@@ -1,0 +1,105 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">药物管理</text>
+  </view>
+  
+  <!-- 药物列表 -->
+  <view class="medication-list">
+    <view class="no-data" wx:if="{{!medications || medications.length === 0}}">
+      暂无药物配置，请点击右下角添加
+    </view>
+    <view class="medication-item" wx:for="{{medications}}" wx:key="_id">
+      <view class="medication-info">
+        <view class="medication-name">{{item.name}}</view>
+        <view class="medication-details">
+          <text class="medication-detail">剂量: {{item.dosage}}{{item.unit}}</text>
+          <text class="medication-detail">频率: {{item.frequency}}</text>
+          <text class="medication-detail" wx:if="{{item.notes}}">备注: {{item.notes}}</text>
+        </view>
+      </view>
+      <view class="medication-actions">
+        <view class="edit-btn" bindtap="editMedication" data-id="{{item._id}}">编辑</view>
+        <view class="delete-btn" bindtap="deleteMedication" data-id="{{item._id}}">删除</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加按钮 -->
+  <view class="add-btn" bindtap="showAddModal">
+    <text class="add-icon">+</text>
+  </view>
+
+  <!-- 添加/编辑药物弹窗 -->
+  <view class="modal" wx:if="{{showModal}}">
+    <view class="modal-mask" bindtap="hideModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        {{editingMedication ? '编辑药物' : '添加药物'}}
+      </view>
+      <view class="modal-body">
+        <!-- 药物名称 -->
+        <view class="form-item">
+          <text class="form-label">药物名称</text>
+          <view class="input-container">
+            <input class="input" placeholder="如: 精氨酸/左卡尼丁" value="{{formData.name}}" bindinput="onNameInput"/>
+          </view>
+        </view>
+        
+        <!-- 剂量和单位 -->
+        <view class="form-item">
+          <text class="form-label">药物剂量（次）</text>
+          <view class="form-row">
+            <view class="input-half" style="flex: 2;">
+              <view class="input-container">
+                <input class="input" type="digit" placeholder="请输入剂量数值" value="{{formData.dosage}}" bindinput="onDosageInput"/>
+              </view>
+            </view>
+            <view class="input-half" style="flex: 1; height: 88rpx; margin-bottom: 20rpx;">
+              <picker class="picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
+                <view class="picker-view">{{units[formData.unitIndex]}}</view>
+              </picker>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 服用频率设置 -->
+        <view class="form-item">
+          <text class="form-label">服用频率</text>
+          <view class="frequency-container">
+            <view class="frequency-row">
+              <text class="frequency-text">每</text>
+              <view class="frequency-input-container">
+                <input class="frequency-input" type="number" value="{{formData.frequencyDays}}" bindinput="onFrequencyDaysInput"/>
+              </view>
+              <text class="frequency-text">天服用</text>
+              <view class="frequency-input-container">
+                <input class="frequency-input" type="number" value="{{formData.frequencyTimes}}" bindinput="onFrequencyTimesInput"/>
+              </view>
+              <text class="frequency-text">次</text>
+            </view>
+          </view>
+          
+          <!-- 常用频率选择 -->
+          <view class="frequency-quickselect">
+            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="1" data-times="1">每日1次</view>
+            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="1" data-times="2">每日2次</view>
+            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="1" data-times="3">每日3次</view>
+            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="2" data-times="1">每2天1次</view>
+          </view>
+        </view>
+        
+        <!-- 备注 -->
+        <view class="form-item">
+          <text class="form-label">备注说明</text>
+          <textarea class="textarea" placeholder="可填写特殊说明" value="{{formData.notes}}" bindinput="onNotesInput"></textarea>
+        </view>
+      </view>
+      
+      <view class="modal-footer">
+        <button class="btn cancel" bindtap="hideModal">取消</button>
+        <button class="btn confirm" bindtap="saveMedication">确定</button>
+      </view>
+    </view>
+  </view>
+</view> 

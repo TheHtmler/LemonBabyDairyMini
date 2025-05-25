@@ -1,0 +1,45 @@
+{
+  "pages": [
+    "pages/role-selection/index",
+    "pages/bind-phone/index",
+    "pages/daily-feeding/index",
+    "pages/data-records/index",
+    "pages/profile/index",
+    "pages/baby-info/index",
+    "pages/nutrition-settings/index",
+    "pages/medications/index",
+    "pages/about/index"
+  ],
+  "window": {
+    "backgroundColor": "#FFF5D6",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFB800",
+    "navigationBarTitleText": "柠檬宝宝喂养记录",
+    "navigationBarTextStyle": "white"
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#FFB800",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "height": "64px",
+    "fontSize": "14px",
+    "list": [
+      {
+        "pagePath": "pages/daily-feeding/index",
+        "text": "今日记录"
+      },
+      {
+        "pagePath": "pages/data-records/index",
+        "text": "数据记录"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
+    ]
+  }
+}

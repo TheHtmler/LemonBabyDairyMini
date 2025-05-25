@@ -1,0 +1,440 @@
+<view class="container" catchtouchmove="preventPageScroll">
+  <!-- 日期选择器 -->
+  <view class="date-selector">
+    <!-- 当前日期显示 -->
+    <view class="current-date">
+      <text class="date-text">{{todayFullDate}}</text>
+    </view>
+    
+    <!-- 日期滑动区域 -->
+    <view class="date-scroll-container">
+      <scroll-view 
+        scroll-x="true" 
+        scroll-into-view="{{currentDateId}}" 
+        scroll-with-animation="true" 
+        class="date-list" 
+        bindscroll="onDateScroll"
+        enhanced="true"
+        show-scrollbar="false"
+        enable-flex="{{false}}"
+        bounces="{{true}}"
+        fast-deceleration="{{true}}"
+      >
+        <view class="date-items-container">
+          <view 
+            id="date-{{index}}" 
+            class="date-item {{selectedDateIndex === index ? 'selected' : ''}} {{index === 0 ? 'today' : ''}}" 
+            wx:for="{{dateList}}" 
+            wx:key="date" 
+            data-date="{{item.date}}" 
+            data-index="{{index}}" 
+            bindtap="onDateItemClick"
+          >
+            <text class="weekday">{{item.weekday}}</text>
+            <text class="day">{{item.day}}</text>
+            <text class="month">{{item.month}}月</text>
+          </view>
+          
+          <view class="date-more-indicator" bindtap="showCalendar">
+            <text>更多</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 记录内容区域 -->
+  <view class="records-wrapper" style="opacity: {{isDataLoading ? 0.5 : 1}};">
+    <!-- 日期显示头部 -->
+    <view class="date-header">
+      <view class="selected-date">{{formattedSelectedDate}}</view>
+      <view class="calendar-icon" bindtap="showCalendar">日历</view>
+    </view>
+
+    <!-- 无记录提示 -->
+    <view class="empty-data" wx:if="{{feedingRecords.length === 0 && medicationRecords.length === 0}}" style="opacity: {{isDataLoading ? 0.5 : 1}}; transition: opacity 0.3s;">
+      <view class="empty-icon">📝</view>
+      <view class="empty-text">当日暂无记录</view>
+      <view class="empty-actions">
+        <view class="add-btn" bindtap="showAddFeedingModal">
+          <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+          <text>补充喂奶记录</text>
+        </view>
+        <view class="add-btn" bindtap="showAddMedicationModal">
+          <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+          <text>补充用药记录</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 有记录时显示内容 -->
+    <block wx:else>
+      <!-- 喂奶记录汇总卡片 -->
+      <view class="card">
+        <view class="card-title">
+          <text>汇总信息</text>
+        </view>
+        
+        <!-- 生长信息 -->
+        <view class="growth-info">
+          <view class="growth-item">
+            <view class="growth-label">体重</view>
+            <view class="growth-value">{{weight}} kg</view>
+          </view>
+          <view class="growth-item">
+            <view class="growth-label">身高</view>
+            <view class="growth-value">{{height}} cm</view>
+          </view>
+        </view>
+        
+        <!-- 喂奶信息 -->
+        <view class="total-summary">
+          <view class="total-item">
+            <view class="total-label">总奶量</view>
+            <view class="total-value">{{totalMilk}}ml</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">天然奶总量</view>
+            <view class="total-value">{{totalNaturalMilk}}ml</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">特奶总量</view>
+            <view class="total-value">{{totalSpecialMilk}}ml</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">奶粉克重</view>
+            <view class="total-value">{{totalPowderWeight}}g</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">喂奶次数</view>
+            <view class="total-value">{{feedingRecords.length}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 喂奶记录列表 -->
+      <view class="card">
+        <view class="card-title">
+          <text>喂奶详细记录</text>
+          <view class="add-btn" bindtap="showAddFeedingModal">
+            <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+            <text>补充记录</text>
+          </view>
+        </view>
+        <view wx:if="{{feedingRecords.length > 0}}">
+          <view class="feeding-record" wx:for="{{feedingRecords}}" wx:key="index">
+            <view class="record-content" bindtap="openEditFeedingModal" data-index="{{index}}">
+              <view class="time-info">
+                <view class="start-time">{{item.formattedStartTime}}</view>
+                <view class="end-time">至 {{item.formattedEndTime}}</view>
+              </view>
+              <view class="volume-info">
+                <view class="breast-milk">天然奶: {{item.naturalMilkVolume || 0}}ml</view>
+                <view class="special-milk">特奶: {{item.specialMilkVolume || 0}}ml</view>
+              </view>
+            </view>
+            <!-- 三点菜单按钮 -->
+            <view class="menu-btn" catchtap="toggleFeedingMenu" data-index="{{index}}">
+              <view class="dot-menu">
+                <view class="dot"></view>
+                <view class="dot"></view>
+                <view class="dot"></view>
+              </view>
+            </view>
+            
+            <!-- 菜单弹出选项 -->
+            <view class="menu-options {{activeFeedingMenu === index ? 'show' : ''}}" wx:if="{{activeFeedingMenu === index}}">
+              <view class="menu-option" catchtap="openEditFeedingModal" data-index="{{index}}">
+                <text>编辑</text>
+              </view>
+              <view class="menu-option delete" catchtap="deleteFeeding" data-index="{{index}}">
+                <text>删除</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="empty-data" wx:else>
+          <view class="empty-text">暂无喂奶记录</view>
+        </view>
+      </view>
+
+      <!-- 用药记录卡片 -->
+      <view class="card" wx:if="{{medicationRecords.length > 0}}">
+        <view class="card-title">
+          <text>用药记录</text>
+          <view class="add-btn" bindtap="showAddMedicationModal">
+            <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+            <text>补充记录</text>
+          </view>
+        </view>
+        <view> 
+          <view class="medication-record" wx:for="{{medicationRecords}}" wx:key="index">
+            <view class="record-content" bindtap="openEditMedicationModal" data-index="{{index}}">
+              <view class="medication-info">
+                <view class="medication-name">{{item.name}}</view>
+                <view class="medication-volume">{{item.volume}}</view>
+              </view>
+              <view class="medication-time">
+                <view class="medication-time-text">{{item.formattedTime}}</view>
+              </view>
+            </view>
+            <!-- 三点菜单按钮 -->
+            <view class="menu-btn" catchtap="toggleMedicationMenu" data-index="{{index}}">
+              <view class="dot-menu">
+                <view class="dot"></view>
+                <view class="dot"></view>
+                <view class="dot"></view>
+              </view>
+            </view>
+            
+            <!-- 菜单弹出选项 -->
+            <view class="menu-options {{activeMedicationMenu === index ? 'show' : ''}}" wx:if="{{activeMedicationMenu === index}}">
+              <view class="menu-option" catchtap="openEditMedicationModal" data-index="{{index}}">
+                <text>编辑</text>
+              </view>
+              <view class="menu-option delete" catchtap="deleteMedication" data-index="{{index}}">
+                <text>删除</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 日历选择器 -->
+  <view class="calendar-picker" wx:if="{{showCalendarPicker}}" bindtap="hideCalendar">
+    <view class="calendar-content" catchtap="preventBubble">
+      <view class="calendar-header">
+        <view bindtap="prevMonth">〈</view>
+        <view class="month-title">{{calendarYear}}年{{calendarMonth}}月</view>
+        <view bindtap="nextMonth">〉</view>
+      </view>
+      
+      <view class="weekday-header">
+        <view class="weekday-item" wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this">{{item}}</view>
+      </view>
+      
+      <view class="calendar-grid">
+        <view 
+          class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}}"
+          wx:for="{{calendarDays}}"
+          wx:key="date"
+          bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}"
+          data-date="{{item.date}}"
+        >
+          {{item.day}}
+        </view>
+      </view>
+      
+      <view class="calendar-footer">
+        <view class="today-btn" bindtap="goToToday">今天</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 补充喂奶记录弹窗 -->
+  <view class="modal" wx:if="{{showAddFeedingModal}}" bindtap="hideAddFeedingModal">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>补充喂奶记录</text>
+      </view>
+      <view class="modal-body">
+        <!-- 时间选择 -->
+        <view class="time-selection">
+          <view class="time-picker-group">
+            <text class="label">开始时间</text>
+            <picker mode="time" value="{{newFeeding.startTime}}" data-field="startTime" bindchange="onNewFeedingTimeChange">
+              <view class="time-picker">{{newFeeding.startTime}}</view>
+            </picker>
+          </view>
+          
+          <view class="time-picker-group">
+            <text class="label">结束时间</text>
+            <picker mode="time" value="{{newFeeding.endTime}}" data-field="endTime" bindchange="onNewFeedingTimeChange">
+              <view class="time-picker">{{newFeeding.endTime}}</view>
+            </picker>
+          </view>
+        </view>
+        
+        <!-- 天然奶量 -->
+        <view class="input-group">
+          <text class="label">天然奶量 (ml)</text>
+          <input 
+            type="digit" 
+            value="{{newFeeding.naturalMilkVolume}}" 
+            data-field="naturalMilkVolume" 
+            bindinput="onNewFeedingInput"
+            placeholder="请输入天然奶量"
+          />
+        </view>
+
+        <!-- 总奶量 -->
+        <view class="input-group">
+          <text class="label">总奶量 (ml)</text>
+          <input 
+            type="digit" 
+            value="{{newFeeding.totalVolume}}" 
+            data-field="totalVolume" 
+            bindinput="onNewFeedingInput"
+            placeholder="请输入总奶量"
+          />
+        </view>
+        
+        <!-- 特奶量展示 -->
+        <view class="special-milk">
+          <text class="label">特奶量:</text>
+          <text class="value">{{newFeeding.specialMilkVolume || '0'}}ml</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideAddFeedingModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveNewFeeding">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 补充用药记录弹窗 -->
+  <view class="modal" wx:if="{{showAddMedicationModal}}" bindtap="hideAddMedicationModal">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>补充用药记录</text>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <text class="label">选择药物</text>
+          <picker 
+            mode="selector" 
+            range="{{medications}}" 
+            range-key="name"
+            bindchange="onMedicationSelect"
+          >
+            <view class="picker {{newMedication.name ? '' : 'placeholder'}}">
+              {{newMedication.name || '请选择药物'}}
+            </view>
+          </picker>
+        </view>
+
+        <view class="form-item">
+          <text class="label">用药剂量</text>
+          <view class="volume-display">{{newMedication.volume || '--'}}</view>
+        </view>
+
+        <view class="form-item">
+          <text class="label">用药时间</text>
+          <picker mode="time" value="{{newMedication.time}}" data-field="time" bindchange="onNewMedicationTimeChange">
+            <view class="time-picker">{{newMedication.time}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideAddMedicationModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveNewMedication">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 删除确认弹窗 -->
+  <view class="confirm-modal" wx:if="{{showDeleteConfirm}}" bindtap="hideDeleteConfirm">
+    <view class="confirm-modal-content" catchtap="preventBubble">
+      <view class="confirm-modal-title">确认删除</view>
+      <view class="confirm-modal-message">{{deleteConfirmMessage}}</view>
+      <view class="confirm-modal-footer">
+        <view class="confirm-modal-btn cancel" bindtap="hideDeleteConfirm">取消</view>
+        <view class="confirm-modal-btn confirm" bindtap="confirmDelete">删除</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑喂奶记录弹窗 -->
+  <view class="modal" wx:if="{{showEditFeedingModal}}" bindtap="hideEditFeedingModal">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>编辑喂奶记录</text>
+      </view>
+      <view class="modal-body">
+        <!-- 时间选择 -->
+        <view class="time-selection">
+          <view class="time-picker-group">
+            <text class="label">开始时间</text>
+            <picker mode="time" value="{{editingFeeding.formattedStartTime}}" data-field="formattedStartTime" bindchange="onEditFeedingTimeChange">
+              <view class="time-picker">{{editingFeeding.formattedStartTime}}</view>
+            </picker>
+          </view>
+          
+          <view class="time-picker-group">
+            <text class="label">结束时间</text>
+            <picker mode="time" value="{{editingFeeding.formattedEndTime}}" data-field="formattedEndTime" bindchange="onEditFeedingTimeChange">
+              <view class="time-picker">{{editingFeeding.formattedEndTime}}</view>
+            </picker>
+          </view>
+        </view>
+        
+        <!-- 天然奶量 -->
+        <view class="input-group">
+          <text class="label">天然奶量 (ml)</text>
+          <input 
+            type="digit" 
+            value="{{editingFeeding.naturalMilkVolume}}" 
+            data-field="naturalMilkVolume" 
+            bindinput="onEditFeedingInput"
+            placeholder="请输入天然奶量"
+          />
+        </view>
+
+        <!-- 总奶量 -->
+        <view class="input-group">
+          <text class="label">总奶量 (ml)</text>
+          <input 
+            type="digit" 
+            value="{{editingFeeding.totalVolume || (editingFeeding.naturalMilkVolume + editingFeeding.specialMilkVolume)}}" 
+            data-field="totalVolume" 
+            bindinput="onEditFeedingInput"
+            placeholder="请输入总奶量"
+          />
+        </view>
+        
+        <!-- 特奶量展示 -->
+        <view class="special-milk">
+          <text class="label">特奶量:</text>
+          <text class="value">{{editingFeeding.specialMilkVolume || '0'}}ml</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideEditFeedingModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveEditedFeeding">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑用药记录弹窗 -->
+  <view class="modal" wx:if="{{showEditMedicationModal}}" bindtap="hideEditMedicationModal">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>编辑用药记录</text>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <text class="label">药物名称</text>
+          <view class="medication-name-display">{{editingMedication.name}}</view>
+        </view>
+
+        <view class="form-item">
+          <text class="label">用药剂量</text>
+          <view class="volume-display">{{editingMedication.volume || '--'}}</view>
+        </view>
+
+        <view class="form-item">
+          <text class="label">用药时间</text>
+          <picker mode="time" value="{{editingMedication.formattedTime}}" data-field="formattedTime" bindchange="onEditMedicationTimeChange">
+            <view class="time-picker">{{editingMedication.formattedTime}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideEditMedicationModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveEditedMedication">保存</button>
+      </view>
+    </view>
+  </view>
+</view> 

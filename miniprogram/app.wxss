@@ -1,0 +1,36 @@
+/**app.wxss**/
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+} 
+
+button {
+  background: initial;
+  box-sizing: border-box;
+}
+
+button:focus{
+  outline: 0;
+}
+
+button::after{
+  border: none;
+}
+
+page {
+  background: #f6f6f6;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 添加全局input样式 */
+input {
+  box-sizing: border-box;
+  vertical-align: middle;
+}

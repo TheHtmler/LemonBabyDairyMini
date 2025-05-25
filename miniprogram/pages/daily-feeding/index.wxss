@@ -1,0 +1,1626 @@
+.container {
+  padding: 20rpx;
+  background-color: #FFF9E6;
+  min-height: 100vh;
+}
+
+.section {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  width: 90%;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8rpx;
+  height: 100%;
+  background-color: #FFE566;
+  border-radius: 4rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.2);
+  display: flex;
+  align-items: center;
+}
+
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 12rpx;
+  height: 12rpx;
+  background-color: #FFB800;
+  border-radius: 50%;
+  margin-right: 12rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-header .section-title {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.add-record-btn {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 32rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.add-record-btn:active {
+  background: rgba(255, 184, 0, 0.2);
+}
+
+.add-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 8rpx;
+}
+
+.add-record-btn text {
+  font-size: 24rpx;
+  color: #FFB800;
+}
+
+.subsection-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  position: relative;
+  padding-left: 16rpx;
+}
+
+.subsection-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 24rpx;
+  background-color: #FFB800;
+  border-radius: 3rpx;
+}
+
+/* Weight Section */
+.weight-input {
+  width: 100%;
+  height: 80rpx;
+  background: #FFF9E6;
+  border: 2rpx solid #FFB800;
+  border-radius: 12rpx;
+  padding: 0 24rpx;
+  font-size: 32rpx;
+  color: #333333;
+  box-sizing: border-box;
+  outline: none;
+  margin-bottom: 16rpx;
+  transition: border-color 0.2s;
+}
+
+.weight-input:focus {
+  border-color: #FFD700;
+  background: #FFF6CC;
+}
+
+.unit {
+  font-size: 28rpx;
+  color: #666666;
+  margin-left: 16rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+}
+
+/* Calculations Section */
+.calculation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+}
+
+.calculation-item:last-child {
+  border-bottom: none;
+}
+
+.calculation-item .label {
+  font-size: 28rpx;
+  color: #666666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.calculation-item .value {
+  font-size: 32rpx;
+  color: #FFB800;
+  font-weight: 600;
+  margin-left: 20rpx;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+/* Feeding Controls */
+.feeding-controls {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.control-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  background-color: rgba(255, 184, 0, 0.1);
+  color: #666666;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.control-btn.active {
+  background-color: #FFB800;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4rpx 8rpx rgba(255, 184, 0, 0.3);
+}
+
+.control-btn[disabled] {
+  opacity: 0.5;
+  background-color: #f0f0f0;
+  border: 2rpx solid #e0e0e0;
+  color: #999999;
+}
+
+/* Feeding Inputs */
+.feeding-inputs {
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 12rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.input-group {
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+
+.input-group:last-child {
+  margin-bottom: 0;
+}
+
+.input-group .label {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 16rpx 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: #FFB800;
+  box-shadow: 0 0 0 2rpx rgba(255, 184, 0, 0.2);
+}
+
+.input-wrapper input {
+  flex: 1;
+  font-size: 32rpx;
+  color: #333333;
+}
+
+.input-wrapper .value {
+  font-size: 32rpx;
+  color: #FFB800;
+  font-weight: 600;
+}
+
+.input-wrapper .unit {
+  font-size: 28rpx;
+  color: #666666;
+  margin-left: 16rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+}
+
+/* Medication Section */
+.medication-section {
+  margin-top: 20rpx;
+}
+
+.medication-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+  padding: 20rpx;
+}
+
+.medication-item {
+  background-color: #f5f5f5;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.medication-item.active {
+  background-color: #ffd700;
+}
+
+.medication-item .dosage {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 8rpx;
+}
+
+/* Medication Records */
+.medication-records {
+  margin-top: 20rpx;
+  padding: 0 20rpx;
+}
+
+.section-subtitle {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+}
+
+.medication-list {
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 16rpx;
+}
+
+.medication-record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.medication-record-item:last-child {
+  border-bottom: none;
+}
+
+.medication-record-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.medication-name {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.medication-volume {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 4rpx;
+}
+
+.medication-time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* Medication Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  width: 80%;
+  max-height: 80vh;
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  padding: 24rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  text-align: center;
+  background-color: #FFF9E6;
+  border-bottom: 1rpx solid rgba(255, 184, 0, 0.2);
+  color: #333;
+}
+
+.modal-body {
+  padding: 30rpx;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  border-top: 1rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.modal-btn {
+  flex: 1;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 32rpx;
+  border: none;
+  background: none;
+}
+
+.modal-btn.cancel {
+  color: #666;
+  border-right: 1rpx solid #f0f0f0;
+}
+
+.modal-btn.confirm {
+  color: #FFB800;
+  font-weight: bold;
+}
+
+/* Feeding History */
+.feeding-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.feeding-item {
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 12rpx;
+  padding: 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.feeding-item:hover {
+  transform: translateY(-2rpx);
+  box-shadow: 0 4rpx 8rpx rgba(255, 184, 0, 0.15);
+}
+
+.feeding-time {
+  margin-bottom: 16rpx;
+  display: flex;
+  align-items: center;
+}
+
+.feeding-time::before {
+  content: '';
+  display: inline-block;
+  width: 8rpx;
+  height: 8rpx;
+  background-color: #FFB800;
+  border-radius: 50%;
+  margin-right: 8rpx;
+}
+
+.feeding-time .time {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.feeding-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+}
+
+.detail-item {
+  text-align: center;
+  background-color: #ffffff;
+  padding: 12rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.detail-item .label {
+  display: block;
+  font-size: 24rpx;
+  color: #666666;
+  margin-bottom: 8rpx;
+}
+
+.detail-item .value {
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
+}
+
+/* Placeholder Style */
+.placeholder {
+  color: #999999;
+}
+
+/* Animation for active states */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.control-btn.active {
+  animation: pulse 1s infinite;
+}
+
+/* Tips Component */
+.tips-container {
+  position: fixed;
+  bottom: 40rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  z-index: 100;
+  animation: slideUp 0.3s ease-out;
+}
+
+.tips-content {
+  background-color: rgba(255, 184, 0, 0.9);
+  color: #ffffff;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  text-align: center;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, 100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.coefficient-input {
+  width: 120rpx;
+  text-align: right;
+  padding: 4rpx 8rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 6rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.feeding-container {
+  padding: 20px;
+}
+
+.current-feeding {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(255, 184, 0, 0.1);
+}
+
+.feeding-time {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.feeding-inputs {
+  margin-bottom: 20px;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 24rpx;
+}
+
+.label {
+  width: 80px;
+  font-size: 16px;
+  color: #333;
+}
+
+.input {
+  flex: 1;
+  height: 40px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 16px;
+  color: #333;
+  text-align: right;
+}
+
+.input.readonly {
+  background: #f0f0f0;
+  color: #666;
+  border: 1px dashed #ddd;
+}
+
+.unit {
+  margin-left: 8px;
+  color: #999;
+  font-size: 14px;
+  width: 30px;
+}
+
+.feeding-actions {
+  margin-top: 30px;
+}
+
+.start-button, .end-button {
+  width: 100%;
+  height: 44px;
+  border-radius: 22px;
+  font-size: 16px;
+  font-weight: 500;
+  color: white;
+  background: #FFB800;
+  border: none;
+  box-shadow: 0 4px 12px rgba(255, 184, 0, 0.2);
+}
+
+.start-button:active, .end-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(255, 184, 0, 0.2);
+}
+
+.start-button[disabled], .end-button[disabled] {
+  background: #e0e0e0;
+  color: #999;
+  box-shadow: none;
+}
+
+.feeding-records {
+  margin-top: 30px;
+}
+
+.record-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.record-item {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(255, 184, 0, 0.1);
+}
+
+.record-time {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.record-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.record-volumes {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #333;
+}
+
+.record-volumes text {
+  background: #FFF5D6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* 无药物提示样式 */
+.no-medications {
+  width: 100%;
+  padding: 20rpx;
+  text-align: center;
+  color: #888;
+  font-size: 28rpx;
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 12rpx;
+  border: 2rpx dashed rgba(255, 184, 0, 0.3);
+}
+
+/* Modal Info Row */
+.modal-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.modal-label {
+  color: #666;
+  font-size: 28rpx;
+}
+
+.modal-value {
+  color: #333;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.modal-time-picker {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.edit-icon {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 4rpx;
+}
+
+/* 新的喂养交互样式 */
+.feeding-status {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.quick-start-btn {
+  width: 100%;
+  height: 200rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+  border: none;
+  border-radius: 20rpx;
+  padding: 0;
+}
+
+.quick-start-btn::after {
+  border: none;
+}
+
+.btn-icon {
+  width: 96rpx;
+  height: 96rpx;
+  margin-bottom: 20rpx;
+}
+
+.btn-text {
+  font-size: 28rpx;
+  color: #FFF;
+  font-weight: 500;
+}
+
+.btn-text-primary {
+  color: #FFB800;
+}
+
+/* 正在喂奶状态 */
+.feeding-active {
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.feeding-timer {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx dashed rgba(255, 184, 0, 0.3);
+}
+
+.timer-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.timer-label {
+  font-size: 28rpx;
+  color: #666;
+  width: 150rpx;
+}
+
+.timer-value {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.timer-value.highlight {
+  color: #FFB800;
+  font-size: 34rpx;
+}
+
+.input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  overflow: hidden;
+  flex: 1;
+  height: 80rpx;
+}
+
+.volume-btn {
+  width: 120rpx!important;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 184, 0, 0.1);
+  color: #FFB800;
+  font-size: 36rpx;
+  font-weight: bold;
+  line-height: 1;
+  border: none;
+  padding: 0;
+}
+
+.volume-input {
+  flex: 1;
+  height: 80rpx;
+  min-width: 80rpx;
+  text-align: center;
+  font-size: 32rpx;
+  margin: 0;
+  padding: 0;
+}
+
+.lh-80 {
+  line-height: 80rpx;
+}
+
+.volume-unit {
+  padding: 0 12rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.special-milk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 20rpx;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.special-milk-item {
+  display: flex;
+  align-items: center;
+}
+
+.special-milk .label {
+  margin-bottom: 0;
+  margin-right: 20rpx;
+}
+
+.special-milk .value {
+  font-size: 32rpx;
+  color: #FFB800;
+  font-weight: 500;
+}
+
+/* 快捷填写模式 */
+.quick-feeding {
+  margin-top: 30rpx;
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.quick-feeding-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 20rpx;
+  position: relative;
+  padding-left: 20rpx;
+}
+
+.quick-feeding-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 8rpx;
+  background-color: #FFB800;
+  border-radius: 4rpx;
+}
+
+.quick-feeding-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.quick-save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  background-color: #FFB800;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 40rpx;
+  border: none;
+  margin-top: 10rpx;
+  box-shadow: 0 6rpx 12rpx rgba(255, 184, 0, 0.2);
+}
+
+/* 快捷输入部分样式 */
+.quick-input-section {
+  margin-top: 30rpx;
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.quick-section-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 20rpx;
+  position: relative;
+  padding-left: 20rpx;
+}
+
+.quick-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 8rpx;
+  background-color: #FFB800;
+  border-radius: 4rpx;
+}
+
+.special-milk {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 20rpx;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.special-milk .label {
+  margin-bottom: 0;
+  margin-right: 20rpx;
+}
+
+.special-milk .value {
+  font-size: 32rpx;
+  color: #FFB800;
+  font-weight: 500;
+}
+
+.quick-save-btn {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  background-color: #FFB800;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 40rpx;
+  border: none;
+  margin-top: 10rpx;
+  box-shadow: 0 6rpx 12rpx rgba(255, 184, 0, 0.2);
+}
+
+/* 时间选择器样式 */
+.time-selection {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.time-picker-group {
+  width: 48%;
+}
+
+.time-picker {
+  background-color: #fff;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  text-align: center;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  color: #333;
+  font-size: 30rpx;
+}
+
+.auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-container {
+  width: 80%;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.auth-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.auth-buttons {
+  width: 100%;
+}
+
+.standard-btn {
+  background-color: #07c160;
+  color: white;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 10px 0;
+  width: 100%;
+}
+
+/* Baby Info Section */
+.baby-info-section {
+  text-align: center;
+  padding: 30rpx 0;
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+  background-color: #FFD700;
+  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.baby-name {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.baby-date {
+  font-size: 32rpx;
+  color: #555;
+  margin-bottom: 6rpx;
+  font-weight: 500;
+}
+
+.baby-days {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* Tab样式 */
+.tabs {
+  display: flex;
+  background-color: rgba(255, 184, 0, 0.1);
+  border-radius: 12rpx;
+  overflow: hidden;
+  margin-top: 16rpx;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tab.active {
+  color: #FFB800;
+  font-weight: 600;
+  background-color: rgba(255, 184, 0, 0.2);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 6rpx;
+  background-color: #FFB800;
+  border-radius: 3rpx;
+}
+
+.tab-content {
+  background: #ffffff;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(255, 184, 0, 0.1);
+  border: 2rpx solid rgba(255, 184, 0, 0.1);
+  min-height: 200rpx;
+  margin-top: 24rpx;
+}
+
+.records-list, .medication-records {
+  margin-top: 16rpx;
+}
+
+.record-item, .medication-record-item {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 2rpx solid rgba(255, 184, 0, 0.15);
+  display: flex;
+  overflow: visible;
+}
+
+.record-content {
+  flex: 1;
+  padding: 20rpx;
+}
+
+.record-time {
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+  display: flex;
+  align-items: center;
+}
+
+.record-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.record-detail-item {
+  display: flex;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-right: 8rpx;
+}
+
+.detail-value {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.record-delete {
+  display: none;
+}
+
+.empty-record {
+  text-align: center;
+  padding: 40rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 药物记录项样式 */
+.medication-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.medication-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 600;
+  margin-right: 16rpx;
+}
+
+.medication-volume {
+  font-size: 24rpx;
+  color: #666;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+}
+
+.medication-time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 修复弹窗的样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  width: 80%;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  padding: 24rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 184, 0, 0.1);
+}
+
+.modal-body {
+  padding: 32rpx 24rpx;
+}
+
+.modal-footer {
+  display: flex;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.modal-btn {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  border-radius: 0;
+  border: none;
+}
+
+.modal-btn.cancel {
+  color: #666;
+  background-color: #f5f5f5;
+}
+
+.modal-btn.confirm {
+  color: #ffffff;
+  background-color: #FFB800;
+}
+
+.modal-btn.confirm:active {
+  background-color: #e0a000;
+}
+
+.modal-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.modal-label {
+  font-size: 28rpx;
+  color: #666;
+  margin-right: 16rpx;
+}
+
+.modal-value {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.modal-time-picker {
+  font-size: 28rpx;
+  color: #333;
+  padding: 12rpx 24rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+}
+
+.edit-icon {
+  font-size: 24rpx;
+  color: #FFB800;
+  margin-left: 8rpx;
+}
+
+/* 添加新的图标样式 */
+.delete-icon {
+  width: 36rpx;
+  height: 36rpx;
+  /* 需要创建一个白色的删除图标 */
+  filter: brightness(5);
+}
+
+/* Protein Calculations Section */
+.protein-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20rpx;
+}
+
+.calculation-header {
+  background-color: rgba(255, 221, 0, 0.15);
+  padding: 10rpx 20rpx;
+  border-radius: 8rpx;
+  margin-bottom: 10rpx;
+}
+
+.header-label {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+/* 设置引导样式 */
+.settings-guide {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(255, 184, 0, 0.08);
+  border: 2rpx dashed rgba(255, 184, 0, 0.5);
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin: 10rpx 0 20rpx;
+}
+
+.guide-icon {
+  width: 48rpx;
+  height: 48rpx;
+  margin-bottom: 16rpx;
+}
+
+.guide-icon image {
+  width: 100%;
+  height: 100%;
+}
+
+.guide-content {
+  margin-bottom: 20rpx;
+}
+
+.guide-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #FF9800;
+  margin-bottom: 8rpx;
+}
+
+.guide-desc {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+}
+
+.missing-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 10rpx;
+}
+
+.missing-item {
+  background-color: rgba(255, 184, 0, 0.15);
+  padding: 6rpx 16rpx;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  color: #FF9800;
+}
+
+.guide-btn {
+  align-self: flex-end;
+  background-color: #FFB800;
+  color: white;
+  font-size: 26rpx;
+  padding: 10rpx 30rpx;
+  border-radius: 30rpx;
+  line-height: 1.5;
+  border: none;
+  box-shadow: 0 4rpx 8rpx rgba(255, 184, 0, 0.2);
+}
+
+.guide-btn::after {
+  border: none;
+}
+
+.calculation-items {
+  padding-top: 10rpx;
+}
+
+/* 按钮区域样式 */
+.feeding-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20rpx;
+}
+
+/* 结束按钮样式 */
+.end-feeding-btn {
+  flex: 2;
+  height: 80rpx;
+  background-color: #FFB800;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 40rpx;
+  border: none;
+  box-shadow: 0 6rpx 12rpx rgba(255, 184, 0, 0.2);
+}
+
+/* 撤销按钮样式 - 设计为不明显 */
+.cancel-feeding-btn {
+  flex: 1;
+  height: 80rpx;
+  background-color: transparent;
+  border: none;
+  font-size: 26rpx;
+  color: #999;
+  margin-right: 20rpx;
+}
+
+.cancel-feeding-btn::after {
+  border: none;
+}
+
+.btn-text-secondary {
+  font-size: 26rpx;
+  color: #999;
+  text-decoration: underline;
+}
+
+/* 开始喂奶按钮样式 */
+.start-feeding-btn {
+  width: 100%;
+  height: 80rpx;
+  background-color: #FFB800;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 40rpx;
+  border: none;
+  box-shadow: 0 6rpx 12rpx rgba(255, 184, 0, 0.2);
+}
+
+.start-feeding-btn:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 8rpx rgba(255, 184, 0, 0.2);
+}
+
+/* 正在喂奶数据显示样式 */
+.feeding-data {
+  background-color: rgba(255, 184, 0, 0.05);
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  border: 2rpx dashed rgba(255, 184, 0, 0.3);
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+}
+
+.data-row:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.data-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.data-value {
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 500;
+}
+
+/* 带有按钮的标题栏样式 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+/* 快捷记录按钮 */
+.quick-record-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60rpx;
+  padding: 0 24rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  border-radius: 30rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.3);
+}
+
+.quick-record-btn text {
+  font-size: 26rpx;
+  color: #FFB800;
+  font-weight: 500;
+}
+
+.quick-record-btn:active {
+  background-color: rgba(255, 184, 0, 0.2);
+}
+
+/* 三点菜单样式 */
+.menu-btn {
+  width: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.dot-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 0 20rpx;
+}
+
+.dot {
+  width: 8rpx;
+  height: 8rpx;
+  background-color: #999;
+  border-radius: 50%;
+  margin: 4rpx 0;
+}
+
+.menu-options {
+  position: absolute;
+  right: 60rpx;
+  top: 0;
+  background-color: #fff;
+  border-radius: 8rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  opacity: 0;
+  transform: scale(0.8);
+  transform-origin: top right;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  border: 1rpx solid #eee;
+}
+
+.menu-options.show {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.menu-option {
+  padding: 16rpx 30rpx;
+  font-size: 28rpx;
+  color: #333;
+  border-bottom: 1rpx solid #f5f5f5;
+  white-space: nowrap;
+}
+
+.menu-option:last-child {
+  border-bottom: none;
+}
+
+.menu-option.delete {
+  color: #ff4d4f;
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99;
+  background-color: transparent;
+} 

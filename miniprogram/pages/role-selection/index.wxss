@@ -1,0 +1,107 @@
+/* 角色选择页面样式 */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #FFF5D6;
+  padding: 40rpx;
+}
+
+/* 头部样式 */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60rpx;
+}
+
+.logo {
+  width: 180rpx;
+  height: 180rpx;
+  margin-bottom: 20rpx;
+}
+
+.title {
+  font-size: 42rpx;
+  font-weight: bold;
+  color: #FFB800;
+  text-shadow: 0 2rpx 2rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 指引文字 */
+.guide-text {
+  font-size: 36rpx;
+  color: #333;
+  margin-bottom: 50rpx;
+  text-align: center;
+}
+
+/* 角色卡片容器 */
+.role-cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 600rpx;
+  gap: 40rpx;
+  margin-bottom: 50rpx;
+}
+
+/* 角色卡片通用样式 */
+.role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 30rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.role-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 创建者角色卡片 */
+.creator {
+  background-color: #FFE082;
+  border: 2rpx solid #FFB800;
+}
+
+/* 参与者角色卡片 */
+.participant {
+  background-color: #FFECB3;
+  border: 2rpx solid #FFC107;
+}
+
+/* 角色图标 */
+.role-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 20rpx;
+}
+
+/* 角色名称 */
+.role-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+  color: #333;
+}
+
+/* 角色描述 */
+.role-desc {
+  font-size: 28rpx;
+  color: #666;
+  text-align: center;
+}
+
+/* 底部文字 */
+.footer-text {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 30rpx;
+  text-align: center;
+} 

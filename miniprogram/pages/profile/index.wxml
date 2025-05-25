@@ -1,0 +1,41 @@
+<view class="profile-container">
+  <!-- 宝宝信息区域 -->
+  <view class="user-info">
+    <!-- 头像区域 - 点击可更换头像 -->
+    <view class="avatar-wrapper" bindtap="onAvatarClick">
+      <image class="avatar" src="{{babyInfo.avatarUrl || defaultAvatarUrl}}" mode="aspectFill"></image>
+      <view class="avatar-edit-icon">换头像</view>
+    </view>
+    
+    <view class="user-details">
+      <!-- 展示宝宝信息 -->
+      <view class="baby-info">
+        <text class="baby-name">{{babyInfo.name || '柠檬宝宝'}}</text>
+        <view class="baby-gender-tag">{{babyInfo.gender === 'male' ? '男孩' : '女孩'}}</view>
+      </view>
+      <text class="baby-birthday" wx:if="{{babyInfo.birthday}}">{{babyInfo.birthday}}</text>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-container">
+    <view class="menu-item" 
+          wx:for="{{menuList}}" 
+          wx:key="id" 
+          data-item="{{item}}" 
+          bindtap="handleMenuClick">
+          <view class="menu-icon">
+            <image src="/images/icons/{{item.icon}}.svg" mode="aspectFit"></image>
+          </view>
+          <view class="menu-name">{{item.name}}</view>
+          <view class="menu-arrow">
+            <image src="/images/icons/arrow-right.svg" mode="aspectFit"></image>
+          </view>
+        </view>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text>柠檬宝宝日记 v1.0.0</text>
+  </view>
+</view> 

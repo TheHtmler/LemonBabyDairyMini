@@ -1,0 +1,83 @@
+<view class="container">
+  <view class="header">
+    <text class="title">营养参数配置</text>
+    <text class="subtitle">为柠檬宝宝设置个性化营养参数</text>
+  </view>
+
+  <form bindsubmit="formSubmit">
+    <view class="form-group">
+      <view class="form-item">
+        <text class="label">天然蛋白摄入系数 (g/kg)</text>
+        <view class="input-container">
+          <input type="digit" name="natural_protein_coefficient" value="{{inputValues.natural_protein_coefficient || 1.2}}" placeholder="默认 1.2" confirm-type="done" />
+        </view>
+        <view class="input-description">每公斤体重需要摄入的天然蛋白量</view>
+      </view>
+
+      <!-- 根据天然蛋白来源不同显示不同的表单项 -->
+      <!-- 当来源为母乳时 -->
+      <view class="form-item" wx:if="{{isBreastMilk}}">
+        <text class="label">母乳蛋白质浓度 (g/100ml)</text>
+        <view class="input-container">
+          <input type="digit" name="natural_milk_protein" value="{{inputValues.natural_milk_protein || 1.1}}" placeholder="默认 1.1" confirm-type="done" />
+        </view>
+        <view class="input-description">每100ml母乳中含有的蛋白质量</view>
+      </view>
+
+      <!-- 当来源为普通奶粉时 -->
+      <view wx:if="{{!isBreastMilk}}">
+        <view class="form-item">
+          <text class="label">奶粉蛋白质浓度 (g/100g)</text>
+          <view class="input-container">
+            <input type="digit" name="natural_milk_protein" value="{{inputValues.natural_milk_protein || 2.1}}" placeholder="默认 2.1" confirm-type="done" />
+          </view>
+          <view class="input-description">每100g奶粉中含有的蛋白质量</view>
+        </view>
+
+        <view class="form-item">
+          <text class="label">奶粉冲配比例</text>
+          <view class="ratio-inputs">
+            <view class="input-item">
+              <input type="digit" name="formula_milk_ratio_powder" value="{{inputValues.formula_milk_ratio.powder || 7}}" placeholder="默认 7" confirm-type="done" />
+              <text class="unit">g粉</text>
+            </view>
+            <text class="ratio-separator">:</text>
+            <view class="input-item">
+              <input type="digit" name="formula_milk_ratio_water" value="{{inputValues.formula_milk_ratio.water || 100}}" placeholder="默认 100" confirm-type="done" />
+              <text class="unit">ml水</text>
+            </view>
+          </view>
+          <view class="input-description">普通奶粉的冲调比例，根据产品说明设置</view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <text class="label">特奶蛋白质浓度 (g/100g)</text>
+        <view class="input-container">
+          <input type="digit" name="special_milk_protein" value="{{inputValues.special_milk_protein || 13.1}}" placeholder="默认 13.1" confirm-type="done" />
+        </view>
+        <view class="input-description">每100g特奶粉中含有的蛋白质量</view>
+      </view>
+
+      <view class="form-item">
+        <text class="label">特奶冲配比例</text>
+        <view class="ratio-inputs">
+          <view class="input-item">
+            <input type="digit" name="special_milk_ratio_powder" value="{{inputValues.special_milk_ratio.powder || 13.5}}" placeholder="默认 13.5" confirm-type="done" />
+            <text class="unit">g粉</text>
+          </view>
+          <text class="ratio-separator">:</text>
+          <view class="input-item">
+            <input type="digit" name="special_milk_ratio_water" value="{{inputValues.special_milk_ratio.water || 90}}" placeholder="默认 90" confirm-type="done" />
+            <text class="unit">ml水</text>
+          </view>
+        </view>
+        <view class="input-description">特殊配方奶的冲调比例</view>
+      </view>
+    </view>
+
+    <view class="button-group">
+      <button class="confirm-btn" form-type="submit">保存设置</button>
+    </view>
+  </form>
+</view> 

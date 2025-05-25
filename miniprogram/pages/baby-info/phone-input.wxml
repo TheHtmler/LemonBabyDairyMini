@@ -1,0 +1,16 @@
+<!-- 手机号输入组件 - 创建者角色显示 -->
+<view class="form-item" wx:if="{{userRole === 'creator'}}">
+  <view class="item-label">手机号码（创建者）<text class="required">*</text></view>
+  <view class="item-input">
+    <input 
+      class="input {{!phoneValid && babyInfo.phone ? 'input-error' : ''}}" 
+      type="number" 
+      maxlength="11" 
+      bindinput="onPhoneInput" 
+      value="{{babyInfo.phone}}" 
+      placeholder="请输入手机号码"
+    />
+    <view class="error-message" wx:if="{{!phoneValid && babyInfo.phone}}">{{phoneErrorMsg}}</view>
+    <view class="input-tip">手机号将作为宝宝信息的唯一标识，家庭成员可通过该号码绑定查看宝宝信息</view>
+  </view>
+</view> 

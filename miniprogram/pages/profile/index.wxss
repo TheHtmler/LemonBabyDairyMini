@@ -1,0 +1,362 @@
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #FFF5D6;
+  padding: 30rpx;
+}
+
+/* 用户信息样式 */
+.user-info {
+  width: 90%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+/* 重写头像选择器样式，覆盖微信按钮默认样式 */
+.avatar-wrapper {
+  position: relative;
+  width: 120rpx!important;
+  height: 120rpx;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.avatar-wrapper::after {
+  border: none;
+}
+
+.avatar-edit-icon {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #FFFFFF;
+  font-size: 20rpx;
+  text-align: center;
+  padding: 4rpx 0;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+}
+
+.user-details {
+  flex: 1;
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-status {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.login-tip {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 编辑资料样式 */
+.nickname-input {
+  border-bottom: 1rpx solid #EEE;
+  padding: 10rpx 0;
+  font-size: 32rpx;
+  margin-bottom: 10rpx;
+}
+
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-btn {
+  margin-left: 10rpx;
+  font-size: 24rpx;
+  padding: 0 20rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+  min-height: 0;
+}
+
+.edit-btn::after {
+  border: none;
+}
+
+.cancel-btn {
+  background-color: #F5F5F5;
+  color: #999;
+}
+
+.save-btn {
+  background-color: #FFB800;
+  color: #FFFFFF;
+}
+
+/* 菜单列表样式 */
+.menu-container {
+  width: 90%;
+  background-color: #FFFFFF;
+  border-radius: 20rpx;
+  margin-bottom: 30rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.section-icon {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 12rpx;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx 20rpx;
+  border-bottom: 1rpx solid #F5F5F5;
+  position: relative;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+
+.menu-icon image {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.menu-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.menu-arrow {
+  width: 24rpx;
+  height: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-arrow image {
+  width: 20rpx;
+  height: 20rpx;
+}
+
+.menu-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item-name {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.menu-item-desc {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.menu-item-notification {
+  min-width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  padding: 0 10rpx;
+  background-color: #FF5252;
+  border-radius: 18rpx;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  text-align: center;
+  margin-right: 10rpx;
+}
+
+/* 版本信息 */
+.version-info {
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+  margin: 60rpx 0 30rpx;
+}
+
+/* 授权按钮样式 */
+.auth-buttons {
+  display: flex;
+  margin-top: 10rpx;
+}
+
+.auth-btn {
+  flex: 1;
+  font-size: 24rpx;
+  padding: 0;
+  margin: 0;
+  height: 60rpx;
+  line-height: 60rpx;
+  border-radius: 30rpx;
+}
+
+.primary-btn {
+  background-color: #FFB800;
+  color: #FFFFFF;
+}
+
+.primary-btn::after {
+  border: none;
+}
+
+.nickname-row {
+  display: flex;
+  align-items: center;
+}
+
+.role-tag {
+  margin-left: 10rpx;
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  color: #FFFFFF;
+}
+
+.owner {
+  background-color: #FFB800;
+}
+
+.collaborator {
+  background-color: #52c41a;
+}
+
+/* 分享管理区域样式 */
+.share-section {
+  margin: 20rpx 0;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+.share-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.share-item:last-child {
+  border-bottom: none;
+}
+
+.share-content {
+  display: flex;
+  align-items: center;
+}
+
+.share-icon {
+  width: 48rpx;
+  height: 48rpx;
+  margin-right: 16rpx;
+}
+
+.share-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.share-title {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+
+.share-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.arrow {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  background-color: #F9F9F9;
+  font-size: 28rpx;
+  color: #666;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+
+.group-icon {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 10rpx;
+}
+
+/* 添加宝宝信息样式 */
+.baby-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.baby-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.baby-gender-tag {
+  margin-left: 16rpx;
+  font-size: 24rpx;
+  background-color: #FFB800;
+  color: #fff;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.baby-birthday {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+} 

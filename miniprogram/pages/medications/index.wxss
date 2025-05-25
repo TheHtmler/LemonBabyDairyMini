@@ -1,0 +1,371 @@
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: #FFF9E6;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 药物列表样式 */
+.medication-list {
+  padding-bottom: 120rpx;
+  width: 90%;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 40rpx 0;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  margin-top: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
+}
+
+.medication-item {
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.medication-info {
+  flex: 1;
+}
+
+.medication-name {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+
+.medication-volume {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.medication-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.edit-btn, .delete-btn {
+  padding: 10rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+}
+
+.edit-btn {
+  background-color: #FFB800;
+  color: #fff;
+}
+
+.delete-btn {
+  background-color: #ff4d4f;
+  color: #fff;
+}
+
+/* 添加按钮样式 */
+.add-btn {
+  position: fixed;
+  right: 40rpx;
+  bottom: 40rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background-color: #FFB800;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
+  z-index: 100;
+}
+
+.add-icon {
+  color: #fff;
+  font-size: 60rpx;
+  font-weight: bold;
+}
+
+/* 弹窗样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border-radius: 30rpx 30rpx 0 0;
+  padding: 40rpx 30rpx;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  font-size: 34rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 40rpx;
+  color: #333;
+}
+
+.modal-body {
+  margin-bottom: 40rpx;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 30rpx;
+  margin-top: 40rpx;
+}
+
+.btn {
+  flex: 1;
+  padding: 24rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+}
+
+.cancel {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.confirm {
+  background-color: #FFB800;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* 页面标题样式 */
+.page-header {
+  width: 90%;
+  margin-bottom: 20rpx;
+  padding: 20rpx 0;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  position: relative;
+  padding-left: 20rpx;
+}
+
+.page-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 8rpx;
+  background-color: #FFB800;
+  border-radius: 4rpx;
+}
+
+/* 药物列表详情样式 */
+.medication-details {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10rpx;
+}
+
+.medication-detail {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 4rpx;
+}
+
+/* 表单样式 */
+.form-item {
+  margin-bottom: 36rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 30rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.input-half {
+  flex: 1;
+  position: relative;
+}
+
+.input-container {
+  position: relative;
+  height: 88rpx;
+  width: 100%;
+}
+
+.input {
+  background-color: #f9f9f9;
+  padding: 0 24rpx;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  font-size: 30rpx;
+  box-sizing: border-box;
+  width: 100%;
+  height: 88rpx;
+  min-height: 88rpx;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 确保备注文本框样式不受影响 */
+.textarea {
+  background-color: #f9f9f9;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  width: 100%;
+  height: 160rpx;
+  box-sizing: border-box;
+  font-size: 30rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  position: relative;
+  display: block;
+}
+
+/* 添加输入框聚焦效果 */
+.input:focus, .textarea:focus {
+  border-color: #FFB800;
+  background-color: rgba(255, 247, 230, 0.5);
+}
+
+.picker {
+  background-color: #f9f9f9;
+  padding: 0 24rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  height: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.picker-view {
+  color: #333;
+  font-size: 30rpx;
+  width: 100%;
+  text-align: center;
+  line-height: 88rpx;
+}
+
+/* 优化频率容器 */
+.frequency-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #fefaf0;
+  padding: 30rpx 20rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.1);
+  margin-bottom: 10rpx;
+}
+
+.frequency-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.frequency-text {
+  font-size: 30rpx;
+  color: #333;
+  padding: 0 10rpx;
+  line-height: 88rpx;
+}
+
+.frequency-input-container {
+  width: 120rpx;
+  height: 88rpx;
+  position: relative;
+  margin: 0 10rpx;
+}
+
+.frequency-input {
+  width: 100% !important;
+  height: 88rpx !important;
+  min-height: 88rpx !important;
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  font-size: 30rpx;
+  text-align: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 频率快速选择 */
+.frequency-quickselect {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.frequency-quick-item {
+  padding: 14rpx 24rpx;
+  border-radius: 30rpx;
+  font-size: 26rpx;
+  background-color: #FFF5D6;
+  color: #FF9800;
+  border: 2rpx solid rgba(255, 184, 0, 0.3);
+  text-align: center;
+  box-shadow: 0 2rpx 6rpx rgba(255, 184, 0, 0.1);
+}
+
+.frequency-quick-item:active {
+  background-color: #FFB800;
+  color: #fff;
+  transform: scale(0.98);
+  transition: all 0.1s;
+} 

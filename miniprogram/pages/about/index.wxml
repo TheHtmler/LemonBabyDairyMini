@@ -1,0 +1,56 @@
+<!--pages/about/index.wxml-->
+<view class="container">
+  <!-- 应用信息 -->
+  <view class="app-info">
+    <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
+    <view class="app-name">柠檬宝宝喂养记录</view>
+    <view class="app-version">版本：1.0.0</view>
+  </view>
+
+  <!-- 应用简介 -->
+  <view class="section">
+    <view class="section-title">应用简介</view>
+    <view class="section-content">
+      "柠檬宝宝喂养记录"是一款专为甲基丙二酸血症(MMA)等患有先天性代谢疾病宝宝的家庭设计的喂养记录工具。帮助您准确记录宝宝每日的喂养、体重、药物等重要信息。
+    </view>
+  </view>
+
+  <!-- 数据与隐私说明 -->
+  <view id="auth" class="section">
+    <view class="section-title">数据与标识说明</view>
+    <view class="section-content">
+      <view class="auth-item">
+        <view class="auth-title">手机号作为唯一标识</view>
+        <view class="auth-content">
+          本应用使用手机号作为用户唯一标识，无需额外的微信授权。创建者角色填写宝宝信息时提供的手机号将作为该家庭的数据标识。
+        </view>
+      </view>
+      
+      <view class="auth-item">
+        <view class="auth-title">家庭协作功能</view>
+        <view class="auth-content">
+          通过手机号，不同家庭成员可以作为参与者加入记录同一个宝宝的信息，只需在参与者角色中输入创建者的手机号即可。
+        </view>
+      </view>
+      
+      <view class="auth-item">
+        <view class="auth-title">数据安全与隐私</view>
+        <view class="auth-content">
+          您的所有数据安全存储于微信小程序云开发平台，我们不会收集必要信息之外的数据，也不会将您的数据分享给任何第三方机构。
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 联系我们 -->
+  <view class="section">
+    <view class="section-title">联系我们</view>
+    <view class="section-content">
+      <view>如有使用问题或建议，欢迎联系我们：</view>
+      <view class="contact-item" bindtap="copyEmail">邮箱：support@lemonbaby.com</view>
+    </view>
+  </view>
+  
+  <!-- 版权信息 -->
+  <view class="copyright">© 2023 柠檬宝宝团队</view>
+</view>
