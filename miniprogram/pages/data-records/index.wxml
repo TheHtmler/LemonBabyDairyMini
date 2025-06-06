@@ -102,7 +102,7 @@
             <view class="total-value">{{totalSpecialMilk}}ml</view>
           </view>
           <view class="total-item">
-            <view class="total-label">奶粉克重</view>
+            <view class="total-label">特奶粉克重</view>
             <view class="total-value">{{totalPowderWeight}}g</view>
           </view>
           <view class="total-item">
