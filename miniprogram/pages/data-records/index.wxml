@@ -106,6 +106,14 @@
             <view class="total-value">{{totalPowderWeight}}g</view>
           </view>
           <view class="total-item">
+            <view class="total-label">天然系数</view>
+            <view class="total-value">{{naturalProteinCoefficient}}g/kg</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">特殊蛋白系数</view>
+            <view class="total-value">{{specialProteinCoefficient}}g/kg</view>
+          </view>
+          <view class="total-item">
             <view class="total-label">喂奶次数</view>
             <view class="total-value">{{feedingRecords.length}}</view>
           </view>
@@ -123,32 +131,25 @@
         </view>
         <view wx:if="{{feedingRecords.length > 0}}">
           <view class="feeding-record" wx:for="{{feedingRecords}}" wx:key="index">
-            <view class="record-content" bindtap="openEditFeedingModal" data-index="{{index}}">
+            <view class="record-content" data-index="{{index}}">
               <view class="time-info">
-                <view class="start-time">{{item.formattedStartTime}}</view>
-                <view class="end-time">至 {{item.formattedEndTime}}</view>
+                <view class="time-text">{{item.formattedStartTime}}</view>
+                <view class="time-text">~</view>
+                <view class="time-text">{{item.formattedEndTime}}</view>
               </view>
               <view class="volume-info">
-                <view class="breast-milk">天然奶: {{item.naturalMilkVolume || 0}}ml</view>
-                <view class="special-milk">特奶: {{item.specialMilkVolume || 0}}ml</view>
+                <view class="volume-info-text">天然奶: {{item.naturalMilkVolume || 0}}ml</view>
+                <view class="volume-info-text"> | </view>
+                <view class="volume-info-text">特奶: {{item.specialMilkVolume || 0}}ml</view>
               </view>
             </view>
-            <!-- 三点菜单按钮 -->
-            <view class="menu-btn" catchtap="toggleFeedingMenu" data-index="{{index}}">
-              <view class="dot-menu">
-                <view class="dot"></view>
-                <view class="dot"></view>
-                <view class="dot"></view>
+            <!-- 操作按钮 -->
+            <view class="action-buttons">
+              <view class="action-btn edit-btn" bindtap="openEditFeedingModal" data-index="{{index}}">
+                <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
               </view>
-            </view>
-            
-            <!-- 菜单弹出选项 -->
-            <view class="menu-options {{activeFeedingMenu === index ? 'show' : ''}}" wx:if="{{activeFeedingMenu === index}}">
-              <view class="menu-option" catchtap="openEditFeedingModal" data-index="{{index}}">
-                <text>编辑</text>
-              </view>
-              <view class="menu-option delete" catchtap="deleteFeeding" data-index="{{index}}">
-                <text>删除</text>
+              <view class="action-btn delete-btn" bindtap="deleteFeeding" data-index="{{index}}">
+                <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
               </view>
             </view>
           </view>
@@ -169,31 +170,19 @@
         </view>
         <view> 
           <view class="medication-record" wx:for="{{medicationRecords}}" wx:key="index">
-            <view class="record-content" bindtap="openEditMedicationModal" data-index="{{index}}">
+            <view class="record-content" data-index="{{index}}">
               <view class="medication-info">
-                <view class="medication-name">{{item.name}}</view>
-                <view class="medication-volume">{{item.volume}}</view>
-              </view>
-              <view class="medication-time">
-                <view class="medication-time-text">{{item.formattedTime}}</view>
+                <view class="medication-name">{{item.name}}： {{item.volume}}</view>
+                <view class="medication-volume">{{item.formattedTime}}</view>
               </view>
             </view>
-            <!-- 三点菜单按钮 -->
-            <view class="menu-btn" catchtap="toggleMedicationMenu" data-index="{{index}}">
-              <view class="dot-menu">
-                <view class="dot"></view>
-                <view class="dot"></view>
-                <view class="dot"></view>
+            <!-- 操作按钮 -->
+            <view class="action-buttons">
+              <view class="action-btn edit-btn" bindtap="openEditMedicationModal" data-index="{{index}}">
+                <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
               </view>
-            </view>
-            
-            <!-- 菜单弹出选项 -->
-            <view class="menu-options {{activeMedicationMenu === index ? 'show' : ''}}" wx:if="{{activeMedicationMenu === index}}">
-              <view class="menu-option" catchtap="openEditMedicationModal" data-index="{{index}}">
-                <text>编辑</text>
-              </view>
-              <view class="menu-option delete" catchtap="deleteMedication" data-index="{{index}}">
-                <text>删除</text>
+              <view class="action-btn delete-btn" bindtap="deleteMedication" data-index="{{index}}">
+                <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
               </view>
             </view>
           </view>
@@ -285,6 +274,7 @@
         <view class="special-milk">
           <text class="label">特奶量:</text>
           <text class="value">{{newFeeding.specialMilkVolume || '0'}}ml</text>
+          <text class="powder-weight">({{newFeeding.specialPowderWeight || '0'}}g奶粉)</text>
         </view>
       </view>
       <view class="modal-footer">
@@ -398,6 +388,7 @@
         <view class="special-milk">
           <text class="label">特奶量:</text>
           <text class="value">{{editingFeeding.specialMilkVolume || '0'}}ml</text>
+          <text class="powder-weight">({{editingFeeding.specialPowderWeight || '0'}}g奶粉)</text>
         </view>
       </view>
       <view class="modal-footer">

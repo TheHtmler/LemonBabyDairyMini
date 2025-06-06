@@ -89,7 +89,7 @@ Page({
         });
         
         if (result && result.openid) {
-          console.log("获取Openid成功");
+          console.log("获取Openid成功", result);
           const openid = result.openid;
           this.app.globalData.openid = openid;
           wx.setStorageSync('openid', openid);

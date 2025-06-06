@@ -26,6 +26,9 @@ Page({
     // 生长数据
     weight: '--',
     height: '--',
+    // 蛋白质系数
+    naturalProteinCoefficient: 0, // 天然蛋白系数 g/kg
+    specialProteinCoefficient: 0, // 特殊蛋白系数 g/kg
     // 日历相关数据
     showCalendarPicker: false,
     calendarYear: new Date().getFullYear(),
@@ -57,9 +60,6 @@ Page({
     editingMedicationIndex: -1,
     editingFeeding: null,
     editingMedication: null,
-    // 菜单状态
-    activeFeedingMenu: -1,
-    activeMedicationMenu: -1,
     // 其他
     medications: [], // 药物配置列表
     showDeleteConfirm: false,
@@ -543,6 +543,8 @@ Page({
           totalSpecialMilk: 0,
           totalMilk: 0,
           totalPowderWeight: 0,
+          naturalProteinCoefficient: 0,
+          specialProteinCoefficient: 0,
           isDataLoading: false // 设置数据加载完成
         });
       }
@@ -568,7 +570,13 @@ Page({
     if (!feedingRecords || feedingRecords.length === 0) {
       this.setData({
         noFeeding: true,
-        feedingRecords: []
+        feedingRecords: [],
+        totalNaturalMilk: 0,
+        totalSpecialMilk: 0,
+        totalMilk: 0,
+        totalPowderWeight: 0,
+        naturalProteinCoefficient: 0,
+        specialProteinCoefficient: 0
       });
       return;
     }
@@ -720,11 +728,69 @@ Page({
       }
     }
     
+    // 计算蛋白质系数
+    let naturalProteinCoefficient = 0;
+    let specialProteinCoefficient = 0;
+    
+    // 获取当前体重，确保是数字
+    const currentWeight = parseFloat(this.data.weight);
+    
+    if (currentWeight && currentWeight > 0) {
+      // 计算天然蛋白摄入量（根据蛋白质来源类型）
+      let naturalProteinIntake = 0;
+      
+      if (this.data.proteinSourceType === 'breastMilk') {
+        // 母乳蛋白质浓度：1.1g/100ml
+        naturalProteinIntake = (totalNaturalMilk * 1.1) / 100;
+      } else if (this.data.proteinSourceType === 'formulaMilk' && this.data.nutritionSettings) {
+        // 普通奶粉蛋白质含量需要从营养设置中获取
+        if (this.data.nutritionSettings.formula_milk_protein_concentration) {
+          // 如果有设置蛋白质浓度（g/100ml）
+          naturalProteinIntake = (totalNaturalMilk * this.data.nutritionSettings.formula_milk_protein_concentration) / 100;
+        } else if (this.data.nutritionSettings.formula_milk_ratio) {
+          // 否则根据奶粉配比和默认蛋白质含量计算
+          // 假设奶粉蛋白质含量为20g/100g奶粉
+          const ratio = this.data.nutritionSettings.formula_milk_ratio;
+          const powderWeight = (totalNaturalMilk * ratio.powder) / ratio.water;
+          naturalProteinIntake = (powderWeight * 20) / 100; // 20%蛋白质含量
+        }
+      }
+      
+      // 计算特殊蛋白摄入量
+      // 特奶蛋白质浓度：13.1g/100g奶粉，配比13.5g/90ml
+      let specialProteinIntake = 0;
+      if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
+        const ratio = this.data.nutritionSettings.special_milk_ratio;
+        const specialPowderWeight = (totalSpecialMilk * ratio.powder) / ratio.water;
+        specialProteinIntake = (specialPowderWeight * 13.1) / 100;
+      } else {
+        // 使用默认配比 13.5g/90ml
+        const defaultSpecialPowderWeight = (totalSpecialMilk * 13.5) / 90;
+        specialProteinIntake = (defaultSpecialPowderWeight * 13.1) / 100;
+      }
+      
+      // 计算系数（g/kg）
+      naturalProteinCoefficient = Math.round((naturalProteinIntake / currentWeight) * 100) / 100; // 保留两位小数
+      specialProteinCoefficient = Math.round((specialProteinIntake / currentWeight) * 100) / 100; // 保留两位小数
+      
+      console.log('蛋白质系数计算:', {
+        totalNaturalMilk,
+        totalSpecialMilk,
+        currentWeight,
+        naturalProteinIntake,
+        specialProteinIntake,
+        naturalProteinCoefficient,
+        specialProteinCoefficient
+      });
+    }
+    
     this.setData({
       totalNaturalMilk: Math.round(totalNaturalMilk),
       totalSpecialMilk: Math.round(totalSpecialMilk),
       totalMilk: Math.round(totalMilk),
-      totalPowderWeight: totalPowderWeight
+      totalPowderWeight: totalPowderWeight,
+      naturalProteinCoefficient: naturalProteinCoefficient,
+      specialProteinCoefficient: specialProteinCoefficient
     });
   },
 
@@ -865,7 +931,8 @@ Page({
         endTime: endTimeStr,
         naturalMilkVolume: '',
         totalVolume: '',
-        specialMilkVolume: 0
+        specialMilkVolume: 0,
+        specialPowderWeight: 0
       }
     });
   },
@@ -920,6 +987,16 @@ Page({
       const total = parseFloat(newFeeding.totalVolume) || 0;
       const natural = parseFloat(newFeeding.naturalMilkVolume) || 0;
       newFeeding.specialMilkVolume = Math.max(0, total - natural);
+      
+      // 计算特奶奶粉重量（根据配比 13.5g/90ml）
+      const specialMilkVolume = newFeeding.specialMilkVolume;
+      if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
+        const ratio = this.data.nutritionSettings.special_milk_ratio;
+        newFeeding.specialPowderWeight = Math.round((specialMilkVolume * ratio.powder / ratio.water) * 10) / 10;
+      } else {
+        // 使用默认配比 13.5g/90ml
+        newFeeding.specialPowderWeight = Math.round((specialMilkVolume * 13.5 / 90) * 10) / 10;
+      }
     }
     
     this.setData({ newFeeding });
@@ -1447,12 +1524,24 @@ Page({
       totalVolume = (parseFloat(feeding.naturalMilkVolume) || 0) + (parseFloat(feeding.specialMilkVolume) || 0);
     }
     
+    // 计算特奶奶粉重量
+    const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
+    let specialPowderWeight = 0;
+    if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
+      const ratio = this.data.nutritionSettings.special_milk_ratio;
+      specialPowderWeight = Math.round((specialMilkVolume * ratio.powder / ratio.water) * 10) / 10;
+    } else {
+      // 使用默认配比 13.5g/90ml
+      specialPowderWeight = Math.round((specialMilkVolume * 13.5 / 90) * 10) / 10;
+    }
+    
     this.setData({
       showEditFeedingModal: true,
       editingFeedingIndex: index,
       editingFeeding: { 
         ...feeding,
-        totalVolume: totalVolume
+        totalVolume: totalVolume,
+        specialPowderWeight: specialPowderWeight
       }
     });
   },
@@ -1479,6 +1568,16 @@ Page({
       const total = parseFloat(editingFeeding.totalVolume) || 0;
       const natural = parseFloat(editingFeeding.naturalMilkVolume) || 0;
       editingFeeding.specialMilkVolume = Math.max(0, total - natural);
+      
+      // 计算特奶奶粉重量（根据配比 13.5g/90ml）
+      const specialMilkVolume = editingFeeding.specialMilkVolume;
+      if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
+        const ratio = this.data.nutritionSettings.special_milk_ratio;
+        editingFeeding.specialPowderWeight = Math.round((specialMilkVolume * ratio.powder / ratio.water) * 10) / 10;
+      } else {
+        // 使用默认配比 13.5g/90ml
+        editingFeeding.specialPowderWeight = Math.round((specialMilkVolume * 13.5 / 90) * 10) / 10;
+      }
     }
     
     this.setData({ editingFeeding });
@@ -1752,54 +1851,6 @@ Page({
       wx.showToast({
         title: '保存失败',
         icon: 'error'
-      });
-    }
-  },
-
-  // 打开喂奶记录菜单
-  toggleFeedingMenu(e) {
-    const index = e.currentTarget.dataset.index;
-    const currentIndex = this.data.activeFeedingMenu;
-    
-    if (currentIndex === index) {
-      // 如果点击的是当前打开的菜单，则关闭
-      this.setData({
-        activeFeedingMenu: -1
-      });
-    } else {
-      // 打开点击的菜单，关闭其他菜单
-      this.setData({
-        activeFeedingMenu: index,
-        activeMedicationMenu: -1
-      });
-    }
-  },
-  
-  // 打开药物记录菜单
-  toggleMedicationMenu(e) {
-    const index = e.currentTarget.dataset.index;
-    const currentIndex = this.data.activeMedicationMenu;
-    
-    if (currentIndex === index) {
-      // 如果点击的是当前打开的菜单，则关闭
-      this.setData({
-        activeMedicationMenu: -1
-      });
-    } else {
-      // 打开点击的菜单，关闭其他菜单
-      this.setData({
-        activeMedicationMenu: index,
-        activeFeedingMenu: -1
-      });
-    }
-  },
-
-  // 点击页面其他位置关闭所有菜单
-  onTapPage() {
-    if (this.data.activeFeedingMenu !== -1 || this.data.activeMedicationMenu !== -1) {
-      this.setData({
-        activeFeedingMenu: -1,
-        activeMedicationMenu: -1
       });
     }
   },

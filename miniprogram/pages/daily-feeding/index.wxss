@@ -1557,6 +1557,12 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  border-radius: 12rpx;
+  transition: background-color 0.2s ease;
+}
+
+.menu-btn:active {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .dot-menu {
@@ -1570,11 +1576,16 @@
 }
 
 .dot {
-  width: 8rpx;
-  height: 8rpx;
+  width: 6rpx;
+  height: 6rpx;
   background-color: #999;
   border-radius: 50%;
-  margin: 4rpx 0;
+  margin: 3rpx 0;
+  transition: background-color 0.2s ease;
+}
+
+.menu-btn:hover .dot {
+  background-color: #666;
 }
 
 .menu-options {
@@ -1582,37 +1593,100 @@
   right: 60rpx;
   top: 0;
   background-color: #fff;
-  border-radius: 8rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12), 0 4rpx 8rpx rgba(0, 0, 0, 0.04);
   z-index: 100;
   opacity: 0;
-  transform: scale(0.8);
+  transform: scale(0.9) translateY(-8rpx);
   transform-origin: top right;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
-  border: 1rpx solid #eee;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  min-width: 140rpx;
+  backdrop-filter: blur(10rpx);
 }
 
 .menu-options.show {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1) translateY(0);
   pointer-events: auto;
 }
 
 .menu-option {
-  padding: 16rpx 30rpx;
+  padding: 20rpx 32rpx;
   font-size: 28rpx;
   color: #333;
-  border-bottom: 1rpx solid #f5f5f5;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.04);
   white-space: nowrap;
+  transition: all 0.2s ease;
+  position: relative;
+  background-color: #fff;
 }
 
 .menu-option:last-child {
   border-bottom: none;
 }
 
+.menu-option:active {
+  background-color: rgba(255, 184, 0, 0.08);
+  transform: scale(0.98);
+}
+
 .menu-option.delete {
-  color: #ff4d4f;
+  color: #ff4757;
+}
+
+.menu-option.delete:active {
+  background-color: rgba(255, 71, 87, 0.08);
+}
+
+/* 添加图标支持 */
+.menu-option::before {
+  content: '';
+  display: inline-block;
+  width: 24rpx;
+  height: 24rpx;
+  margin-right: 12rpx;
+  vertical-align: middle;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.menu-option[data-action="edit"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E");
+}
+
+.menu-option[data-action="view"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'/%3E%3C/svg%3E");
+}
+
+.menu-option[data-action="delete"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff4757'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E");
+}
+
+/* 动画效果 */
+@keyframes menuSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-8rpx);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes menuSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-8rpx);
+  }
 }
 
 .menu-overlay {

@@ -491,45 +491,48 @@
   padding: 16rpx 8rpx;
   border-bottom: 1px solid #f0f0f0;
   align-items: center;
+  position: relative;
 }
 
 .feeding-record:last-child {
   border-bottom: none;
 }
 
+.record-content {
+  width: 100%;
+}
+
 .time-info {
+  display: flex;
+  gap: 10rpx;
   flex: 0.4;
 }
 
-.start-time {
+.time-text {
   font-size: 30rpx;
   color: #333;
   font-weight: bold;
   margin-bottom: 6rpx;
 }
 
-.end-time {
-  font-size: 24rpx;
-  color: #888;
-}
-
 .volume-info {
+  margin-top: 10rpx;
+  display: flex;
+  gap: 10rpx;
   flex: 0.5;
   text-align: right;
 }
 
-.breast-milk, .special-milk {
+.volume-info-text{
   font-size: 28rpx;
-  color: #555;
-  margin-bottom: 6rpx;
-}
-
-.breast-milk {
   color: #FFB800;
 }
 
-.special-milk {
-  color: #5BC0DE;
+.menu-btn .dot-menu .dot {
+  width: 10rpx;
+  height: 10rpx;
+  background-color: #FFB800;
+  border-radius: 50%;
 }
 
 /* 用药记录样式 */
@@ -539,6 +542,7 @@
   align-items: center;
   padding: 20rpx 0;
   border-bottom: 1px solid #f5f5f5;
+  position: relative;
 }
 
 .medication-info {
@@ -870,6 +874,12 @@
   font-weight: 500;
 }
 
+.special-milk .powder-weight {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 8rpx;
+}
+
 .modal-footer {
   display: flex;
   border-top: 1rpx solid #f0f0f0;
@@ -1032,6 +1042,7 @@
   padding: 16rpx 8rpx;
   border-bottom: 1px solid #f0f0f0;
   align-items: center;
+  position: relative;
 }
 
 .feeding-record:last-child {
@@ -1054,6 +1065,7 @@
   align-items: center;
   padding: 20rpx 0;
   border-bottom: 1px solid #f5f5f5;
+  position: relative;
 }
 
 .medication-info {
@@ -1122,4 +1134,50 @@
 .confirm-modal-btn.confirm {
   color: #FF6B6B;
   font-weight: 500;
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.action-btn {
+  width: 68rpx;
+  height: 68rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.action-btn.edit-btn {
+  background-color: rgba(255, 184, 0, 0.15);
+  border: 1rpx solid rgba(255, 184, 0, 0.3);
+}
+
+.action-btn.edit-btn:active {
+  background-color: rgba(255, 184, 0, 0.25);
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-btn.delete-btn {
+  background-color: rgba(255, 71, 87, 0.15);
+  border: 1rpx solid rgba(255, 71, 87, 0.3);
+}
+
+.action-btn.delete-btn:active {
+  background-color: rgba(255, 71, 87, 0.25);
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-icon {
+  width: 36rpx;
+  height: 36rpx;
+  opacity: 0.9;
 } 

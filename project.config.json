@@ -35,11 +35,18 @@
     "packNpmManually": false,
     "packNpmRelationList": [],
     "minifyWXSS": true,
-    "swc": true
+    "swc": true,
+    "compileWorklet": false,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "disableSWC": false
   },
   "appid": "wx731fe4e54b1893ac",
   "projectname": "柠檬宝宝喂养记录",
-  "libVersion": "2.14.1",
+  "libVersion": "3.8.5",
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "condition": {
     "search": {
@@ -79,5 +86,6 @@
     "miniprogramRoot": "miniprogram/",
     "cloudfunctionRoot": "cloudfunctions/",
     "defaultEnv": "prod-7g5lap9xcf106dbf"
-  }
+  },
+  "simulatorPluginLibVersion": {}
 }

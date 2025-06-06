@@ -21,7 +21,6 @@ Page({
     proteinSourceIndex: 0,
     isFormValid: false,
     isFormSubmitting: false,
-    fromProfile: false,
     redirectUrl: '',
     firstLogin: false,
     isSharedInfo: false,  // 标记是否为共享的宝宝信息
@@ -44,9 +43,6 @@ Page({
     
     // 处理用户角色
     this.handleUserRole(options);
-    
-    // 处理来源标记
-    this.handleSourceFlag(options);
     
     // 执行初始化流程
     this.initialize();
@@ -88,15 +84,6 @@ Page({
     }
   },
   
-  // 处理来源标记
-  handleSourceFlag(options) {
-    if (options.from === 'profile') {
-      this.setData({
-        fromProfile: true
-      });
-    }
-  },
-  
   // 获取用户角色的辅助方法
   getUserRole() {
     return this.app.globalData.userRole || wx.getStorageSync('user_role');
@@ -112,6 +99,7 @@ Page({
   // 执行初始化流程
   async initialize() {
     try {
+      console.log('===initialize===');
       // 顺序执行初始化操作
       await this.checkLoginStatus();
       await this.checkUserPermission();
@@ -248,7 +236,7 @@ Page({
       wx.hideLoading();
     }
   },
-  
+
   // 处理索引值计算
   processInfoIndexes(babyInfo) {
     // 设置疾病类型索引
@@ -918,5 +906,12 @@ Page({
       proteinSourceIndex: index,
       'babyInfo.proteinSourceType': sourceType
     });
+  },
+
+  // 获取手机号
+  getPhoneNumber (e) {
+    console.log(e.detail.code)  // 动态令牌
+    console.log(e.detail.errMsg) // 回调信息（成功失败都会返回）
+    console.log(e.detail.errno)  // 错误码（失败时返回）
   },
 }); 

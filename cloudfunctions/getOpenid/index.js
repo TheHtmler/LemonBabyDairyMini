@@ -7,7 +7,6 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 exports.main = async (event, context) => {
   // 获取 WXContext (微信调用上下文)
   const wxContext = cloud.getWXContext();
-
   return {
     openid: wxContext.OPENID,
     appid: wxContext.APPID,

@@ -2418,6 +2418,11 @@ Page({
     }
   },
 
+  // 阻止事件冒泡
+  preventBubble() {
+    // 空方法，用于阻止事件冒泡
+  },
+
   // 计算奶粉克重
   calculateFormulaPowderWeight(naturalMilkVolume) {
     if (this.data.proteinSourceType !== 'formulaMilk') {

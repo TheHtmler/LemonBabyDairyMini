@@ -243,10 +243,10 @@
           
           <!-- 菜单弹出选项 -->
           <view class="menu-options {{activeFeedingMenu === index ? 'show' : ''}}" wx:if="{{activeFeedingMenu === index}}">
-            <view class="menu-option" catchtap="openEditModal" data-index="{{index}}">
+            <view class="menu-option" catchtap="openEditModal" data-index="{{index}}" data-action="edit">
               <text>编辑</text>
             </view>
-            <view class="menu-option delete" catchtap="deleteFeeding" data-index="{{index}}">
+            <view class="menu-option delete" catchtap="deleteFeeding" data-index="{{index}}" data-action="delete">
               <text>删除</text>
             </view>
           </view>
@@ -279,10 +279,10 @@
           
           <!-- 菜单弹出选项 -->
           <view class="menu-options {{activeMedicationMenu === index ? 'show' : ''}}" wx:if="{{activeMedicationMenu === index}}">
-            <view class="menu-option" catchtap="openMedicationRecordModal" data-index="{{index}}">
+            <view class="menu-option" catchtap="openMedicationRecordModal" data-index="{{index}}" data-action="view">
               <text>查看</text>
             </view>
-            <view class="menu-option delete" catchtap="deleteMedication" data-index="{{index}}">
+            <view class="menu-option delete" catchtap="deleteMedication" data-index="{{index}}" data-action="delete">
               <text>删除</text>
             </view>
           </view>
@@ -295,8 +295,8 @@
   </view>
 
   <!-- Medication Modal -->
-  <view class="modal" wx:if="{{showMedicationModal}}">
-    <view class="modal-content">
+  <view class="modal" wx:if="{{showMedicationModal}}" bindtap="closeMedicationModal">
+    <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>记录用药</text>
       </view>
@@ -328,8 +328,8 @@
   </view>
   
   <!-- 编辑记录弹窗 -->
-  <view class="modal" wx:if="{{showEditModal}}">
-    <view class="modal-content">
+  <view class="modal" wx:if="{{showEditModal}}" bindtap="closeEditModal">
+    <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>编辑喂奶记录</text>
       </view>
@@ -391,8 +391,8 @@
   </view>
   
   <!-- 药物记录详情弹窗 -->
-  <view class="modal" wx:if="{{showMedicationRecordModal}}">
-    <view class="modal-content">
+  <view class="modal" wx:if="{{showMedicationRecordModal}}" bindtap="closeMedicationRecordModal">
+    <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>药物记录详情</text>
       </view>
@@ -423,8 +423,8 @@
   </view>
   
   <!-- 快捷记录弹窗 -->
-  <view class="modal" wx:if="{{showQuickInputModal}}">
-    <view class="modal-content">
+  <view class="modal" wx:if="{{showQuickInputModal}}" bindtap="hideQuickInputModal">
+    <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>快捷记录</text>
       </view>

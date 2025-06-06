@@ -52,6 +52,7 @@ App({
       });
       
       if (result && result.result && result.result.openid) {
+        console.log('===getOpenid===', result);
         openid = result.result.openid;
         this.globalData.openid = openid;
         wx.setStorageSync('openid', openid);
@@ -202,5 +203,5 @@ App({
       console.error('更新用户资料失败:', error);
       return false;
     }
-  }
+  },
 });

@@ -170,6 +170,7 @@
           data-field="phone"
           disabled="{{phoneDisabled}}"
         />
+        <button open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">快速获取手机号</button>
       </view>
       <view class="phone-error" wx:if="{{phoneErrorMsg}}">{{phoneErrorMsg}}</view>
       <view class="form-tip">
