@@ -207,25 +207,25 @@ Page({
     }
     
     // 如果已选择角色但未完成宝宝信息
-    if (userRole && !babyInfoCompleted) {
-      console.log('已选择角色但未完成宝宝信息，导航到相应页面');
-      if (userRole === 'creator') {
-        wx.redirectTo({
-          url: '/pages/baby-info/index?firstLogin=true&role=creator',
-          success: () => {
-            console.log('成功跳转到宝宝信息页面');
-          }
-        });
-      } else if (userRole === 'participant') {
-        wx.redirectTo({
-          url: '/pages/bind-phone/index?firstLogin=true&role=participant',
-          success: () => {
-            console.log('成功跳转到手机号绑定页面');
-          }
-        });
-      }
-      return;
-    }
+    // if (userRole && !babyInfoCompleted) {
+    //   console.log('已选择角色但未完成宝宝信息，导航到相应页面');
+    //   if (userRole === 'creator') {
+    //     wx.redirectTo({
+    //       url: '/pages/baby-info/index?firstLogin=true&role=creator',
+    //       success: () => {
+    //         console.log('成功跳转到宝宝信息页面');
+    //       }
+    //     });
+    //   } else if (userRole === 'participant') {
+    //     wx.redirectTo({
+    //       url: '/pages/bind-phone/index?firstLogin=true&role=participant',
+    //       success: () => {
+    //         console.log('成功跳转到手机号绑定页面');
+    //       }
+    //     });
+    //   }
+    //   return;
+    // }
     
     // 如果未选择角色，留在当前页面等待用户选择
     console.log('未选择角色，保持在角色选择页面');

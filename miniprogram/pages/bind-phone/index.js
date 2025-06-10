@@ -417,17 +417,16 @@ Page({
       // 记录参与者关联
       try {
         if (openid) {
-          // 检查是否已存在
+          // 检查是否已存在 - 通过参与者手机号和babyUid来检查
           const existingParticipant = await db.collection('baby_participants').where({
-            _openid: openid,
+            phone: this.data.participantPhone,
             babyUid: finalBabyUid
           }).get();
           
           if (!existingParticipant.data || existingParticipant.data.length === 0) {
-            // 添加新记录
+            // 添加新记录 - 不手动指定_openid，让系统自动添加
             await db.collection('baby_participants').add({
               data: {
-                _openid: openid,
                 phone: this.data.participantPhone, // 添加参与者自己的手机号
                 creatorPhone: creatorPhone,
                 babyUid: finalBabyUid, // 使用宝宝唯一ID关联
@@ -506,5 +505,29 @@ Page({
     const timestamp = new Date().getTime();
     const randomNum = Math.floor(Math.random() * 10000);
     return `baby_${timestamp}_${randomNum}`;
+  },
+
+  // 点击首页icon返回角色选择页
+  onLogoClick() {
+    console.log('===onLogoClick===');
+    // 清除角色选择相关的缓存数据
+    wx.removeStorageSync('user_role');
+    wx.removeStorageSync('has_selected_role');
+    wx.removeStorageSync('baby_info_completed');
+    wx.removeStorageSync('baby_uid');
+    wx.removeStorageSync('creator_phone');
+    wx.removeStorageSync('bound_creator_phone');
+    
+    // 清除全局数据
+    const app = getApp();
+    app.globalData.userRole = '';
+    app.globalData.babyInfo = null;
+    app.globalData.babyUid = null;
+    app.globalData.creatorPhone = '';
+    
+    // 跳转回角色选择页
+    wx.reLaunch({
+      url: '/pages/role-selection/index'
+    });
   }
 }) 

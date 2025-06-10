@@ -1,6 +1,6 @@
 <view class="container">
   <view class="header">
-    <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+    <image class="logo" src="/images/logo.png" mode="aspectFit" bindtap="onLogoClick"></image>
     <view class="title">绑定创建者手机号</view>
   </view>
 
