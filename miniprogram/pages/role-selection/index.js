@@ -45,7 +45,7 @@ Page({
       // 1. 获取openid
       await this.getOpenid();
       
-      // 2. 检查用户角色选择状态
+      // 2. 检查用户角色
       const userRole = await this.getUserRole();
       
       // 3. 检查宝宝信息完成状态
@@ -116,21 +116,96 @@ Page({
   async getUserRole() {
     try {
       console.log('===角色选择页-获取用户角色开始===');
-      // 使用实例变量替代重复调用getApp()
+      
+      // 首先从本地缓存读取
       const userRole = wx.getStorageSync('user_role');
       const hasSelectedRole = wx.getStorageSync('has_selected_role');
       
-      console.log('角色选择页 - 已保存的角色:', userRole, '是否已选择角色:', hasSelectedRole);
+      console.log('角色选择页 - 本地缓存的角色:', userRole, '是否已选择角色:', hasSelectedRole);
       
       if (userRole && hasSelectedRole) {
         // 更新全局状态
         this.app.globalData.userRole = userRole;
-        console.log('===角色选择页-获取用户角色结束：', userRole);
+        console.log('===角色选择页-从本地缓存获取用户角色结束：', userRole);
         return userRole;
       }
       
-      console.log('===角色选择页-获取用户角色结束：未选择角色');
+      // 本地缓存没有角色信息，从数据库查询
+      console.log('本地缓存无角色信息，开始从数据库查询用户角色');
+      
+      // 确保有openid
+      const openid = this.app.globalData.openid || wx.getStorageSync('openid');
+      if (!openid) {
+        console.log('没有openid，无法查询数据库');
+        return null;
+      }
+      
+      const db = wx.cloud.database();
+      
+      // 首先检查是否是创建者
+      console.log('检查用户是否为创建者...');
+      const creatorResult = await db.collection('baby_creators').where({
+        _openid: openid
+      }).get();
+      
+      if (creatorResult.data && creatorResult.data.length > 0) {
+        console.log('从数据库识别用户为创建者');
+        const detectedRole = 'creator';
+        
+        // 保存到本地缓存和全局状态
+        this.app.globalData.userRole = detectedRole;
+        wx.setStorageSync('user_role', detectedRole);
+        wx.setStorageSync('has_selected_role', true);
+        
+        // 同时保存创建者相关信息
+        const creatorInfo = creatorResult.data[0];
+        if (creatorInfo.phone) {
+          wx.setStorageSync('creator_phone', creatorInfo.phone);
+          this.app.globalData.creatorPhone = creatorInfo.phone;
+        }
+        if (creatorInfo.babyUid) {
+          wx.setStorageSync('baby_uid', creatorInfo.babyUid);
+          this.app.globalData.babyUid = creatorInfo.babyUid;
+        }
+        
+        console.log('===角色选择页-从数据库获取用户角色结束：', detectedRole);
+        return detectedRole;
+      }
+      
+      // 然后检查是否是参与者
+      console.log('检查用户是否为参与者...');
+      const participantResult = await db.collection('baby_participants').where({
+        _openid: openid
+      }).get();
+      
+      if (participantResult.data && participantResult.data.length > 0) {
+        console.log('从数据库识别用户为参与者');
+        const detectedRole = 'participant';
+        
+        // 保存到本地缓存和全局状态
+        this.app.globalData.userRole = detectedRole;
+        wx.setStorageSync('user_role', detectedRole);
+        wx.setStorageSync('has_selected_role', true);
+        
+        // 同时保存参与者相关信息
+        const participantInfo = participantResult.data[0];
+        if (participantInfo.creatorPhone) {
+          wx.setStorageSync('bound_creator_phone', participantInfo.creatorPhone);
+          this.app.globalData.creatorPhone = participantInfo.creatorPhone;
+        }
+        if (participantInfo.babyUid) {
+          wx.setStorageSync('baby_uid', participantInfo.babyUid);
+          this.app.globalData.babyUid = participantInfo.babyUid;
+        }
+        
+        console.log('===角色选择页-从数据库获取用户角色结束：', detectedRole);
+        return detectedRole;
+      }
+      
+      // 数据库中也没有找到用户角色信息
+      console.log('===角色选择页-数据库中未找到用户角色信息===');
       return null;
+      
     } catch (error) {
       console.error('获取用户角色失败:', error);
       return null;
@@ -206,26 +281,26 @@ Page({
       return;
     }
     
-    // 如果已选择角色但未完成宝宝信息
-    // if (userRole && !babyInfoCompleted) {
-    //   console.log('已选择角色但未完成宝宝信息，导航到相应页面');
-    //   if (userRole === 'creator') {
-    //     wx.redirectTo({
-    //       url: '/pages/baby-info/index?firstLogin=true&role=creator',
-    //       success: () => {
-    //         console.log('成功跳转到宝宝信息页面');
-    //       }
-    //     });
-    //   } else if (userRole === 'participant') {
-    //     wx.redirectTo({
-    //       url: '/pages/bind-phone/index?firstLogin=true&role=participant',
-    //       success: () => {
-    //         console.log('成功跳转到手机号绑定页面');
-    //       }
-    //     });
-    //   }
-    //   return;
-    // }
+    // 如果已选择角色但未完成宝宝信息，导航到相应页面
+    if (userRole && !babyInfoCompleted) {
+      console.log('已选择角色但未完成宝宝信息，导航到相应页面');
+      if (userRole === 'creator') {
+        wx.redirectTo({
+          url: '/pages/baby-info/index?firstLogin=true&role=creator',
+          success: () => {
+            console.log('成功跳转到宝宝信息页面');
+          }
+        });
+      } else if (userRole === 'participant') {
+        wx.redirectTo({
+          url: '/pages/bind-phone/index?firstLogin=true&role=participant',
+          success: () => {
+            console.log('成功跳转到手机号绑定页面');
+          }
+        });
+      }
+      return;
+    }
     
     // 如果未选择角色，留在当前页面等待用户选择
     console.log('未选择角色，保持在角色选择页面');
