@@ -1,3 +1,5 @@
+
+
 Page({
   data: {
     userInfo: {},
@@ -24,6 +26,7 @@ Page({
         icon: 'medicine',
         path: '/pages/medications/index'
       },
+
       {
         id: 4,
         name: '数据标识说明',
@@ -283,6 +286,12 @@ Page({
       return;
     }
     
+    // 处理数据迁移
+    if (item.action === 'migration') {
+      this.handleMigration();
+      return;
+    }
+    
     // 跳转到对应页面
     wx.navigateTo({
       url: item.path
@@ -484,5 +493,7 @@ Page({
       creatorPhone: '',
       cloudEnvId: cloudEnvId
     };
-  }
+  },
+
+
 }) 

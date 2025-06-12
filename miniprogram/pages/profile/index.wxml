@@ -19,7 +19,7 @@
 
   <!-- 菜单列表 -->
   <view class="menu-container">
-    <view class="menu-item" 
+    <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}}" 
           wx:for="{{menuList}}" 
           wx:key="id" 
           data-item="{{item}}" 
@@ -27,7 +27,10 @@
           <view class="menu-icon">
             <image src="/images/icons/{{item.icon}}.svg" mode="aspectFit"></image>
           </view>
-          <view class="menu-name">{{item.name}}</view>
+          <view class="menu-content">
+            <view class="menu-name">{{item.name}}</view>
+            <view class="menu-desc" wx:if="{{item.description}}">{{item.description}}</view>
+          </view>
           <view class="menu-arrow">
             <image src="/images/icons/arrow-right.svg" mode="aspectFit"></image>
           </view>

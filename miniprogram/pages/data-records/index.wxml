@@ -159,7 +159,7 @@
       </view>
 
       <!-- 用药记录卡片 -->
-      <view class="card" wx:if="{{medicationRecords.length > 0}}">
+      <view class="card" wx:if="{{groupedMedicationRecords.length > 0}}">
         <view class="card-title">
           <text>用药记录</text>
           <view class="add-btn" bindtap="showAddMedicationModal">
@@ -167,21 +167,32 @@
             <text>补充记录</text>
           </view>
         </view>
-        <view> 
-          <view class="medication-record" wx:for="{{medicationRecords}}" wx:key="index">
-            <view class="record-content" data-index="{{index}}">
-              <view class="medication-info">
-                <view class="medication-name">{{item.name}}： {{item.volume}}</view>
-                <view class="medication-volume">{{item.formattedTime}}</view>
-              </view>
+        <view>
+          <!-- 按药物名称分组显示 -->
+          <view class="medication-group" wx:for="{{groupedMedicationRecords}}" wx:key="medicationName" wx:for-item="group">
+            <view class="medication-group-header">
+              <text class="medication-group-name">{{group.medicationName}}</text>
+              <text class="medication-group-count">今日{{group.totalCount}}次</text>
             </view>
-            <!-- 操作按钮 -->
-            <view class="action-buttons">
-              <view class="action-btn edit-btn" bindtap="openEditMedicationModal" data-index="{{index}}">
-                <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
-              </view>
-              <view class="action-btn delete-btn" bindtap="deleteMedication" data-index="{{index}}">
-                <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+            
+            <!-- 该药物的所有记录 -->
+            <view class="medication-group-records">
+              <view class="medication-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record">
+                <view class="record-content">
+                  <view class="medication-time-dose">
+                    <text class="medication-time">{{record.actualTime}}</text>
+                    <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>
+                  </view>
+                </view>
+                <!-- 操作按钮 -->
+                <view class="action-buttons">
+                  <view class="action-btn edit-btn" bindtap="openEditMedicationModal" data-record-id="{{record._id}}">
+                    <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                  </view>
+                  <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record._id}}">
+                    <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -306,7 +317,17 @@
 
         <view class="form-item">
           <text class="label">用药剂量</text>
-          <view class="volume-display">{{newMedication.volume || '--'}}</view>
+          <view class="dosage-input-container">
+            <input 
+              type="digit" 
+              value="{{newMedication.dosage}}" 
+              data-field="dosage" 
+              bindinput="onNewMedicationInput"
+              placeholder="请输入剂量"
+              class="dosage-input"
+            />
+            <text class="unit-text">{{newMedication.unit}}</text>
+          </view>
         </view>
 
         <view class="form-item">
@@ -406,19 +427,29 @@
       <view class="modal-body">
         <view class="form-item">
           <text class="label">药物名称</text>
-          <view class="medication-name-display">{{editingMedication.name}}</view>
+          <view class="medication-name-display">{{editingMedication.medicationName}}</view>
         </view>
 
         <view class="form-item">
           <text class="label">用药剂量</text>
-          <view class="volume-display">{{editingMedication.volume || '--'}}</view>
+          <view class="dosage-input-container">
+            <input 
+              type="digit" 
+              value="{{editingMedication.dosage}}" 
+              data-field="dosage" 
+              bindinput="onEditMedicationInput"
+              placeholder="请输入剂量"
+              class="dosage-input"
+            />
+            <text class="unit-text">{{editingMedication.unit}}</text>
+          </view>
         </view>
 
         <view class="form-item">
           <text class="label">用药时间</text>
-          <picker mode="time" value="{{editingMedication.formattedTime}}" data-field="formattedTime" bindchange="onEditMedicationTimeChange">
-            <view class="time-picker">{{editingMedication.formattedTime}}</view>
-          </picker>
+                      <picker mode="time" value="{{editingMedication.actualTime}}" data-field="actualTime" bindchange="onEditMedicationTimeChange">
+              <view class="time-picker">{{editingMedication.actualTime}}</view>
+            </picker>
         </view>
       </view>
       <view class="modal-footer">

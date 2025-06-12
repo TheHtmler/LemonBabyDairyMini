@@ -11,6 +11,8 @@ function getWeekday(date) {
 
 // 引入营养设置模型
 const NutritionModel = require('../../models/nutrition');
+// 引入药物记录模型
+const MedicationRecordModel = require('../../models/medicationRecord');
 
 Page({
   data: {
@@ -19,6 +21,7 @@ Page({
     dateList: [],
     feedingRecords: [],
     medicationRecords: [],
+    groupedMedicationRecords: [], // 按药物名称分组的药物记录
     totalNaturalMilk: 0,
     totalSpecialMilk: 0,
     totalMilk: 0,
@@ -50,7 +53,8 @@ Page({
     },
     newMedication: {
       name: '',
-      volume: '',
+      dosage: '',
+      unit: '',
       time: ''
     },
     // 编辑相关
@@ -66,6 +70,7 @@ Page({
     deleteConfirmMessage: '',
     deleteType: '', // 'feeding' 或 'medication'
     deleteIndex: -1,
+    deleteRecordId: '', // 药物记录的ID
     todayFullDate: '', // 今日完整日期（年月日）
     babyInfo: null, // 存储宝宝基本信息
     isDataLoading: false, // 新增数据加载状态
@@ -371,12 +376,14 @@ Page({
         console.warn('未找到宝宝UID，将查询所有记录（可能不准确）');
       }
       
-      const result = await db.collection('feeding_records')
-        .where(query)
-        .get();
+      // 并行查询喂养记录和药物记录
+      const [feedingResult, medicationResult] = await Promise.all([
+        db.collection('feeding_records').where(query).get(),
+        MedicationRecordModel.findByDate(dateStr, babyUid)
+      ]);
       
-      if (result.data && result.data.length > 0) {
-        const record = result.data[0];
+      if (feedingResult.data && feedingResult.data.length > 0) {
+        const record = feedingResult.data[0];
         
         // 设置体重数据，兼容新旧数据结构
         let recordWeight = '';
@@ -390,10 +397,13 @@ Page({
           recordWeight = record.weight;
         }
         
+        // 获取药物记录数据
+        const medicationRecordsToSet = (medicationResult.success ? medicationResult.data : []) || [];
+        
         this.setData({
           recordId: record._id,
           feedings: record.feedings || [],
-          medicationRecords: record.medicationRecords || [],
+          medicationRecords: medicationRecordsToSet,
           weight: recordWeight || (this.data.babyInfo ? this.data.babyInfo.weight : '--'),
           hasRecord: true,
           isDataLoading: false // 设置数据加载完成
@@ -401,19 +411,19 @@ Page({
         
         // 处理喂奶和用药记录
         this.processFeedingData(record.feedings || []);
-        this.processMedicationData(record.medicationRecords || []);
+        this.processMedicationData(medicationRecordsToSet);
       } else {
-        // 没有记录时，尝试使用宝宝信息中的体重
+        // 没有喂养记录，但可能有药物记录
+        const medicationRecordsToSet = (medicationResult.success ? medicationResult.data : []) || [];
         const defaultWeight = this.data.babyInfo ? this.data.babyInfo.weight : '--';
         
         this.setData({
           recordId: '',
           feedings: [],
-          medicationRecords: [],
+          medicationRecords: medicationRecordsToSet,
           weight: defaultWeight,
-          hasRecord: false,
+          hasRecord: medicationRecordsToSet.length > 0, // 如果有药物记录，也算有记录
           feedingRecords: [],
-          medicationRecords: [],
           totalNaturalMilk: 0,
           totalSpecialMilk: 0,
           totalMilk: 0,
@@ -422,6 +432,9 @@ Page({
           specialProteinCoefficient: 0,
           isDataLoading: false // 设置数据加载完成
         });
+        
+        // 处理药物记录
+        this.processMedicationData(medicationRecordsToSet);
       }
       
       wx.hideLoading();
@@ -740,7 +753,13 @@ Page({
   hideAddMedicationModal() {
     console.log('隐藏用药记录弹窗');
     this.setData({
-      showAddMedicationModal: false
+      showAddMedicationModal: false,
+      newMedication: {
+        name: '',
+        dosage: '',
+        unit: '',
+        time: ''
+      }
     });
   },
 
@@ -934,12 +953,30 @@ Page({
   async saveNewMedication() {
     console.log('保存用药记录', this.data.newMedication);
     
-    const { name, volume, time } = this.data.newMedication;
+    const { name, dosage, unit, time } = this.data.newMedication;
     
     // 验证输入
     if (!name) {
       wx.showToast({
         title: '请选择药物',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    if (!dosage || dosage.trim() === '') {
+      wx.showToast({
+        title: '请输入用药剂量',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 验证剂量是否为有效正数
+    const dosageNum = parseFloat(dosage);
+    if (isNaN(dosageNum) || dosageNum <= 0) {
+      wx.showToast({
+        title: '请输入有效的剂量数值',
         icon: 'none'
       });
       return;
@@ -956,80 +993,46 @@ Page({
     wx.showLoading({ title: '保存中...' });
     
     try {
-      const db = wx.cloud.database();
-      const _ = db.command;
-      
-      // 获取当天的开始和结束时间
-      const [year, month, day] = this.data.selectedDate.split('-').map(Number);
-      const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-      const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-      
       // 获取宝宝UID
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      
+      // 获取当天的开始时间
+      const [year, month, day] = this.data.selectedDate.split('-').map(Number);
       
       // 创建完整的用药时间对象
       const [hours, minutes] = time.split(':').map(Number);
       const medicationTime = new Date(year, month - 1, day, hours, minutes, 0);
       
-      // 查询当天的记录
-      let query = {
-        date: _.gte(startOfDay).and(_.lte(endOfDay))
-      };
+      // 查找药物ID（如果需要的话）
+      const selectedMed = this.data.medications.find(med => med.name === name);
+      const medicationId = selectedMed ? selectedMed._id : '';
       
-      // 如果有宝宝UID，添加到查询条件
-      if (babyUid) {
-        query.babyUid = babyUid;
-      }
+             // 使用新的药物记录模型创建记录
+       const result = await MedicationRecordModel.create({
+         babyUid: babyUid,
+         date: this.data.selectedDate,
+         medicationId: medicationId,
+         medicationName: name,
+         dosage: parseFloat(dosage),
+         unit: unit,
+         actualTime: time,
+         actualDateTime: medicationTime
+       });
       
-      const res = await db.collection('feeding_records').where(query).get();
-      
-      const medication = {
-        name: name,
-        volume: volume,
-        time: medicationTime,     // 保存为完整日期时间对象
-        timeString: time,         // 保存可读的时间字符串
-        formattedTime: time,      // 直接添加格式化后的时间，避免处理错误
-        babyUid: babyUid,         // 添加宝宝UID关联
-        createdAt: new Date()     // 添加创建时间戳
-      };
-      
-      if (res.data.length > 0) {
-        // 更新现有记录
-        await db.collection('feeding_records').doc(res.data[0]._id).update({
-          data: {
-            medicationRecords: _.push([medication]),
-            updatedAt: db.serverDate()
-          }
+      if (result.success) {
+        wx.hideLoading();
+        wx.showToast({
+          title: '保存成功',
+          icon: 'success'
         });
-      } else {
-        // 创建新记录，使用新的数据结构
-        const basicInfo = {
-          weight: this.data.weight || '' // 添加体重记录到basicInfo
-        };
         
-        await db.collection('feeding_records').add({
-          data: {
-            date: startOfDay,
-            basicInfo: basicInfo,   // 使用新的结构
-            feedings: [],
-            medicationRecords: [medication],
-            babyUid: babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
+        // 重新加载数据
+        this.fetchDailyRecords(this.data.selectedDate);
+        this.hideAddMedicationModal();
+      } else {
+        throw new Error(result.message || '保存失败');
       }
-      
-      wx.hideLoading();
-      wx.showToast({
-        title: '保存成功',
-        icon: 'success'
-      });
-      
-      // 重新加载数据
-      this.fetchDailyRecords(this.data.selectedDate);
-      this.hideAddMedicationModal();
       
     } catch (error) {
       console.error('保存用药记录失败:', error);
@@ -1059,7 +1062,8 @@ Page({
     const newMedication = {
       ...this.data.newMedication,
       name: medication.name,
-      volume: medication.dosage + medication.unit
+      dosage: medication.dosage,
+      unit: medication.unit
     };
     this.setData({ newMedication });
   },
@@ -1080,15 +1084,32 @@ Page({
 
   // 显示删除用药记录确认对话框
   deleteMedication(e) {
-    const index = e.currentTarget.dataset.index;
-    const medication = this.data.medicationRecords[index];
-    const message = `确认删除 ${medication.name} (${medication.formattedTime}) 的用药记录吗？`;
+    const recordId = e.currentTarget.dataset.recordId;
+    console.log('点击删除药物记录，recordId:', recordId);
+    
+    const medication = this.data.medicationRecords.find(record => record._id === recordId);
+    console.log('找到的药物记录:', medication);
+    
+    if (!medication) {
+      wx.showToast({
+        title: '未找到药物记录',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    const message = `确认删除 ${medication.medicationName} (${medication.actualTime}) 的用药记录吗？`;
+    
+    console.log('设置删除确认对话框数据:', {
+      deleteType: 'medication',
+      deleteRecordId: recordId
+    });
     
     this.setData({
       showDeleteConfirm: true,
       deleteConfirmMessage: message,
       deleteType: 'medication',
-      deleteIndex: index
+      deleteRecordId: recordId // 使用recordId而不是index
     });
   },
 
@@ -1098,15 +1119,22 @@ Page({
       showDeleteConfirm: false,
       deleteConfirmMessage: '',
       deleteType: '',
-      deleteIndex: -1
+      deleteIndex: -1,
+      deleteRecordId: ''
     });
   },
 
   // 确认删除记录
   async confirmDelete() {
-    const { deleteType, deleteIndex, selectedDate } = this.data;
+    const { deleteType, deleteIndex, deleteRecordId, selectedDate } = this.data;
     
-    if (deleteIndex < 0) {
+    // 检查是否有有效的删除目标
+    if (deleteType === 'feeding' && deleteIndex < 0) {
+      this.hideDeleteConfirm();
+      return;
+    }
+    
+    if (deleteType === 'medication' && !deleteRecordId) {
       this.hideDeleteConfirm();
       return;
     }
@@ -1117,32 +1145,31 @@ Page({
     });
 
     try {
-      const db = wx.cloud.database();
-
-      // 将日期字符串转换为 Date 对象
-      const [year, month, day] = selectedDate.split('-').map(Number);
-      const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-      const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-
-      // 查询当天的记录
-      const res = await db.collection('feeding_records').where({
-        date: db.command.gte(startOfDay).and(db.command.lte(endOfDay))
-      }).get();
-
-      if (res.data.length === 0) {
-        wx.hideLoading();
-        wx.showToast({
-          title: '未找到记录',
-          icon: 'error'
-        });
-        this.hideDeleteConfirm();
-        return;
-      }
-
-      const dayRecord = res.data[0];
-
       if (deleteType === 'feeding') {
-        // 删除喂奶记录
+        // 处理喂奶记录删除
+        const db = wx.cloud.database();
+
+        // 将日期字符串转换为 Date 对象
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
+        const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
+
+        // 查询当天的记录
+        const res = await db.collection('feeding_records').where({
+          date: db.command.gte(startOfDay).and(db.command.lte(endOfDay))
+        }).get();
+
+        if (res.data.length === 0) {
+          wx.hideLoading();
+          wx.showToast({
+            title: '未找到记录',
+            icon: 'error'
+          });
+          this.hideDeleteConfirm();
+          return;
+        }
+
+        const dayRecord = res.data[0];
         const feedings = [...dayRecord.feedings];
         feedings.splice(deleteIndex, 1);
 
@@ -1150,15 +1177,22 @@ Page({
         await db.collection('feeding_records').doc(dayRecord._id).update({
           data: { feedings }
         });
+        
       } else if (deleteType === 'medication') {
-        // 删除用药记录
-        const medicationRecords = [...dayRecord.medicationRecords];
-        medicationRecords.splice(deleteIndex, 1);
-
-        // 更新数据库
-        await db.collection('feeding_records').doc(dayRecord._id).update({
-          data: { medicationRecords }
-        });
+        // 删除用药记录 - 使用新的药物记录模型
+        const recordId = this.data.deleteRecordId;
+        console.log('准备删除药物记录，recordId:', recordId);
+        
+        if (recordId) {
+          const result = await MedicationRecordModel.delete(recordId);
+          console.log('删除药物记录结果:', result);
+          
+          if (!result.success) {
+            throw new Error(result.message || '删除失败');
+          }
+        } else {
+          throw new Error('无法找到要删除的药物记录');
+        }
       }
 
       // 刷新数据
@@ -1215,7 +1249,8 @@ Page({
   processMedicationData: function(medicationRecords) {
     if (!medicationRecords || medicationRecords.length === 0) {
       this.setData({
-        medicationRecords: []
+        medicationRecords: [],
+        groupedMedicationRecords: []
       });
       return;
     }
@@ -1225,49 +1260,18 @@ Page({
     const processedMedicationRecords = medicationRecords.map(record => {
       console.log('处理用药记录:', record);
       
-      let formattedTime = '--:--';
-      
-      try {
-        // 1. 首先尝试使用timeString属性（如果存在）
-        if (record.timeString && typeof record.timeString === 'string' && record.timeString.includes(':')) {
-          formattedTime = record.timeString;
-        }
-        // 2. 如果没有timeString，尝试使用time属性
-        else if (record.time) {
-          // 如果time是字符串且包含冒号，直接使用
-          if (typeof record.time === 'string' && record.time.includes(':')) {
-            formattedTime = record.time;
-          }
-          // 如果time是Date对象或可以转换为Date的字符串
-          else {
-            const dateObj = record.time instanceof Date ? record.time : new Date(record.time);
-            
-            // 检查转换后的Date对象是否有效
-            if (!isNaN(dateObj.getTime())) {
-              const hour = dateObj.getHours().toString().padStart(2, '0');
-              const minute = dateObj.getMinutes().toString().padStart(2, '0');
-              formattedTime = `${hour}:${minute}`;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('格式化用药时间出错:', error, record.time);
-        formattedTime = '--:--';
-      }
-      
-      // 确保返回的记录包含所有原始属性，并添加formattedTime属性
+      // 直接使用新数据结构的原始数据，WXML 已适配新字段
       return {
-        ...record,
-        formattedTime: formattedTime
+        ...record
       };
     });
     
     // 按时间排序
     processedMedicationRecords.sort((a, b) => {
       // 如果时间格式是无效的，则排在后面
-      if (a.formattedTime === '--:--' && b.formattedTime !== '--:--') return 1;
-      if (a.formattedTime !== '--:--' && b.formattedTime === '--:--') return -1;
-      if (a.formattedTime === '--:--' && b.formattedTime === '--:--') return 0;
+      if (!a.actualTime && b.actualTime) return 1;
+      if (a.actualTime && !b.actualTime) return -1;
+      if (!a.actualTime && !b.actualTime) return 0;
       
       // 将时间转换为分钟数进行比较
       const getMinutes = (timeStr) => {
@@ -1276,11 +1280,15 @@ Page({
       };
       
       // 降序排列（最近的时间在前）
-      return getMinutes(b.formattedTime) - getMinutes(a.formattedTime);
+      return getMinutes(b.actualTime) - getMinutes(a.actualTime);
     });
+
+    // 使用MedicationRecordModel的分组功能
+    const groupedMedicationRecords = MedicationRecordModel.groupRecordsByMedication(processedMedicationRecords);
     
     this.setData({
-      medicationRecords: processedMedicationRecords
+      medicationRecords: processedMedicationRecords,
+      groupedMedicationRecords: groupedMedicationRecords
     });
   },
 
@@ -1482,32 +1490,20 @@ Page({
 
   // 打开编辑用药记录弹窗
   openEditMedicationModal(e) {
-    const index = e.currentTarget.dataset.index;
-    const medication = this.data.medicationRecords[index];
+    const recordId = e.currentTarget.dataset.recordId;
+    const medication = this.data.medicationRecords.find(record => record._id === recordId);
     
-    // 确保medication对象有正确的formattedTime
-    if (!medication.formattedTime || medication.formattedTime === '--:--') {
-      // 尝试从time属性创建
-      if (medication.time) {
-        try {
-          const dateObj = medication.time instanceof Date ? medication.time : new Date(medication.time);
-          if (!isNaN(dateObj.getTime())) {
-            medication.formattedTime = this.formatTime(dateObj);
-          }
-        } catch (error) {
-          console.error('格式化编辑用药时间出错:', error);
-          // 如果无法格式化，使用当前时间
-          medication.formattedTime = this.formatTime(new Date());
-        }
-      } else {
-        // 如果没有time属性，使用当前时间
-        medication.formattedTime = this.formatTime(new Date());
-      }
+    if (!medication) {
+      wx.showToast({
+        title: '未找到药物记录',
+        icon: 'none'
+      });
+      return;
     }
     
     this.setData({
       showEditMedicationModal: true,
-      editingMedicationIndex: index,
+      editingMedicationRecordId: recordId, // 使用recordId而不是index
       editingMedication: { ...medication }
     });
   },
@@ -1517,10 +1513,21 @@ Page({
     this.setData({
       showEditMedicationModal: false,
       editingMedicationIndex: -1,
+      editingMedicationRecordId: '',
       editingMedication: null
     });
   },
   
+  // 编辑用药记录输入处理
+  onEditMedicationInput(e) {
+    const { field } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    const editingMedication = { ...this.data.editingMedication };
+    
+    editingMedication[field] = value;
+    this.setData({ editingMedication });
+  },
+
   // 编辑用药记录时间选择处理
   onEditMedicationTimeChange(e) {
     const { field } = e.currentTarget.dataset;
@@ -1536,10 +1543,10 @@ Page({
     try {
       wx.showLoading({ title: '保存中...' });
       
-      const { editingMedication, editingMedicationIndex, selectedDate } = this.data;
+      const { editingMedication, selectedDate } = this.data;
       
       // 验证输入
-      if (!editingMedication.formattedTime) {
+      if (!editingMedication.actualTime) {
         wx.showToast({
           title: '请选择用药时间',
           icon: 'none'
@@ -1547,58 +1554,50 @@ Page({
         wx.hideLoading();
         return;
       }
-      
-      // 准备更新的数据
-      const db = wx.cloud.database();
-      const _ = db.command;
-      
-      // 获取当天的开始和结束时间
-      const [year, month, day] = selectedDate.split('-').map(Number);
-      const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-      const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-      
-      // 解析时间
-      const [hours, minutes] = editingMedication.formattedTime.split(':').map(Number);
-      const medicationTime = new Date(year, month - 1, day, hours, minutes, 0);
-      
-      // 查询当天记录
-      const res = await db.collection('feeding_records')
-        .where({
-          date: _.gte(startOfDay).and(_.lte(endOfDay))
-        })
-        .get();
-      
-      if (res.data.length === 0) {
-        wx.hideLoading();
+
+      if (!editingMedication.dosage || editingMedication.dosage.trim() === '') {
         wx.showToast({
-          title: '未找到记录',
-          icon: 'error'
+          title: '请输入用药剂量',
+          icon: 'none'
         });
+        wx.hideLoading();
+        return;
+      }
+
+      // 验证剂量是否为有效正数
+      const dosage = parseFloat(editingMedication.dosage);
+      if (isNaN(dosage) || dosage <= 0) {
+        wx.showToast({
+          title: '请输入有效的剂量数值',
+          icon: 'none'
+        });
+        wx.hideLoading();
         return;
       }
       
-      // 获取记录并更新
-      const record = res.data[0];
-      const medicationRecords = [...record.medicationRecords];
-      
-      // 处理被编辑的记录的索引
-      if (medicationRecords[editingMedicationIndex]) {
-        // 更新记录
-        medicationRecords[editingMedicationIndex] = {
-          ...medicationRecords[editingMedicationIndex],
-          time: medicationTime,
-          timeString: editingMedication.formattedTime,
-          formattedTime: editingMedication.formattedTime // 直接保存格式化的时间
-        };
-        
-        // 更新数据库
-        await db.collection('feeding_records').doc(record._id).update({
-          data: {
-            medicationRecords: medicationRecords,
-            updatedAt: db.serverDate()
-          }
+      if (!editingMedication._id) {
+        wx.showToast({
+          title: '记录ID不存在',
+          icon: 'error'
         });
-        
+        wx.hideLoading();
+        return;
+      }
+      
+      // 获取日期和时间
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const [hours, minutes] = editingMedication.actualTime.split(':').map(Number);
+      const medicationTime = new Date(year, month - 1, day, hours, minutes, 0);
+      
+      // 使用新的药物记录模型更新
+      const result = await MedicationRecordModel.update(editingMedication._id, {
+        actualTime: editingMedication.actualTime, // 保存为字符串格式
+        actualDateTime: medicationTime, // 保存为Date对象
+        dosage: parseFloat(editingMedication.dosage), // 确保是数字类型
+        medicationName: editingMedication.medicationName
+      });
+      
+      if (result.success) {
         wx.hideLoading();
         wx.showToast({
           title: '保存成功',
@@ -1609,11 +1608,7 @@ Page({
         this.fetchDailyRecords(this.data.selectedDate);
         this.hideEditMedicationModal();
       } else {
-        wx.hideLoading();
-        wx.showToast({
-          title: '未找到要编辑的记录',
-          icon: 'none'
-        });
+        throw new Error(result.message || '更新失败');
       }
       
     } catch (error) {

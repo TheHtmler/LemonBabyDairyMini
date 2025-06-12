@@ -272,16 +272,16 @@
             <view class="medication-record-item" wx:for="{{group.records}}" wx:key="originalIndex" wx:for-item="record">
               <view class="record-content" data-index="{{record.originalIndex}}">
                 <view class="medication-time-dose">
-                  <text class="medication-time">{{record.time}}</text>
-                  <text class="medication-volume">{{record.volume}}</text>
+                  <text class="medication-time">{{record.actualTime}}</text>
+                  <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>
                 </view>
               </view>
               <!-- 操作按钮 -->
               <view class="action-buttons">
-                <view class="action-btn edit-btn" bindtap="openMedicationRecordModal" data-record-id="{{record.recordId}}" data-action="view">
+                <view class="action-btn edit-btn" bindtap="openMedicationRecordModal" data-medication-id="{{record._id}}" data-action="view">
                   <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
                 </view>
-                <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record.recordId}}" data-action="delete">
+                <view class="action-btn delete-btn" bindtap="deleteMedication" data-medication-id="{{record._id}}" data-action="delete">
                   <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
                 </view>
               </view>
@@ -309,7 +309,10 @@
         </view>
         <view class="modal-info-row">
           <text class="modal-label">药物剂量:</text>
-          <text class="modal-value">{{selectedMedicationInfo.dosage}}{{selectedMedicationInfo.unit}}</text>
+          <view class="dosage-input-container">
+            <input type="digit" class="dosage-input" value="{{currentModalDosage}}" bindinput="onMedicationDosageChange" placeholder="请输入药物剂量" />
+            <text class="dosage-unit">{{selectedMedicationInfo.unit}}</text>
+          </view>
         </view>
         <view class="modal-info-row" wx:if="{{selectedMedicationInfo.frequency}}">
           <text class="modal-label">服用频率:</text>
@@ -401,16 +404,19 @@
       <view class="modal-body">
         <view class="modal-info-row">
           <text class="modal-label">药物名称:</text>
-          <text class="modal-value">{{selectedMedicationRecord.name}}</text>
+          <text class="modal-value">{{selectedMedicationRecord.medicationName}}</text>
         </view>
         <view class="modal-info-row">
           <text class="modal-label">药物剂量:</text>
-          <text class="modal-value">{{selectedMedicationRecord.volume}}</text>
+          <view class="dosage-input-container">
+            <input type="digit" class="dosage-input" value="{{selectedMedicationRecord.dosage}}" bindinput="onMedicationRecordDosageChange" />
+            <text class="dosage-unit">{{selectedMedicationRecord.unit}}</text>
+          </view>
         </view>
         <view class="modal-info-row">
           <text class="modal-label">服用时间:</text>
-          <picker mode="time" value="{{selectedMedicationRecord.time}}" start="00:00" end="23:59" bindchange="onMedicationRecordTimeChange">
-            <view class="modal-time-picker">{{selectedMedicationRecord.time}} <text class="edit-icon">✎</text></view>
+          <picker mode="time" value="{{selectedMedicationRecord.actualTime}}" start="00:00" end="23:59" bindchange="onMedicationRecordTimeChange">
+            <view class="modal-time-picker">{{selectedMedicationRecord.actualTime}} <text class="edit-icon">✎</text></view>
           </picker>
         </view>
         <view class="modal-info-row" wx:if="{{selectedMedicationRecord.frequency}}">
@@ -419,7 +425,8 @@
         </view>
       </view>
       <view class="modal-footer">
-        <button class="modal-btn confirm" bindtap="closeMedicationRecordModal">关闭</button>
+        <button class="modal-btn cancel" bindtap="closeMedicationRecordModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveMedicationRecordChanges">保存</button>
       </view>
     </view>
   </view>

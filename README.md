@@ -74,7 +74,7 @@
   - `weight`: 宝宝当日体重
   - `feedings`: 喂奶记录数组
   - `medications`: 药物记录对象
-  - `medicationRecords`: 药物记录数组
+  
   - `userInfo`: 操作用户信息
   - `createdAt`: 创建时间
   - `updatedAt`: 更新时间

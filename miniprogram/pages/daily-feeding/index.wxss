@@ -420,6 +420,41 @@
   color: #999;
 }
 
+/* Dosage input container */
+.dosage-input-container {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.dosage-input {
+  flex: 1;
+  height: 64rpx;
+  background: #FFF9E6;
+  border: 2rpx solid #FFB800;
+  border-radius: 8rpx;
+  padding: 0 16rpx;
+  font-size: 28rpx;
+  color: #333333;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dosage-input:focus {
+  border-color: #FFD700;
+  background: #FFF6CC;
+}
+
+.dosage-unit {
+  font-size: 24rpx;
+  color: #666666;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 8rpx 12rpx;
+  border-radius: 6rpx;
+  white-space: nowrap;
+}
+
 /* Medication Modal */
 .modal {
   position: fixed;
