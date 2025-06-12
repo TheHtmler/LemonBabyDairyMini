@@ -328,16 +328,5 @@ Page({
     }
   },
 
-  // 创建默认设置
-  createDefaultSettings() {
-    return {
-      natural_protein_coefficient: 1.2,  // 天然蛋白系数 g/kg
-      natural_milk_protein: 1.1,         // 母乳蛋白质含量 g/100ml
-      special_milk_protein: 13.1,        // 特奶蛋白质含量 g/100g
-      special_milk_ratio: {
-        powder: 13.5,                    // 特奶粉量 g
-        water: 90                        // 特奶水量 ml
-      }
-    };
-  }
+
 }); 

@@ -1,6 +1,6 @@
 <view class="container">
   <!-- 点击空白处关闭菜单的覆盖层 -->
-  <view class="menu-overlay" wx:if="{{activeFeedingMenu !== -1 || activeMedicationMenu !== -1}}" bindtap="onTapPage"></view>
+  <view class="menu-overlay" wx:if="{{activeFeedingMenu !== -1}}" bindtap="onTapPage"></view>
 
   <!-- Baby Info Section -->
   <view class="section baby-info-section">
@@ -260,33 +260,35 @@
     <!-- 药物记录 -->
     <view class="tab-content" hidden="{{activeTab !== 'medication'}}">
       <view class="medication-records">
-        <view class="medication-record-item" wx:for="{{medicationRecords}}" wx:key="index">
-          <view class="record-content" bindtap="openMedicationRecordModal" data-index="{{index}}">
-            <view class="medication-info">
-              <text class="medication-name">{{item.name}}</text>
-              <text class="medication-volume">{{item.volume}}</text>
-            </view>
-            <text class="medication-time">{{item.time}}</text>
-          </view>
-          <!-- 三点菜单按钮 -->
-          <view class="menu-btn" catchtap="toggleMedicationMenu" data-index="{{index}}">
-            <view class="dot-menu">
-              <view class="dot"></view>
-              <view class="dot"></view>
-              <view class="dot"></view>
-            </view>
+        <!-- 按药物名称分组显示 -->
+        <view class="medication-group" wx:for="{{groupedMedicationRecords}}" wx:key="medicationName" wx:for-item="group">
+          <view class="medication-group-header">
+            <text class="medication-group-name">{{group.medicationName}}</text>
+            <text class="medication-group-count">今日{{group.totalCount}}次</text>
           </view>
           
-          <!-- 菜单弹出选项 -->
-          <view class="menu-options {{activeMedicationMenu === index ? 'show' : ''}}" wx:if="{{activeMedicationMenu === index}}">
-            <view class="menu-option" catchtap="openMedicationRecordModal" data-index="{{index}}" data-action="view">
-              <text>查看</text>
-            </view>
-            <view class="menu-option delete" catchtap="deleteMedication" data-index="{{index}}" data-action="delete">
-              <text>删除</text>
+          <!-- 该药物的所有记录 -->
+          <view class="medication-group-records">
+            <view class="medication-record-item" wx:for="{{group.records}}" wx:key="originalIndex" wx:for-item="record">
+              <view class="record-content" data-index="{{record.originalIndex}}">
+                <view class="medication-time-dose">
+                  <text class="medication-time">{{record.time}}</text>
+                  <text class="medication-volume">{{record.volume}}</text>
+                </view>
+              </view>
+              <!-- 操作按钮 -->
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openMedicationRecordModal" data-record-id="{{record.recordId}}" data-action="view">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record.recordId}}" data-action="delete">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
             </view>
           </view>
         </view>
+        
         <view class="empty-record" wx:if="{{medicationRecords.length === 0}}">
           <text>暂无用药记录</text>
         </view>

@@ -8,6 +8,7 @@ Page({
     weight: '',
     feedings: [],
     medicationRecords: [],
+    groupedMedicationRecords: [], // 按药物名称分组的药物记录
     medicationsList: [], // 存储从数据库加载的药物列表
     currentFeeding: {
       startTime: '',
@@ -59,7 +60,6 @@ Page({
     settingsGuideText: '', // 自定义的设置引导提示
     showQuickInputModal: false, // 是否显示快捷记录弹窗
     activeFeedingMenu: -1, // 当前打开的喂奶记录菜单项索引
-    activeMedicationMenu: -1, // 当前打开的药物记录菜单项索引
     showAddFeedingModal: false, // 是否显示补充喂奶记录弹窗
     newFeeding: {
       startTime: '',
@@ -652,8 +652,11 @@ Page({
         // 对喂奶记录按时间倒序排序
         feedingsToSet = this.sortFeedingsByTimeDesc(feedingsToSet);
         
-        // 对药物记录按时间倒序排序
-        const medicationRecordsToSet = this.sortMedicationsByTimeDesc(record.medicationRecords || []);
+        // 对药物记录按时间倒序排序，并确保每条记录都有recordId
+        const medicationRecordsToSet = this.sortMedicationsByTimeDesc(record.medicationRecords || []).map((medicationRecord, index) => ({
+          ...medicationRecord,
+          recordId: medicationRecord.recordId || `med_legacy_${index}_${Date.now()}`
+        }));
         
         // 获取基本信息（兼容旧数据结构）
         let weightToSet = '';
@@ -669,6 +672,7 @@ Page({
         this.setData({
           feedings: feedingsToSet,
           medicationRecords: medicationRecordsToSet,
+          groupedMedicationRecords: this.groupMedicationRecords(medicationRecordsToSet),
           weight: weightToSet,
           recordId: record._id
         });
@@ -737,6 +741,50 @@ Page({
       // 小时相同时比较分钟
       return bTimeParts[1] - aTimeParts[1]; // 降序排列
     });
+  },
+
+  // 按药物名称分组药物记录
+  groupMedicationRecords(medicationRecords) {
+    if (!medicationRecords || medicationRecords.length === 0) {
+      return [];
+    }
+
+    // 按药物名称分组
+    const groups = {};
+    medicationRecords.forEach((record, index) => {
+      const medicationName = record.name;
+      if (!groups[medicationName]) {
+        groups[medicationName] = [];
+      }
+      groups[medicationName].push({
+        ...record,
+        originalIndex: index, // 保存原始索引，用于兼容性
+        recordId: record.recordId || record.id || `med_${index}_${Date.now()}` // 确保每条记录都有唯一ID
+      });
+    });
+
+    // 转换为数组格式，并对每组内的记录按时间排序
+    const groupedRecords = Object.keys(groups).map(medicationName => {
+      const records = groups[medicationName].sort((a, b) => {
+        // 按时间倒序排序
+        const aTimeParts = a.time.split(':').map(Number);
+        const bTimeParts = b.time.split(':').map(Number);
+        
+        if (aTimeParts[0] !== bTimeParts[0]) {
+          return bTimeParts[0] - aTimeParts[0];
+        }
+        return bTimeParts[1] - aTimeParts[1];
+      });
+
+      return {
+        medicationName: medicationName,
+        records: records,
+        totalCount: records.length
+      };
+    });
+
+    // 按药物名称排序
+    return groupedRecords.sort((a, b) => a.medicationName.localeCompare(b.medicationName));
   },
 
   // 加载默认体重（从宝宝信息或历史记录中）
@@ -1156,8 +1204,12 @@ Page({
       dateTime.setHours(hours, minutes, 0, 0);
     }
 
+    // 生成唯一的记录ID
+    const recordId = `med_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // 创建药物记录
     const medicationRecord = {
+      recordId: recordId, // 添加唯一的记录ID
       id: selectedMedication,
       name: medInfo.name,
       volume: `${medInfo.dosage}${medInfo.unit}`,
@@ -1168,8 +1220,10 @@ Page({
     };
 
     // 更新状态
+    const updatedMedicationRecords = [...this.data.medicationRecords, medicationRecord];
     this.setData({
-      medicationRecords: [...this.data.medicationRecords, medicationRecord],
+      medicationRecords: updatedMedicationRecords,
+      groupedMedicationRecords: this.groupMedicationRecords(updatedMedicationRecords),
       showMedicationModal: false
     });
 
@@ -1822,8 +1876,18 @@ Page({
 
   // 打开药物记录详情弹窗
   openMedicationRecordModal(e) {
-    const index = e.currentTarget.dataset.index;
-    const record = this.data.medicationRecords[index];
+    const { recordId } = e.currentTarget.dataset;
+    
+    // 根据recordId查找药物记录
+    const record = this.data.medicationRecords.find(record => record.recordId === recordId);
+    
+    if (!record) {
+      wx.showToast({
+        title: '未找到药物记录',
+        icon: 'none'
+      });
+      return;
+    }
     
     // 确保有Date对象
     let dateTime = record.dateTime;
@@ -1842,7 +1906,6 @@ Page({
         ...record,
         dateTime: dateTime
       },
-      activeMedicationMenu: -1 // 关闭菜单
     });
   },
 
@@ -1851,18 +1914,22 @@ Page({
     this.setData({
       showMedicationRecordModal: false,
       selectedMedicationRecord: null,
-      activeMedicationMenu: -1 // 确保菜单关闭
     });
   },
 
   // 处理药物记录时间变更
   onMedicationRecordTimeChange(e) {
     const newTime = e.detail.value;
-    const recordIndex = this.data.medicationRecords.findIndex(
-      record => record === this.data.selectedMedicationRecord
-    );
+    const selectedRecord = this.data.selectedMedicationRecord;
+    console.log(selectedRecord, '==selectedRecord==')
     
-    if (recordIndex === -1) return;
+    if (!selectedRecord || !selectedRecord.recordId) {
+      wx.showToast({
+        title: '选中的记录无效',
+        icon: 'none'
+      });
+      return;
+    }
     
     // 创建Date对象
     const now = new Date();
@@ -1870,8 +1937,18 @@ Page({
     const dateTime = new Date(now);
     dateTime.setHours(hours, minutes, 0, 0);
     
-    // 更新本地数据
+    // 根据recordId查找并更新本地数据
     const medicationRecords = [...this.data.medicationRecords];
+    const recordIndex = medicationRecords.findIndex(record => record.recordId === selectedRecord.recordId);
+    
+    if (recordIndex === -1) {
+      wx.showToast({
+        title: '未找到要更新的记录',
+        icon: 'none'
+      });
+      return;
+    }
+    
     medicationRecords[recordIndex].time = newTime;
     medicationRecords[recordIndex].dateTime = dateTime; // 添加标准时间对象
     
@@ -1888,11 +1965,11 @@ Page({
     });
     
     // 更新数据库
-    this.updateMedicationRecordTime(medicationRecords[recordIndex], recordIndex);
+    this.updateMedicationRecordTime(medicationRecords[recordIndex]);
   },
   
   // 更新数据库中的药物记录时间
-  async updateMedicationRecordTime(medicationRecord, index) {
+  async updateMedicationRecordTime(medicationRecord) {
     try {
       wx.showLoading({
         title: '更新中...',
@@ -1936,17 +2013,26 @@ Page({
         return;
       }
       
-      // 更新记录
+      // 更新记录 - 基于recordId查找要更新的记录
       const dayRecord = res.data[0];
       const medicationRecords = dayRecord.medicationRecords || [];
       
-      if (medicationRecords[index]) {
-        medicationRecords[index].time = medicationRecord.time;
-        medicationRecords[index].dateTime = medicationRecord.dateTime; // 更新Date对象
+      const recordIndex = medicationRecords.findIndex(record => record.recordId === medicationRecord.recordId);
+      
+      if (recordIndex !== -1) {
+        medicationRecords[recordIndex].time = medicationRecord.time;
+        medicationRecords[recordIndex].dateTime = medicationRecord.dateTime; // 更新Date对象
         // 确保记录中包含babyUid
-        if (babyUid && !medicationRecords[index].babyUid) {
-          medicationRecords[index].babyUid = babyUid;
+        if (babyUid && !medicationRecords[recordIndex].babyUid) {
+          medicationRecords[recordIndex].babyUid = babyUid;
         }
+      } else {
+        wx.hideLoading();
+        wx.showToast({
+          title: '未找到要更新的记录',
+          icon: 'none'
+        });
+        return;
       }
       
       // 重新排序以保持时间倒序
@@ -1962,7 +2048,7 @@ Page({
       // 更新本地数据
       this.setData({
         medicationRecords: sortedMedicationRecords,
-        activeMedicationMenu: -1,
+        groupedMedicationRecords: this.groupMedicationRecords(sortedMedicationRecords),
         showMedicationRecordModal: false
       });
       
@@ -2068,8 +2154,10 @@ Page({
       }
       
       // 更新本地数据 - 将新记录添加到数组开头（时间倒序）
+      const updatedMedicationRecords = [medicationRecord, ...this.data.medicationRecords];
       this.setData({
-        medicationRecords: [medicationRecord, ...this.data.medicationRecords]
+        medicationRecords: updatedMedicationRecords,
+        groupedMedicationRecords: this.groupMedicationRecords(updatedMedicationRecords)
       });
       
       wx.hideLoading();
@@ -2219,8 +2307,18 @@ Page({
 
   // 删除药物记录
   async deleteMedication(e) {
-    const { index } = e.currentTarget.dataset;
-    const medication = this.data.medicationRecords[index];
+    const { recordId } = e.currentTarget.dataset;
+    
+    // 根据recordId查找要删除的药物记录
+    const medication = this.data.medicationRecords.find(record => record.recordId === recordId);
+    
+    if (!medication) {
+      wx.showToast({
+        title: '未找到要删除的记录',
+        icon: 'none'
+      });
+      return;
+    }
     
     // 获取宝宝UID
     const app = getApp();
@@ -2244,7 +2342,7 @@ Page({
             wx.showLoading({ title: '删除中...' });
             
             // 创建新的记录数组（去掉要删除的项）
-            const updatedMedicationRecords = this.data.medicationRecords.filter((_, i) => i !== index);
+            const updatedMedicationRecords = this.data.medicationRecords.filter(record => record.recordId !== recordId);
             
             // 更新数据库
             if (this.data.recordId) {
@@ -2260,7 +2358,7 @@ Page({
             // 更新本地数据
             this.setData({
               medicationRecords: updatedMedicationRecords,
-              activeMedicationMenu: -1 // 重置菜单状态
+              groupedMedicationRecords: this.groupMedicationRecords(updatedMedicationRecords),
             });
             
             // 重新加载药物状态（静默模式）
@@ -2384,36 +2482,15 @@ Page({
       // 打开点击的菜单，关闭其他菜单
       this.setData({
         activeFeedingMenu: index,
-        activeMedicationMenu: -1
       });
     }
   },
   
-  // 打开药物记录菜单
-  toggleMedicationMenu(e) {
-    const index = e.currentTarget.dataset.index;
-    const currentIndex = this.data.activeMedicationMenu;
-    
-    if (currentIndex === index) {
-      // 如果点击的是当前打开的菜单，则关闭
-      this.setData({
-        activeMedicationMenu: -1
-      });
-    } else {
-      // 打开点击的菜单，关闭其他菜单
-      this.setData({
-        activeMedicationMenu: index,
-        activeFeedingMenu: -1
-      });
-    }
-  },
-
   // 点击页面其他位置关闭所有菜单
   onTapPage() {
-    if (this.data.activeFeedingMenu !== -1 || this.data.activeMedicationMenu !== -1) {
+    if (this.data.activeFeedingMenu !== -1) {
       this.setData({
         activeFeedingMenu: -1,
-        activeMedicationMenu: -1
       });
     }
   },
@@ -2455,12 +2532,7 @@ Page({
     return Math.round(powderWeight * 10) / 10; // 保留一位小数
   },
 
-  // 判断药物是否已服用
-  hasTakenMedication(medicationId) {
-    // 通过遍历medicationRecords数组判断药物是否已被服用
-    const records = this.data.medicationRecords || [];
-    return records.some(record => record.id === medicationId);
-  },
+
 
   // 显示补充喂奶记录弹窗
   showAddFeedingModal() {
@@ -2715,7 +2787,11 @@ Page({
       
       const res = await db.collection('feeding_records').where(query).get();
       
+      // 生成唯一的记录ID
+      const recordId = `med_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const medication = {
+        recordId: recordId, // 添加唯一的记录ID
         name: name,
         volume: volume,
         time: time,
@@ -2771,178 +2847,67 @@ Page({
     }
   },
 
-  // 处理喂奶数据
-  processFeedingData(feedingRecords) {
-    if (!feedingRecords || feedingRecords.length === 0) {
-      this.setData({
-        feedingRecords: []
-      });
-      return;
-    }
+  // 检查今日是否已服用某个药物的方法
+  hasTakenMedication(medicationId) {
+    return this.data.medicationRecords.some(record => record.id === medicationId);
+  },
 
-    console.log('处理喂奶记录数据:', JSON.stringify(feedingRecords));
-    
-    const processedRecords = feedingRecords.map(record => {
-      // 处理时间字段 - 优先使用DateTime字段，如果没有则使用字符串
-      let startDateTime = record.startDateTime;
-      let endDateTime = record.endDateTime;
-      let startTimeStr = record.startTime;
-      let endTimeStr = record.endTime;
-      
-      // 如果有Date对象，使用它格式化显示时间
-      if (startDateTime instanceof Date || (startDateTime && !isNaN(new Date(startDateTime).getTime()))) {
-        const dateObj = startDateTime instanceof Date ? startDateTime : new Date(startDateTime);
-        startTimeStr = this.formatTime(dateObj);
-      }
-      
-      if (endDateTime instanceof Date || (endDateTime && !isNaN(new Date(endDateTime).getTime()))) {
-        const dateObj = endDateTime instanceof Date ? endDateTime : new Date(endDateTime);
-        endTimeStr = this.formatTime(dateObj);
-      }
-      
-      // 如果没有Date对象但有时间字符串，创建Date对象
-      if (!startDateTime && startTimeStr) {
-        const now = new Date();
-        const [hours, minutes] = startTimeStr.split(':').map(Number);
-        startDateTime = new Date(now);
-        startDateTime.setHours(hours, minutes, 0, 0);
-      }
-      
-      if (!endDateTime && endTimeStr) {
-        const now = new Date();
-        const [hours, minutes] = endTimeStr.split(':').map(Number);
-        endDateTime = new Date(now);
-        endDateTime.setHours(hours, minutes, 0, 0);
-        
-        // 如果结束时间小于开始时间，可能是跨天记录，将结束时间加一天
-        if (startDateTime && endDateTime < startDateTime) {
-          endDateTime.setDate(endDateTime.getDate() + 1);
-        }
-      }
-      
-      // 计算喂奶持续时间
-      let duration = 0;
-      if (startDateTime && endDateTime) {
-        duration = Math.round((endDateTime - startDateTime) / 60000); // 转为分钟
-      }
-      
-      // 返回处理后的记录，包括标准化的时间格式
-      return {
-        ...record,
-        startTime: startTimeStr,
-        endTime: endTimeStr,
-        startDateTime: startDateTime,
-        endDateTime: endDateTime,
-        duration: duration
-      };
-    });
-    
-    // 按时间排序（使用日期对象或字符串）
-    const sortedRecords = this.sortFeedingsByTimeDesc(processedRecords);
-    
+  // 隐藏补充喂奶记录弹窗
+  hideAddFeedingModal() {
     this.setData({
-      feedingRecords: sortedRecords
+      showAddFeedingModal: false,
+      newFeeding: {
+        startTime: '',
+        endTime: '',
+        startDateTime: '',
+        endDateTime: '',
+        naturalMilkVolume: '',
+        totalVolume: '',
+        specialMilkVolume: 0
+      }
     });
-    
-    // 计算总量
-    this.calculateTotalMilk(sortedRecords);
   },
 
-  // 处理药物记录
-  processMedicationData(medicationRecords) {
-    if (!medicationRecords || medicationRecords.length === 0) {
-      this.setData({
-        medicationRecords: []
-      });
-      return;
-    }
-
-    console.log('处理用药记录数据:', JSON.stringify(medicationRecords));
-    
-    const processedRecords = medicationRecords.map(record => {
-      // 处理时间字段 - 优先使用dateTime字段，如果没有则使用字符串
-      let dateTime = record.dateTime;
-      let timeStr = record.time;
-      
-      // 如果有Date对象，使用它格式化显示时间
-      if (dateTime instanceof Date || (dateTime && !isNaN(new Date(dateTime).getTime()))) {
-        const dateObj = dateTime instanceof Date ? dateTime : new Date(dateTime);
-        timeStr = this.formatTime(dateObj);
-      }
-      
-      // 如果没有Date对象但有时间字符串，创建Date对象
-      if (!dateTime && timeStr) {
-        const now = new Date();
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        dateTime = new Date(now);
-        dateTime.setHours(hours, minutes, 0, 0);
-      }
-      
-      // 返回处理后的记录，包括标准化的时间格式
-      return {
-        ...record,
-        time: timeStr,
-        dateTime: dateTime
-      };
-    });
-    
-    // 按时间排序（使用日期对象）
-    const sortedRecords = this.sortMedicationsByTimeDesc(processedRecords);
-    
+  // 隐藏补充用药记录弹窗
+  hideAddMedicationModal() {
     this.setData({
-      medicationRecords: sortedRecords
+      showAddMedicationModal: false,
+      newMedication: {
+        name: '',
+        volume: '',
+        time: '',
+        dateTime: ''
+      }
     });
   },
 
-  // 对喂奶记录按时间倒序排序
-  sortFeedingsByTimeDesc(feedings) {
-    return [...feedings].sort((a, b) => {
-      // 首先尝试使用日期对象比较
-      if (a.startDateTime && b.startDateTime) {
-        return b.startDateTime - a.startDateTime;
-      }
-      
-      // 如果没有日期对象，使用时间字符串比较
-      const aStartTime = a.startTime;
-      const bStartTime = b.startTime;
-      
-      // 将时间格式 "HH:MM" 转换为可比较的格式
-      const aTimeParts = aStartTime.split(':').map(Number);
-      const bTimeParts = bStartTime.split(':').map(Number);
-      
-      // 比较小时
-      if (aTimeParts[0] !== bTimeParts[0]) {
-        return bTimeParts[0] - aTimeParts[0]; // 降序排列
-      }
-      
-      // 小时相同时比较分钟
-      return bTimeParts[1] - aTimeParts[1]; // 降序排列
-    });
+  // 新喂奶记录输入处理
+  onNewFeedingInput(e) {
+    const { field } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    const newFeeding = { ...this.data.newFeeding };
+    
+    newFeeding[field] = value;
+    
+    // 如果改变了天然奶量或总奶量，重新计算特奶量
+    if (field === 'naturalMilkVolume' || field === 'totalVolume') {
+      const naturalMilk = parseFloat(newFeeding.naturalMilkVolume) || 0;
+      const totalVolume = parseFloat(newFeeding.totalVolume) || 0;
+      newFeeding.specialMilkVolume = Math.max(0, totalVolume - naturalMilk);
+    }
+    
+    this.setData({ newFeeding });
   },
 
-  // 对药物记录按时间倒序排序
-  sortMedicationsByTimeDesc(medicationRecords) {
-    return [...medicationRecords].sort((a, b) => {
-      // 首先尝试使用日期对象比较
-      if (a.dateTime && b.dateTime) {
-        return b.dateTime - a.dateTime;
-      }
-      
-      // 如果没有日期对象，使用时间字符串比较
-      const aTime = a.time;
-      const bTime = b.time;
-      
-      // 将时间格式 "HH:MM" 转换为可比较的格式
-      const aTimeParts = aTime.split(':').map(Number);
-      const bTimeParts = bTime.split(':').map(Number);
-      
-      // 比较小时
-      if (aTimeParts[0] !== bTimeParts[0]) {
-        return bTimeParts[0] - aTimeParts[0]; // 降序排列
-      }
-      
-      // 小时相同时比较分钟
-      return bTimeParts[1] - aTimeParts[1]; // 降序排列
-    });
+  // 新用药记录输入处理
+  onNewMedicationInput(e) {
+    const { field } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    const newMedication = { ...this.data.newMedication };
+    
+    newMedication[field] = value;
+    
+    this.setData({ newMedication });
   }
+
 }); 

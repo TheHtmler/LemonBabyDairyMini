@@ -341,33 +341,7 @@ class MedicationModel {
     }
   }
   
-  /**
-   * 获取今日需要服用的药物
-   * @param {Array} settings 药物设置列表
-   * @returns {Array} 今日需要服用的药物列表
-   */
-  getTodayMedications(settings) {
-    if (!settings) return [];
 
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0-6，0表示周日
-    const isEvenDay = today.getDate() % 2 === 0;
-
-    return settings.filter(med => {
-      switch (med.frequency) {
-        case '每日一次':
-          return true;
-        case '每日两次':
-          return true;
-        case '隔天一次':
-          return isEvenDay;
-        case '两天打一次':
-          return isEvenDay;
-        default:
-          return false;
-      }
-    });
-  }
 }
 
 module.exports = new MedicationModel(); 

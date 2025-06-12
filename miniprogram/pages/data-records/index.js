@@ -127,38 +127,6 @@ Page({
     }
   },
 
-  onReady: function() {
-    // 页面首次渲染完成
-  },
-
-  // 处理日期滑动事件
-  onDateScroll: function(e) {
-    // 获取滚动位置
-    const scrollLeft = e.detail.scrollLeft;
-    console.log('日期滚动位置:', scrollLeft);
-  },
-
-  // 处理滑动事件
-  preventPageScroll: function(e) {
-    // 阻止页面整体的滑动，固定页面内容
-    console.log('阻止页面整体滑动');
-    // 返回true允许冒泡(允许滚动视图的事件传递)，返回false则阻止滑动
-    return false;
-  },
-
-  // 允许日期区域横向滑动
-  allowScrollX: function(e) {
-    // 允许scroll-view横向滑动，阻止冒泡
-    console.log('允许日期区域横向滑动');
-    // 不阻止默认事件，以允许scroll-view的滑动
-    return true;
-  },
-
-  allowDateScroll: function(e) {
-    // 微信小程序中直接返回true允许滚动
-    return true;
-  },
-
   // 初始化快速选择日期列表
   initDateList: function() {
     const today = new Date();
@@ -232,12 +200,7 @@ Page({
     });
   },
 
-  isToday: function(date) {
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear();
-  },
+
 
   // 格式化日期为YYYY-MM-DD形式
   formatDate: function(date) {
@@ -293,10 +256,7 @@ Page({
     this.fetchDailyRecords(selectedDate);
   },
 
-  // 为了保持与WXML的兼容性，添加selectDate作为onDateSelected的别名
-  selectDate: function(e) {
-    this.onDateSelected(e);
-  },
+
 
   // 添加日期项点击处理函数
   onDateItemClick: function(e) {
@@ -369,94 +329,9 @@ Page({
     this.initCalendar(today.getFullYear(), today.getMonth() + 1);
   },
 
-  // 获取指定日期的记录
-  fetchDailyRecords: function(date) {
-    if (!date) {
-      console.error('未提供有效日期');
-      return;
-    }
-    
-    console.log('开始获取记录，日期:', date);
-    
-    // 先设置数据区域透明，创建平滑过渡效果
-    this.setData({
-      isDataLoading: true
-    });
-    
-    // 显示加载提示
-    wx.showLoading({
-      title: '加载中...',
-      mask: true
-    });
-    
-    // 日期字符串转换为Date对象
-    const [year, month, day] = date.split('-').map(Number);
-    const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-    
-    console.log('查询日期范围:', startOfDay, '至', endOfDay);
-    
-    // 直接使用数据库查询，跳过云函数
-    this.fetchRangeRecords(date, date);
-  },
+
   
-  // 查询日期范围内的记录
-  async fetchRangeRecords(startDate, endDate) {
-    wx.showLoading({ title: '加载中...' });
-    
-    try {
-      const db = wx.cloud.database();
-      const _ = db.command;
-      
-      // 转换为Date对象
-      const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
-      const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
-      
-      const startDateObj = new Date(startYear, startMonth - 1, startDay, 0, 0, 0);
-      const endDateObj = new Date(endYear, endMonth - 1, endDay, 23, 59, 59);
-      
-      // 获取宝宝UID
-      const app = getApp();
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-      
-      let query = {
-        date: _.gte(startDateObj).and(_.lte(endDateObj))
-      };
-      
-      // 如果有宝宝UID，添加到查询条件
-      if (babyUid) {
-        query.babyUid = babyUid;
-      } else {
-        console.warn('未找到宝宝UID，将查询所有记录（可能不准确）');
-      }
-      
-      const recordsResult = await db.collection('feeding_records')
-        .where(query)
-        .orderBy('date', 'desc')
-        .get();
-      
-      // 处理记录
-      const processedData = this.processRangeRecords(recordsResult.data);
-      this.setData({
-        rangeData: processedData,
-        isDataLoading: false // 设置数据加载完成
-      });
-      
-      wx.hideLoading();
-    } catch (error) {
-      console.error('获取日期范围记录失败:', error);
-      wx.hideLoading();
-      wx.showToast({
-        title: '获取记录失败',
-        icon: 'none'
-      });
-      
-      // 即使加载失败也要重置加载状态
-      this.setData({
-        isDataLoading: false
-      });
-    }
-  },
+
   
   // 获取当天的详细记录
   async fetchDailyRecords(dateStr) {
@@ -794,21 +669,7 @@ Page({
     });
   },
 
-  // 导航到添加喂奶记录页面
-  navigateToAddFeeding() {
-    const date = this.data.selectedDate;
-    wx.navigateTo({
-      url: `/pages/add-record/index?date=${date}&type=feeding`
-    });
-  },
-  
-  // 导航到添加用药记录页面
-  navigateToAddMedication() {
-    const date = this.data.selectedDate;
-    wx.navigateTo({
-      url: `/pages/add-record/index?date=${date}&type=medication`
-    });
-  },
+
 
   // 下拉刷新
   onPullDownRefresh: function() {
@@ -818,97 +679,7 @@ Page({
     wx.stopPullDownRefresh();
   },
 
-  // 更新药物服用时间
-  updateMedicationTime: function(e) {
-    const index = e.currentTarget.dataset.index;
-    const newTime = e.detail.value;
-    
-    // 更新视图上的时间
-    const medicationRecord = this.data.medicationRecords[index];
-    medicationRecord.formattedTime = newTime;
-    
-    // 更新数据数组
-    const medicationRecords = this.data.medicationRecords;
-    medicationRecords[index] = medicationRecord;
-    
-    this.setData({
-      medicationRecords: medicationRecords
-    });
-    
-    // 更新数据库中的记录
-    this.updateMedicationInDB(medicationRecord, index);
-  },
-  
-  // 更新数据库中的药物记录
-  updateMedicationInDB: function(medicationRecord, index) {
-    const db = wx.cloud.database();
-    const _ = db.command;
-    
-    // 显示加载提示
-    wx.showLoading({
-      title: '更新中...',
-      mask: true
-    });
-    
-    // 解析当前选中的日期
-    const [year, month, day] = this.data.selectedDate.split('-').map(Number);
-    const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-    
-    // 查询当前日期的记录
-    db.collection('feeding_records')
-      .where({
-        date: _.gte(startOfDay).and(_.lte(endOfDay))
-      })
-      .get()
-      .then(res => {
-        if (res.data.length === 0) {
-          wx.hideLoading();
-          wx.showToast({
-            title: '未找到记录',
-            icon: 'error'
-          });
-          return;
-        }
-        
-        // 获取当天记录
-        const dayRecord = res.data[0];
-        
-        // 更新药物记录
-        const medicationRecords = dayRecord.medicationRecords || [];
-        if (medicationRecords[index]) {
-          medicationRecords[index].time = medicationRecord.formattedTime;
-        }
-        
-        // 更新数据库
-        db.collection('feeding_records').doc(dayRecord._id).update({
-          data: {
-            medicationRecords: medicationRecords
-          }
-        }).then(() => {
-          wx.hideLoading();
-          wx.showToast({
-            title: '时间已更新',
-            icon: 'success'
-          });
-        }).catch(err => {
-          console.error('更新药物记录失败:', err);
-          wx.hideLoading();
-          wx.showToast({
-            title: '更新失败',
-            icon: 'error'
-          });
-        });
-      })
-      .catch(err => {
-        console.error('查询记录失败:', err);
-        wx.hideLoading();
-        wx.showToast({
-          title: '更新失败',
-          icon: 'error'
-        });
-      });
-  },
+
 
   // 显示补充喂奶记录弹窗
   showAddFeedingModal() {
@@ -1906,4 +1677,9 @@ Page({
       return Promise.resolve();
     }
   },
+
+  // 阻止事件冒泡
+  preventBubble() {
+    // 阻止事件冒泡
+  }
 }); 

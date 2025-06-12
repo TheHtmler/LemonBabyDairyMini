@@ -1,4 +1,4 @@
-<view class="container" catchtouchmove="preventPageScroll">
+<view class="container">
   <!-- 日期选择器 -->
   <view class="date-selector">
     <!-- 当前日期显示 -->
@@ -13,7 +13,6 @@
         scroll-into-view="{{currentDateId}}" 
         scroll-with-animation="true" 
         class="date-list" 
-        bindscroll="onDateScroll"
         enhanced="true"
         show-scrollbar="false"
         enable-flex="{{false}}"

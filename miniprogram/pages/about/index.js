@@ -47,40 +47,20 @@ Page({
 
   },
 
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
-  },
-
   // 跳转到特定部分
   scrollToSection: function (sectionId) {
-    wx.createSelectorQuery()
-      .select('#' + sectionId)
-      .boundingClientRect(function (rect) {
-        if (rect) {
-          wx.pageScrollTo({
-            scrollTop: rect.top,
-            duration: 300
-          });
-        }
-      })
-      .exec();
+    // 滚动到指定section
+    const query = wx.createSelectorQuery();
+    query.select('#' + sectionId).boundingClientRect();
+    query.selectViewport().scrollOffset();
+    query.exec(function (res) {
+      if (res[0]) {
+        wx.pageScrollTo({
+          scrollTop: res[1].scrollTop + res[0].top - 50,
+          duration: 300
+        });
+      }
+    });
   },
 
   // 复制联系邮箱
@@ -90,17 +70,9 @@ Page({
       success: function () {
         wx.showToast({
           title: '邮箱已复制',
-          icon: 'success',
-          duration: 1500
+          icon: 'success'
         });
       }
-    });
-  },
-
-  // 返回上一页
-  navigateBack: function () {
-    wx.navigateBack({
-      delta: 1
     });
   }
 })
