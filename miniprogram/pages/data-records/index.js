@@ -205,8 +205,6 @@ Page({
     });
   },
 
-
-
   // 格式化日期为YYYY-MM-DD形式
   formatDate: function(date) {
     const year = date.getFullYear();
@@ -260,8 +258,6 @@ Page({
     
     this.fetchDailyRecords(selectedDate);
   },
-
-
 
   // 添加日期项点击处理函数
   onDateItemClick: function(e) {
@@ -334,10 +330,6 @@ Page({
     this.initCalendar(today.getFullYear(), today.getMonth() + 1);
   },
 
-
-  
-
-  
   // 获取当天的详细记录
   async fetchDailyRecords(dateStr) {
     // 先设置数据区域透明，创建平滑过渡效果
@@ -469,86 +461,115 @@ Page({
       return;
     }
 
-    // 按时间排序
-    feedingRecords.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-
-    // 定义格式化时间的函数
-    const formatTime = date => {
-      console.log('尝试格式化时间:', date);
-      
-      if (!date) {
-        console.error('传入的日期为空');
-        return '--:--';
-      }
-      
-      // 确保date是Date对象
-      let dateObj;
-      try {
-        dateObj = date instanceof Date ? date : new Date(date);
-        
-        // 检查是否为有效日期
-        if (isNaN(dateObj.getTime())) {
-          console.error('无效的日期格式:', date);
-          return '--:--';
-        }
-        
-        const hour = dateObj.getHours().toString().padStart(2, '0');
-        const minute = dateObj.getMinutes().toString().padStart(2, '0');
-      return `${hour}:${minute}`;
-      } catch (error) {
-        console.error('格式化时间出错:', error, date);
-        return '--:--';
-      }
-    };
-
     console.log('处理喂奶记录数据:', JSON.stringify(feedingRecords));
     
+    // 按时间排序（优先使用startDateTime，其次使用startTime）
+    feedingRecords.sort((a, b) => {
+      let timeA, timeB;
+      
+      // 优先使用startDateTime进行排序
+      if (a.startDateTime && b.startDateTime) {
+        timeA = a.startDateTime instanceof Date ? a.startDateTime : new Date(a.startDateTime);
+        timeB = b.startDateTime instanceof Date ? b.startDateTime : new Date(b.startDateTime);
+        return timeA - timeB;
+      }
+      
+      // 其次使用startTime进行排序
+      if (a.startTime && b.startTime) {
+        timeA = a.startTime instanceof Date ? a.startTime : new Date(a.startTime);
+        timeB = b.startTime instanceof Date ? b.startTime : new Date(b.startTime);
+        return timeA - timeB;
+      }
+      
+      return 0;
+    });
+    
+    // 处理每条记录的时间显示和持续时间计算
     const processedRecords = feedingRecords.map(record => {
       console.log('处理记录:', record);
       
-      let start, end, duration;
+      // 格式化开始时间
+      let formattedStartTime = '--:--';
+      if (record.startTime && typeof record.startTime === 'string' && record.startTime.includes(':')) {
+        formattedStartTime = record.startTime;
+      } else if (record.startDateTime) {
+        const date = record.startDateTime instanceof Date ? record.startDateTime : new Date(record.startDateTime);
+        if (!isNaN(date.getTime())) {
+          formattedStartTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+      } else if (record.startTime) {
+        const date = record.startTime instanceof Date ? record.startTime : new Date(record.startTime);
+        if (!isNaN(date.getTime())) {
+          formattedStartTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+      }
       
+      // 格式化结束时间
+      let formattedEndTime = '--:--';
+      if (record.endTime && typeof record.endTime === 'string' && record.endTime.includes(':')) {
+        formattedEndTime = record.endTime;
+      } else if (record.endDateTime) {
+        const date = record.endDateTime instanceof Date ? record.endDateTime : new Date(record.endDateTime);
+        if (!isNaN(date.getTime())) {
+          formattedEndTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+      } else if (record.endTime) {
+        const date = record.endTime instanceof Date ? record.endTime : new Date(record.endTime);
+        if (!isNaN(date.getTime())) {
+          formattedEndTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+      }
+      
+      // 计算持续时间
+      let duration = 0;
       try {
-        // 确保时间是Date对象
-        start = record.startTime instanceof Date ? record.startTime : new Date(record.startTime);
-        end = record.endTime instanceof Date ? record.endTime : new Date(record.endTime);
+        let startDateTime, endDateTime;
         
-        console.log('开始时间对象:', start);
-        console.log('结束时间对象:', end);
-        
-        // 检查日期是否有效
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          console.error('无效的时间格式:', record.startTime, record.endTime);
-          
-          // 如果是字符串格式的时间，尝试直接使用
-          const startTimeStr = typeof record.startTime === 'string' ? record.startTime : '--:--';
-          const endTimeStr = typeof record.endTime === 'string' ? record.endTime : '--:--';
-          
-          return {
-            ...record,
-            formattedStartTime: startTimeStr.includes(':') ? startTimeStr : '--:--',
-            formattedEndTime: endTimeStr.includes(':') ? endTimeStr : '--:--',
-            duration: 0
-          };
+        // 获取开始时间Date对象
+        if (record.startDateTime) {
+          startDateTime = record.startDateTime instanceof Date ? record.startDateTime : new Date(record.startDateTime);
+        } else if (record.startTime) {
+          if (record.startTime instanceof Date) {
+            startDateTime = record.startTime;
+          } else if (typeof record.startTime === 'string' && record.startTime.includes(':')) {
+            const today = new Date();
+            const [hours, minutes] = record.startTime.split(':').map(Number);
+            startDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
+          }
         }
         
-        duration = Math.round((end - start) / 60000); // 转为分钟
-      } catch (error) {
-        console.error('处理时间对象错误:', error);
-        return {
-          ...record,
-          formattedStartTime: '--:--',
-          formattedEndTime: '--:--',
-          duration: 0
-        };
-      }
+        // 获取结束时间Date对象
+        if (record.endDateTime) {
+          endDateTime = record.endDateTime instanceof Date ? record.endDateTime : new Date(record.endDateTime);
+        } else if (record.endTime) {
+          if (record.endTime instanceof Date) {
+            endDateTime = record.endTime;
+          } else if (typeof record.endTime === 'string' && record.endTime.includes(':')) {
+            const today = new Date();
+            const [hours, minutes] = record.endTime.split(':').map(Number);
+            endDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
+          }
+        }
         
-        return {
-          ...record,
-          formattedStartTime: formatTime(start),
-          formattedEndTime: formatTime(end),
-          duration: duration
-        };
+        // 计算持续时间
+        if (startDateTime && endDateTime && !isNaN(startDateTime.getTime()) && !isNaN(endDateTime.getTime())) {
+          // 如果结束时间小于开始时间，可能是跨天记录
+          if (endDateTime < startDateTime) {
+            endDateTime.setDate(endDateTime.getDate() + 1);
+          }
+          duration = Math.round((endDateTime - startDateTime) / 60000); // 转为分钟
+        }
+      } catch (error) {
+        console.error('计算持续时间出错:', error);
+        duration = 0;
+      }
+      
+      return {
+        ...record,
+        formattedStartTime: formattedStartTime,
+        formattedEndTime: formattedEndTime,
+        duration: duration
+      };
     });
 
     this.setData({
@@ -682,8 +703,6 @@ Page({
     });
   },
 
-
-
   // 下拉刷新
   onPullDownRefresh: function() {
     if (this.data.selectedDate) {
@@ -691,8 +710,6 @@ Page({
     }
     wx.stopPullDownRefresh();
   },
-
-
 
   // 显示补充喂奶记录弹窗
   showAddFeedingModal() {
@@ -893,8 +910,10 @@ Page({
       const res = await db.collection('feeding_records').where(query).get();
 
       const feeding = {
-        startTime: startDateTime,  // 保存为完整日期时间对象
-        endTime: endDateTime,      // 保存为完整日期时间对象
+        startTime: startTime,           // 字符串格式，用于显示
+        endTime: endTime,               // 字符串格式，用于显示
+        startDateTime: startDateTime,   // Date对象，用于排序和比较
+        endDateTime: endDateTime,       // Date对象，用于排序和比较
         naturalMilkVolume: parseFloat(naturalMilkVolume) || 0,
         specialMilkVolume: parseFloat(this.data.newFeeding.specialMilkVolume) || 0,
         totalVolume: parseFloat(totalVolume) || 0,
@@ -1441,11 +1460,13 @@ Page({
       
       // 处理被编辑的记录的索引 (这里可能需要与显示列表的索引进行映射)
       if (feedings[editingFeedingIndex]) {
-        // 更新记录
+        // 更新记录，确保包含完整的時間字段
         feedings[editingFeedingIndex] = {
           ...feedings[editingFeedingIndex],
-          startTime: startDateTime,
-          endTime: endDateTime,
+          startTime: editingFeeding.formattedStartTime,      // 字符串格式，用于显示
+          endTime: editingFeeding.formattedEndTime,          // 字符串格式，用于显示
+          startDateTime: startDateTime,                      // Date对象，用于排序和比较
+          endDateTime: endDateTime,                          // Date对象，用于排序和比较
           naturalMilkVolume: parseFloat(editingFeeding.naturalMilkVolume) || 0,
           specialMilkVolume: parseFloat(editingFeeding.specialMilkVolume) || 0,
           totalVolume: parseFloat(editingFeeding.totalVolume) || 

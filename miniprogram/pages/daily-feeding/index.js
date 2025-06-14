@@ -712,42 +712,60 @@ Page({
   // 对喂奶记录按时间倒序排序
   sortFeedingsByTimeDesc(feedings) {
     return [...feedings].sort((a, b) => {
-      // 首先比较开始时间
-      const aStartTime = a.startTime;
-      const bStartTime = b.startTime;
+      let timeA, timeB;
       
-      // 将时间格式 "HH:MM" 转换为可比较的格式
-      const aTimeParts = aStartTime.split(':').map(Number);
-      const bTimeParts = bStartTime.split(':').map(Number);
-      
-      // 比较小时
-      if (aTimeParts[0] !== bTimeParts[0]) {
-        return bTimeParts[0] - aTimeParts[0]; // 降序排列
+      // 优先使用startDateTime进行排序
+      if (a.startDateTime && b.startDateTime) {
+        timeA = a.startDateTime instanceof Date ? a.startDateTime : new Date(a.startDateTime);
+        timeB = b.startDateTime instanceof Date ? b.startDateTime : new Date(b.startDateTime);
+        return timeB - timeA; // 降序排列
       }
       
-      // 小时相同时比较分钟
-      return bTimeParts[1] - aTimeParts[1]; // 降序排列
+      // 其次使用startTime进行排序
+      if (a.startTime && b.startTime) {
+        // 如果是字符串格式的时间 HH:MM
+        if (typeof a.startTime === 'string' && typeof b.startTime === 'string' && 
+            a.startTime.includes(':') && b.startTime.includes(':')) {
+          const aTimeParts = a.startTime.split(':').map(Number);
+          const bTimeParts = b.startTime.split(':').map(Number);
+          
+          // 比较小时
+          if (aTimeParts[0] !== bTimeParts[0]) {
+            return bTimeParts[0] - aTimeParts[0]; // 降序
+          }
+          // 比较分钟
+          return bTimeParts[1] - aTimeParts[1]; // 降序
+        }
+        
+        // 如果是Date对象
+        timeA = a.startTime instanceof Date ? a.startTime : new Date(a.startTime);
+        timeB = b.startTime instanceof Date ? b.startTime : new Date(b.startTime);
+        
+        if (!isNaN(timeA.getTime()) && !isNaN(timeB.getTime())) {
+          return timeB - timeA; // 降序排列
+        }
+      }
+      
+      return 0;
     });
   },
   
   // 对药物记录按时间倒序排序
   sortMedicationsByTimeDesc(medicationRecords) {
     return [...medicationRecords].sort((a, b) => {
-      // 比较时间
-      const aTime = a.time;
-      const bTime = b.time;
+      // 如果时间格式是无效的，则排在后面
+      if (!a.actualTime && b.actualTime) return 1;
+      if (a.actualTime && !b.actualTime) return -1;
+      if (!a.actualTime && !b.actualTime) return 0;
       
-      // 将时间格式 "HH:MM" 转换为可比较的格式
-      const aTimeParts = aTime.split(':').map(Number);
-      const bTimeParts = bTime.split(':').map(Number);
+      // 将时间转换为分钟数进行比较
+      const getMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
       
-      // 比较小时
-      if (aTimeParts[0] !== bTimeParts[0]) {
-        return bTimeParts[0] - aTimeParts[0]; // 降序排列
-      }
-      
-      // 小时相同时比较分钟
-      return bTimeParts[1] - aTimeParts[1]; // 降序排列
+      // 降序排列（最近的时间在前）
+      return getMinutes(b.actualTime) - getMinutes(a.actualTime);
     });
   },
 
