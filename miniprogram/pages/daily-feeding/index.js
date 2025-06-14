@@ -348,6 +348,12 @@ Page({
     const weight = parseFloat(this.data.weight);
     const params = this.data.calculation_params;
     
+    // 检查params是否为null或undefined
+    if (!params) {
+      console.log('calculation_params为空，无法进行计算');
+      return;
+    }
+    
     // 确定蛋白质来源类型
     const isBreastMilk = this.data.proteinSourceType === 'breastMilk';
 
