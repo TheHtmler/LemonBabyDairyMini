@@ -65,7 +65,7 @@
   <view class="section feeding-section">
     <!-- 标题栏带有快捷记录按钮 -->
     <view class="section-header">
-      <text class="section-title">当前喂奶</text>
+      <text class="section-title">喂奶</text>
       <view class="quick-record-btn" bindtap="showQuickInputModal">
         <text>快捷记录</text>
       </view>
@@ -176,7 +176,7 @@
 
   <!-- Medication Section -->
   <view class="section medication-section">
-    <text class="section-title">药物记录</text>
+    <text class="section-title">喂药</text>
     <view class="medication-grid">
       <!-- 使用数据库加载的药物列表 -->
       <view class="medication-item {{hasTakenMedication(item._id) ? 'active' : ''}}" 
@@ -195,7 +195,7 @@
 
   <!-- Records Section -->
   <view class="section records-section">
-    <text class="section-title">今日记录</text>
+    <text class="section-title">今日数据记录</text>
     
     <!-- 选项卡标题 -->
     <view class="tabs">
