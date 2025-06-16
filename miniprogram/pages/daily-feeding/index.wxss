@@ -867,7 +867,7 @@
   border: 2rpx solid rgba(255, 184, 0, 0.2);
 }
 
-.feeding-timer {
+.feeding-status {
   display: flex;
   flex-direction: column;
   margin-bottom: 20rpx;
@@ -875,25 +875,25 @@
   border-bottom: 2rpx dashed rgba(255, 184, 0, 0.3);
 }
 
-.timer-row {
+.status-row {
   display: flex;
   align-items: center;
   margin-bottom: 10rpx;
 }
 
-.timer-label {
+.status-label {
   font-size: 28rpx;
   color: #666;
   width: 150rpx;
 }
 
-.timer-value {
+.status-value {
   font-size: 32rpx;
   color: #333;
   font-weight: 500;
 }
 
-.timer-value.highlight {
+.status-value.highlight {
   color: #FFB800;
   font-size: 34rpx;
 }

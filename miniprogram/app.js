@@ -173,21 +173,6 @@ App({
     }
   },
   
-  // 初始化数据库集合
-  async initCollections() {
-    try {
-      // 调用云函数初始化集合
-      const result = await wx.cloud.callFunction({
-        name: 'initAllCollections'
-      });
-      
-      return result.result || { success: false, message: '初始化集合失败' };
-    } catch (error) {
-      console.error('初始化集合失败:', error);
-      return { success: false, message: error.message || '初始化集合失败' };
-    }
-  },
-  
   // 更新用户资料
   async updateUserProfile(userInfo) {
     try {

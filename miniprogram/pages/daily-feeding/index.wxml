@@ -126,16 +126,16 @@
       </view>
     </view>
     
-    <!-- 正在喂奶状态：显示计时 -->
+    <!-- 正在喂奶状态：显示记录中 -->
     <view class="feeding-active" wx:if="{{currentFeeding.startTime && !currentFeeding.endTime}}">
-      <view class="feeding-timer">
-        <view class="timer-row">
-          <text class="timer-label">开始时间:</text>
-          <text class="timer-value">{{currentFeeding.startTime}}</text>
+      <view class="feeding-status">
+        <view class="status-row">
+          <text class="status-label">开始时间:</text>
+          <text class="status-value">{{currentFeeding.startTime}}</text>
         </view>
-        <view class="timer-row">
-          <text class="timer-label">已进行:</text>
-          <text class="timer-value highlight">{{elapsedTime}}</text>
+        <view class="status-row">
+          <text class="status-label">状态:</text>
+          <text class="status-value highlight">记录中...</text>
         </view>
       </view>
       

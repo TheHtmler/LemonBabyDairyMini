@@ -722,101 +722,82 @@ Page({
     try {
       console.log(`开始确保集合存在: ${collectionNames.join(', ')}`);
       
-      // 先尝试通过云函数初始化
-      let callFunctionSuccess = false;
+      // 删除云函数调用，直接使用手动创建集合的方式
+      console.log('尝试手动创建集合');
       
-      try {
-        const result = await this.app.initCollections();
-        console.log('云函数初始化集合结果:', result);
-        
-        if (result && result.success) {
-          callFunctionSuccess = true;
-          console.log('通过云函数成功初始化集合');
-        } else {
-          console.warn('通过云函数初始化集合返回非成功状态');
-        }
-      } catch (cloudError) {
-        console.error('通过云函数初始化集合出错:', cloudError);
-      }
+      // 尝试手动创建集合
+      const db = wx.cloud.database({
+        env: this.app.globalData.cloudEnvId
+      });
+      const results = {};
       
-      // 如果云函数调用失败，尝试手动创建集合
-      if (!callFunctionSuccess) {
-        console.log('尝试手动创建集合');
+      for (const name of collectionNames) {
+        // 对每个集合尝试3次
+        let success = false;
+        let attempts = 0;
+        const maxAttempts = 3;
         
-        // 尝试手动创建集合
-        const db = wx.cloud.database({
-          env: this.app.globalData.cloudEnvId
-        });
-        const results = {};
-        
-        for (const name of collectionNames) {
-          // 对每个集合尝试3次
-          let success = false;
-          let attempts = 0;
-          const maxAttempts = 3;
-          
-          while (!success && attempts < maxAttempts) {
-            attempts++;
+        while (!success && attempts < maxAttempts) {
+          attempts++;
+          try {
+            console.log(`尝试创建集合 ${name}，第${attempts}次尝试`);
+            
+            // 先检查集合是否存在
             try {
-              console.log(`尝试创建集合 ${name}，第${attempts}次尝试`);
-              
-              // 先检查集合是否存在
-              try {
-                const countResult = await db.collection(name).count();
-                console.log(`集合 ${name} 已存在, 记录数: ${countResult.total}`);
-                results[name] = '已存在';
-                success = true;
-              } catch (countError) {
-                // 如果集合不存在，尝试创建
-                if (countError.errCode === -502005) {
-                  try {
-                    await db.createCollection(name);
-                    console.log(`成功创建集合: ${name}`);
-                    results[name] = '创建成功';
+              const countResult = await db.collection(name).count();
+              console.log(`集合 ${name} 已存在, 记录数: ${countResult.total}`);
+              results[name] = '已存在';
+              success = true;
+            } catch (countError) {
+              // 如果集合不存在，尝试创建
+              if (countError.errCode === -502005) {
+                try {
+                  await db.createCollection(name);
+                  console.log(`成功创建集合: ${name}`);
+                  results[name] = '创建成功';
+                  success = true;
+                } catch (createError) {
+                  if (createError.errCode === -501001) {
+                    // 集合已存在，这是正常的
+                    console.log(`集合 ${name} 已存在 (创建时检测)`);
+                    results[name] = '已存在';
                     success = true;
-                  } catch (createError) {
-                    if (createError.errCode === -501001) {
-                      // 集合已存在，这是正常的
-                      console.log(`集合 ${name} 已存在 (创建时检测)`);
-                      results[name] = '已存在';
-                      success = true;
+                  } else {
+                    console.error(`创建集合失败: ${name}，错误码: ${createError.errCode}，错误信息: ${createError.errMsg || createError.message || '未知错误'}`);
+                    
+                    if (attempts < maxAttempts) {
+                      console.log(`将在0.5秒后重试创建集合: ${name}`);
+                      await new Promise(resolve => setTimeout(resolve, 500));
                     } else {
-                      console.error(`创建集合失败: ${name}，错误码: ${createError.errCode}，错误信息: ${createError.errMsg || createError.message || '未知错误'}`);
-                      
-                      if (attempts < maxAttempts) {
-                        console.log(`将在0.5秒后重试创建集合: ${name}`);
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                      } else {
-                        results[name] = `创建失败: ${createError.errMsg || createError.message || '未知错误'}`;
-                      }
+                      results[name] = `创建失败: ${createError.errMsg || createError.message || '未知错误'}`;
                     }
                   }
+                }
+              } else {
+                console.error(`检查集合是否存在时出错: ${name}，错误码: ${countError.errCode}，错误信息: ${countError.errMsg || countError.message || '未知错误'}`);
+                
+                if (attempts < maxAttempts) {
+                  console.log(`将在0.5秒后重试检查集合: ${name}`);
+                  await new Promise(resolve => setTimeout(resolve, 500));
                 } else {
-                  console.error(`检查集合是否存在时出错: ${name}，错误码: ${countError.errCode}，错误信息: ${countError.errMsg || countError.message || '未知错误'}`);
-                  
-                  if (attempts < maxAttempts) {
-                    console.log(`将在0.5秒后重试检查集合: ${name}`);
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                  } else {
-                    results[name] = `检查失败: ${countError.errMsg || countError.message || '未知错误'}`;
-                  }
+                  results[name] = `检查失败: ${countError.errMsg || countError.message || '未知错误'}`;
                 }
               }
-            } catch (error) {
-              console.error(`处理集合时出现意外错误: ${name}`, error);
-              
-              if (attempts < maxAttempts) {
-                console.log(`将在0.5秒后重试: ${name}`);
-                await new Promise(resolve => setTimeout(resolve, 500));
-              } else {
-                results[name] = `意外错误: ${error.errMsg || error.message || '未知错误'}`;
-              }
+            }
+          } catch (error) {
+            console.error(`处理集合时出现意外错误: ${name}`, error);
+            
+            if (attempts < maxAttempts) {
+              console.log(`将在0.5秒后重试: ${name}`);
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } else {
+              results[name] = `意外错误: ${error.errMsg || error.message || '未知错误'}`;
             }
           }
         }
-        
-        console.log('手动创建集合结果:', results);
       }
+      
+      console.log('手动创建集合结果:', results);
       
       // 即使部分集合创建失败，我们也返回成功，让程序继续尝试操作
       return {
