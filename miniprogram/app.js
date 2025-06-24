@@ -13,6 +13,9 @@ App({
     cloudEnvId: 'prod-7g5lap9xcf106dbf'
   },
 
+  // 添加openid就绪的Promise
+  openidReady: null,
+
   onLaunch: function() {
     if (!wx.cloud) {
       console.error('请使用 2.2.3 或以上的基础库以使用云能力');
@@ -28,11 +31,13 @@ App({
       traceUser: true,
     });
     
-    // 初始化时尝试获取openid
-    this.getOpenid().then(() => {
-      console.log('已获取openid');
+    // 创建openid就绪的Promise
+    this.openidReady = this.getOpenid().then((openid) => {
+      console.log('app.js: openid获取完成');
+      return openid;
     }).catch(error => {
-      console.error('获取openid失败:', error);
+      console.error('app.js: 获取openid失败:', error);
+      throw error;
     });
   },
   
@@ -48,7 +53,7 @@ App({
       
       // 如果缓存中没有，则通过云函数获取
       const result = await wx.cloud.callFunction({
-        name: 'login'
+        name: 'getOpenid'
       });
       
       if (result && result.result && result.result.openid) {
@@ -187,6 +192,122 @@ App({
     } catch (error) {
       console.error('更新用户资料失败:', error);
       return false;
+    }
+  },
+  
+  // 获取用户角色
+  async getUserRole() {
+    try {
+      // 首先从本地缓存读取
+      const userRole = wx.getStorageSync('user_role');
+      const hasSelectedRole = wx.getStorageSync('has_selected_role');
+      
+      console.log('app - 本地缓存的角色:', userRole, '是否已选择角色:', hasSelectedRole);
+      
+      if (userRole && hasSelectedRole) {
+        // 更新全局状态
+        this.globalData.userRole = userRole;
+        console.log('===app.getUserRole结束：从本地缓存获取===');
+        return userRole;
+      }
+      
+      // 本地缓存没有角色信息，从数据库查询
+      console.log('本地缓存无角色信息，开始从数据库查询用户角色');
+      
+      // 确保有openid
+      const openid = this.globalData.openid || wx.getStorageSync('openid');
+      if (!openid) {
+        console.log('没有openid，无法查询数据库');
+        return null;
+      }
+      
+      const db = wx.cloud.database();
+      
+      // 首先检查是否是创建者
+      console.log('检查用户是否为创建者...');
+      const creatorResult = await db.collection('baby_creators').where({
+        _openid: openid
+      }).get();
+      
+      if (creatorResult.data && creatorResult.data.length > 0) {
+        console.log('从数据库识别用户为创建者');
+        const detectedRole = 'creator';
+        
+        // 检查是否完成宝宝信息
+        const babyInfoCompleted = wx.getStorageSync('baby_info_completed');
+        
+        // 只有在完成宝宝信息时才设置has_selected_role
+        if (babyInfoCompleted) {
+          // 保存到本地缓存和全局状态
+          this.globalData.userRole = detectedRole;
+          wx.setStorageSync('user_role', detectedRole);
+          wx.setStorageSync('has_selected_role', true);
+          
+          // 同时保存创建者相关信息
+          const creatorInfo = creatorResult.data[0];
+          if (creatorInfo.phone) {
+            wx.setStorageSync('creator_phone', creatorInfo.phone);
+            this.globalData.creatorPhone = creatorInfo.phone;
+          }
+          if (creatorInfo.babyUid) {
+            wx.setStorageSync('baby_uid', creatorInfo.babyUid);
+            this.globalData.babyUid = creatorInfo.babyUid;
+          }
+          
+          console.log('===app.getUserRole结束：从数据库获取创建者（已完成宝宝信息）===');
+          return detectedRole;
+        } else {
+          console.log('===app.getUserRole结束：从数据库获取创建者（未完成宝宝信息）===');
+          return null;
+        }
+      }
+      
+      // 然后检查是否是参与者
+      console.log('检查用户是否为参与者...');
+      const participantResult = await db.collection('baby_participants').where({
+        _openid: openid
+      }).get();
+      
+      if (participantResult.data && participantResult.data.length > 0) {
+        console.log('从数据库识别用户为参与者');
+        const detectedRole = 'participant';
+        
+        // 检查是否完成宝宝信息
+        const babyInfoCompleted = wx.getStorageSync('baby_info_completed');
+        
+        // 只有在完成宝宝信息时才设置has_selected_role
+        if (babyInfoCompleted) {
+          // 保存到本地缓存和全局状态
+          this.globalData.userRole = detectedRole;
+          wx.setStorageSync('user_role', detectedRole);
+          wx.setStorageSync('has_selected_role', true);
+          
+          // 同时保存参与者相关信息
+          const participantInfo = participantResult.data[0];
+          if (participantInfo.creatorPhone) {
+            wx.setStorageSync('bound_creator_phone', participantInfo.creatorPhone);
+            this.globalData.creatorPhone = participantInfo.creatorPhone;
+          }
+          if (participantInfo.babyUid) {
+            wx.setStorageSync('baby_uid', participantInfo.babyUid);
+            this.globalData.babyUid = participantInfo.babyUid;
+          }
+          
+          console.log('===app.getUserRole结束：从数据库获取参与者（已完成宝宝信息）===');
+          return detectedRole;
+        } else {
+          console.log('===app.getUserRole结束：从数据库获取参与者（未完成宝宝信息）===');
+          return null;
+        }
+      }
+      
+      // 数据库中也没有找到用户角色信息
+      console.log('===app.getUserRole结束：数据库中未找到用户角色信息===');
+      return null;
+      
+    } catch (error) {
+      console.error('app.getUserRole失败:', error);
+      return null;
     }
   },
 });

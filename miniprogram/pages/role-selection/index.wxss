@@ -7,6 +7,114 @@
   min-height: 100vh;
   background-color: #FFF5D6;
   padding: 40rpx;
+  position: relative;
+}
+
+/* Loading 遮罩样式 */
+.loading-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 245, 214, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10rpx);
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx;
+  border-radius: 30rpx;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.loading-logo {
+  margin-bottom: 30rpx;
+}
+
+.loading-logo .logo {
+  width: 120rpx;
+  height: 120rpx;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.loading-text {
+  font-size: 32rpx;
+  color: #FFB800;
+  font-weight: 500;
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #FFE082;
+  border-top: 4rpx solid #FFB800;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 重试按钮样式 */
+.retry-button {
+  background-color: #FFB800;
+  color: white;
+  padding: 20rpx 40rpx;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.retry-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(255, 184, 0, 0.3);
+}
+
+/* 动画定义 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 头部样式 */

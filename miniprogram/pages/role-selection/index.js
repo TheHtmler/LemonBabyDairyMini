@@ -5,14 +5,15 @@ Page({
   data: {
     selectedRole: '',  // 存储选中的角色
     isPageLoaded: false, // 标记页面是否已加载完成
-    isInitializing: true // 初始化状态标记
+    isInitializing: true, // 初始化状态标记
+    loadingText: '正在初始化...',
+    initFailed: false // 初始化失败标记
   },
 
   /**
    * 生命周期函数--监听页面显示
    */
   onShow: function () {
-    console.log('===角色选择页面显示===');
     // 如果不是初始加载（如返回到本页），需要重新检查状态
     if (this.data.isPageLoaded && !this.data.isInitializing) {
       console.log('页面已加载且非初始化状态，重新检查');
@@ -21,7 +22,6 @@ Page({
   },
 
   onReady: function() {
-    console.log('===角色选择页面渲染完成===');
     // 获取app实例并保存为实例变量
     this.app = getApp();
     this.setData({
@@ -32,183 +32,102 @@ Page({
   
   /**
    * 初始化应用流程
-   * 1. 获取openid
+   * 1. 等待openid（app.js已获取）
    * 2. 检查用户角色
    * 3. 检查是否已完成宝宝信息填写
    * 4. 根据状态决定导航
    */
   async initializeApp() {
-    console.log('===开始初始化应用流程===');
-    this.setData({ isInitializing: true });
+    const startTime = Date.now();
+    const minLoadingTime = 800; // 最小loading时间800ms
+    
+    this.setData({ 
+      isInitializing: true,
+      loadingText: '正在初始化...'
+    });
     
     try {
-      // 1. 获取openid
-      await this.getOpenid();
+      // 1. 等待openid（app.js的onLaunch中已获取）
+      this.setData({ loadingText: '正在获取用户信息...' });
+      await this.waitForOpenid();
       
       // 2. 检查用户角色
-      const userRole = await this.getUserRole();
+      this.setData({ loadingText: '正在检查用户角色...' });
+      const userRole = await this.app.getUserRole();
       
       // 3. 检查宝宝信息完成状态
+      this.setData({ loadingText: '正在检查宝宝信息...' });
       const babyInfoCompleted = await this.checkBabyInfo();
       
+      // 确保最小loading时间
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < minLoadingTime) {
+        await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+      }
+      
       // 设置初始化完成
-      this.setData({ isInitializing: false });
+      this.setData({ 
+        isInitializing: false,
+        loadingText: ''
+      });
       
       // 4. 根据状态决定导航
       this.handleNavigation(userRole, babyInfoCompleted);
     } catch (error) {
       console.error('初始化应用失败:', error);
-      this.setData({ isInitializing: false });
+      
+      // 确保最小loading时间
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < minLoadingTime) {
+        await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+      }
+      
+      this.setData({ 
+        isInitializing: false,
+        loadingText: '初始化失败',
+        initFailed: true
+      });
+      
+      // 显示错误提示
+      wx.showToast({
+        title: '初始化失败，请重试',
+        icon: 'none',
+        duration: 2000
+      });
     }
   },
   
   /**
-   * 获取openid
+   * 重试初始化
    */
-  async getOpenid() {
-    try {
-      console.log('===角色选择页-获取openid开始===');
-      // 使用实例变量替代重复调用getApp()
-      
-      // 检查是否已有openid
-      const cachedOpenid = wx.getStorageSync('openid');
-      if (cachedOpenid) {
-        console.log("本地缓存中找到openid，无需调用云函数");
-        this.app.globalData.openid = cachedOpenid;
-        return cachedOpenid;
-      }
-      
-      // 使用云函数获取openid
-      console.log("===开始调用GetOpenid云函数获取openid===");
-      try {
-        const { result } = await wx.cloud.callFunction({
-          name: 'getOpenid',
-          config: {
-            env: this.app.globalData.cloudEnvId
-          }
-        });
-        
-        if (result && result.openid) {
-          console.log("获取Openid成功", result);
-          const openid = result.openid;
-          this.app.globalData.openid = openid;
-          wx.setStorageSync('openid', openid);
-          console.log("===getOpenid函数正常结束===");
-          return openid;
-        } else {
-          console.error('获取openid失败：返回结果异常');
-          return null;
-        }
-      } catch (err) {
-        console.error('调用云函数获取openid失败：', err);
-        return null;
-      }
-      
-    } catch (error) {
-      console.error('角色选择页面：获取openid失败', error);
-      throw error;
-    }
+  retryInitialization() {
+    this.setData({
+      initFailed: false,
+      loadingText: '正在重新初始化...'
+    });
+    this.initializeApp();
   },
   
   /**
-   * 获取用户角色
+   * 等待openid可用
    */
-  async getUserRole() {
+  async waitForOpenid() {
     try {
-      console.log('===角色选择页-获取用户角色开始===');
-      
-      // 首先从本地缓存读取
-      const userRole = wx.getStorageSync('user_role');
-      const hasSelectedRole = wx.getStorageSync('has_selected_role');
-      
-      console.log('角色选择页 - 本地缓存的角色:', userRole, '是否已选择角色:', hasSelectedRole);
-      
-      if (userRole && hasSelectedRole) {
-        // 更新全局状态
-        this.app.globalData.userRole = userRole;
-        console.log('===角色选择页-从本地缓存获取用户角色结束：', userRole);
-        return userRole;
+      // 首先检查是否已经有openid
+      let openid = this.app.globalData.openid || wx.getStorageSync('openid');
+      if (openid) {
+        console.log('已有openid:', openid);
+        return openid;
       }
       
-      // 本地缓存没有角色信息，从数据库查询
-      console.log('本地缓存无角色信息，开始从数据库查询用户角色');
-      
-      // 确保有openid
-      const openid = this.app.globalData.openid || wx.getStorageSync('openid');
-      if (!openid) {
-        console.log('没有openid，无法查询数据库');
-        return null;
-      }
-      
-      const db = wx.cloud.database();
-      
-      // 首先检查是否是创建者
-      console.log('检查用户是否为创建者...');
-      const creatorResult = await db.collection('baby_creators').where({
-        _openid: openid
-      }).get();
-      
-      if (creatorResult.data && creatorResult.data.length > 0) {
-        console.log('从数据库识别用户为创建者');
-        const detectedRole = 'creator';
-        
-        // 保存到本地缓存和全局状态
-        this.app.globalData.userRole = detectedRole;
-        wx.setStorageSync('user_role', detectedRole);
-        wx.setStorageSync('has_selected_role', true);
-        
-        // 同时保存创建者相关信息
-        const creatorInfo = creatorResult.data[0];
-        if (creatorInfo.phone) {
-          wx.setStorageSync('creator_phone', creatorInfo.phone);
-          this.app.globalData.creatorPhone = creatorInfo.phone;
-        }
-        if (creatorInfo.babyUid) {
-          wx.setStorageSync('baby_uid', creatorInfo.babyUid);
-          this.app.globalData.babyUid = creatorInfo.babyUid;
-        }
-        
-        console.log('===角色选择页-从数据库获取用户角色结束：', detectedRole);
-        return detectedRole;
-      }
-      
-      // 然后检查是否是参与者
-      console.log('检查用户是否为参与者...');
-      const participantResult = await db.collection('baby_participants').where({
-        _openid: openid
-      }).get();
-      
-      if (participantResult.data && participantResult.data.length > 0) {
-        console.log('从数据库识别用户为参与者');
-        const detectedRole = 'participant';
-        
-        // 保存到本地缓存和全局状态
-        this.app.globalData.userRole = detectedRole;
-        wx.setStorageSync('user_role', detectedRole);
-        wx.setStorageSync('has_selected_role', true);
-        
-        // 同时保存参与者相关信息
-        const participantInfo = participantResult.data[0];
-        if (participantInfo.creatorPhone) {
-          wx.setStorageSync('bound_creator_phone', participantInfo.creatorPhone);
-          this.app.globalData.creatorPhone = participantInfo.creatorPhone;
-        }
-        if (participantInfo.babyUid) {
-          wx.setStorageSync('baby_uid', participantInfo.babyUid);
-          this.app.globalData.babyUid = participantInfo.babyUid;
-        }
-        
-        console.log('===角色选择页-从数据库获取用户角色结束：', detectedRole);
-        return detectedRole;
-      }
-      
-      // 数据库中也没有找到用户角色信息
-      console.log('===角色选择页-数据库中未找到用户角色信息===');
-      return null;
-      
+      // 如果没有openid，等待app.js的openidReady Promise
+      console.log('等待app.js获取openid...');
+      openid = await this.app.openidReady;
+      console.log('app.js openid获取完成:', openid);
+      return openid;
     } catch (error) {
-      console.error('获取用户角色失败:', error);
-      return null;
+      console.error('等待openid失败:', error);
+      throw new Error('获取openid失败');
     }
   },
   
@@ -218,7 +137,6 @@ Page({
   async checkBabyInfo() {
     try {
       console.log('===角色选择页-检查宝宝信息开始===');
-      // 使用实例变量替代重复调用getApp()
       
       // 检查本地存储状态
       const babyInfoCompleted = wx.getStorageSync('baby_info_completed');
@@ -233,20 +151,11 @@ Page({
         hasBoundCreatorPhone: !!boundCreatorPhone
       });
       
-      // 检查是否有任何宝宝标识符
-      const hasBabyIdentifier = !!(babyUid || creatorPhone || boundCreatorPhone);
-      
-      // 如果本地已标记完成或有标识符
-      if (babyInfoCompleted || hasBabyIdentifier) {
+      // 只有当明确标记为完成时才认为宝宝信息已完成
+      if (babyInfoCompleted) {
         // 确保全局变量也更新
         if (babyUid) this.app.globalData.babyUid = babyUid;
         if (creatorPhone) this.app.globalData.creatorPhone = creatorPhone;
-        
-        // 如果有标识符但未标记完成，设置标记
-        if (hasBabyIdentifier && !babyInfoCompleted) {
-          wx.setStorageSync('baby_info_completed', true);
-          console.log('检测到宝宝标识符，已设置完成标记');
-        }
         
         console.log('===角色选择页-检查宝宝信息结束：已完成===');
         return true;
@@ -281,24 +190,27 @@ Page({
       return;
     }
     
-    // 如果已选择角色但未完成宝宝信息，导航到相应页面
+    // 如果已选择角色但未完成宝宝信息，清除角色选择状态，让用户重新选择
     if (userRole && !babyInfoCompleted) {
-      console.log('已选择角色但未完成宝宝信息，导航到相应页面');
-      if (userRole === 'creator') {
-        wx.redirectTo({
-          url: '/pages/baby-info/index?firstLogin=true&role=creator',
-          success: () => {
-            console.log('成功跳转到宝宝信息页面');
-          }
-        });
-      } else if (userRole === 'participant') {
-        wx.redirectTo({
-          url: '/pages/bind-phone/index?firstLogin=true&role=participant',
-          success: () => {
-            console.log('成功跳转到手机号绑定页面');
-          }
-        });
-      }
+      console.log('已选择角色但未完成宝宝信息，清除角色状态让用户重新选择');
+      
+      // 清除角色选择状态
+      this.app.globalData.userRole = '';
+      wx.removeStorageSync('user_role');
+      wx.removeStorageSync('has_selected_role');
+      
+      // 清除相关的宝宝信息
+      wx.removeStorageSync('baby_uid');
+      wx.removeStorageSync('creator_phone');
+      wx.removeStorageSync('bound_creator_phone');
+      wx.removeStorageSync('baby_info_completed');
+      
+      // 重置全局数据
+      this.app.globalData.babyUid = null;
+      this.app.globalData.creatorPhone = '';
+      
+      // 保持在当前页面，让用户重新选择角色
+      console.log('清除角色状态，保持在角色选择页面');
       return;
     }
     

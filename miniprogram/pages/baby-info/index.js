@@ -109,15 +109,18 @@ Page({
     }
   },
 
-  // 检查登录状态，确保有openid
+  // 检查登录状态
   async checkLoginStatus() {
-    const openid = wx.getStorageSync('openid');
+    // 检查是否有openid
+    let openid = this.app.globalData.openid || wx.getStorageSync('openid');
+    
     if (!openid) {
       console.log('未检测到openid，尝试自动获取');
       
       try {
-        // 尝试获取openid
-        await this.app.getOpenid();
+        // 等待app.js的openidReady Promise
+        openid = await this.app.openidReady;
+        console.log('通过app.openidReady获取到openid:', openid);
       } catch (error) {
         console.error('自动获取openid失败:', error);
         
@@ -472,13 +475,13 @@ Page({
 
     try {
       // 获取openid
-      let openid = wx.getStorageSync('openid');
+      let openid = this.app.globalData.openid || wx.getStorageSync('openid');
       
-      // 如果没有openid，尝试通过app获取
+      // 如果没有openid，等待app.js的openidReady Promise
       if (!openid) {
         try {
-          await this.app.getOpenid();
-          openid = wx.getStorageSync('openid');
+          openid = await this.app.openidReady;
+          console.log('通过app.openidReady获取到openid:', openid);
         } catch (error) {
           console.error('获取openid失败:', error);
           throw new Error('无法获取用户ID，请重新授权');

@@ -2,7 +2,7 @@
 <view class="container">
   <!-- 应用信息 -->
   <view class="app-info">
-    <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
+    <image class="app-logo" src="/images/LemonLogo.png" mode="aspectFit"></image>
     <view class="app-name">柠檬宝宝喂养记录</view>
     <view class="app-version">版本：1.0.0</view>
   </view>

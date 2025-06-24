@@ -201,7 +201,8 @@ Page({
       let openid = app.globalData.openid || wx.getStorageSync('openid');
       if (!openid) {
         try {
-          openid = await app.getOpenid();
+          openid = await app.openidReady;
+          console.log('通过app.openidReady获取到openid:', openid);
         } catch (error) {
           console.error('获取openid失败:', error);
         }

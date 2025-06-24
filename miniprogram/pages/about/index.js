@@ -5,7 +5,7 @@ Page({
    * 页面的初始数据
    */
   data: {
-    logoUrl: '/images/logo.png',
+    logoUrl: '/images/LemonLogo.png',
     appVersion: '1.0.0'
   },
 

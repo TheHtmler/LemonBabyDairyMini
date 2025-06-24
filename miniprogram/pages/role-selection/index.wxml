@@ -1,7 +1,23 @@
 <view class="container">
+  <!-- Loading 遮罩 -->
+  <view class="loading-mask" wx:if="{{isInitializing}}">
+    <view class="loading-content">
+      <view class="loading-logo">
+        <image class="logo" src="/images/LemonLogo.png" mode="aspectFit"></image>
+      </view>
+      <view class="loading-text">{{loadingText}}</view>
+      <view class="loading-spinner" wx:if="{{!initFailed}}">
+        <view class="spinner"></view>
+      </view>
+      <view class="retry-button" wx:if="{{initFailed}}" bindtap="retryInitialization">
+        <text>重试</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 柠檬宝宝喂养记录标题 -->
   <view class="header">
-    <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+    <image class="logo" src="/images/LemonLogo.png" mode="aspectFit"></image>
     <view class="title">柠檬宝宝喂养记录</view>
   </view>
 
