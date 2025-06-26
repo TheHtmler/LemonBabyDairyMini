@@ -136,8 +136,6 @@ Page({
    */
   async checkBabyInfo() {
     try {
-      console.log('===角色选择页-检查宝宝信息开始===');
-      
       // 检查本地存储状态
       const babyInfoCompleted = wx.getStorageSync('baby_info_completed');
       const babyUid = wx.getStorageSync('baby_uid');
@@ -156,12 +154,8 @@ Page({
         // 确保全局变量也更新
         if (babyUid) this.app.globalData.babyUid = babyUid;
         if (creatorPhone) this.app.globalData.creatorPhone = creatorPhone;
-        
-        console.log('===角色选择页-检查宝宝信息结束：已完成===');
         return true;
       }
-      
-      console.log('===角色选择页-检查宝宝信息结束：未完成===');
       return false;
     } catch (error) {
       console.error('检查宝宝信息状态失败:', error);
@@ -173,27 +167,16 @@ Page({
    * 处理导航逻辑
    */
   handleNavigation(userRole, babyInfoCompleted) {
-    console.log('===角色选择页-处理导航逻辑===', {userRole, babyInfoCompleted});
-    
     // 如果已经选择角色且完成宝宝信息，直接进入主页面
     if (userRole && babyInfoCompleted) {
-      console.log('已有角色和宝宝信息，导航到主页面');
       wx.switchTab({
         url: '/pages/daily-feeding/index',
-        success: () => {
-          console.log('成功跳转到主页面');
-        },
-        fail: (err) => {
-          console.error('跳转到主页面失败:', err);
-        }
       });
       return;
     }
     
     // 如果已选择角色但未完成宝宝信息，清除角色选择状态，让用户重新选择
     if (userRole && !babyInfoCompleted) {
-      console.log('已选择角色但未完成宝宝信息，清除角色状态让用户重新选择');
-      
       // 清除角色选择状态
       this.app.globalData.userRole = '';
       wx.removeStorageSync('user_role');
@@ -209,8 +192,6 @@ Page({
       this.app.globalData.babyUid = null;
       this.app.globalData.creatorPhone = '';
       
-      // 保持在当前页面，让用户重新选择角色
-      console.log('清除角色状态，保持在角色选择页面');
       return;
     }
     
@@ -224,8 +205,6 @@ Page({
   selectRole: function (e) {
     // 获取选中的角色
     const role = e.currentTarget.dataset.role;
-    
-    console.log('用户选择角色:', role);
     
     // 存储选中的角色
     this.setData({
@@ -251,17 +230,11 @@ Page({
         // 创建者跳转到宝宝信息页面
         wx.redirectTo({
           url: '/pages/baby-info/index?firstLogin=true&role=creator',
-          complete: () => {
-            console.log('已跳转到宝宝信息页面');
-          }
         });
       } else {
         // 参与者跳转到绑定手机号页面
         wx.redirectTo({
           url: '/pages/bind-phone/index?firstLogin=true&role=participant',
-          complete: () => {
-            console.log('已跳转到手机号绑定页面');
-          }
         });
       }
     }, 500);
