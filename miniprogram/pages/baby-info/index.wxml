@@ -5,17 +5,6 @@
   </view>
   
   <view class="form-container">
-    <!-- 共享信息提示 -->
-    <view class="shared-info-alert" wx:if="{{isSharedInfo}}">
-      <view class="alert-content">
-        <icon type="info" size="18" color="#1890ff"></icon>
-        <view class="alert-text">
-          <text class="alert-title">同步信息</text>
-          <text class="alert-desc">此信息已从{{ownerNickname || '家人'}}同步，如有变更请联系原始记录者更新</text>
-        </view>
-      </view>
-    </view>
-
     <!-- 基本信息 -->
     <view class="form-group">
       <view class="form-title">基本信息</view>
@@ -23,7 +12,7 @@
       <!-- 头像上传 -->
       <view class="avatar-section">
         <view class="item-label">宝宝头像</view>
-        <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" disabled="{{isSharedInfo && !isOwner}}">
+        <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" disabled="{{!isOwner}}">
           <image class="avatar" src="{{babyInfo.avatarUrl || defaultAvatarUrl}}" mode="aspectFill"></image>
           <view class="avatar-upload-icon" wx:if="{{userRole === 'creator'}}">点击上传</view>
         </button>
@@ -37,7 +26,7 @@
           value="{{babyInfo.name}}" 
           bindinput="onInput" 
           data-field="name"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         />
       </view>
       
@@ -48,7 +37,7 @@
           range="{{genders}}" 
           value="{{genderIndex}}" 
           bindchange="onGenderChange"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         >
           <view class="picker">
             {{genders[genderIndex]}}
@@ -63,7 +52,7 @@
           mode="date" 
           value="{{babyInfo.birthday}}" 
           bindchange="onBirthdayChange"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         >
           <view class="picker">
             {{babyInfo.birthday || '请选择出生日期'}}
@@ -86,7 +75,7 @@
           value="{{babyInfo.weight}}" 
           bindinput="onInput" 
           data-field="weight"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         />
       </view>
       
@@ -99,7 +88,7 @@
           value="{{babyInfo.height}}" 
           bindinput="onInput" 
           data-field="height"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         />
       </view>
     </view>
@@ -115,7 +104,7 @@
           range="{{conditions}}" 
           value="{{conditionIndex}}" 
           bindchange="onConditionChange"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         >
           <view class="picker">
             {{conditions[conditionIndex]}}
@@ -131,7 +120,7 @@
           range="{{proteinSources}}" 
           value="{{proteinSourceIndex}}" 
           bindchange="onProteinSourceChange"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         >
           <view class="picker">
             {{proteinSources[proteinSourceIndex]}}
@@ -149,7 +138,7 @@
           bindinput="onInput" 
           data-field="notes"
           maxlength="200"
-          disabled="{{isSharedInfo && !isOwner}}"
+          disabled="{{!isOwner}}"
         ></textarea>
       </view>
     </view>
@@ -174,7 +163,7 @@
       </view>
       <view class="phone-error" wx:if="{{phoneErrorMsg}}">{{phoneErrorMsg}}</view>
       <view class="form-tip">
-        <text>创建者手机号将作为唯一标识，让家人能够查看宝宝信息</text>
+        <text>创建者手机号将作为唯一标识，让家人能够查看宝宝信息，不会采集您的信息</text>
       </view>
       <!-- 添加手机号不可修改的提示 -->
       <view class="form-tip warning" wx:if="{{phoneDisabled && babyInfo.phone}}">
@@ -188,8 +177,8 @@
       <text class="required">*</text> 为必填项
     </view>
     <button 
-      class="save-btn {{isFormValid ? 'active' : ''}} {{isFormSubmitting || (isSharedInfo && !isOwner)}}" 
-      disabled="{{!isFormValid || isFormSubmitting || (isSharedInfo && !isOwner)}}" 
+      class="save-btn {{isFormValid ? 'active' : ''}} {{isFormSubmitting || (!isOwner)}}" 
+      disabled="{{!isFormValid || isFormSubmitting || (!isOwner)}}" 
       bindtap="saveBabyInfo"
     >
       {{firstLogin ? '完成' : '保存'}}

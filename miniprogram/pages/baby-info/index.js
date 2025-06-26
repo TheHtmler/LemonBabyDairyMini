@@ -23,7 +23,6 @@ Page({
     isFormSubmitting: false,
     redirectUrl: '',
     firstLogin: false,
-    isSharedInfo: false,  // 标记是否为共享的宝宝信息
     isOwner: true,        // 标记当前用户是否为信息所有者
     ownerNickname: '',    // 宝宝信息所有者的昵称
     fromInvite: false,    // 标记是否从邀请页面进入
