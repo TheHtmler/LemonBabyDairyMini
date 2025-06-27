@@ -51,7 +51,7 @@
     </view>
 
     <!-- 无记录提示 -->
-    <view class="empty-data" wx:if="{{feedingRecords.length === 0 && medicationRecords.length === 0}}" style="opacity: {{isDataLoading ? 0.5 : 1}}; transition: opacity 0.3s;">
+    <view class="empty-data" wx:if="{{feedingRecords.length === 0 && medicationRecords.length === 0 && bowelRecords.length === 0}}" style="opacity: {{isDataLoading ? 0.5 : 1}}; transition: opacity 0.3s;">
       <view class="empty-icon">📝</view>
       <view class="empty-text">当日暂无记录</view>
       <view class="empty-actions">
@@ -62,6 +62,10 @@
         <view class="add-btn" bindtap="showAddMedicationModal">
           <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
           <text>补充用药记录</text>
+        </view>
+        <view class="add-btn" bindtap="showAddBowelModal">
+          <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+          <text>补充排便记录</text>
         </view>
       </view>
     </view>
@@ -198,6 +202,56 @@
                     <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
                   </view>
                   <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record._id}}">
+                    <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 排便记录卡片 -->
+      <view class="card" wx:if="{{bowelRecords.length > 0}}">
+        <view class="card-title">
+          <text>排便记录</text>
+          <view class="add-btn" bindtap="showAddBowelModal">
+            <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+            <text>补充记录</text>
+          </view>
+        </view>
+        <view>
+          <!-- 按类型分组显示 -->
+          <view class="bowel-group" wx:for="{{groupedBowelRecords}}" wx:key="type" wx:for-item="group">
+            <view class="bowel-group-header">
+              <text class="bowel-group-name">{{group.typeText}}</text>
+              <text class="bowel-group-count">{{group.count}}次</text>
+            </view>
+            
+            <!-- 该类型的所有记录 -->
+            <view class="bowel-group-records">
+              <view class="bowel-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record">
+                <view class="record-content">
+                  <view class="bowel-time-type">
+                    <text class="bowel-time">{{record.timeString}}</text>
+                  </view>
+                  <!-- 大便详细信息 -->
+                  <view class="bowel-details" wx:if="{{record.type === 'stool' || record.type === 'mixed'}}">
+                    <text class="bowel-detail" wx:if="{{record.consistencyText}}">{{record.consistencyText}}</text>
+                    <text class="bowel-detail" wx:if="{{record.colorText}}">{{record.colorText}}</text>
+                    <text class="bowel-detail" wx:if="{{record.amountText}}">{{record.amountText}}</text>
+                  </view>
+                  <!-- 备注 -->
+                  <view class="bowel-notes" wx:if="{{record.notes}}">
+                    <text class="notes-text">{{record.notes}}</text>
+                  </view>
+                </view>
+                <!-- 操作按钮 -->
+                <view class="action-buttons">
+                  <view class="action-btn edit-btn" bindtap="openEditBowelModal" data-record-id="{{record._id}}">
+                    <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                  </view>
+                  <view class="action-btn delete-btn" bindtap="deleteBowelRecord" data-record-id="{{record._id}}">
                     <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
                   </view>
                 </view>
@@ -475,6 +529,210 @@
       <view class="modal-footer">
         <button class="modal-btn cancel" bindtap="hideEditMedicationModal">取消</button>
         <button class="modal-btn confirm" bindtap="saveEditedMedication">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 补充排便记录弹窗 -->
+  <view class="modal" wx:if="{{showAddBowelModal}}" bindtap="hideAddBowelModal" catchtouchmove="preventBubble">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>补充排便记录</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <!-- 时间选择 -->
+        <view class="form-item">
+          <text class="label">时间</text>
+          <picker mode="time" value="{{newBowelRecord.time}}" bindchange="onNewBowelTimeChange">
+            <view class="time-picker">{{newBowelRecord.time}}</view>
+          </picker>
+        </view>
+
+        <!-- 类型选择 -->
+        <view class="form-item">
+          <text class="label">类型</text>
+          <view class="bowel-type-options">
+            <view class="bowel-type-btn {{newBowelRecord.type === 'stool' ? 'active' : ''}}" data-type="stool" bindtap="onBowelTypeSelect">
+              <text class="type-icon">💩</text>
+              <text class="type-text">大便</text>
+            </view>
+            <view class="bowel-type-btn {{newBowelRecord.type === 'urine' ? 'active' : ''}}" data-type="urine" bindtap="onBowelTypeSelect">
+              <text class="type-icon">💧</text>
+              <text class="type-text">小便</text>
+            </view>
+            <view class="bowel-type-btn {{newBowelRecord.type === 'mixed' ? 'active' : ''}}" data-type="mixed" bindtap="onBowelTypeSelect">
+              <text class="type-icon">🚽</text>
+              <text class="type-text">混合</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 大便详细信息 -->
+        <view wx:if="{{newBowelRecord.type === 'stool' || newBowelRecord.type === 'mixed'}}">
+          <!-- 性状 -->
+          <view class="form-item">
+            <text class="label">性状</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.consistency === 'liquid' ? 'active' : ''}}" data-field="consistency" data-value="liquid" bindtap="onBowelOptionSelect">水样</view>
+              <view class="option-btn {{newBowelRecord.consistency === 'loose' ? 'active' : ''}}" data-field="consistency" data-value="loose" bindtap="onBowelOptionSelect">稀便</view>
+              <view class="option-btn {{newBowelRecord.consistency === 'soft' ? 'active' : ''}}" data-field="consistency" data-value="soft" bindtap="onBowelOptionSelect">糊状</view>
+              <view class="option-btn {{newBowelRecord.consistency === 'normal' ? 'active' : ''}}" data-field="consistency" data-value="normal" bindtap="onBowelOptionSelect">正常</view>
+              <view class="option-btn {{newBowelRecord.consistency === 'hard' ? 'active' : ''}}" data-field="consistency" data-value="hard" bindtap="onBowelOptionSelect">干硬</view>
+            </view>
+          </view>
+
+          <!-- 颜色 -->
+          <view class="form-item">
+            <text class="label">颜色</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.color === 'yellow' ? 'active' : ''}}" data-field="color" data-value="yellow" bindtap="onBowelOptionSelect">黄色</view>
+              <view class="option-btn {{newBowelRecord.color === 'green' ? 'active' : ''}}" data-field="color" data-value="green" bindtap="onBowelOptionSelect">绿色</view>
+              <view class="option-btn {{newBowelRecord.color === 'brown' ? 'active' : ''}}" data-field="color" data-value="brown" bindtap="onBowelOptionSelect">褐色</view>
+              <view class="option-btn {{newBowelRecord.color === 'white' ? 'active' : ''}}" data-field="color" data-value="white" bindtap="onBowelOptionSelect">白色</view>
+              <view class="option-btn {{newBowelRecord.color === 'red' ? 'active' : ''}}" data-field="color" data-value="red" bindtap="onBowelOptionSelect">红色</view>
+              <view class="option-btn {{newBowelRecord.color === 'black' ? 'active' : ''}}" data-field="color" data-value="black" bindtap="onBowelOptionSelect">黑色</view>
+            </view>
+          </view>
+
+          <!-- 气味 -->
+          <view class="form-item">
+            <text class="label">气味</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.smell === 'normal' ? 'active' : ''}}" data-field="smell" data-value="normal" bindtap="onBowelOptionSelect">正常</view>
+              <view class="option-btn {{newBowelRecord.smell === 'sour' ? 'active' : ''}}" data-field="smell" data-value="sour" bindtap="onBowelOptionSelect">酸臭</view>
+              <view class="option-btn {{newBowelRecord.smell === 'fishy' ? 'active' : ''}}" data-field="smell" data-value="fishy" bindtap="onBowelOptionSelect">腥臭</view>
+              <view class="option-btn {{newBowelRecord.smell === 'odorless' ? 'active' : ''}}" data-field="smell" data-value="odorless" bindtap="onBowelOptionSelect">无味</view>
+            </view>
+          </view>
+
+          <!-- 分量 -->
+          <view class="form-item">
+            <text class="label">分量</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.amount === 'small' ? 'active' : ''}}" data-field="amount" data-value="small" bindtap="onBowelOptionSelect">少量</view>
+              <view class="option-btn {{newBowelRecord.amount === 'medium' ? 'active' : ''}}" data-field="amount" data-value="medium" bindtap="onBowelOptionSelect">适量</view>
+              <view class="option-btn {{newBowelRecord.amount === 'large' ? 'active' : ''}}" data-field="amount" data-value="large" bindtap="onBowelOptionSelect">大量</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 备注 -->
+        <view class="form-item">
+          <text class="label">备注</text>
+          <textarea 
+            value="{{newBowelRecord.notes}}" 
+            data-field="notes" 
+            bindinput="onNewBowelInput"
+            placeholder="可选，记录其他信息"
+            class="notes-textarea"
+          />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideAddBowelModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveNewBowelRecord">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑排便记录弹窗 -->
+  <view class="modal" wx:if="{{showEditBowelModal}}" bindtap="hideEditBowelModal" catchtouchmove="preventBubble">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>编辑排便记录</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <!-- 时间选择 -->
+        <view class="form-item">
+          <text class="label">时间</text>
+          <picker mode="time" value="{{editingBowelRecord.timeString}}" bindchange="onEditBowelTimeChange">
+            <view class="time-picker">{{editingBowelRecord.timeString}}</view>
+          </picker>
+        </view>
+
+        <!-- 类型选择 -->
+        <view class="form-item">
+          <text class="label">类型</text>
+          <view class="bowel-type-options">
+            <view class="bowel-type-btn {{editingBowelRecord.type === 'stool' ? 'active' : ''}}" data-type="stool" bindtap="onEditBowelTypeSelect">
+              <text class="type-icon">💩</text>
+              <text class="type-text">大便</text>
+            </view>
+            <view class="bowel-type-btn {{editingBowelRecord.type === 'urine' ? 'active' : ''}}" data-type="urine" bindtap="onEditBowelTypeSelect">
+              <text class="type-icon">💧</text>
+              <text class="type-text">小便</text>
+            </view>
+            <view class="bowel-type-btn {{editingBowelRecord.type === 'mixed' ? 'active' : ''}}" data-type="mixed" bindtap="onEditBowelTypeSelect">
+              <text class="type-icon">🚽</text>
+              <text class="type-text">混合</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 大便详细信息 -->
+        <view wx:if="{{editingBowelRecord.type === 'stool' || editingBowelRecord.type === 'mixed'}}">
+          <!-- 性状 -->
+          <view class="form-item">
+            <text class="label">性状</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.consistency === 'liquid' ? 'active' : ''}}" data-field="consistency" data-value="liquid" bindtap="onEditBowelOptionSelect">水样</view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'loose' ? 'active' : ''}}" data-field="consistency" data-value="loose" bindtap="onEditBowelOptionSelect">稀便</view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'soft' ? 'active' : ''}}" data-field="consistency" data-value="soft" bindtap="onEditBowelOptionSelect">糊状</view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'normal' ? 'active' : ''}}" data-field="consistency" data-value="normal" bindtap="onEditBowelOptionSelect">正常</view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'hard' ? 'active' : ''}}" data-field="consistency" data-value="hard" bindtap="onEditBowelOptionSelect">干硬</view>
+            </view>
+          </view>
+
+          <!-- 颜色 -->
+          <view class="form-item">
+            <text class="label">颜色</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.color === 'yellow' ? 'active' : ''}}" data-field="color" data-value="yellow" bindtap="onEditBowelOptionSelect">黄色</view>
+              <view class="option-btn {{editingBowelRecord.color === 'green' ? 'active' : ''}}" data-field="color" data-value="green" bindtap="onEditBowelOptionSelect">绿色</view>
+              <view class="option-btn {{editingBowelRecord.color === 'brown' ? 'active' : ''}}" data-field="color" data-value="brown" bindtap="onEditBowelOptionSelect">褐色</view>
+              <view class="option-btn {{editingBowelRecord.color === 'white' ? 'active' : ''}}" data-field="color" data-value="white" bindtap="onEditBowelOptionSelect">白色</view>
+              <view class="option-btn {{editingBowelRecord.color === 'red' ? 'active' : ''}}" data-field="color" data-value="red" bindtap="onEditBowelOptionSelect">红色</view>
+              <view class="option-btn {{editingBowelRecord.color === 'black' ? 'active' : ''}}" data-field="color" data-value="black" bindtap="onEditBowelOptionSelect">黑色</view>
+            </view>
+          </view>
+
+          <!-- 气味 -->
+          <view class="form-item">
+            <text class="label">气味</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.smell === 'normal' ? 'active' : ''}}" data-field="smell" data-value="normal" bindtap="onEditBowelOptionSelect">正常</view>
+              <view class="option-btn {{editingBowelRecord.smell === 'sour' ? 'active' : ''}}" data-field="smell" data-value="sour" bindtap="onEditBowelOptionSelect">酸臭</view>
+              <view class="option-btn {{editingBowelRecord.smell === 'fishy' ? 'active' : ''}}" data-field="smell" data-value="fishy" bindtap="onEditBowelOptionSelect">腥臭</view>
+              <view class="option-btn {{editingBowelRecord.smell === 'odorless' ? 'active' : ''}}" data-field="smell" data-value="odorless" bindtap="onEditBowelOptionSelect">无味</view>
+            </view>
+          </view>
+
+          <!-- 分量 -->
+          <view class="form-item">
+            <text class="label">分量</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.amount === 'small' ? 'active' : ''}}" data-field="amount" data-value="small" bindtap="onEditBowelOptionSelect">少量</view>
+              <view class="option-btn {{editingBowelRecord.amount === 'medium' ? 'active' : ''}}" data-field="amount" data-value="medium" bindtap="onEditBowelOptionSelect">适量</view>
+              <view class="option-btn {{editingBowelRecord.amount === 'large' ? 'active' : ''}}" data-field="amount" data-value="large" bindtap="onEditBowelOptionSelect">大量</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 备注 -->
+        <view class="form-item">
+          <text class="label">备注</text>
+          <textarea 
+            value="{{editingBowelRecord.notes}}" 
+            data-field="notes" 
+            bindinput="onEditBowelInput"
+            placeholder="可选，记录其他信息"
+            class="notes-textarea"
+          />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideEditBowelModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveEditedBowelRecord">保存</button>
       </view>
     </view>
   </view>

@@ -22,6 +22,8 @@ Page({
     feedingRecords: [],
     medicationRecords: [],
     groupedMedicationRecords: [], // 按药物名称分组的药物记录
+    bowelRecords: [], // 排便记录
+    groupedBowelRecords: [], // 按类型分组的排便记录
     totalNaturalMilk: 0,
     totalSpecialMilk: 0,
     totalMilk: 0,
@@ -44,6 +46,7 @@ Page({
     isReturning: false,
     showAddFeedingModal: false,
     showAddMedicationModal: false,
+    showAddBowelModal: false,
     // 新增记录相关
     newFeeding: {
       startTime: '',
@@ -58,13 +61,24 @@ Page({
       unit: '',
       time: ''
     },
+    newBowelRecord: {
+      time: '',
+      type: 'stool',
+      consistency: '',
+      color: '',
+      smell: '',
+      amount: '',
+      notes: ''
+    },
     // 编辑相关
     showEditFeedingModal: false,
     showEditMedicationModal: false,
+    showEditBowelModal: false,
     editingFeedingIndex: -1,
     editingMedicationIndex: -1,
     editingFeeding: null,
     editingMedication: null,
+    editingBowelRecord: null,
     // 其他
     medications: [], // 药物配置列表
     showDeleteConfirm: false,
@@ -369,10 +383,14 @@ Page({
         console.warn('未找到宝宝UID，将查询所有记录（可能不准确）');
       }
       
-      // 并行查询喂养记录和药物记录
-      const [feedingResult, medicationResult] = await Promise.all([
+      // 并行查询喂养记录、药物记录和排便记录
+      const [feedingResult, medicationResult, bowelResult] = await Promise.all([
         db.collection('feeding_records').where(query).get(),
-        MedicationRecordModel.findByDate(dateStr, babyUid)
+        MedicationRecordModel.findByDate(dateStr, babyUid),
+        db.collection('bowel_records').where({
+          babyUid: babyUid,
+          recordTime: _.gte(startOfDay).and(_.lte(endOfDay))
+        }).orderBy('recordTime', 'desc').get()
       ]);
       
       if (feedingResult.data && feedingResult.data.length > 0) {
@@ -393,29 +411,36 @@ Page({
         // 获取药物记录数据
         const medicationRecordsToSet = (medicationResult.success ? medicationResult.data : []) || [];
         
+        // 获取排便记录数据
+        const bowelRecordsToSet = bowelResult.data || [];
+        
         this.setData({
           recordId: record._id,
           feedings: record.feedings || [],
           medicationRecords: medicationRecordsToSet,
+          bowelRecords: bowelRecordsToSet,
           weight: recordWeight || (this.data.babyInfo ? this.data.babyInfo.weight : '--'),
           hasRecord: true,
           isDataLoading: false // 设置数据加载完成
         });
         
-        // 处理喂奶和用药记录
+        // 处理喂奶、用药和排便记录
         this.processFeedingData(record.feedings || []);
         this.processMedicationData(medicationRecordsToSet);
+        this.processBowelData(bowelRecordsToSet);
       } else {
-        // 没有喂养记录，但可能有药物记录
+        // 没有喂养记录，但可能有药物记录和排便记录
         const medicationRecordsToSet = (medicationResult.success ? medicationResult.data : []) || [];
+        const bowelRecordsToSet = bowelResult.data || [];
         const defaultWeight = this.data.babyInfo ? this.data.babyInfo.weight : '--';
         
         this.setData({
           recordId: '',
           feedings: [],
           medicationRecords: medicationRecordsToSet,
+          bowelRecords: bowelRecordsToSet,
           weight: defaultWeight,
-          hasRecord: medicationRecordsToSet.length > 0, // 如果有药物记录，也算有记录
+          hasRecord: medicationRecordsToSet.length > 0 || bowelRecordsToSet.length > 0, // 如果有药物记录或排便记录，也算有记录
           feedingRecords: [],
           totalNaturalMilk: 0,
           totalSpecialMilk: 0,
@@ -427,8 +452,9 @@ Page({
           isDataLoading: false // 设置数据加载完成
         });
         
-        // 处理药物记录
+        // 处理药物记录和排便记录
         this.processMedicationData(medicationRecordsToSet);
+        this.processBowelData(bowelRecordsToSet);
       }
       
       wx.hideLoading();
@@ -455,6 +481,8 @@ Page({
         feedingRecords: [],
         medicationRecords: [],
         groupedMedicationRecords: [],
+        bowelRecords: [],
+        groupedBowelRecords: [],
         hasRecord: false
       });
       
@@ -1317,7 +1345,7 @@ Page({
       return;
     }
     
-    if (deleteType === 'medication' && !deleteRecordId) {
+    if ((deleteType === 'medication' || deleteType === 'bowel') && !deleteRecordId) {
       this.hideDeleteConfirm();
       return;
     }
@@ -1429,6 +1457,22 @@ Page({
           }
         } else {
           throw new Error('无法找到要删除的药物记录');
+        }
+      } else if (deleteType === 'bowel') {
+        // 删除排便记录
+        const recordId = this.data.deleteRecordId;
+        console.log('准备删除排便记录，recordId:', recordId);
+        
+        if (recordId) {
+          const db = wx.cloud.database();
+          const result = await db.collection('bowel_records').doc(recordId).remove();
+          console.log('删除排便记录结果:', result);
+          
+          if (!result.stats || result.stats.removed === 0) {
+            throw new Error('删除失败，记录可能不存在');
+          }
+        } else {
+          throw new Error('无法找到要删除的排便记录');
         }
       }
 
@@ -1973,5 +2017,451 @@ Page({
   // 阻止事件冒泡
   preventBubble() {
     // 阻止事件冒泡
+  },
+
+  // === 排便记录相关方法 ===
+  
+  // 处理排便记录数据
+  processBowelData(bowelRecords) {
+    if (!bowelRecords || bowelRecords.length === 0) {
+      this.setData({
+        bowelRecords: [],
+        groupedBowelRecords: []
+      });
+      return;
+    }
+
+    // 处理记录，添加显示用的文本
+    const processedRecords = bowelRecords.map(record => ({
+      ...record,
+      typeText: this.getBowelTypeText(record.type),
+      consistencyText: record.consistency ? this.getConsistencyText(record.consistency) : '',
+      colorText: record.color ? this.getColorText(record.color) : '',
+      smellText: record.smell ? this.getSmellText(record.smell) : '',
+      amountText: record.amount ? this.getAmountText(record.amount) : ''
+    }));
+
+    // 按类型分组
+    const groupedRecords = this.groupBowelRecordsByType(processedRecords);
+
+    this.setData({
+      bowelRecords: processedRecords,
+      groupedBowelRecords: groupedRecords
+    });
+  },
+
+  // 按类型分组排便记录
+  groupBowelRecordsByType(records) {
+    const groups = [];
+    const typeOrder = ['stool', 'urine', 'mixed'];
+    const typeLabels = {
+      'stool': '大便',
+      'urine': '小便', 
+      'mixed': '混合'
+    };
+    
+    typeOrder.forEach(type => {
+      const typeRecords = records.filter(record => record.type === type);
+      if (typeRecords.length > 0) {
+        groups.push({
+          type: type,
+          typeText: typeLabels[type],
+          records: typeRecords,
+          count: typeRecords.length
+        });
+      }
+    });
+    
+    return groups;
+  },
+
+  // 显示补充排便记录弹窗
+  showAddBowelModal() {
+    const now = new Date();
+    const currentTime = this.formatTime(now);
+    
+    this.setData({
+      showAddBowelModal: true,
+      newBowelRecord: {
+        time: currentTime,
+        type: 'stool',
+        consistency: '',
+        color: '',
+        smell: '',
+        amount: '',
+        notes: ''
+      }
+    });
+  },
+
+  // 隐藏补充排便记录弹窗
+  hideAddBowelModal() {
+    this.setData({
+      showAddBowelModal: false,
+      newBowelRecord: {
+        time: '',
+        type: 'stool',
+        consistency: '',
+        color: '',
+        smell: '',
+        amount: '',
+        notes: ''
+      }
+    });
+  },
+
+  // 排便记录时间选择
+  onNewBowelTimeChange(e) {
+    const timeStr = e.detail.value;
+    this.setData({
+      'newBowelRecord.time': timeStr
+    });
+  },
+
+  // 排便类型选择
+  onBowelTypeSelect(e) {
+    const { type } = e.currentTarget.dataset;
+    this.setData({
+      'newBowelRecord.type': type
+    });
+  },
+
+  // 排便选项选择
+  onBowelOptionSelect(e) {
+    const { field, value } = e.currentTarget.dataset;
+    this.setData({
+      [`newBowelRecord.${field}`]: value
+    });
+  },
+
+  // 排便记录输入
+  onNewBowelInput(e) {
+    const { field } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    this.setData({
+      [`newBowelRecord.${field}`]: value
+    });
+  },
+
+  // 保存新的排便记录
+  async saveNewBowelRecord() {
+    const { time, type, consistency, color, smell, amount, notes } = this.data.newBowelRecord;
+    
+    // 验证必填字段
+    if (!time) {
+      wx.showToast({
+        title: '请选择时间',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    if (!type) {
+      wx.showToast({
+        title: '请选择类型',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    try {
+      wx.showLoading({ title: '保存中...' });
+      
+      const db = wx.cloud.database();
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      
+      if (!babyUid) {
+        wx.showToast({
+          title: '未找到宝宝信息',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 创建时间对象
+      const [year, month, day] = this.data.selectedDate.split('-').map(Number);
+      const [hours, minutes] = time.split(':').map(Number);
+      const recordTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+      
+      // 准备保存的数据
+      const recordData = {
+        babyUid: babyUid,
+        type: type,
+        recordTime: recordTime,
+        timeString: time,
+        createdAt: new Date()
+      };
+      
+      // 如果是大便，添加详细信息
+      if (type === 'stool' || type === 'mixed') {
+        recordData.consistency = consistency;
+        recordData.color = color;
+        recordData.smell = smell;
+        recordData.amount = amount;
+      }
+      
+      // 添加备注
+      if (notes) {
+        recordData.notes = notes;
+      }
+      
+      // 保存到数据库
+      await db.collection('bowel_records').add({
+        data: recordData
+      });
+      
+      // 隐藏弹窗
+      this.hideAddBowelModal();
+      
+      // 重新加载数据
+      await this.fetchDailyRecords(this.data.selectedDate);
+      
+      wx.hideLoading();
+      wx.showToast({
+        title: '记录成功',
+        icon: 'success'
+      });
+      
+    } catch (error) {
+      console.error('保存排便记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({
+        title: '保存失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 打开编辑排便记录弹窗
+  openEditBowelModal(e) {
+    const { recordId } = e.currentTarget.dataset;
+    
+    // 从排便记录中找到要编辑的记录
+    const record = this.data.bowelRecords.find(r => r._id === recordId);
+    
+    if (!record) {
+      wx.showToast({
+        title: '未找到记录',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    this.setData({
+      showEditBowelModal: true,
+      editingBowelRecord: { ...record }
+    });
+  },
+
+  // 隐藏编辑排便记录弹窗
+  hideEditBowelModal() {
+    this.setData({
+      showEditBowelModal: false,
+      editingBowelRecord: null
+    });
+  },
+
+  // 编辑排便记录时间选择
+  onEditBowelTimeChange(e) {
+    const timeStr = e.detail.value;
+    this.setData({
+      'editingBowelRecord.timeString': timeStr
+    });
+  },
+
+  // 编辑排便类型选择
+  onEditBowelTypeSelect(e) {
+    const { type } = e.currentTarget.dataset;
+    this.setData({
+      'editingBowelRecord.type': type
+    });
+  },
+
+  // 编辑排便选项选择
+  onEditBowelOptionSelect(e) {
+    const { field, value } = e.currentTarget.dataset;
+    this.setData({
+      [`editingBowelRecord.${field}`]: value
+    });
+  },
+
+  // 编辑排便记录输入
+  onEditBowelInput(e) {
+    const { field } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    this.setData({
+      [`editingBowelRecord.${field}`]: value
+    });
+  },
+
+  // 保存编辑的排便记录
+  async saveEditedBowelRecord() {
+    const record = this.data.editingBowelRecord;
+    
+    if (!record || !record._id) {
+      wx.showToast({
+        title: '记录数据无效',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 验证必填字段
+    if (!record.timeString) {
+      wx.showToast({
+        title: '请选择时间',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    if (!record.type) {
+      wx.showToast({
+        title: '请选择类型',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    try {
+      wx.showLoading({ title: '保存中...' });
+      
+      const db = wx.cloud.database();
+      
+      // 创建时间对象
+      const [year, month, day] = this.data.selectedDate.split('-').map(Number);
+      const [hours, minutes] = record.timeString.split(':').map(Number);
+      const recordTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+      
+      // 准备更新的数据
+      const updateData = {
+        type: record.type,
+        recordTime: recordTime,
+        timeString: record.timeString,
+        updatedAt: new Date()
+      };
+      
+      // 如果是大便，添加详细信息
+      if (record.type === 'stool' || record.type === 'mixed') {
+        updateData.consistency = record.consistency || '';
+        updateData.color = record.color || '';
+        updateData.smell = record.smell || '';
+        updateData.amount = record.amount || '';
+      } else {
+        // 如果改为小便，清除大便相关信息
+        updateData.consistency = '';
+        updateData.color = '';
+        updateData.smell = '';
+        updateData.amount = '';
+      }
+      
+      // 更新备注
+      updateData.notes = record.notes || '';
+      
+      // 更新数据库
+      await db.collection('bowel_records').doc(record._id).update({
+        data: updateData
+      });
+      
+      // 隐藏弹窗
+      this.hideEditBowelModal();
+      
+      // 重新加载数据
+      await this.fetchDailyRecords(this.data.selectedDate);
+      
+      wx.hideLoading();
+      wx.showToast({
+        title: '更新成功',
+        icon: 'success'
+      });
+      
+    } catch (error) {
+      console.error('更新排便记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({
+        title: '更新失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 删除排便记录
+  deleteBowelRecord(e) {
+    const { recordId } = e.currentTarget.dataset;
+    
+    // 找到要删除的记录
+    const record = this.data.bowelRecords.find(r => r._id === recordId);
+    
+    if (!record) {
+      wx.showToast({
+        title: '未找到记录',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    this.setData({
+      showDeleteConfirm: true,
+      deleteConfirmMessage: `确定要删除 ${record.timeString} 的${record.typeText}记录吗？`,
+      deleteType: 'bowel',
+      deleteRecordId: recordId
+    });
+  },
+
+  // 获取类型显示文本
+  getBowelTypeText(type) {
+    const typeMap = {
+      'stool': '大便',
+      'urine': '小便',
+      'mixed': '混合'
+    };
+    return typeMap[type] || type;
+  },
+
+  // 获取性状显示文本
+  getConsistencyText(consistency) {
+    const consistencyMap = {
+      'liquid': '水样',
+      'loose': '稀便',
+      'soft': '糊状',
+      'normal': '正常',
+      'hard': '干硬'
+    };
+    return consistencyMap[consistency] || consistency;
+  },
+
+  // 获取颜色显示文本
+  getColorText(color) {
+    const colorMap = {
+      'yellow': '黄色',
+      'green': '绿色',
+      'brown': '褐色',
+      'white': '白色',
+      'red': '红色',
+      'black': '黑色'
+    };
+    return colorMap[color] || color;
+  },
+
+  // 获取气味显示文本
+  getSmellText(smell) {
+    const smellMap = {
+      'normal': '正常',
+      'sour': '酸臭',
+      'fishy': '腥臭',
+      'odorless': '无味'
+    };
+    return smellMap[smell] || smell;
+  },
+
+  // 获取分量显示文本
+  getAmountText(amount) {
+    const amountMap = {
+      'small': '少量',
+      'medium': '适量',
+      'large': '大量'
+    };
+    return amountMap[amount] || amount;
   }
 }); 

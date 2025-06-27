@@ -412,7 +412,9 @@
 .medication-volume {
   font-size: 24rpx;
   color: #666;
-  margin-top: 4rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
 }
 
 .medication-time {
@@ -425,6 +427,7 @@
   display: flex;
   align-items: center;
   gap: 12rpx;
+  width: 50%;
 }
 
 .dosage-input {
@@ -467,6 +470,8 @@
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  /* 防止背景滑动穿透，但允许弹窗内容滑动 */
+  overflow: hidden;
 }
 
 .modal-content {
@@ -496,26 +501,49 @@
 
 .modal-footer {
   display: flex;
-  border-top: 1rpx solid rgba(255, 184, 0, 0.2);
+  gap: 24rpx;
+  padding: 24rpx 32rpx;
+  background: #ffffff;
 }
 
 .modal-btn {
   flex: 1;
-  line-height: 88rpx;
+  height: 72rpx;
   text-align: center;
-  font-size: 32rpx;
-  border: none;
+  font-size: 28rpx;
+  border: 2rpx solid;
+  border-radius: 36rpx;
   background: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-btn.cancel {
   color: #666;
-  border-right: 1rpx solid #f0f0f0;
+  border-color: #e0e0e0;
+  background: #f8f8f8;
+}
+
+.modal-btn.cancel:active {
+  background: #f0f0f0;
+  transform: scale(0.98);
 }
 
 .modal-btn.confirm {
-  color: #FFB800;
-  font-weight: bold;
+  color: #ffffff;
+  border-color: #FFB800;
+  background: #FFB800;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
+}
+
+.modal-btn.confirm:active {
+  background: #E6A600;
+  border-color: #E6A600;
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(255, 184, 0, 0.4);
 }
 
 /* Feeding History */
@@ -1861,4 +1889,658 @@
   bottom: 0;
   z-index: 99;
   background-color: transparent;
+}
+
+/* ============ 排便记录样式 ============ */
+
+/* 排便模块 */
+.bowel-section {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFFBF0 100%);
+}
+
+.bowel-stats {
+  display: flex;
+  align-items: center;
+}
+
+.stats-text {
+  font-size: 24rpx;
+  color: #FFB800;
+  background: rgba(255, 184, 0, 0.1);
+  padding: 8rpx 16rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(255, 184, 0, 0.2);
+}
+
+/* 排便按钮网格 */
+.bowel-grid {
+  display: flex;
+  gap: 20rpx;
+  justify-content: space-between;
+}
+
+.bowel-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx 16rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.bowel-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  border-radius: 3rpx 3rpx 0 0;
+  transition: all 0.3s ease;
+}
+
+.bowel-item.stool::before {
+  background: linear-gradient(90deg, #8B4513, #A0522D);
+}
+
+.bowel-item.urine::before {
+  background: linear-gradient(90deg, #4A90E2, #7BB3F0);
+}
+
+.bowel-item.mixed::before {
+  background: linear-gradient(90deg, #9B59B6, #BB6BD9);
+}
+
+.bowel-item:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(255, 184, 0, 0.2);
+}
+
+.bowel-icon {
+  font-size: 48rpx;
+  margin-bottom: 12rpx;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
+}
+
+.bowel-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.bowel-count {
+  font-size: 24rpx;
+  color: #FFB800;
+  background: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  min-width: 60rpx;
+  text-align: center;
+}
+
+/* 排便记录列表 */
+.bowel-records {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx; /* 增加分组间距 */
+  min-height: 200rpx; /* 确保有最小高度 */
+}
+
+/* 排便记录分组 */
+.bowel-group {
+  background: #ffffff;
+  border-radius: 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.1);
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.1);
+}
+
+.bowel-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: rgba(255, 184, 0, 0.1);
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+}
+
+.bowel-group-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+
+.bowel-group-title::before {
+  content: '';
+  display: inline-block;
+  width: 12rpx;
+  height: 12rpx;
+  background-color: #FFB800;
+  border-radius: 50%;
+  margin-right: 12rpx;
+}
+
+.bowel-group-count {
+  font-size: 24rpx;
+  color: #FFB800;
+  background: #ffffff;
+  padding: 8rpx 16rpx;
+  border-radius: 16rpx;
+  font-weight: 500;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.bowel-group-records {
+  display: flex;
+  flex-direction: column;
+}
+
+.bowel-record-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24rpx;
+  background: #ffffff;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.bowel-record-item:last-child {
+  border-bottom: none;
+}
+
+.bowel-record-item:active {
+  background: rgba(255, 184, 0, 0.05);
+  transform: scale(0.98);
+}
+
+.bowel-record-item .record-content {
+  flex: 1;
+  margin-right: 16rpx;
+}
+
+.bowel-time-type {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.bowel-time {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.bowel-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.bowel-detail {
+  font-size: 22rpx;
+  color: #666;
+  background: rgba(255, 184, 0, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.bowel-notes {
+  margin-top: 8rpx;
+}
+
+.notes-text {
+  font-size: 24rpx;
+  color: #888;
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #FFB800;
+}
+
+/* 排便记录空状态优化 */
+.bowel-records .empty-record {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 40rpx;
+  text-align: center;
+  color: #999;
+  background: rgba(255, 184, 0, 0.05);
+  border-radius: 20rpx;
+  border: 2rpx dashed rgba(255, 184, 0, 0.2);
+  min-height: 200rpx;
+}
+
+.bowel-records .empty-record::before {
+  content: '📝';
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.6;
+}
+
+.bowel-records .empty-record text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 排便记录弹窗 */
+.bowel-record-modal .modal-content {
+  max-width: 720rpx;
+  max-height: 85vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bowel-record-modal .modal-header {
+  padding: 32rpx 32rpx 24rpx 32rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+  margin-bottom: 0;
+  flex-shrink: 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+.bowel-record-modal .modal-body {
+  box-sizing: border-box;
+  padding: 24rpx 32rpx;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.bowel-record-modal .modal-body::-webkit-scrollbar {
+  width: 6rpx;
+}
+
+.bowel-record-modal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 6rpx;
+}
+
+.bowel-record-modal .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 184, 0, 0.3);
+  border-radius: 6rpx;
+}
+
+.bowel-record-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 184, 0, 0.5);
+}
+
+.bowel-record-modal .modal-footer {
+  display: flex;
+  gap: 24rpx;
+  padding: 24rpx 32rpx 32rpx 32rpx;
+  margin-top: 0;
+  flex-shrink: 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+.bowel-record-modal .modal-info-row {
+  margin-bottom: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.bowel-record-modal .modal-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.bowel-type-selector {
+  display: flex;
+  gap: 16rpx;
+  width: 100%;
+}
+
+.type-option {
+  flex: 1;
+  padding: 10rpx 8rpx;
+  text-align: center;
+  background: rgba(255, 184, 0, 0.1);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 16rpx;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.type-option.selected {
+  background: #FFB800;
+  border-color: #FFB800;
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
+}
+
+.type-option text {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.bowel-option-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  width: 100%;
+}
+
+.option-item {
+  padding: 16rpx 12rpx;
+  background: rgba(255, 184, 0, 0.1);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 16rpx;
+  transition: all 0.3s ease;
+  text-align: center;
+  white-space: nowrap;
+  min-height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-item.selected {
+  background: #FFB800;
+  border-color: #FFB800;
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
+}
+
+.option-item text {
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.notes-input {
+  width: 100%;
+  min-height: 140rpx;
+  background: rgba(255, 184, 0, 0.05);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  color: #333;
+  box-sizing: border-box;
+  resize: none;
+  line-height: 1.5;
+}
+
+.notes-input:focus {
+  border-color: #FFB800;
+  background: rgba(255, 184, 0, 0.1);
+  outline: none;
+}
+
+.notes-input::placeholder {
+  color: #999;
+  font-size: 26rpx;
+}
+
+/* 排便记录详情弹窗特殊样式 */
+.bowel-detail-modal .modal-content {
+  max-width: 640rpx;
+  max-height: 80vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bowel-detail-modal .modal-header {
+  padding: 32rpx 32rpx 24rpx 32rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+  flex-shrink: 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+.bowel-detail-modal .modal-body {
+  padding: 24rpx 32rpx;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.bowel-detail-modal .modal-body::-webkit-scrollbar {
+  width: 6rpx;
+}
+
+.bowel-detail-modal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 6rpx;
+}
+
+.bowel-detail-modal .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 184, 0, 0.3);
+  border-radius: 6rpx;
+}
+
+.bowel-detail-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 184, 0, 0.5);
+}
+
+.bowel-detail-modal .modal-footer {
+  display: flex;
+  gap: 24rpx;
+  padding: 24rpx 32rpx 32rpx 32rpx;
+  flex-shrink: 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+.bowel-detail-modal .modal-info-row {
+  margin-bottom: 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20rpx;
+}
+
+.bowel-detail-modal .modal-label {
+  font-size: 28rpx;
+  color: #666;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 120rpx;
+}
+
+.bowel-detail-modal .modal-value {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+  flex: 1;
+}
+
+/* 排便记录弹窗时间选择器优化 */
+.bowel-record-modal .modal-time-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 24rpx;
+  background: rgba(255, 184, 0, 0.05);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 500;
+  min-height: 80rpx;
+  transition: all 0.3s ease;
+}
+
+.bowel-record-modal .modal-time-picker:active {
+  background: rgba(255, 184, 0, 0.1);
+  border-color: #FFB800;
+}
+
+.bowel-record-modal .edit-icon {
+  font-size: 24rpx;
+  color: #FFB800;
+  margin-left: 12rpx;
+}
+
+/* 选项区域标题样式优化 */
+.bowel-record-modal .modal-info-row:has(.bowel-option-selector) .modal-label,
+.bowel-record-modal .modal-info-row:has(.bowel-type-selector) .modal-label {
+  margin-bottom: 8rpx;
+}
+
+/* 大便详细信息区域样式 */
+.bowel-detail-section {
+  background: rgba(255, 184, 0, 0.02);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 16rpx;
+  border: 1rpx solid rgba(255, 184, 0, 0.1);
+}
+
+.bowel-detail-section .modal-info-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 编辑排便记录弹窗样式 */
+.bowel-edit-modal .modal-content {
+  max-width: 720rpx;
+  max-height: 85vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bowel-edit-modal .modal-header {
+  padding: 32rpx 32rpx 24rpx 32rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+  margin-bottom: 0;
+  flex-shrink: 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+.bowel-edit-modal .modal-body {
+  box-sizing: border-box;
+  padding: 24rpx 32rpx;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.bowel-edit-modal .modal-body::-webkit-scrollbar {
+  width: 6rpx;
+}
+
+.bowel-edit-modal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 6rpx;
+}
+
+.bowel-edit-modal .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 184, 0, 0.3);
+  border-radius: 6rpx;
+}
+
+.bowel-edit-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 184, 0, 0.5);
+}
+
+.bowel-edit-modal .modal-footer {
+  display: flex;
+  gap: 24rpx;
+  padding: 24rpx 32rpx 32rpx 32rpx;
+  margin-top: 0;
+  flex-shrink: 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+.bowel-edit-modal .modal-info-row {
+  margin-bottom: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.bowel-edit-modal .modal-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.bowel-edit-modal .modal-time-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 24rpx;
+  background: rgba(255, 184, 0, 0.05);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 500;
+  min-height: 80rpx;
+  transition: all 0.3s ease;
+}
+
+.bowel-edit-modal .modal-time-picker:active {
+  background: rgba(255, 184, 0, 0.1);
+  border-color: #FFB800;
+}
+
+.bowel-edit-modal .edit-icon {
+  font-size: 24rpx;
+  color: #FFB800;
+  margin-left: 12rpx;
+}
+
+/* 响应式优化 */
+@media screen and (max-width: 400px) {
+  .bowel-option-selector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .bowel-record-modal .modal-content,
+  .bowel-edit-modal .modal-content {
+    max-width: 95vw;
+    margin: 0 20rpx;
+  }
+  
+  .type-option text,
+  .option-item text {
+    font-size: 24rpx;
+  }
 } 
