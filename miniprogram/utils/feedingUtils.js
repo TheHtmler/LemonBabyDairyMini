@@ -56,16 +56,6 @@ const utils = {
     return true;
   },
 
-  // 错误处理
-  handleError(error, defaultMessage = '操作失败') {
-    console.error(error);
-    const message = error.message || defaultMessage;
-    wx.showToast({
-      title: message,
-      icon: 'none'
-    });
-  },
-
   // 成功提示
   showSuccess(message = '操作成功') {
     wx.showToast({

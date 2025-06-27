@@ -3,70 +3,34 @@ const NutritionModel = require('../../models/nutrition');
 // 导入药物记录模型
 const MedicationRecordModel = require('../../models/medicationRecord');
 // 导入工具函数
-const { utils, calculator, dataManager, uiUtils, dataUtils } = require('../../utils/index');
+const { 
+  waitForAppInitialization, 
+  checkUserPermission, 
+  getBabyInfo,
+  calculator,
+  dataManager,
+  uiUtils,
+  dataUtils,
+  utils,
+  handleError,
+  getBabyUid,
+  validation
+} = require('../../utils/index');
 
 const app = getApp();
 
 Page({
-  // 统一的错误处理方法
-  handleError(error, title = '操作失败', showToast = true) {
-    console.error(title + ':', error);
-    wx.hideLoading();
-    
-    if (showToast) {
-      // 仅在调试环境或特定错误显示详细信息
-      const isDebug = wx.getSystemInfoSync().platform === 'devtools';
-      wx.showToast({
-        title: isDebug ? `${title}: ${error.message || error}` : title,
-        icon: 'none',
-        duration: 2000
-      });
-    }
-  },
-
-  // 统一的数据验证方法
-  validateData(data, rules) {
-    for (const field in rules) {
-      const value = data[field];
-      const rule = rules[field];
-      
-      if (rule.required && (!value || value.toString().trim() === '')) {
-        wx.showToast({
-          title: rule.message || `请输入${field}`,
-          icon: 'none'
-        });
-        return false;
-      }
-      
-      if (rule.type === 'number' && value) {
-        const num = parseFloat(value);
-        if (isNaN(num) || (rule.min !== undefined && num < rule.min)) {
-          wx.showToast({
-            title: rule.message || `${field}格式不正确`,
-            icon: 'none'
-          });
-          return false;
-        }
-      }
-    }
-    return true;
-  },
-
-  // 获取宝宝UID的统一方法
-  getBabyUid() {
-    const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-    if (!babyUid) {
-      console.warn('未找到宝宝UID');
-    }
-    return babyUid;
-  },
 
   data: {
+    // === 核心业务数据 ===
     weight: '',
     feedings: [],
     medicationRecords: [],
-    groupedMedicationRecords: [],
     medicationsList: [],
+    calculation_params: null,
+    recordId: '',
+
+    // === 当前操作数据 ===
     currentFeeding: {
       startTime: '',
       endTime: '',
@@ -76,22 +40,6 @@ Page({
       totalVolume: '',
       formulaPowderWeight: ''
     },
-    dailyNaturalProtein: 0,
-    requiredNaturalMilk: 0,
-    totalNaturalMilkFed: 0,
-    remainingNaturalMilk: 0,
-    formulaPowderNeeded: 0,
-    babyName: '',
-    babyDays: 0,
-    todayDate: '',
-    recordId: '',
-    showMedicationModal: false,
-    selectedMedication: null,
-    selectedMedicationInfo: null,
-    currentModalTime: '',
-    currentModalDosage: '',
-    calculation_params: null,
-
     quickFeedingData: {
       naturalMilkVolume: '',
       totalVolume: '',
@@ -100,22 +48,6 @@ Page({
       startTime: '',
       endTime: ''
     },
-    showEditModal: false,
-    editingFeedingIndex: -1,
-    editingFeeding: null,
-    showMedicationRecordModal: false,
-    selectedMedicationRecord: null,
-    app: null,
-    activeTab: 'feeding',
-    proteinSourceType: 'breastMilk',
-    proteinSourceLabel: '',
-    nutritionSettingsComplete: true,
-    missingSettings: [],
-    showSettingsGuide: false,
-    settingsGuideText: '',
-    showQuickInputModal: false,
-    activeFeedingMenu: -1,
-    showAddFeedingModal: false,
     newFeeding: {
       startTime: '',
       endTime: '',
@@ -125,13 +57,182 @@ Page({
       totalVolume: '',
       specialMilkVolume: 0
     },
-    showAddMedicationModal: false,
     newMedication: {
       name: '',
       volume: '',
       time: '',
       dateTime: ''
+    },
+
+    // === UI状态管理（合并模态框状态）===
+    modals: {
+      medication: false,
+      edit: false,
+      medicationRecord: false,
+      quickInput: false,
+      addFeeding: false,
+      addMedication: false
+    },
+    
+    // === 临时状态数据 ===
+    selectedMedication: null,
+    selectedMedicationInfo: null, // 缓存选中药物的完整信息
+    selectedMedicationRecord: null,
+    editingFeeding: null,
+    editingFeedingIndex: -1,
+    activeFeedingMenu: -1,
+    currentFeedingRecordId: '', // 当前正在进行的喂奶记录ID
+    
+    // === 模态框临时数据 ===
+    currentModalTime: '',
+    currentModalDosage: '',
+    
+    // === 宝宝信息缓存 ===
+    babyName: '宝宝',
+    babyDays: 0,
+    todayDate: '', // 缓存今日日期
+    
+    // === 计算数据缓存 ===
+    proteinSourceLabel: '母乳', // 蛋白质来源标签
+    dailyNaturalProtein: '0', // 每日所需天然蛋白量
+    requiredNaturalMilk: '0', // 每日所需天然奶量
+    totalNaturalMilkFed: 0, // 已喂天然奶总量
+    remainingNaturalMilk: '0', // 剩余天然奶量
+    formulaPowderNeeded: '0', // 所需奶粉量
+    groupedMedicationRecords: [], // 分组的药物记录
+    
+    // === 设置相关 ===
+    proteinSourceType: 'breastMilk',
+    nutritionSettingsComplete: true,
+    missingSettings: [],
+    showSettingsGuide: false,
+    settingsGuideText: '',
+    
+    // === UI 标签页 ===
+    activeTab: 'feeding'
+  },
+
+  // === 计算属性和工具方法 ===
+  // 获取今日日期
+  getTodayDate() {
+    return uiUtils.formatters.formatDateDisplay(new Date(), 'YYYY年MM月DD日');
+  },
+
+  // 获取蛋白质来源标签
+  getProteinSourceLabel() {
+    return this.data.proteinSourceType === 'breastMilk' ? '母乳' : '普通奶粉';
+  },
+
+  // 获取分组的药物记录
+  getGroupedMedicationRecords() {
+    return MedicationRecordModel.groupRecordsByMedication(this.data.medicationRecords);
+  },
+
+  // 获取选中药物的完整信息
+  getSelectedMedicationInfo() {
+    if (!this.data.selectedMedication) return null;
+    return this.data.medicationsList.find(med => med._id === this.data.selectedMedication);
+  },
+
+  // === 宝宝信息计算属性 ===
+  async getBabyName() {
+    const babyInfo = await getBabyInfo();
+    return babyInfo?.name || '';
+  },
+
+  async getBabyDays() {
+    const babyInfo = await getBabyInfo();
+    if (!babyInfo?.birthday) return 0;
+    
+    const birthDate = new Date(babyInfo.birthday);
+    const today = new Date();
+    const diffTime = Math.abs(today - birthDate);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  },
+
+  // 初始化宝宝信息缓存
+  async initBabyInfoCache() {
+    try {
+      const [name, days] = await Promise.all([
+        this.getBabyName(),
+        this.getBabyDays()
+      ]);
+      
+      this.setData({
+        babyName: name || '宝宝',
+        babyDays: days || 0,
+        todayDate: this.getTodayDate(), // 缓存今日日期
+        proteinSourceLabel: this.getProteinSourceLabel(), // 初始化蛋白质来源标签
+        groupedMedicationRecords: this.getGroupedMedicationRecords() // 初始化分组药物记录
+      });
+    } catch (error) {
+      console.error('初始化宝宝信息缓存失败:', error);
+      // 使用默认值
+      this.setData({
+        babyName: '宝宝',
+        babyDays: 0,
+        todayDate: this.getTodayDate(), // 即使出错也要设置日期
+        proteinSourceLabel: this.getProteinSourceLabel(),
+        groupedMedicationRecords: this.getGroupedMedicationRecords()
+      });
     }
+  },
+
+  // === 营养计算属性 ===
+  // 每日所需天然蛋白量
+  getDailyNaturalProtein() {
+    if (!this.data.weight || !this.data.calculation_params) return '0';
+    const weight = parseFloat(this.data.weight);
+    return (weight * this.data.calculation_params.natural_protein_coefficient).toFixed(2);
+  },
+
+  // 每日所需天然奶量
+  getRequiredNaturalMilk() {
+    if (!this.data.weight || !this.data.calculation_params) return '0';
+    const dailyProtein = parseFloat(this.getDailyNaturalProtein());
+    const naturalMilkNeeded = (dailyProtein * 100) / this.data.calculation_params.natural_milk_protein;
+    return Math.round(naturalMilkNeeded).toString();
+  },
+
+  // 已喂天然奶总量
+  getTotalNaturalMilkFed() {
+    return this.data.feedings.reduce((sum, feeding) => {
+      return sum + (parseFloat(feeding.naturalMilkVolume) || 0);
+    }, 0);
+  },
+
+  // 剩余天然奶量
+  getRemainingNaturalMilk() {
+    const required = parseFloat(this.getRequiredNaturalMilk());
+    const fed = this.getTotalNaturalMilkFed();
+    return Math.max(0, required - fed).toString();
+  },
+
+  // 所需奶粉量（普通奶粉情况）
+  getFormulaPowderNeeded() {
+    if (this.data.proteinSourceType !== 'formulaMilk') return '0';
+    if (!this.data.weight || !this.data.calculation_params) return '0';
+    
+    const dailyProtein = parseFloat(this.getDailyNaturalProtein());
+    const formulaPowderNeeded = (dailyProtein * 100) / this.data.calculation_params.natural_milk_protein;
+    return formulaPowderNeeded.toFixed(1);
+  },
+
+  // === 模态框状态管理工具 ===
+  showModal(modalName) {
+    this.setData({
+      [`modals.${modalName}`]: true
+    });
+  },
+
+  hideModal(modalName) {
+    this.setData({
+      [`modals.${modalName}`]: false
+    });
+  },
+
+  isModalOpen(modalName) {
+    return this.data.modals[modalName];
   },
 
   onLoad() {
@@ -141,79 +242,267 @@ Page({
   // 初始化页面
   async initializePage() {
     try {
+      // 显示加载提示
+      wx.showLoading({
+        title: '正在初始化...',
+        mask: true
+      });
+      
+      // 等待应用初始化完成
+      await waitForAppInitialization((progress, text) => {
+        wx.showLoading({
+          title: text || '正在初始化...',
+          mask: true
+        });
+      });
+      
+      // 检查用户权限
+      const hasPermission = await checkUserPermission();
+      if (!hasPermission) {
+        wx.hideLoading();
+        wx.showModal({
+          title: '权限不足',
+          content: '您没有权限访问此页面，请重新登录',
+          showCancel: false,
+          success: () => {
+            wx.reLaunch({
+              url: '/pages/role-selection/index'
+            });
+          }
+        });
+        return;
+      }
+      
       this.setData({ app });
       
       this.setTodayDate();
       
-      // 并行加载初始数据
+      // 初始化宝宝信息缓存
+      await this.initBabyInfoCache();
+      
+      // 并行加载其他初始数据
       await Promise.all([
-        this.loadBabyInfo(),
         this.loadCalculationParams(),
         this.loadMedications()
       ]);
       
-      this.initQuickFeedingData();
-      this.initCurrentFeedingData();
+      await this.initQuickFeedingData();
+      await this.initCurrentFeedingData();
+      
+      // 检查是否有未完成的临时记录
+      await this.checkUnfinishedFeeding();
+      
+      wx.hideLoading();
     } catch (error) {
-      this.handleError(error, '页面初始化失败');
+      handleError(error, { title: '页面初始化失败' });
+      
+      // 如果是初始化错误，跳转到角色选择页面
+      if (error.message && error.message.includes('初始化')) {
+        wx.showModal({
+          title: '初始化失败',
+          content: '应用初始化失败，请重新进入',
+          showCancel: false,
+          success: () => {
+            wx.reLaunch({
+              url: '/pages/role-selection/index'
+            });
+          }
+        });
+      }
     }
   },
 
+  // 获取最近的喂奶记录数据作为默认值
+  async getLatestFeedingData() {
+    try {
+      // 首先检查今日记录
+      if (this.data.feedings?.length > 0) {
+        const lastFeeding = this.data.feedings[this.data.feedings.length - 1];
+        return {
+          naturalMilkVolume: lastFeeding.naturalMilkVolume || '',
+          specialMilkVolume: lastFeeding.specialMilkVolume || '0',
+          formulaPowderWeight: lastFeeding.formulaPowderWeight || '0'
+        };
+      }
+      
+      // 如果今日没有记录，查询最近的历史记录
+      const db = wx.cloud.database();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      
+      if (!babyUid) {
+        console.warn('未找到宝宝UID，无法获取历史记录');
+        return this.getCalculatedDefaultValues();
+      }
+      
+      // 查询最近7天的记录
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const result = await db.collection('feeding_records')
+        .where({
+          babyUid: babyUid,
+          date: db.command.gte(sevenDaysAgo)
+        })
+        .orderBy('date', 'desc')
+        .limit(5)
+        .get();
+      
+      // 查找最新的喂奶记录
+      for (const record of result.data) {
+        if (record.feedings && record.feedings.length > 0) {
+          // 获取该天最后一次喂奶记录
+          const sortedFeedings = record.feedings.sort((a, b) => {
+            const timeA = a.startDateTime ? new Date(a.startDateTime) : new Date(`2000-01-01 ${a.startTime || '00:00'}`);
+            const timeB = b.startDateTime ? new Date(b.startDateTime) : new Date(`2000-01-01 ${b.startTime || '00:00'}`);
+            return timeB - timeA;
+          });
+          
+          const latestFeeding = sortedFeedings[0];
+          return {
+            naturalMilkVolume: latestFeeding.naturalMilkVolume || '',
+            specialMilkVolume: latestFeeding.specialMilkVolume || '0',
+            formulaPowderWeight: latestFeeding.formulaPowderWeight || '0'
+          };
+        }
+      }
+      
+      // 如果没有找到历史记录，返回计算的默认值
+      return this.getCalculatedDefaultValues();
+      
+    } catch (error) {
+      console.error('获取最近喂奶记录失败:', error);
+      return this.getCalculatedDefaultValues();
+    }
+  },
+
+  // 基于体重计算的默认值
+  getCalculatedDefaultValues() {
+    if (this.data.weight && this.data.calculation_params) {
+      const weight = parseFloat(this.data.weight);
+      const recommended = calculator.calculateRecommendedVolume(weight, this.data.calculation_params);
+      return {
+        naturalMilkVolume: recommended.naturalMilk || '',
+        specialMilkVolume: '0',
+        formulaPowderWeight: '0'
+      };
+    }
+    
+    // 兜底默认值
+    return {
+      naturalMilkVolume: '',
+      specialMilkVolume: '0',
+      formulaPowderWeight: '0'
+    };
+  },
+
   // 初始化当前喂奶记录的默认值
-  initCurrentFeedingData() {
+  async initCurrentFeedingData() {
     if (this.data.currentFeeding.startTime) {
       return;
     }
     
-    let initialValues = { naturalMilkVolume: '', totalVolume: '' };
-    
-    // 尝试从历史记录获取
-    if (this.data.feedings?.length > 0) {
-      const lastFeeding = this.data.feedings[this.data.feedings.length - 1];
-      initialValues = {
-        naturalMilkVolume: lastFeeding.naturalMilkVolume,
-        totalVolume: lastFeeding.totalVolume
-      };
-    } else if (this.data.weight && this.data.calculation_params) {
-      // 基于体重计算建议值
-      const weight = parseFloat(this.data.weight);
-      const recommended = calculator.calculateRecommendedVolume(weight, this.data.calculation_params);
-      initialValues = {
-        naturalMilkVolume: recommended.naturalMilk,
-        totalVolume: recommended.total
-      };
-    }
+    // 获取最近的喂奶数据作为默认值
+    const defaultValues = await this.getLatestFeedingData();
     
     this.setData({
-      'currentFeeding.naturalMilkVolume': initialValues.naturalMilkVolume,
-      'currentFeeding.totalVolume': initialValues.totalVolume
+      'currentFeeding.naturalMilkVolume': defaultValues.naturalMilkVolume,
+      'currentFeeding.specialMilkVolume': defaultValues.specialMilkVolume,
+      'currentFeeding.formulaPowderWeight': defaultValues.formulaPowderWeight
     }, () => {
-      dataManager.updateSpecialMilkForType(this, 'current');
+      // 重新计算总奶量
+      this.calculateTotalVolume('current');
+      
+      // 重新计算特奶粉量
+      if (this.data.calculation_params) {
+        dataManager.updateSpecialMilkForType(this, 'current');
+      }
+      
+      // 如果是普通奶粉且有天然奶量，重新计算奶粉重量
+      if (this.data.proteinSourceType === 'formulaMilk' && defaultValues.naturalMilkVolume) {
+        const formulaPowderWeight = this.calculateFormulaPowderWeight(parseFloat(defaultValues.naturalMilkVolume));
+        this.setData({
+          'currentFeeding.formulaPowderWeight': formulaPowderWeight.toFixed(1)
+        });
+      }
     });
   },
 
   // 设置今日日期，格式为 "YYYY年MM月DD日"
   setTodayDate() {
-    const todayDate = uiUtils.formatters.formatDateDisplay(new Date(), 'YYYY年MM月DD日');
-    this.setData({ todayDate });
+    this.setData({
+      todayDate: this.getTodayDate()
+    });
+  },
+
+  // 检查是否有未完成的临时记录
+  async checkUnfinishedFeeding() {
+    try {
+      const db = wx.cloud.database();
+      const recordId = this.data.recordId;
+      
+      if (!recordId) {
+        return;
+      }
+      
+      // 获取当前记录
+      const record = await db.collection('feeding_records').doc(recordId).get();
+      if (!record.data || !record.data.feedings) {
+        return;
+      }
+      
+      // 查找临时记录
+      const feedings = record.data.feedings;
+      const tempFeeding = feedings.find(feeding => feeding.isTemporary);
+      
+      if (tempFeeding) {
+        console.log('发现未完成的临时记录，恢复状态');
+        
+        // 恢复界面状态 - 注意：结束时间设为空，让UI显示为"记录中"状态
+        this.setData({
+          'currentFeeding.startTime': tempFeeding.startTime,
+          'currentFeeding.endTime': '', // 清空结束时间，显示为记录中状态
+          'currentFeeding.naturalMilkVolume': tempFeeding.naturalMilkVolume || '',
+          'currentFeeding.specialMilkVolume': tempFeeding.specialMilkVolume || '0',
+          'currentFeeding.specialMilkPowder': tempFeeding.specialMilkPowder || '0',
+          'currentFeeding.totalVolume': tempFeeding.totalVolume || '0',
+          'currentFeeding.formulaPowderWeight': tempFeeding.formulaPowderWeight || '0',
+          currentFeedingRecordId: `${recordId}_${tempFeeding.startTime}`
+        });
+        
+        // 显示提示
+        wx.showToast({
+          title: '恢复未完成的喂奶记录',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    } catch (error) {
+      console.error('检查未完成记录失败:', error);
+    }
   },
 
   async onShow() {
     try {
       this.setData({ app });
       
-      // 只重新加载必要的数据，避免重复请求
-      await this.loadTodayData(false);
+      // 并行执行初始化任务
+      await Promise.all([
+        this.loadTodayData(false),
+        this.initBabyInfoCache() // 更新宝宝信息缓存
+      ]);
       
       // 初始化当前喂奶数据
-      this.initCurrentFeedingData();
+      await this.initCurrentFeedingData();
+      
+      // 检查是否有未完成的临时记录
+      await this.checkUnfinishedFeeding();
       
       // 检查营养设置完整性
       if (this.data.calculation_params) {
         this.checkNutritionSettings();
       }
     } catch (error) {
-      this.handleError(error, '加载页面数据失败');
+      handleError(error, { title: '加载页面数据失败' });
     }
   },
 
@@ -241,6 +530,16 @@ Page({
         wx.hideLoading();
         // 验证默认设置的完整性
         this.checkNutritionSettings();
+        
+        // 只在调试模式下显示错误提示
+        this.checkIsDevTools().then(isDebug => {
+          if (isDebug) {
+            wx.showToast({
+              title: '加载参数失败，使用默认值',
+              icon: 'none'
+            });
+          }
+        });
         return;
       }
       
@@ -260,10 +559,7 @@ Page({
         }
       }
       
-      // 设置蛋白质来源标签，用于UI显示
-      this.setData({
-        proteinSourceLabel: proteinSourceLabel
-      });
+      // 蛋白质来源标签现在通过 getProteinSourceLabel() 方法动态获取
       
       // 已登录状态，获取营养设置，必须传入 babyUid 参数
       const settings = await NutritionModel.getNutritionSettings(babyUid);
@@ -304,7 +600,8 @@ Page({
 
       // 更新计算参数
       this.setData({
-        calculation_params: params
+        calculation_params: params,
+        proteinSourceType: proteinSourceType // 确保设置蛋白质来源类型
       }, () => {
         // 更新参数后重新计算所有相关数值
         if (this.data.weight) {
@@ -331,54 +628,26 @@ Page({
       // 验证默认设置的完整性
       this.checkNutritionSettings();
       
-      // 只在调试模式下显示错误提示
-      if (wx.getSystemInfoSync().platform === 'devtools') {
-        wx.showToast({
-          title: '加载参数失败，使用默认值',
-          icon: 'none'
-        });
-      }
     }
   },
 
   // 更新所有计算
   updateCalculations() {
-    if (!this.data.weight || !this.data.nutritionSettingsComplete || !this.data.calculation_params) {
-      return;
+    // 更新所有缓存的计算值
+    if (this.data.weight && this.data.calculation_params) {
+      this.setData({
+        proteinSourceLabel: this.getProteinSourceLabel(),
+        dailyNaturalProtein: this.getDailyNaturalProtein(),
+        requiredNaturalMilk: this.getRequiredNaturalMilk(),
+        totalNaturalMilkFed: this.getTotalNaturalMilkFed(),
+        remainingNaturalMilk: this.getRemainingNaturalMilk(),
+        formulaPowderNeeded: this.getFormulaPowderNeeded(),
+        groupedMedicationRecords: this.getGroupedMedicationRecords()
+      });
+      
+      // 更新当前喂奶的特奶量
+      dataManager.updateSpecialMilkForType(this, 'current');
     }
-
-    const weight = parseFloat(this.data.weight);
-    const params = this.data.calculation_params;
-    const isBreastMilk = this.data.proteinSourceType === 'breastMilk';
-
-    // 计算每日所需天然蛋白量
-    const dailyNaturalProtein = weight * params.natural_protein_coefficient;
-    const naturalMilkNeeded = (dailyNaturalProtein * 100) / params.natural_milk_protein;
-    
-    const resultObj = {
-      dailyNaturalProtein: dailyNaturalProtein.toFixed(2)
-    };
-    
-    if (isBreastMilk) {
-      resultObj.requiredNaturalMilk = Math.round(naturalMilkNeeded).toString();
-    } else {
-      const dailyMilkVolume = (naturalMilkNeeded * params.formula_milk_ratio?.water) / params.formula_milk_ratio?.powder;
-      resultObj.requiredNaturalMilk = Math.round(dailyMilkVolume).toString();
-      resultObj.formulaPowderNeeded = naturalMilkNeeded.toFixed(1);
-    }
-
-    // 计算已喂和剩余量
-    const totalNaturalMilkFed = this.data.feedings.reduce((sum, feeding) => {
-      return sum + (parseFloat(feeding.naturalMilkVolume) || 0);
-    }, 0);
-
-    resultObj.totalNaturalMilkFed = Math.round(totalNaturalMilkFed).toString();
-    resultObj.remainingNaturalMilk = Math.round(Math.max(0, Number(resultObj.requiredNaturalMilk) - totalNaturalMilkFed)).toString();
-
-    this.setData(resultObj);
-    
-    // 更新当前喂奶的特奶量
-    dataManager.updateSpecialMilkForType(this, 'current');
   },
 
   // 处理体重输入
@@ -390,46 +659,87 @@ Page({
     });
   },
 
-  // 处理总奶量输入
-  onTotalVolumeInput(e) {
-    const totalVolume = parseFloat(e.detail.value);
-    if (isNaN(totalVolume)) return;
-
-    // 计算每顿所需天然奶量
-    let naturalMilkVolume = 0;
-    if (this.data.weight && this.data.calculation_params) {
-      const weight = parseFloat(this.data.weight);
-      const params = this.data.calculation_params;
-      const dailyNaturalProtein = weight * params.natural_protein_coefficient;
-      const naturalMilkNeeded = (dailyNaturalProtein * 100) / params.natural_milk_protein;
-      // 假设一天8顿，计算每顿的理想量
-      naturalMilkVolume = naturalMilkNeeded / 8;
-    }
-
-    const specialMilkVolume = Math.max(0, totalVolume - naturalMilkVolume);
-
+  // 计算总奶量（天然奶量 + 特奶量）
+  calculateTotalVolume(type = 'current') {
+    const feedingData = type === 'current' ? this.data.currentFeeding : 
+                       type === 'quick' ? this.data.quickFeedingData :
+                       this.data.editingFeeding;
+    
+    const naturalMilk = parseFloat(feedingData.naturalMilkVolume) || 0;
+    const specialMilk = parseFloat(feedingData.specialMilkVolume) || 0;
+    const totalVolume = naturalMilk + specialMilk;
+    
+    const updateField = type === 'current' ? 'currentFeeding.totalVolume' :
+                       type === 'quick' ? 'quickFeedingData.totalVolume' :
+                       'editingFeeding.totalVolume';
+    
     this.setData({
-      'currentFeeding.totalVolume': totalVolume.toFixed(1),
-      'currentFeeding.specialMilkVolume': specialMilkVolume.toFixed(1)
+      [updateField]: totalVolume.toFixed(1)
     });
+    
+    return totalVolume;
   },
 
   // 开始喂奶记录
-  startFeeding() {
+  async startFeeding() {
     try {
-      // 验证喂奶数据
+      // 1. 首先验证体重数据
+      if (!this.data.weight || parseFloat(this.data.weight) <= 0) {
+        wx.showModal({
+          title: '请先输入体重',
+          content: '开始喂奶记录前，请先在上方输入宝宝今日的体重数据',
+          showCancel: false,
+          confirmText: '知道了'
+        });
+        return;
+      }
+      
+      // 2. 验证喂奶数据
       utils.validateFeedingData(this.data.currentFeeding);
       
-      // 获取当前时间并更新
-      const formattedTime = utils.formatTime();
+      // 3. 获取当前时间
+      const now = new Date();
+      const startTime = utils.formatTime(now);
+      
+      // 4. 结束时间默认为开始时间+20分钟
+      const endDateTime = new Date(now.getTime() + 20 * 60 * 1000);
+      const endTime = utils.formatTime(endDateTime);
+      
+      // 5. 立即保存到数据库
+      wx.showLoading({ title: '开始记录...' });
+      
+      const feeding = {
+        startTime: startTime,
+        endTime: endTime,
+        startDateTime: now,
+        endDateTime: endDateTime,
+        naturalMilkVolume: Math.round(parseFloat(this.data.currentFeeding.naturalMilkVolume || 0)).toString(),
+        specialMilkVolume: Math.round(parseFloat(this.data.currentFeeding.specialMilkVolume || 0)).toString(),
+        specialMilkPowder: parseFloat(this.data.currentFeeding.specialMilkPowder || 0).toFixed(1),
+        totalVolume: Math.round(parseFloat(this.data.currentFeeding.totalVolume || 0)).toString(),
+        formulaPowderWeight: this.data.currentFeeding.formulaPowderWeight || '0',
+        isTemporary: true // 标记为临时记录
+      };
+      
+      // 6. 保存记录并获取记录ID
+      const savedFeeding = await this.saveFeedingRecordAndGetId(feeding);
+      
+      // 7. 更新UI状态 - 注意：这里只更新时间状态，不清空结束时间，保持UI显示
       this.setData({
-        'currentFeeding.startTime': formattedTime,
-        'currentFeeding.endTime': ''
+        'currentFeeding.startTime': startTime,
+        'currentFeeding.endTime': '', // 清空结束时间，让UI显示为"记录中"状态
+        currentFeedingRecordId: savedFeeding.tempId // 保存临时记录的ID
       });
       
+      wx.hideLoading();
       utils.showSuccess('开始记录喂奶');
+      
+      // 8. 刷新数据显示（静默模式，避免影响当前状态）
+      await this.loadTodayData(true);
+      
     } catch (error) {
-      this.handleError(error);
+      wx.hideLoading();
+      handleError(error, { title: '开始记录失败' });
     }
   },
   
@@ -440,23 +750,41 @@ Page({
       content: '确定要撤销当前喂奶记录吗？',
       confirmText: '确定',
       cancelText: '取消',
-      success: (res) => {
+      success: async (res) => {
         if (res.confirm) {
-          // 保留奶量数据，重置时间状态
-          const { naturalMilkVolume, totalVolume, specialMilkVolume, specialMilkPowder } = this.data.currentFeeding;
-          
-          this.setData({
-            currentFeeding: {
-              startTime: '',
-              endTime: '',
-              naturalMilkVolume,
-              specialMilkVolume,
-              specialMilkPowder,
-              totalVolume
+          try {
+            wx.showLoading({ title: '撤销中...' });
+            
+            // 如果存在已保存的记录，删除它
+            if (this.data.currentFeedingRecordId) {
+              await this.deleteTempFeedingRecord();
             }
-          });
-          
-          utils.showSuccess('已撤销');
+            
+            // 保留奶量数据，重置时间状态
+            const { naturalMilkVolume, specialMilkVolume, specialMilkPowder, totalVolume, formulaPowderWeight } = this.data.currentFeeding;
+            
+            this.setData({
+              currentFeeding: {
+                startTime: '',
+                endTime: '',
+                naturalMilkVolume,
+                specialMilkVolume,
+                specialMilkPowder,
+                totalVolume,
+                formulaPowderWeight
+              },
+              currentFeedingRecordId: '' // 清空记录ID
+            });
+            
+            // 刷新数据显示
+            await this.loadTodayData(true);
+            
+            wx.hideLoading();
+            utils.showSuccess('已撤销');
+          } catch (error) {
+            wx.hideLoading();
+            handleError(error, { title: '撤销失败' });
+          }
         }
       }
     });
@@ -469,23 +797,35 @@ Page({
         throw new Error('请先开始喂奶');
       }
       
+      wx.showLoading({ title: '保存中...' });
+      
       const endTime = utils.formatTime();
+      const endDateTime = new Date();
+      
+      // 如果存在临时记录，更新它的结束时间
+      if (this.data.currentFeedingRecordId) {
+        await this.updateTempFeedingRecord(endTime, endDateTime);
+      } else {
+        // 如果没有临时记录（意外情况），创建新记录
+        const { naturalMilkVolume, specialMilkVolume, specialMilkPowder, totalVolume, formulaPowderWeight } = this.data.currentFeeding;
+        
+        const feeding = {
+          startTime: this.data.currentFeeding.startTime,
+          endTime: endTime,
+          startDateTime: utils.createTimeObject(this.data.currentFeeding.startTime),
+          endDateTime: endDateTime,
+          naturalMilkVolume: Math.round(parseFloat(naturalMilkVolume || 0)).toString(),
+          specialMilkVolume: Math.round(parseFloat(specialMilkVolume || 0)).toString(),
+          specialMilkPowder: parseFloat(specialMilkPowder || 0).toFixed(1),
+          totalVolume: Math.round(parseFloat(totalVolume || 0)).toString(),
+          formulaPowderWeight: formulaPowderWeight || '0'
+        };
+        
+        await this.saveFeedingRecord(feeding);
+      }
       
       // 保存当前奶量数据
-      const { naturalMilkVolume, specialMilkVolume, specialMilkPowder, totalVolume } = this.data.currentFeeding;
-      
-      // 准备记录数据
-      const feeding = {
-        startTime: this.data.currentFeeding.startTime,
-        endTime: endTime,
-        naturalMilkVolume: Math.round(parseFloat(naturalMilkVolume)).toString(),
-        specialMilkVolume: Math.round(parseFloat(specialMilkVolume)).toString(),
-        specialMilkPowder: parseFloat(specialMilkPowder).toFixed(1),
-        totalVolume: Math.round(parseFloat(totalVolume)).toString()
-      };
-      console.log('feeding', feeding);
-      
-      await this.saveFeedingRecord(feeding);
+      const { naturalMilkVolume, specialMilkVolume, specialMilkPowder, totalVolume, formulaPowderWeight } = this.data.currentFeeding;
       
       // 重置时间状态，保留奶量
       this.setData({
@@ -495,16 +835,21 @@ Page({
           naturalMilkVolume,
           specialMilkVolume,
           specialMilkPowder,
-          totalVolume
-        }
+          totalVolume,
+          formulaPowderWeight
+        },
+        currentFeedingRecordId: '' // 清空记录ID
       });
       
       // 更新统计数据
       await this.loadTodayData(true);
+      
+      wx.hideLoading();
       utils.showSuccess('记录已保存');
       
     } catch (error) {
-      this.handleError(error, '保存喂奶记录失败');
+      wx.hideLoading();
+      handleError(error, { title: '保存喂奶记录失败' });
     }
   },
   
@@ -513,6 +858,15 @@ Page({
     const field = e.currentTarget.dataset.field;
     const value = e.detail.value;
     dataManager.updateFeedingData(this, 'current', field, value);
+    
+    // 当输入天然奶量或特奶量时，重新计算总奶量
+    if (field === 'naturalMilkVolume' || field === 'specialMilkVolume') {
+      this.calculateTotalVolume('current');
+      // 重新计算特奶粉量
+      if (this.data.calculation_params) {
+        dataManager.updateSpecialMilkForType(this, 'current');
+      }
+    }
   },
 
   // Load today's data from cloud database
@@ -569,28 +923,44 @@ Page({
           weightToSet = record.weight;
         }
       } else {
-        // 如果没有今日记录，尝试获取默认体重
-        if (!this.data.weight) {
-          await this.loadDefaultWeight();
+        // 如果没有今日记录，自动加载昨天的体重数据作为默认值
+        const yesterdayWeight = await this.loadYesterdayWeight();
+        if (yesterdayWeight) {
+          weightToSet = yesterdayWeight;
+          
+          // 显示体重自动回填提示（仅在非静默模式下）
+          if (!silent) {
+            setTimeout(() => {
+              wx.showToast({
+                title: `已自动填入体重: ${yesterdayWeight}kg`,
+                icon: 'none',
+                duration: 2000
+              });
+            }, 500); // 延迟显示，避免与加载提示冲突
+          }
         }
       }
       
       // 处理药物记录 - 使用独立集合的数据
       const medicationRecordsToSet = medicationResult.data || [];
-      const groupedMedicationRecords = MedicationRecordModel.groupRecordsByMedication(medicationRecordsToSet);
 
-      // 设置数据
+      // 设置数据（不再缓存 groupedMedicationRecords，改用方法动态计算）
       this.setData({
         feedings: feedingsToSet,
         medicationRecords: medicationRecordsToSet,
-        groupedMedicationRecords: groupedMedicationRecords,
         weight: weightToSet,
         recordId: recordId
       });
       
-      if (this.data.weight) {
+      // 如果有体重数据，触发计算更新
+      if (weightToSet) {
         this.updateCalculations();
       }
+      
+      // 更新分组药物记录缓存
+      this.setData({
+        groupedMedicationRecords: this.getGroupedMedicationRecords()
+      });
       
       // Calculate natural milk stats after loading data
       this.calculateNaturalMilkStats();
@@ -612,38 +982,126 @@ Page({
            dataUtils.array.sortByTime(feedings, 'startTime');
   },
 
-  // 加载默认体重（从宝宝信息或历史记录中）
-  async loadDefaultWeight() {
+  // 加载昨天的体重数据
+  async loadYesterdayWeight() {
     try {
-      // 首先尝试从宝宝信息获取体重
-      if (this.data.babyInfo && this.data.babyInfo.weight) {
-        this.setData({ weight: this.data.babyInfo.weight });
-        this.updateCalculations();
-        return;
+      const db = wx.cloud.database();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      
+      if (!babyUid) {
+        console.warn('未找到宝宝UID，无法获取昨天体重');
+        return null;
       }
       
-      // 如果宝宝信息没有体重，尝试获取最近一条记录的体重
-      const db = wx.cloud.database();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+             // 获取昨天的日期范围
+       const today = new Date();
+       const yesterday = new Date(today);
+       yesterday.setDate(today.getDate() - 1);
+       
+       // 确保日期有效
+       if (isNaN(yesterday.getTime())) {
+         console.error('昨天日期计算错误');
+         return null;
+       }
+       
+       const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0);
+       const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
       
+      console.log('查询昨天体重数据:', {
+        startOfYesterday: startOfYesterday.toISOString(),
+        endOfYesterday: endOfYesterday.toISOString(),
+        babyUid
+      });
+      
+      // 查询昨天的记录
       const result = await db.collection('feeding_records')
         .where({
-          date: db.command.lt(today)
+          babyUid: babyUid,
+          date: db.command.gte(startOfYesterday).and(db.command.lte(endOfYesterday))
         })
         .orderBy('date', 'desc')
         .limit(1)
         .get();
       
       if (result.data && result.data.length > 0) {
-        const lastRecord = result.data[0];
-        if (lastRecord.weight) {
-          this.setData({ weight: lastRecord.weight });
-          this.updateCalculations();
+        const yesterdayRecord = result.data[0];
+        let weight = null;
+        
+        // 获取体重数据（兼容新旧数据结构）
+        if (yesterdayRecord.basicInfo && yesterdayRecord.basicInfo.weight) {
+          weight = yesterdayRecord.basicInfo.weight;
+        } else if (yesterdayRecord.weight) {
+          weight = yesterdayRecord.weight;
+        }
+        
+        if (weight) {
+          console.log('找到昨天的体重数据:', weight);
+          return weight;
         }
       }
+      
+      // 如果没有找到昨天的记录，尝试获取最近的历史记录
+      console.log('未找到昨天的记录，查询最近的历史记录');
+      return await this.loadLatestHistoryWeight();
+      
     } catch (error) {
-      console.error('加载默认体重失败:', error);
+      console.error('加载昨天体重失败:', error);
+      return null;
+    }
+  },
+
+  // 加载最近的历史体重数据（兜底方案）
+  async loadLatestHistoryWeight() {
+    try {
+      const db = wx.cloud.database();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      
+      if (!babyUid) {
+        return null;
+      }
+      
+      // 获取最近7天的记录
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      
+      const result = await db.collection('feeding_records')
+        .where({
+          babyUid: babyUid,
+          date: db.command.gte(sevenDaysAgo).and(db.command.lt(today))
+        })
+        .orderBy('date', 'desc')
+        .limit(5)
+        .get();
+      
+      // 遍历查找有体重数据的记录
+      for (const record of result.data) {
+        let weight = null;
+        
+        if (record.basicInfo && record.basicInfo.weight) {
+          weight = record.basicInfo.weight;
+        } else if (record.weight) {
+          weight = record.weight;
+        }
+        
+        if (weight) {
+          console.log('找到历史体重数据:', weight, '日期:', record.date);
+          return weight;
+        }
+      }
+      
+      // 最后尝试从宝宝信息获取默认体重
+      const babyInfo = await getBabyInfo();
+      if (babyInfo && babyInfo.weight) {
+        console.log('使用宝宝信息中的体重:', babyInfo.weight);
+        return babyInfo.weight;
+      }
+      
+      return null;
+      
+    } catch (error) {
+      console.error('加载历史体重失败:', error);
+      return null;
     }
   },
 
@@ -710,13 +1168,6 @@ Page({
       }
     } catch (error) {
       console.error('保存体重失败:', error);
-      // 仅在调试环境显示错误
-      if (wx.getSystemInfoSync().platform === 'devtools') {
-        wx.showToast({
-          title: '保存体重失败',
-          icon: 'none'
-        });
-      }
     }
   },
   
@@ -780,7 +1231,7 @@ Page({
   },
   
   // 保存快速记录
-  saveQuickFeeding() {
+  async saveQuickFeeding() {
     // 检查必要字段是否填写
     const { naturalMilkVolume, totalVolume, startTime, endTime } = this.data.quickFeedingData;
     
@@ -793,20 +1244,13 @@ Page({
     }
     
     const naturalMilkNum = parseFloat(naturalMilkVolume);
-    const totalVolumeNum = parseFloat(totalVolume);
+    const specialMilkNum = parseFloat(this.data.quickFeedingData.specialMilkVolume) || 0;
+    const totalVolumeNum = parseFloat(this.data.quickFeedingData.totalVolume) || 0;
     
     // 验证数据有效性
-    if (isNaN(naturalMilkNum) || isNaN(totalVolumeNum) || naturalMilkNum < 0 || totalVolumeNum < 0) {
+    if (isNaN(naturalMilkNum) || isNaN(specialMilkNum) || naturalMilkNum < 0 || specialMilkNum < 0) {
       wx.showToast({
         title: '请输入有效的奶量',
-        icon: 'none'
-      });
-      return;
-    }
-    
-    if (naturalMilkNum > totalVolumeNum) {
-      wx.showToast({
-        title: '天然奶量不能大于总奶量',
         icon: 'none'
       });
       return;
@@ -821,11 +1265,8 @@ Page({
       return;
     }
     
-    // 计算特奶量
-    const specialMilkVolume = Math.max(0, totalVolumeNum - naturalMilkNum);
-    
     // 计算特奶粉克重
-    const specialMilkPowder = this.calculateSpecialMilkPowder(specialMilkVolume);
+    const specialMilkPowder = this.calculateSpecialMilkPowder(specialMilkNum);
     
     // 创建Date对象
     const now = new Date();
@@ -850,7 +1291,7 @@ Page({
       startDateTime: startDateTime, // 添加标准时间对象
       endDateTime: endDateTime,     // 添加标准时间对象
       naturalMilkVolume: naturalMilkNum.toString(),
-      specialMilkVolume: specialMilkVolume.toString(),
+      specialMilkVolume: specialMilkNum.toString(),
       specialMilkPowder: specialMilkPowder.toFixed(1),
       totalVolume: totalVolumeNum.toString()
     };
@@ -860,31 +1301,31 @@ Page({
       title: '保存中...'
     });
     
-    this.saveFeedingRecord(feeding)
-      .then(() => {
-        // 隐藏弹窗
-        this.hideQuickInputModal();
-        
-        // 重置表单
-        this.initQuickFeedingData();
-        
-        // 刷新数据以显示最新记录（使用静默模式）
-        this.loadTodayData(true);
-        
-        wx.hideLoading();
-        wx.showToast({
-          title: '保存成功',
-          icon: 'success'
-        });
-      })
-      .catch(error => {
-        console.error('保存快速喂奶记录失败:', error);
-        wx.hideLoading();
-        wx.showToast({
-          title: '保存失败',
-          icon: 'none'
-        });
+    try {
+      await this.saveFeedingRecord(feeding);
+      
+      // 隐藏弹窗
+      this.hideQuickInputModal();
+      
+      // 重置表单
+      await this.initQuickFeedingData();
+      
+      // 刷新数据以显示最新记录（使用静默模式）
+      this.loadTodayData(true);
+      
+      wx.hideLoading();
+      wx.showToast({
+        title: '保存成功',
+        icon: 'success'
       });
+    } catch (error) {
+      console.error('保存快速喂奶记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({
+        title: '保存失败',
+        icon: 'none'
+      });
+    }
   },
 
   // 从云数据库加载药物列表
@@ -942,7 +1383,7 @@ Page({
     const now = new Date();
     const formattedTime = utils.formatTime(now);
     
-    // 根据ID找到对应的药物信息
+    // 检查药物是否存在
     const medicationInfo = this.data.medicationsList.find(med => med._id === medication);
     
     if (!medicationInfo) {
@@ -954,9 +1395,9 @@ Page({
     }
     
     this.setData({
-      showMedicationModal: true,
+      'modals.medication': true,
       selectedMedication: medication,
-      selectedMedicationInfo: medicationInfo, // 存储完整的药物信息对象
+      selectedMedicationInfo: medicationInfo, // 缓存药物信息
       currentModalTime: formattedTime,
       currentModalDosage: medicationInfo.dosage // 初始化为默认剂量
     });
@@ -964,10 +1405,10 @@ Page({
 
   // Close medication modal
   closeMedicationModal() {
-    uiUtils.modalManager.hide(this, 'Medication');
+    this.hideModal('medication');
     this.setData({
       selectedMedication: null,
-      selectedMedicationInfo: null,
+      selectedMedicationInfo: null, // 清理缓存
       currentModalTime: '',
       currentModalDosage: ''
     });
@@ -1004,8 +1445,8 @@ Page({
   async recordMedication() {
     const { selectedMedication, currentModalTime, currentModalDateTime, currentModalDosage } = this.data;
     
-    // 从medicationsList中查找药物信息
-    const medInfo = this.data.medicationsList.find(med => med._id === selectedMedication);
+    // 从缓存中获取药物信息
+    const medInfo = this.data.selectedMedicationInfo;
     
     if (!medInfo) {
       wx.showToast({
@@ -1016,7 +1457,7 @@ Page({
     }
 
     // 使用统一验证方法验证剂量
-    if (!this.validateData(
+    if (!validation.validateData(
       { dosage: currentModalDosage }, 
       { 
         dosage: { 
@@ -1033,7 +1474,7 @@ Page({
     const finalDosage = currentModalDosage;
 
     // 获取宝宝UID
-    const babyUid = this.getBabyUid();
+    const babyUid = getBabyUid();
     if (!babyUid) {
       wx.showToast({
         title: '未找到宝宝信息',
@@ -1069,9 +1510,7 @@ Page({
       const result = await MedicationRecordModel.addRecord(medicationData);
       
       // 关闭弹窗
-      this.setData({
-        showMedicationModal: false
-      });
+      this.hideModal('medication');
       
       // 显示成功动画
       this.showMedicationSuccessAnimation(medInfo.name);
@@ -1102,20 +1541,12 @@ Page({
 
   // Calculate total natural milk fed and remaining amount
   calculateNaturalMilkStats() {
-    const totalNaturalMilkFed = this.data.feedings.reduce((sum, feeding) => {
-      return sum + (parseFloat(feeding.naturalMilkVolume) || 0);
-    }, 0);
-
-    const remainingNaturalMilk = Math.max(0, this.data.requiredNaturalMilk - totalNaturalMilkFed);
-
-    this.setData({
-      'totalNaturalMilkFed': Math.round(totalNaturalMilkFed).toString(),
-      'remainingNaturalMilk': Math.round(remainingNaturalMilk).toString()
-    });
+    // 统计数据现在通过 getTotalNaturalMilkFed() 和 getRemainingNaturalMilk() 方法动态计算
+    // 不需要缓存到data中
   },
 
   // 初始化快捷填写数据
-  initQuickFeedingData() {
+  async initQuickFeedingData() {
     // 获取当前时间
     const now = new Date();
     const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000);
@@ -1126,60 +1557,33 @@ Page({
       'quickFeedingData.endTime': utils.formatTime(now)
     });
     
-    // 尝试从上一次记录中获取值
-    const lastFeeding = this.data.feedings[this.data.feedings.length - 1];
+    // 获取最近的喂奶数据作为默认值
+    const defaultValues = await this.getLatestFeedingData();
     
-    if (lastFeeding) {
-      // 使用上一次记录的值
-      this.setData({
-        'quickFeedingData.naturalMilkVolume': lastFeeding.naturalMilkVolume,
-        'quickFeedingData.totalVolume': lastFeeding.totalVolume
-      });
-    } else if (this.data.weight && this.data.calculation_params) {
-      // 如果没有历史记录，使用基于体重和参数的计算值
-      // 计算每餐所需天然奶量
-      const weight = parseFloat(this.data.weight);
-      const params = this.data.calculation_params;
-      const dailyNaturalProtein = weight * params.natural_protein_coefficient;
-      const naturalMilkNeeded = (dailyNaturalProtein * 100) / params.natural_milk_protein;
-      
-      // 假设一天8顿，计算每顿的理想量
-      const perFeedingNaturalMilk = naturalMilkNeeded / 8;
-      
-      if (perFeedingNaturalMilk > 0) {
-        // 基于计算值设置
-        const roundedValue = Math.round(perFeedingNaturalMilk);
-        const estimatedTotalVolume = Math.round(roundedValue * 1.5); // 估计总量约为天然奶量的1.5倍
-        
-        this.setData({
-          'quickFeedingData.naturalMilkVolume': roundedValue.toString(),
-          'quickFeedingData.totalVolume': estimatedTotalVolume.toString()
-        });
-      } else {
-        // 无法计算时，使用空值等待用户输入
-        this.setData({
-          'quickFeedingData.naturalMilkVolume': '',
-          'quickFeedingData.totalVolume': ''
-        });
-      }
-    } else {
-      // 没有足够信息计算时，使用空值
-      this.setData({
-        'quickFeedingData.naturalMilkVolume': '',
-        'quickFeedingData.totalVolume': '',
-        'quickFeedingData.specialMilkVolume': '0',
-        'quickFeedingData.specialMilkPowder': '0'
-      });
-    }
+    this.setData({
+      'quickFeedingData.naturalMilkVolume': defaultValues.naturalMilkVolume,
+      'quickFeedingData.specialMilkVolume': defaultValues.specialMilkVolume,
+      'quickFeedingData.formulaPowderWeight': defaultValues.formulaPowderWeight
+    });
+
+    // 重新计算总奶量
+    this.calculateTotalVolume('quick');
 
     // 计算特奶量和特奶粉量
-    this.calculateQuickSpecialMilk();
+    if (this.data.calculation_params) {
+      dataManager.updateSpecialMilkForType(this, 'quick');
+      
+      // 如果是普通奶粉且有天然奶量，重新计算奶粉重量
+      if (this.data.proteinSourceType === 'formulaMilk' && defaultValues.naturalMilkVolume) {
+        const formulaPowderWeight = this.calculateFormulaPowderWeight(parseFloat(defaultValues.naturalMilkVolume));
+        this.setData({
+          'quickFeedingData.formulaPowderWeight': formulaPowderWeight.toFixed(1)
+        });
+      }
+    }
   },
 
-  // 计算快捷填写的特奶量
-  calculateQuickSpecialMilk() {
-    dataManager.updateSpecialMilkForType(this, 'quick');
-  },
+
 
   // 计算特奶粉克重
   calculateSpecialMilkPowder(specialMilkVolume) {
@@ -1193,12 +1597,203 @@ Page({
     
     const fieldMap = {
       'quickNaturalMilk': 'naturalMilkVolume',
-      'quickTotalVolume': 'totalVolume'
+      'quickSpecialMilk': 'specialMilkVolume'
     };
     
     const mappedField = fieldMap[field];
     if (mappedField) {
       dataManager.updateFeedingData(this, 'quick', mappedField, value);
+      
+      // 重新计算总奶量
+      this.calculateTotalVolume('quick');
+      
+      // 重新计算特奶粉量
+      if (this.data.calculation_params) {
+        dataManager.updateSpecialMilkForType(this, 'quick');
+      }
+    }
+  },
+
+  // 保存喂奶记录并返回ID（用于开始喂奶时立即保存）
+  async saveFeedingRecordAndGetId(feeding) {
+    try {
+      // 获取当前日期（只保留年月日）
+      const now = new Date();
+      const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // 获取宝宝UID，用于数据关联
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      if (!babyUid) {
+        console.warn('未找到宝宝UID，可能导致数据同步问题');
+      }
+      
+      // 添加babyUid到喂奶记录中
+      feeding.babyUid = babyUid;
+      feeding.createdAt = new Date();
+      
+      // 保存到数据库
+      const db = wx.cloud.database();
+      
+      // 检查记录ID是否存在，存在则判断是否是当天的记录
+      let shouldCreateNewRecord = true;
+      let recordId = this.data.recordId;
+
+      if (recordId) {
+        // 获取已有记录数据
+        const existingRecord = await db.collection('feeding_records').doc(recordId).get();
+        if (existingRecord && existingRecord.data) {
+          const recordDate = new Date(existingRecord.data.date);
+          
+          // 如果记录日期与当前日期相同（同一天），则更新该记录
+          if (recordDate.getFullYear() === currentDate.getFullYear() &&
+              recordDate.getMonth() === currentDate.getMonth() &&
+              recordDate.getDate() === currentDate.getDate()) {
+            
+            // 是当天的记录，更新它
+            shouldCreateNewRecord = false;
+            
+            await db.collection('feeding_records').doc(recordId).update({
+              data: {
+                feedings: db.command.push(feeding),
+                'basicInfo.weight': this.data.weight || '',
+                updatedAt: db.serverDate()
+              }
+            });
+          }
+        }
+      }
+      
+      // 如果不是当天的记录或没有记录ID，创建新记录
+      if (shouldCreateNewRecord) {
+        const basicInfo = {
+          weight: this.data.weight || ''
+        };
+        
+        const result = await db.collection('feeding_records').add({
+          data: {
+            date: currentDate,
+            basicInfo: basicInfo,
+            feedings: [feeding],
+            medicationRecords: [],
+            babyUid: babyUid,
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          }
+        });
+        
+        // 保存新记录的ID
+        recordId = result._id;
+        this.setData({
+          recordId: recordId
+        });
+      }
+      
+      // 返回记录信息，包含一个临时ID用于后续更新
+      return {
+        recordId: recordId,
+        tempId: `${recordId}_${feeding.startTime}` // 临时ID用于标识这条记录
+      };
+      
+    } catch (error) {
+      console.error('保存喂奶记录失败:', error);
+      throw error;
+    }
+  },
+
+  // 更新临时喂奶记录的结束时间
+  async updateTempFeedingRecord(endTime, endDateTime) {
+    try {
+      const db = wx.cloud.database();
+      const recordId = this.data.recordId;
+      
+      if (!recordId) {
+        throw new Error('找不到记录ID');
+      }
+      
+      // 获取当前记录
+      const record = await db.collection('feeding_records').doc(recordId).get();
+      if (!record.data || !record.data.feedings) {
+        throw new Error('找不到喂奶记录');
+      }
+      
+      // 找到要更新的记录（最后一条临时记录）
+      const feedings = record.data.feedings;
+      let targetIndex = -1;
+      
+      // 从后往前找到第一条临时记录
+      for (let i = feedings.length - 1; i >= 0; i--) {
+        if (feedings[i].isTemporary) {
+          targetIndex = i;
+          break;
+        }
+      }
+      
+      if (targetIndex === -1) {
+        throw new Error('找不到临时记录');
+      }
+      
+      // 更新记录
+      const updatedFeeding = {
+        ...feedings[targetIndex],
+        endTime: endTime,
+        endDateTime: endDateTime,
+        isTemporary: false // 移除临时标记
+      };
+      
+      // 更新数组
+      feedings[targetIndex] = updatedFeeding;
+      
+      // 保存到数据库
+      await db.collection('feeding_records').doc(recordId).update({
+        data: {
+          feedings: feedings,
+          updatedAt: db.serverDate()
+        }
+      });
+      
+      console.log('临时记录更新成功');
+      
+    } catch (error) {
+      console.error('更新临时记录失败:', error);
+      throw error;
+    }
+  },
+
+  // 删除临时喂奶记录
+  async deleteTempFeedingRecord() {
+    try {
+      const db = wx.cloud.database();
+      const recordId = this.data.recordId;
+      
+      if (!recordId) {
+        console.log('没有记录ID，无需删除');
+        return;
+      }
+      
+      // 获取当前记录
+      const record = await db.collection('feeding_records').doc(recordId).get();
+      if (!record.data || !record.data.feedings) {
+        console.log('找不到喂奶记录');
+        return;
+      }
+      
+      // 找到并删除临时记录
+      const feedings = record.data.feedings;
+      const filteredFeedings = feedings.filter(feeding => !feeding.isTemporary);
+      
+      // 保存到数据库
+      await db.collection('feeding_records').doc(recordId).update({
+        data: {
+          feedings: filteredFeedings,
+          updatedAt: db.serverDate()
+        }
+      });
+      
+      console.log('临时记录删除成功');
+      
+    } catch (error) {
+      console.error('删除临时记录失败:', error);
+      throw error;
     }
   },
 
@@ -1318,20 +1913,25 @@ Page({
     const { field } = e.currentTarget.dataset;
     let currentValue = 0;
     let updateField = '';
+    let feedingType = 'current';
     
     // 确定要更新的字段和当前值
     if (field === 'naturalMilkVolume') {
       currentValue = parseFloat(this.data.currentFeeding.naturalMilkVolume) || 0;
       updateField = 'currentFeeding.naturalMilkVolume';
-    } else if (field === 'totalVolume') {
-      currentValue = parseFloat(this.data.currentFeeding.totalVolume) || 0;
-      updateField = 'currentFeeding.totalVolume';
+      feedingType = 'current';
+    } else if (field === 'specialMilkVolume') {
+      currentValue = parseFloat(this.data.currentFeeding.specialMilkVolume) || 0;
+      updateField = 'currentFeeding.specialMilkVolume';
+      feedingType = 'current';
     } else if (field === 'quickNaturalMilk') {
       currentValue = parseFloat(this.data.quickFeedingData.naturalMilkVolume) || 0;
       updateField = 'quickFeedingData.naturalMilkVolume';
-    } else if (field === 'quickTotalVolume') {
-      currentValue = parseFloat(this.data.quickFeedingData.totalVolume) || 0;
-      updateField = 'quickFeedingData.totalVolume';
+      feedingType = 'quick';
+    } else if (field === 'quickSpecialMilk') {
+      currentValue = parseFloat(this.data.quickFeedingData.specialMilkVolume) || 0;
+      updateField = 'quickFeedingData.specialMilkVolume';
+      feedingType = 'quick';
     }
     
     // 增加5ml
@@ -1342,27 +1942,22 @@ Page({
       [updateField]: newValue.toString()
     });
     
-    // 如果需要，重新计算特奶量
-    if (field === 'totalVolume' || field === 'naturalMilkVolume') {
-      this.updateSpecialMilkVolume();
-      
-      // 如果是普奶且更新的是天然奶量，计算奶粉克重
-      if (this.data.proteinSourceType === 'formulaMilk' && field === 'naturalMilkVolume') {
-        const formulaPowderWeight = this.calculateFormulaPowderWeight(newValue);
-        this.setData({
-          'currentFeeding.formulaPowderWeight': formulaPowderWeight
-        });
-      }
-    } else if (field === 'quickNaturalMilk' || field === 'quickTotalVolume') {
-      this.calculateQuickSpecialMilk();
-      
-      // 如果是普奶且更新的是天然奶量，计算奶粉克重
-      if (this.data.proteinSourceType === 'formulaMilk' && field === 'quickNaturalMilk') {
-        const formulaPowderWeight = this.calculateFormulaPowderWeight(newValue);
-        this.setData({
-          'quickFeedingData.formulaPowderWeight': formulaPowderWeight
-        });
-      }
+    // 重新计算总奶量和特奶粉量
+    this.calculateTotalVolume(feedingType);
+    if (this.data.calculation_params) {
+      dataManager.updateSpecialMilkForType(this, feedingType);
+    }
+    
+    // 如果是普奶且更新的是天然奶量，计算奶粉克重
+    if (this.data.proteinSourceType === 'formulaMilk' && 
+        (field === 'naturalMilkVolume' || field === 'quickNaturalMilk')) {
+      const formulaPowderWeight = this.calculateFormulaPowderWeight(newValue);
+      const weightField = feedingType === 'current' ? 
+        'currentFeeding.formulaPowderWeight' : 
+        'quickFeedingData.formulaPowderWeight';
+      this.setData({
+        [weightField]: formulaPowderWeight
+      });
     }
   },
   
@@ -1370,20 +1965,25 @@ Page({
     const { field } = e.currentTarget.dataset;
     let currentValue = 0;
     let updateField = '';
+    let feedingType = 'current';
     
     // 确定要更新的字段和当前值
     if (field === 'naturalMilkVolume') {
       currentValue = parseFloat(this.data.currentFeeding.naturalMilkVolume) || 0;
       updateField = 'currentFeeding.naturalMilkVolume';
-    } else if (field === 'totalVolume') {
-      currentValue = parseFloat(this.data.currentFeeding.totalVolume) || 0;
-      updateField = 'currentFeeding.totalVolume';
+      feedingType = 'current';
+    } else if (field === 'specialMilkVolume') {
+      currentValue = parseFloat(this.data.currentFeeding.specialMilkVolume) || 0;
+      updateField = 'currentFeeding.specialMilkVolume';
+      feedingType = 'current';
     } else if (field === 'quickNaturalMilk') {
       currentValue = parseFloat(this.data.quickFeedingData.naturalMilkVolume) || 0;
       updateField = 'quickFeedingData.naturalMilkVolume';
-    } else if (field === 'quickTotalVolume') {
-      currentValue = parseFloat(this.data.quickFeedingData.totalVolume) || 0;
-      updateField = 'quickFeedingData.totalVolume';
+      feedingType = 'quick';
+    } else if (field === 'quickSpecialMilk') {
+      currentValue = parseFloat(this.data.quickFeedingData.specialMilkVolume) || 0;
+      updateField = 'quickFeedingData.specialMilkVolume';
+      feedingType = 'quick';
     }
     
     // 减少5ml，但不小于0
@@ -1394,34 +1994,26 @@ Page({
       [updateField]: newValue.toString()
     });
     
-    // 如果需要，重新计算特奶量
-    if (field === 'totalVolume' || field === 'naturalMilkVolume') {
-      this.updateSpecialMilkVolume();
-      
-      // 如果是普奶且更新的是天然奶量，计算奶粉克重
-      if (this.data.proteinSourceType === 'formulaMilk' && field === 'naturalMilkVolume') {
-        const formulaPowderWeight = this.calculateFormulaPowderWeight(newValue);
-        this.setData({
-          'currentFeeding.formulaPowderWeight': formulaPowderWeight
-        });
-      }
-    } else if (field === 'quickNaturalMilk' || field === 'quickTotalVolume') {
-      this.calculateQuickSpecialMilk();
-      
-      // 如果是普奶且更新的是天然奶量，计算奶粉克重
-      if (this.data.proteinSourceType === 'formulaMilk' && field === 'quickNaturalMilk') {
-        const formulaPowderWeight = this.calculateFormulaPowderWeight(newValue);
-        this.setData({
-          'quickFeedingData.formulaPowderWeight': formulaPowderWeight
-        });
-      }
+    // 重新计算总奶量和特奶粉量
+    this.calculateTotalVolume(feedingType);
+    if (this.data.calculation_params) {
+      dataManager.updateSpecialMilkForType(this, feedingType);
+    }
+    
+    // 如果是普奶且更新的是天然奶量，计算奶粉克重
+    if (this.data.proteinSourceType === 'formulaMilk' && 
+        (field === 'naturalMilkVolume' || field === 'quickNaturalMilk')) {
+      const formulaPowderWeight = this.calculateFormulaPowderWeight(newValue);
+      const weightField = feedingType === 'current' ? 
+        'currentFeeding.formulaPowderWeight' : 
+        'quickFeedingData.formulaPowderWeight';
+      this.setData({
+        [weightField]: formulaPowderWeight
+      });
     }
   },
   
-  // 更新特奶量
-  updateSpecialMilkVolume() {
-    dataManager.updateSpecialMilkForType(this, 'current');
-  },
+
 
   // 打开编辑记录弹窗
   openEditModal(e) {
@@ -1452,21 +2044,31 @@ Page({
       }
     }
     
+    const editingFeeding = { 
+      ...feeding,
+      startDateTime: startDateTime,
+      endDateTime: endDateTime
+    };
+    
+    // 如果是普通奶粉，确保有奶粉重量
+    if (this.data.proteinSourceType === 'formulaMilk') {
+      if (!editingFeeding.formulaPowderWeight && editingFeeding.naturalMilkVolume) {
+        const formulaPowderWeight = this.calculateFormulaPowderWeight(parseFloat(editingFeeding.naturalMilkVolume));
+        editingFeeding.formulaPowderWeight = formulaPowderWeight.toFixed(1);
+      }
+    }
+    
     this.setData({
-      showEditModal: true,
+      'modals.edit': true,
       editingFeedingIndex: index,
-      editingFeeding: { 
-        ...feeding,
-        startDateTime: startDateTime,
-        endDateTime: endDateTime
-      },
+      editingFeeding: editingFeeding,
       activeFeedingMenu: -1 // 关闭菜单
     });
   },
 
   // 关闭编辑记录弹窗
   closeEditModal() {
-    uiUtils.modalManager.hide(this, 'Edit');
+    this.hideModal('edit');
     this.setData({
       editingFeedingIndex: -1,
       editingFeeding: null
@@ -1500,21 +2102,38 @@ Page({
     } else {
       // 其他字段使用统一的数据管理
       dataManager.updateFeedingData(this, 'edit', field, value);
+      
+      // 当输入天然奶量或特奶量时，重新计算总奶量
+      if (field === 'naturalMilkVolume' || field === 'specialMilkVolume') {
+        this.calculateTotalVolume('edit');
+        // 重新计算特奶粉量
+        if (this.data.calculation_params) {
+          dataManager.updateSpecialMilkForType(this, 'edit');
+        }
+        
+        // 如果是普通奶粉且输入的是天然奶量，计算奶粉重量
+        if (this.data.proteinSourceType === 'formulaMilk' && field === 'naturalMilkVolume') {
+          const formulaPowderWeight = this.calculateFormulaPowderWeight(parseFloat(value) || 0);
+          this.setData({
+            'editingFeeding.formulaPowderWeight': formulaPowderWeight.toFixed(1)
+          });
+        }
+      }
     }
   },
 
-  // 更新编辑中的特奶量
-  updateEditingSpecialMilkVolume() {
-    dataManager.updateSpecialMilkForType(this, 'edit');
-  },
+
 
   // 保存编辑的记录
   async saveEditedFeeding() {
     try {
       wx.showLoading({ title: '保存中...' });
       
-      // 更新特奶量
-      this.updateEditingSpecialMilkVolume();
+      // 确保计算数据是最新的
+      this.calculateTotalVolume('edit');
+      if (this.data.calculation_params) {
+        dataManager.updateSpecialMilkForType(this, 'edit');
+      }
       
       // 获取宝宝UID
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
@@ -1575,7 +2194,7 @@ Page({
       // 更新本地数据
       this.setData({
         feedings: sortedFeedings,
-        showEditModal: false,
+        'modals.edit': false,
         editingFeedingIndex: -1,
         activeFeedingMenu: -1 // 确保菜单关闭
       });
@@ -1622,7 +2241,7 @@ Page({
     }
     
     this.setData({
-      showMedicationRecordModal: true,
+      'modals.medicationRecord': true,
       selectedMedicationRecord: {
         ...record,
         dateTime: dateTime
@@ -1633,7 +2252,7 @@ Page({
   // 关闭药物记录详情弹窗
   closeMedicationRecordModal() {
     this.setData({
-      showMedicationRecordModal: false,
+      'modals.medicationRecord': false,
       selectedMedicationRecord: null,
     });
   },
@@ -1717,7 +2336,7 @@ Page({
       
       // 关闭弹窗
       this.setData({
-        showMedicationRecordModal: false,
+        'modals.medicationRecord': false,
         selectedMedicationRecord: null
       });
       
@@ -1749,23 +2368,10 @@ Page({
   // 加载宝宝信息
   async loadBabyInfo() {
     try {
-      const db = wx.cloud.database();
-      // 获取当前用户绑定的宝宝UID
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      // 使用新的工具函数获取宝宝信息
+      const babyInfo = await getBabyInfo();
       
-      if (!babyUid) {
-        console.warn('未找到宝宝UID，无法加载宝宝信息');
-        return;
-      }
-      
-      // 使用 babyUid 查询宝宝信息
-      const res = await db.collection('baby_info').where({
-        babyUid: babyUid
-      }).get();
-      
-      if (res.data && res.data.length > 0) {
-        const babyInfo = res.data[0];
-        
+      if (babyInfo) {
         const birthDate = new Date(babyInfo.birthday);
         const today = new Date();
         
@@ -1774,14 +2380,9 @@ Page({
         
         // 处理蛋白质来源类型
         const proteinSourceType = babyInfo.proteinSourceType || 'breastMilk';
-        const proteinSourceLabel = proteinSourceType === 'breastMilk' ? '母乳' : '普通奶粉';
         
         this.setData({
-          babyName: babyInfo.name,
-          babyDays: diffDays,
-          babyInfo: babyInfo,
-          proteinSourceType: proteinSourceType,
-          proteinSourceLabel: proteinSourceLabel
+          proteinSourceType: proteinSourceType
         });
         
         // 如果没有设置体重，使用宝宝信息中的体重
@@ -1998,19 +2599,19 @@ Page({
   navigateToNutritionSettings() {
     // 根据蛋白质来源类型传递参数
     wx.navigateTo({
-      url: `/pages/nutrition-settings/index?proteinSource=${this.data.proteinSourceLabel}`
+      url: `/pages/nutrition-settings/index?proteinSource=${this.getProteinSourceLabel()}`
     });
   },
 
   // 显示快捷输入弹窗
-  showQuickInputModal() {
-    this.initQuickFeedingData();
-    uiUtils.modalManager.show(this, 'QuickInput');
+  async showQuickInputModal() {
+    await this.initQuickFeedingData();
+    this.showModal('quickInput');
   },
   
   // 隐藏快捷输入弹窗
   hideQuickInputModal() {
-    uiUtils.modalManager.hide(this, 'QuickInput');
+    this.hideModal('quickInput');
   },
 
   // 打开喂奶记录菜单
@@ -2074,7 +2675,7 @@ Page({
 
 
   // 显示补充喂奶记录弹窗
-  showAddFeedingModal() {
+  async showAddFeedingModal() {
     // 默认设置当前时间
     const now = new Date();
     const currentTime = utils.formatTime(now);
@@ -2083,17 +2684,29 @@ Page({
     const endTime = new Date(now.getTime() + 30 * 60000);
     const endTimeStr = utils.formatTime(endTime);
     
+    // 获取最近的喂奶数据作为默认值
+    const defaultValues = await this.getLatestFeedingData();
+    
     this.setData({
-      showAddFeedingModal: true,
+      'modals.addFeeding': true,
       newFeeding: {
         startTime: currentTime,
         endTime: endTimeStr,
         startDateTime: now,
         endDateTime: endTime,
-        naturalMilkVolume: '',
-        totalVolume: '',
-        specialMilkVolume: 0
+        naturalMilkVolume: defaultValues.naturalMilkVolume,
+        specialMilkVolume: defaultValues.specialMilkVolume,
+        formulaPowderWeight: defaultValues.formulaPowderWeight
       }
+    });
+    
+    // 计算总奶量
+    const naturalMilk = parseFloat(defaultValues.naturalMilkVolume) || 0;
+    const specialMilk = parseFloat(defaultValues.specialMilkVolume) || 0;
+    const totalVolume = naturalMilk + specialMilk;
+    
+    this.setData({
+      'newFeeding.totalVolume': totalVolume.toString()
     });
   },
 
@@ -2132,16 +2745,13 @@ Page({
     const currentTime = utils.formatTime(now);
     
     this.setData({
-      showAddMedicationModal: true
-    }, () => {
-      this.setData({
-        newMedication: {
-          name: '',
-          volume: '',
-          time: currentTime,
-          dateTime: now
-        }
-      });
+      'modals.addMedication': true,
+      newMedication: {
+        name: '',
+        volume: '',
+        time: currentTime,
+        dateTime: now
+      }
     });
   },
 
@@ -2359,7 +2969,7 @@ Page({
   // 隐藏补充喂奶记录弹窗
   hideAddFeedingModal() {
     this.setData({
-      showAddFeedingModal: false,
+      'modals.addFeeding': false,
       newFeeding: {
         startTime: '',
         endTime: '',
@@ -2375,7 +2985,7 @@ Page({
   // 隐藏补充用药记录弹窗
   hideAddMedicationModal() {
     this.setData({
-      showAddMedicationModal: false,
+      'modals.addMedication': false,
       newMedication: {
         name: '',
         volume: '',

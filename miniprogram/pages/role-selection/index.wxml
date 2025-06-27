@@ -6,7 +6,16 @@
         <image class="logo" src="/images/LemonLogo.png" mode="aspectFit"></image>
       </view>
       <view class="loading-text">{{loadingText}}</view>
-      <view class="loading-spinner" wx:if="{{!initFailed}}">
+      
+      <!-- 进度条 -->
+      <view class="progress-container" wx:if="{{!initFailed}}">
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{initProgress}}%"></view>
+        </view>
+        <view class="progress-text">{{initProgress}}%</view>
+      </view>
+      
+      <view class="loading-spinner" wx:if="{{!initFailed && initProgress < 100}}">
         <view class="spinner"></view>
       </view>
       <view class="retry-button" wx:if="{{initFailed}}" bindtap="retryInitialization">

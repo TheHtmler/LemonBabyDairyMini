@@ -951,6 +951,17 @@
   color: #999;
 }
 
+.volume-value {
+  font-size: 32rpx;
+  color: #FFB800;
+  font-weight: 600;
+  padding: 8rpx 16rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  border-radius: 8rpx;
+  line-height: 1;
+  margin: 0 12rpx;
+}
+
 .special-milk {
   display: flex;
   align-items: center;

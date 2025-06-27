@@ -25,8 +25,6 @@
     "selectedColor": "#FFB800",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
-    "height": "64px",
-    "fontSize": "14px",
     "list": [
       {
         "pagePath": "pages/daily-feeding/index",

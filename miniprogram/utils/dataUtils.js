@@ -292,6 +292,47 @@ const dataUtils = {
       }
       return true;
     }
+  },
+
+  // 数据验证工具
+  validation: {
+    // 统一的数据验证方法
+    validateData(data, rules) {
+      for (const field in rules) {
+        const value = data[field];
+        const rule = rules[field];
+        
+        if (rule.required && (!value || value.toString().trim() === '')) {
+          wx.showToast({
+            title: rule.message || `请输入${field}`,
+            icon: 'none'
+          });
+          return false;
+        }
+        
+        if (rule.type === 'number' && value) {
+          const num = parseFloat(value);
+          if (isNaN(num) || (rule.min !== undefined && num < rule.min)) {
+            wx.showToast({
+              title: rule.message || `${field}格式不正确`,
+              icon: 'none'
+            });
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+    
+    // ... existing code ...
+    
+    // 必填验证
+    required(value, fieldName = '字段') {
+      if (value === null || value === undefined || value === '') {
+        throw new Error(`${fieldName}不能为空`);
+      }
+      return true;
+    }
   }
 };
 

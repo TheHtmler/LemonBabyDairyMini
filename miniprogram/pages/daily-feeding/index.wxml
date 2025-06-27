@@ -4,9 +4,9 @@
 
   <!-- Baby Info Section -->
   <view class="section baby-info-section">
-    <view class="baby-name">{{babyName || '宝宝'}}</view>
+    <view class="baby-name">{{babyName}}</view>
     <view class="baby-date">{{todayDate}}</view>
-    <view class="baby-days">已出生 {{babyDays || 0}} 天</view>
+    <view class="baby-days">已出生 {{babyDays}} 天</view>
   </view>
 
   <!-- Weight Section -->
@@ -94,23 +94,23 @@
         </view>
       </view>
       
-      <!-- 总奶量 -->
+      <!-- 特奶量 -->
       <view class="input-group">
-        <text class="label">总奶量</text>
+        <text class="label">特奶量</text>
         <view class="volume-control">
-          <button class="volume-btn decrease" catchtap="decreaseVolume" data-field="totalVolume">−</button>
-          <input type="digit" class="volume-input" value="{{currentFeeding.totalVolume}}" 
-                data-field="totalVolume" bindinput="onFeedingInput" />
-          <button class="volume-btn increase" catchtap="increaseVolume" data-field="totalVolume">+</button>
+          <button class="volume-btn decrease" catchtap="decreaseVolume" data-field="specialMilkVolume">−</button>
+          <input type="digit" class="volume-input" value="{{currentFeeding.specialMilkVolume}}" 
+                data-field="specialMilkVolume" bindinput="onFeedingInput" />
+          <button class="volume-btn increase" catchtap="increaseVolume" data-field="specialMilkVolume">+</button>
           <text class="volume-unit">ml</text>
         </view>
       </view>
       
-      <!-- 特奶量 -->
+      <!-- 计算结果显示 -->
       <view class="special-milk">
         <view class="special-milk-item">
-          <text class="label">特奶量:</text>
-          <text class="value">{{currentFeeding.specialMilkVolume || '0'}}ml</text>
+          <text class="label">总奶量:</text>
+          <text class="value">{{currentFeeding.totalVolume || '0'}}ml</text>
         </view>
         <view class="special-milk-item">
           <text class="label">特奶粉:</text>
@@ -144,6 +144,11 @@
         <view class="data-row">
           <text class="data-label">{{proteinSourceLabel}}量:</text>
           <text class="data-value">{{currentFeeding.naturalMilkVolume}}ml</text>
+        </view>
+        <!-- 普通奶粉情况下显示奶粉重量 -->
+        <view class="data-row" wx:if="{{proteinSourceType === 'formulaMilk'}}">
+          <text class="data-label">奶粉重量:</text>
+          <text class="data-value">{{currentFeeding.formulaPowderWeight || '0'}}g</text>
         </view>
         <view class="data-row">
           <text class="data-label">特奶量:</text>
@@ -217,6 +222,11 @@
               <view class="record-detail-item">
                 <text class="detail-label">{{proteinSourceLabel}}:</text>
                 <text class="detail-value">{{item.naturalMilkVolume}}ml</text>
+              </view>
+              <!-- 普通奶粉情况下显示奶粉重量 -->
+              <view class="record-detail-item" wx:if="{{proteinSourceType === 'formulaMilk'}}">
+                <text class="detail-label">奶粉:</text>
+                <text class="detail-value">{{item.formulaPowderWeight || '0'}}g</text>
               </view>
               <view class="record-detail-item">
                 <text class="detail-label">特奶:</text>
@@ -297,7 +307,7 @@
   </view>
 
   <!-- Medication Modal -->
-  <view class="modal" wx:if="{{showMedicationModal}}" bindtap="closeMedicationModal">
+  <view class="modal" wx:if="{{modals.medication}}" bindtap="closeMedicationModal">
     <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>记录用药</text>
@@ -333,7 +343,7 @@
   </view>
   
   <!-- 编辑记录弹窗 -->
-  <view class="modal" wx:if="{{showEditModal}}" bindtap="closeEditModal">
+  <view class="modal" wx:if="{{modals.edit}}" bindtap="closeEditModal">
     <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>编辑喂奶记录</text>
@@ -366,21 +376,29 @@
           </view>
         </view>
         
-        <!-- 总奶量 -->
-        <view class="input-group">
-          <text class="label">总奶量</text>
+        <!-- 普通奶粉情况下显示奶粉重量 -->
+        <view class="input-group" wx:if="{{proteinSourceType === 'formulaMilk'}}">
+          <text class="label">奶粉重量</text>
           <view class="volume-control">
-            <input type="digit" class="volume-input" value="{{editingFeeding.totalVolume}}" 
-                  data-field="totalVolume" bindinput="onEditFeedingInput" />
-            <text class="volume-unit">ml</text>
+            <text class="volume-value">{{editingFeeding.formulaPowderWeight || '0'}}g</text>
           </view>
         </view>
         
         <!-- 特奶量 -->
+        <view class="input-group">
+          <text class="label">特奶量</text>
+          <view class="volume-control">
+            <input type="digit" class="volume-input" value="{{editingFeeding.specialMilkVolume}}" 
+                  data-field="specialMilkVolume" bindinput="onEditFeedingInput" />
+            <text class="volume-unit">ml</text>
+          </view>
+        </view>
+        
+        <!-- 计算结果 -->
         <view class="special-milk">
           <view class="special-milk-item">
-            <text class="label">特奶量:</text>
-            <text class="value">{{editingFeeding.specialMilkVolume || '0'}}ml</text>
+            <text class="label">总奶量:</text>
+            <text class="value">{{editingFeeding.totalVolume || '0'}}ml</text>
           </view>
           <view class="special-milk-item">
             <text class="label">特奶粉:</text>
@@ -396,7 +414,7 @@
   </view>
   
   <!-- 药物记录详情弹窗 -->
-  <view class="modal" wx:if="{{showMedicationRecordModal}}" bindtap="closeMedicationRecordModal">
+  <view class="modal" wx:if="{{modals.medicationRecord}}" bindtap="closeMedicationRecordModal">
     <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>药物记录详情</text>
@@ -432,7 +450,7 @@
   </view>
   
   <!-- 快捷记录弹窗 -->
-  <view class="modal" wx:if="{{showQuickInputModal}}" bindtap="hideQuickInputModal">
+  <view class="modal" wx:if="{{modals.quickInput}}" bindtap="hideQuickInputModal">
     <view class="modal-content" catchtap="preventBubble">
       <view class="modal-header">
         <text>快捷记录</text>
@@ -467,23 +485,31 @@
           </view>
         </view>
         
-        <!-- 总奶量 -->
-        <view class="input-group">
-          <text class="label">总奶量</text>
+        <!-- 普通奶粉情况下显示奶粉重量 -->
+        <view class="input-group" wx:if="{{proteinSourceType === 'formulaMilk'}}">
+          <text class="label">奶粉重量</text>
           <view class="volume-control">
-            <button class="volume-btn decrease" catchtap="decreaseVolume" data-field="quickTotalVolume">−</button>
-            <input type="digit" class="volume-input" value="{{quickFeedingData.totalVolume}}" 
-                  data-field="quickTotalVolume" bindinput="onQuickFeedingInput" />
-            <button class="volume-btn increase" catchtap="increaseVolume" data-field="quickTotalVolume">+</button>
+            <text class="volume-value">{{quickFeedingData.formulaPowderWeight || '0'}}g</text>
+          </view>
+        </view>
+        
+        <!-- 特奶量 -->
+        <view class="input-group">
+          <text class="label">特奶量</text>
+          <view class="volume-control">
+            <button class="volume-btn decrease" catchtap="decreaseVolume" data-field="quickSpecialMilk">−</button>
+            <input type="digit" class="volume-input" value="{{quickFeedingData.specialMilkVolume}}" 
+                  data-field="quickSpecialMilk" bindinput="onQuickFeedingInput" />
+            <button class="volume-btn increase" catchtap="increaseVolume" data-field="quickSpecialMilk">+</button>
             <text class="volume-unit">ml</text>
           </view>
         </view>
         
-        <!-- 特奶量和特奶粉克重展示 -->
+        <!-- 计算结果展示 -->
         <view class="special-milk">
           <view class="special-milk-item">
-            <text class="label">特奶量:</text>
-            <text class="value">{{quickFeedingData.specialMilkVolume || '0'}}ml</text>
+            <text class="label">总奶量:</text>
+            <text class="value">{{quickFeedingData.totalVolume || '0'}}ml</text>
           </view>
           <view class="special-milk-item">
             <text class="label">特奶粉:</text>

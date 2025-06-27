@@ -55,6 +55,35 @@
   text-align: center;
 }
 
+/* 进度条样式 */
+.progress-container {
+  width: 100%;
+  margin-bottom: 30rpx;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8rpx;
+  background-color: #FFE082;
+  border-radius: 4rpx;
+  overflow: hidden;
+  margin-bottom: 10rpx;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #FFB800;
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  color: #FFB800;
+  text-align: center;
+  font-weight: 500;
+}
+
 .loading-spinner {
   display: flex;
   align-items: center;
