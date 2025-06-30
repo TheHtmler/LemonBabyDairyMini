@@ -4,6 +4,7 @@
     "pages/bind-phone/index",
     "pages/daily-feeding/index",
     "pages/data-records/index",
+    "pages/analysis-report/index",
     "pages/profile/index",
     "pages/baby-info/index",
     "pages/nutrition-settings/index",
@@ -33,6 +34,10 @@
       {
         "pagePath": "pages/data-records/index",
         "text": "数据记录"
+      },
+      {
+        "pagePath": "pages/analysis-report/index",
+        "text": "报告分析"
       },
       {
         "pagePath": "pages/profile/index",
