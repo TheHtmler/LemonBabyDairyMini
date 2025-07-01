@@ -11,7 +11,9 @@
     "pages/baby-info/index",
     "pages/nutrition-settings/index",
     "pages/medications/index",
-    "pages/about/index"
+    "pages/about/index",
+    "pages/add-report/index",
+    "pages/report-detail/index"
   ],
   "window": {
     "backgroundColor": "#FFF5D6",

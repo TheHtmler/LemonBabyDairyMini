@@ -1,0 +1,161 @@
+<!--pages/report-detail/index.wxml-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 主要内容 -->
+  <view wx:else class="content">
+    <!-- 报告头部信息 -->
+    <view class="report-header">
+      <view class="header-main">
+        <view class="report-title">
+          <text class="title-text">{{reportData.reportTypeName}}</text>
+          <text class="date-text">{{reportData.formattedDate}}</text>
+        </view>
+        <view class="header-actions">
+          <view class="action-btn" bindtap="onEditReport">
+            <text class="action-icon">✏️</text>
+          </view>
+          <view class="action-btn" bindtap="onDeleteReport">
+            <text class="action-icon">🗑️</text>
+          </view>
+          <view class="action-btn" bindtap="onCopyReport">
+            <text class="action-icon">📋</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 报告摘要 -->
+      <view class="report-summary">
+        <view class="summary-item">
+          <text class="summary-number">{{reportSummary.totalCount}}</text>
+          <text class="summary-label">总指标</text>
+        </view>
+        <view class="summary-divider"></view>
+        <view class="summary-item">
+          <text class="summary-number normal">{{reportSummary.normalCount}}</text>
+          <text class="summary-label">正常</text>
+        </view>
+        <view class="summary-divider"></view>
+        <view class="summary-item">
+          <text class="summary-number abnormal">{{reportSummary.abnormalCount}}</text>
+          <text class="summary-label">异常</text>
+        </view>
+        <view class="summary-divider"></view>
+        <view class="summary-item">
+          <text class="summary-number rate">{{reportSummary.normalRate}}%</text>
+          <text class="summary-label">正常率</text>
+        </view>
+      </view>
+
+      <!-- 整体状态 -->
+      <view class="overall-status {{reportSummary.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
+        <text class="status-text">
+          {{reportSummary.abnormalCount > 0 ? '存在异常指标，请注意' : '所有指标正常'}}
+        </text>
+      </view>
+    </view>
+
+    <!-- 指标详情列表 -->
+    <view class="indicators-section">
+      <text class="section-title">指标详情</text>
+      
+      <view class="indicators-list">
+        <view wx:for="{{indicatorConfigs}}" wx:key="key" class="indicator-detail">
+          <!-- 获取指标数据 -->
+          <view wx:if="{{reportData.indicators[item.key]}}" class="indicator-item">
+            <!-- 指标头部 -->
+            <view class="indicator-header">
+              <view class="indicator-info">
+                <text class="indicator-name">{{item.name}}</text>
+                <text class="indicator-abbr">({{item.abbr}})</text>
+              </view>
+              
+              <!-- 状态标识 -->
+              <view class="status-badge {{reportData.indicators[item.key].status}}">
+                <text class="status-icon">
+                  {{reportData.indicators[item.key].status === 'normal' ? '✓' : 
+                    reportData.indicators[item.key].status === 'high' ? '↑' : 
+                    reportData.indicators[item.key].status === 'low' ? '↓' : '?'}}
+                </text>
+                <text class="status-text">
+                  {{reportData.indicators[item.key].status === 'normal' ? '正常' : 
+                    reportData.indicators[item.key].status === 'high' ? '偏高' : 
+                    reportData.indicators[item.key].status === 'low' ? '偏低' : '未知'}}
+                </text>
+              </view>
+            </view>
+
+            <!-- 指标数值 -->
+            <view class="indicator-values">
+              <view class="value-row main-value">
+                <text class="value-label">检测值：</text>
+                <text class="value-text {{reportData.indicators[item.key].status}}">
+                  {{reportData.indicators[item.key].value}} {{item.unit}}
+                </text>
+              </view>
+
+              <!-- 参考范围（非比值指标） -->
+              <view wx:if="{{!item.isRatio && reportData.indicators[item.key].minRange}}" class="value-row">
+                <text class="value-label">参考范围：</text>
+                <text class="value-text">
+                  {{reportData.indicators[item.key].minRange}} - {{reportData.indicators[item.key].maxRange}} {{item.unit}}
+                </text>
+              </view>
+
+              <!-- 最优范围（氨基酸指标） -->
+              <view wx:if="{{reportData.indicators[item.key].optimalRange}}" class="value-row optimal">
+                <text class="value-label">最优范围：</text>
+                <text class="value-text optimal">
+                  {{reportData.indicators[item.key].optimalRange.min}} - {{reportData.indicators[item.key].optimalRange.max}} {{item.unit}}
+                </text>
+              </view>
+            </view>
+
+            <!-- 趋势按钮（预留） -->
+            <view class="indicator-actions">
+              <button class="trend-btn" bindtap="onViewTrend" data-indicator="{{item.key}}">
+                <text class="trend-text">📈 查看趋势</text>
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 报告信息 -->
+    <view class="report-info-section">
+      <text class="section-title">报告信息</text>
+      
+      <view class="info-card">
+        <view class="info-row">
+          <text class="info-label">报告编号：</text>
+          <text class="info-value">{{reportData.reportId}}</text>
+        </view>
+        
+        <view class="info-row">
+          <text class="info-label">创建时间：</text>
+          <text class="info-value">{{reportData.createdAt}}</text>
+        </view>
+        
+        <view wx:if="{{reportData.updatedAt !== reportData.createdAt}}" class="info-row">
+          <text class="info-label">更新时间：</text>
+          <text class="info-value">{{reportData.updatedAt}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作按钮 -->
+  <view class="bottom-actions">
+    <button class="action-button edit" bindtap="onEditReport">
+      <text class="btn-text">编辑报告</text>
+    </button>
+    <button class="action-button delete" bindtap="onDeleteReport" disabled="{{deleting}}">
+      <text class="btn-text">{{deleting ? '删除中...' : '删除报告'}}</text>
+    </button>
+  </view>
+</view> 

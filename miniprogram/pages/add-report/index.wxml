@@ -1,0 +1,134 @@
+<!--pages/add-report/index.wxml-->
+<view class="container">
+  <!-- 页面头部 -->
+  <!-- <view class="page-header">
+    <text class="page-title">{{mode === 'edit' ? '编辑' : '添加'}}检测报告</text>
+    <text class="page-subtitle">请准确填写各项指标数据</text>
+  </view> -->
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 主要内容 -->
+  <view wx:else class="content">
+    <!-- 基础信息卡片 -->
+    <view class="base-info-card">
+      <view class="info-item">
+        <text class="info-label">检测日期</text>
+        <picker mode="date" value="{{reportDate}}" bindchange="onDateChange" class="date-picker">
+          <view class="picker-content">
+            <text class="date-text">{{reportDate || '请选择日期'}}</text>
+            <text class="picker-arrow">📅</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 报告类型选择 -->
+    <view class="report-type-section">
+      <text class="section-title">报告类型</text>
+      <scroll-view class="type-scroll" scroll-x="true" show-scrollbar="false">
+        <view wx:for="{{reportTypes}}" wx:key="key" 
+              class="type-item {{selectedReportType === item.key ? 'active' : ''}}"
+              bindtap="onReportTypeChange" data-type="{{item.key}}">
+          <text class="type-icon">{{item.icon}}</text>
+          <text class="type-name">{{item.name}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 指标输入区域 -->
+    <view class="indicators-section">
+      <text class="section-title">指标数据</text>
+      
+      <view class="indicators-list">
+        <view wx:for="{{currentIndicators}}" wx:key="key" class="indicator-item">
+          <!-- 指标头部 -->
+          <view class="indicator-header">
+            <view class="indicator-name">
+              <text class="name-text">{{item.name}}</text>
+              <text class="abbr-text">({{item.abbr}})</text>
+            </view>
+            <view wx:if="{{indicatorData[item.key] && indicatorData[item.key].status}}" 
+                  class="status-badge {{indicatorData[item.key].status}}">
+              <text class="status-text">
+                {{indicatorData[item.key].status === 'normal' ? '正常' : 
+                  indicatorData[item.key].status === 'high' ? '偏高' : 
+                  indicatorData[item.key].status === 'low' ? '偏低' : '未知'}}
+              </text>
+            </view>
+          </view>
+
+          <!-- 指标输入 -->
+          <view class="indicator-inputs">
+            <!-- 检测值 -->
+            <view class="input-group">
+              <text class="input-label">检测值</text>
+              <input class="input-field" 
+                     type="digit" 
+                     placeholder="请输入检测值"
+                     value="{{indicatorData[item.key].value}}"
+                     data-indicator="{{item.key}}" 
+                     data-field="value"
+                     bindinput="onIndicatorValueInput" />
+              <text class="input-unit">{{item.unit}}</text>
+            </view>
+
+            <!-- 参考范围（非比值指标） -->
+            <view wx:if="{{!item.isRatio}}" class="range-inputs">
+              <view class="input-group half">
+                <text class="input-label">最小值</text>
+                <input class="input-field" 
+                       type="digit" 
+                       placeholder="最小值"
+                       value="{{indicatorData[item.key].minRange}}"
+                       data-indicator="{{item.key}}" 
+                       data-field="minRange"
+                       bindinput="onIndicatorValueInput" />
+              </view>
+              <text class="range-separator">-</text>
+              <view class="input-group half">
+                <text class="input-label">最大值</text>
+                <input class="input-field" 
+                       type="digit" 
+                       placeholder="最大值"
+                       value="{{indicatorData[item.key].maxRange}}"
+                       data-indicator="{{item.key}}" 
+                       data-field="maxRange"
+                       bindinput="onIndicatorValueInput" />
+              </view>
+            </view>
+
+            <!-- 最优范围提示（氨基酸指标） -->
+            <view wx:if="{{indicatorData[item.key].optimalRange}}" class="optimal-range">
+              <text class="optimal-label">最优范围：</text>
+              <text class="optimal-value">
+                {{indicatorData[item.key].optimalRange.min}} - {{indicatorData[item.key].optimalRange.max}} {{item.unit}}
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作区域 -->
+  <view class="bottom-section">
+    <!-- 免责声明 -->
+    <view class="disclaimer">
+      <text class="disclaimer-text">
+        ⚠️ 免责声明：本工具仅用于记录检测数据，不提供医疗诊断建议。请在专业医生指导下解读报告结果。
+      </text>
+    </view>
+
+    <!-- 保存按钮 -->
+    <view class="save-section">
+      <button class="save-button" bindtap="onSaveReport" disabled="{{saving}}">
+        <text class="save-text">{{saving ? '保存中...' : '保存报告'}}</text>
+      </button>
+    </view>
+  </view>
+</view> 

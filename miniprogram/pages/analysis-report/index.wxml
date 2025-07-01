@@ -1,2 +1,154 @@
 <!--pages/analysis-report/index.wxml-->
-<text>pages/analysis-report/index.wxml</text>
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 主要内容 -->
+  <view wx:else class="content">
+    <!-- 统计信息卡片 -->
+    <view class="statistics-card">
+      <view class="stats-header">
+        <text class="stats-title">检测报告概览</text>
+        <text wx:if="{{statistics.lastReportDate}}" class="stats-date">最近检测：{{statistics.lastReportDate}}</text>
+      </view>
+      
+      <view class="stats-content">
+        <view class="stat-item">
+          <text class="stat-number">{{statistics.totalReports}}</text>
+          <text class="stat-label">总报告数</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-number" style="color: #4CAF50;">{{statistics.normalRate}}%</text>
+          <text class="stat-label">正常率</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-number" style="color: #F44336;">{{statistics.abnormalCount}}</text>
+          <text class="stat-label">异常报告</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 报告类型筛选器 -->
+    <view class="filter-section">
+      <scroll-view class="filter-scroll" scroll-x="true" show-scrollbar="false">
+        <view class="filter-item {{filterType === 'all' ? 'active' : ''}}" 
+              bindtap="onFilterChange" data-type="all">
+          <text class="filter-icon">📊</text>
+          <text class="filter-text">全部</text>
+        </view>
+        <view class="filter-item {{filterType === 'blood_ms' ? 'active' : ''}}" 
+              bindtap="onFilterChange" data-type="blood_ms">
+          <text class="filter-icon">🩸</text>
+          <text class="filter-text">血串联质谱</text>
+        </view>
+        <view class="filter-item {{filterType === 'urine_ms' ? 'active' : ''}}" 
+              bindtap="onFilterChange" data-type="urine_ms">
+          <text class="filter-icon">🧪</text>
+          <text class="filter-text">尿串联质谱</text>
+        </view>
+        <view class="filter-item {{filterType === 'blood_gas' ? 'active' : ''}}" 
+              bindtap="onFilterChange" data-type="blood_gas">
+          <text class="filter-icon">💨</text>
+          <text class="filter-text">血气分析</text>
+        </view>
+        <view class="filter-item {{filterType === 'blood_ammonia' ? 'active' : ''}}" 
+              bindtap="onFilterChange" data-type="blood_ammonia">
+          <text class="filter-icon">⚡</text>
+          <text class="filter-text">血氨检测</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 报告列表 -->
+    <view class="report-list">
+      <!-- 空状态 -->
+      <view wx:if="{{reportList.length === 0}}" class="empty-state">
+        <view class="empty-icon">📋</view>
+        <text class="empty-title">暂无检测报告</text>
+        <text class="empty-desc">点击右下角按钮添加第一个报告</text>
+      </view>
+
+      <!-- 报告卡片列表 -->
+      <view wx:else class="report-cards">
+        <view wx:for="{{reportList}}" wx:key="_id" class="report-card" 
+              bindtap="onViewReport" data-report-id="{{item._id}}">
+          
+          <!-- 卡片头部 -->
+          <view class="card-header">
+            <view class="card-date">
+              <text class="date-text">{{item.formattedDate}}</text>
+              <text class="report-type">{{item.reportTypeName}}</text>
+            </view>
+            <view class="card-actions">
+              <view class="action-btn" catchtap="onEditReport" 
+                    data-report-id="{{item._id}}">
+                <text class="action-icon">✏️</text>
+              </view>
+              <view class="action-btn" catchtap="onDeleteReport" 
+                    data-report-id="{{item._id}}" data-index="{{index}}">
+                <text class="action-icon">🗑️</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 卡片内容 -->
+          <view class="card-content">
+            <view class="summary-stats">
+              <view class="summary-item">
+                <text class="summary-label">总指标</text>
+                <text class="summary-value">{{item.summary.totalCount}}</text>
+              </view>
+              <view class="summary-item">
+                <text class="summary-label">正常</text>
+                <text class="summary-value normal">{{item.summary.normalCount}}</text>
+              </view>
+              <view class="summary-item">
+                <text class="summary-label">异常</text>
+                <text class="summary-value abnormal">{{item.summary.abnormalCount}}</text>
+              </view>
+              <view class="summary-item">
+                <text class="summary-label">正常率</text>
+                <text class="summary-value rate">{{item.summary.normalRate}}%</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 卡片底部状态 -->
+          <view class="card-footer">
+            <view class="status-indicator {{item.summary.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
+              <text class="status-text">
+                {{item.summary.abnormalCount > 0 ? '存在异常指标' : '指标正常'}}
+              </text>
+            </view>
+            <view class="view-detail">
+              <text class="detail-text">查看详情</text>
+              <text class="detail-arrow">→</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载更多 -->
+      <view wx:if="{{loadingMore}}" class="loading-more">
+        <text class="loading-more-text">加载更多...</text>
+      </view>
+      
+      <!-- 没有更多数据 -->
+      <view wx:elif="{{!hasMore && reportList.length > 0}}" class="no-more">
+        <text class="no-more-text">没有更多数据了</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 悬浮添加按钮 -->
+  <view class="fab-container">
+    <button class="fab-button" bindtap="onAddReport">
+      <text class="fab-icon">+</text>
+    </button>
+  </view>
+</view>
