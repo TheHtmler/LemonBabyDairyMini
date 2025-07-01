@@ -8,7 +8,23 @@ Page({
     isInitializing: true, // 初始化状态标记
     loadingText: '正在初始化...',
     initFailed: false, // 初始化失败标记
-    initProgress: 0 // 初始化进度
+    initProgress: 0, // 初始化进度
+    inviteCode: '', // 邀请码（从链接参数获取）
+    fromInvite: false // 是否从邀请链接进入
+  },
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad: function(options) {
+    // 检查是否从邀请链接进入
+    if (options.inviteCode) {
+      this.setData({
+        inviteCode: options.inviteCode,
+        fromInvite: true
+      });
+      console.log('从邀请链接进入，邀请码:', options.inviteCode);
+    }
   },
 
   /**
@@ -214,7 +230,7 @@ Page({
       mask: true
     });
     
-    // 根据角色跳转到不同页面
+    // 根据角色和是否有邀请码跳转到不同页面
     setTimeout(() => {
       wx.hideLoading();
       if (role === 'creator') {
@@ -223,11 +239,97 @@ Page({
           url: '/pages/baby-info/index?firstLogin=true&role=creator',
         });
       } else {
-        // 参与者跳转到绑定手机号页面
-        wx.redirectTo({
-          url: '/pages/bind-phone/index?firstLogin=true&role=participant',
-        });
+        // 参与者逻辑
+        if (this.data.fromInvite && this.data.inviteCode) {
+          // 如果有邀请码，直接尝试加入
+          this.joinByInviteCode(this.data.inviteCode);
+        } else {
+          // 没有邀请码，跳转到邀请码输入页面
+          wx.redirectTo({
+            url: '/pages/invite-join/index?firstLogin=true&role=participant',
+          });
+        }
       }
     }, 500);
+  },
+
+  /**
+   * 通过邀请码加入
+   */
+  async joinByInviteCode(inviteCode) {
+    try {
+      wx.showLoading({
+        title: '验证邀请码...',
+        mask: true
+      });
+
+      // 导入邀请码模型
+      const InvitationModel = require('../../models/invitation');
+      
+      // 验证邀请码格式
+      if (!InvitationModel.validateInviteCodeFormat(inviteCode)) {
+        throw new Error('邀请码格式不正确，请检查输入');
+      }
+
+      // 查找宝宝信息
+      const result = await InvitationModel.findBabyByInviteCode(inviteCode);
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      // 获取当前用户openid
+      const openid = this.app.globalData.openid || wx.getStorageSync('openid');
+      if (!openid) {
+        throw new Error('无法获取用户信息，请重新授权');
+      }
+
+      // 添加参与者
+      const joinResult = await InvitationModel.addParticipant(result.babyInfo.babyUid, openid);
+      
+      if (!joinResult.success) {
+        throw new Error(joinResult.message);
+      }
+
+      // 保存宝宝信息到本地和全局
+      const babyInfo = result.babyInfo;
+      wx.setStorageSync('baby_uid', babyInfo.babyUid);
+      wx.setStorageSync('baby_info_completed', true);
+      this.app.globalData.babyUid = babyInfo.babyUid;
+      this.app.globalData.babyInfo = babyInfo;
+
+      wx.hideLoading();
+      
+      // 显示成功提示
+      wx.showToast({
+        title: joinResult.message,
+        icon: 'success',
+        duration: 2000
+      });
+
+      // 跳转到主页面
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/daily-feeding/index'
+        });
+      }, 2000);
+
+    } catch (error) {
+      wx.hideLoading();
+      console.error('加入失败:', error);
+      
+      wx.showModal({
+        title: '加入失败',
+        content: error.message || '加入失败，请重试',
+        showCancel: false,
+        confirmText: '重新输入',
+        success: () => {
+          // 跳转到邀请码输入页面
+          wx.redirectTo({
+            url: '/pages/invite-join/index?firstLogin=true&role=participant',
+          });
+        }
+      });
+    }
   }
 }) 

@@ -8,10 +8,11 @@ Page({
       height: '',
       condition: 'MMA', // 默认甲基丙二酸血症
       notes: '',
-      phone: '', // 添加手机号字段
       avatarUrl: '', // 添加头像URL字段
       babyUid: '', // 宝宝唯一标识
-      proteinSourceType: 'breastMilk' // 天然蛋白摄入方式，默认母乳
+      proteinSourceType: 'breastMilk', // 天然蛋白摄入方式，默认母乳
+      inviteCode: '', // 邀请码
+      inviteCodeExpiry: null // 邀请码过期时间
     },
     genders: ['男孩', '女孩'],
     genderIndex: 0,
@@ -27,10 +28,8 @@ Page({
     ownerNickname: '',    // 宝宝信息所有者的昵称
     fromInvite: false,    // 标记是否从邀请页面进入
     userRole: '',          // 用户角色：creator 或 participant
-    phoneValid: false, // 手机号验证状态
-    phoneErrorMsg: '', // 手机号错误信息
     defaultAvatarUrl: '/images/LemonLogo.png', // 默认头像路径
-    phoneDisabled: false // 新增：标记手机号是否禁止修改
+    showInviteCode: false // 是否显示邀请码信息
   },
 
   onLoad(options) {
@@ -204,7 +203,7 @@ Page({
         
         // 处理索引和配置
         const indexes = this.processInfoIndexes(babyInfo);
-        const phoneConfig = await this.processPhoneConfig(babyInfo);
+        const inviteConfig = await this.processInviteCodeConfig(babyInfo);
         
         this.setData({
           babyInfo: {
@@ -215,20 +214,20 @@ Page({
             height: babyInfo.height || '',
             condition: babyInfo.condition || 'MMA',
             notes: babyInfo.notes || '',
-            phone: phoneConfig.phone, // 使用获取到的手机号
             avatarUrl: babyInfo.avatarUrl || this.data.defaultAvatarUrl,
             babyUid: babyInfo.babyUid || '',
-            proteinSourceType: babyInfo.proteinSourceType || 'breastMilk'
+            proteinSourceType: babyInfo.proteinSourceType || 'breastMilk',
+            inviteCode: inviteConfig.inviteCode,
+            inviteCodeExpiry: inviteConfig.inviteCodeExpiry
           },
           genderIndex: indexes.genderIndex,
           conditionIndex: indexes.conditionIndex,
           proteinSourceIndex: indexes.proteinSourceIndex,
-          phoneDisabled: phoneConfig.phoneDisabled, // 设置手机号是否禁止修改
+          showInviteCode: inviteConfig.showInviteCode,
           isFormValid: this.checkFormValid({
             name: babyInfo.name,
             weight: babyInfo.weight,
-            birthday: babyInfo.birthday,
-            phone: phoneConfig.phone // 使用获取到的手机号
+            birthday: babyInfo.birthday
           })
         });
       }
@@ -269,54 +268,21 @@ Page({
     };
   },
   
-  // 处理手机号配置
-  async processPhoneConfig(babyInfo) {
-    // 尝试获取手机号，优先使用creatorPhone，其次使用phone，最后尝试从本地存储获取
-    let phone = '';
-    let phoneDisabled = false; // 标记手机号是否禁止修改
-    
-    if (babyInfo.creatorPhone) {
-      phone = babyInfo.creatorPhone;
-      console.log('从宝宝信息中获取creatorPhone:', phone);
-      // 如果是创建者且已有手机号，则禁止修改
-      if (this.data.userRole === 'creator') {
-        phoneDisabled = true;
-      }
-    } else if (babyInfo.phone) {
-      phone = babyInfo.phone;
-      console.log('从宝宝信息中获取phone:', phone);
-      // 如果是创建者且已有手机号，则禁止修改
-      if (this.data.userRole === 'creator') {
-        phoneDisabled = true;
-      }
-    } else if (this.data.userRole === 'creator') {
-      // 如果是创建者角色，尝试从本地存储获取
-      phone = wx.getStorageSync('creator_phone') || '';
-      console.log('从本地存储获取creator_phone:', phone);
-      // 如果本地已有保存的手机号，也禁止修改
-      if (phone) {
-        phoneDisabled = true;
-      }
-    } else if (this.data.userRole === 'participant') {
-      // 如果是参与者角色，尝试从本地存储获取绑定的创建者手机号
-      phone = wx.getStorageSync('bound_creator_phone') || '';
-      console.log('从本地存储获取bound_creator_phone:', phone);
-      // 参与者始终不能修改创建者手机号
-      phoneDisabled = true;
-    }
-
-    // 从全局状态获取创建者手机号
-    if (!phone && this.app.globalData.creatorPhone) {
-      phone = this.app.globalData.creatorPhone;
-      console.log('从全局状态获取创建者手机号:', phone);
-      if (this.data.userRole === 'creator' && phone) {
-        phoneDisabled = true;
-      }
+  // 处理邀请码配置
+  async processInviteCodeConfig(babyInfo) {
+    // 如果是创建者且有宝宝信息，显示邀请码
+    if (this.data.userRole === 'creator' && babyInfo.babyUid) {
+      return {
+        showInviteCode: true,
+        inviteCode: babyInfo.inviteCode || '',
+        inviteCodeExpiry: babyInfo.inviteCodeExpiry
+      };
     }
     
     return {
-      phone,
-      phoneDisabled
+      showInviteCode: false,
+      inviteCode: '',
+      inviteCodeExpiry: null
     };
   },
 
@@ -375,46 +341,10 @@ Page({
     });
   },
 
-  // 处理手机号输入
-  onPhoneInput(e) {
-    // 如果手机号已禁用，不处理输入
-    if (this.data.phoneDisabled) {
-      return;
-    }
-    
-    const phone = e.detail.value;
-    const phoneValid = this.validatePhone(phone);
-    
-    this.setData({
-      'babyInfo.phone': phone,
-      phoneValid: phoneValid,
-      phoneErrorMsg: phoneValid ? '' : '请输入正确的11位手机号，用于标识和关联家庭数据',
-      isFormValid: this.checkFormValid({
-        ...this.data.babyInfo,
-        phone: phone
-      })
-    });
-  },
-  
-  // 验证手机号码
-  validatePhone(phone) {
-    const phoneRegex = /^1[3-9]\d{9}$/;
-    return phoneRegex.test(phone);
-  },
-  
-  // 更新验证表单逻辑
+    // 更新验证表单逻辑
   checkFormValid(formData) {
-    // 如果手机号已禁用，则说明已有有效手机号，不需要再验证
-    if (this.data.phoneDisabled) {
-      return formData.name && formData.weight && formData.birthday;
-    }
-    
-    // 创建者需要验证手机号，参与者不需要
-    if (this.data.userRole === 'creator') {
-      return formData.name && formData.weight && formData.birthday && this.validatePhone(formData.phone);
-    } else {
-      return formData.name && formData.weight && formData.birthday;
-    }
+    // 简化表单验证，只验证基本必填项
+    return formData.name && formData.weight && formData.birthday;
   },
 
   // 生成唯一宝宝ID
@@ -451,15 +381,8 @@ Page({
   async saveBabyInfo() {
     // 检查表单有效性
     if (!this.data.isFormValid) {
-      let errorMsg = '请填写必填项';
-      
-      // 只有当手机号未被禁用且为创建者时，才需验证手机号
-      if (!this.data.phoneDisabled && this.data.userRole === 'creator' && !this.validatePhone(this.data.babyInfo.phone)) {
-        errorMsg = '请填写正确的手机号，用于标识家庭数据';
-      }
-      
       wx.showToast({
-        title: errorMsg,
+        title: '请填写必填项',
         icon: 'none'
       });
       return;
@@ -512,34 +435,16 @@ Page({
         env: cloudEnvId
       });
 
-      // 如果是创建者，需要获取手机号
-      let creatorPhone = '';
+      // 如果是创建者，生成邀请码（新记录）或保持现有邀请码（更新记录）
+      let inviteCode = this.data.babyInfo.inviteCode;
+      let inviteCodeExpiry = this.data.babyInfo.inviteCodeExpiry;
       
-      if (this.data.userRole === 'creator') {
-        creatorPhone = this.data.babyInfo.phone;
-        
-        // 保存创建者信息到云函数
-        try {
-          const saveCreatorResult = await wx.cloud.callFunction({
-            name: 'saveCreatorInfo',
-            data: {
-              phone: creatorPhone,
-              name: this.data.babyInfo.name
-            }
-          });
-          
-          if (!saveCreatorResult.result || !saveCreatorResult.result.success) {
-            console.error('保存创建者信息失败:', saveCreatorResult.result);
-            throw new Error(saveCreatorResult.result?.message || '保存创建者信息失败');
-          }
-          
-          console.log('保存创建者信息成功');
-        } catch (error) {
-          console.warn('保存创建者信息失败，但将继续尝试保存宝宝信息:', error);
-        }
-      } else if (this.data.userRole === 'participant') {
-        // 如果是参与者，使用绑定的创建者手机号
-        creatorPhone = wx.getStorageSync('bound_creator_phone');
+      if (this.data.userRole === 'creator' && !inviteCode) {
+        // 导入邀请码模型
+        const InvitationModel = require('../../models/invitation');
+        inviteCode = InvitationModel.generateInviteCode();
+        inviteCodeExpiry = InvitationModel.getInviteCodeExpiry();
+        console.log('为新宝宝生成邀请码:', inviteCode);
       }
 
       // 使用现有的宝宝UID或生成新的
@@ -559,13 +464,17 @@ Page({
         condition: this.data.babyInfo.condition,
         notes: this.data.babyInfo.notes,
         updatedAt: db.serverDate(),
-        creatorPhone: creatorPhone, // 添加创建者手机号字段
         avatarUrl: this.data.babyInfo.avatarUrl || this.data.defaultAvatarUrl, // 保存头像URL
         babyUid: babyUid, // 添加宝宝唯一ID
         nutritionSettings: nutritionSettings, // 添加默认营养设置
         medicationSettings: medicationSettings, // 添加默认药物设置
         nutritionSettingsConfirmed: this.data.userRole !== 'creator', // 只有创建者需要确认设置
-        proteinSourceType: this.data.babyInfo.proteinSourceType || 'breastMilk'
+        proteinSourceType: this.data.babyInfo.proteinSourceType || 'breastMilk',
+        // 如果是创建者，添加邀请码
+        ...(this.data.userRole === 'creator' && {
+          inviteCode: inviteCode,
+          inviteCodeExpiry: inviteCodeExpiry
+        })
       };
 
       // 查询是否已有宝宝信息记录
@@ -601,17 +510,14 @@ Page({
           // 更新现有创建者记录
           await db.collection('baby_creators').doc(creatorRes.data[0]._id).update({
             data: {
-              phone: this.data.babyInfo.phone,
               updatedAt: db.serverDate(),
               babyUid: babyUid // 添加关联的宝宝UID
             }
           });
         } else {
-          // 创建新的创建者记录
+          // 创建新的创建者记录（_openid会自动添加）
           await db.collection('baby_creators').add({
             data: {
-              _openid: openid,
-              phone: this.data.babyInfo.phone,
               babyUid: babyUid, // 添加关联的宝宝UID
               createdAt: db.serverDate(),
               updatedAt: db.serverDate()
@@ -619,11 +525,9 @@ Page({
           });
         }
         
-        // 将手机号和宝宝UID保存到本地
-        wx.setStorageSync('creator_phone', this.data.babyInfo.phone);
+        // 保存宝宝UID到本地
         wx.setStorageSync('baby_uid', babyUid);
         this.app.globalData.babyUid = babyUid;
-        this.app.globalData.creatorPhone = this.data.babyInfo.phone;
       }
 
       // 设置宝宝信息已完成标志
@@ -891,10 +795,83 @@ Page({
     });
   },
 
-  // 获取手机号
-  getPhoneNumber (e) {
-    console.log(e.detail.code)  // 动态令牌
-    console.log(e.detail.errMsg) // 回调信息（成功失败都会返回）
-    console.log(e.detail.errno)  // 错误码（失败时返回）
+  // 复制邀请码
+  onCopyInviteCode(e) {
+    const inviteCode = e.currentTarget.dataset.text;
+    wx.setClipboardData({
+      data: inviteCode,
+      success: () => {
+        wx.showToast({
+          title: '邀请码已复制',
+          icon: 'success'
+        });
+      }
+    });
   },
+
+  // 分享邀请码
+  onShareInviteCode() {
+    const InvitationModel = require('../../models/invitation');
+    const shareInfo = InvitationModel.getShareInfo(this.data.babyInfo.inviteCode, this.data.babyInfo.name);
+    
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
+    
+    // 设置分享内容
+    wx.onShareAppMessage(() => {
+      return shareInfo;
+    });
+    
+    wx.showToast({
+      title: '请点击右上角分享',
+      icon: 'none'
+    });
+  },
+
+  // 刷新邀请码
+  async onRefreshInviteCode() {
+    wx.showModal({
+      title: '刷新邀请码',
+      content: '刷新后原邀请码将失效，确定要刷新吗？',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            wx.showLoading({
+              title: '刷新中...',
+              mask: true
+            });
+
+            const InvitationModel = require('../../models/invitation');
+            const openid = this.app.globalData.openid || wx.getStorageSync('openid');
+            
+            const result = await InvitationModel.refreshInviteCode(this.data.babyInfo.babyUid, openid);
+            
+            wx.hideLoading();
+            
+            if (result.success) {
+              this.setData({
+                'babyInfo.inviteCode': result.inviteCode,
+                'babyInfo.inviteCodeExpiry': result.expiry
+              });
+              
+              wx.showToast({
+                title: '邀请码已刷新',
+                icon: 'success'
+              });
+            } else {
+              throw new Error(result.message);
+            }
+          } catch (error) {
+            wx.hideLoading();
+            wx.showToast({
+              title: error.message || '刷新失败',
+              icon: 'none'
+            });
+          }
+        }
+      }
+    });
+  }
 }); 

@@ -19,9 +19,10 @@
 
   <!-- 菜单列表 -->
   <view class="menu-container">
-    <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}}" 
+    <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}} {{item.action === 'share' ? 'share-item' : ''}}" 
           wx:for="{{menuList}}" 
           wx:key="id" 
+          wx:if="{{!item.showForCreator || (item.showForCreator && userRole === 'creator')}}"
           data-item="{{item}}" 
           bindtap="handleMenuClick">
           <view class="menu-icon">

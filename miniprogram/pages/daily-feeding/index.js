@@ -83,7 +83,6 @@ Page({
       addFeeding: false,
       addMedication: false,
       bowelRecord: false, // 排便记录弹窗
-      bowelDetail: false, // 排便详情弹窗
       bowelEdit: false // 编辑排便记录弹窗
     },
     

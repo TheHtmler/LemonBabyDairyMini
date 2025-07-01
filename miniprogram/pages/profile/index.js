@@ -1,5 +1,3 @@
-
-
 Page({
   data: {
     userInfo: {},
@@ -7,6 +5,9 @@ Page({
     isLoggedIn: true,  // 默认设置为已登录
     isEditingProfile: false,
     tempNickName: '',
+    userRole: '', // 用户角色
+    showInviteCode: false, // 是否显示邀请码（创建者可见）
+    inviteCode: '', // 邀请码
     menuList: [
       {
         id: 1,
@@ -26,21 +27,28 @@ Page({
         icon: 'medicine',
         path: '/pages/medications/index'
       },
-
       {
         id: 4,
+        name: '分享数据',
+        icon: 'participant',
+        action: 'share',
+        description: '邀请家人一起记录宝宝成长',
+        showForCreator: true
+      },
+      {
+        id: 5,
         name: '数据标识说明',
         icon: 'info',
         path: '/pages/about/index?section=auth'
       },
       {
-        id: 5,
+        id: 6,
         name: '关于我们',
         icon: 'info',
         path: '/pages/about/index'
       },
       {
-        id: 6,
+        id: 7,
         name: '注销账户',
         icon: 'logout',
         action: 'logout'
@@ -53,6 +61,13 @@ Page({
     // 确保有默认的头像路径
     this.setData({
       defaultAvatarUrl: '/images/LemonLogo.png'
+    });
+
+    // 获取用户角色
+    const app = getApp();
+    const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
+    this.setData({
+      userRole: userRole
     });
 
     // 获取宝宝信息
@@ -77,42 +92,43 @@ Page({
         return;
       }
       
-      // 获取角色和手机号
+      // 获取角色信息
       const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
-      const creatorPhone = app.globalData.creatorPhone || wx.getStorageSync('creator_phone') || wx.getStorageSync('bound_creator_phone');
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
       
-      if (!userRole || !creatorPhone) {
-        console.log('缺少角色或手机号信息');
+      if (!userRole || !babyUid) {
+        console.log('缺少角色或宝宝UID信息');
         this.getUserInfo(); // 回退到使用用户信息
         return;
       }
       
       // 从数据库查询宝宝信息
       const db = wx.cloud.database();
-      const openid = wx.getStorageSync('openid');
       
-      let query = {};
-      if (userRole === 'creator') {
-        // 创建者根据自己的openid查询
-        query = { _openid: openid };
-      } else if (userRole === 'participant' && creatorPhone) {
-        // 参与者根据绑定的创建者手机号查询
-        query = { creatorPhone: creatorPhone };
-      }
-      
-      // 查询宝宝信息
-      const res = await db.collection('baby_info').where(query).limit(1).get();
+      // 根据babyUid查询宝宝信息
+      const res = await db.collection('baby_info').where({
+        babyUid: babyUid
+      }).limit(1).get();
       
       if (res.data && res.data.length > 0) {
         const babyInfo = res.data[0];
+        
+        // 构建宝宝信息数据
+        const babyInfoData = {
+          name: babyInfo.name || '柠檬宝宝',
+          avatarUrl: babyInfo.avatarUrl || this.data.defaultAvatarUrl,
+          birthday: babyInfo.birthday || '',
+          gender: babyInfo.gender || 'male',
+          babyUid: babyInfo.babyUid
+        };
+
+        // 如果是创建者且有邀请码，显示邀请码信息
+        const showInviteCode = userRole === 'creator' && babyInfo.inviteCode;
+        
         this.setData({
-          babyInfo: {
-            name: babyInfo.name || '柠檬宝宝',
-            avatarUrl: babyInfo.avatarUrl || this.data.defaultAvatarUrl,
-            // 其他宝宝信息...
-            birthday: babyInfo.birthday || '',
-            gender: babyInfo.gender || 'male'
-          }
+          babyInfo: babyInfoData,
+          showInviteCode: showInviteCode,
+          inviteCode: babyInfo.inviteCode || ''
         });
         
         // 缓存到app全局
@@ -298,6 +314,38 @@ Page({
     });
   },
   
+  // 处理菜单点击
+  handleMenuClick: function(e) {
+    const item = e.currentTarget.dataset.item;
+    
+    if (item.action === 'logout') {
+      this.handleLogout();
+    } else if (item.action === 'share') {
+      this.handleShareData();
+    } else if (item.path) {
+      wx.navigateTo({
+        url: item.path
+      });
+    }
+  },
+
+  // 处理分享数据
+  handleShareData() {
+    // 检查是否为创建者
+    if (this.data.userRole !== 'creator') {
+      wx.showToast({
+        title: '只有创建者可以分享数据',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 跳转到分享页面
+    wx.navigateTo({
+      url: '/pages/share-data/index'
+    });
+  },
+
   // 处理注销账户
   handleLogout: function() {
     wx.showModal({
@@ -495,5 +543,89 @@ Page({
     };
   },
 
+  // 复制邀请码
+  onCopyInviteCode() {
+    wx.setClipboardData({
+      data: this.data.inviteCode,
+      success: () => {
+        wx.showToast({
+          title: '邀请码已复制',
+          icon: 'success'
+        });
+      }
+    });
+  },
+
+  // 分享邀请码
+  onShareInviteCode() {
+    const InvitationModel = require('../../models/invitation');
+    const shareInfo = InvitationModel.getShareInfo(this.data.inviteCode, this.data.babyInfo.name);
+    
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
+    
+    // 设置分享内容
+    wx.onShareAppMessage(() => {
+      return shareInfo;
+    });
+    
+    wx.showToast({
+      title: '请点击右上角分享',
+      icon: 'none'
+    });
+  },
+
+  // 刷新邀请码
+  async onRefreshInviteCode() {
+    wx.showModal({
+      title: '刷新邀请码',
+      content: '刷新后原邀请码将失效，确定要刷新吗？',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            wx.showLoading({
+              title: '刷新中...',
+              mask: true
+            });
+
+            const InvitationModel = require('../../models/invitation');
+            const openid = wx.getStorageSync('openid');
+            
+            const result = await InvitationModel.refreshInviteCode(this.data.babyInfo.babyUid, openid);
+            
+            wx.hideLoading();
+            
+            if (result.success) {
+              this.setData({
+                inviteCode: result.inviteCode
+              });
+              
+              // 更新全局数据
+              const app = getApp();
+              if (app.globalData.babyInfo) {
+                app.globalData.babyInfo.inviteCode = result.inviteCode;
+                app.globalData.babyInfo.inviteCodeExpiry = result.expiry;
+              }
+              
+              wx.showToast({
+                title: '邀请码已刷新',
+                icon: 'success'
+              });
+            } else {
+              throw new Error(result.message);
+            }
+          } catch (error) {
+            wx.hideLoading();
+            wx.showToast({
+              title: error.message || '刷新失败',
+              icon: 'none'
+            });
+          }
+        }
+      }
+    });
+  }
 
 }) 

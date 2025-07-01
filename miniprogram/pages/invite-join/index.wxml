@@ -1,0 +1,59 @@
+<view class="container">
+  <view class="header">
+    <image class="logo" src="/images/LemonLogo.png" mode="aspectFit" bindtap="onLogoClick"></image>
+    <view class="title">输入邀请码</view>
+  </view>
+
+  <view class="form-container">
+    <view class="description">
+      请输入宝宝创建者分享的8位数字邀请码，加入宝宝记录
+    </view>
+
+    <view class="form-item">
+      <view class="label">邀请码</view>
+      <input 
+        class="input invite-code-input" 
+        type="number" 
+        bindinput="onInviteCodeInput" 
+        bindblur="onInviteCodeBlur"
+        value="{{inviteCode}}" 
+        maxlength="8" 
+        placeholder="请输入8位数字邀请码" 
+      />
+      <view class="input-hint">邀请码为8位纯数字，如：12345678</view>
+      <view class="error-message" wx:if="{{errorMessage}}">{{errorMessage}}</view>
+    </view>
+
+    <!-- 加入按钮 -->
+    <button 
+      class="btn-join {{isFormValid ? 'active' : ''}}" 
+      bindtap="joinBaby" 
+      disabled="{{!isFormValid || isSubmitting}}"
+    >
+      <text>{{isSubmitting ? '验证中...' : '加入宝宝记录'}}</text>
+    </button>
+  </view>
+  
+  <!-- 提示信息 -->
+  <view class="tip-section">
+    <view class="tip-title">💡 如何获取邀请码？</view>
+    <view class="tip-content">
+      <text>• 请联系宝宝的创建者获取8位数字邀请码</text>
+      <text>• 创建者可以在个人资料页面查看和分享邀请码</text>
+      <text>• 邀请码有效期为30天，如过期请联系创建者刷新</text>
+      <text>• 加入后您将可以查看和记录宝宝的喂养数据</text>
+    </view>
+  </view>
+
+  <!-- 或者创建新记录 -->
+  <view class="create-section">
+    <view class="divider">
+      <view class="divider-line"></view>
+      <view class="divider-text">或者</view>
+      <view class="divider-line"></view>
+    </view>
+    <button class="btn-create" bindtap="onLogoClick">
+      我要创建新的宝宝记录
+    </button>
+  </view>
+</view> 

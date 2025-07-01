@@ -1,0 +1,340 @@
+/* pages/share-data/index.wxss */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFF4D6 50%, #FFEFCC 100%);
+  padding: 0;
+}
+
+/* 页面标题 */
+.page-title {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+  margin-top: 30rpx;
+  padding: 50rpx 30rpx 40rpx;
+  text-align: center;
+  border-radius: 40rpx;
+  box-shadow: 0 6rpx 30rpx rgba(255, 193, 7, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-title::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+}
+
+.title-text {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.title-desc {
+  display: block;
+  font-size: 30rpx;
+  color: #555;
+  opacity: 0.9;
+  position: relative;
+  z-index: 1;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 400rpx;
+}
+
+.loading-text {
+  font-size: 32rpx;
+  color: #999;
+  margin-top: 20rpx;
+}
+
+/* 主要内容 */
+.content {
+  padding: 40rpx 30rpx 80rpx;
+  width: 90%;
+}
+
+/* 邀请码卡片 */
+.invite-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FEFEFE 100%);
+  border-radius: 25rpx;
+  padding: 40rpx 35rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid rgba(255, 215, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.invite-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4rpx;
+  background: linear-gradient(90deg, #FFD700, #FFC107, #FFD700);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 35rpx;
+  padding-bottom: 25rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.card-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.card-status {
+  padding: 10rpx 20rpx;
+  border-radius: 25rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.card-status.valid {
+  background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
+  color: #4CAF50;
+  border: 1rpx solid rgba(76, 175, 80, 0.2);
+}
+
+.card-status.invalid {
+  background: linear-gradient(135deg, #FFE8E8 0%, #FFF0F0 100%);
+  color: #F44336;
+  border: 1rpx solid rgba(244, 67, 54, 0.2);
+}
+
+/* 邀请码显示区域 */
+.invite-code-section {
+  text-align: center;
+}
+
+.invite-code {
+  font-size: 52rpx;
+  font-weight: bold;
+  color: #FF8C00;
+  letter-spacing: 10rpx;
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFFACD 100%);
+  padding: 30rpx 25rpx;
+  border-radius: 20rpx;
+  border: 2rpx dashed #FFD700;
+  margin-bottom: 25rpx;
+  position: relative;
+  font-family: 'Courier New', monospace;
+}
+
+.invite-code::before {
+  content: '';
+  position: absolute;
+  top: -2rpx;
+  left: -2rpx;
+  right: -2rpx;
+  bottom: -2rpx;
+  background: linear-gradient(45deg, #FFD700, #FFC107, #FFD700, #FFC107);
+  border-radius: 20rpx;
+  z-index: -1;
+  animation: borderGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes borderGlow {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.invite-expiry {
+  font-size: 28rpx;
+  color: #777;
+}
+
+.expiry-label {
+  margin-right: 12rpx;
+  color: #666;
+}
+
+.expiry-time {
+  color: #FF6B6B;
+  font-weight: 600;
+}
+
+/* 无邀请码区域 */
+.no-invite-section {
+  text-align: center;
+  padding: 50rpx 25rpx;
+}
+
+.no-invite-text {
+  font-size: 34rpx;
+  color: #999;
+  margin-bottom: 18rpx;
+  font-weight: 500;
+}
+
+.no-invite-desc {
+  font-size: 28rpx;
+  color: #BBB;
+  line-height: 1.6;
+}
+
+/* 操作按钮区域 */
+.action-section {
+  margin-bottom: 40rpx;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.action-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20rpx;
+}
+
+.action-row .action-btn {
+  flex: 1;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
+  color: #333;
+  border: 2rpx solid #FFD700;
+  border-radius: 25rpx;
+  padding: 22rpx 20rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: 0 6rpx 20rpx rgba(255, 215, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.action-btn:active::before {
+  left: 100%;
+}
+
+.action-btn:active {
+  transform: translateY(3rpx);
+  box-shadow: 0 3rpx 12rpx rgba(255, 215, 0, 0.25);
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+  color: #333;
+  border-color: #FFB300;
+}
+
+.action-btn.secondary {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+  border-color: #DDD;
+  color: #666;
+}
+
+.btn-text {
+  font-size: 30rpx;
+  position: relative;
+  z-index: 1;
+}
+
+/* 使用说明 */
+.usage-tips {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FEFEFE 100%);
+  border-radius: 25rpx;
+  padding: 30rpx;
+  box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid rgba(255, 215, 0, 0.1);
+}
+
+.tips-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+  position: relative;
+}
+
+.tips-title::before {
+  content: '';
+  position: absolute;
+  bottom: -1rpx;
+  left: 0;
+  width: 60rpx;
+  height: 2rpx;
+  background: linear-gradient(90deg, #FFD700, #FFC107);
+}
+
+.tips-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 5rpx 0;
+}
+
+.tip-number {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+  color: #333;
+  width: 45rpx;
+  height: 45rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: bold;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  box-shadow: 0 3rpx 10rpx rgba(255, 215, 0, 0.3);
+}
+
+.tip-text {
+  font-size: 30rpx;
+  color: #666;
+  line-height: 1.6;
+  flex: 1;
+  margin-top: 2rpx;
+} 

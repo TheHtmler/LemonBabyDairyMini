@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "分享数据",
+  "navigationBarBackgroundColor": "#FFD700",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF8DC",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+} 

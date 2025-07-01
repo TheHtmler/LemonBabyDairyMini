@@ -144,30 +144,31 @@
     </view>
 
     <!-- 联系方式（创建者必填） -->
-    <view class="form-group" wx:if="{{userRole === 'creator'}}">
-      <view class="form-title">创建者联系方式</view>
+    <!-- 邀请码信息（仅创建者可见）-->
+    <view class="form-group" wx:if="{{userRole === 'creator' && showInviteCode}}">
+      <view class="form-title">邀请码信息</view>
       
-      <view class="form-item">
-        <view class="item-label">手机号<text class="required">*</text></view>
-        <input 
-          class="input" 
-          type="number" 
-          maxlength="11"
-          placeholder="请输入手机号码" 
-          value="{{babyInfo.phone}}" 
-          bindinput="onPhoneInput" 
-          data-field="phone"
-          disabled="{{phoneDisabled}}"
-        />
-        <!-- <button open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">快速获取手机号</button> -->
-      </view>
-      <view class="phone-error" wx:if="{{phoneErrorMsg}}">{{phoneErrorMsg}}</view>
-      <view class="form-tip">
-        <text>创建者手机号将作为唯一标识，让家人能够查看宝宝信息，不会采集您的信息</text>
-      </view>
-      <!-- 添加手机号不可修改的提示 -->
-      <view class="form-tip warning" wx:if="{{phoneDisabled && babyInfo.phone}}">
-        <text>创建者手机号一旦设置不可更改，如需更改请联系管理员</text>
+      <view class="invite-card">
+        <view class="invite-header">
+          <view class="invite-icon">🎯</view>
+          <view class="invite-title">分享邀请码</view>
+        </view>
+        
+        <view class="invite-code-display">
+          <text class="invite-code-text">{{babyInfo.inviteCode}}</text>
+          <button class="copy-btn" data-text="{{babyInfo.inviteCode}}" bindtap="onCopyInviteCode">复制</button>
+        </view>
+        
+        <view class="invite-actions">
+          <button class="share-btn" bindtap="onShareInviteCode">微信分享</button>
+          <button class="refresh-btn" bindtap="onRefreshInviteCode">刷新邀请码</button>
+        </view>
+        
+        <view class="invite-tip">
+          <text>• 邀请码有效期30天</text>
+          <text>• 家人可通过此邀请码加入宝宝记录</text>
+          <text>• 可随时刷新生成新的邀请码</text>
+        </view>
       </view>
     </view>
   </view>

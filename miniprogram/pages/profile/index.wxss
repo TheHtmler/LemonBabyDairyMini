@@ -240,6 +240,27 @@
   color: #ff9500;
 }
 
+/* 分享菜单项特殊样式 */
+.share-item {
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.1), rgba(255, 200, 77, 0.05));
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 12rpx;
+  margin: 8rpx 12rpx;
+}
+
+.share-item .menu-name {
+  color: #FFB800;
+  font-weight: bold;
+}
+
+.share-item .menu-desc {
+  color: #FFB800;
+}
+
+.share-item .menu-icon image {
+  filter: hue-rotate(20deg) brightness(1.1);
+}
+
 /* 版本信息 */
 .version-info {
   text-align: center;
@@ -388,4 +409,149 @@
   font-size: 26rpx;
   color: #666;
   margin-bottom: 10rpx;
+}
+
+/* 邀请码相关样式 */
+.invite-section {
+  margin: 30rpx 30rpx 20rpx;
+}
+
+.invite-card {
+  background: linear-gradient(135deg, #FFB800 0%, #FF8C00 100%);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8rpx 24rpx rgba(255, 184, 0, 0.3);
+}
+
+.invite-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: shimmer 4s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.invite-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 32rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.invite-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+  margin-top: 4rpx;
+}
+
+.invite-content {
+  flex: 1;
+}
+
+.invite-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.invite-subtitle {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.invite-code-area {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(10rpx);
+}
+
+.invite-code-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 12rpx;
+}
+
+.invite-code-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.invite-code-text {
+  font-size: 40rpx;
+  font-weight: bold;
+  letter-spacing: 6rpx;
+  flex: 1;
+}
+
+.copy-btn {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+  font-size: 24rpx;
+  margin-left: 20rpx;
+  transition: all 0.3s;
+}
+
+.copy-btn:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.invite-actions {
+  display: flex;
+  gap: 16rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.share-btn,
+.refresh-btn {
+  flex: 1;
+  height: 68rpx;
+  border-radius: 34rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.share-btn:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.refresh-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.refresh-btn:active {
+  background: rgba(255, 255, 255, 0.25);
 } 

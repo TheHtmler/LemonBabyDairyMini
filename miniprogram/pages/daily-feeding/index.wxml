@@ -353,7 +353,7 @@
           
           <!-- 该类型的所有记录 -->
           <view class="bowel-group-records">
-            <view class="bowel-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record" wx:for-index="recordIndex" data-group-index="{{index}}" data-record-index="{{recordIndex}}" bindtap="showBowelDetailModal">
+            <view class="bowel-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record" wx:for-index="recordIndex">
               <view class="record-content">
                 <view class="bowel-time-type">
                   <text class="bowel-time">{{record.timeString}}</text>
@@ -754,53 +754,6 @@
       <view class="modal-footer">
         <button class="modal-btn cancel" bindtap="hideBowelRecordModal">取消</button>
         <button class="modal-btn confirm" bindtap="saveBowelRecord">保存</button>
-      </view>
-    </view>
-  </view>
-
-  <!-- 排便记录详情弹窗 -->
-  <view class="modal bowel-detail-modal" wx:if="{{modals.bowelDetail}}" bindtap="hideBowelDetailModal" catchtouchmove="preventBubble">
-    <view class="modal-content" catchtap="preventBubble">
-      <view class="modal-header">
-        <text>排便记录详情</text>
-      </view>
-      <scroll-view class="modal-body" scroll-y="true" enhanced="true" show-scrollbar="false">
-        <view class="modal-info-row">
-          <text class="modal-label">时间:</text>
-          <text class="modal-value">{{selectedBowelRecord.timeString}}</text>
-        </view>
-        <view class="modal-info-row">
-          <text class="modal-label">类型:</text>
-          <text class="modal-value">{{selectedBowelRecord.typeText}}</text>
-        </view>
-        
-        <!-- 大便详细信息 -->
-        <view wx:if="{{selectedBowelRecord.type === 'stool' || selectedBowelRecord.type === 'mixed'}}">
-          <view class="modal-info-row" wx:if="{{selectedBowelRecord.consistencyText}}">
-            <text class="modal-label">性状:</text>
-            <text class="modal-value">{{selectedBowelRecord.consistencyText}}</text>
-          </view>
-          <view class="modal-info-row" wx:if="{{selectedBowelRecord.colorText}}">
-            <text class="modal-label">颜色:</text>
-            <text class="modal-value">{{selectedBowelRecord.colorText}}</text>
-          </view>
-          <view class="modal-info-row" wx:if="{{selectedBowelRecord.smellText}}">
-            <text class="modal-label">气味:</text>
-            <text class="modal-value">{{selectedBowelRecord.smellText}}</text>
-          </view>
-          <view class="modal-info-row" wx:if="{{selectedBowelRecord.amountText}}">
-            <text class="modal-label">分量:</text>
-            <text class="modal-value">{{selectedBowelRecord.amountText}}</text>
-          </view>
-        </view>
-        
-        <view class="modal-info-row" wx:if="{{selectedBowelRecord.notes}}">
-          <text class="modal-label">备注:</text>
-          <text class="modal-value">{{selectedBowelRecord.notes}}</text>
-        </view>
-      </scroll-view>
-      <view class="modal-footer">
-        <button class="modal-btn confirm" bindtap="hideBowelDetailModal">关闭</button>
       </view>
     </view>
   </view>
