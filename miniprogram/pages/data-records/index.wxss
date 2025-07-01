@@ -417,6 +417,7 @@
 }
 
 .growth-value {
+  position: relative;
   font-size: 32rpx;
   color: #333;
   font-weight: 500;
@@ -429,7 +430,6 @@
   transform: translateY(-50%);
   font-size: 24rpx;
   color: #999;
-  margin-top: 12rpx;
 }
 
 /* 体重输入框样式改进 */

@@ -2463,5 +2463,61 @@ Page({
       'large': '大量'
     };
     return amountMap[amount] || amount;
-  }
+  },
+
+  // 体重输入处理
+  onWeightInput(e) {
+    const value = e.detail.value;
+    this.setData({ weight: value });
+  },
+
+  // 体重输入失焦时保存
+  async onWeightBlur(e) {
+    const value = e.detail.value;
+    if (!value || isNaN(parseFloat(value))) {
+      wx.showToast({ title: '请输入有效体重', icon: 'none' });
+      return;
+    }
+    const weight = parseFloat(value);
+    this.setData({ weight });
+    // 保存到数据库
+    try {
+      const db = wx.cloud.database();
+      const _ = db.command;
+      const selectedDate = this.data.selectedDate;
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
+      const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      let query = { date: _.gte(startOfDay).and(_.lte(endOfDay)) };
+      if (babyUid) query.babyUid = babyUid;
+      const res = await db.collection('feeding_records').where(query).get();
+      if (res.data.length > 0) {
+        // 更新已有记录的体重
+        await db.collection('feeding_records').doc(res.data[0]._id).update({
+          data: { 'basicInfo.weight': weight, updatedAt: db.serverDate() }
+        });
+      } else {
+        // 没有记录则新建一条只含体重的记录
+        await db.collection('feeding_records').add({
+          data: {
+            date: startOfDay,
+            basicInfo: { weight },
+            feedings: [],
+            medicationRecords: [],
+            babyUid: babyUid,
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          }
+        });
+      }
+      wx.showToast({ title: '体重已保存', icon: 'success' });
+      // 重新加载数据，刷新相关计算
+      await this.fetchDailyRecords(this.data.selectedDate);
+    } catch (err) {
+      wx.showToast({ title: '保存失败', icon: 'error' });
+      console.error('保存体重失败', err);
+    }
+  },
 }); 

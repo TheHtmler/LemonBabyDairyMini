@@ -949,17 +949,6 @@ Page({
         const yesterdayWeight = await this.loadYesterdayWeight();
         if (yesterdayWeight) {
           weightToSet = yesterdayWeight;
-          
-          // 显示体重自动回填提示（仅在非静默模式下）
-          if (!silent) {
-            setTimeout(() => {
-              wx.showToast({
-                title: `已自动填入体重: ${yesterdayWeight}kg`,
-                icon: 'none',
-                duration: 2000
-              });
-            }, 500); // 延迟显示，避免与加载提示冲突
-          }
         }
       }
       

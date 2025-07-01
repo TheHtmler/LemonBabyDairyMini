@@ -82,7 +82,10 @@
         <view class="growth-info">
           <view class="growth-item">
             <view class="growth-label">体重</view>
-            <view class="growth-value">{{weight}} kg</view>
+            <view class="growth-value">
+              <input class="weight-input" type="digit" value="{{weight}}" placeholder="请输入体重" bindinput="onWeightInput" bindblur="onWeightBlur" />
+              <text class="unit">kg</text>
+            </view>
           </view>
           <view class="growth-item">
             <view class="growth-label">身高</view>
@@ -521,9 +524,9 @@
 
         <view class="form-item">
           <text class="label">用药时间</text>
-                      <picker mode="time" value="{{editingMedication.actualTime}}" data-field="actualTime" bindchange="onEditMedicationTimeChange">
-              <view class="time-picker">{{editingMedication.actualTime}}</view>
-            </picker>
+          <picker mode="time" value="{{editingMedication.actualTime}}" data-field="actualTime" bindchange="onEditMedicationTimeChange">
+            <view class="time-picker">{{editingMedication.actualTime}}</view>
+          </picker>
         </view>
       </view>
       <view class="modal-footer">
