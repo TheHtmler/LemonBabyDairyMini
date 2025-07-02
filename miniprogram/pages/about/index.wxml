@@ -46,8 +46,8 @@
   <view class="section">
     <view class="section-title">联系我们</view>
     <view class="section-content">
-      <view>如有使用问题或建议，欢迎联系我们：</view>
-      <view class="contact-item" bindtap="copyEmail">邮箱：support@lemonbaby.com</view>
+      <view>如有使用问题或建议，欢迎联系我们微信号：</view>
+      <view class="contact-item" bindtap="copyEmail">randyhsu2025</view>
     </view>
   </view>
   

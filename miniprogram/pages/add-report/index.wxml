@@ -51,14 +51,13 @@
             <view class="indicator-name">
               <text class="name-text">{{item.name}}</text>
               <text class="abbr-text">({{item.abbr}})</text>
+              <text wx:if="{{!item.optional && !item.isRatio}}" class="required-mark">*</text>
             </view>
             <view wx:if="{{indicatorData[item.key] && indicatorData[item.key].status}}" 
                   class="status-badge {{indicatorData[item.key].status}}">
-              <text class="status-text">
                 {{indicatorData[item.key].status === 'normal' ? '正常' : 
                   indicatorData[item.key].status === 'high' ? '偏高' : 
                   indicatorData[item.key].status === 'low' ? '偏低' : '未知'}}
-              </text>
             </view>
           </view>
 
@@ -73,32 +72,35 @@
                      value="{{indicatorData[item.key].value}}"
                      data-indicator="{{item.key}}" 
                      data-field="value"
-                     bindinput="onIndicatorValueInput" />
-              <text class="input-unit">{{item.unit}}</text>
+                     bindinput="onIndicatorValueInput"
+                     bindblur="onIndicatorValueBlur" />
+
             </view>
 
-            <!-- 参考范围（非比值指标） -->
-            <view wx:if="{{!item.isRatio}}" class="range-inputs">
+            <!-- 参考范围（非比值指标或允许范围输入的比值指标） -->
+            <view wx:if="{{!item.isRatio || item.allowRangeInput}}" class="range-inputs">
               <view class="input-group half">
                 <text class="input-label">最小值</text>
                 <input class="input-field" 
                        type="digit" 
-                       placeholder="最小值"
+                       placeholder="{{indicatorData[item.key].minRange ? '已自动填充' : '最小值'}}"
                        value="{{indicatorData[item.key].minRange}}"
                        data-indicator="{{item.key}}" 
                        data-field="minRange"
-                       bindinput="onIndicatorValueInput" />
+                       bindinput="onIndicatorValueInput"
+                       bindblur="onIndicatorValueBlur" />
               </view>
               <text class="range-separator">-</text>
               <view class="input-group half">
                 <text class="input-label">最大值</text>
                 <input class="input-field" 
                        type="digit" 
-                       placeholder="最大值"
+                       placeholder="{{indicatorData[item.key].maxRange ? '已自动填充' : '最大值'}}"
                        value="{{indicatorData[item.key].maxRange}}"
                        data-indicator="{{item.key}}" 
                        data-field="maxRange"
-                       bindinput="onIndicatorValueInput" />
+                       bindinput="onIndicatorValueInput"
+                       bindblur="onIndicatorValueBlur" />
               </view>
             </view>
 
@@ -106,7 +108,7 @@
             <view wx:if="{{indicatorData[item.key].optimalRange}}" class="optimal-range">
               <text class="optimal-label">最优范围：</text>
               <text class="optimal-value">
-                {{indicatorData[item.key].optimalRange.min}} - {{indicatorData[item.key].optimalRange.max}} {{item.unit}}
+                {{indicatorData[item.key].optimalRange.min}} - {{indicatorData[item.key].optimalRange.max}}
               </text>
             </view>
           </view>
@@ -120,7 +122,7 @@
     <!-- 免责声明 -->
     <view class="disclaimer">
       <text class="disclaimer-text">
-        ⚠️ 免责声明：本工具仅用于记录检测数据，不提供医疗诊断建议。请在专业医生指导下解读报告结果。
+        ⚠️ 声明：本工具仅用于记录检测数据，不提供医疗诊断建议。请在专业医生指导下解读报告结果。
       </text>
     </view>
 

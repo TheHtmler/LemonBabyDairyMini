@@ -72,7 +72,7 @@ Page({
         await this.loadReportData();
       } else {
         // 新建模式，初始化指标
-        this.initIndicators();
+        await this.initIndicators();
       }
 
     } catch (error) {
@@ -102,7 +102,7 @@ Page({
       });
 
       // 初始化指标配置
-      this.initIndicators();
+      await this.initIndicators();
 
     } catch (error) {
       console.error('加载报告数据失败:', error);
@@ -123,18 +123,71 @@ Page({
     return `${year}-${month}-${day}`;
   },
 
+  // 获取历史范围值
+  async getHistoricalRanges(reportType) {
+    try {
+      if (!this.data.babyInfo || !this.data.babyInfo.babyUid) {
+        return {};
+      }
+
+      const db = wx.cloud.database();
+      const result = await db.collection('baby_reports')
+        .where({
+          babyUid: this.data.babyInfo.babyUid,
+          reportType: reportType
+        })
+        .orderBy('reportDate', 'desc')
+        .limit(1)
+        .get();
+
+      if (result.data && result.data.length > 0) {
+        const latestReport = result.data[0];
+        const historicalRanges = {};
+        
+        // 提取每个指标的范围值（只提取非比值指标的范围）
+        if (latestReport.indicators) {
+          Object.keys(latestReport.indicators).forEach(indicatorKey => {
+            const indicatorData = latestReport.indicators[indicatorKey];
+            // 只保存有minRange和maxRange的指标（排除比值指标）
+            if (indicatorData.minRange && indicatorData.maxRange) {
+              historicalRanges[indicatorKey] = {
+                minRange: indicatorData.minRange,
+                maxRange: indicatorData.maxRange
+              };
+            }
+          });
+        }
+
+        console.log('获取到历史范围值:', historicalRanges);
+        return historicalRanges;
+      }
+
+      return {};
+    } catch (error) {
+      console.error('获取历史范围值失败:', error);
+      return {};
+    }
+  },
+
   // 初始化指标配置
-  initIndicators() {
+  async initIndicators() {
     const indicators = ReportModel.getIndicators(this.data.selectedReportType);
     const indicatorData = { ...this.data.indicatorData };
 
-    // 初始化空的指标数据
+    // 如果是新建模式，尝试从历史记录中获取范围值
+    let historicalRanges = {};
+    if (this.data.mode === 'add') {
+      historicalRanges = await this.getHistoricalRanges(this.data.selectedReportType);
+    }
+
+    // 初始化指标数据
     indicators.forEach(indicator => {
       if (!indicatorData[indicator.key]) {
+        const historical = historicalRanges[indicator.key] || {};
         indicatorData[indicator.key] = {
           value: '',
-          minRange: '',
-          maxRange: '',
+          minRange: historical.minRange || '',
+          maxRange: historical.maxRange || '',
           status: 'unknown',
           optimalRange: null
         };
@@ -181,14 +234,34 @@ Page({
   },
 
   // 执行报告类型切换
-  switchReportType(reportType) {
+  async switchReportType(reportType) {
     this.setData({
       selectedReportType: reportType,
       indicatorData: {},
       hasUnsavedChanges: false
     });
     
-    this.initIndicators();
+    await this.initIndicators();
+  },
+
+  // 格式化数字为小数点后三位
+  formatToThreeDecimalPlaces(value) {
+    if (!value || value === '') return '';
+    
+    const num = parseFloat(value);
+    if (isNaN(num)) return value;
+    
+    // 保留小数点后三位
+    return num.toFixed(3);
+  },
+
+  // 验证是否为有效数字
+  isValidNumber(value) {
+    if (!value || value === '') return true; // 空值允许
+    
+    // 检查是否为有效的数字格式（包括整数、小数、科学计数法）
+    const numberRegex = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
+    return numberRegex.test(value.toString().trim());
   },
 
   // 指标值输入
@@ -207,6 +280,49 @@ Page({
       indicatorData: indicatorData,
       hasUnsavedChanges: true
     });
+  },
+
+  // 指标值失去焦点时验证和格式化
+  onIndicatorValueBlur: function (e) {
+    const { indicator, field } = e.currentTarget.dataset;
+    let value = e.detail.value;
+    
+    // 验证数字格式
+    if (value && value !== '') {
+      if (!this.isValidNumber(value)) {
+        wx.showToast({
+          title: '请输入有效的数字',
+          icon: 'none',
+          duration: 2000
+        });
+        
+        // 清空无效输入
+        const indicatorData = { ...this.data.indicatorData };
+        if (!indicatorData[indicator]) {
+          indicatorData[indicator] = {};
+        }
+        indicatorData[indicator][field] = '';
+        
+        this.setData({
+          indicatorData: indicatorData
+        });
+        return;
+      }
+      
+      // 格式化为小数点后三位
+      const formattedValue = this.formatToThreeDecimalPlaces(value);
+      
+      const indicatorData = { ...this.data.indicatorData };
+      if (!indicatorData[indicator]) {
+        indicatorData[indicator] = {};
+      }
+      
+      indicatorData[indicator][field] = formattedValue;
+      
+      this.setData({
+        indicatorData: indicatorData
+      });
+    }
 
     // 重新计算该指标状态
     this.calculateIndicatorStatus(indicator);
@@ -272,6 +388,9 @@ Page({
           newIndicatorData.c3_c0.value = ratio.toString();
           
           this.setData({ indicatorData: newIndicatorData });
+          
+          // 计算比值指标的状态
+          this.calculateIndicatorStatus('c3_c0');
         }
       }
 
@@ -291,6 +410,9 @@ Page({
           newIndicatorData.c3_c2.value = ratio.toString();
           
           this.setData({ indicatorData: newIndicatorData });
+          
+          // 计算比值指标的状态
+          this.calculateIndicatorStatus('c3_c2');
         }
       }
     }
@@ -299,7 +421,8 @@ Page({
   // 重新计算所有指标状态
   recalculateAllIndicators() {
     this.data.currentIndicators.forEach(indicator => {
-      if (!indicator.isRatio) {
+      // 非比值指标或允许范围输入的比值指标都计算状态
+      if (!indicator.isRatio || indicator.allowRangeInput) {
         this.calculateIndicatorStatus(indicator.key);
       }
     });

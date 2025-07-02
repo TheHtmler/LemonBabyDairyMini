@@ -204,19 +204,27 @@
 
 .indicator-name {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .name-text {
   font-size: 30rpx;
   font-weight: 600;
   color: #333;
-  margin-bottom: 5rpx;
+  margin-right: 8rpx;
 }
 
 .abbr-text {
   font-size: 24rpx;
   color: #666;
+  margin-right: 6rpx;
+}
+
+.required-mark {
+  font-size: 30rpx;
+  color: #F44336;
+  font-weight: bold;
 }
 
 .status-badge {

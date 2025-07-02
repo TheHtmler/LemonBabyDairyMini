@@ -10,37 +10,37 @@ class ReportModel {
 
   // 血串联质谱指标配置
   static BLOOD_MS_INDICATORS = [
-    { key: 'iso_leu', name: '异亮氨酸/亮氨酸', unit: 'μmol/L', abbr: 'Iso/Leu' },
-    { key: 'met', name: '蛋氨酸/甲硫氨酸', unit: 'μmol/L', abbr: 'Met' },
-    { key: 'val', name: '缬氨酸', unit: 'μmol/L', abbr: 'Val' },
-    { key: 'thr', name: '苏氨酸', unit: 'μmol/L', abbr: 'Thr' },
-    { key: 'c0', name: '游离肉碱', unit: 'μmol/L', abbr: 'C0' },
-    { key: 'c2', name: '乙酰基肉碱', unit: 'μmol/L', abbr: 'C2' },
-    { key: 'c3', name: '丙酰基肉碱', unit: 'μmol/L', abbr: 'C3' },
-    { key: 'c3_c0', name: 'C3/C0', unit: '', abbr: 'C3/C0', isRatio: true },
-    { key: 'c3_c2', name: 'C3/C2', unit: '', abbr: 'C3/C2', isRatio: true }
+    { key: 'iso_leu', name: '异亮氨酸/亮氨酸', unit: '', abbr: 'Iso/Leu' },
+    { key: 'met', name: '蛋氨酸/甲硫氨酸', unit: '', abbr: 'Met' },
+    { key: 'val', name: '缬氨酸', unit: '', abbr: 'Val' },
+    { key: 'thr', name: '苏氨酸', unit: '', abbr: 'Thr', optional: true },
+    { key: 'c0', name: '游离肉碱', unit: '', abbr: 'C0' },
+    { key: 'c2', name: '乙酰基肉碱', unit: '', abbr: 'C2' },
+    { key: 'c3', name: '丙酰基肉碱', unit: '', abbr: 'C3' },
+    { key: 'c3_c0', name: 'C3/C0', unit: '', abbr: 'C3/C0', isRatio: true, allowRangeInput: true },
+    { key: 'c3_c2', name: 'C3/C2', unit: '', abbr: 'C3/C2', isRatio: true, allowRangeInput: true }
   ];
 
   // 尿串联质谱指标配置
   static URINE_MS_INDICATORS = [
-    { key: 'methylmalonic_acid', name: '甲基丙二酸', unit: 'mmol/mol Cr', abbr: 'MMA' },
-    { key: 'hydroxypropionic_acid', name: '3-羟基丙酸', unit: 'mmol/mol Cr', abbr: '3-HPA' },
-    { key: 'hydroxybutyric_acid', name: '3-羟基丁酸', unit: 'mmol/mol Cr', abbr: '3-HBA' },
-    { key: 'methylcitric_acid', name: '甲基枸橼酸', unit: 'mmol/mol Cr', abbr: 'MCA' }
+    { key: 'methylmalonic_acid', name: '甲基丙二酸', unit: '', abbr: 'MMA' },
+    { key: 'hydroxypropionic_acid', name: '3-羟基丙酸', unit: '', abbr: '3-HPA' },
+    { key: 'hydroxybutyric_acid', name: '3-羟基丁酸', unit: '', abbr: '3-HBA' },
+    { key: 'methylcitric_acid', name: '甲基枸橼酸', unit: '', abbr: 'MCA' }
   ];
 
   // 血气指标配置（待补充）
   static BLOOD_GAS_INDICATORS = [
     { key: 'ph', name: 'pH值', unit: '', abbr: 'pH' },
-    { key: 'pco2', name: '二氧化碳分压', unit: 'mmHg', abbr: 'PCO2' },
-    { key: 'po2', name: '氧分压', unit: 'mmHg', abbr: 'PO2' },
-    { key: 'hco3', name: '碳酸氢根', unit: 'mmol/L', abbr: 'HCO3-' },
-    { key: 'be', name: '剩余碱', unit: 'mmol/L', abbr: 'BE' }
+    { key: 'pco2', name: '二氧化碳分压', unit: '', abbr: 'PCO2' },
+    { key: 'po2', name: '氧分压', unit: '', abbr: 'PO2' },
+    { key: 'hco3', name: '碳酸氢根', unit: '', abbr: 'HCO3-' },
+    { key: 'be', name: '剩余碱', unit: '', abbr: 'BE' }
   ];
 
   // 血氨指标配置（待补充）
   static BLOOD_AMMONIA_INDICATORS = [
-    { key: 'ammonia', name: '血氨', unit: 'μmol/L', abbr: 'NH3' }
+    { key: 'ammonia', name: '血氨', unit: '', abbr: 'NH3' }
   ];
 
   // 获取指标配置
@@ -143,7 +143,7 @@ class ReportModel {
   }
 
   // 计算比值指标（如C3/C0, C3/C2）
-  static calculateRatio(numerator, denominator, precision = 2) {
+  static calculateRatio(numerator, denominator, precision = 3) {
     const num = parseFloat(numerator);
     const den = parseFloat(denominator);
     
@@ -161,6 +161,12 @@ class ReportModel {
 
     requiredIndicators.forEach(indicator => {
       const data = indicators[indicator.key];
+      
+      // 如果是可选指标且没有数据，跳过验证
+      if (indicator.optional && (!data || (!data.value || data.value.trim() === ''))) {
+        return;
+      }
+      
       if (!data) {
         errors.push(`缺少指标：${indicator.name}`);
         return;
@@ -170,8 +176,10 @@ class ReportModel {
         errors.push(`${indicator.name} 的值不能为空`);
       }
 
-      if (!indicator.isRatio && (!data.minRange || !data.maxRange)) {
-        errors.push(`${indicator.name} 需要设置参考范围`);
+      if (!indicator.isRatio || indicator.allowRangeInput) {
+        if (!data.minRange || !data.maxRange) {
+          errors.push(`${indicator.name} 需要设置参考范围`);
+        }
       }
     });
 
@@ -189,6 +197,19 @@ class ReportModel {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  // 格式化日期时间
+  static formatDateTime(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 
   // 获取报告摘要信息

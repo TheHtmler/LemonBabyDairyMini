@@ -351,10 +351,6 @@
   color: #F44336;
 }
 
-.status-text {
-  font-size: 24rpx;
-}
-
 .view-detail {
   display: flex;
   align-items: center;

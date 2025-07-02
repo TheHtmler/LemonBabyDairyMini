@@ -66,7 +66,7 @@ Page({
   // 复制联系邮箱
   copyEmail: function () {
     wx.setClipboardData({
-      data: 'support@lemonbaby.com',
+      data: '18019330063@163.com',
       success: function () {
         wx.showToast({
           title: '邮箱已复制',

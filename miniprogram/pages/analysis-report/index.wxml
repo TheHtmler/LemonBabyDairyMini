@@ -121,9 +121,7 @@
           <!-- 卡片底部状态 -->
           <view class="card-footer">
             <view class="status-indicator {{item.summary.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
-              <text class="status-text">
                 {{item.summary.abnormalCount > 0 ? '存在异常指标' : '指标正常'}}
-              </text>
             </view>
             <view class="view-detail">
               <text class="detail-text">查看详情</text>

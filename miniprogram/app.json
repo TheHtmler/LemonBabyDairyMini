@@ -2,7 +2,6 @@
   "pages": [
     "pages/role-selection/index",
     "pages/invite-join/index",
-    "pages/bind-phone/index",
     "pages/daily-feeding/index",
     "pages/data-records/index",
     "pages/analysis-report/index",

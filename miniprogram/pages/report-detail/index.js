@@ -72,17 +72,18 @@ Page({
       
       const reportData = result.data;
       
-      // 计算报告摘要
-      const reportSummary = ReportModel.getReportSummary(reportData);
-      
       // 获取指标配置
       const indicatorConfigs = ReportModel.getIndicators(reportData.reportType);
+      
+      // 计算报告摘要（基于指标配置）
+      const reportSummary = this.calculateReportSummary(reportData, indicatorConfigs);
       
       // 格式化报告数据
       const formattedReportData = {
         ...reportData,
         formattedDate: ReportModel.formatDate(reportData.reportDate),
-        reportTypeName: ReportModel.getReportTypeName(reportData.reportType)
+        reportTypeName: ReportModel.getReportTypeName(reportData.reportType),
+        formattedUpdatedAt: ReportModel.formatDateTime(reportData.updatedAt)
       };
 
       this.setData({
@@ -197,6 +198,34 @@ Page({
     return reportData.indicators[indicatorKey] || null;
   },
 
+  // 计算报告摘要（基于指标配置）
+  calculateReportSummary: function (reportData, indicatorConfigs) {
+    const totalCount = indicatorConfigs.length;
+    let normalCount = 0;
+    let abnormalCount = 0;
+    let filledCount = 0;
+
+    indicatorConfigs.forEach(config => {
+      const indicatorData = reportData.indicators && reportData.indicators[config.key];
+      if (indicatorData && indicatorData.value) {
+        filledCount++;
+        if (indicatorData.status === 'normal') {
+          normalCount++;
+        } else if (indicatorData.status === 'high' || indicatorData.status === 'low') {
+          abnormalCount++;
+        }
+      }
+    });
+
+    return {
+      normalCount,
+      abnormalCount,
+      totalCount,
+      filledCount,
+      normalRate: filledCount > 0 ? Math.round((normalCount / filledCount) * 100) : 0
+    };
+  },
+
   // 查看历史趋势（预留功能）
   onViewTrend: function (e) {
     const indicatorKey = e.currentTarget.dataset.indicator;
@@ -217,16 +246,18 @@ Page({
       const data = this.getIndicatorData(config.key);
       if (data && data.value) {
         const statusDisplay = this.getIndicatorStatusDisplay(data.status);
-        copyText += `${config.name}(${config.abbr})：${data.value} ${config.unit || ''} [${statusDisplay.text}]\n`;
+        copyText += `${config.name}(${config.abbr})：${data.value} [${statusDisplay.text}]\n`;
         
         if (data.minRange && data.maxRange) {
-          copyText += `  参考范围：${data.minRange} - ${data.maxRange} ${config.unit || ''}\n`;
+          copyText += `  参考范围：${data.minRange} - ${data.maxRange}\n`;
         }
         
         if (data.optimalRange) {
-          copyText += `  最优范围：${data.optimalRange.min} - ${data.optimalRange.max} ${config.unit || ''}\n`;
+          copyText += `  最优范围：${data.optimalRange.min} - ${data.optimalRange.max}\n`;
         }
         copyText += '\n';
+      } else {
+        copyText += `${config.name}(${config.abbr})：未填写\n\n`;
       }
     });
 
