@@ -708,7 +708,7 @@ Page({
       
       if (this.data.proteinSourceType === 'breastMilk') {
         // 母乳蛋白质浓度：1.1g/100ml
-        naturalProteinIntake = (totalNaturalMilk * 1.1) / 100;
+        naturalProteinIntake = (totalNaturalMilk * this.data.nutritionSettings.natural_milk_protein || 1.1) / 100;
       } else if (this.data.proteinSourceType === 'formulaMilk' && this.data.nutritionSettings) {
         // 普通奶粉蛋白质含量需要从营养设置中获取
         if (this.data.nutritionSettings.formula_milk_protein_concentration) {
