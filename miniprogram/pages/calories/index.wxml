@@ -1,0 +1,33 @@
+<view class="calorie-container">
+  <!-- 年龄段选择 -->
+  <picker mode="selector" range="{{ageOptions}}" value="{{ageIndex}}" bindchange="onAgeChange">
+    <view class="picker">
+      年龄段：{{ageOptions[ageIndex]}}（kcal/kg·d：{{energyRange[ageIndex]}})
+    </view>
+  </picker>
+
+  <!-- 速查概览（MMA 稳定期能量范围） -->
+  <view class="tips">
+    <text>说明：为 MMA 稳定期参考范围；急性期或化验异常请按医嘱调整。</text>
+  </view>
+
+  <!-- 食材能量/蛋白速查 -->
+  <view class="search">
+    <input placeholder="搜索食材（如：米粉、鸡胸、南瓜）" bindinput="onSearch" value="{{keyword}}" />
+  </view>
+
+  <view class="table">
+    <view class="thead">
+      <text class="col name">食材（可食部）</text>
+      <text class="col energy">kcal/100g</text>
+      <text class="col protein">蛋白g/100g</text>
+    </view>
+    <block wx:for="{{filteredFoods}}" wx:key="name">
+      <view class="trow">
+        <text class="col name">{{item.name}}</text>
+        <text class="col energy">{{item.kcal100}}</text>
+        <text class="col protein">{{item.prot100}}</text>
+      </view>
+    </block>
+  </view>
+</view>

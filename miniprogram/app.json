@@ -12,7 +12,8 @@
     "pages/medications/index",
     "pages/about/index",
     "pages/add-report/index",
-    "pages/report-detail/index"
+    "pages/report-detail/index",
+    "pages/calories/index"
   ],
   "window": {
     "backgroundColor": "#FFF5D6",
