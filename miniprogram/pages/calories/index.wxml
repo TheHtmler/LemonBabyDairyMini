@@ -1,33 +1,105 @@
-<view class="calorie-container">
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">营养标准管理</text>
+  </view>
+
   <!-- 年龄段选择 -->
-  <picker mode="selector" range="{{ageOptions}}" value="{{ageIndex}}" bindchange="onAgeChange">
-    <view class="picker">
-      年龄段：{{ageOptions[ageIndex]}}（kcal/kg·d：{{energyRange[ageIndex]}})
-    </view>
-  </picker>
+  <view class="age-picker-container">
+    <picker mode="selector" range="{{ageOptions}}" value="{{ageIndex}}" bindchange="onAgeChange">
+      <view class="picker">
+        年龄段：{{ageOptions[ageIndex]}}（kcal/kg·d：{{energyRange[ageIndex]}})
+      </view>
+    </picker>
+  </view>
 
   <!-- 速查概览（MMA 稳定期能量范围） -->
   <view class="tips">
     <text>说明：为 MMA 稳定期参考范围；急性期或化验异常请按医嘱调整。</text>
   </view>
 
-  <!-- 食材能量/蛋白速查 -->
-  <view class="search">
-    <input placeholder="搜索食材（如：米粉、鸡胸、南瓜）" bindinput="onSearch" value="{{keyword}}" />
+  <!-- 营养标准列表 -->
+  <view class="nutrition-list">
+    <view class="no-data" wx:if="{{!nutritionStandards || nutritionStandards.length === 0}}">
+      暂无营养标准配置，请点击右下角添加
+    </view>
+    <view class="nutrition-item" wx:for="{{nutritionStandards}}" wx:key="_id">
+      <view class="nutrition-info">
+        <view class="nutrition-name">{{item.name}}</view>
+        <view class="nutrition-details">
+          <text class="nutrition-detail">热量: {{item.kcal100}} kcal/{{item.baseAmount}}{{item.unit}}</text>
+          <text class="nutrition-detail">蛋白质: {{item.prot100}} g/{{item.baseAmount}}{{item.unit}}</text>
+          <text class="nutrition-detail" wx:if="{{item.notes}}">备注: {{item.notes}}</text>
+        </view>
+      </view>
+      <view class="nutrition-actions">
+        <view class="edit-btn" bindtap="editNutrition" data-id="{{item._id}}">编辑</view>
+        <view class="delete-btn" bindtap="deleteNutrition" data-id="{{item._id}}">删除</view>
+      </view>
+    </view>
   </view>
 
-  <view class="table">
-    <view class="thead">
-      <text class="col name">食材（可食部）</text>
-      <text class="col energy">kcal/100g</text>
-      <text class="col protein">蛋白g/100g</text>
-    </view>
-    <block wx:for="{{filteredFoods}}" wx:key="name">
-      <view class="trow">
-        <text class="col name">{{item.name}}</text>
-        <text class="col energy">{{item.kcal100}}</text>
-        <text class="col protein">{{item.prot100}}</text>
+  <!-- 添加按钮 -->
+  <view class="add-btn" bindtap="showAddModal">
+    <text class="add-icon">+</text>
+  </view>
+
+  <!-- 添加/编辑营养标准弹窗 -->
+  <view class="modal" wx:if="{{showModal}}">
+    <view class="modal-mask" bindtap="hideModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        {{editingNutrition ? '编辑营养标准' : '添加营养标准'}}
       </view>
-    </block>
+      <view class="modal-body">
+        <!-- 营养标准名称 -->
+        <view class="form-item">
+          <text class="form-label">营养标准名称</text>
+          <view class="input-container">
+            <input class="input" placeholder="如: 母乳、特奶、米粉、鸡胸肉" value="{{formData.name}}" bindinput="onNameInput"/>
+          </view>
+        </view>
+        
+        <!-- 热量和蛋白质 -->
+        <view class="form-item">
+          <text class="form-label">标准营养成分</text>
+          <view class="form-row">
+            <view class="input-half">
+              <view class="input-container">
+                <input class="input" type="digit" placeholder="热量(kcal)" value="{{formData.kcal100}}" bindinput="onKcalInput"/>
+              </view>
+            </view>
+            <view class="input-half">
+              <view class="input-container">
+                <input class="input" type="digit" placeholder="蛋白质(g)" value="{{formData.prot100}}" bindinput="onProteinInput"/>
+              </view>
+            </view>
+          </view>
+          <view class="form-row">
+            <view class="input-half">
+              <view class="input-container">
+                <input class="input" type="digit" placeholder="基准重量" value="{{formData.baseAmount}}" bindinput="onBaseAmountInput"/>
+              </view>
+            </view>
+            <view class="input-half" style="flex: 1; height: 88rpx; margin-bottom: 20rpx;">
+              <picker class="picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
+                <view class="picker-view">{{units[formData.unitIndex]}}</view>
+              </picker>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 备注 -->
+        <view class="form-item">
+          <text class="form-label">备注说明</text>
+          <textarea class="textarea" placeholder="可填写特殊说明，如：冲配比例、食用方式、适用年龄等" value="{{formData.notes}}" bindinput="onNotesInput"></textarea>
+        </view>
+      </view>
+      
+      <view class="modal-footer">
+        <button class="btn cancel" bindtap="hideModal">取消</button>
+        <button class="btn confirm" bindtap="saveNutrition">确定</button>
+      </view>
+    </view>
   </view>
 </view>
