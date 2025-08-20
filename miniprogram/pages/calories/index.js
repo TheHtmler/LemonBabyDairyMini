@@ -10,7 +10,6 @@ Page({
     formData: {
       name: '',
       kcal100: '',
-      prot100: '',
       baseAmount: '100',
       unitIndex: 0,
       notes: ''
@@ -60,7 +59,6 @@ Page({
       formData: {
         name: '',
         kcal100: '',
-        prot100: '',
         baseAmount: '100',
         unitIndex: 0,
         notes: ''
@@ -78,10 +76,9 @@ Page({
         editingNutrition: nutrition,
         formData: {
           name: nutrition.name,
-          kcal100: nutrition.kcal100,
-          prot100: nutrition.prot100,
-          baseAmount: nutrition.baseAmount || '100',
-          unitIndex: this.data.units.indexOf(nutrition.unit) !== -1 ? this.data.units.indexOf(nutrition.unit) : 0,
+          kcal100: String((nutrition.kcal100 != null ? nutrition.kcal100 : (nutrition.items && nutrition.items[0] ? nutrition.items[0].value : '')) || ''),
+          baseAmount: String(nutrition.baseAmount || '100'),
+          unitIndex: Math.max(0, this.data.units.indexOf(nutrition.unit || (nutrition.items && nutrition.items[0] ? nutrition.items[0].unit : 'g') || 'g')),
           notes: nutrition.notes || ''
         }
       });
@@ -96,7 +93,6 @@ Page({
       formData: {
         name: '',
         kcal100: '',
-        prot100: '',
         baseAmount: '100',
         unitIndex: 0,
         notes: ''
@@ -116,28 +112,13 @@ Page({
       });
       return;
     }
-
-    if (!formData.kcal100 || parseFloat(formData.kcal100) < 0) {
-      wx.showToast({
-        title: '请输入有效热量值',
-        icon: 'none'
-      });
+    // 校验热量
+    if (formData.kcal100 === '' || isNaN(Number(formData.kcal100))) {
+      wx.showToast({ title: '请输入有效热量', icon: 'none' });
       return;
     }
-
-    if (!formData.prot100 || parseFloat(formData.prot100) < 0) {
-      wx.showToast({
-        title: '请输入有效蛋白质值',
-        icon: 'none'
-      });
-      return;
-    }
-
-    if (!formData.baseAmount || parseFloat(formData.baseAmount) <= 0) {
-      wx.showToast({
-        title: '请输入有效基准重量',
-        icon: 'none'
-      });
+    if (!formData.baseAmount || isNaN(Number(formData.baseAmount)) || Number(formData.baseAmount) <= 0) {
+      wx.showToast({ title: '请输入有效基准重量', icon: 'none' });
       return;
     }
 
@@ -154,12 +135,11 @@ Page({
       
       const nutritionData = {
         name: formData.name.trim(),
-        kcal100: parseFloat(formData.kcal100),
-        prot100: parseFloat(formData.prot100),
-        baseAmount: parseFloat(formData.baseAmount),
+        kcal100: Number(formData.kcal100),
+        baseAmount: Number(formData.baseAmount),
         unit: this.data.units[formData.unitIndex],
-        notes: formData.notes.trim(),
-        babyUid: babyUid, // 添加宝宝UID关联
+        notes: (formData.notes || '').trim(),
+        babyUid: babyUid,
         updatedAt: db.serverDate()
       };
 
@@ -260,27 +240,15 @@ Page({
   },
 
   onKcalInput(e) {
-    this.setData({
-      'formData.kcal100': e.detail.value
-    });
-  },
-
-  onProteinInput(e) {
-    this.setData({
-      'formData.prot100': e.detail.value
-    });
+    this.setData({ 'formData.kcal100': e.detail.value });
   },
 
   onBaseAmountInput(e) {
-    this.setData({
-      'formData.baseAmount': e.detail.value
-    });
+    this.setData({ 'formData.baseAmount': e.detail.value });
   },
 
   onUnitChange(e) {
-    this.setData({
-      'formData.unitIndex': parseInt(e.detail.value)
-    });
+    this.setData({ 'formData.unitIndex': parseInt(e.detail.value) });
   },
 
   onNotesInput(e) {

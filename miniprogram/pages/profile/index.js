@@ -29,7 +29,7 @@ Page({
       },
       {
         id: 4,
-        name: '热量参考',
+        name: '热量设置',
         icon: 'calories',
         path: '/pages/calories/index'
       },

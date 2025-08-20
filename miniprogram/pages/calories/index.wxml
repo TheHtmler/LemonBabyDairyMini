@@ -27,8 +27,8 @@
       <view class="nutrition-info">
         <view class="nutrition-name">{{item.name}}</view>
         <view class="nutrition-details">
+          <!-- 新结构：循环展示items；兼容旧结构若无items则展示旧字段 -->
           <text class="nutrition-detail">热量: {{item.kcal100}} kcal/{{item.baseAmount}}{{item.unit}}</text>
-          <text class="nutrition-detail">蛋白质: {{item.prot100}} g/{{item.baseAmount}}{{item.unit}}</text>
           <text class="nutrition-detail" wx:if="{{item.notes}}">备注: {{item.notes}}</text>
         </view>
       </view>
@@ -60,32 +60,31 @@
           </view>
         </view>
         
-        <!-- 热量和蛋白质 -->
+        <!-- 基准单位设置 -->
         <view class="form-item">
-          <text class="form-label">标准营养成分</text>
-          <view class="form-row">
-            <view class="input-half">
-              <view class="input-container">
-                <input class="input" type="digit" placeholder="热量(kcal)" value="{{formData.kcal100}}" bindinput="onKcalInput"/>
-              </view>
-            </view>
-            <view class="input-half">
-              <view class="input-container">
-                <input class="input" type="digit" placeholder="蛋白质(g)" value="{{formData.prot100}}" bindinput="onProteinInput"/>
-              </view>
-            </view>
-          </view>
+          <text class="form-label">基准单位</text>
           <view class="form-row">
             <view class="input-half">
               <view class="input-container">
                 <input class="input" type="digit" placeholder="基准重量" value="{{formData.baseAmount}}" bindinput="onBaseAmountInput"/>
               </view>
             </view>
-            <view class="input-half" style="flex: 1; height: 88rpx; margin-bottom: 20rpx;">
-              <picker class="picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
-                <view class="picker-view">{{units[formData.unitIndex]}}</view>
+            <view class="unit-picker-container">
+              <picker class="unit-picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
+                <view class="unit-picker-view">{{units[formData.unitIndex]}}</view>
               </picker>
             </view>
+          </view>
+        </view>
+
+        <!-- 热量设置 -->
+        <view class="form-item">
+          <text class="form-label">热量含量</text>
+          <view class="form-row">
+            <view class="input-container" style="flex: 1;">
+              <input class="input" type="digit" placeholder="请输入热量值" value="{{formData.kcal100}}" bindinput="onKcalInput"/>
+            </view>
+            <view class="unit-label">kcal / {{formData.baseAmount}}{{units[formData.unitIndex]}}</view>
           </view>
         </view>
         
