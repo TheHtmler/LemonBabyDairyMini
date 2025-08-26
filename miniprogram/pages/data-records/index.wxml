@@ -6,7 +6,7 @@
       <text class="date-text">{{todayFullDate}}</text>
     </view>
     
-    <!-- 日期滑动区域 -->
+    <!-- 日期滑动区域1 -->
     <view class="date-scroll-container">
       <scroll-view 
         scroll-x="true" 
