@@ -14,6 +14,11 @@ const NutritionModel = require('../../models/nutrition');
 // 引入药物记录模型
 const MedicationRecordModel = require('../../models/medicationRecord');
 
+// 母乳热量 67kcal/100ml
+// 特奶热量 69.5kcal/100ml
+const BREAST_MILK_KCAL = 0.67;
+const SPECIAL_MILK_KCAL = 0.70;
+
 Page({
   data: {
     selectedDate: '',
@@ -94,6 +99,8 @@ Page({
     // 营养参数设置
     nutritionSettings: null,
     proteinSourceType: 'breastMilk', // 默认蛋白质来源类型为母乳
+    totalBreastMilkKcal: 0,
+    totalSpecialMilkKcal: 0,
   },
 
   onLoad: function() {
@@ -445,12 +452,14 @@ Page({
           totalNaturalMilk: 0,
           totalSpecialMilk: 0,
           totalMilk: 0,
-                  totalPowderWeight: 0,
-        totalFormulaPowderWeight: 0,
-        naturalProteinCoefficient: 0,
-        specialProteinCoefficient: 0,
-          isDataLoading: false // 设置数据加载完成
-        });
+          totalBreastMilkKcal: 0,
+          totalSpecialMilkKcal: 0,
+          totalPowderWeight: 0,
+          totalFormulaPowderWeight: 0,
+          naturalProteinCoefficient: 0,
+          specialProteinCoefficient: 0,
+            isDataLoading: false // 设置数据加载完成
+          });
         
         // 处理药物记录和排便记录
         this.processMedicationData(medicationRecordsToSet);
@@ -508,6 +517,8 @@ Page({
         totalNaturalMilk: 0,
         totalSpecialMilk: 0,
         totalMilk: 0,
+        totalBreastMilkKcal: 0,
+        totalSpecialMilkKcal: 0,
         totalPowderWeight: 0,
         totalFormulaPowderWeight: 0,
         naturalProteinCoefficient: 0,
@@ -755,6 +766,8 @@ Page({
       totalNaturalMilk: Math.round(totalNaturalMilk),
       totalSpecialMilk: Math.round(totalSpecialMilk),
       totalMilk: Math.round(totalMilk),
+      totalBreastMilkKcal: Math.round(totalNaturalMilk * BREAST_MILK_KCAL),
+      totalSpecialMilkKcal: Math.round(totalSpecialMilk * SPECIAL_MILK_KCAL),
       totalPowderWeight: totalPowderWeight,
       totalFormulaPowderWeight: totalFormulaPowderWeight, // 新增普通奶粉重量统计
       naturalProteinCoefficient: naturalProteinCoefficient,

@@ -128,6 +128,22 @@
             <view class="total-label">喂奶次数</view>
             <view class="total-value">{{feedingRecords.length}}</view>
           </view>
+          <view class="total-item">
+            <view class="total-label">母乳热量</view>
+            <view class="total-value">{{totalBreastMilkKcal}}kcal</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">特奶热量</view>
+            <view class="total-value">{{totalSpecialMilkKcal}}kcal</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">总热量</view>
+            <view class="total-value">{{totalBreastMilkKcal + totalSpecialMilkKcal}}kcal</view>
+          </view>
+          <view class="total-item">
+            <view class="total-label">目标热量</view>
+            <view class="total-value">{{weight * 72}}~{{weight * 109}}kcal</view>
+          </view>
         </view>
       </view>
 
