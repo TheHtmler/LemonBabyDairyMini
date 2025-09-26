@@ -33,6 +33,10 @@ Page({
     totalSpecialMilk: 0,
     totalMilk: 0,
     totalPowderWeight: 0,
+    goalKcalRange: {
+      min: 0,
+      max: 0
+    },
     totalFormulaPowderWeight: 0, // 新增普通奶粉重量统计
     // 生长数据
     weight: '--',
@@ -455,6 +459,10 @@ Page({
           totalBreastMilkKcal: 0,
           totalSpecialMilkKcal: 0,
           totalPowderWeight: 0,
+          goalKcalRange: {
+            min: 0,
+            max: 0
+          },
           totalFormulaPowderWeight: 0,
           naturalProteinCoefficient: 0,
           specialProteinCoefficient: 0,
@@ -520,6 +528,10 @@ Page({
         totalBreastMilkKcal: 0,
         totalSpecialMilkKcal: 0,
         totalPowderWeight: 0,
+        goalKcalRange: {
+          min: 0,
+          max: 0
+        },
         totalFormulaPowderWeight: 0,
         naturalProteinCoefficient: 0,
         specialProteinCoefficient: 0
@@ -771,7 +783,11 @@ Page({
       totalPowderWeight: totalPowderWeight,
       totalFormulaPowderWeight: totalFormulaPowderWeight, // 新增普通奶粉重量统计
       naturalProteinCoefficient: naturalProteinCoefficient,
-      specialProteinCoefficient: specialProteinCoefficient
+      specialProteinCoefficient: specialProteinCoefficient,
+      goalKcalRange: {
+        min: Math.floor(currentWeight * 72),
+        max: Math.floor(currentWeight * 109)
+      }
     });
   },
 
