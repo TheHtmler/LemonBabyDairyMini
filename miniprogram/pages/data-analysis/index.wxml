@@ -1,0 +1,148 @@
+<!-- pages/data-analysis/index.wxml -->
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">数据加载中...</text>
+  </view>
+  <!-- 主要内容 -->
+  <view wx:else class="content">
+    <!-- 时间维度选择 -->
+    <view class="dimension-selector">
+      <view class="dimension-tabs">
+        <view class="tab-item {{timeDimension === 'week' ? 'active' : ''}}" bindtap="onTimeDimensionChange" data-dimension="week">
+          <text class="tab-text">周视图</text>
+        </view>
+        <view class="tab-item {{timeDimension === 'month' ? 'active' : ''}}" bindtap="onTimeDimensionChange" data-dimension="month">
+          <text class="tab-text">月视图</text>
+        </view>
+      </view>
+    </view>
+    <!-- 日期范围导航 -->
+    <view class="date-navigation">
+      <view class="nav-btn" bindtap="onPrevious" hover-class="nav-btn-hover">
+        <text class="nav-icon">◀</text>
+      </view>
+      <view class="date-range {{timeDimension === 'month' ? 'clickable' : ''}}" bindtap="{{timeDimension === 'month' ? 'onDatePicker' : ''}}">
+        <text class="date-text">{{dateRangeText}}</text>
+        <text wx:if="{{timeDimension === 'month'}}" class="date-picker-icon">📅</text>
+      </view>
+      <view class="nav-btn" bindtap="onNext" hover-class="nav-btn-hover">
+        <text class="nav-icon">▶</text>
+      </view>
+    </view>
+    <!-- 日期选择器弹窗 -->
+    <view wx:if="{{showDatePicker}}" class="date-picker-mask" bindtap="onCloseDatePicker">
+      <view class="date-picker-modal" catchtap="stopPropagation">
+        <view class="picker-header">
+          <text class="picker-title">选择月份</text>
+          <view class="picker-close" bindtap="onCloseDatePicker">✕</view>
+        </view>
+        <view class="picker-content">
+          <!-- 年份选择 -->
+          <view class="picker-row">
+            <view class="picker-btn" bindtap="onYearChange" data-offset="-1">
+              <text>◀</text>
+            </view>
+            <view class="picker-value">
+              <text class="picker-year">{{pickerYear}}年</text>
+            </view>
+            <view class="picker-btn" bindtap="onYearChange" data-offset="1">
+              <text>▶</text>
+            </view>
+          </view>
+          <!-- 月份选择 -->
+          <view class="picker-months">
+            <view wx:for="{{months}}" wx:key="*this" class="month-item {{pickerMonth === item ? 'active' : ''}}" bindtap="onMonthSelect" data-month="{{item}}">
+              <text class="month-text">{{item}}月</text>
+            </view>
+          </view>
+        </view>
+        <view class="picker-footer">
+          <view class="picker-action cancel" bindtap="onCloseDatePicker">
+            <text>取消</text>
+          </view>
+          <view class="picker-action confirm" bindtap="onDatePickerConfirm">
+            <text>确定</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <!-- 统计卡片 -->
+    <view class="statistics-card">
+      <view class="stat-header">
+        <text class="stat-title">数据概览</text>
+        <text class="stat-days">记录天数：{{statistics.totalDays}}天</text>
+      </view>
+      <view class="stat-grid">
+        <view class="stat-item">
+          <text class="stat-label">平均奶量</text>
+          <text class="stat-value">
+            {{statistics.avgMilkVolume}}
+            <text class="stat-unit">ml</text>
+          </text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">平均热量</text>
+          <text class="stat-value">
+            {{statistics.avgCalories}}
+            <text class="stat-unit">kcal</text>
+          </text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">天然奶</text>
+          <text class="stat-value natural">
+            {{statistics.avgNaturalMilk}}
+            <text class="stat-unit">ml</text>
+          </text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">特奶</text>
+          <text class="stat-value special">
+            {{statistics.avgSpecialMilk}}
+            <text class="stat-unit">ml</text>
+          </text>
+        </view>
+      </view>
+    </view>
+    <!-- 空状态 -->
+    <view wx:if="{{!hasData}}" class="empty-state">
+      <view class="empty-icon">📊</view>
+      <text class="empty-title">暂无数据</text>
+      <text class="empty-desc">所选时间范围内没有喂养记录</text>
+    </view>
+    <!-- 图表区域 -->
+    <view wx:else class="charts-container">
+      <!-- 奶量统计曲线 -->
+      <view class="chart-section">
+        <view class="chart-header">
+          <text class="chart-title">📈 奶量统计曲线</text>
+          <text class="chart-subtitle">每日奶量变化趋势</text>
+        </view>
+        <view class="chart-wrapper">
+          <ec-canvas id="milk-chart" canvas-id="milk-chart" ec="{{ ec }}" bind:init="initMilkChart"></ec-canvas>
+        </view>
+      </view>
+      <!-- 蛋白质系数比例曲线 -->
+      <view class="chart-section">
+        <view class="chart-header">
+          <text class="chart-title">🥛 蛋白质系数曲线</text>
+          <text class="chart-subtitle">总蛋白、天然蛋白、特殊蛋白系数（g/kg）</text>
+        </view>
+        <view class="chart-wrapper">
+          <ec-canvas id="protein-chart" canvas-id="protein-chart" ec="{{ ec }}" bind:init="initProteinChart"></ec-canvas>
+        </view>
+      </view>
+      <!-- 总热量曲线 -->
+      <view class="chart-section">
+        <view class="chart-header">
+          <text class="chart-title">🔥 总热量曲线</text>
+          <text class="chart-subtitle">每日热量摄入趋势</text>
+        </view>
+        <view class="chart-wrapper">
+          <ec-canvas id="calorie-chart" canvas-id="calorie-chart" ec="{{ ec }}" bind:init="initCalorieChart"></ec-canvas>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

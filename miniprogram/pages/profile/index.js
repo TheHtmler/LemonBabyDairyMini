@@ -29,6 +29,13 @@ Page({
       },
       {
         id: 4,
+        name: '数据分析',
+        icon: 'nutrition',
+        path: '/pages/data-analysis/index',
+        description: '查看周、月维度的数据趋势'
+      },
+      {
+        id: 5,
         name: '分享数据',
         icon: 'participant',
         action: 'share',
@@ -36,19 +43,19 @@ Page({
         showForCreator: true
       },
       {
-        id: 5,
+        id: 6,
         name: '数据标识说明',
         icon: 'info',
         path: '/pages/about/index?section=auth'
       },
       {
-        id: 6,
+        id: 7,
         name: '关于我们',
         icon: 'info',
         path: '/pages/about/index'
       },
       {
-        id: 7,
+        id: 8,
         name: '注销账户',
         icon: 'logout',
         action: 'logout'
