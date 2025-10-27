@@ -32,7 +32,6 @@ Page({
     totalNaturalMilk: 0,
     totalSpecialMilk: 0,
     totalMilk: 0,
-    totalPowderWeight: 0,
     goalKcalRange: {
       min: 0,
       max: 0
@@ -458,7 +457,6 @@ Page({
           totalMilk: 0,
           totalBreastMilkKcal: 0,
           totalSpecialMilkKcal: 0,
-          totalPowderWeight: 0,
           goalKcalRange: {
             min: 0,
             max: 0
@@ -527,7 +525,6 @@ Page({
         totalMilk: 0,
         totalBreastMilkKcal: 0,
         totalSpecialMilkKcal: 0,
-        totalPowderWeight: 0,
         goalKcalRange: {
           min: 0,
           max: 0
@@ -673,7 +670,6 @@ Page({
     const totalMilk = totalNaturalMilk + totalSpecialMilk;
     
     // 计算奶粉克重
-    let totalPowderWeight = 0;
     let totalFormulaPowderWeight = 0; // 单独统计普通奶粉重量
     
     // 确保营养设置已加载
@@ -687,7 +683,6 @@ Page({
         const ratio = this.data.nutritionSettings.formula_milk_ratio;
         const powderWeight = (totalNaturalMilk * ratio.powder) / ratio.water;
         totalFormulaPowderWeight = Math.round(powderWeight * 10) / 10; // 保留一位小数
-        totalPowderWeight += totalFormulaPowderWeight;
         console.log('普通奶粉克重:', totalFormulaPowderWeight);
       }
       
@@ -695,7 +690,6 @@ Page({
       if (this.data.nutritionSettings.special_milk_ratio) {
         const ratio = this.data.nutritionSettings.special_milk_ratio;
         const specialPowderWeight = (totalSpecialMilk * ratio.powder) / ratio.water;
-        totalPowderWeight += Math.round(specialPowderWeight * 10) / 10; // 保留一位小数
         console.log('特奶粉克重:', Math.round(specialPowderWeight * 10) / 10);
       } else {
         console.warn('未找到特奶配比设置，无法计算特奶粉重');
@@ -707,14 +701,12 @@ Page({
       // 默认特奶配比 13.5g/90ml
       const defaultSpecialRatio = 13.5 / 90;
       const specialPowderWeight = totalSpecialMilk * defaultSpecialRatio;
-      totalPowderWeight += Math.round(specialPowderWeight * 10) / 10;
       
       // 如果是普通奶粉模式，使用默认比例 7g/100ml
       if (this.data.proteinSourceType === 'formulaMilk') {
         const defaultFormulaRatio = 7 / 100;
         const formulaPowderWeight = totalNaturalMilk * defaultFormulaRatio;
         totalFormulaPowderWeight = Math.round(formulaPowderWeight * 10) / 10;
-        totalPowderWeight += totalFormulaPowderWeight;
       }
     }
     
@@ -780,7 +772,6 @@ Page({
       totalMilk: Math.round(totalMilk),
       totalBreastMilkKcal: Math.round(totalNaturalMilk * BREAST_MILK_KCAL),
       totalSpecialMilkKcal: Math.round(totalSpecialMilk * SPECIAL_MILK_KCAL),
-      totalPowderWeight: totalPowderWeight,
       totalFormulaPowderWeight: totalFormulaPowderWeight, // 新增普通奶粉重量统计
       naturalProteinCoefficient: naturalProteinCoefficient,
       specialProteinCoefficient: specialProteinCoefficient,

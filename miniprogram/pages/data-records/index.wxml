@@ -75,6 +75,10 @@
             <view class="total-value">{{totalMilk}}ml</view>
           </view>
           <view class="total-item">
+            <view class="total-label">喂奶次数</view>
+            <view class="total-value">{{feedingRecords.length}}</view>
+          </view>
+          <view class="total-item">
             <view class="total-label">天然奶总量</view>
             <view class="total-value">{{totalNaturalMilk}}ml</view>
           </view>
@@ -88,20 +92,12 @@
             <view class="total-value">{{totalSpecialMilk}}ml</view>
           </view>
           <view class="total-item">
-            <view class="total-label">特奶粉克重</view>
-            <view class="total-value">{{totalPowderWeight}}g</view>
-          </view>
-          <view class="total-item">
             <view class="total-label">天然系数</view>
             <view class="total-value">{{naturalProteinCoefficient}}g/kg</view>
           </view>
           <view class="total-item">
             <view class="total-label">特殊蛋白系数</view>
             <view class="total-value">{{specialProteinCoefficient}}g/kg</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">喂奶次数</view>
-            <view class="total-value">{{feedingRecords.length}}</view>
           </view>
           <view class="total-item">
             <view class="total-label">母乳热量</view>
