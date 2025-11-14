@@ -1,0 +1,189 @@
+<view class="container">
+  <view class="page-header">
+    <text class="page-title">食物管理</text>
+    <text class="page-subtitle">维护常用食物，记录时可快速选择</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    加载中...
+  </view>
+
+  <view class="food-list" wx:if="{{!loading && groupedFoods.length > 0}}">
+    <block wx:for="{{groupedFoods}}" wx:key="category">
+      <view class="category-card">
+        <view class="category-header">
+          <text class="category-name">{{item.category}}</text>
+          <text class="category-count">{{item.items.length}} 种</text>
+        </view>
+        <view class="category-body">
+          <block wx:for="{{item.items}}" wx:key="_id">
+            <view class="food-item">
+              <view class="food-main">
+                <view class="food-info">
+                  <view class="food-name">
+                    <text>{{item.name}}</text>
+                    <text class="food-tag system" wx:if="{{item.isSystem}}">系统预设</text>
+                    <text class="food-tag custom" wx:if="{{!item.isSystem}}">自定义</text>
+                  </view>
+                  <view class="food-unit">单位：{{item.baseUnit}} / {{item.baseQuantity}}</view>
+                </view>
+                <image class="food-cover" wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill" />
+              </view>
+              <view class="food-nutrition">
+                <view class="nutrition-item">
+                  <text class="label">热量</text>
+                  <text class="value">{{item.nutritionPerUnit.calories || 0}} kcal</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">蛋白</text>
+                  <text class="value">{{item.nutritionPerUnit.protein || 0}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">碳水</text>
+                  <text class="value">{{item.nutritionPerUnit.carbs || 0}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">脂肪</text>
+                  <text class="value">{{item.nutritionPerUnit.fat || 0}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">膳纤</text>
+                  <text class="value">{{item.nutritionPerUnit.fiber || 0}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">钠</text>
+                  <text class="value">{{item.nutritionPerUnit.sodium || 0}} mg</text>
+                </view>
+              </view>
+              <view class="food-actions" wx:if="{{!item.isSystem}}">
+                <button
+                  class="action-btn edit"
+                  size="mini"
+                  data-id="{{item._id}}"
+                  bindtap="showEditModal"
+                  type="default"
+                >
+                  编辑
+                </button>
+                <button
+                  class="action-btn delete"
+                  size="mini"
+                  data-id="{{item._id}}"
+                  data-name="{{item.name}}"
+                  bindtap="onDeleteFood"
+                  type="warn"
+                >
+                  删除
+                </button>
+              </view>
+            </view>
+          </block>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="empty" wx:if="{{!loading && groupedFoods.length === 0}}">
+    <text>还没有可用的食物，请点击下方按钮添加</text>
+  </view>
+
+  <view class="add-btn" wx:if="{{babyUid}}" bindtap="showAddModal">
+    <text class="add-icon">+</text>
+  </view>
+
+  <view class="modal" wx:if="{{showAddModal}}">
+    <view class="modal-mask" bindtap="hideAddModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        {{editingFoodId ? '编辑食物' : '添加食物'}}
+      </view>
+      <view class="modal-body">
+        <view class="form-title">基本信息</view>
+        <view class="form-item">
+          <text class="form-label">名称</text>
+          <input class="input" placeholder="如：南瓜泥" value="{{formData.name}}" data-field="name" bindinput="onInputChange" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">分类</text>
+          <input class="input" placeholder="如：辅食/水果" value="{{formData.category}}" data-field="category" bindinput="onInputChange" />
+          <view class="suggestions">
+            <text class="suggestion" wx:for="{{categorySuggestions}}" wx:key="*this" data-value="{{item}}" bindtap="selectCategorySuggestion">{{item}}</text>
+          </view>
+          <view class="custom-category-row">
+            <input
+              class="custom-category-input"
+              placeholder="输入新分类名称"
+              value="{{customCategoryInput}}"
+              bindinput="onCustomCategoryInput"
+            />
+            <view class="custom-category-button" bindtap="addCustomCategory">添加</view>
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-item half">
+            <text class="form-label">记录单位</text>
+            <input class="input" placeholder="如：g / ml" value="{{formData.unit}}" data-field="unit" bindinput="onInputChange" />
+            <view class="suggestions">
+              <text class="suggestion" wx:for="{{unitSuggestions}}" wx:key="*this" data-value="{{item}}" bindtap="selectUnitSuggestion">{{item}}</text>
+            </view>
+          </view>
+          <view class="form-item half">
+            <text class="form-label">基础份量</text>
+            <input class="input" type="digit" placeholder="默认 100" value="{{formData.baseQuantity}}" data-field="baseQuantity" bindinput="onInputChange" />
+          </view>
+        </view>
+        <view class="form-item">
+          <text class="form-label">默认记录份量</text>
+          <input class="input" type="digit" placeholder="默认跟基础份量一致" value="{{formData.defaultQuantity}}" data-field="defaultQuantity" bindinput="onInputChange" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">热量 (kcal)</text>
+          <input class="input" type="digit" placeholder="必填" value="{{formData.calories}}" data-field="calories" bindinput="onInputChange" />
+        </view>
+
+        <view class="form-title">选填信息</view>
+        <view class="form-item">
+          <text class="form-label">图片链接</text>
+          <input class="input" placeholder="可填写图片 URL 或留空" value="{{formData.image}}" data-field="image" bindinput="onInputChange" />
+        </view>
+        <view class="form-title">营养信息（选填，对应基础份量）</view>
+        <view class="form-row">
+          <view class="form-item half">
+            <text class="form-label">蛋白 (g)</text>
+            <input class="input" type="digit" value="{{formData.protein}}" data-field="protein" bindinput="onInputChange" />
+          </view>
+          <view class="form-item half">
+            <text class="form-label">脂肪 (g)</text>
+            <input class="input" type="digit" value="{{formData.fat}}" data-field="fat" bindinput="onInputChange" />
+          </view>
+        </view>
+        <view class="form-row">
+          <view class="form-item half">
+            <text class="form-label">碳水 (g)</text>
+            <input class="input" type="digit" value="{{formData.carbs}}" data-field="carbs" bindinput="onInputChange" />
+          </view>
+          <view class="form-item half">
+            <text class="form-label">膳食纤维 (g)</text>
+            <input class="input" type="digit" value="{{formData.fiber}}" data-field="fiber" bindinput="onInputChange" />
+          </view>
+        </view>
+        <view class="form-item">
+          <text class="form-label">钠 (mg)</text>
+          <input class="input" type="digit" value="{{formData.sodium}}" data-field="sodium" bindinput="onInputChange" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">蛋白来源</text>
+          <picker class="picker" mode="selector" range="{{proteinSourceOptions}}" range-key="label" value="{{formData.proteinSourceIndex}}" bindchange="onProteinSourceChange">
+            <view class="picker-display">
+              {{proteinSourceOptions[formData.proteinSourceIndex].label}}
+            </view>
+          </picker>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn cancel" bindtap="hideAddModal">取消</button>
+        <button class="btn confirm" bindtap="saveFood">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

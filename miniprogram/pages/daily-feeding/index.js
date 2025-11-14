@@ -2,6 +2,15 @@
 const NutritionModel = require('../../models/nutrition');
 // 导入药物记录模型
 const MedicationRecordModel = require('../../models/medicationRecord');
+// 导入食物模型
+const FoodModel = require('../../models/food');
+// 系统默认食物
+const { DEFAULT_FOODS } = require('../../constants/defaultFoods');
+
+const MILK_CATEGORY_ALIASES = ['milk', '奶类', '奶制品', '乳制品', '乳类及制品'];
+
+const NATURAL_MILK_CALORIES_PER_ML = 0.67;
+const SPECIAL_MILK_CALORIES_PER_ML = 0.695;
 // 导入工具函数
 const { 
   waitForAppInitialization, 
@@ -25,11 +34,21 @@ Page({
     // === 核心业务数据 ===
     weight: '',
     feedings: [],
+    intakes: [],
+    foodIntakes: [],
     medicationRecords: [],
     bowelRecords: [], // 排便记录
     medicationsList: [],
     calculation_params: null,
     recordId: '',
+    macroSummary: {
+      calories: 0,
+      protein: 0,
+      naturalProtein: 0,
+      specialProtein: 0,
+      carbs: 0,
+      fat: 0
+    },
 
     // === 当前操作数据 ===
     currentFeeding: {
@@ -42,12 +61,12 @@ Page({
       formulaPowderWeight: ''
     },
     quickFeedingData: {
+      startTime: '',
       naturalMilkVolume: '',
       totalVolume: '',
       specialMilkVolume: '0',
       specialMilkPowder: '0',
-      startTime: '',
-      endTime: ''
+      formulaPowderWeight: ''
     },
     newFeeding: {
       startTime: '',
@@ -56,7 +75,9 @@ Page({
       endDateTime: '',
       naturalMilkVolume: '',
       totalVolume: '',
-      specialMilkVolume: 0
+      specialMilkVolume: 0,
+      specialPowderWeight: 0,
+      formulaPowderWeight: 0
     },
     newMedication: {
       name: '',
@@ -83,7 +104,8 @@ Page({
       addFeeding: false,
       addMedication: false,
       bowelRecord: false, // 排便记录弹窗
-      bowelEdit: false // 编辑排便记录弹窗
+      bowelEdit: false, // 编辑排便记录弹窗
+      foodIntake: false // 食物摄入弹窗
     },
     
     // === 临时状态数据 ===
@@ -112,7 +134,7 @@ Page({
     remainingNaturalMilk: '0', // 剩余天然奶量
     formulaPowderNeeded: '0', // 所需奶粉量
     groupedMedicationRecords: [], // 分组的药物记录
-    
+
     // === 设置相关 ===
     proteinSourceType: 'breastMilk',
     nutritionSettingsComplete: true,
@@ -131,6 +153,22 @@ Page({
       stoolCount: 0,
       urineCount: 0,
       mixedCount: 0
+    },
+
+    // === 食物记录与库 ===
+    foodCatalog: [],
+    foodCategories: [],
+    categorizedFoods: {},
+    currentFoodOptions: [],
+    newFoodIntake: {
+      category: '',
+      foodId: '',
+      food: null,
+      quantity: '',
+      unit: '',
+      nutritionPreview: null,
+      proteinSource: 'natural',
+      recordTime: ''
     }
   },
 
@@ -154,6 +192,26 @@ Page({
   getSelectedMedicationInfo() {
     if (!this.data.selectedMedication) return null;
     return this.data.medicationsList.find(med => med._id === this.data.selectedMedication);
+  },
+
+  getFoodById(foodId) {
+    if (!foodId) return null;
+    return this.data.foodCatalog.find(food => food._id === foodId) || null;
+  },
+
+  isMilkCategory(category) {
+    if (!category) return false;
+    return MILK_CATEGORY_ALIASES.includes(category);
+  },
+
+  normalizeFoodCategoryValue(category) {
+    const text = (category || '').toString().trim();
+    if (!text) return '婴幼儿辅食';
+    const lower = text.toLowerCase();
+    if (lower === 'milk' || text === '奶类') return '乳类及制品';
+    if (lower === 'food') return '主食及谷薯';
+    if (text === '辅食') return '婴幼儿辅食';
+    return text;
   },
 
   // === 宝宝信息计算属性 ===
@@ -305,7 +363,8 @@ Page({
       // 并行加载其他初始数据
       await Promise.all([
         this.loadCalculationParams(),
-        this.loadMedications()
+        this.loadMedications(),
+        this.loadFoodCatalog()
       ]);
       
       await this.initQuickFeedingData();
@@ -510,7 +569,8 @@ Page({
       // 并行执行初始化任务
       await Promise.all([
         this.loadTodayData(false),
-        this.initBabyInfoCache() // 更新宝宝信息缓存
+        this.initBabyInfoCache(), // 更新宝宝信息缓存
+        this.loadFoodCatalog()
       ]);
       
       // 初始化当前喂奶数据
@@ -700,6 +760,219 @@ Page({
     });
     
     return totalVolume;
+  },
+
+  // 加载食物库
+  async loadFoodCatalog() {
+    try {
+      const babyUid = getBabyUid();
+      const remoteFoods = await FoodModel.getAvailableFoods(babyUid);
+      const combinedFoods = (remoteFoods || [])
+        .filter(item => !!item && !!item._id)
+        .map(food => {
+          const normalizedCategory = this.normalizeFoodCategoryValue(
+            food.category || food.categoryLevel1
+          );
+          return {
+            ...food,
+            category: normalizedCategory,
+            categoryLevel1: normalizedCategory,
+            categoryLevel2: food.categoryLevel2 || '',
+            isSystem: !!food.isSystem
+          };
+        });
+
+      const categorizedFoods = {};
+      const categorySet = new Set();
+
+      combinedFoods.forEach(food => {
+        const category = food.category || '婴幼儿辅食';
+        if (!categorizedFoods[category]) {
+          categorizedFoods[category] = [];
+        }
+        categorizedFoods[category].push(food);
+        categorySet.add(category);
+      });
+
+      Object.keys(categorizedFoods).forEach(category => {
+        categorizedFoods[category] = categorizedFoods[category].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+      });
+
+      const foodCategories = Array.from(categorySet).sort((a, b) => a.localeCompare(b));
+
+      this.setData({
+        foodCatalog: combinedFoods,
+        categorizedFoods,
+        foodCategories
+      });
+    } catch (error) {
+      console.error('加载食物库失败:', error);
+      const normalizedDefaults = DEFAULT_FOODS.map(food => ({
+        ...food,
+        category: this.normalizeFoodCategoryValue(food.category || food.categoryLevel1),
+        categoryLevel1: food.categoryLevel1 || this.normalizeFoodCategoryValue(food.category)
+      }));
+      const milkFoods = normalizedDefaults.filter(item => this.isMilkCategory(item.category));
+      const otherFoods = normalizedDefaults.filter(item => !this.isMilkCategory(item.category));
+      this.setData({
+        foodCatalog: normalizedDefaults,
+        foodCategories: ['乳类及制品', '婴幼儿辅食'],
+        categorizedFoods: {
+          乳类及制品: milkFoods,
+          婴幼儿辅食: otherFoods
+        }
+      });
+    }
+  },
+
+  // 规范化摄入记录
+  normalizeIntakes(intakes = []) {
+    if (!Array.isArray(intakes)) return [];
+
+    return intakes
+      .map(item => {
+        if (!item) return null;
+        const nutrition = item.nutrition || {};
+        const proteinSource = item.proteinSource || (item.milkType === 'special_formula' ? 'special' : 'natural');
+        const recordedAt = item.recordedAt || this.safeFormatTime(item.createdAt);
+
+        const rawCategory =
+          item.category || (item.type === 'milk' || item.milkType ? 'milk' : '');
+        const normalizedCategory = rawCategory || '辅食';
+        const isMilk = this.isMilkCategory(normalizedCategory) || item.type === 'milk' || !!item.milkType;
+
+        return {
+          ...item,
+          type: isMilk ? 'milk' : 'food',
+          category: normalizedCategory,
+          recordedAt,
+          nutrition: {
+            calories: Number(nutrition.calories) || 0,
+            protein: Number(nutrition.protein) || 0,
+            carbs: Number(nutrition.carbs) || 0,
+            fat: Number(nutrition.fat) || 0,
+            fiber: Number(nutrition.fiber) || 0,
+            sodium: Number(nutrition.sodium) || 0
+          },
+          naturalProtein: typeof item.naturalProtein === 'number' ? item.naturalProtein : null,
+          specialProtein: typeof item.specialProtein === 'number' ? item.specialProtein : null,
+          proteinSource
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const timeA = (a.recordedAt || '').replace(':', '');
+        const timeB = (b.recordedAt || '').replace(':', '');
+        return timeB.localeCompare(timeA);
+      });
+  },
+
+  // 计算宏量营养统计
+  calculateMacroSummary(intakes = [], feedings = []) {
+    const summary = {
+      calories: 0,
+      protein: 0,
+      naturalProtein: 0,
+      specialProtein: 0,
+      carbs: 0,
+      fat: 0
+    };
+
+    const accumulateFromIntake = (intake) => {
+      const nutrition = intake.nutrition || {};
+      const protein = Number(nutrition.protein) || 0;
+      const naturalProtein = typeof intake.naturalProtein === 'number'
+        ? intake.naturalProtein
+        : (intake.proteinSource === 'special' ? 0 : protein);
+      const specialProtein = typeof intake.specialProtein === 'number'
+        ? intake.specialProtein
+        : (intake.proteinSource === 'special' ? protein : 0);
+
+      summary.calories += Number(nutrition.calories) || 0;
+      summary.protein += protein;
+      summary.naturalProtein += naturalProtein;
+      summary.specialProtein += specialProtein;
+      summary.carbs += Number(nutrition.carbs) || 0;
+      summary.fat += Number(nutrition.fat) || 0;
+    };
+
+    (intakes || []).forEach(accumulateFromIntake);
+
+    (feedings || []).forEach(feeding => {
+      const milkNutrition = this.calculateMilkNutrition(feeding);
+      summary.calories += milkNutrition.calories;
+      summary.protein += milkNutrition.protein;
+      summary.naturalProtein += milkNutrition.naturalProtein;
+      summary.specialProtein += milkNutrition.specialProtein;
+      summary.carbs += milkNutrition.carbs;
+      summary.fat += milkNutrition.fat;
+    });
+
+    summary.calories = this._round(summary.calories, 2);
+    summary.protein = this._round(summary.protein, 2);
+    summary.naturalProtein = this._round(summary.naturalProtein, 2);
+    summary.specialProtein = this._round(summary.specialProtein, 2);
+    summary.carbs = this._round(summary.carbs, 2);
+    summary.fat = this._round(summary.fat, 2);
+
+    return summary;
+  },
+
+  // 计算单次喂奶的营养值
+  calculateMilkNutrition(feeding) {
+    const settings = this.data.calculation_params || {};
+    const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
+    const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
+    const specialPowderWeight = parseFloat(feeding.specialMilkPowder) || 0;
+
+    const naturalProteinPer100ml = Number(settings.natural_milk_protein) || 1.1;
+    const naturalProtein = (naturalMilkVolume * naturalProteinPer100ml) / 100;
+    const naturalCalories = naturalMilkVolume * NATURAL_MILK_CALORIES_PER_ML;
+
+    let specialProtein = 0;
+    if (specialPowderWeight > 0) {
+      const specialProteinPer100g = Number(settings.special_milk_protein) || 13.1;
+      specialProtein = (specialPowderWeight * specialProteinPer100g) / 100;
+    } else if (specialMilkVolume > 0) {
+      const specialProteinPer100ml = Number(settings.special_milk_protein_ml) || 1.3;
+      specialProtein = (specialMilkVolume * specialProteinPer100ml) / 100;
+    }
+
+    const specialCalories = specialMilkVolume * SPECIAL_MILK_CALORIES_PER_ML;
+
+    return {
+      calories: this._round(naturalCalories + specialCalories, 2),
+      protein: this._round(naturalProtein + specialProtein, 2),
+      naturalProtein: this._round(naturalProtein, 2),
+      specialProtein: this._round(specialProtein, 2),
+      carbs: 0,
+      fat: 0
+    };
+  },
+
+  // 安全格式化时间
+  safeFormatTime(dateInput) {
+    if (!dateInput) {
+      const now = new Date();
+      return utils.formatTime(now);
+    }
+    if (typeof dateInput === 'string' && dateInput.includes(':')) {
+      return dateInput;
+    }
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) {
+      const now = new Date();
+      return utils.formatTime(now);
+    }
+    return utils.formatTime(date);
+  },
+
+  _round(value, precision = 2) {
+    if (isNaN(value)) return 0;
+    const multiplier = Math.pow(10, precision);
+    return Math.round(value * multiplier) / multiplier;
   },
 
   // 开始喂奶记录
@@ -933,10 +1206,17 @@ Page({
       let weightToSet = '';
       let recordId = '';
       
+      let intakesToSet = [];
+      let foodIntakesToSet = [];
+      let macroSummary = this.calculateMacroSummary([], []);
+
       if (feedingResult.data.length > 0) {
         const record = feedingResult.data[0];
         feedingsToSet = this.sortFeedingsByTimeDesc(record.feedings || []);
         recordId = record._id;
+        intakesToSet = this.normalizeIntakes(record.intakes || []);
+        foodIntakesToSet = intakesToSet.filter(item => item.type !== 'milk');
+        macroSummary = this.calculateMacroSummary(intakesToSet, feedingsToSet);
         
         // 获取基本信息（兼容旧数据结构）
         if (record.basicInfo && record.basicInfo.weight) {
@@ -961,10 +1241,13 @@ Page({
       // 设置数据（不再缓存 groupedMedicationRecords，改用方法动态计算）
       this.setData({
         feedings: feedingsToSet,
+        intakes: intakesToSet,
+        foodIntakes: foodIntakesToSet,
         medicationRecords: medicationRecordsToSet,
         bowelRecords: bowelRecordsToSet,
         weight: weightToSet,
-        recordId: recordId
+        recordId: recordId,
+        macroSummary: macroSummary
       });
       
       // 如果有体重数据，触发计算更新
@@ -1216,41 +1499,14 @@ Page({
     this.setData({
       'quickFeedingData.startTime': e.detail.value
     });
-    
-    // 验证时间选择是否合理（结束时间不能早于开始时间）
-    const startTime = e.detail.value;
-    const endTime = this.data.quickFeedingData.endTime;
-    
-    if (startTime && endTime && startTime > endTime) {
-      // 如果开始时间晚于结束时间，将结束时间设置为开始时间后20分钟
-      const startDate = new Date();
-      const [startHours, startMinutes] = startTime.split(':').map(Number);
-      startDate.setHours(startHours, startMinutes);
-      
-      const endDate = new Date(startDate.getTime() + 20 * 60 * 1000);
-      const formattedEndTime = utils.formatTime(endDate);
-      
-      this.setData({
-        'quickFeedingData.endTime': formattedEndTime
-      });
-    }
-  },
-
-  // 处理快捷输入结束时间变化
-  onQuickEndTimeChange(e) {
-    const timeStr = e.detail.value;
-    
-    this.setData({
-      'quickFeedingData.endTime': timeStr
-    });
   },
   
   // 保存快速记录
   async saveQuickFeeding() {
     // 检查必要字段是否填写
-    const { naturalMilkVolume, totalVolume, startTime, endTime } = this.data.quickFeedingData;
+    const { naturalMilkVolume, totalVolume, startTime } = this.data.quickFeedingData;
     
-    if (!naturalMilkVolume || !totalVolume || !startTime || !endTime) {
+    if (!naturalMilkVolume || !totalVolume || !startTime) {
       wx.showToast({
         title: '请填写所有必要信息',
         icon: 'none'
@@ -1271,44 +1527,27 @@ Page({
       return;
     }
     
-    // 确保时间格式正确并验证时间顺序
-    if (startTime >= endTime) {
-      wx.showToast({
-        title: '结束时间必须晚于开始时间',
-        icon: 'none'
-      });
-      return;
-    }
-    
     // 计算特奶粉克重
     const specialMilkPowder = this.calculateSpecialMilkPowder(specialMilkNum);
     
     // 创建Date对象
     const now = new Date();
     const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
     
     const startDateTime = new Date(now);
     startDateTime.setHours(startHours, startMinutes, 0, 0);
     
-    const endDateTime = new Date(now);
-    endDateTime.setHours(endHours, endMinutes, 0, 0);
-    
-    // 如果结束时间小于开始时间，可能是跨天记录，将结束时间加一天
-    if (endDateTime < startDateTime) {
-      endDateTime.setDate(endDateTime.getDate() + 1);
-    }
-    
     // 创建喂奶记录对象
     const feeding = {
       startTime: startTime,
-      endTime: endTime,
       startDateTime: startDateTime, // 添加标准时间对象
-      endDateTime: endDateTime,     // 添加标准时间对象
+      endTime: '',
+      endDateTime: null,
       naturalMilkVolume: naturalMilkNum.toString(),
       specialMilkVolume: specialMilkNum.toString(),
       specialMilkPowder: specialMilkPowder.toFixed(1),
-      totalVolume: totalVolumeNum.toString()
+      totalVolume: totalVolumeNum.toString(),
+      formulaPowderWeight: (this.data.quickFeedingData.formulaPowderWeight || '0')
     };
     
     // 尝试保存记录
@@ -1556,20 +1795,18 @@ Page({
 
   // Calculate total natural milk fed and remaining amount
   calculateNaturalMilkStats() {
-    // 统计数据现在通过 getTotalNaturalMilkFed() 和 getRemainingNaturalMilk() 方法动态计算
-    // 不需要缓存到data中
+    const summary = this.calculateMacroSummary(this.data.intakes || [], this.data.feedings || []);
+    this.setData({ macroSummary: summary });
   },
 
   // 初始化快捷填写数据
   async initQuickFeedingData() {
     // 获取当前时间
     const now = new Date();
-    const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000);
     
     // 设置时间默认值
     this.setData({
-      'quickFeedingData.startTime': utils.formatTime(twentyMinutesAgo),
-      'quickFeedingData.endTime': utils.formatTime(now)
+      'quickFeedingData.startTime': utils.formatTime(now)
     });
     
     // 获取最近的喂奶数据作为默认值
@@ -1578,7 +1815,8 @@ Page({
     this.setData({
       'quickFeedingData.naturalMilkVolume': defaultValues.naturalMilkVolume,
       'quickFeedingData.specialMilkVolume': defaultValues.specialMilkVolume,
-      'quickFeedingData.formulaPowderWeight': defaultValues.formulaPowderWeight
+      'quickFeedingData.formulaPowderWeight': defaultValues.formulaPowderWeight,
+      'quickFeedingData.specialMilkPowder': '0'
     });
 
     // 重新计算总奶量
@@ -1603,6 +1841,377 @@ Page({
   // 计算特奶粉克重
   calculateSpecialMilkPowder(specialMilkVolume) {
     return calculator.calculateSpecialMilkPowder(specialMilkVolume, this.data.calculation_params);
+  },
+
+  // 显示食物摄入弹窗
+  showFoodIntakeModal() {
+    if (!this.data.foodCatalog || this.data.foodCatalog.length === 0) {
+      wx.showToast({
+        title: '请先前往“我的-食物管理”添加食物',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const categories = this.data.foodCategories.length > 0 ? this.data.foodCategories : ['food'];
+    const defaultCategory = categories[0];
+    const foodsInCategory = this.data.categorizedFoods[defaultCategory] || [];
+    const defaultOptions = foodsInCategory.length > 0 ? foodsInCategory : this.data.foodCatalog;
+    const defaultFood = defaultOptions[0] || null;
+    if (!defaultFood) {
+      wx.showToast({ title: '暂无可用食物，请先添加', icon: 'none' });
+      return;
+    }
+    const recordTime = utils.formatTime(new Date());
+
+    const quantity = defaultFood?.defaultQuantity || defaultFood?.baseQuantity || 100;
+    const nutritionPreview = defaultFood
+      ? FoodModel.calculateNutrition(defaultFood, quantity)
+      : null;
+
+    this.setData({
+      'newFoodIntake.category': defaultCategory,
+      'newFoodIntake.foodId': defaultFood?._id || '',
+      'newFoodIntake.food': defaultFood || null,
+      'newFoodIntake.quantity': quantity,
+      'newFoodIntake.unit': defaultFood?.baseUnit || 'g',
+      'newFoodIntake.nutritionPreview': nutritionPreview,
+      'newFoodIntake.proteinSource': defaultFood?.proteinSource || 'natural',
+      'newFoodIntake.recordTime': recordTime,
+      currentFoodOptions: defaultOptions
+    }, () => {
+      this.showModal('foodIntake');
+    });
+  },
+
+  hideFoodIntakeModal() {
+    this.hideModal('foodIntake');
+    this.setData({
+      newFoodIntake: {
+        category: '',
+        foodId: '',
+        food: null,
+        quantity: '',
+        unit: '',
+        nutritionPreview: null,
+        proteinSource: 'natural',
+        recordTime: ''
+      }
+    });
+  },
+
+  onFoodCategoryChange(e) {
+    const categories = this.data.foodCategories;
+    if (!categories || categories.length === 0) return;
+
+    const index = Number(e.detail.value);
+    const category = categories[index] || categories[0];
+    const foods = this.data.categorizedFoods[category] || [];
+    const options = foods.length > 0 ? foods : this.data.foodCatalog;
+    const selectedFood = options[0] || null;
+
+    this.setData({ currentFoodOptions: options });
+    this.updateFoodSelection(selectedFood, category);
+  },
+
+  onFoodSelectChange(e) {
+    const { category } = this.data.newFoodIntake;
+    const foods = this.data.categorizedFoods[category] || [];
+    const options = foods.length > 0 ? foods : this.data.foodCatalog;
+    const index = Number(e.detail.value);
+    const selectedFood = options[index] || null;
+
+    this.updateFoodSelection(selectedFood, category);
+  },
+
+  updateFoodSelection(selectedFood, category) {
+    if (!selectedFood) {
+      this.setData({
+        'newFoodIntake.category': category,
+        'newFoodIntake.foodId': '',
+        'newFoodIntake.food': null,
+        'newFoodIntake.quantity': '',
+        'newFoodIntake.unit': '',
+        'newFoodIntake.nutritionPreview': null,
+        'newFoodIntake.proteinSource': 'natural',
+        currentFoodOptions: this.data.categorizedFoods[category] || this.data.foodCatalog
+      });
+      return;
+    }
+
+    const defaultQuantity = selectedFood.defaultQuantity || selectedFood.baseQuantity || 100;
+    let nutritionPreview = null;
+    if (selectedFood.nutritionSource === 'babySettings') {
+      if (selectedFood.milkType === 'mother_milk') {
+        nutritionPreview = this.calculateMilkNutrition({
+          naturalMilkVolume: defaultQuantity,
+          specialMilkVolume: 0,
+          specialMilkPowder: 0
+        });
+      } else if (selectedFood.milkType === 'special_formula') {
+        const ratio = this.data.calculation_params?.special_milk_ratio;
+        let specialPowderWeight = 0;
+        if (ratio && ratio.water) {
+          specialPowderWeight = this._round((defaultQuantity * ratio.powder) / ratio.water, 2);
+        }
+        nutritionPreview = this.calculateMilkNutrition({
+          naturalMilkVolume: 0,
+          specialMilkVolume: defaultQuantity,
+          specialMilkPowder: specialPowderWeight
+        });
+      }
+    }
+
+    if (!nutritionPreview) {
+      nutritionPreview = FoodModel.calculateNutrition(selectedFood, defaultQuantity);
+    }
+
+    this.setData({
+      'newFoodIntake.category': category,
+      'newFoodIntake.foodId': selectedFood._id,
+      'newFoodIntake.food': selectedFood,
+      'newFoodIntake.quantity': defaultQuantity,
+      'newFoodIntake.unit': selectedFood.baseUnit || 'g',
+      'newFoodIntake.nutritionPreview': nutritionPreview,
+      'newFoodIntake.proteinSource': selectedFood.proteinSource || 'natural',
+      currentFoodOptions: (this.data.categorizedFoods[category] && this.data.categorizedFoods[category].length > 0)
+        ? this.data.categorizedFoods[category]
+        : this.data.foodCatalog
+    }, () => {
+      this.updateFoodIntakePreview();
+    });
+  },
+
+  onFoodQuantityInput(e) {
+    const quantity = e.detail.value;
+    this.setData({
+      'newFoodIntake.quantity': quantity
+    }, () => {
+      this.updateFoodIntakePreview();
+    });
+  },
+
+  onFoodRecordTimeChange(e) {
+    this.setData({
+      'newFoodIntake.recordTime': e.detail.value
+    });
+  },
+
+  updateFoodIntakePreview() {
+    const { food, quantity } = this.data.newFoodIntake;
+    if (!food || !quantity) {
+      this.setData({ 'newFoodIntake.nutritionPreview': null });
+      return;
+    }
+
+    const numQuantity = parseFloat(quantity);
+    if (isNaN(numQuantity) || numQuantity <= 0) {
+      this.setData({ 'newFoodIntake.nutritionPreview': null });
+      return;
+    }
+
+    let nutritionPreview = null;
+
+    if (food.nutritionSource === 'babySettings') {
+      if (food.milkType === 'mother_milk') {
+        const milkNutrition = this.calculateMilkNutrition({
+          naturalMilkVolume: numQuantity,
+          specialMilkVolume: 0,
+          specialMilkPowder: 0
+        });
+        nutritionPreview = milkNutrition;
+      } else if (food.milkType === 'special_formula') {
+        const ratio = this.data.calculation_params?.special_milk_ratio;
+        let specialPowderWeight = 0;
+        if (ratio && ratio.water) {
+          specialPowderWeight = this._round((numQuantity * ratio.powder) / ratio.water, 2);
+        }
+        const milkNutrition = this.calculateMilkNutrition({
+          naturalMilkVolume: 0,
+          specialMilkVolume: numQuantity,
+          specialMilkPowder: specialPowderWeight
+        });
+        nutritionPreview = milkNutrition;
+      }
+    }
+
+    if (!nutritionPreview) {
+      nutritionPreview = FoodModel.calculateNutrition(food, numQuantity);
+    }
+
+    this.setData({ 'newFoodIntake.nutritionPreview': nutritionPreview });
+  },
+
+  async saveFoodIntake() {
+    const { foodId, food, quantity, recordTime, nutritionPreview, proteinSource } = this.data.newFoodIntake;
+
+    if (!foodId || !food) {
+      wx.showToast({
+        title: '请选择食物',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const numQuantity = parseFloat(quantity);
+    if (isNaN(numQuantity) || numQuantity <= 0) {
+      wx.showToast({
+        title: '请输入有效的重量',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    let nutrition = nutritionPreview;
+    if (!nutrition) {
+      if (food.nutritionSource === 'babySettings') {
+        if (food.milkType === 'mother_milk') {
+          nutrition = this.calculateMilkNutrition({
+            naturalMilkVolume: numQuantity,
+            specialMilkVolume: 0,
+            specialMilkPowder: 0
+          });
+        } else if (food.milkType === 'special_formula') {
+          const ratio = this.data.calculation_params?.special_milk_ratio;
+          let specialPowderWeight = 0;
+          if (ratio && ratio.water) {
+            specialPowderWeight = this._round((numQuantity * ratio.powder) / ratio.water, 2);
+          }
+          nutrition = this.calculateMilkNutrition({
+            naturalMilkVolume: 0,
+            specialMilkVolume: numQuantity,
+            specialMilkPowder: specialPowderWeight
+          });
+        }
+      }
+
+      if (!nutrition) {
+        nutrition = FoodModel.calculateNutrition(food, numQuantity);
+      }
+    }
+    const protein = Number(nutrition.protein) || 0;
+    let naturalProtein = protein;
+    let specialProtein = 0;
+    let milkExtras = null;
+    let specialPowderWeightForSpecial = 0;
+
+    if (food.milkType === 'special_formula') {
+      const ratioForSave = this.data.calculation_params?.special_milk_ratio;
+      if (ratioForSave && ratioForSave.water) {
+        specialPowderWeightForSpecial = this._round((numQuantity * ratioForSave.powder) / ratioForSave.water, 2);
+      }
+    }
+
+    if (proteinSource === 'special') {
+      specialProtein = protein;
+      naturalProtein = 0;
+    } else if (proteinSource === 'mixed' && food.proteinSplit) {
+      const naturalRatio = Number(food.proteinSplit.natural) || 0;
+      const specialRatio = Number(food.proteinSplit.special) || 0;
+      const totalRatio = naturalRatio + specialRatio || 1;
+      naturalProtein = protein * (naturalRatio / totalRatio);
+      specialProtein = protein * (specialRatio / totalRatio);
+    }
+
+    if (food.milkType === 'special_formula') {
+      milkExtras = { specialPowderWeight: specialPowderWeightForSpecial };
+    }
+
+    const normalizedNutrition = {
+      calories: this._round(Number(nutrition.calories) || 0, 2),
+      protein: this._round(Number(nutrition.protein) || 0, 2),
+      carbs: this._round(Number(nutrition.carbs) || 0, 2),
+      fat: this._round(Number(nutrition.fat) || 0, 2),
+      fiber: this._round(Number(nutrition.fiber) || 0, 2),
+      sodium: this._round(Number(nutrition.sodium) || 0, 2)
+    };
+
+    const categoryValue = (food.category && String(food.category).trim()) || '';
+    const isMilkCategory = this.isMilkCategory(categoryValue) || categoryValue === 'milk' || !!food.milkType;
+
+    const intake = {
+      _id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      type: isMilkCategory ? 'milk' : 'food',
+      category: categoryValue || (isMilkCategory ? '奶类' : '辅食'),
+      foodId: foodId,
+      nameSnapshot: food.name,
+      unit: food.baseUnit || 'g',
+      quantity: numQuantity,
+      proteinSource,
+      nutrition: normalizedNutrition,
+      naturalProtein: this._round(naturalProtein, 2),
+      specialProtein: this._round(specialProtein, 2),
+      milkType: food.milkType || '',
+      recordedAt: recordTime || utils.formatTime(new Date()),
+      createdAt: new Date(),
+      createdBy: app.globalData.openid || wx.getStorageSync('openid') || ''
+    };
+    if (milkExtras) {
+      intake.milkExtras = milkExtras;
+    }
+
+    try {
+      wx.showLoading({ title: '保存中...' });
+      const db = wx.cloud.database();
+      const today = new Date();
+      const recordDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+      let recordId = this.data.recordId;
+      let existingIntakes = [...this.data.intakes];
+      existingIntakes.unshift(intake);
+
+      const updatedSummary = this.calculateMacroSummary(existingIntakes, this.data.feedings);
+
+      if (recordId) {
+        await db.collection('feeding_records').doc(recordId).update({
+          data: {
+            intakes: existingIntakes,
+            summary: updatedSummary,
+            updatedAt: db.serverDate()
+          }
+        });
+      } else {
+        const result = await db.collection('feeding_records').add({
+          data: {
+            date: recordDate,
+            feedings: [],
+            intakes: existingIntakes,
+            medicationRecords: [],
+            summary: updatedSummary,
+            babyUid: babyUid,
+            basicInfo: {
+              weight: this.data.weight || ''
+            },
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          }
+        });
+        recordId = result._id;
+        this.setData({ recordId });
+      }
+
+      wx.hideLoading();
+      wx.showToast({ title: '添加成功', icon: 'success' });
+
+      this.setData({
+        intakes: existingIntakes,
+        foodIntakes: existingIntakes.filter(item => item.type !== 'milk'),
+        macroSummary: updatedSummary
+      });
+
+      this.hideFoodIntakeModal();
+      await this.loadTodayData(true);
+    } catch (error) {
+      console.error('保存食物摄入失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
   },
 
   // 快捷填写输入处理
@@ -2042,14 +2651,14 @@ Page({
     // 如果没有Date对象，从时间字符串创建
     if (!startDateTime) {
       const now = new Date();
-      const [startHours, startMinutes] = feeding.startTime.split(':').map(Number);
+      const [startHours = 0, startMinutes = 0] = (feeding.startTime || '').split(':').map(Number);
       startDateTime = new Date(now);
       startDateTime.setHours(startHours, startMinutes, 0, 0);
     }
     
-    if (!endDateTime) {
+    if (!endDateTime && feeding.endTime) {
       const now = new Date();
-      const [endHours, endMinutes] = feeding.endTime.split(':').map(Number);
+      const [endHours = 0, endMinutes = 0] = (feeding.endTime || '').split(':').map(Number);
       endDateTime = new Date(now);
       endDateTime.setHours(endHours, endMinutes, 0, 0);
       
@@ -2062,7 +2671,8 @@ Page({
     const editingFeeding = { 
       ...feeding,
       startDateTime: startDateTime,
-      endDateTime: endDateTime
+      endDateTime: endDateTime || null,
+      endTime: feeding.endTime || ''
     };
     
     // 如果是普通奶粉，确保有奶粉重量
@@ -2095,23 +2705,13 @@ Page({
     const { field } = e.currentTarget.dataset;
     const value = e.detail.value;
     
-    if (field === 'startTime' || field === 'endTime') {
+    if (field === 'startTime') {
       // 时间字段处理
       const editingFeeding = { ...this.data.editingFeeding };
       editingFeeding[field] = value;
       
       const dateTime = utils.createTimeObject(value);
-      
-      if (field === 'startTime') {
-        editingFeeding.startDateTime = dateTime;
-      } else if (field === 'endTime') {
-        editingFeeding.endDateTime = dateTime;
-        
-        // 跨天处理
-        if (editingFeeding.endDateTime < editingFeeding.startDateTime) {
-          editingFeeding.endDateTime.setDate(editingFeeding.endDateTime.getDate() + 1);
-        }
-      }
+      editingFeeding.startDateTime = dateTime;
       
       this.setData({ editingFeeding });
     } else {
@@ -2166,27 +2766,16 @@ Page({
         babyUid: babyUid // 确保记录中包含babyUid
       };
       
-      // 确保编辑后的记录包含Date对象
-      if (!editedFeeding.startDateTime || !editedFeeding.endDateTime) {
+      // 补全时间信息
+      if (!editedFeeding.startDateTime) {
         const now = new Date();
-        
-        if (!editedFeeding.startDateTime) {
-          const [startHours, startMinutes] = editedFeeding.startTime.split(':').map(Number);
-          editedFeeding.startDateTime = new Date(now);
-          editedFeeding.startDateTime.setHours(startHours, startMinutes, 0, 0);
-        }
-        
-        if (!editedFeeding.endDateTime) {
-          const [endHours, endMinutes] = editedFeeding.endTime.split(':').map(Number);
-          editedFeeding.endDateTime = new Date(now);
-          editedFeeding.endDateTime.setHours(endHours, endMinutes, 0, 0);
-          
-          // 如果结束时间小于开始时间，可能是跨天记录，将结束时间加一天
-          if (editedFeeding.endDateTime < editedFeeding.startDateTime) {
-            editedFeeding.endDateTime.setDate(editedFeeding.endDateTime.getDate() + 1);
-          }
-        }
+        const [startHours = 0, startMinutes = 0] = (editedFeeding.startTime || '').split(':').map(Number);
+        editedFeeding.startDateTime = new Date(now);
+        editedFeeding.startDateTime.setHours(startHours, startMinutes, 0, 0);
       }
+      
+      editedFeeding.endTime = editedFeeding.endTime || '';
+      editedFeeding.endDateTime = editedFeeding.endDateTime || null;
       
       // 更新数据库中的记录
       const db = wx.cloud.database();

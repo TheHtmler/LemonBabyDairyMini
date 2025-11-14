@@ -22,6 +22,13 @@ Page({
         path: '/pages/nutrition-settings/index'
       },
       {
+        id: 9,
+        name: '食物管理',
+        icon: 'add',
+        path: '/pages/food-management/index',
+        description: '维护常用食物，记录摄入更快捷'
+      },
+      {
         id: 3,
         name: '药物设置',
         icon: 'medicine',
