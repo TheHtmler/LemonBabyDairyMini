@@ -1271,6 +1271,91 @@
   border-radius: 3rpx;
 }
 
+.records-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.summary-card {
+  box-sizing: border-box;
+  width: 100%;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 6rpx 18rpx rgba(255, 184, 0, 0.12);
+}
+
+.calories-card {
+  background: linear-gradient(135deg, rgba(255, 200, 120, 0.18), rgba(255, 243, 205, 0.85));
+}
+
+.natural-protein-card {
+  background: linear-gradient(135deg, rgba(126, 217, 87, 0.18), rgba(235, 255, 230, 0.9));
+}
+
+.special-protein-card {
+  background: linear-gradient(135deg, rgba(255, 143, 163, 0.2), rgba(255, 236, 240, 0.95));
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-badge {
+  font-size: 22rpx;
+  color: #fff;
+  background-color: #FFB800;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.card-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.metric-value {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #FF8C00;
+}
+
+.metric-unit {
+  font-size: 26rpx;
+  color: #777;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.card-extra {
+  color: #FF7A45;
+  font-weight: 500;
+}
+
+.card-extra.accent {
+  color: #e35b5b;
+}
+
 .tab-content {
   background: #ffffff;
   border-radius: 12rpx;
@@ -1283,6 +1368,60 @@
 
 .records-list, .medication-records {
   margin-top: 16rpx;
+}
+
+.food-record-item {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
+  margin-bottom: 16rpx;
+}
+
+.food-record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.protein-chip {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
+  background-color: rgba(255, 184, 0, 0.18);
+  color: #FF8C00;
+}
+
+.protein-chip.special {
+  background-color: rgba(255, 87, 115, 0.18);
+  color: #FF4757;
+}
+
+.food-record-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.food-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.food-quantity {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.food-record-meta {
+  display: flex;
+  gap: 20rpx;
+  font-size: 24rpx;
+  color: #666;
 }
 
 .record-item, .medication-record-item {
@@ -1522,102 +1661,6 @@
   filter: brightness(5);
 }
 
-/* Protein Calculations Section */
-.protein-section {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 20rpx;
-}
-
-.calculation-header {
-  background-color: rgba(255, 221, 0, 0.15);
-  padding: 10rpx 20rpx;
-  border-radius: 8rpx;
-  margin-bottom: 10rpx;
-}
-
-.header-label {
-  font-size: 28rpx;
-  color: #333;
-  font-weight: bold;
-}
-
-/* 设置引导样式 */
-.settings-guide {
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(255, 184, 0, 0.08);
-  border: 2rpx dashed rgba(255, 184, 0, 0.5);
-  border-radius: 12rpx;
-  padding: 24rpx;
-  margin: 10rpx 0 20rpx;
-}
-
-.guide-icon {
-  width: 48rpx;
-  height: 48rpx;
-  margin-bottom: 16rpx;
-}
-
-.guide-icon image {
-  width: 100%;
-  height: 100%;
-}
-
-.guide-content {
-  margin-bottom: 20rpx;
-}
-
-.guide-title {
-  display: block;
-  font-size: 30rpx;
-  font-weight: bold;
-  color: #FF9800;
-  margin-bottom: 8rpx;
-}
-
-.guide-desc {
-  display: block;
-  font-size: 26rpx;
-  color: #666;
-  margin-bottom: 16rpx;
-}
-
-.missing-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-  margin-top: 10rpx;
-}
-
-.missing-item {
-  background-color: rgba(255, 184, 0, 0.15);
-  padding: 6rpx 16rpx;
-  border-radius: 30rpx;
-  font-size: 24rpx;
-  color: #FF9800;
-}
-
-.guide-btn {
-  align-self: flex-end;
-  background-color: #FFB800;
-  color: white;
-  font-size: 26rpx;
-  padding: 10rpx 30rpx;
-  border-radius: 30rpx;
-  line-height: 1.5;
-  border: none;
-  box-shadow: 0 4rpx 8rpx rgba(255, 184, 0, 0.2);
-}
-
-.guide-btn::after {
-  border: none;
-}
-
-.calculation-items {
-  padding-top: 10rpx;
-}
-
 /* 按钮区域样式 */
 .feeding-buttons {
   display: flex;
@@ -1720,6 +1763,11 @@
   margin-bottom: 20rpx;
 }
 
+.quick-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
 /* 快捷记录按钮 */
 .quick-record-btn {
   display: flex;
@@ -1740,6 +1788,15 @@
 
 .quick-record-btn:active {
   background-color: rgba(255, 184, 0, 0.2);
+}
+
+.quick-record-btn.secondary {
+  background-color: rgba(126, 217, 87, 0.15);
+  border-color: rgba(126, 217, 87, 0.4);
+}
+
+.quick-record-btn.secondary text {
+  color: #4CAF50;
 }
 
 /* 食物摄入摘要 */

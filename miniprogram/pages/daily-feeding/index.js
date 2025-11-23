@@ -49,6 +49,23 @@ Page({
       carbs: 0,
       fat: 0
     },
+    intakeOverview: {
+      calories: {
+        total: 0,
+        fromMilk: 0,
+        fromFood: 0
+      },
+      naturalProtein: {
+        total: 0,
+        fromMilk: 0,
+        fromFood: 0
+      },
+      specialProtein: {
+        total: 0,
+        fromMilk: 0,
+        fromFood: 0
+      }
+    },
 
     // === 当前操作数据 ===
     currentFeeding: {
@@ -115,7 +132,7 @@ Page({
     editingFeeding: null,
     editingFeedingIndex: -1,
     activeFeedingMenu: -1,
-    currentFeedingRecordId: '', // 当前正在进行的喂奶记录ID
+    currentFeedingRecordId: '', // 当前正在进行的喂养记录ID
     
     // === 模态框临时数据 ===
     currentModalTime: '',
@@ -128,19 +145,10 @@ Page({
     
     // === 计算数据缓存 ===
     proteinSourceLabel: '母乳', // 蛋白质来源标签
-    dailyNaturalProtein: '0', // 每日所需天然蛋白量
-    requiredNaturalMilk: '0', // 每日所需天然奶量
-    totalNaturalMilkFed: 0, // 已喂天然奶总量
-    remainingNaturalMilk: '0', // 剩余天然奶量
-    formulaPowderNeeded: '0', // 所需奶粉量
     groupedMedicationRecords: [], // 分组的药物记录
 
     // === 设置相关 ===
     proteinSourceType: 'breastMilk',
-    nutritionSettingsComplete: true,
-    missingSettings: [],
-    showSettingsGuide: false,
-    settingsGuideText: '',
     
     // === UI 标签页 ===
     activeTab: 'feeding',
@@ -258,46 +266,6 @@ Page({
     }
   },
 
-  // === 营养计算属性 ===
-  // 每日所需天然蛋白量
-  getDailyNaturalProtein() {
-    if (!this.data.weight || !this.data.calculation_params) return '0';
-    const weight = parseFloat(this.data.weight);
-    return (weight * this.data.calculation_params.natural_protein_coefficient).toFixed(2);
-  },
-
-  // 每日所需天然奶量
-  getRequiredNaturalMilk() {
-    if (!this.data.weight || !this.data.calculation_params) return '0';
-    const dailyProtein = parseFloat(this.getDailyNaturalProtein());
-    const naturalMilkNeeded = (dailyProtein * 100) / this.data.calculation_params.natural_milk_protein;
-    return Math.round(naturalMilkNeeded).toString();
-  },
-
-  // 已喂天然奶总量
-  getTotalNaturalMilkFed() {
-    return this.data.feedings.reduce((sum, feeding) => {
-      return sum + (parseFloat(feeding.naturalMilkVolume) || 0);
-    }, 0);
-  },
-
-  // 剩余天然奶量
-  getRemainingNaturalMilk() {
-    const required = parseFloat(this.getRequiredNaturalMilk());
-    const fed = this.getTotalNaturalMilkFed();
-    return Math.max(0, required - fed).toString();
-  },
-
-  // 所需奶粉量（普通奶粉情况）
-  getFormulaPowderNeeded() {
-    if (this.data.proteinSourceType !== 'formulaMilk') return '0';
-    if (!this.data.weight || !this.data.calculation_params) return '0';
-    
-    const dailyProtein = parseFloat(this.getDailyNaturalProtein());
-    const formulaPowderNeeded = (dailyProtein * 100) / this.data.calculation_params.natural_milk_protein;
-    return formulaPowderNeeded.toFixed(1);
-  },
-
   // === 模态框状态管理工具 ===
   showModal(modalName) {
     this.setData({
@@ -393,7 +361,7 @@ Page({
     }
   },
 
-  // 获取最近的喂奶记录数据作为默认值
+  // 获取最近的喂养记录数据作为默认值
   async getLatestFeedingData() {
     try {
       // 首先检查今日记录
@@ -428,10 +396,10 @@ Page({
         .limit(5)
         .get();
       
-      // 查找最新的喂奶记录
+      // 查找最新的喂养记录
       for (const record of result.data) {
         if (record.feedings && record.feedings.length > 0) {
-          // 获取该天最后一次喂奶记录
+          // 获取该天最后一次喂养记录
           const sortedFeedings = record.feedings.sort((a, b) => {
             const timeA = a.startDateTime ? new Date(a.startDateTime) : new Date(`2000-01-01 ${a.startTime || '00:00'}`);
             const timeB = b.startDateTime ? new Date(b.startDateTime) : new Date(`2000-01-01 ${b.startTime || '00:00'}`);
@@ -451,7 +419,7 @@ Page({
       return this.getCalculatedDefaultValues();
       
     } catch (error) {
-      console.error('获取最近喂奶记录失败:', error);
+      console.error('获取最近喂养记录失败:', error);
       return this.getCalculatedDefaultValues();
     }
   },
@@ -476,13 +444,13 @@ Page({
     };
   },
 
-  // 初始化当前喂奶记录的默认值
+  // 初始化当前喂养记录的默认值
   async initCurrentFeedingData() {
     if (this.data.currentFeeding.startTime) {
       return;
     }
     
-    // 获取最近的喂奶数据作为默认值
+    // 获取最近的喂养数据作为默认值
     const defaultValues = await this.getLatestFeedingData();
     
     this.setData({
@@ -552,7 +520,7 @@ Page({
         
         // 显示提示
         wx.showToast({
-          title: '恢复未完成的喂奶记录',
+          title: '恢复未完成的喂养记录',
           icon: 'none',
           duration: 2000
         });
@@ -573,16 +541,12 @@ Page({
         this.loadFoodCatalog()
       ]);
       
-      // 初始化当前喂奶数据
+      // 初始化当前喂养数据
       await this.initCurrentFeedingData();
       
       // 检查是否有未完成的临时记录
       await this.checkUnfinishedFeeding();
       
-      // 检查营养设置完整性
-      if (this.data.calculation_params) {
-        this.checkNutritionSettings();
-      }
     } catch (error) {
       handleError(error, { title: '加载页面数据失败' });
     }
@@ -608,10 +572,10 @@ Page({
       if (!babyUid) {
         console.warn('未找到宝宝UID，使用默认营养设置');
         const defaultSettings = NutritionModel.createDefaultSettings();
-        this.setData({ calculation_params: defaultSettings });
+        this.setData({ calculation_params: defaultSettings }, () => {
+          this.updateCalculations();
+        });
         wx.hideLoading();
-        // 验证默认设置的完整性
-        this.checkNutritionSettings();
         
         // 只在调试模式下显示错误提示
         this.checkIsDevTools().then(isDebug => {
@@ -686,12 +650,7 @@ Page({
         proteinSourceType: proteinSourceType // 确保设置蛋白质来源类型
       }, () => {
         // 更新参数后重新计算所有相关数值
-        if (this.data.weight) {
-          this.updateCalculations();
-        }
-        
-        // 验证设置的完整性
-        this.checkNutritionSettings();
+        this.updateCalculations();
       });
       
       wx.hideLoading();
@@ -703,33 +662,26 @@ Page({
       
       this.setData({
         calculation_params: defaultSettings
+      }, () => {
+        this.updateCalculations();
       });
       
       wx.hideLoading();
-      
-      // 验证默认设置的完整性
-      this.checkNutritionSettings();
-      
     }
   },
 
   // 更新所有计算
   updateCalculations() {
-    // 更新所有缓存的计算值
-    if (this.data.weight && this.data.calculation_params) {
-      this.setData({
-        proteinSourceLabel: this.getProteinSourceLabel(),
-        dailyNaturalProtein: this.getDailyNaturalProtein(),
-        requiredNaturalMilk: this.getRequiredNaturalMilk(),
-        totalNaturalMilkFed: this.getTotalNaturalMilkFed(),
-        remainingNaturalMilk: this.getRemainingNaturalMilk(),
-        formulaPowderNeeded: this.getFormulaPowderNeeded(),
-        groupedMedicationRecords: this.getGroupedMedicationRecords()
-      });
-      
-      // 更新当前喂奶的特奶量
+    this.setData({
+      proteinSourceLabel: this.getProteinSourceLabel(),
+      groupedMedicationRecords: this.getGroupedMedicationRecords()
+    });
+
+    if (this.data.calculation_params) {
       dataManager.updateSpecialMilkForType(this, 'current');
     }
+
+    this.calculateNaturalMilkStats();
   },
 
   // 处理体重输入
@@ -920,7 +872,65 @@ Page({
     return summary;
   },
 
-  // 计算单次喂奶的营养值
+  // 计算摄入概览（热量 / 天然蛋白 / 特殊蛋白）
+  calculateIntakeOverview(feedings = [], intakes = []) {
+    const overview = {
+      calories: {
+        total: 0,
+        fromMilk: 0,
+        fromFood: 0
+      },
+      naturalProtein: {
+        total: 0,
+        fromMilk: 0,
+        fromFood: 0
+      },
+      specialProtein: {
+        total: 0,
+        fromMilk: 0,
+        fromFood: 0
+      }
+    };
+
+    (feedings || []).forEach(feeding => {
+      const milkNutrition = this.calculateMilkNutrition(feeding);
+
+      overview.calories.fromMilk += milkNutrition.calories;
+      overview.naturalProtein.fromMilk += milkNutrition.naturalProtein;
+      overview.specialProtein.fromMilk += milkNutrition.specialProtein;
+    });
+
+    (intakes || []).forEach(intake => {
+      const nutrition = intake.nutrition || {};
+      const calories = Number(nutrition.calories) || 0;
+      const protein = Number(nutrition.protein) || 0;
+      const naturalProtein = typeof intake.naturalProtein === 'number'
+        ? intake.naturalProtein
+        : (intake.proteinSource === 'special' ? 0 : protein);
+      const specialProtein = typeof intake.specialProtein === 'number'
+        ? intake.specialProtein
+        : (intake.proteinSource === 'special' ? protein : 0);
+
+      const targetField = intake.type === 'food' ? 'fromFood' : 'fromMilk';
+      overview.calories[targetField] += calories;
+      overview.naturalProtein[targetField] += naturalProtein;
+      overview.specialProtein[targetField] += specialProtein;
+    });
+
+    const roundGroup = (group, precision = 2) => {
+      group.fromMilk = this._round(group.fromMilk, precision);
+      group.fromFood = this._round(group.fromFood, precision);
+      group.total = this._round(group.fromMilk + group.fromFood, precision);
+    };
+
+    roundGroup(overview.calories, 2);
+    roundGroup(overview.naturalProtein, 2);
+    roundGroup(overview.specialProtein, 2);
+
+    return overview;
+  },
+
+  // 计算单次喂养的营养值
   calculateMilkNutrition(feeding) {
     const settings = this.data.calculation_params || {};
     const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
@@ -975,21 +985,21 @@ Page({
     return Math.round(value * multiplier) / multiplier;
   },
 
-  // 开始喂奶记录
+  // 开始喂养记录
   async startFeeding() {
     try {
       // 1. 首先验证体重数据
       if (!this.data.weight || parseFloat(this.data.weight) <= 0) {
         wx.showModal({
           title: '请先输入体重',
-          content: '开始喂奶记录前，请先在上方输入宝宝今日的体重数据',
+          content: '开始喂养记录前，请先在上方输入宝宝今日的体重数据',
           showCancel: false,
           confirmText: '知道了'
         });
         return;
       }
       
-      // 2. 验证喂奶数据
+      // 2. 验证喂养数据
       utils.validateFeedingData(this.data.currentFeeding);
       
       // 3. 获取当前时间
@@ -1027,7 +1037,7 @@ Page({
       });
       
       wx.hideLoading();
-      utils.showSuccess('开始记录喂奶');
+      utils.showSuccess('开始记录喂养');
       
       // 8. 刷新数据显示（静默模式，避免影响当前状态）
       await this.loadTodayData(true);
@@ -1038,11 +1048,11 @@ Page({
     }
   },
   
-  // 撤销当前喂奶记录
+  // 撤销当前喂养记录
   cancelFeeding() {
     wx.showModal({
       title: '确认撤销',
-      content: '确定要撤销当前喂奶记录吗？',
+      content: '确定要撤销当前喂养记录吗？',
       confirmText: '确定',
       cancelText: '取消',
       success: async (res) => {
@@ -1085,11 +1095,11 @@ Page({
     });
   },
   
-  // 结束喂奶记录
+  // 结束喂养记录
   async endFeeding() {
     try {
       if (!this.data.currentFeeding.startTime) {
-        throw new Error('请先开始喂奶');
+        throw new Error('请先开始喂养');
       }
       
       wx.showLoading({ title: '保存中...' });
@@ -1144,11 +1154,11 @@ Page({
       
     } catch (error) {
       wx.hideLoading();
-      handleError(error, { title: '保存喂奶记录失败' });
+      handleError(error, { title: '保存喂养记录失败' });
     }
   },
   
-  // 处理喂奶输入
+  // 处理喂养输入
   onFeedingInput(e) {
     const field = e.currentTarget.dataset.field;
     const value = e.detail.value;
@@ -1250,18 +1260,8 @@ Page({
         macroSummary: macroSummary
       });
       
-      // 如果有体重数据，触发计算更新
-      if (weightToSet) {
-        this.updateCalculations();
-      }
-      
-      // 更新分组药物记录缓存
-      this.setData({
-        groupedMedicationRecords: this.getGroupedMedicationRecords()
-      });
-      
-      // Calculate natural milk stats after loading data
-      this.calculateNaturalMilkStats();
+      // 更新计算与概览
+      this.updateCalculations();
       
       if (!silent) {
         wx.hideLoading();
@@ -1274,7 +1274,7 @@ Page({
     }
   },
   
-  // 对喂奶记录按时间倒序排序
+  // 对喂养记录按时间倒序排序
   sortFeedingsByTimeDesc(feedings) {
     return dataUtils.array.sortByTime(feedings, 'startDateTime') || 
            dataUtils.array.sortByTime(feedings, 'startTime');
@@ -1537,7 +1537,7 @@ Page({
     const startDateTime = new Date(now);
     startDateTime.setHours(startHours, startMinutes, 0, 0);
     
-    // 创建喂奶记录对象
+    // 创建喂养记录对象
     const feeding = {
       startTime: startTime,
       startDateTime: startDateTime, // 添加标准时间对象
@@ -1573,7 +1573,7 @@ Page({
         icon: 'success'
       });
     } catch (error) {
-      console.error('保存快速喂奶记录失败:', error);
+      console.error('保存快速喂养记录失败:', error);
       wx.hideLoading();
       wx.showToast({
         title: '保存失败',
@@ -1795,8 +1795,14 @@ Page({
 
   // Calculate total natural milk fed and remaining amount
   calculateNaturalMilkStats() {
-    const summary = this.calculateMacroSummary(this.data.intakes || [], this.data.feedings || []);
-    this.setData({ macroSummary: summary });
+    const feedings = this.data.feedings || [];
+    const intakes = this.data.intakes || [];
+    const summary = this.calculateMacroSummary(intakes, feedings);
+    const overview = this.calculateIntakeOverview(feedings, intakes);
+    this.setData({
+      macroSummary: summary,
+      intakeOverview: overview
+    });
   },
 
   // 初始化快捷填写数据
@@ -1809,7 +1815,7 @@ Page({
       'quickFeedingData.startTime': utils.formatTime(now)
     });
     
-    // 获取最近的喂奶数据作为默认值
+    // 获取最近的喂养数据作为默认值
     const defaultValues = await this.getLatestFeedingData();
     
     this.setData({
@@ -2199,10 +2205,12 @@ Page({
       wx.hideLoading();
       wx.showToast({ title: '添加成功', icon: 'success' });
 
+      const updatedOverview = this.calculateIntakeOverview(this.data.feedings || [], existingIntakes);
       this.setData({
         intakes: existingIntakes,
         foodIntakes: existingIntakes.filter(item => item.type !== 'milk'),
-        macroSummary: updatedSummary
+        macroSummary: updatedSummary,
+        intakeOverview: updatedOverview
       });
 
       this.hideFoodIntakeModal();
@@ -2238,7 +2246,7 @@ Page({
     }
   },
 
-  // 保存喂奶记录并返回ID（用于开始喂奶时立即保存）
+  // 保存喂养记录并返回ID（用于开始喂养时立即保存）
   async saveFeedingRecordAndGetId(feeding) {
     try {
       // 获取当前日期（只保留年月日）
@@ -2251,7 +2259,7 @@ Page({
         console.warn('未找到宝宝UID，可能导致数据同步问题');
       }
       
-      // 添加babyUid到喂奶记录中
+      // 添加babyUid到喂养记录中
       feeding.babyUid = babyUid;
       feeding.createdAt = new Date();
       
@@ -2319,12 +2327,12 @@ Page({
       };
       
     } catch (error) {
-      console.error('保存喂奶记录失败:', error);
+      console.error('保存喂养记录失败:', error);
       throw error;
     }
   },
 
-  // 更新临时喂奶记录的结束时间
+  // 更新临时喂养记录的结束时间
   async updateTempFeedingRecord(endTime, endDateTime) {
     try {
       const db = wx.cloud.database();
@@ -2337,7 +2345,7 @@ Page({
       // 获取当前记录
       const record = await db.collection('feeding_records').doc(recordId).get();
       if (!record.data || !record.data.feedings) {
-        throw new Error('找不到喂奶记录');
+        throw new Error('找不到喂养记录');
       }
       
       // 找到要更新的记录（最后一条临时记录）
@@ -2383,7 +2391,7 @@ Page({
     }
   },
 
-  // 删除临时喂奶记录
+  // 删除临时喂养记录
   async deleteTempFeedingRecord() {
     try {
       const db = wx.cloud.database();
@@ -2397,7 +2405,7 @@ Page({
       // 获取当前记录
       const record = await db.collection('feeding_records').doc(recordId).get();
       if (!record.data || !record.data.feedings) {
-        console.log('找不到喂奶记录');
+        console.log('找不到喂养记录');
         return;
       }
       
@@ -2421,7 +2429,7 @@ Page({
     }
   },
 
-  // 保存喂奶记录
+  // 保存喂养记录
   async saveFeedingRecord(feeding) {
     try {
       wx.showLoading({ title: '保存中...' });
@@ -2436,7 +2444,7 @@ Page({
         console.warn('未找到宝宝UID，可能导致数据同步问题');
       }
       
-      // 添加babyUid到喂奶记录中
+      // 添加babyUid到喂养记录中
       feeding.babyUid = babyUid;
       feeding.createdAt = new Date(); // 添加创建时间
       
@@ -2517,7 +2525,7 @@ Page({
       
       return Promise.resolve();
     } catch (error) {
-      console.error('保存喂奶记录失败:', error);
+      console.error('保存喂养记录失败:', error);
       
       wx.hideLoading();
       
@@ -2756,7 +2764,7 @@ Page({
         console.warn('未找到宝宝UID，可能导致数据同步问题');
       }
       
-      // 获取编辑后的喂奶记录
+      // 获取编辑后的喂养记录
       const editedFeeding = {
         ...this.data.editingFeeding,
         naturalMilkVolume: Math.round(parseFloat(this.data.editingFeeding.naturalMilkVolume) || 0).toString(),
@@ -2997,10 +3005,6 @@ Page({
           this.updateCalculations();
         }
         
-        // 检查营养设置完整性
-        if (this.data.calculation_params) {
-          this.checkNutritionSettings();
-        }
       } else {
         console.warn('未找到宝宝信息');
       }
@@ -3017,7 +3021,7 @@ Page({
     });
   },
 
-  // 删除喂奶记录
+  // 删除喂养记录
   async deleteFeeding(e) {
     const { index } = e.currentTarget.dataset;
     const feeding = this.data.feedings[index];
@@ -3025,10 +3029,10 @@ Page({
           // 获取宝宝UID
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
       
-      // 验证要删除的喂奶记录是否属于当前宝宝
+      // 验证要删除的喂养记录是否属于当前宝宝
     if (babyUid && feeding.babyUid && feeding.babyUid !== babyUid) {
       wx.showToast({
-        title: '无权删除此喂奶记录',
+        title: '无权删除此喂养记录',
         icon: 'none'
       });
       return;
@@ -3036,7 +3040,7 @@ Page({
     
     wx.showModal({
       title: '确认删除',
-      content: `确定要删除 ${feeding.startTime} 的喂奶记录吗？`,
+      content: `确定要删除 ${feeding.startTime} 的喂养记录吗？`,
       success: async (res) => {
         if (res.confirm) {
           try {
@@ -3068,7 +3072,7 @@ Page({
             wx.hideLoading();
             wx.showToast({ title: '删除成功' });
           } catch (error) {
-            console.error('删除喂奶记录失败:', error);
+            console.error('删除喂养记录失败:', error);
             wx.hideLoading();
             wx.showToast({
               title: '删除失败',
@@ -3136,69 +3140,6 @@ Page({
     });
   },
 
-  // 检查营养设置参数完整性
-  checkNutritionSettings() {
-    if (!this.data.calculation_params) {
-      this.setData({
-        nutritionSettingsComplete: false,
-        missingSettings: ['营养参数'],
-        showSettingsGuide: true
-      });
-      return false;
-    }
-
-    const params = this.data.calculation_params;
-    const missingSettings = [];
-    
-    // 所有情况下都需要的参数
-    if (!params.natural_protein_coefficient) missingSettings.push('天然蛋白系数');
-    
-    // 根据天然蛋白来源检查不同的必要参数
-    if (this.data.proteinSourceType === 'breastMilk') {
-      // 母乳必要参数
-      if (!params.natural_milk_protein) missingSettings.push('母乳蛋白质浓度');
-    } else if (this.data.proteinSourceType === 'formulaMilk') {
-      // 普通奶粉必要参数
-      if (!params.natural_milk_protein) missingSettings.push('奶粉蛋白质浓度');
-      if (!params.formula_milk_ratio || 
-          !params.formula_milk_ratio.powder || 
-          !params.formula_milk_ratio.water) {
-        missingSettings.push('奶粉冲配比例');
-      }
-    }
-    
-    // 特奶必要参数
-    if (!params.special_milk_protein) missingSettings.push('特奶蛋白质浓度');
-    if (!params.special_milk_ratio || 
-        !params.special_milk_ratio.powder || 
-        !params.special_milk_ratio.water) {
-      missingSettings.push('特奶冲配比例');
-    }
-    
-    // 创建自定义的设置引导提示
-    let settingsGuideText = '';
-    if (missingSettings.length > 0) {
-      if (this.data.proteinSourceType === 'breastMilk') {
-        settingsGuideText = `请完善营养设置中的${missingSettings.join('、')}，设置完成后可准确计算宝宝每日所需母乳量。`;
-      } else if (this.data.proteinSourceType === 'formulaMilk') {
-        settingsGuideText = `请完善营养设置中的${missingSettings.join('、')}，设置完成后可准确计算宝宝每日所需奶粉用量。`;
-      } else {
-        settingsGuideText = `请完善营养设置中的${missingSettings.join('、')}`;
-      }
-    }
-    
-    const complete = missingSettings.length === 0;
-    
-    this.setData({
-      nutritionSettingsComplete: complete,
-      missingSettings: missingSettings,
-      showSettingsGuide: !complete,
-      settingsGuideText: settingsGuideText
-    });
-    
-    return complete;
-  },
-  
   // 导航到营养设置页面
   navigateToNutritionSettings() {
     // 根据蛋白质来源类型传递参数
@@ -3218,7 +3159,7 @@ Page({
     this.hideModal('quickInput');
   },
 
-  // 打开喂奶记录菜单
+  // 打开喂养记录菜单
   toggleFeedingMenu(e) {
     const index = e.currentTarget.dataset.index;
     const currentIndex = this.data.activeFeedingMenu;
@@ -3278,7 +3219,7 @@ Page({
 
 
 
-  // 显示补充喂奶记录弹窗
+  // 显示补充喂养记录弹窗
   async showAddFeedingModal() {
     // 默认设置当前时间
     const now = new Date();
@@ -3288,7 +3229,7 @@ Page({
     const endTime = new Date(now.getTime() + 30 * 60000);
     const endTimeStr = utils.formatTime(endTime);
     
-    // 获取最近的喂奶数据作为默认值
+    // 获取最近的喂养数据作为默认值
     const defaultValues = await this.getLatestFeedingData();
     
     this.setData({
@@ -3314,7 +3255,7 @@ Page({
     });
   },
 
-  // 新喂奶记录时间选择处理
+  // 新喂养记录时间选择处理
   onNewFeedingTimeChange(e) {
     const { field } = e.currentTarget.dataset;
     const timeStr = e.detail.value;
@@ -3376,14 +3317,14 @@ Page({
     this.setData({ newMedication });
   },
 
-  // 保存新的喂奶记录
+  // 保存新的喂养记录
   async saveNewFeeding() {
     const { startTime, endTime, startDateTime, endDateTime, naturalMilkVolume, totalVolume } = this.data.newFeeding;
     
     // 验证输入
     if (!startTime || !endTime) {
       wx.showToast({
-        title: '请选择喂奶时间',
+        title: '请选择喂养时间',
         icon: 'none'
       });
       return;
@@ -3482,7 +3423,7 @@ Page({
       this.hideAddFeedingModal();
 
     } catch (error) {
-      console.error('保存喂奶记录失败:', error);
+      console.error('保存喂养记录失败:', error);
       wx.hideLoading();
       wx.showToast({
         title: '保存失败',
@@ -3570,7 +3511,7 @@ Page({
     return this.data.medicationRecords.some(record => record.medicationId === medicationId);
   },
 
-  // 隐藏补充喂奶记录弹窗
+  // 隐藏补充喂养记录弹窗
   hideAddFeedingModal() {
     this.setData({
       'modals.addFeeding': false,
@@ -3599,7 +3540,7 @@ Page({
     });
   },
 
-  // 新喂奶记录输入处理
+  // 新喂养记录输入处理
   onNewFeedingInput(e) {
     const { field } = e.currentTarget.dataset;
     const value = e.detail.value;
