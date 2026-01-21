@@ -1,5 +1,6 @@
 // pages/analysis-report/index.js
 const ReportModel = require('../../models/report');
+const InvitationModel = require('../../models/invitation');
 
 Page({
 
@@ -91,7 +92,17 @@ Page({
    * 用户点击右上角分享
    */
   onShareAppMessage() {
-
+    const app = getApp();
+    const babyInfo = app.globalData.babyInfo || wx.getStorageSync('baby_info') || {};
+    const inviteCode = babyInfo.inviteCode;
+    if (inviteCode) {
+      return InvitationModel.getShareInfo(inviteCode, babyInfo.name);
+    }
+    return {
+      title: '柠檬宝宝喂养记录',
+      path: '/pages/role-selection/index',
+      imageUrl: '/images/LemonLogo.png'
+    };
   },
 
   // 初始化页面

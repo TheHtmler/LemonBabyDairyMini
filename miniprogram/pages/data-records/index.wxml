@@ -21,6 +21,11 @@
       </scroll-view>
     </view>
   </view>
+  <fat-ratio-popup
+    visible="{{showFatRatioPopup}}"
+    lines="{{fatRatioPopupLines}}"
+    bind:close="hideFatRatioPopup"
+  />
   <!-- 记录内容区域 -->
   <view class="records-wrapper" style="opacity: {{isDataLoading ? 0.5 : 1}};">
     <!-- 日期显示头部 -->
@@ -52,208 +57,341 @@
       <!-- 喂奶记录汇总卡片 -->
       <view class="card">
         <view class="card-title">
-          <text>汇总信息</text>
+          <text>当日汇总数据</text>
         </view>
-        <!-- 生长信息 -->
-        <view class="growth-info">
-          <view class="growth-item">
-            <view class="growth-label">体重</view>
-            <view class="growth-value">
-              <input class="weight-input" type="digit" value="{{weight}}" placeholder="请输入体重" bindinput="onWeightInput" bindblur="onWeightBlur" />
-              <text class="unit">kg</text>
+        <view class="summary-section">
+          <view class="section-subtitle">基础信息</view>
+          <view class="summary-grid">
+            <view class="summary-item">
+              <view class="summary-label">体重</view>
+              <view class="summary-number weight-number">
+                <input class="weight-input" type="digit" value="{{weight}}" placeholder="请输入体重" bindinput="onWeightInput" bindblur="onWeightBlur" />
+              </view>
+              <view class="summary-unit">kg</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">身高</view>
+              <view class="summary-number">{{height}}</view>
+              <view class="summary-unit">cm</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">总奶量</view>
+              <view class="summary-number">{{totalMilk || 0}}</view>
+              <view class="summary-unit">ml</view>
             </view>
           </view>
-          <view class="growth-item">
-            <view class="growth-label">身高</view>
-            <view class="growth-value">{{height}} cm</view>
+        </view>
+
+        <view class="summary-section">
+          <view class="section-subtitle">热量统计</view>
+          <view class="summary-grid">
+            <view class="summary-item">
+              <view class="summary-label">总热量</view>
+              <view class="summary-number">{{dailyCaloriesTotal || 0}}</view>
+              <view class="summary-unit">kcal/d</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">普奶热量</view>
+              <view class="summary-number">{{intakeOverview.milk.normal.calories || 0}}</view>
+              <view class="summary-unit">kcal</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">特奶热量</view>
+              <view class="summary-number">{{intakeOverview.milk.special.calories || 0}}</view>
+              <view class="summary-unit">kcal</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">食物热量</view>
+              <view class="summary-number">{{intakeOverview.food.totalCalories || 0}}</view>
+              <view class="summary-unit">kcal</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">热量系数</view>
+              <view class="summary-number">{{caloriePerKg !== '' ? caloriePerKg : '--'}}</view>
+              <view class="summary-unit">kcal/kg/d</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">目标热量系数</view>
+              <view class="summary-number">
+                {{calorieGoalPerKgRange.min}}~{{calorieGoalPerKgRange.max}}
+              </view>
+              <view class="summary-unit">kcal/kg/d</view>
+              <!-- <view class="summary-subtext" wx:if="{{goalKcalRange.min && goalKcalRange.max}}">
+                约 {{goalKcalRange.min}}~{{goalKcalRange.max}} kcal/d
+              </view> -->
+              <view class="summary-subtext" wx:if="{{calorieGoalPerKgRange.label}}">
+                {{calorieGoalPerKgRange.label}}
+              </view>
+            </view>
           </view>
         </view>
-        <!-- 喂奶信息 -->
-        <view class="total-summary">
-          <view class="total-item">
-            <view class="total-label">总奶量</view>
-            <view class="total-value">{{totalMilk}}ml</view>
+
+        <view class="summary-section">
+          <view class="section-subtitle">蛋白统计</view>
+          <view class="summary-grid">
+            <view class="summary-item">
+              <view class="summary-label">总蛋白</view>
+              <view class="summary-number">
+                {{proteinSummaryDisplay.total}}
+              </view>
+              <view class="summary-unit">g</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">天然蛋白</view>
+              <view class="summary-number">
+                {{proteinSummaryDisplay.natural}}
+              </view>
+              <view class="summary-unit">g</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">特殊蛋白</view>
+              <view class="summary-number">
+                {{proteinSummaryDisplay.special}}
+              </view>
+              <view class="summary-unit">g</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">天然蛋白系数</view>
+              <view class="summary-number">{{naturalProteinCoefficient || '--'}}</view>
+              <view class="summary-unit">g/kg/d</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">特殊蛋白系数</view>
+              <view class="summary-number">{{specialProteinCoefficient || '--'}}</view>
+              <view class="summary-unit">g/kg/d</view>
+            </view>
           </view>
-          <view class="total-item">
-            <view class="total-label">喂奶次数</view>
-            <view class="total-value">{{feedingRecords.length}}</view>
+        </view>
+
+        <view class="summary-section">
+          <view class="macro-ratio-header">
+            <view class="section-subtitle">供能占比</view>
           </view>
-          <view class="total-item">
-            <view class="total-label">天然奶总量</view>
-            <view class="total-value">{{totalNaturalMilk}}ml</view>
-          </view>
-          <!-- 如果是普通奶粉，显示奶粉重量统计 -->
-          <view class="total-item" wx:if="{{proteinSourceType === 'formulaMilk'}}">
-            <view class="total-label">奶粉总重量</view>
-            <view class="total-value">{{totalFormulaPowderWeight || '0'}}g</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">特奶总量</view>
-            <view class="total-value">{{totalSpecialMilk}}ml</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">天然系数</view>
-            <view class="total-value">{{naturalProteinCoefficient}}g/kg</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">特殊蛋白系数</view>
-            <view class="total-value">{{specialProteinCoefficient}}g/kg</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">母乳热量</view>
-            <view class="total-value">{{totalBreastMilkKcal}}kcal</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">特奶热量</view>
-            <view class="total-value">{{totalSpecialMilkKcal}}kcal</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">总热量</view>
-            <view class="total-value">{{totalBreastMilkKcal + totalSpecialMilkKcal}}kcal</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">目标热量</view>
-            <view class="total-value">{{goalKcalRange.min}}~{{goalKcalRange.max}}kcal</view>
+          <view class="summary-grid">
+            <view class="summary-item">
+              <view class="summary-label">蛋白</view>
+              <view class="summary-number">{{macroRatios.protein || 0}}%</view>
+              <view class="summary-subtext">参考 10%-15%</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">碳水</view>
+              <view class="summary-number">{{macroRatios.carbs || 0}}%</view>
+              <view class="summary-subtext">参考 55%-60%</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label-row">
+                <text class="summary-label">脂肪</text>
+                <text class="ratio-info-icon" bindtap="showFatRatioPopup">i</text>
+              </view>
+              <view class="summary-number">{{macroRatios.fat || 0}}%</view>
+              <view class="summary-subtext">参考 {{fatRatioRangeText || '--'}}</view>
+            </view>
           </view>
         </view>
       </view>
       <!-- 食物摄入卡片 -->
-      <view class="card">
+      <view class="card intake-overview-card">
         <view class="card-title">
-          <text>食物摄入</text>
+          <text>摄入概览</text>
         </view>
-        <view class="total-summary">
-          <view class="total-item">
-            <view class="total-label">热量</view>
-            <view class="total-value">{{macroSummary.calories || 0}} kcal</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">总蛋白</view>
-            <view class="total-value">{{macroSummary.protein || 0}} g</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">天然蛋白</view>
-            <view class="total-value">{{macroSummary.naturalProtein || 0}} g</view>
-          </view>
-          <view class="total-item">
-            <view class="total-label">特殊蛋白</view>
-            <view class="total-value">{{macroSummary.specialProtein || 0}} g</view>
-          </view>
-        </view>
-        <view class="intake-list" wx:if="{{foodIntakes.length > 0}}">
-          <view class="intake-item" wx:for="{{foodIntakes}}" wx:key="_id">
-            <view class="intake-header">
-              <text class="intake-time">{{item.recordedAt}}</text>
-              <text class="intake-name">{{item.nameSnapshot}}</text>
+        <view class="records-summary">
+          <view class="summary-card milk-card">
+            <view class="card-header">
+              <text class="card-title">喂奶</text>
+              <text class="card-meta">热量 {{intakeOverview.milk.totalCalories || 0}} kcal</text>
             </view>
-            <view class="intake-detail">
-              <text class="detail">{{item.quantity}}{{item.unit || 'g'}}</text>
-              <text class="divider">|</text>
-              <text class="detail">热量 {{item.nutrition.calories || 0}} kcal</text>
-              <text class="divider">|</text>
-              <text class="detail">蛋白 {{item.nutrition.protein || 0}} g</text>
-              <text class="divider">|</text>
-              <text class="detail">碳水 {{item.nutrition.carbs || 0}} g</text>
-              <text class="divider">|</text>
-              <text class="detail">脂肪 {{item.nutrition.fat || 0}} g</text>
-              <text class="divider">|</text>
-              <text class="detail">膳纤 {{item.nutrition.fiber || 0}} g</text>
-              <text class="divider">|</text>
-              <text class="detail">钠 {{item.nutrition.sodium || 0}} mg</text>
-            </view>
-            <view class="intake-tags">
-              <text class="tag {{item.proteinSource === 'special' ? 'special' : 'natural'}}">
-                {{item.proteinSource === 'special' ? '特殊蛋白' : '天然蛋白'}}
-              </text>
+            <view class="card-body milk-body">
+              <view class="milk-column">
+                <text class="column-title">天然喂养</text>
+                <view class="stat-row">
+                  <text>体积</text>
+                  <text>{{intakeOverview.milk.normal.volume || 0}} ml</text>
+                </view>
+                <view class="stat-row">
+                  <text>蛋白</text>
+                  <text>{{intakeOverview.milk.normal.protein || 0}} g</text>
+                </view>
+                <view class="stat-row">
+                  <text>蛋白系数</text>
+                  <text>{{intakeOverview.milk.normal.coefficient !== '' ? intakeOverview.milk.normal.coefficient : '—'}} g/kg/d</text>
+                </view>
+                <view class="stat-row">
+                  <text>热量</text>
+                  <text>{{intakeOverview.milk.normal.calories || 0}} kcal</text>
+                </view>
+                <view class="stat-row">
+                  <text>碳水</text>
+                  <text>{{intakeOverview.milk.normal.carbs || 0}} g</text>
+                </view>
+                <view class="stat-row">
+                  <text>脂肪</text>
+                  <text>{{intakeOverview.milk.normal.fat || 0}} g</text>
+                </view>
+              </view>
+              <view class="milk-column">
+                <text class="column-title">特奶</text>
+                <view class="stat-row">
+                  <text>体积</text>
+                  <text>{{intakeOverview.milk.special.volume || 0}} ml</text>
+                </view>
+                <view class="stat-row">
+                  <text>蛋白</text>
+                  <text>{{intakeOverview.milk.special.protein || 0}} g</text>
+                </view>
+                <view class="stat-row">
+                  <text>蛋白系数</text>
+                  <text>{{intakeOverview.milk.special.coefficient !== '' ? intakeOverview.milk.special.coefficient : '—'}} g/kg/d</text>
+                </view>
+                <view class="stat-row">
+                  <text>热量</text>
+                  <text>{{intakeOverview.milk.special.calories || 0}} kcal</text>
+                </view>
+                <view class="stat-row">
+                  <text>碳水</text>
+                  <text>{{intakeOverview.milk.special.carbs || 0}} g</text>
+                </view>
+                <view class="stat-row">
+                  <text>脂肪</text>
+                  <text>{{intakeOverview.milk.special.fat || 0}} g</text>
+                </view>
+              </view>
             </view>
           </view>
-        </view>
-        <view class="empty-data" wx:if="{{foodIntakes.length === 0}}">
-          <view class="empty-text">暂无食物记录</view>
+          <view class="summary-card food-card">
+            <view class="card-header">
+              <text class="card-title">食物</text>
+              <text class="card-meta">热量 {{intakeOverview.food.totalCalories || 0}} kcal</text>
+            </view>
+            <view class="card-body food-body">
+              <view class="body-summary">
+                <text>蛋白 {{intakeOverview.food.protein || 0}} g</text>
+                <text>碳水 {{intakeOverview.food.carbs || 0}} g · 脂肪 {{intakeOverview.food.fat || 0}} g</text>
+              </view>
+              <view class="empty-record" wx:if="{{intakeOverview.food.count === 0}}">
+                <text>暂无食物摄入记录</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
-      <!-- 喂奶记录列表 -->
-      <view class="card">
-        <view class="card-title">
-          <text>喂奶详细记录</text>
-          <view class="add-btn" bindtap="showAddFeedingModal">
-            <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
-            <text>补充记录</text>
-          </view>
+      <!-- 记录选项卡 -->
+      <view class="tabs">
+        <view class="tab {{activeTab === 'feeding' ? 'active' : ''}}" data-tab="feeding" bindtap="switchTab">
+          <text>喂奶记录</text>
         </view>
-        <view wx:if="{{feedingRecords.length > 0}}">
-          <view class="feeding-record" wx:for="{{feedingRecords}}" wx:key="index">
-            <view class="record-content" data-index="{{index}}">
-              <view class="time-info">
-                <view class="time-text">{{item.formattedStartTime || '--:--'}}</view>
-              </view>
-              <view class="volume-info">
-                <view class="volume-info-text">天然奶: {{item.naturalMilkVolume || 0}}ml</view>
-                <!-- 如果是普通奶粉，显示奶粉重量 -->
-                <view class="volume-info-text" wx:if="{{proteinSourceType === 'formulaMilk'}}">
-                  |
-                </view>
-                <view class="volume-info-text" wx:if="{{proteinSourceType === 'formulaMilk'}}">
-                  奶粉: {{item.formulaPowderWeight || 0}}g
-                </view>
-                <view class="volume-info-text">|</view>
-                <view class="volume-info-text">特奶: {{item.specialMilkVolume || 0}}ml</view>
-              </view>
-            </view>
-            <!-- 操作按钮 -->
-            <view class="action-buttons">
-              <view class="action-btn edit-btn" bindtap="openEditFeedingModal" data-index="{{index}}">
-                <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
-              </view>
-              <view class="action-btn delete-btn" bindtap="deleteFeeding" data-index="{{index}}">
-                <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
-              </view>
-            </view>
-          </view>
+        <view class="tab {{activeTab === 'food' ? 'active' : ''}}" data-tab="food" bindtap="switchTab">
+          <text>食物记录</text>
         </view>
-        <view class="empty-data" wx:else>
-          <view class="empty-text">暂无喂奶记录</view>
-        </view>
-      </view>
-      <!-- 用药记录卡片 -->
-      <view class="card" wx:if="{{groupedMedicationRecords.length > 0}}">
-        <view class="card-title">
+        <view class="tab {{activeTab === 'medication' ? 'active' : ''}}" data-tab="medication" bindtap="switchTab">
           <text>用药记录</text>
-          <view class="add-btn" bindtap="showAddMedicationModal">
-            <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
-            <text>补充记录</text>
+        </view>
+      </view>
+
+      <block wx:if="{{activeTab === 'food'}}">
+        <view class="card">
+          <view class="card-title">
+            <text>食物摄入</text>
+            <view class="add-btn" bindtap="showFoodIntakeExperimentModal">
+              <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+              <text>补充食物</text>
+            </view>
+          </view>
+          <view class="intake-list" wx:if="{{foodIntakes.length > 0}}">
+            <view class="food-record-item" wx:for="{{foodIntakes}}" wx:key="_id">
+              <view class="record-content">
+                <food-record-item record="{{item}}" />
+              </view>
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{index}}" data-id="{{item._id}}">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteFoodIntake" data-index="{{index}}" data-id="{{item._id}}">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{foodIntakes.length === 0}}">
+            <view class="empty-text">暂无食物记录</view>
           </view>
         </view>
-        <view>
-          <!-- 按药物名称分组显示 -->
-          <view class="medication-group" wx:for="{{groupedMedicationRecords}}" wx:key="medicationName" wx:for-item="group">
-            <view class="medication-group-header">
-              <text class="medication-group-name">{{group.medicationName}}</text>
-              <text class="medication-group-count">今日{{group.totalCount}}次</text>
+      </block>
+
+      <block wx:elif="{{activeTab === 'medication'}}">
+        <view class="card">
+          <view class="card-title">
+            <text>用药记录</text>
+            <view class="add-btn" bindtap="showAddMedicationModal">
+              <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+              <text>补充记录</text>
             </view>
-            <!-- 该药物的所有记录 -->
-            <view class="medication-group-records">
-              <view class="medication-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record">
-                <view class="record-content">
-                  <view class="medication-time-dose">
-                    <text class="medication-time">{{record.actualTime}}</text>
-                    <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>
+          </view>
+          <view>
+            <!-- 按药物名称分组显示 -->
+            <view class="medication-group" wx:for="{{groupedMedicationRecords}}" wx:key="medicationName" wx:for-item="group">
+              <view class="medication-group-header">
+                <text class="medication-group-name">{{group.medicationName}}</text>
+                <text class="medication-group-count">今日{{group.totalCount}}次</text>
+              </view>
+              <!-- 该药物的所有记录 -->
+              <view class="medication-group-records">
+                <view class="medication-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record">
+                  <view class="record-content">
+                    <view class="medication-time-dose">
+                      <text class="medication-time">{{record.actualTime}}</text>
+                      <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>
+                    </view>
                   </view>
-                </view>
-                <!-- 操作按钮 -->
-                <view class="action-buttons">
-                  <view class="action-btn edit-btn" bindtap="openEditMedicationModal" data-record-id="{{record._id}}">
-                    <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
-                  </view>
-                  <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record._id}}">
-                    <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                  <!-- 操作按钮 -->
+                  <view class="action-buttons">
+                    <view class="action-btn edit-btn" bindtap="openEditMedicationModal" data-record-id="{{record._id}}">
+                      <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                    </view>
+                    <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record._id}}">
+                      <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                    </view>
                   </view>
                 </view>
               </view>
             </view>
           </view>
+          <view class="empty-data" wx:if="{{groupedMedicationRecords.length === 0}}">
+            <view class="empty-text">暂无用药记录</view>
+          </view>
         </view>
-      </view>
+      </block>
+
+      <block wx:else>
+        <!-- 喂奶记录列表 -->
+        <view class="card">
+          <view class="card-title">
+            <text>喂奶详细记录</text>
+            <view class="add-btn" bindtap="showAddFeedingModal">
+              <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+              <text>补充记录</text>
+            </view>
+          </view>
+          <view wx:if="{{feedingRecords.length > 0}}">
+            <view class="feeding-record" wx:for="{{feedingRecords}}" wx:key="index">
+              <view class="record-content" data-index="{{index}}">
+                <feeding-record-item record="{{item}}" showLabel="{{false}}" />
+              </view>
+              <!-- 操作按钮 -->
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openEditFeedingModal" data-index="{{index}}">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteFeeding" data-index="{{index}}">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-data" wx:else>
+            <view class="empty-text">暂无喂奶记录</view>
+          </view>
+        </view>
+      </block>
       <!-- 排便记录卡片 -->
       <view class="card" wx:if="{{bowelRecords.length > 0}}">
         <view class="card-title">
@@ -334,49 +472,115 @@
     </view>
   </view>
   <!-- 补充喂奶记录弹窗 -->
-  <view class="modal" wx:if="{{showAddFeedingModal}}" bindtap="hideAddFeedingModal">
-    <view class="modal-content" catchtap="preventBubble">
+  <feeding-modal
+    visible="{{showAddFeedingModal}}"
+    title="补充喂奶记录"
+    feedingData="{{newFeedingDisplay}}"
+    showGoalHint="{{false}}"
+    confirmText="保存"
+    bind:close="hideAddFeedingModal"
+    bind:confirm="saveNewFeeding"
+    bind:timechange="handleNewFeedingModalTimeChange"
+    bind:inputchange="handleNewFeedingModalInputChange"
+    bind:adjust="handleNewFeedingModalAdjust"
+    bind:typechange="handleNewFeedingModalTypeChange"
+  />
+  <!-- 食物摄入弹窗 -->
+  <view class="modal feeding-modal" wx:if="{{showFoodIntakeModal}}" bindtap="hideFoodIntakeModal" catchtouchmove="preventBubble">
+    <view class="modal-content food-modal-content" catchtap="preventBubble">
       <view class="modal-header">
-        <text>补充喂奶记录</text>
+        <text>{{foodModalMode === 'edit' ? '编辑食物记录' : '添加食物记录'}}</text>
       </view>
       <view class="modal-body">
-        <!-- 时间选择 -->
-        <view class="time-selection">
-          <view class="time-picker-group">
-            <text class="label">喂奶时间</text>
-            <picker mode="time" value="{{newFeeding.startTime}}" data-field="startTime" bindchange="onNewFeedingTimeChange">
-              <view class="time-picker">{{newFeeding.startTime}}</view>
-            </picker>
+        <view class="input-group">
+          <text class="label">食物</text>
+          <view class="food-selection-card">
+            <view class="food-list-header">
+              <view class="food-header-title">请选择食物</view>
+              <view class="food-add-btn" bindtap="openFoodManage">
+                <text class="food-add-icon">＋</text>
+                <text>添加食物</text>
+              </view>
+            </view>
+            <view class="food-search-input">
+              <text class="search-icon">🔍</text>
+              <input type="text" value="{{foodSearchQuery}}" placeholder="搜索食物名称或类别" confirm-type="search" bindinput="onFoodSearchInput" />
+            </view>
+            <scroll-view class="food-option-list" scroll-y="true">
+              <view class="food-option {{newFoodIntake.foodId === item._id ? 'selected' : ''}}"
+                    wx:for="{{filteredFoodOptions}}" wx:key="_id"
+                    data-id="{{item._id}}" bindtap="onFoodSelect">
+                <view class="food-option-main">
+                  <text class="food-option-name">{{item.name}}</text>
+                  <text class="food-option-tag">{{item.category || '未分类'}}</text>
+                </view>
+                <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>
+              </view>
+              <view class="food-option-empty" wx:if="{{filteredFoodOptions.length === 0}}">
+                <text>未找到匹配的食物，请调整搜索条件</text>
+              </view>
+            </scroll-view>
           </view>
         </view>
-        <!-- 天然奶量 -->
         <view class="input-group">
-          <text class="label">天然奶量 (ml)</text>
-          <input type="digit" value="{{newFeeding.naturalMilkVolume}}" data-field="naturalMilkVolume" bindinput="onNewFeedingInput" placeholder="请输入天然奶量" />
+          <text class="label">份量 ({{newFoodIntake.unit || 'g'}})</text>
+          <input type="digit" value="{{newFoodIntake.quantity}}" bindinput="onFoodQuantityInput" placeholder="请输入重量" />
         </view>
-        <!-- 如果是普通奶粉，显示奶粉重量 -->
-        <view class="input-group" wx:if="{{proteinSourceType === 'formulaMilk'}}">
-          <text class="label">奶粉重量</text>
-          <view class="display-value">{{newFeeding.formulaPowderWeight || '0'}}g</view>
-        </view>
-        <!-- 特奶量 -->
         <view class="input-group">
-          <text class="label">特奶量 (ml)</text>
-          <input type="digit" value="{{newFeeding.specialMilkVolume}}" data-field="specialMilkVolume" bindinput="onNewFeedingInput" placeholder="请输入特奶量" />
+          <text class="label">记录时间</text>
+          <picker mode="time" value="{{newFoodIntake.recordTime}}" bindchange="onFoodRecordTimeChange">
+            <view class="picker-value">{{newFoodIntake.recordTime || '选择时间'}}</view>
+          </picker>
         </view>
-        <!-- 计算结果展示 -->
-        <view class="special-milk">
-          <text class="label">总奶量:</text>
-          <text class="value">{{newFeeding.totalVolume || '0'}}ml</text>
-          <text class="powder-weight">(特奶粉 {{newFeeding.specialPowderWeight || '0'}}g)</text>
+        <view class="nutrition-preview" wx:if="{{newFoodIntake.nutritionPreview}}">
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.calories}} kcal</text>
+            <text>热量</text>
+          </view>
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.protein}} g</text>
+            <text>蛋白质</text>
+          </view>
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.carbs}} g</text>
+            <text>碳水</text>
+          </view>
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.fat}} g</text>
+            <text>脂肪</text>
+          </view>
         </view>
       </view>
       <view class="modal-footer">
-        <button class="modal-btn cancel" bindtap="hideAddFeedingModal">取消</button>
-        <button class="modal-btn confirm" bindtap="saveNewFeeding">保存</button>
+        <button class="modal-btn cancel" bindtap="hideFoodIntakeModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveFoodIntake">保存</button>
       </view>
     </view>
   </view>
+  <!-- 食物摄入实验弹窗 -->
+  <food-intake-modal
+    visible="{{showFoodIntakeExperimentModal}}"
+    step="{{foodExperimentStep}}"
+    searchQuery="{{foodExperimentSearchQuery}}"
+    categories="{{foodExperimentCategories}}"
+    activeCategory="{{foodExperimentCategory}}"
+    options="{{filteredFoodExperimentOptions}}"
+    selectedFoodId="{{foodExperiment.foodId}}"
+    foodExperiment="{{foodExperiment}}"
+    confirmDisabled="{{!foodExperiment.foodId}}"
+    formCancelText="{{foodModalMode === 'edit' ? '取消' : '上一步'}}"
+    bind:close="hideFoodIntakeExperimentModal"
+    bind:openmanage="openFoodManage"
+    bind:searchinput="onFoodExperimentSearchInput"
+    bind:categorytap="onFoodExperimentCategorySelect"
+    bind:optiontap="onFoodExperimentFoodSelect"
+    bind:confirmselect="confirmFoodExperimentSelection"
+    bind:backtoselect="backToFoodExperimentSelection"
+    bind:quantityinput="onFoodExperimentQuantityInput"
+    bind:timechange="onFoodExperimentRecordTimeChange"
+    bind:formcancel="handleFoodExperimentFormCancel"
+    bind:formsave="saveFoodIntakeExperiment"
+  />
   <!-- 补充用药记录弹窗 -->
   <view class="modal" wx:if="{{showAddMedicationModal}}" bindtap="hideAddMedicationModal">
     <view class="modal-content" catchtap="preventBubble">
@@ -424,51 +628,19 @@
     </view>
   </view>
   <!-- 编辑喂奶记录弹窗 -->
-  <view class="modal" wx:if="{{showEditFeedingModal}}" bindtap="hideEditFeedingModal">
-    <view class="modal-content" catchtap="preventBubble">
-      <view class="modal-header">
-        <text>编辑喂奶记录</text>
-      </view>
-      <view class="modal-body">
-        <!-- 时间选择 -->
-        <view class="time-selection">
-          <view class="time-picker-group">
-            <text class="label">喂奶时间</text>
-            <picker mode="time" value="{{editingFeeding.formattedStartTime}}" data-field="formattedStartTime" bindchange="onEditFeedingTimeChange">
-              <view class="time-picker">{{editingFeeding.formattedStartTime}}</view>
-            </picker>
-          </view>
-        </view>
-        <!-- 天然奶量 -->
-        <view class="input-group">
-          <text class="label">天然奶量 (ml)</text>
-          <input type="digit" value="{{editingFeeding.naturalMilkVolume}}" data-field="naturalMilkVolume" bindinput="onEditFeedingInput" placeholder="请输入天然奶量" />
-        </view>
-        <!-- 如果是普通奶粉，显示奶粉重量 -->
-        <view class="input-group" wx:if="{{proteinSourceType === 'formulaMilk'}}">
-          <text class="label">奶粉重量</text>
-          <view class="display-value">{{editingFeeding.formulaPowderWeight || '0'}}g</view>
-        </view>
-        <!-- 特奶量 -->
-        <view class="input-group">
-          <text class="label">特奶量 (ml)</text>
-          <input type="digit" value="{{editingFeeding.specialMilkVolume}}" data-field="specialMilkVolume" bindinput="onEditFeedingInput" placeholder="请输入特奶量" />
-        </view>
-        <!-- 计算结果展示 -->
-        <view class="special-milk">
-          <text class="label">总奶量:</text>
-          <text class="value">
-            {{editingFeeding.totalVolume || ((editingFeeding.naturalMilkVolume || 0) + (editingFeeding.specialMilkVolume || 0))}}ml
-          </text>
-          <text class="powder-weight">(特奶粉 {{editingFeeding.specialPowderWeight || '0'}}g)</text>
-        </view>
-      </view>
-      <view class="modal-footer">
-        <button class="modal-btn cancel" bindtap="hideEditFeedingModal">取消</button>
-        <button class="modal-btn confirm" bindtap="saveEditedFeeding">保存</button>
-      </view>
-    </view>
-  </view>
+  <feeding-modal
+    visible="{{showEditFeedingModal}}"
+    title="编辑喂奶记录"
+    feedingData="{{editingFeedingDisplay}}"
+    showGoalHint="{{false}}"
+    confirmText="保存"
+    bind:close="hideEditFeedingModal"
+    bind:confirm="saveEditedFeeding"
+    bind:timechange="handleEditFeedingModalTimeChange"
+    bind:inputchange="handleEditFeedingModalInputChange"
+    bind:adjust="handleEditFeedingModalAdjust"
+    bind:typechange="handleEditFeedingModalTypeChange"
+  />
   <!-- 编辑用药记录弹窗 -->
   <view class="modal" wx:if="{{showEditMedicationModal}}" bindtap="hideEditMedicationModal">
     <view class="modal-content" catchtap="preventBubble">

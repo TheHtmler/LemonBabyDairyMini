@@ -113,22 +113,6 @@
         </picker>
       </view>
       
-      <view class="form-item">
-        <view class="item-label">天然蛋白摄入方式<text class="required">*</text></view>
-        <picker 
-          mode="selector" 
-          range="{{proteinSources}}" 
-          value="{{proteinSourceIndex}}" 
-          bindchange="onProteinSourceChange"
-          disabled="{{!isOwner}}"
-        >
-          <view class="picker">
-            {{proteinSources[proteinSourceIndex]}}
-            <text class="arrow">▼</text>
-          </view>
-        </picker>
-      </view>
-      
       <view class="form-item textarea-item">
         <view class="item-label">其他备注</view>
         <textarea 

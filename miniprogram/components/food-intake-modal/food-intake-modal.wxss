@@ -1,0 +1,357 @@
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.modal-content {
+  width: 88%;
+  max-height: 84vh;
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  padding: 24rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  text-align: center;
+  background-color: #FFF9E6;
+  border-bottom: 1rpx solid rgba(255, 184, 0, 0.2);
+  color: #333;
+}
+
+.modal-footer {
+  display: flex;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.modal-btn {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  border-radius: 0;
+  border: none;
+}
+
+.modal-btn.cancel {
+  color: #666;
+  background-color: #f5f5f5;
+}
+
+.modal-btn.confirm {
+  color: #ffffff;
+  background-color: #FFB800;
+}
+
+.modal-btn.confirm:active {
+  background-color: #e0a000;
+}
+
+.food-experiment-body {
+  padding: 16rpx 16rpx 24rpx;
+  height: 62vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.food-experiment-search {
+  flex-shrink: 0;
+}
+
+.food-search-input {
+  display: flex;
+  align-items: center;
+  background: #F7F7F7;
+  border-radius: 12rpx;
+  padding: 8rpx 12rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.food-search-input input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.food-search-input input::placeholder {
+  color: #999;
+}
+
+.search-icon {
+  font-size: 26rpx;
+  color: #999;
+  margin-right: 8rpx;
+}
+
+.food-experiment-select {
+  display: flex;
+  height: 100%;
+  gap: 12rpx;
+  min-height: 0;
+}
+
+.food-experiment-categories {
+  width: 28%;
+  background: #F7F7F7;
+  border-radius: 12rpx;
+  padding: 10rpx 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.food-experiment-categories .category-item {
+  padding: 16rpx 12rpx;
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+}
+
+.food-experiment-categories .category-item.active {
+  background: #ffffff;
+  color: #FF8C00;
+  font-weight: 600;
+}
+
+.food-experiment-list-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.food-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.food-header-title {
+  font-size: 26rpx;
+  color: #555;
+}
+
+.food-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 12rpx;
+  background: rgba(26, 152, 255, 0.08);
+  color: #1a98ff;
+  font-size: 24rpx;
+}
+
+.food-add-icon {
+  font-size: 28rpx;
+}
+
+.food-option-list {
+  max-height: 320rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.05);
+  border-radius: 12rpx;
+  margin-top: 12rpx;
+  padding: 8rpx 0;
+  background: #FFF;
+  box-sizing: border-box;
+}
+
+.food-experiment-option-list {
+  flex: 1;
+  max-height: none;
+  height: 100%;
+  min-height: 0;
+}
+
+.food-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.food-option + .food-option {
+  border-top: 1rpx solid #F0F0F0;
+}
+
+.food-option-main {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.food-option-name {
+  font-size: 22rpx;
+  color: #333;
+}
+
+.food-option-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #FFB800;
+  color: #ffffff;
+  font-size: 24rpx;
+  line-height: 1;
+  visibility: hidden;
+}
+
+.food-option-add.active {
+  visibility: visible;
+}
+
+.food-option-sub {
+  font-size: 22rpx;
+  color: #BBB;
+  margin-top: 6rpx;
+}
+
+.food-option-empty {
+  text-align: center;
+  padding: 24rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.food-experiment-form-step {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.06);
+  padding: 16rpx;
+  box-sizing: border-box;
+}
+
+.food-experiment-form-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+  margin-bottom: 16rpx;
+  gap: 8rpx;
+}
+
+.food-experiment-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6rpx;
+}
+
+.food-experiment-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.food-experiment-switch {
+  font-size: 24rpx;
+  color: #1a98ff;
+  padding: 6rpx 12rpx;
+  border-radius: 12rpx;
+  background: rgba(26, 152, 255, 0.08);
+  align-self: flex-start;
+}
+
+.food-experiment-form-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.input-group {
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+
+.input-group:last-child {
+  margin-bottom: 0;
+}
+
+.input-group .label {
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.input-group input {
+  width: 100%;
+  height: 64rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  font-size: 30rpx;
+  color: #333;
+  background: #fff;
+}
+
+.picker-value {
+  width: 100%;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 20rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 12rpx;
+  background: #fff;
+  box-sizing: border-box;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.nutrition-preview {
+  margin-top: 16rpx;
+  background: rgba(255, 184, 0, 0.08);
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.nutrition-preview.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.nutrition-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.nutrition-preview .preview-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 26rpx;
+  color: #333;
+}

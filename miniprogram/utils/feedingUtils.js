@@ -93,21 +93,6 @@ const calculator = {
     return Math.round(specialMilkVolume * ratio * 10) / 10;
   },
 
-  // 计算奶粉克重（普通奶粉）
-  calculateFormulaPowderWeight(naturalMilkVolume, calculation_params, proteinSourceType) {
-    if (proteinSourceType !== 'formulaMilk') {
-      return 0;
-    }
-    
-    if (!calculation_params?.formula_milk_ratio?.powder || !calculation_params?.formula_milk_ratio?.water) {
-      return 0;
-    }
-    
-    const ratio = calculation_params.formula_milk_ratio;
-    const powderWeight = (naturalMilkVolume * ratio.powder) / ratio.water;
-    return Math.round(powderWeight * 10) / 10;
-  },
-
   // 计算每餐建议奶量
   calculateRecommendedVolume(weight, calculation_params, mealsPerDay = 8) {
     if (!weight || !calculation_params) {
@@ -181,15 +166,6 @@ const dataManager = {
     const updateData = {};
     updateData[`${dataKey}.specialMilkVolume`] = specialMilkVolume;
     updateData[`${dataKey}.specialMilkPowder`] = specialMilkPowder;
-    
-    // 如果是普通奶粉，还需要计算奶粉克重
-    if (context.data.proteinSourceType === 'formulaMilk' && feedingData.naturalMilkVolume) {
-      const formulaPowderWeight = calculator.calculateFormulaPowderWeight(
-        naturalMilk, context.data.calculation_params, context.data.proteinSourceType
-      );
-      updateData[`${dataKey}.formulaPowderWeight`] = formulaPowderWeight;
-    }
-    
     context.setData(updateData);
   }
 };

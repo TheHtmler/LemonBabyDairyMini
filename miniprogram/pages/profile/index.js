@@ -17,7 +17,7 @@ Page({
       },
       {
         id: 2,
-        name: '营养设置',
+        name: '配奶管理',
         icon: 'setting',
         path: '/pages/nutrition-settings/index'
       },
@@ -30,7 +30,7 @@ Page({
       },
       {
         id: 3,
-        name: '药物设置',
+        name: '药物管理',
         icon: 'medicine',
         path: '/pages/medications/index'
       },
@@ -40,6 +40,13 @@ Page({
         icon: 'nutrition',
         path: '/pages/data-analysis/index',
         description: '查看周、月维度的数据趋势'
+      },
+      {
+        id: 10,
+        name: '成长记录',
+        icon: 'growth',
+        path: '/pages/growth-records/index',
+        description: '身高体重曲线与成长里程碑'
       },
       {
         id: 5,
@@ -640,6 +647,20 @@ Page({
         }
       }
     });
+  },
+
+  onShareAppMessage() {
+    const InvitationModel = require('../../models/invitation');
+    const babyInfo = this.data.babyInfo || {};
+    const inviteCode = this.data.inviteCode || babyInfo.inviteCode;
+    if (inviteCode) {
+      return InvitationModel.getShareInfo(inviteCode, babyInfo.name);
+    }
+    return {
+      title: '柠檬宝宝喂养记录',
+      path: '/pages/role-selection/index',
+      imageUrl: '/images/LemonLogo.png'
+    };
   }
 
 }) 

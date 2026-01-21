@@ -1,0 +1,52 @@
+.food-record {
+  display: flex;
+  flex-direction: column;
+}
+
+.food-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6rpx;
+}
+
+.food-time {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.food-name {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 600;
+}
+
+.food-quantity-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 4rpx;
+}
+
+.food-quantity {
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
+}
+
+.food-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 8rpx;
+  gap: 12rpx;
+  font-size: 24rpx;
+  color: #555555;
+}
+
+.food-metrics .divider {
+  color: #DDDDDD;
+}
+
+.food-metrics .metric {
+  color: #555555;
+}

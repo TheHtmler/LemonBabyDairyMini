@@ -1,0 +1,15 @@
+<view class="modal" wx:if="{{visible}}" bindtap="handleClose" catchtouchmove="stopBubble">
+  <view class="modal-content" catchtap="stopBubble">
+    <view class="modal-header">
+      <text>{{title}}</text>
+    </view>
+    <view class="modal-body">
+      <view class="ratio-lines">
+        <view class="ratio-line" wx:for="{{lines}}" wx:key="*this">{{item}}</view>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="modal-btn confirm" bindtap="handleClose">{{confirmText}}</button>
+    </view>
+  </view>
+</view>

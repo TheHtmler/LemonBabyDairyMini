@@ -1,0 +1,359 @@
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  width: 90%;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  padding: 24rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 184, 0, 0.1);
+}
+
+.modal-body {
+  padding: 32rpx 0;
+}
+
+.modal-scroll {
+  box-sizing: border-box;
+  height: 60vh;
+  max-height: 60vh;
+}
+
+.modal-footer {
+  display: flex;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.modal-btn {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  border-radius: 0;
+  border: none;
+}
+
+.modal-btn.cancel {
+  color: #666;
+  background-color: #f5f5f5;
+}
+
+.modal-btn.confirm {
+  color: #ffffff;
+  background-color: #FFB800;
+}
+
+.modal-btn.confirm:active {
+  background-color: #e0a000;
+}
+
+.input-group {
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+
+.input-group:last-child {
+  margin-bottom: 0;
+}
+
+.input-group .label {
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.input-group input {
+  width: 100%;
+  height: 72rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  font-size: 30rpx;
+  color: #333;
+  background: #fff;
+}
+
+.input-group input::placeholder {
+  color: #B5B5B5;
+}
+
+.picker-value {
+  padding: 20rpx;
+  background: rgba(255, 184, 0, 0.08);
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  color: #333333;
+}
+
+.content-box {
+  padding: 0 24rpx;
+}
+
+.milk-type-selector {
+  display: flex;
+  gap: 16rpx;
+  margin: 10rpx 0 20rpx;
+}
+
+.milk-type-option {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 32rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.4);
+  font-size: 26rpx;
+  color: #666;
+}
+
+.milk-type-option.active {
+  background-color: rgba(255, 184, 0, 0.15);
+  color: #FF9C00;
+  border-color: #FFB800;
+  font-weight: 600;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  overflow: hidden;
+  flex: 1;
+  height: 60rpx;
+}
+
+.volume-btn {
+  width: 60rpx!important;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 184, 0, 0.1);
+  color: #FFB800;
+  font-size: 36rpx;
+  font-weight: bold;
+  line-height: 1;
+  border: none;
+  padding: 0;
+}
+
+.volume-input {
+  flex: 1;
+  height: 80rpx;
+  min-width: 80rpx;
+  text-align: center;
+  font-size: 32rpx;
+  margin: 0;
+  padding: 0;
+}
+
+.volume-unit {
+  padding: 0 12rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.nutrient-row {
+  margin-bottom: 16rpx;
+  padding: 10rpx;
+  display: flex;
+  gap: 18rpx;
+  font-size: 24rpx;
+  background: rgba(255, 184, 0, 0.08);
+}
+
+.nutrient-row text {
+  color: #FF8C00;
+}
+
+.goal-hint-card {
+  margin-top: 20rpx;
+  padding: 20rpx;
+  border-radius: 14rpx;
+  background: rgba(67, 193, 255, 0.08);
+  border: 2rpx solid rgba(67, 193, 255, 0.3);
+}
+
+.goal-hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1a98ff;
+  margin-bottom: 12rpx;
+}
+
+.goal-target-switch {
+  display: flex;
+  gap: 12rpx;
+}
+
+.goal-target-option {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid rgba(26, 152, 255, 0.25);
+  color: #1a98ff;
+  font-size: 24rpx;
+  background: rgba(26, 152, 255, 0.08);
+}
+
+.goal-target-option.active {
+  background: #1a98ff;
+  color: #ffffff;
+  border-color: #1a98ff;
+  font-weight: 600;
+  box-shadow: 0 4rpx 10rpx rgba(26, 152, 255, 0.15);
+}
+
+.goal-calorie-input {
+  margin-bottom: 12rpx;
+}
+
+.goal-calorie-label {
+  display: block;
+  font-size: 24rpx;
+  color: #1a98ff;
+  margin-bottom: 6rpx;
+}
+
+.goal-calorie-field {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #ffffff;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(67, 193, 255, 0.3);
+  padding: 10rpx 14rpx;
+}
+
+.goal-calorie-field input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.goal-calorie-unit {
+  font-size: 22rpx;
+  color: #1a98ff;
+}
+
+.goal-hint-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 26rpx;
+  color: #555;
+  margin-bottom: 8rpx;
+}
+
+.goal-hint-gap {
+  padding: 12rpx 14rpx;
+  margin-bottom: 14rpx;
+  background: rgba(26, 152, 255, 0.06);
+  border: 2rpx dashed rgba(26, 152, 255, 0.3);
+  border-radius: 12rpx;
+}
+
+.goal-coef-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  font-size: 24rpx;
+  color: #1a98ff;
+  margin-bottom: 8rpx;
+}
+
+.goal-hint-value {
+  color: #0077ff;
+  font-weight: 600;
+}
+
+.goal-hint-desc {
+  font-size: 24rpx;
+  color: #888;
+}
+
+.goal-hint-section.goal-plan {
+  margin-top: 14rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 2rpx solid rgba(26, 152, 255, 0.15);
+  box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, 0.4);
+}
+
+.goal-plan-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1a98ff;
+  margin-bottom: 10rpx;
+}
+
+.goal-plan-meta {
+  font-size: 22rpx;
+  color: #1780d6;
+  background: rgba(26, 152, 255, 0.08);
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+}
+
+.goal-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10rpx;
+  margin-bottom: 8rpx;
+}
+
+.goal-plan-item {
+  background: rgba(26, 152, 255, 0.05);
+  border-radius: 10rpx;
+  padding: 10rpx 12rpx;
+  border: 2rpx solid rgba(26, 152, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.goal-plan-label {
+  font-size: 22rpx;
+  color: #4a4a4a;
+}
+
+.goal-plan-value {
+  font-size: 28rpx;
+  color: #0077ff;
+  font-weight: 700;
+}
+
+.goal-plan-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  font-size: 22rpx;
+  color: #1780d6;
+}

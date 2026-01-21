@@ -453,6 +453,51 @@
   background: #FFF6CC;
 }
 
+.coefficient-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.coefficient-item {
+  flex: 1 1 calc(50% - 16rpx);
+  background: #FFF9E6;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  box-sizing: border-box;
+}
+
+.coefficient-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.coefficient-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 2rpx solid rgba(255, 184, 0, 0.4);
+  border-radius: 12rpx;
+  padding: 0 16rpx;
+}
+
+.coefficient-input {
+  flex: 1;
+  height: 64rpx;
+  border: none;
+  font-size: 30rpx;
+  color: #333;
+  background: transparent;
+}
+
+.coefficient-unit {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 8rpx;
+}
+
 /* 喂奶记录汇总样式 */
 .total-summary {
   display: flex;
@@ -482,6 +527,278 @@
   font-size: 36rpx;
   color: #FFB800;
   font-weight: bold;
+}
+
+.summary-section {
+  margin-bottom: 28rpx;
+}
+
+.summary-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-subtitle {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 12rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.section-subtitle::before {
+  content: '';
+  display: block;
+  width: 8rpx;
+  height: 30rpx;
+  background: #FFE7A0;
+  border-radius: 6rpx;
+}
+
+.macro-ratio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+}
+
+
+.summary-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.summary-item {
+  flex: 1;
+  min-width: 30%;
+  padding: 18rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  background: #FFF9E6;
+  border: 1rpx solid rgba(255, 184, 0, 0.25);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.05);
+  box-sizing: border-box;
+  word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+
+.summary-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 8rpx;
+}
+
+.summary-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+.summary-subtext {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #777;
+  line-height: 1.4;
+  word-break: break-word;
+  text-align: center;
+}
+
+
+.summary-number {
+  font-size: 36rpx;
+  color: #FFB800;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.summary-unit {
+  font-size: 24rpx;
+  color: #777;
+  line-height: 1.2;
+}
+
+.ratio-info-icon {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 50%;
+  border: 1rpx solid #cfcfcf;
+  color: #888;
+  font-size: 20rpx;
+  line-height: 26rpx;
+  text-align: center;
+}
+
+.weight-number .weight-input {
+  width: 180rpx;
+  padding: 0 16rpx;
+  text-align: center;
+}
+
+.weight-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+}
+
+.weight-value .weight-input {
+  width: 160rpx;
+  padding: 0 16rpx;
+}
+
+.unit-inline {
+  position: static;
+  transform: none;
+  right: auto;
+  top: auto;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.records-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 16rpx;
+}
+
+.summary-card {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  background: #FFF9E6;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 6rpx 18rpx rgba(255, 184, 0, 0.1);
+}
+
+.summary-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-card .card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-card .card-meta {
+  font-size: 26rpx;
+  color: #FF7A00;
+  font-weight: 600;
+}
+
+.milk-card {
+  background: linear-gradient(135deg, rgba(255, 200, 120, 0.18), rgba(255, 243, 205, 0.85));
+}
+
+.food-card {
+  background: linear-gradient(135deg, rgba(126, 217, 87, 0.18), rgba(235, 255, 230, 0.9));
+}
+
+.milk-body {
+  display: flex;
+  gap: 20rpx;
+}
+
+.milk-column {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: inset 0 4rpx 12rpx rgba(255, 184, 0, 0.1);
+}
+
+.column-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FF8C00;
+  margin-bottom: 12rpx;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.stat-row text:last-child {
+  color: #FF6A00;
+  font-weight: 600;
+}
+
+.food-body .body-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  font-size: 20rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+}
+
+.food-body .body-summary text:first-child {
+  color: #FF6A00;
+  font-weight: 600;
+}
+
+.food-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.food-row {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16rpx;
+  padding: 16rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.food-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6rpx;
+}
+
+.food-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.food-quantity {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.food-row-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.empty-record {
+  text-align: center;
+  padding: 32rpx 0;
+  font-size: 26rpx;
+  color: #999;
 }
 
 /* 喂奶记录样式 */
@@ -526,6 +843,21 @@
 .volume-info-text{
   font-size: 28rpx;
   color: #FFB800;
+}
+
+.record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx 20rpx;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #7A7A7A;
+}
+
+.record-meta text {
+  white-space: nowrap;
+  display: inline-flex;
+  flex: 0 0 auto;
 }
 
 .menu-btn .dot-menu .dot {
@@ -753,10 +1085,6 @@
 
 .intake-detail .detail {
   color: #555555;
-}
-
-.intake-tags {
-  margin-top: 12rpx;
 }
 
 .tag {
@@ -1313,12 +1641,14 @@
 .action-buttons {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  flex-direction: column;
+  gap: 10rpx;
+  margin-left: 16rpx;
 }
 
 .action-btn {
-  width: 68rpx;
-  height: 68rpx;
+  width: 40rpx;
+  height: 40rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1341,6 +1671,7 @@
 .action-btn.delete-btn {
   background-color: rgba(255, 71, 87, 0.15);
   border: 1rpx solid rgba(255, 71, 87, 0.3);
+  margin-left: 0;
 }
 
 .action-btn.delete-btn:active {
@@ -1350,9 +1681,313 @@
 }
 
 .action-icon {
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.9;
+}
+
+/* 食物弹窗样式 */
+.food-modal-content {
+  width: 86%;
+  max-height: 84vh;
+}
+
+.input-group {
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+
+.input-group .label {
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.input-group input {
+  width: 100%;
+  height: 72rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  font-size: 30rpx;
+  color: #333;
+  background: #fff;
+}
+
+.food-selection-card {
+  flex: 1;
+  border: 2rpx solid rgba(0, 0, 0, 0.06);
+  border-radius: 16rpx;
+  padding: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+}
+
+.food-search-input {
+  display: flex;
+  align-items: center;
+  background: #F7F7F7;
+  border-radius: 12rpx;
+  padding: 8rpx 12rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.food-search-input input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.search-icon {
+  font-size: 26rpx;
+  color: #999;
+  margin-right: 8rpx;
+}
+
+.food-option-list {
+  max-height: 320rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.05);
+  border-radius: 12rpx;
+  margin-top: 12rpx;
+  padding: 8rpx 0;
+  background: #FFF;
+  box-sizing: border-box;
+}
+
+.food-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.food-header-title {
+  font-size: 26rpx;
+  color: #555;
+}
+
+.food-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 12rpx;
+  background: rgba(26, 152, 255, 0.08);
+  color: #1a98ff;
+  font-size: 24rpx;
+}
+
+.food-add-icon {
+  font-size: 28rpx;
+}
+
+/* 食物实验弹窗 */
+.food-experiment-modal .modal-content {
+  width: 88%;
+  max-height: 84vh;
+}
+
+.food-experiment-body {
+  padding: 16rpx 16rpx 24rpx;
+  height: 62vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.food-experiment-search {
+  flex-shrink: 0;
+}
+
+.food-experiment-select {
+  display: flex;
+  height: 100%;
+  gap: 12rpx;
+  min-height: 0;
+}
+
+.food-experiment-categories {
+  width: 28%;
+  background: #F7F7F7;
+  border-radius: 12rpx;
+  padding: 10rpx 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.food-experiment-categories .category-item {
+  padding: 16rpx 12rpx;
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+}
+
+.food-experiment-categories .category-item.active {
+  background: #ffffff;
+  color: #FF8C00;
+  font-weight: 600;
+}
+
+.food-experiment-list-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.food-experiment-option-list {
+  flex: 1;
+  max-height: none;
+  height: 100%;
+  min-height: 0;
+}
+
+.food-experiment-form-step {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.06);
+  padding: 16rpx;
+  box-sizing: border-box;
+}
+
+.food-experiment-form-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.food-experiment-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.food-experiment-title {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 600;
+}
+
+.food-experiment-switch {
+  margin-left: auto;
+  font-size: 24rpx;
+  color: #1a98ff;
+}
+
+.food-experiment-form-body {
+  padding-top: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.food-experiment-form-body .input-group input {
+  height: 72rpx;
+}
+
+.food-option-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 36rpx;
   height: 36rpx;
-  opacity: 0.9;
+  border-radius: 50%;
+  background: #FFB800;
+  color: #ffffff;
+  font-size: 24rpx;
+  line-height: 1;
+  visibility: hidden;
+}
+
+.food-option-add.active {
+  visibility: visible;
+}
+
+.food-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.food-option + .food-option {
+  border-top: 1rpx solid #F0F0F0;
+}
+
+.food-option.selected {
+  background: rgba(255, 184, 0, 0.08);
+  font-weight: 600;
+}
+
+.food-option-main {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.food-option-name {
+  font-size: 22rpx;
+  color: #333;
+}
+
+.food-option-tag {
+  font-size: 18rpx;
+  color: #999;
+}
+
+.food-option-sub {
+  font-size: 22rpx;
+  color: #BBB;
+  margin-top: 6rpx;
+}
+
+.food-option-empty {
+  text-align: center;
+  padding: 24rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.nutrition-preview {
+  margin-top: 16rpx;
+  background: rgba(255, 184, 0, 0.08);
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.nutrition-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 24rpx;
+  color: #555;
+}
+
+.food-record-item {
+  display: flex;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
+  margin-bottom: 16rpx;
+  position: relative;
 }
 
 /* === 排便记录样式 === */
@@ -1550,6 +2185,29 @@
   transform: scale(0.95);
 }
 
+.milk-type-selector {
+  display: flex;
+  gap: 16rpx;
+  margin: 10rpx 0 16rpx;
+}
+
+.milk-type-option {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 32rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.4);
+  font-size: 26rpx;
+  color: #666;
+}
+
+.milk-type-option.active {
+  background-color: rgba(255, 184, 0, 0.15);
+  color: #FF9C00;
+  border-color: #FFB800;
+  font-weight: 600;
+}
+
 /* 备注输入框 */
 .notes-textarea {
   width: 100%;
@@ -1592,4 +2250,41 @@
     margin-right: 12rpx;
     margin-bottom: 0;
   }
-} 
+}
+
+/* 记录 Tabs */
+.tabs {
+  display: flex;
+  background-color: rgba(255, 184, 0, 0.1);
+  border-radius: 12rpx;
+  overflow: hidden;
+  margin: 16rpx 12rpx 20rpx;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tab.active {
+  color: #FFB800;
+  font-weight: 600;
+  background-color: rgba(255, 184, 0, 0.2);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 6rpx;
+  background-color: #FFB800;
+  border-radius: 3rpx;
+}

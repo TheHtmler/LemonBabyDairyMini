@@ -4,6 +4,7 @@
     "pages/invite-join/index",
     "pages/daily-feeding/index",
     "pages/data-records/index",
+    "pages/growth-records/index",
     "pages/data-analysis/index",
     "pages/analysis-report/index",
     "pages/profile/index",

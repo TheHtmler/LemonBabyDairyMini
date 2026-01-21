@@ -1,0 +1,121 @@
+<view class="modal food-experiment-modal" wx:if="{{visible}}" bindtap="handleClose" catchtouchmove="stopBubble">
+  <view class="modal-content food-experiment-content" catchtap="stopBubble">
+    <view class="modal-header">
+      <text>{{title}}</text>
+    </view>
+    <view class="food-experiment-body">
+      <view class="food-experiment-search" wx:if="{{step === 'select'}}">
+        <view class="food-search-input">
+          <text class="search-icon">🔍</text>
+          <input type="text" value="{{searchQuery}}" placeholder="搜索食物名称或类别" confirm-type="search" bindinput="handleSearchInput" />
+        </view>
+      </view>
+      <view class="food-experiment-select" wx:if="{{step === 'select'}}">
+        <view class="food-experiment-categories">
+          <view class="category-item {{activeCategory === (item.value || item) ? 'active' : ''}}"
+                wx:for="{{categories}}" wx:key="value"
+                data-category="{{item.value || item}}" bindtap="handleCategoryTap">
+            <text>{{item.label || (item === 'recent' ? '最近' : item)}}</text>
+          </view>
+        </view>
+        <view class="food-experiment-list-panel">
+          <view class="food-list-header">
+            <view class="food-header-title">请选择食物</view>
+            <view class="food-add-btn" bindtap="handleOpenFoodManage">
+              <text class="food-add-icon">＋</text>
+              <text>添加食物</text>
+            </view>
+          </view>
+          <scroll-view class="food-option-list food-experiment-option-list" scroll-y="true">
+            <view class="food-option"
+                  wx:for="{{options}}" wx:key="_id"
+                  data-id="{{item._id}}" bindtap="handleOptionTap">
+              <view class="food-option-main">
+                <text class="food-option-name">{{item.name}}</text>
+                <view class="food-option-add {{selectedFoodId === item._id ? 'active' : ''}}">✓</view>
+              </view>
+              <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>
+            </view>
+            <view class="food-option-empty" wx:if="{{options.length === 0}}">
+              <text>未找到匹配的食物，请调整搜索条件</text>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+      <view class="food-experiment-form-step" wx:if="{{step === 'form'}}">
+        <view class="food-experiment-form-header">
+          <view class="food-experiment-title-group">
+            <text class="food-experiment-title">{{foodExperiment.food ? foodExperiment.food.name : '未选择食物'}}</text>
+          </view>
+          <view class="food-experiment-switch" bindtap="handleBackToSelect">更换食物</view>
+        </view>
+        <view class="food-experiment-form-body">
+          <view class="input-group">
+            <text class="label">份量 ({{foodExperiment.unit || 'g'}})</text>
+            <input type="digit" value="{{foodExperiment.quantity}}" bindinput="handleQuantityInput" placeholder="请输入重量" />
+          </view>
+          <view class="input-group">
+            <text class="label">{{timeLabel}}</text>
+            <picker mode="time" value="{{foodExperiment.recordTime}}" bindchange="handleRecordTimeChange">
+              <view class="picker-value">{{foodExperiment.recordTime || '选择时间'}}</view>
+            </picker>
+          </view>
+          <view class="nutrition-preview {{nutritionLayout === 'grid' ? 'grid' : ''}}" wx:if="{{foodExperiment.nutritionPreview}}">
+            <block wx:if="{{nutritionLayout === 'grid'}}">
+              <view class="nutrition-item">
+                <text>{{foodExperiment.nutritionPreview.calories || 0}} kcal</text>
+                <text>热量</text>
+              </view>
+              <view class="nutrition-item">
+                <text>{{foodExperiment.nutritionPreview.protein || 0}} g</text>
+                <text>蛋白质</text>
+              </view>
+              <view class="nutrition-item">
+                <text>{{foodExperiment.nutritionPreview.carbs || 0}} g</text>
+                <text>碳水</text>
+              </view>
+              <view class="nutrition-item">
+                <text>{{foodExperiment.nutritionPreview.fat || 0}} g</text>
+                <text>脂肪</text>
+              </view>
+            </block>
+            <block wx:else>
+              <view class="preview-row">
+                <text>热量</text>
+                <text>{{foodExperiment.nutritionPreview.calories || 0}} kcal</text>
+              </view>
+              <view class="preview-row">
+                <text>蛋白</text>
+                <text>{{foodExperiment.nutritionPreview.protein || 0}} g</text>
+              </view>
+              <view class="preview-row">
+                <text>碳水</text>
+                <text>{{foodExperiment.nutritionPreview.carbs || 0}} g</text>
+              </view>
+              <view class="preview-row">
+                <text>脂肪</text>
+                <text>{{foodExperiment.nutritionPreview.fat || 0}} g</text>
+              </view>
+              <view class="preview-row">
+                <text>膳纤</text>
+                <text>{{foodExperiment.nutritionPreview.fiber || 0}} g</text>
+              </view>
+              <view class="preview-row">
+                <text>钠</text>
+                <text>{{foodExperiment.nutritionPreview.sodium || 0}} mg</text>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="modal-footer" wx:if="{{step === 'select'}}">
+      <button class="modal-btn cancel" bindtap="handleClose">{{selectCancelText}}</button>
+      <button class="modal-btn confirm" bindtap="handleConfirmSelect" disabled="{{confirmDisabled}}">{{selectConfirmText}}</button>
+    </view>
+    <view class="modal-footer" wx:if="{{step === 'form'}}">
+      <button class="modal-btn cancel" bindtap="handleFormCancel">{{formCancelText}}</button>
+      <button class="modal-btn confirm" bindtap="handleFormSave">{{formConfirmText}}</button>
+    </view>
+  </view>
+</view>

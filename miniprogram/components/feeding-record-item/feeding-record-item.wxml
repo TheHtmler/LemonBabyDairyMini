@@ -1,0 +1,20 @@
+<view class="feeding-record" bindtap="handleTap">
+  <view class="feeding-header">
+    <text class="feeding-time">{{timeText}}</text>
+    <text class="feeding-label" wx:if="{{showLabel}}">{{label}}</text>
+  </view>
+  <view class="feeding-detail">
+    <view class="milk-row">
+      <block wx:for="{{milkItems}}" wx:key="index">
+        <text class="detail detail-milk">{{item.text}}</text>
+        <text class="divider" wx:if="{{index < milkItems.length - 1}}">|</text>
+      </block>
+    </view>
+    <view class="metric-row">
+      <block wx:for="{{metricItems}}" wx:key="index">
+        <text class="detail">{{item.text}}</text>
+        <text class="divider" wx:if="{{index < metricItems.length - 1}}">|</text>
+      </block>
+    </view>
+  </view>
+</view>

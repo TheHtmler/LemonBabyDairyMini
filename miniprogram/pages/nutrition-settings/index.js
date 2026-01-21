@@ -1,4 +1,4 @@
-// 营养设置页面
+// 配奶设置页面
 const app = getApp();
 const NutritionModel = require('../../models/nutrition');
 
@@ -6,10 +6,9 @@ Page({
   data: {
     settings: null,
     isConfirmed: false,
-    proteinSource: '母乳', // 默认值为母乳
-    isBreastMilk: true, // 是否为母乳（用于控制UI显示）
     inputValues: {}, // 用于显示初始值
     isFromSetup: false,
+    activeTab: 'formula'
   },
 
   onLoad: async function(options) {
@@ -24,33 +23,31 @@ Page({
         isFromSetup: isFromSetup
       });
 
-      // 设置天然蛋白来源类型
-      if (options.proteinSource) {
-        const proteinSource = decodeURIComponent(options.proteinSource);
-        const isBreastMilk = proteinSource === '母乳';
-        
-        this.setData({
-          proteinSource: proteinSource,
-          isBreastMilk: isBreastMilk
-        });
-      } else {
-        // 如果没有传递蛋白质来源，尝试从宝宝信息获取
-        await this.loadBabyProteinSource();
-      }
-
       // 首先设置默认值，防止页面渲染问题
       const defaultSettings = {
-        natural_protein_coefficient: 1.2,
-        natural_milk_protein: this.data.isBreastMilk ? 1.1 : 2.1, // 根据来源设置不同的默认值
-        special_milk_protein: 13.1,
-        special_milk_ratio: {
-          powder: 13.5,
-          water: 90
-        },
+        natural_milk_protein: 1.1,
+        natural_milk_calories: 67,
+        natural_milk_fat: 4.0,
+        natural_milk_carbs: 6.8,
+        natural_milk_fiber: 0,
+        formula_milk_protein: '',
+        formula_milk_calories: '',
+        formula_milk_fat: '',
+        formula_milk_carbs: '',
+        formula_milk_fiber: '',
         formula_milk_ratio: {
-          powder: 7,
-          water: 100
+          powder: '',
+          water: ''
         },
+        special_milk_protein: '',
+        special_milk_calories: '',
+        special_milk_fat: '',
+        special_milk_carbs: '',
+        special_milk_fiber: '',
+        special_milk_ratio: {
+          powder: '',
+          water: ''
+        }
       };
       
       // 使用深拷贝确保默认值不会被引用修改
@@ -69,11 +66,19 @@ Page({
         return;
       }
 
-      // 获取营养设置
+      // 获取配奶设置
       try {
         const settings = await NutritionModel.getNutritionSettings(babyUid);
         
         if (settings) {
+          const motherDefaults = {
+            natural_milk_protein: defaultSettings.natural_milk_protein,
+            natural_milk_calories: defaultSettings.natural_milk_calories,
+            natural_milk_fat: defaultSettings.natural_milk_fat,
+            natural_milk_carbs: defaultSettings.natural_milk_carbs,
+            natural_milk_fiber: defaultSettings.natural_milk_fiber
+          };
+
           // 使用深合并逻辑处理设置
           const mergedSettings = {
             ...defaultSettings,
@@ -105,6 +110,13 @@ Page({
               });
             }
           });
+
+          Object.keys(motherDefaults).forEach(key => {
+            const value = mergedSettings[key];
+            if (value === '' || value === undefined || value === null) {
+              mergedSettings[key] = motherDefaults[key];
+            }
+          });
           
           this.setData({ 
             settings: mergedSettings,
@@ -112,18 +124,24 @@ Page({
           });
         }
       } catch (settingsError) {
-        console.error('获取营养设置失败，使用默认值:', settingsError);
+        console.error('获取配奶设置失败，使用默认值:', settingsError);
       }
 
       wx.hideLoading();
     } catch (err) {
       wx.hideLoading();
-      console.error('加载营养设置失败：', err);
+      console.error('加载配奶设置失败：', err);
       wx.showToast({
         title: '加载设置失败',
         icon: 'none'
       });
     }
+  },
+
+  onTabChange(e) {
+    const tab = e.currentTarget.dataset.tab;
+    if (!tab) return;
+    this.setData({ activeTab: tab });
   },
 
   // 处理表单提交
@@ -132,6 +150,17 @@ Page({
       // 从表单获取所有输入值
       const formData = e.detail.value;
       const invalidFields = [];
+      const allValues = Object.values(formData || {});
+      const hasAnyValue = allValues.some(value => (value || '').toString().trim() !== '');
+
+      if (!hasAnyValue) {
+        wx.showModal({
+          title: '无法保存',
+          content: '请至少填写一项配奶参数再保存。',
+          showCancel: false
+        });
+        return;
+      }
       
       // 使用正则表达式验证是否为有效数字（允许小数）
       const numberRegex = /^[0-9]+(\.[0-9]+)?$/;
@@ -166,32 +195,30 @@ Page({
       
       // 构建完整的设置对象
       const newSettings = {
-        natural_protein_coefficient: formData.natural_protein_coefficient,
         natural_milk_protein: formData.natural_milk_protein,
+        natural_milk_calories: formData.natural_milk_calories,
+        natural_milk_fat: formData.natural_milk_fat,
+        natural_milk_carbs: formData.natural_milk_carbs,
+        natural_milk_fiber: formData.natural_milk_fiber,
+        formula_milk_protein: formData.formula_milk_protein,
+        formula_milk_calories: formData.formula_milk_calories,
+        formula_milk_fat: formData.formula_milk_fat,
+        formula_milk_carbs: formData.formula_milk_carbs,
+        formula_milk_fiber: formData.formula_milk_fiber,
+        formula_milk_ratio: {
+          powder: formData.formula_milk_ratio_powder,
+          water: formData.formula_milk_ratio_water
+        },
         special_milk_protein: formData.special_milk_protein,
+        special_milk_calories: formData.special_milk_calories,
+        special_milk_fat: formData.special_milk_fat,
+        special_milk_carbs: formData.special_milk_carbs,
+        special_milk_fiber: formData.special_milk_fiber,
         special_milk_ratio: {
           powder: formData.special_milk_ratio_powder,
           water: formData.special_milk_ratio_water
         },
       };
-      
-      // 如果是普通奶粉，添加配方奶相关设置
-      if (!this.data.isBreastMilk) {
-        newSettings.formula_milk_ratio = {
-          powder: formData.formula_milk_ratio_powder,
-          water: formData.formula_milk_ratio_water
-        };
-      } else {
-        // 如果是母乳，保留原始formula_milk_ratio设置（如果有的话）
-        if (this.data.settings && this.data.settings.formula_milk_ratio) {
-          newSettings.formula_milk_ratio = this.data.settings.formula_milk_ratio;
-        } else {
-          newSettings.formula_milk_ratio = {
-            powder: 7,
-            water: 100
-          };
-        }
-      }
       
       // 保存设置
       this.saveSettings(newSettings);
@@ -207,13 +234,25 @@ Page({
   // 获取字段显示名称
   getFieldDisplayName(fieldName) {
     const fieldMap = {
-      'natural_protein_coefficient': '天然蛋白摄入系数',
-      'natural_milk_protein': '母乳/奶粉蛋白质浓度',
+      'natural_milk_protein': '母乳蛋白质浓度',
+      'natural_milk_calories': '母乳热量',
+      'natural_milk_fat': '母乳脂肪',
+      'natural_milk_carbs': '母乳碳水',
+      'natural_milk_fiber': '母乳膳食纤维',
+      'formula_milk_protein': '普奶蛋白质浓度',
+      'formula_milk_calories': '普奶热量',
+      'formula_milk_fat': '普奶脂肪',
+      'formula_milk_carbs': '普奶碳水',
+      'formula_milk_fiber': '普奶膳食纤维',
+      'formula_milk_ratio_powder': '普奶粉量',
+      'formula_milk_ratio_water': '普奶水量',
       'special_milk_protein': '特奶蛋白质浓度',
+      'special_milk_calories': '特奶热量',
+      'special_milk_fat': '特奶脂肪',
+      'special_milk_carbs': '特奶碳水',
+      'special_milk_fiber': '特奶膳食纤维',
       'special_milk_ratio_powder': '特奶粉量',
-      'special_milk_ratio_water': '特奶水量',
-      'formula_milk_ratio_powder': '奶粉粉量',
-      'formula_milk_ratio_water': '奶粉水量'
+      'special_milk_ratio_water': '特奶水量'
     };
     
     return fieldMap[fieldName] || fieldName;
@@ -241,9 +280,13 @@ Page({
       }
       
       // 更新本地设置，然后保存到服务器
-      this.setData({ settings: newSettings }, async () => {
+      this.setData({ 
+        settings: newSettings,
+        inputValues: JSON.parse(JSON.stringify(newSettings))
+      }, async () => {
         try {
           // 保存设置到服务器
+          console.log(babyUid, '----babyUid')
           const success = await NutritionModel.updateNutritionSettings(babyUid, this.data.settings);
           
           wx.hideLoading();
@@ -288,7 +331,7 @@ Page({
         }
       });
     } catch (error) {
-      console.error('保存营养设置失败:', error);
+      console.error('保存配奶设置失败:', error);
       wx.hideLoading();
       wx.showToast({
         title: '保存失败，请重试',
@@ -296,37 +339,4 @@ Page({
       });
     }
   },
-
-  // 加载宝宝的蛋白质来源类型
-  async loadBabyProteinSource() {
-    try {
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-      if (!babyUid) return;
-      
-      const db = wx.cloud.database();
-      const res = await db.collection('baby_info').where({
-        babyUid: babyUid
-      }).get();
-      
-      if (res.data && res.data.length > 0) {
-        const babyInfo = res.data[0];
-        let proteinSource = '母乳';
-        let isBreastMilk = true;
-        
-        if (babyInfo.proteinSourceType === 'formulaMilk') {
-          proteinSource = '普通奶粉';
-          isBreastMilk = false;
-        }
-        
-        this.setData({
-          proteinSource: proteinSource,
-          isBreastMilk: isBreastMilk
-        });
-      }
-    } catch (error) {
-      console.error('加载宝宝蛋白质来源类型失败:', error);
-    }
-  },
-
-
 }); 

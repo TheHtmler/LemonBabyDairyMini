@@ -1,0 +1,15 @@
+<view class="food-record">
+  <view class="food-header">
+    <text class="food-time">{{timeText}}</text>
+    <text class="food-name">{{nameText}}</text>
+  </view>
+  <view class="food-quantity-row">
+    <text class="food-quantity">{{quantityText}}</text>
+  </view>
+  <view class="food-metrics">
+    <block wx:for="{{metricItems}}" wx:key="index">
+      <text class="metric">{{item}}</text>
+      <text class="divider" wx:if="{{index < metricItems.length - 1}}">|</text>
+    </block>
+  </view>
+</view>

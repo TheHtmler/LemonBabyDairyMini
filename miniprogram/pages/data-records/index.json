@@ -1,5 +1,12 @@
 {
   "navigationBarTitleText": "数据记录",
   "enablePullDownRefresh": true,
-  "backgroundColor": "#FFF5D6"
+  "backgroundColor": "#FFF5D6",
+  "usingComponents": {
+    "feeding-record-item": "/components/feeding-record-item/feeding-record-item",
+    "food-record-item": "/components/food-record-item/food-record-item",
+    "feeding-modal": "/components/feeding-modal/feeding-modal",
+    "food-intake-modal": "/components/food-intake-modal/food-intake-modal",
+    "fat-ratio-popup": "/components/fat-ratio-popup/fat-ratio-popup"
+  }
 } 

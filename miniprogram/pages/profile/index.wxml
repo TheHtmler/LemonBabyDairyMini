@@ -19,15 +19,12 @@
 
   <!-- 菜单列表 -->
   <view class="menu-container">
-    <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}} {{item.action === 'share' ? 'share-item' : ''}}" 
+        <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}} {{item.action === 'share' ? 'share-item' : ''}}" 
           wx:for="{{menuList}}" 
           wx:key="id" 
           wx:if="{{!item.showForCreator || (item.showForCreator && userRole === 'creator')}}"
           data-item="{{item}}" 
           bindtap="handleMenuClick">
-          <view class="menu-icon">
-            <image src="/images/icons/{{item.icon}}.svg" mode="aspectFit"></image>
-          </view>
           <view class="menu-content">
             <view class="menu-name">{{item.name}}</view>
             <view class="menu-desc" wx:if="{{item.description}}">{{item.description}}</view>

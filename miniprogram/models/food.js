@@ -1,87 +1,11 @@
 // 食物数据模型，支持自定义食物库与营养计算
 const db = wx.cloud.database();
 const _ = db.command;
-const { DEFAULT_FOODS } = require('../constants/defaultFoods');
 
 class FoodModel {
   constructor() {
     this.collection = db.collection('food_catalog');
     this._systemFoodsEnsured = false;
-  }
-
-  async _ensureSystemFoods() {
-    if (this._systemFoodsEnsured) return;
-    this._systemFoodsEnsured = true;
-
-    try {
-      if (!Array.isArray(DEFAULT_FOODS) || DEFAULT_FOODS.length === 0) {
-        return;
-      }
-
-      const systemIds = DEFAULT_FOODS.map(item => item._id).filter(Boolean);
-      let existingIds = new Set();
-      if (systemIds.length > 0) {
-        const res = await this.collection
-          .where({ _id: _.in(systemIds) })
-          .field({ _id: true })
-          .get();
-        existingIds = new Set((res.data || []).map(item => item._id));
-      }
-
-      for (const food of DEFAULT_FOODS) {
-        const baseDoc = {
-          ...food,
-          _id: food._id,
-          category: food.categoryLevel1 || food.category,
-          categoryLevel1: food.categoryLevel1 || food.category,
-          categoryLevel2: food.categoryLevel2 || '',
-          baseUnit: food.baseUnit || 'g',
-          baseQuantity: Number(food.baseQuantity) || 100,
-          defaultQuantity: Number(food.defaultQuantity || food.baseQuantity || 100),
-          nutritionPerUnit: this._normalizeNutrition(food.nutritionPerUnit),
-          proteinSource: food.proteinSource || 'natural',
-          nutritionSource: food.nutritionSource || 'system',
-          source: food.source || '',
-          isSystem: true,
-          isLiquid: !!food.isLiquid,
-          image: food.image || ''
-        };
-
-        if (existingIds.has(food._id)) {
-          await this.collection.doc(food._id).update({
-            data: {
-              name: baseDoc.name,
-              category: baseDoc.category,
-              categoryLevel1: baseDoc.categoryLevel1,
-              categoryLevel2: baseDoc.categoryLevel2,
-              baseUnit: baseDoc.baseUnit,
-              baseQuantity: baseDoc.baseQuantity,
-              defaultQuantity: baseDoc.defaultQuantity,
-              nutritionPerUnit: baseDoc.nutritionPerUnit,
-              proteinSource: baseDoc.proteinSource,
-              nutritionSource: baseDoc.nutritionSource,
-              source: baseDoc.source,
-              isLiquid: baseDoc.isLiquid,
-              image: baseDoc.image,
-              isSystem: true,
-              babyUid: _.remove(),
-              updatedAt: db.serverDate()
-            }
-          });
-        } else {
-          await this.collection.add({
-            data: {
-              ...baseDoc,
-              createdAt: db.serverDate(),
-              updatedAt: db.serverDate()
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('同步系统默认食物失败:', error);
-      this._systemFoodsEnsured = false;
-    }
   }
 
   /**
@@ -91,15 +15,18 @@ class FoodModel {
    */
   async getAvailableFoods(babyUid) {
     try {
-      await this._ensureSystemFoods();
-
-      const conditions = [{ babyUid: _.exists(false) }, { babyUid: _.eq(null) }];
+      const conditions = [];
       if (babyUid) {
-        conditions.push({ babyUid });
+        conditions.push({ babyUid: _.eq(babyUid) });
+        conditions.push({ sharedBabyUids: _.in([babyUid]) });
+      } else {
+        // 没有 babyUid 时仅取系统/公开数据
+        conditions.push({ isSystem: true });
       }
 
       const allFoods = [];
-      const pageSize = 100; // Mini Program Cloud DB allows up to 100 documents per request
+      // 小程序端单次 limit 上限 20，按 20 分页
+      const pageSize = 20;
       let offset = 0;
       let hasMore = true;
 
@@ -120,7 +47,27 @@ class FoodModel {
         }
       }
 
-      return allFoods;
+      const foodMap = new Map();
+      const addFood = (doc, override = false) => {
+        if (!doc) return;
+        const key = doc._id || `${doc.name}_${doc.category || ''}_${doc.babyUid || doc.sharedBabyUids || 'sys'}`;
+        if (!foodMap.has(key) || override) {
+          foodMap.set(key, doc);
+        }
+      };
+
+      allFoods.forEach(doc => {
+        if (!doc) return;
+        addFood(
+          {
+            ...doc,
+            aliasText: doc.aliasText || (Array.isArray(doc.alias) ? doc.alias.join(' / ') : (doc.alias || ''))
+          },
+          true
+        );
+      });
+
+      return Array.from(foodMap.values());
     } catch (error) {
       console.error('获取食物列表失败:', error);
       return [];
@@ -172,8 +119,14 @@ class FoodModel {
     }
 
     try {
+      const sharedBabyUids = Array.isArray(foodData.sharedBabyUids) ? [...foodData.sharedBabyUids] : [];
+      if (foodData.babyUid && !sharedBabyUids.includes(foodData.babyUid)) {
+        sharedBabyUids.push(foodData.babyUid);
+      }
+
       const payload = {
         ...foodData,
+        sharedBabyUids,
         image: foodData.image ? String(foodData.image).trim() : '',
         baseQuantity: Number(foodData.baseQuantity) || 100,
         nutritionPerUnit: this._normalizeNutrition(foodData.nutritionPerUnit),
@@ -249,6 +202,7 @@ class FoodModel {
         nutritionPerUnit: this._normalizeNutrition(foodData.nutritionPerUnit),
         updatedAt: db.serverDate()
       };
+      delete payload.sharedBabyUids;
 
       const res = await this.collection
         .where({
@@ -256,7 +210,10 @@ class FoodModel {
           babyUid: _.eq(babyUid)
         })
         .update({
-          data: payload
+          data: {
+            ...payload,
+            sharedBabyUids: _.addToSet(babyUid)
+          }
         });
 
       const updated = res?.stats?.updated || 0;
@@ -293,6 +250,32 @@ class FoodModel {
     if (isNaN(num)) return 0;
     const multiplier = Math.pow(10, precision);
     return Math.round(num * multiplier) / multiplier;
+  }
+
+  _formatSystemFoodDoc(food) {
+    if (!food) return null;
+    const category = food.categoryLevel1 || food.category || '婴幼儿辅食';
+    const baseQuantity = Number(food.baseQuantity) || 100;
+    const defaultQuantity =
+      Number(food.defaultQuantity || food.baseQuantity || baseQuantity) || baseQuantity;
+    return {
+      ...food,
+      _id: food._id || `system_${food.name}_${category}`,
+      category,
+      categoryLevel1: category,
+      categoryLevel2: food.categoryLevel2 || '',
+      baseUnit: food.baseUnit || 'g',
+      baseQuantity,
+      defaultQuantity,
+      nutritionPerUnit: this._normalizeNutrition(food.nutritionPerUnit || {}),
+      proteinSource: food.proteinSource || 'natural',
+      nutritionSource: food.nutritionSource || 'system',
+      source: food.source || '',
+      isSystem: true,
+      isLiquid: !!food.isLiquid,
+      image: food.image || '',
+      aliasText: Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || '')
+    };
   }
 }
 

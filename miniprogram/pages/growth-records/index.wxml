@@ -1,0 +1,94 @@
+<view class="growth-container">
+  <view class="page-header">
+    <text class="page-title">成长曲线</text>
+    <text class="page-subtitle">标准曲线对照 + 每月测量点</text>
+  </view>
+
+  <view class="chart-card">
+    <view class="chart-header">
+      <text class="chart-title">{{chartInfoText}}</text>
+      <text class="chart-subtitle">来源：WS/T 423-2022</text>
+    </view>
+    <view class="chart-wrapper">
+      <view class="chart-inner">
+        <ec-canvas id="growth-chart" canvas-id="growth-chart" ec="{{ ec }}" bind:init="initGrowthChart"></ec-canvas>
+      </view>
+    </view>
+  </view>
+
+  <view class="action-row">
+    <button class="action-btn primary" bindtap="openMeasurementForm">新增测量</button>
+    <button class="action-btn secondary" bindtap="openMilestoneForm">新增里程碑</button>
+  </view>
+
+  <view class="form-card" wx:if="{{showMeasurementForm}}">
+    <view class="form-title">新增测量记录</view>
+    <view class="form-item">
+      <text class="form-label">测量日期</text>
+      <picker mode="date" value="{{newMeasurement.date}}" bindchange="onMeasurementDateChange">
+        <view class="picker-value">{{newMeasurement.date || '请选择日期'}}</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">体重 (kg)</text>
+      <input class="form-input" type="digit" data-field="weight" value="{{newMeasurement.weight}}" placeholder="例如 7.2" bindinput="onMeasurementInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">身长 (cm)</text>
+      <input class="form-input" type="digit" data-field="length" value="{{newMeasurement.length}}" placeholder="例如 68.5" bindinput="onMeasurementInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">头围 (cm)</text>
+      <input class="form-input" type="digit" data-field="head" value="{{newMeasurement.head}}" placeholder="例如 43.0" bindinput="onMeasurementInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">备注</text>
+      <input class="form-input" type="text" data-field="notes" value="{{newMeasurement.notes}}" placeholder="可选" bindinput="onMeasurementInput" />
+    </view>
+    <view class="form-actions">
+      <button class="action-btn ghost" bindtap="closeForms">取消</button>
+      <button class="action-btn primary" bindtap="saveMeasurement">保存</button>
+    </view>
+  </view>
+
+  <view class="form-card" wx:if="{{showMilestoneForm}}">
+    <view class="form-title">新增成长里程碑</view>
+    <view class="form-item">
+      <text class="form-label">里程碑</text>
+      <input class="form-input" type="text" data-field="title" value="{{newMilestone.title}}" placeholder="如：第一次会坐" bindinput="onMilestoneInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">发生日期</text>
+      <picker mode="date" value="{{newMilestone.date}}" bindchange="onMilestoneDateChange">
+        <view class="picker-value">{{newMilestone.date || '请选择日期'}}</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">备注</text>
+      <input class="form-input" type="text" data-field="notes" value="{{newMilestone.notes}}" placeholder="可选" bindinput="onMilestoneInput" />
+    </view>
+    <view class="form-actions">
+      <button class="action-btn ghost" bindtap="closeForms">取消</button>
+      <button class="action-btn primary" bindtap="saveMilestone">保存</button>
+    </view>
+  </view>
+
+  <view class="milestone-section">
+    <view class="section-title">成长里程碑</view>
+    <view class="milestone-list" wx:if="{{milestones.length > 0}}">
+      <view class="milestone-item" wx:for="{{milestones}}" wx:key="_id" data-id="{{item._id}}" bindtap="toggleMilestone">
+        <view class="milestone-dot"></view>
+        <view class="milestone-content">
+          <view class="milestone-title">{{item.title}}</view>
+          <view class="milestone-date">{{item.eventDateText}}</view>
+          <view class="milestone-notes" wx:if="{{expandedMilestoneId === item._id}}">
+            {{item.notes || '暂无备注'}}
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="empty-state" wx:else>
+      <text>暂无里程碑记录</text>
+    </view>
+  </view>
+</view>

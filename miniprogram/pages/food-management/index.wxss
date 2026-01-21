@@ -272,6 +272,7 @@
   color: #555555;
 }
 
+
 .input,
 .picker-display {
   width: 100%;
@@ -312,6 +313,7 @@
   display: flex;
   gap: 16rpx;
 }
+
 
 .custom-category-input {
   flex: 1;

@@ -1,0 +1,153 @@
+<view class="modal" wx:if="{{visible}}" bindtap="handleClose" catchtouchmove="stopBubble">
+  <view class="modal-content" catchtap="stopBubble">
+    <view class="modal-header">
+      <text>{{title}}</text>
+    </view>
+    <scroll-view class="modal-body modal-scroll" scroll-y="true" enhanced="true" show-scrollbar="false">
+      <view class="content-box">
+        <view class="input-group">
+          <text class="label">喂奶时间</text>
+          <picker mode="time" value="{{feedingData.startTime}}" bindchange="handleTimeChange">
+            <view class="picker-value">{{feedingData.startTime || '选择时间'}}</view>
+          </picker>
+        </view>
+
+        <view class="milk-type-selector">
+          <view class="milk-type-option {{feedingData.naturalMilkType === 'breast' ? 'active' : ''}}" data-type="breast" bindtap="handleMilkTypeChange">母乳</view>
+          <view class="milk-type-option {{feedingData.naturalMilkType === 'formula' ? 'active' : ''}}" data-type="formula" bindtap="handleMilkTypeChange">普奶</view>
+        </view>
+
+        <view class="input-group">
+          <text class="label">{{feedingData.naturalMilkType === 'formula' ? '普奶体积' : '母乳体积'}}</text>
+          <view class="volume-control">
+            <button class="volume-btn decrease" catchtap="handleAdjust" data-field="naturalMilkVolume" data-action="decrease">−</button>
+            <input type="digit" class="volume-input" value="{{feedingData.naturalMilkVolume}}" data-field="naturalMilkVolume" bindinput="handleInputChange" />
+            <button class="volume-btn increase" catchtap="handleAdjust" data-field="naturalMilkVolume" data-action="increase">+</button>
+            <text class="volume-unit">ml</text>
+          </view>
+        </view>
+        <view class="nutrient-row">
+          <text>蛋白 {{feedingData.normalProtein || 0}} g</text>
+          <text>热量 {{feedingData.normalCalories || 0}} kcal</text>
+        </view>
+        <view class="nutrient-row" wx:if="{{feedingData.naturalMilkType === 'formula'}}">
+          <text>粉重 {{feedingData.formulaPowderWeight || 0}} g</text>
+        </view>
+
+        <view class="input-group">
+          <text class="label">特奶体积</text>
+          <view class="volume-control">
+            <button class="volume-btn decrease" catchtap="handleAdjust" data-field="specialMilkVolume" data-action="decrease">−</button>
+            <input type="digit" class="volume-input" value="{{feedingData.specialMilkVolume}}" data-field="specialMilkVolume" bindinput="handleInputChange" />
+            <button class="volume-btn increase" catchtap="handleAdjust" data-field="specialMilkVolume" data-action="increase">+</button>
+            <text class="volume-unit">ml</text>
+          </view>
+        </view>
+        <view class="nutrient-row">
+          <text>蛋白 {{feedingData.specialProtein || 0}} g</text>
+          <text>热量 {{feedingData.specialCalories || 0}} kcal</text>
+        </view>
+        <view class="nutrient-row">
+          <text>粉重 {{feedingData.specialPowderWeight || feedingData.specialMilkPowder || 0}} g</text>
+        </view>
+
+        <view class="goal-hint-card" wx:if="{{showGoalHint}}">
+          <view class="goal-hint-header">
+            <text>今日目标提示</text>
+            <view class="goal-target-switch">
+              <view class="goal-target-option {{quickGoalTarget === 'protein' ? 'active' : ''}}" data-mode="protein" bindtap="handleGoalTargetChange">蛋白优先</view>
+              <view class="goal-target-option {{quickGoalTarget === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="handleGoalTargetChange">热量优先</view>
+            </view>
+          </view>
+          <view class="goal-calorie-input" wx:if="{{quickGoalTarget === 'calorie'}}">
+            <text class="goal-calorie-label">热量系数</text>
+            <view class="goal-calorie-field">
+              <input type="digit" value="{{calorieCoefficientInput}}" placeholder="请输入热量系数" data-field="calorieCoefficientInput" bindinput="handleCoefficientInput" />
+              <text class="goal-calorie-unit">kcal/kg</text>
+            </view>
+          </view>
+          <block wx:if="{{quickGoalSuggestion.error}}">
+            <text class="goal-hint-desc">{{quickGoalSuggestion.error}}</text>
+          </block>
+          <block wx:elif="{{quickGoalSuggestion.ready}}">
+            <block wx:if="{{quickGoalSuggestion.mode === 'protein'}}">
+              <view class="goal-coef-row">
+                <text>天然蛋白系数 {{naturalProteinCoefficientInput || '—'}} g/kg/d</text>
+                <text>特殊蛋白系数 {{specialProteinCoefficientInput || '—'}} g/kg/d</text>
+              </view>
+              <view class="goal-hint-row" wx:if="{{quickGoalSuggestion.naturalProteinGap > 0}}">
+                <text>距离天然蛋白目标还需</text>
+                <text class="goal-hint-value">{{quickGoalSuggestion.naturalVolume}} ml 普奶</text>
+              </view>
+              <view class="goal-hint-row" wx:if="{{quickGoalSuggestion.specialProteinGap > 0}}">
+                <text>距离特殊蛋白目标还需</text>
+                <text class="goal-hint-value">{{quickGoalSuggestion.specialVolume}} ml 特奶</text>
+              </view>
+              <view class="goal-hint-row" wx:if="{{quickGoalSuggestion.specialProteinGap > 0}}">
+                <text>补充后热量系数</text>
+                <text class="goal-hint-value">{{quickGoalSuggestion.predictedCalorieCoefficient}} kcal/kg</text>
+              </view>
+              <view class="goal-hint-desc" wx:if="{{quickGoalSuggestion.naturalProteinGap <= 0 && quickGoalSuggestion.specialProteinGap <= 0}}">
+                今日已达到设定的天然/特殊蛋白系数
+              </view>
+            </block>
+            <block wx:elif="{{quickGoalSuggestion.mode === 'calorie'}}">
+              <view class="goal-hint-row goal-hint-gap">
+                <text>剩余热量目标还需</text>
+                <text class="goal-hint-value">{{quickGoalSuggestion.calorieGap}} kcal</text>
+              </view>
+              <view class="goal-hint-section goal-plan">
+                <view class="goal-plan-title">
+                  <view>天然蛋白系数优先</view>
+                  <view class="goal-plan-meta" wx:if="{{calorieCoefficientInput}}">
+                    目标 {{calorieCoefficientInput}} kcal/kg
+                  </view>
+                </view>
+                <view class="goal-plan-grid">
+                  <view class="goal-plan-item">
+                    <text class="goal-plan-label">普奶</text>
+                    <text class="goal-plan-value">{{quickGoalSuggestion.naturalPriorityPlan.naturalVolume || 0}} ml</text>
+                  </view>
+                  <view class="goal-plan-item">
+                    <text class="goal-plan-label">特奶</text>
+                    <text class="goal-plan-value">{{quickGoalSuggestion.naturalPriorityPlan.specialVolume || 0}} ml</text>
+                  </view>
+                </view>
+                <view class="goal-plan-metrics">
+                  <text wx:if="{{quickGoalSuggestion.naturalPriorityPlan.predictedNaturalCoefficient !== ''}}">天然蛋白系数 {{quickGoalSuggestion.naturalPriorityPlan.predictedNaturalCoefficient}} g/kg/d</text>
+                  <text wx:if="{{quickGoalSuggestion.naturalPriorityPlan.predictedSpecialCoefficient !== ''}}">特殊蛋白系数 {{quickGoalSuggestion.naturalPriorityPlan.predictedSpecialCoefficient}} g/kg/d</text>
+                </view>
+              </view>
+              <view class="goal-hint-section goal-plan">
+                <view class="goal-plan-title">
+                  <view>特殊蛋白系数优先</view>
+                  <view class="goal-plan-meta" wx:if="{{calorieCoefficientInput}}">
+                    目标 {{calorieCoefficientInput}} kcal/kg
+                  </view>
+                </view>
+                <view class="goal-plan-grid">
+                  <view class="goal-plan-item">
+                    <text class="goal-plan-label">普奶</text>
+                    <text class="goal-plan-value">{{quickGoalSuggestion.specialPriorityPlan.naturalVolume || 0}} ml</text>
+                  </view>
+                  <view class="goal-plan-item">
+                    <text class="goal-plan-label">特奶</text>
+                    <text class="goal-plan-value">{{quickGoalSuggestion.specialPriorityPlan.specialVolume || 0}} ml</text>
+                  </view>
+                </view>
+                <view class="goal-plan-metrics">
+                  <text wx:if="{{quickGoalSuggestion.specialPriorityPlan.predictedNaturalCoefficient !== ''}}">天然蛋白系数 {{quickGoalSuggestion.specialPriorityPlan.predictedNaturalCoefficient}} g/kg/d</text>
+                  <text wx:if="{{quickGoalSuggestion.specialPriorityPlan.predictedSpecialCoefficient !== ''}}">特殊蛋白系数 {{quickGoalSuggestion.specialPriorityPlan.predictedSpecialCoefficient}} g/kg/d</text>
+                </view>
+              </view>
+            </block>
+          </block>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="modal-footer">
+      <button class="modal-btn cancel" bindtap="handleClose">{{cancelText}}</button>
+      <button class="modal-btn confirm" bindtap="handleConfirm">{{confirmText}}</button>
+    </view>
+  </view>
+</view>

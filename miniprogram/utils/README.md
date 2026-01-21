@@ -44,7 +44,6 @@ const dataUtils = require('../../utils/dataUtils');
 #### calculator - 计算工具
 - `calculateSpecialMilk(naturalMilkVolume, totalVolume, calculation_params)` - 计算特奶量
 - `calculateSpecialMilkPowder(specialMilkVolume, calculation_params)` - 计算特奶粉克重
-- `calculateFormulaPowderWeight(naturalMilkVolume, calculation_params, proteinSourceType)` - 计算奶粉克重
 - `calculateRecommendedVolume(weight, calculation_params, mealsPerDay)` - 计算建议奶量
 
 #### dataManager - 数据管理

@@ -10,7 +10,6 @@ Page({
       notes: '',
       avatarUrl: '', // 添加头像URL字段
       babyUid: '', // 宝宝唯一标识
-      proteinSourceType: 'breastMilk', // 天然蛋白摄入方式，默认母乳
       inviteCode: '', // 邀请码
       inviteCodeExpiry: null // 邀请码过期时间
     },
@@ -18,8 +17,6 @@ Page({
     genderIndex: 0,
     conditions: ['甲基丙二酸血症', '丙酸血症', '其他'],
     conditionIndex: 0,
-    proteinSources: ['母乳', '普通奶粉'],
-    proteinSourceIndex: 0,
     isFormValid: false,
     isFormSubmitting: false,
     redirectUrl: '',
@@ -216,13 +213,11 @@ Page({
             notes: babyInfo.notes || '',
             avatarUrl: babyInfo.avatarUrl || this.data.defaultAvatarUrl,
             babyUid: babyInfo.babyUid || '',
-            proteinSourceType: babyInfo.proteinSourceType || 'breastMilk',
             inviteCode: inviteConfig.inviteCode,
             inviteCodeExpiry: inviteConfig.inviteCodeExpiry
           },
           genderIndex: indexes.genderIndex,
           conditionIndex: indexes.conditionIndex,
-          proteinSourceIndex: indexes.proteinSourceIndex,
           showInviteCode: inviteConfig.showInviteCode,
           isFormValid: this.checkFormValid({
             name: babyInfo.name,
@@ -253,18 +248,9 @@ Page({
     // 设置性别索引
     const genderIndex = babyInfo.gender === 'male' ? 0 : 1;
 
-    // 设置天然蛋白来源索引
-    let proteinSourceIndex = 0;
-    if (babyInfo.proteinSourceType === 'breastMilk') {
-      proteinSourceIndex = 0;
-    } else if (babyInfo.proteinSourceType === 'formulaMilk') {
-      proteinSourceIndex = 1;
-    }
-    
     return {
       conditionIndex,
-      genderIndex,
-      proteinSourceIndex
+      genderIndex
     };
   },
   
@@ -355,25 +341,32 @@ Page({
     return `baby_${timestamp}_${randomNum}`;
   },
 
-  // 创建默认的营养设置
+  // 创建默认的配奶设置
   createDefaultNutritionSettings() {
-    // 根据天然蛋白来源设置不同的默认值
-    const proteinConcentration = this.data.babyInfo.proteinSourceType === 'breastMilk' ? 1.1 : 2.1;
-
     return {
-      natural_protein_coefficient: 1.2,  // 天然蛋白系数 g/kg
-      natural_milk_protein: proteinConcentration, // 根据来源设置不同的蛋白质含量 g/100ml
-      special_milk_protein: 13.1,       // 特奶蛋白质含量 g/100g
+      natural_protein_coefficient: '',
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      natural_milk_fat: 4.0,
+      natural_milk_carbs: 6.8,
+      natural_milk_fiber: 0,
+      formula_milk_protein: '',
+      formula_milk_calories: '',
+      formula_milk_ratio: {
+        powder: '',
+        water: ''
+      },
+      special_milk_protein: '',
       special_milk_ratio: {
-        powder: 13.5,                   // 特奶粉量 g
-        water: 90                       // 特奶水量 ml
+        powder: '',
+        water: ''
       }
     };
   },
 
-  // 创建默认的药物设置
+  // 创建默认的药物管理配置
   createDefaultMedicationSettings() {
-    // 不再使用硬编码的默认药物设置
+    // 不再使用硬编码的默认药物管理配置
     return [];
   },
 
@@ -451,7 +444,7 @@ Page({
       const babyUid = this.data.babyInfo.babyUid || this.generateBabyUid();
       console.log('使用宝宝ID:', babyUid);
 
-      // 创建默认的营养设置和药物设置
+      // 创建默认的配奶设置和药物管理配置
       const nutritionSettings = this.data.babyInfo.nutritionSettings || this.createDefaultNutritionSettings();
       const medicationSettings = this.data.babyInfo.medicationSettings || this.createDefaultMedicationSettings();
 
@@ -466,10 +459,9 @@ Page({
         updatedAt: db.serverDate(),
         avatarUrl: this.data.babyInfo.avatarUrl || this.data.defaultAvatarUrl, // 保存头像URL
         babyUid: babyUid, // 添加宝宝唯一ID
-        nutritionSettings: nutritionSettings, // 添加默认营养设置
-        medicationSettings: medicationSettings, // 添加默认药物设置
+        nutritionSettings: nutritionSettings, // 添加默认配奶设置
+        medicationSettings: medicationSettings, // 添加默认药物管理配置
         nutritionSettingsConfirmed: this.data.userRole !== 'creator', // 只有创建者需要确认设置
-        proteinSourceType: this.data.babyInfo.proteinSourceType || 'breastMilk',
         // 如果是创建者，添加邀请码
         ...(this.data.userRole === 'creator' && {
           inviteCode: inviteCode,
@@ -543,32 +535,23 @@ Page({
         title: '保存成功',
         icon: 'success',
         success: () => {
-          // 只有创建者角色才引导去完善营养设置信息
+          // 只有创建者角色才引导去完善配奶设置信息
           if (this.data.userRole === 'creator') {
-            // 根据蛋白质来源类型显示不同的提示
-            let confirmContent = '';
-            if (this.data.babyInfo.proteinSourceType === 'breastMilk') {
-              confirmContent = '您选择了母乳作为天然蛋白来源，需要设置母乳的蛋白质浓度(默认为1.1g/100ml)，是否前往设置？';
-            } else {
-              confirmContent = '您选择了普通奶粉作为天然蛋白来源，需要设置奶粉的蛋白质浓度和冲配比例，是否前往设置？';
-            }
-            
+            const confirmContent = '建议完善天然蛋白浓度与特奶配置，是否立即前往配奶设置？';
             wx.showModal({
-              title: '设置营养参数',
+              title: '完善配奶设置',
               content: confirmContent,
               confirmText: '去设置',
               cancelText: '稍后设置',
               success: (res) => {
                 if (res.confirm) {
-                  // 用户点击"去设置"，跳转到营养设置页面，并传递蛋白质来源类型
-                  const proteinSource = this.data.babyInfo.proteinSourceType === 'breastMilk' ? '母乳' : '普通奶粉';
                   wx.navigateTo({
-                    url: `/pages/nutrition-settings/index?proteinSource=${encodeURIComponent(proteinSource)}&fromSetup=true`,
+                    url: `/pages/nutrition-settings/index?fromSetup=true`,
                     success: () => {
-                      console.log('成功跳转到营养设置页面');
+                      console.log('成功跳转到配奶设置页面');
                     },
                     fail: (err) => {
-                      console.error('跳转到营养设置页面失败:', err);
+                      console.error('跳转到配奶设置页面失败:', err);
                       // 跳转失败时，直接进入首页
                       this.navigateToMainPage();
                     }
@@ -778,21 +761,6 @@ Page({
         icon: 'none',
       });
     }
-  },
-
-  // 天然蛋白来源选择处理
-  onProteinSourceChange(e) {
-    const index = e.detail.value;
-    let sourceType = 'breastMilk'; // 默认是母乳
-    
-    if (index == 1) {
-      sourceType = 'formulaMilk'; // 普通奶粉
-    }
-    
-    this.setData({
-      proteinSourceIndex: index,
-      'babyInfo.proteinSourceType': sourceType
-    });
   },
 
   // 复制邀请码

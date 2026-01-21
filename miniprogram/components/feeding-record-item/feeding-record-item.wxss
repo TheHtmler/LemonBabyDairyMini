@@ -1,0 +1,54 @@
+.feeding-record {
+  display: flex;
+  flex-direction: column;
+}
+
+.feeding-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.feeding-time {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.feeding-label {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 600;
+}
+
+.feeding-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  font-size: 26rpx;
+  color: #555555;
+}
+
+.milk-row,
+.metric-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.metric-row {
+  font-size: 24rpx;
+}
+
+.feeding-detail .divider {
+  color: #DDDDDD;
+}
+
+.feeding-detail .detail {
+  color: #555555;
+}
+
+.feeding-detail .detail-milk {
+  color: #FFB800;
+  font-weight: 600;
+}
