@@ -46,6 +46,9 @@ class MedicationRecordModel {
       createdAt: this.db.serverDate(),
       updatedAt: this.db.serverDate()
     };
+    if (data.notes && String(data.notes).trim()) {
+      record.notes = String(data.notes).trim();
+    }
 
     return await this.collection.add({ data: record });
   }

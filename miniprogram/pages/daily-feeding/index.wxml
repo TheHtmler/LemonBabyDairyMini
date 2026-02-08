@@ -15,25 +15,7 @@
     <input type="digit" class="weight-input" value="{{weight}}" placeholder="请输入体重" bindinput="onWeightInput" />
   </view>
 
-  <view class="section weight-section">
-    <text class="section-title">目标系数 (g/kg/d)</text>
-    <view class="coefficient-wrapper">
-      <view class="coefficient-item">
-        <text class="coefficient-label">天然蛋白系数</text>
-        <view class="coefficient-input-wrapper">
-          <input type="digit" class="coefficient-input" value="{{naturalProteinCoefficientInput}}" placeholder="请输入天然蛋白系数" bindinput="onNaturalCoefficientInput" />
-          <text class="coefficient-unit">g/kg/d</text>
-        </view>
-      </view>
-      <view class="coefficient-item">
-        <text class="coefficient-label">特殊蛋白系数</text>
-        <view class="coefficient-input-wrapper">
-          <input type="digit" class="coefficient-input" value="{{specialProteinCoefficientInput}}" placeholder="请输入特殊蛋白系数" bindinput="onSpecialCoefficientInput" />
-          <text class="coefficient-unit">g/kg/d</text>
-        </view>
-      </view>
-    </view>
-  </view>
+  <!-- 目标系数改为喂奶弹窗内填写 -->
 
   <!-- Current Feeding Section -->
   <view class="section feeding-section">
@@ -219,20 +201,16 @@
     <!-- 喂养记录 -->
     <view class="tab-content" hidden="{{activeTab !== 'feeding'}}">
       <view class="records-list">
-        <view class="record-item" wx:for="{{feedingsDisplay}}" wx:key="index">
-          <view class="record-content">
-            <feeding-record-item record="{{item}}" showLabel="{{false}}" bind:recordtap="openEditModal" data-index="{{index}}" />
-          </view>
-          <!-- 操作按钮 -->
-          <view class="action-buttons">
-            <view class="action-btn edit-btn" bindtap="openEditModal" data-index="{{index}}">
-              <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
-            </view>
-            <view class="action-btn delete-btn" bindtap="deleteFeeding" data-index="{{index}}">
-              <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
-            </view>
-          </view>
-        </view>
+        <feeding-record-card
+          wx:for="{{feedingsDisplay}}"
+          wx:key="index"
+          record="{{item}}"
+          index="{{index}}"
+          showLabel="{{false}}"
+          bind:recordtap="openEditModal"
+          bind:edit="openEditModal"
+          bind:delete="deleteFeeding"
+        />
         <view class="empty-record" wx:if="{{feedingsDisplay.length === 0}}">
           <text>暂无喂养记录</text>
         </view>
@@ -264,35 +242,22 @@
     <!-- 药物记录 -->
     <view class="tab-content" hidden="{{activeTab !== 'medication'}}">
       <view class="medication-records">
-        <!-- 按药物名称分组显示 -->
-        <view class="medication-group" wx:for="{{groupedMedicationRecords}}" wx:key="medicationName" wx:for-item="group">
-          <view class="medication-group-header">
-            <text class="medication-group-name">{{group.medicationName}}</text>
-            <text class="medication-group-count">今日{{group.totalCount}}次</text>
-          </view>
-          
-          <!-- 该药物的所有记录 -->
           <view class="medication-group-records">
-            <view class="medication-record-item" wx:for="{{group.records}}" wx:key="originalIndex" wx:for-item="record">
-              <view class="record-content" data-index="{{record.originalIndex}}">
-                <view class="medication-time-dose">
-                  <text class="medication-time">{{record.actualTime}}</text>
-                  <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>
-                </view>
+          <view class="medication-record-item" wx:for="{{medicationRecords}}" wx:key="_id" wx:for-item="record">
+            <view class="record-content" data-index="{{record.originalIndex}}">
+              <medication-record-item record="{{record}}" />
+            </view>
+            <!-- 操作按钮 -->
+            <view class="action-buttons">
+              <view class="action-btn edit-btn" bindtap="openMedicationRecordModal" data-medication-id="{{record._id}}" data-action="view">
+                <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
               </view>
-              <!-- 操作按钮 -->
-              <view class="action-buttons">
-                <view class="action-btn edit-btn" bindtap="openMedicationRecordModal" data-medication-id="{{record._id}}" data-action="view">
-                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
-                </view>
-                <view class="action-btn delete-btn" bindtap="deleteMedication" data-medication-id="{{record._id}}" data-action="delete">
-                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
-                </view>
+              <view class="action-btn delete-btn" bindtap="deleteMedication" data-medication-id="{{record._id}}" data-action="delete">
+                <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
               </view>
             </view>
           </view>
         </view>
-        
         <view class="empty-record" wx:if="{{medicationRecords.length === 0}}">
           <text>暂无用药记录</text>
         </view>
@@ -306,46 +271,26 @@
     bind:close="hideFatRatioPopup"
   />
 
-  <!-- Medication Modal -->
-  <view class="modal" wx:if="{{modals.medication}}" bindtap="closeMedicationModal" catchtouchmove="preventBubble">
-    <view class="modal-content" catchtap="preventBubble">
-      <view class="modal-header">
-        <text>记录用药</text>
-      </view>
-      <view class="modal-body">
-        <view class="modal-info-row">
-          <text class="modal-label">药物名称:</text>
-          <picker mode="selector" range="{{medicationsList}}" range-key="name" value="{{selectedMedicationIndex}}" bindchange="onMedicationPickerChange">
-            <view class="modal-picker">
-              <text class="modal-value">{{selectedMedicationInfo ? selectedMedicationInfo.name : '请选择药物'}}</text>
-              <text class="edit-icon">▼</text>
-            </view>
-          </picker>
-        </view>
-        <view class="modal-info-row">
-          <text class="modal-label">药物剂量:</text>
-          <view class="dosage-input-container">
-            <input type="digit" class="dosage-input" value="{{currentModalDosage}}" bindinput="onMedicationDosageChange" placeholder="请输入药物剂量" />
-            <text class="dosage-unit">{{selectedMedicationInfo.unit}}</text>
-          </view>
-        </view>
-        <view class="modal-info-row" wx:if="{{selectedMedicationInfo.frequency}}">
-          <text class="modal-label">服用频率:</text>
-          <text class="modal-value">{{selectedMedicationInfo.frequency}}</text>
-        </view>
-        <view class="modal-info-row">
-          <text class="modal-label">服用时间:</text>
-          <picker mode="time" value="{{currentModalTime}}" start="00:00" end="23:59" bindchange="onMedicationTimeChange">
-            <view class="modal-time-picker">{{currentModalTime}} <text class="edit-icon">✎</text></view>
-          </picker>
-        </view>
-      </view>
-      <view class="modal-footer">
-        <button class="modal-btn cancel" bindtap="closeMedicationModal">取消</button>
-        <button class="modal-btn confirm" bindtap="recordMedication">确认</button>
-      </view>
-    </view>
-  </view>
+  <medication-modal
+    visible="{{modals.medication}}"
+    title="记录用药"
+    medications="{{medicationsList}}"
+    selectedMedicationIndex="{{selectedMedicationIndex}}"
+    selectedMedicationName="{{selectedMedicationInfo ? selectedMedicationInfo.name : ''}}"
+    showMedicationPicker="{{true}}"
+    dosage="{{currentModalDosage}}"
+    unit="{{selectedMedicationInfo ? selectedMedicationInfo.unit : ''}}"
+    time="{{currentModalTime}}"
+    frequency="{{selectedMedicationInfo ? selectedMedicationInfo.frequency : ''}}"
+    notes="{{currentModalNotes}}"
+    confirmText="确认"
+    bind:close="closeMedicationModal"
+    bind:medicationchange="onMedicationPickerChange"
+    bind:dosagechange="onMedicationDosageChange"
+    bind:timechange="onMedicationTimeChange"
+    bind:noteschange="onMedicationNotesChange"
+    bind:confirm="recordMedication"
+  />
   
   <!-- 编辑记录弹窗 -->
   <feeding-modal
@@ -362,41 +307,23 @@
     bind:typechange="handleEditModalTypeChange"
   />
   
-  <!-- 药物记录详情弹窗 -->
-  <view class="modal" wx:if="{{modals.medicationRecord}}" bindtap="closeMedicationRecordModal" catchtouchmove="preventBubble">
-    <view class="modal-content" catchtap="preventBubble">
-      <view class="modal-header">
-        <text>药物记录详情</text>
-      </view>
-      <view class="modal-body">
-        <view class="modal-info-row">
-          <text class="modal-label">药物名称:</text>
-          <text class="modal-value">{{selectedMedicationRecord.medicationName}}</text>
-        </view>
-        <view class="modal-info-row">
-          <text class="modal-label">药物剂量:</text>
-          <view class="dosage-input-container">
-            <input type="digit" class="dosage-input" value="{{selectedMedicationRecord.dosage}}" bindinput="onMedicationRecordDosageChange" />
-            <text class="dosage-unit">{{selectedMedicationRecord.unit}}</text>
-          </view>
-        </view>
-        <view class="modal-info-row">
-          <text class="modal-label">服用时间:</text>
-          <picker mode="time" value="{{selectedMedicationRecord.actualTime}}" start="00:00" end="23:59" bindchange="onMedicationRecordTimeChange">
-            <view class="modal-time-picker">{{selectedMedicationRecord.actualTime}} <text class="edit-icon">✎</text></view>
-          </picker>
-        </view>
-        <view class="modal-info-row" wx:if="{{selectedMedicationRecord.frequency}}">
-          <text class="modal-label">服用频率:</text>
-          <text class="modal-value">{{selectedMedicationRecord.frequency}}</text>
-        </view>
-      </view>
-      <view class="modal-footer">
-        <button class="modal-btn cancel" bindtap="closeMedicationRecordModal">取消</button>
-        <button class="modal-btn confirm" bindtap="saveMedicationRecordChanges">保存</button>
-      </view>
-    </view>
-  </view>
+  <medication-modal
+    visible="{{modals.medicationRecord}}"
+    title="药物记录详情"
+    selectedMedicationName="{{selectedMedicationRecord.medicationName}}"
+    showMedicationPicker="{{false}}"
+    dosage="{{selectedMedicationRecord.dosage}}"
+    unit="{{selectedMedicationRecord.unit}}"
+    time="{{selectedMedicationRecord.actualTime}}"
+    frequency="{{selectedMedicationRecord.frequency}}"
+    notes="{{selectedMedicationRecord.notes}}"
+    confirmText="保存"
+    bind:close="closeMedicationRecordModal"
+    bind:dosagechange="onMedicationRecordDosageChange"
+    bind:timechange="onMedicationRecordTimeChange"
+    bind:noteschange="onMedicationRecordNotesChange"
+    bind:confirm="saveMedicationRecordChanges"
+  />
   
   <!-- 快捷记录弹窗 -->
   <feeding-modal
@@ -467,6 +394,11 @@
               <view class="picker-value">{{newFoodIntake.recordTime || '选择时间'}}</view>
             </picker>
           </view>
+          <view class="input-group">
+            <text class="label">备注</text>
+            <textarea class="notes-input" placeholder="可选，记录特殊说明"
+                      value="{{newFoodIntake.notes}}" bindinput="onFoodNotesInput"></textarea>
+          </view>
           <view class="nutrition-preview" wx:if="{{newFoodIntake.nutritionPreview}}">
             <view class="preview-row">
               <text>热量</text>
@@ -522,6 +454,7 @@
     bind:confirmselect="confirmFoodExperimentSelection"
     bind:backtoselect="backToFoodExperimentSelection"
     bind:quantityinput="onFoodExperimentQuantityInput"
+    bind:notesinput="onFoodExperimentNotesInput"
     bind:timechange="onFoodExperimentRecordTimeChange"
     bind:formcancel="handleFoodExperimentFormCancel"
     bind:formsave="saveFoodIntakeExperiment"

@@ -144,7 +144,8 @@ Page({
       naturalProteinCoefficient: [], // 天然蛋白系数 (g/kg)
       specialProteinCoefficient: [], // 特殊蛋白系数 (g/kg)
       totalProteinCoefficient: [], // 总蛋白系数 (g/kg)
-      totalCalories: [] // 总热量
+      totalCalories: [], // 总热量
+      calorieCoefficient: [] // 热量系数 (kcal/kg)
     },
     
     // 统计数据
@@ -154,6 +155,9 @@ Page({
       avgSpecialMilk: 0, // 平均特奶
       avgProteinRatio: '0:0', // 平均蛋白质比例
       avgCalories: 0, // 平均热量
+      avgCalorieCoefficient: 0, // 平均热量系数
+      avgTotalProteinCoefficient: 0, // 平均总蛋白系数
+      recordCoverage: 0, // 记录覆盖率
       totalDays: 0 // 记录天数
     },
     
@@ -506,6 +510,7 @@ Page({
     const specialProteinCoefficient = [];
     const totalProteinCoefficient = [];
     const totalCalories = [];
+    const calorieCoefficient = [];
     
     // 生成日期列表
     const dateList = this.generateDateList(startDate, endDate);
@@ -562,6 +567,7 @@ Page({
     let totalCal = 0;
     let totalNaturalProtein = 0;
     let totalSpecialProtein = 0;
+    let totalCalorieCoefficient = 0;
     let recordDays = 0;
     
     // 按日期顺序处理数据
@@ -611,13 +617,16 @@ Page({
         // 计算蛋白质系数 (g/kg)
         let dayNaturalProteinCoef = 0;
         let daySpecialProteinCoef = 0;
+        let dayCalorieCoef = 0;
         
         if (weight > 0) {
           dayNaturalProteinCoef = (summary.naturalProtein / weight).toFixed(2);
           daySpecialProteinCoef = (summary.specialProtein / weight).toFixed(2);
+          dayCalorieCoef = roundNumber(dayCalories / weight, 1);
 
           totalNaturalProtein += parseFloat(dayNaturalProteinCoef);
           totalSpecialProtein += parseFloat(daySpecialProteinCoef);
+          totalCalorieCoefficient += dayCalorieCoef;
         }
         
         const dayTotalProteinCoef = parseFloat(dayNaturalProteinCoef) + parseFloat(daySpecialProteinCoef);
@@ -629,6 +638,7 @@ Page({
         specialProteinCoefficient.push(parseFloat(daySpecialProteinCoef));
         totalProteinCoefficient.push(parseFloat(dayTotalProteinCoef.toFixed(2)));
         totalCalories.push(dayCalories);
+        calorieCoefficient.push(dayCalorieCoef);
         
         // 累计统计
         totalMilk += dayTotalMilk;
@@ -645,6 +655,7 @@ Page({
         specialProteinCoefficient.push(0);
         totalProteinCoefficient.push(0);
         totalCalories.push(0);
+        calorieCoefficient.push(0);
       }
     });
     
@@ -655,6 +666,16 @@ Page({
     const avgCalories = recordDays > 0 ? Math.round(totalCal / recordDays) : 0;
     const avgNaturalProteinCoef = recordDays > 0 ? (totalNaturalProtein / recordDays).toFixed(2) : '0.00';
     const avgSpecialProteinCoef = recordDays > 0 ? (totalSpecialProtein / recordDays).toFixed(2) : '0.00';
+    const avgTotalProteinCoefficient = recordDays > 0
+      ? roundNumber((Number(avgNaturalProteinCoef) || 0) + (Number(avgSpecialProteinCoef) || 0), 2)
+      : 0;
+    const avgCalorieCoefficient = recordDays > 0
+      ? roundNumber(totalCalorieCoefficient / recordDays, 1)
+      : 0;
+    const totalDaysInRange = dateList.length || 0;
+    const recordCoverage = totalDaysInRange > 0
+      ? Math.round((recordDays / totalDaysInRange) * 100)
+      : 0;
     
     // 计算平均蛋白质系数比例
     let avgProteinRatio = `${avgNaturalProteinCoef}:${avgSpecialProteinCoef}`;
@@ -674,7 +695,8 @@ Page({
         naturalProteinCoefficient,
         specialProteinCoefficient,
         totalProteinCoefficient,
-        totalCalories
+        totalCalories,
+        calorieCoefficient
       },
       statistics: {
         avgMilkVolume,
@@ -682,6 +704,9 @@ Page({
         avgSpecialMilk,
         avgProteinRatio,
         avgCalories,
+        avgCalorieCoefficient,
+        avgTotalProteinCoefficient,
+        recordCoverage,
         totalDays: recordDays
       }
     });
@@ -1031,23 +1056,33 @@ Page({
   // 初始化热量图表
   initCalorieChart(e) {
     const component = e.detail.component;
-    const { dates, totalCalories } = this.data.chartData;
+    const { dates, totalCalories, calorieCoefficient } = this.data.chartData;
     
     if (!dates || dates.length === 0) {
       console.log('热量图表：暂无数据');
       return;
     }
     
+    const validCoefficients = (calorieCoefficient || []).filter(v => v > 0);
+    const yRightMax = validCoefficients.length > 0
+      ? Math.ceil(Math.max(...validCoefficients) / 10) * 10
+      : 100;
+
     setTimeout(() => {
       component.drawChart({
         xData: dates,
         series: [
-          { name: '总热量(kcal)', data: totalCalories }
+          { name: '总热量(kcal)', data: totalCalories },
+          { name: '热量系数(kcal/kg)', data: calorieCoefficient, yAxisIndex: 1 }
         ],
         options: {
-          colors: ['#FF5722'],
+          colors: ['#FF5722', '#4CAF50'],
           showGrid: true,
-          showLegend: true
+          showLegend: true,
+          yAxisLabel: '总热量(kcal)',
+          yAxisRightLabel: 'kcal/kg',
+          yAxisRightMin: 0,
+          yAxisRightMax: yRightMax
         }
       });
     }, 200);

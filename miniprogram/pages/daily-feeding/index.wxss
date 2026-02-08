@@ -863,7 +863,7 @@
 /* Medication Records */
 .medication-records {
   margin-top: 20rpx;
-  padding: 0 20rpx;
+  padding: 0;
 }
 
 /* Medication Group Styles */
@@ -901,41 +901,62 @@
 }
 
 .medication-group-records {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
   padding: 0;
 }
 
 .medication-group .medication-record-item {
-  padding: 20rpx 24rpx;
-  border-bottom: 1rpx solid rgba(255, 184, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 24rpx;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
   position: relative;
+  margin-bottom: 0;
 }
 
 .medication-group .medication-record-item:last-child {
   border-bottom: none;
 }
 
-.medication-time-dose {
+.medication-row {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-  flex: 1;
+  justify-content: space-between;
+  gap: 12rpx;
+  width: 100%;
+}
+
+.medication-row-secondary {
+  margin-top: 8rpx;
+  justify-content: flex-start;
 }
 
 .medication-group .medication-time {
-  font-size: 32rpx;
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.medication-group .medication-name {
+  font-size: 30rpx;
   color: #333333;
-  font-weight: 500;
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
 }
 
 .medication-group .medication-volume {
-  font-size: 26rpx;
-  color: #666666;
-  background-color: rgba(255, 184, 0, 0.1);
-  padding: 6rpx 12rpx;
-  border-radius: 12rpx;
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
   display: inline-block;
   width: fit-content;
 }
@@ -956,8 +977,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  padding: 24rpx;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
 }
 
 .medication-record-item:last-child {
@@ -2055,11 +2079,12 @@
 
 .record-item, .medication-record-item {
   position: relative;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 12rpx;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  padding: 24rpx;
   margin-bottom: 16rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-  border: 2rpx solid rgba(255, 184, 0, 0.15);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
   display: flex;
   overflow: visible;
 }

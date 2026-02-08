@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "feeding-record-item": "/components/feeding-record-item/feeding-record-item"
+  }
+}

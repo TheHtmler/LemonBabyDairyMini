@@ -60,6 +60,11 @@
               <view class="picker-value">{{foodExperiment.recordTime || '选择时间'}}</view>
             </picker>
           </view>
+          <view class="input-group">
+            <text class="label">备注</text>
+            <textarea class="notes-input" placeholder="可选，记录特殊说明"
+                      value="{{foodExperiment.notes}}" bindinput="handleNotesInput"></textarea>
+          </view>
           <view class="nutrition-preview {{nutritionLayout === 'grid' ? 'grid' : ''}}" wx:if="{{foodExperiment.nutritionPreview}}">
             <block wx:if="{{nutritionLayout === 'grid'}}">
               <view class="nutrition-item">

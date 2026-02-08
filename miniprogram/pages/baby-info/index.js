@@ -26,7 +26,9 @@ Page({
     fromInvite: false,    // 标记是否从邀请页面进入
     userRole: '',          // 用户角色：creator 或 participant
     defaultAvatarUrl: '/images/LemonLogo.png', // 默认头像路径
-    showInviteCode: false // 是否显示邀请码信息
+    showInviteCode: false, // 是否显示邀请码信息
+    showAvatarCropper: false,
+    avatarCropSrc: ''
   },
 
   onLoad(options) {
@@ -41,6 +43,50 @@ Page({
     
     // 执行初始化流程
     this.initialize();
+  },
+
+  onShow() {
+    if (this.app) {
+      this.loadBabyInfo();
+    }
+  },
+
+  getAvatarCacheKey(babyUid) {
+    return `baby_avatar_cache_${babyUid}`;
+  },
+
+  async resolveAvatarUrl(babyInfo) {
+    const babyUid = babyInfo?.babyUid || this.app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    const fileId = babyInfo?.avatarFileId;
+    const cacheKey = babyUid ? this.getAvatarCacheKey(babyUid) : '';
+    const cached = cacheKey ? wx.getStorageSync(cacheKey) : null;
+    const now = Date.now();
+    if (cached && cached.url && cached.expiresAt && cached.expiresAt > now) {
+      return cached.url;
+    }
+
+    if (!babyUid || !fileId) {
+      return babyInfo?.avatarUrl || this.data.defaultAvatarUrl;
+    }
+
+    try {
+      const { fileList } = await wx.cloud.getTempFileURL({
+        fileList: [{ fileID: fileId, maxAge: 604800 }],
+        config: { env: this.app.globalData.cloudEnvId }
+      });
+      const url = fileList?.[0]?.tempFileURL;
+      if (url) {
+        wx.setStorageSync(cacheKey, {
+          url,
+          expiresAt: now + 6 * 24 * 60 * 60 * 1000
+        });
+        return url;
+      }
+    } catch (error) {
+      console.error('获取头像临时链接失败:', error);
+    }
+
+    return babyInfo?.avatarUrl || this.data.defaultAvatarUrl;
   },
   
   // 处理重定向URL
@@ -202,6 +248,8 @@ Page({
         const indexes = this.processInfoIndexes(babyInfo);
         const inviteConfig = await this.processInviteCodeConfig(babyInfo);
         
+        const avatarUrl = await this.resolveAvatarUrl(babyInfo);
+
         this.setData({
           babyInfo: {
             name: babyInfo.name || '',
@@ -211,7 +259,8 @@ Page({
             height: babyInfo.height || '',
             condition: babyInfo.condition || 'MMA',
             notes: babyInfo.notes || '',
-            avatarUrl: babyInfo.avatarUrl || this.data.defaultAvatarUrl,
+            avatarUrl: avatarUrl,
+            avatarFileId: babyInfo.avatarFileId || '',
             babyUid: babyInfo.babyUid || '',
             inviteCode: inviteConfig.inviteCode,
             inviteCodeExpiry: inviteConfig.inviteCodeExpiry
@@ -712,9 +761,27 @@ Page({
     wx.showLoading({
       title: '正在处理...',
     });
-    
-    // 上传头像到云存储
-    this.uploadAvatarToCloud(avatarUrl);
+    wx.hideLoading();
+    this.setData({
+      showAvatarCropper: true,
+      avatarCropSrc: avatarUrl
+    });
+  },
+
+  hideAvatarCropper() {
+    this.setData({
+      showAvatarCropper: false,
+      avatarCropSrc: ''
+    });
+  },
+
+  onAvatarCropped(e) {
+    const tempFilePath = e.detail.tempFilePath;
+    this.hideAvatarCropper();
+    wx.showLoading({
+      title: '正在处理...'
+    });
+    this.uploadAvatarToCloud(tempFilePath);
   },
   
   // 上传头像到云存储
@@ -722,9 +789,23 @@ Page({
     try {
       // 获取云环境ID
       const cloudEnvId = this.app.globalData.cloudEnvId;
+      const babyUid =
+        this.data.babyInfo.babyUid ||
+        this.app.globalData.babyUid ||
+        wx.getStorageSync('baby_uid');
+      if (!babyUid) {
+        wx.hideLoading();
+        wx.showToast({
+          title: '未找到宝宝信息，无法上传头像',
+          icon: 'none'
+        });
+        return;
+      }
       
       // 将临时文件上传到云存储
-      const cloudPath = `baby_avatars/${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const extMatch = (tempFilePath || '').match(/\.[a-zA-Z0-9]+$/);
+      const ext = extMatch ? extMatch[0] : '.jpg';
+      const cloudPath = `baby_avatars/${babyUid}${ext}`;
       const result = await wx.cloud.uploadFile({
         cloudPath,
         filePath: tempFilePath,
@@ -734,7 +815,7 @@ Page({
       });
       if (result.fileID) {
         // 获取可访问的URL
-        const fileList = [result.fileID];
+        const fileList = [{ fileID: result.fileID, maxAge: 604800 }];
         const { fileList: fileUrlList } = await wx.cloud.getTempFileURL({
           fileList: fileList,
           config: {
@@ -745,6 +826,40 @@ Page({
         // 更新本地头像
         this.setData({
           'babyInfo.avatarUrl': avatarUrl,
+          'babyInfo.avatarFileId': result.fileID
+        });
+
+        const updateRes = await wx.cloud.callFunction({
+          name: 'updateBabyAvatar',
+          data: {
+            babyUid,
+            avatarUrl,
+            avatarFileId: result.fileID
+          }
+        });
+        if (!updateRes?.result?.ok) {
+          wx.hideLoading();
+          wx.showToast({
+            title: updateRes?.result?.message || '头像同步失败',
+            icon: 'none'
+          });
+          return;
+        }
+
+        const appInstance = getApp();
+        const updatedBabyInfo = {
+          ...(appInstance.globalData.babyInfo || {}),
+          ...this.data.babyInfo,
+          avatarUrl,
+          avatarFileId: result.fileID
+        };
+        appInstance.globalData.babyInfo = updatedBabyInfo;
+        wx.setStorageSync('baby_info', updatedBabyInfo);
+
+        const cacheKey = this.getAvatarCacheKey(babyUid);
+        wx.setStorageSync(cacheKey, {
+          url: avatarUrl,
+          expiresAt: Date.now() + 6 * 24 * 60 * 60 * 1000
         });
         
         wx.hideLoading();

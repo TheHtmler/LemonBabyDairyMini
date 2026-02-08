@@ -1,0 +1,62 @@
+.record-item {
+  position: relative;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  display: flex;
+  overflow: visible;
+}
+
+.record-content {
+  flex: 1;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10rpx;
+  margin-left: 16rpx;
+}
+
+.action-btn {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.action-btn.edit-btn {
+  background-color: rgba(255, 184, 0, 0.15);
+  border: 1rpx solid rgba(255, 184, 0, 0.3);
+}
+
+.action-btn.edit-btn:active {
+  background-color: rgba(255, 184, 0, 0.25);
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-btn.delete-btn {
+  background-color: rgba(255, 71, 87, 0.15);
+  border: 1rpx solid rgba(255, 71, 87, 0.3);
+}
+
+.action-btn.delete-btn:active {
+  background-color: rgba(255, 71, 87, 0.25);
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-icon {
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.9;
+}

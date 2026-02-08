@@ -7,7 +7,7 @@ Page({
       name: '',
       volume: ''
     },
-    units: ['ml', 'mg', 'g', '片', '粒', '滴'],
+    units: ['ml', 'mg', 'g', '片', '粒', '滴', '包', '袋', '支', '个'],
     concentrationUnits: ['mg', 'g', 'ml'],
     volumeUnits: ['ml', 'g'],
     formData: {
@@ -70,7 +70,7 @@ Page({
   showAddModal() {
     if (!this.data.canEdit) {
       wx.showToast({
-        title: '只有创建者可以编辑药物',
+        title: '暂无编辑权限',
         icon: 'none'
       })
       return
@@ -100,7 +100,7 @@ Page({
   editMedication(e) {
     if (!this.data.canEdit) {
       wx.showToast({
-        title: '只有创建者可以编辑药物',
+        title: '暂无编辑权限',
         icon: 'none'
       })
       return
@@ -223,7 +223,7 @@ Page({
   async saveMedication() {
     if (!this.data.canEdit) {
       wx.showToast({
-        title: '只有创建者可以编辑药物',
+        title: '暂无编辑权限',
         icon: 'none'
       })
       return
@@ -339,7 +339,7 @@ Page({
   async deleteMedication(e) {
     if (!this.data.canEdit) {
       wx.showToast({
-        title: '只有创建者可以删除药物',
+        title: '暂无删除权限',
         icon: 'none'
       })
       return
@@ -458,7 +458,7 @@ Page({
       // 如果不是创建者，尝试从app获取权限状态
       try {
         await app.checkPermission();
-        const canEdit = app.globalData.isOwner || false;
+        const canEdit = app.globalData.permission || false;
         console.log('用户权限检查结果:', canEdit ? '可以编辑' : '不可编辑');
         this.setData({
           canEdit: canEdit
@@ -470,7 +470,7 @@ Page({
         });
         
         wx.showToast({
-          title: '权限检查失败，目前只有创建者可编辑',
+          title: '权限检查失败，暂不可编辑',
           icon: 'none',
           duration: 2000
         });

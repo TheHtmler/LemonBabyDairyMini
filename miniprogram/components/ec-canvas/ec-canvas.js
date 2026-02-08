@@ -290,6 +290,12 @@ Component({
         ctx.fillText(displayValue.toString(), padding.left - 10, y + 4);
       }
 
+      // 左侧Y轴说明
+      if (yAxisLabel) {
+        ctx.textAlign = 'left';
+        ctx.fillText(yAxisLabel, padding.left, padding.top - 10);
+      }
+
       // 绘制右侧Y轴标签
       if (opts.yAxisRightMax !== undefined || yAxisRightLabel) {
         ctx.textAlign = 'left';
@@ -299,6 +305,12 @@ Component({
           const displayValue = value < 10 ? value.toFixed(1) : Math.round(value);
           ctx.fillText(displayValue.toString(), padding.left + chartWidth + 10, y + 4);
         }
+      }
+
+      // 右侧Y轴说明
+      if (yAxisRightLabel) {
+        ctx.textAlign = 'right';
+        ctx.fillText(yAxisRightLabel, padding.left + chartWidth, padding.top - 10);
       }
 
       // 绘制X轴标签
@@ -440,6 +452,8 @@ Component({
         rightAxisAlignMode = 'panel',
         upperAxisLabel = 'cm',
         lowerAxisLabel = 'kg',
+        upperAxisRightLabel,
+        lowerAxisRightLabel,
         upperAxisLeft,
         upperAxisRight,
         lowerAxisLeft,
@@ -578,7 +592,7 @@ Component({
 
       ctx.font = '10px sans-serif';
       ctx.fillStyle = '#666';
-      panels.forEach((panel) => {
+      panels.forEach((panel, panelIndex) => {
         const leftTicks = [];
         const rightTicks = [];
         if (panel.leftAxis.step) {
@@ -635,6 +649,20 @@ Component({
             const displayValue = rounded < 10 ? rounded.toFixed(1) : Math.round(rounded);
             ctx.fillText(displayValue.toString(), padding.left + chartWidth + 10, y + 4);
           });
+        }
+
+        // Axis labels for each panel
+        const leftLabel = panelIndex === 0 ? upperAxisLabel : lowerAxisLabel;
+        const rightLabel = panelIndex === 0
+          ? (upperAxisRightLabel || upperAxisLabel)
+          : (lowerAxisRightLabel || lowerAxisLabel);
+        if (leftLabel) {
+          ctx.textAlign = 'left';
+          ctx.fillText(leftLabel, padding.left, panel.top + 12);
+        }
+        if (showRightAxis && rightLabel) {
+          ctx.textAlign = 'right';
+          ctx.fillText(rightLabel, padding.left + chartWidth, panel.top + 12);
         }
       });
 

@@ -187,6 +187,31 @@
   color: #FF8C00;
 }
 
+.notes-input {
+  width: 100%;
+  min-height: 140rpx;
+  background: rgba(255, 184, 0, 0.05);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  color: #333;
+  box-sizing: border-box;
+  resize: none;
+  line-height: 1.5;
+}
+
+.notes-input:focus {
+  border-color: #FFB800;
+  background: rgba(255, 184, 0, 0.1);
+  outline: none;
+}
+
+.notes-input::placeholder {
+  color: #999;
+  font-size: 26rpx;
+}
+
 .goal-hint-card {
   margin-top: 20rpx;
   padding: 20rpx;
@@ -283,6 +308,45 @@
   font-size: 24rpx;
   color: #1a98ff;
   margin-bottom: 8rpx;
+}
+
+.goal-coef-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.goal-coef-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.goal-coef-label {
+  font-size: 24rpx;
+  color: #333;
+}
+
+.goal-coef-input {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 2rpx solid rgba(26, 152, 255, 0.2);
+  border-radius: 12rpx;
+  padding: 8rpx 12rpx;
+  gap: 8rpx;
+}
+
+.goal-coef-input input {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.goal-coef-unit {
+  font-size: 22rpx;
+  color: #1a98ff;
 }
 
 .goal-hint-value {

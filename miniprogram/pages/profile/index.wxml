@@ -40,3 +40,11 @@
     <text>柠檬宝宝日记 v1.0.0</text>
   </view>
 </view> 
+
+<avatar-cropper
+  visible="{{showAvatarCropper}}"
+  imageSrc="{{avatarCropSrc}}"
+  cropSize="{{300}}"
+  bind:close="hideAvatarCropper"
+  bind:confirm="onAvatarCropped"
+/>

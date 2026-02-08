@@ -1,0 +1,41 @@
+.medication-record {
+  display: flex;
+  flex-direction: column;
+}
+
+.medication-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.medication-time {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.medication-name {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
+}
+
+.medication-dose {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.medication-volume {
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
+}
+
+.medication-notes {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #888888;
+}

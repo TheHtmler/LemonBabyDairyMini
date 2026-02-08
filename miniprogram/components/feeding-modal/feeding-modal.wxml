@@ -69,15 +69,29 @@
           <block wx:if="{{quickGoalSuggestion.error}}">
             <text class="goal-hint-desc">{{quickGoalSuggestion.error}}</text>
           </block>
-          <block wx:elif="{{quickGoalSuggestion.ready}}">
-            <block wx:if="{{quickGoalSuggestion.mode === 'protein'}}">
-              <view class="goal-coef-row">
-                <text>天然蛋白系数 {{naturalProteinCoefficientInput || '—'}} g/kg/d</text>
-                <text>特殊蛋白系数 {{specialProteinCoefficientInput || '—'}} g/kg/d</text>
+          <block wx:if="{{quickGoalTarget === 'protein'}}">
+            <view class="goal-coef-inputs">
+              <view class="goal-coef-field">
+                <text class="goal-coef-label">天然蛋白系数</text>
+                <view class="goal-coef-input">
+                  <input type="digit" value="{{naturalProteinCoefficientInput}}" placeholder="请输入天然蛋白系数" data-field="naturalProteinCoefficientInput" bindinput="handleCoefficientInput" />
+                  <text class="goal-coef-unit">g/kg/d</text>
+                </view>
               </view>
+              <view class="goal-coef-field">
+                <text class="goal-coef-label">特殊蛋白系数</text>
+                <view class="goal-coef-input">
+                  <input type="digit" value="{{specialProteinCoefficientInput}}" placeholder="请输入特殊蛋白系数" data-field="specialProteinCoefficientInput" bindinput="handleCoefficientInput" />
+                  <text class="goal-coef-unit">g/kg/d</text>
+                </view>
+              </view>
+            </view>
+          </block>
+          <block wx:if="{{quickGoalSuggestion.ready}}">
+            <block wx:if="{{quickGoalSuggestion.mode === 'protein'}}">
               <view class="goal-hint-row" wx:if="{{quickGoalSuggestion.naturalProteinGap > 0}}">
                 <text>距离天然蛋白目标还需</text>
-                <text class="goal-hint-value">{{quickGoalSuggestion.naturalVolume}} ml 普奶</text>
+                <text class="goal-hint-value">{{quickGoalSuggestion.naturalVolume}} ml {{feedingData.naturalMilkType === 'formula' ? '普奶' : '母乳'}}</text>
               </view>
               <view class="goal-hint-row" wx:if="{{quickGoalSuggestion.specialProteinGap > 0}}">
                 <text>距离特殊蛋白目标还需</text>
@@ -105,7 +119,7 @@
                 </view>
                 <view class="goal-plan-grid">
                   <view class="goal-plan-item">
-                    <text class="goal-plan-label">普奶</text>
+                    <text class="goal-plan-label">{{feedingData.naturalMilkType === 'formula' ? '普奶' : '母乳'}}</text>
                     <text class="goal-plan-value">{{quickGoalSuggestion.naturalPriorityPlan.naturalVolume || 0}} ml</text>
                   </view>
                   <view class="goal-plan-item">
@@ -127,7 +141,7 @@
                 </view>
                 <view class="goal-plan-grid">
                   <view class="goal-plan-item">
-                    <text class="goal-plan-label">普奶</text>
+                    <text class="goal-plan-label">{{feedingData.naturalMilkType === 'formula' ? '普奶' : '母乳'}}</text>
                     <text class="goal-plan-value">{{quickGoalSuggestion.specialPriorityPlan.naturalVolume || 0}} ml</text>
                   </view>
                   <view class="goal-plan-item">
@@ -142,6 +156,11 @@
               </view>
             </block>
           </block>
+        </view>
+        <view class="input-group">
+          <text class="label">备注</text>
+          <textarea class="notes-input" placeholder="可选，记录特殊情况" 
+                    value="{{feedingData.notes}}" data-field="notes" bindinput="handleInputChange"></textarea>
         </view>
       </view>
     </scroll-view>

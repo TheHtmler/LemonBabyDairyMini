@@ -896,9 +896,11 @@
 }
 
 .medication-group-records {
-  background-color: #fafafa;
-  border-radius: 12rpx;
-  padding: 8rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  background-color: transparent;
+  padding: 0;
 }
 
 /* 用药记录单项样式 */
@@ -906,8 +908,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16rpx 20rpx;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 24rpx;
+  background: #FFF9E6;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
   position: relative;
 }
 
@@ -915,24 +920,36 @@
   border-bottom: none;
 }
 
-.medication-time-dose {
+.medication-row {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  justify-content: space-between;
+  gap: 12rpx;
+  width: 100%;
+}
+
+.medication-row-secondary {
+  margin-top: 8rpx;
+  justify-content: flex-start;
 }
 
 .medication-time {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.medication-name {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
 }
 
 .medication-volume {
-  font-size: 24rpx;
-  color: #666;
-  background-color: #f5f5f5;
-  padding: 4rpx 8rpx;
-  border-radius: 8rpx;
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
 }
 
 /* 保持向后兼容的旧样式 */

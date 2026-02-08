@@ -93,6 +93,9 @@ Component({
     handleQuantityInput(e) {
       this.triggerEvent('quantityinput', { value: e.detail.value });
     },
+    handleNotesInput(e) {
+      this.triggerEvent('notesinput', { value: e.detail.value });
+    },
     handleRecordTimeChange(e) {
       this.triggerEvent('timechange', { value: e.detail.value });
     },

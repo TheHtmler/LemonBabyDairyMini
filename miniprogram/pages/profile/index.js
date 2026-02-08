@@ -75,7 +75,9 @@ Page({
         action: 'logout'
       }
     ],
-    defaultAvatarUrl: '/images/LemonLogo.png'
+    defaultAvatarUrl: '/images/LemonLogo.png',
+    showAvatarCropper: false,
+    avatarCropSrc: ''
   },
 
   onLoad: function () {
@@ -98,6 +100,45 @@ Page({
   onShow: function () {
     // 刷新宝宝信息
     this.getBabyInfo();
+  },
+
+  getAvatarCacheKey(babyUid) {
+    return `baby_avatar_cache_${babyUid}`;
+  },
+
+  async resolveAvatarUrl(babyInfo) {
+    const app = getApp();
+    const babyUid = babyInfo?.babyUid || app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    const fileId = babyInfo?.avatarFileId;
+    const cacheKey = babyUid ? this.getAvatarCacheKey(babyUid) : '';
+    const cached = cacheKey ? wx.getStorageSync(cacheKey) : null;
+    const now = Date.now();
+    if (cached && cached.url && cached.expiresAt && cached.expiresAt > now) {
+      return cached.url;
+    }
+
+    if (!babyUid || !fileId) {
+      return babyInfo?.avatarUrl || this.data.defaultAvatarUrl;
+    }
+
+    try {
+      const { fileList } = await wx.cloud.getTempFileURL({
+        fileList: [{ fileID: fileId, maxAge: 604800 }],
+        config: { env: app.globalData.cloudEnvId }
+      });
+      const url = fileList?.[0]?.tempFileURL;
+      if (url) {
+        wx.setStorageSync(cacheKey, {
+          url,
+          expiresAt: now + 6 * 24 * 60 * 60 * 1000
+        });
+        return url;
+      }
+    } catch (error) {
+      console.error('获取头像临时链接失败:', error);
+    }
+
+    return babyInfo?.avatarUrl || this.data.defaultAvatarUrl;
   },
 
   // 获取宝宝信息
@@ -133,11 +174,13 @@ Page({
       
       if (res.data && res.data.length > 0) {
         const babyInfo = res.data[0];
+        const avatarUrl = await this.resolveAvatarUrl(babyInfo);
         
         // 构建宝宝信息数据
         const babyInfoData = {
           name: babyInfo.name || '柠檬宝宝',
-          avatarUrl: babyInfo.avatarUrl || this.data.defaultAvatarUrl,
+          avatarUrl: avatarUrl,
+          avatarFileId: babyInfo.avatarFileId || '',
           birthday: babyInfo.birthday || '',
           gender: babyInfo.gender || 'male',
           babyUid: babyInfo.babyUid
@@ -209,15 +252,28 @@ Page({
   // 上传头像到云存储
   async uploadAvatarToCloud(tempFilePath) {
     try {
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      if (!babyUid) {
+        wx.hideLoading();
+        wx.showToast({
+          title: '未找到宝宝信息，无法上传头像',
+          icon: 'none'
+        });
+        return;
+      }
+
       // 将临时文件上传到云存储
-      const cloudPath = `avatars/${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const extMatch = (tempFilePath || '').match(/\.[a-zA-Z0-9]+$/);
+      const ext = extMatch ? extMatch[0] : '.jpg';
+      const cloudPath = `baby_avatars/${babyUid}${ext}`;
       const result = await wx.cloud.uploadFile({
         cloudPath,
         filePath: tempFilePath,
       });
       if (result.fileID) {
         // 获取可访问的URL
-        const fileList = [result.fileID];
+        const fileList = [{ fileID: result.fileID, maxAge: 604800 }];
         const { fileList: fileUrlList } = await wx.cloud.getTempFileURL({
           fileList: fileList,
         });
@@ -225,9 +281,10 @@ Page({
         // 更新本地头像并保存到用户信息
         this.setData({
           'userInfo.avatarUrl': avatarUrl,
+          'babyInfo.avatarUrl': avatarUrl,
+          'babyInfo.avatarFileId': result.fileID
         });
         // 保存到应用的全局数据和数据库
-        const app = getApp();
         const updatedInfo = {
           ...app.globalData.userInfo,
           avatarUrl: avatarUrl,
@@ -235,6 +292,40 @@ Page({
         await app.updateUserProfile(updatedInfo);
         wx.setStorageSync('userInfo', updatedInfo);
         app.globalData.userInfo = updatedInfo;
+
+        const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+        const updateRes = await wx.cloud.callFunction({
+          name: 'updateBabyAvatar',
+          data: {
+            babyUid,
+            avatarUrl,
+            avatarFileId: result.fileID
+          }
+        });
+        if (!updateRes?.result?.ok) {
+          wx.hideLoading();
+          wx.showToast({
+            title: updateRes?.result?.message || '头像同步失败',
+            icon: 'none'
+          });
+          return;
+        }
+
+        const updatedBabyInfo = {
+          ...(app.globalData.babyInfo || {}),
+          ...this.data.babyInfo,
+          avatarUrl,
+          avatarFileId: result.fileID
+        };
+        app.globalData.babyInfo = updatedBabyInfo;
+        wx.setStorageSync('baby_info', updatedBabyInfo);
+
+        const cacheKey = this.getAvatarCacheKey(babyUid);
+        wx.setStorageSync(cacheKey, {
+          url: avatarUrl,
+          expiresAt: Date.now() + 6 * 24 * 60 * 60 * 1000
+        });
+
         wx.hideLoading();
         wx.showToast({
           title: '头像已更新',
@@ -262,11 +353,29 @@ Page({
         wx.showLoading({
           title: '正在处理...',
         });
-        
-        // 上传头像到云存储
-        this.uploadAvatarToCloud(res.tempFilePaths[0]);
+        wx.hideLoading();
+        this.setData({
+          showAvatarCropper: true,
+          avatarCropSrc: res.tempFilePaths[0]
+        });
       }
     });
+  },
+
+  hideAvatarCropper() {
+    this.setData({
+      showAvatarCropper: false,
+      avatarCropSrc: ''
+    });
+  },
+
+  onAvatarCropped(e) {
+    const tempFilePath = e.detail.tempFilePath;
+    this.hideAvatarCropper();
+    wx.showLoading({
+      title: '正在处理...'
+    });
+    this.uploadAvatarToCloud(tempFilePath);
   },
   
   // 保存用户资料

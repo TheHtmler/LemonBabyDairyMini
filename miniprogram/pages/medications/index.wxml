@@ -55,7 +55,7 @@
                 <input class="input" type="digit" placeholder="请输入剂量数值" value="{{formData.dosage}}" bindinput="onDosageInput"/>
               </view>
             </view>
-            <view class="input-half" style="flex: 1; height: 88rpx; margin-bottom: 20rpx;">
+            <view class="input-half unit-picker">
               <picker class="picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
                 <view class="picker-view">{{units[formData.unitIndex]}}</view>
               </picker>

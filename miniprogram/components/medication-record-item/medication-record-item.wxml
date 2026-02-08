@@ -1,0 +1,12 @@
+<view class="medication-record">
+  <view class="medication-header">
+    <text class="medication-time">{{record.actualTime}}</text>
+    <text class="medication-name">{{record.medicationName}}</text>
+  </view>
+  <view class="medication-dose">
+    <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>
+  </view>
+  <view class="medication-notes" wx:if="{{record.notes}}">
+    备注: {{record.notes}}
+  </view>
+</view>

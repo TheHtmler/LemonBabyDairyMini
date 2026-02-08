@@ -280,6 +280,7 @@ Page({
       defaultQuantity,
       nutritionPerUnit: this.buildNutritionPayload(formData),
       proteinSource: this.getProteinSourceValue(formData.proteinSourceIndex),
+      foodType: 'food',
       image: formData.image ? formData.image.trim() : '',
       isLiquid: baseUnit.toLowerCase() === 'ml',
       babyUid,

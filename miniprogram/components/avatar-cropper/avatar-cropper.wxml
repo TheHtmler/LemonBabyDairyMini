@@ -1,0 +1,23 @@
+<view class="cropper-mask" wx:if="{{visible}}" bindtap="handleClose" catchtouchmove="stop">
+  <view class="cropper-panel" catchtap="stop">
+    <view class="cropper-header">
+      <text>裁剪头像</text>
+    </view>
+    <view class="cropper-body">
+      <canvas
+        class="cropper-canvas"
+        canvas-id="cropCanvas"
+        style="width: {{cropSize}}px; height: {{cropSize}}px;"
+        width="{{cropSize}}"
+        height="{{cropSize}}"
+        bindtouchstart="onTouchStart"
+        bindtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+      ></canvas>
+    </view>
+    <view class="cropper-footer">
+      <button class="cropper-btn cancel" bindtap="handleClose">取消</button>
+      <button class="cropper-btn confirm" bindtap="handleConfirm">确定</button>
+    </view>
+  </view>
+</view>

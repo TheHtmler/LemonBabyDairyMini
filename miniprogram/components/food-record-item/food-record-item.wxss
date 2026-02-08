@@ -50,3 +50,9 @@
 .food-metrics .metric {
   color: #555555;
 }
+
+.food-notes {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #888888;
+}

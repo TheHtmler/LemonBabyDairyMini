@@ -9,13 +9,12 @@
     <view class="form-group">
       <view class="form-title">基本信息</view>
       
-      <!-- 头像上传 -->
+      <!-- 头像展示（在此页面关闭上传） -->
       <view class="avatar-section">
         <view class="item-label">宝宝头像</view>
-        <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" disabled="{{!isOwner}}">
+        <view class="avatar-wrapper">
           <image class="avatar" src="{{babyInfo.avatarUrl || defaultAvatarUrl}}" mode="aspectFill"></image>
-          <view class="avatar-upload-icon" wx:if="{{userRole === 'creator'}}">点击上传</view>
-        </button>
+        </view>
       </view>
       
       <view class="form-item">
@@ -169,4 +168,4 @@
       {{firstLogin ? '完成' : '保存'}}
     </button>
   </view>
-</view> 
+</view>

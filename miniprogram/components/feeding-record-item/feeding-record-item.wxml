@@ -16,5 +16,8 @@
         <text class="divider" wx:if="{{index < metricItems.length - 1}}">|</text>
       </block>
     </view>
+    <view class="feeding-notes" wx:if="{{record.notes}}">
+      备注: {{record.notes}}
+    </view>
   </view>
 </view>

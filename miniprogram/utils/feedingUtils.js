@@ -96,15 +96,29 @@ const calculator = {
   // 计算每餐建议奶量
   calculateRecommendedVolume(weight, calculation_params, mealsPerDay = 8) {
     if (!weight || !calculation_params) {
-      return { naturalMilk: '', total: '' };
+      return { naturalMilk: '0', total: '0' };
     }
-    
-    const dailyNaturalProtein = weight * calculation_params.natural_protein_coefficient;
-    const naturalMilkNeeded = (dailyNaturalProtein * 100) / calculation_params.natural_milk_protein;
+
+    const weightNum = parseFloat(weight);
+    const proteinCoeff = parseFloat(calculation_params.natural_protein_coefficient);
+    const proteinPer100ml = parseFloat(calculation_params.natural_milk_protein);
+
+    if (!Number.isFinite(weightNum) || weightNum <= 0) {
+      return { naturalMilk: '0', total: '0' };
+    }
+    if (!Number.isFinite(proteinCoeff) || proteinCoeff <= 0) {
+      return { naturalMilk: '0', total: '0' };
+    }
+    if (!Number.isFinite(proteinPer100ml) || proteinPer100ml <= 0) {
+      return { naturalMilk: '0', total: '0' };
+    }
+
+    const dailyNaturalProtein = weightNum * proteinCoeff;
+    const naturalMilkNeeded = (dailyNaturalProtein * 100) / proteinPer100ml;
     const perFeedingNaturalMilk = naturalMilkNeeded / mealsPerDay;
     
-    if (perFeedingNaturalMilk <= 0) {
-      return { naturalMilk: '', total: '' };
+    if (!Number.isFinite(perFeedingNaturalMilk) || perFeedingNaturalMilk <= 0) {
+      return { naturalMilk: '0', total: '0' };
     }
     
     const roundedValue = Math.round(perFeedingNaturalMilk);

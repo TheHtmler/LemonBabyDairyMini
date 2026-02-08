@@ -1,9 +1,12 @@
 {
   "usingComponents": {
     "feeding-record-item": "/components/feeding-record-item/feeding-record-item",
+    "feeding-record-card": "/components/feeding-record-card/feeding-record-card",
     "food-record-item": "/components/food-record-item/food-record-item",
+    "medication-record-item": "/components/medication-record-item/medication-record-item",
     "feeding-modal": "/components/feeding-modal/feeding-modal",
     "food-intake-modal": "/components/food-intake-modal/food-intake-modal",
-    "fat-ratio-popup": "/components/fat-ratio-popup/fat-ratio-popup"
+    "fat-ratio-popup": "/components/fat-ratio-popup/fat-ratio-popup",
+    "medication-modal": "/components/medication-modal/medication-modal"
   }
 }

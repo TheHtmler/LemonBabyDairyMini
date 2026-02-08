@@ -1,0 +1,13 @@
+<view class="record-item">
+  <view class="record-content" bindtap="handleRecordTap">
+    <feeding-record-item record="{{record}}" showLabel="{{showLabel}}" />
+  </view>
+  <view class="action-buttons" wx:if="{{showActions}}">
+    <view class="action-btn edit-btn" wx:if="{{showEdit}}" bindtap="handleEdit">
+      <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+    </view>
+    <view class="action-btn delete-btn" wx:if="{{showDelete}}" bindtap="handleDelete">
+      <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+    </view>
+  </view>
+</view>

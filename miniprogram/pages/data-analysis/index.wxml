@@ -90,6 +90,26 @@
           </text>
         </view>
         <view class="stat-item">
+          <text class="stat-label">平均热量系数</text>
+          <text class="stat-value">
+            {{statistics.avgCalorieCoefficient}}
+            <text class="stat-unit">kcal/kg</text>
+          </text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">平均总蛋白系数</text>
+          <text class="stat-value">
+            {{statistics.avgTotalProteinCoefficient}}
+            <text class="stat-unit">g/kg</text>
+          </text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">平均蛋白比例</text>
+          <text class="stat-value">
+            {{statistics.avgProteinRatio}}
+          </text>
+        </view>
+        <view class="stat-item">
           <text class="stat-label">天然奶</text>
           <text class="stat-value natural">
             {{statistics.avgNaturalMilk}}
@@ -101,6 +121,13 @@
           <text class="stat-value special">
             {{statistics.avgSpecialMilk}}
             <text class="stat-unit">ml</text>
+          </text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">记录覆盖率</text>
+          <text class="stat-value">
+            {{statistics.recordCoverage}}
+            <text class="stat-unit">%</text>
           </text>
         </view>
       </view>
@@ -136,8 +163,8 @@
       <!-- 总热量曲线 -->
       <view class="chart-section">
         <view class="chart-header">
-          <text class="chart-title">🔥 总热量曲线</text>
-          <text class="chart-subtitle">每日热量摄入趋势</text>
+          <text class="chart-title">🔥 热量曲线</text>
+          <text class="chart-subtitle">每日热量摄入与热量系数（kcal/kg）</text>
         </view>
         <view class="chart-wrapper">
           <ec-canvas id="calorie-chart" canvas-id="calorie-chart" ec="{{ ec }}" bind:init="initCalorieChart"></ec-canvas>

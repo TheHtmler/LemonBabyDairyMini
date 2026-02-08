@@ -52,3 +52,9 @@
   color: #FFB800;
   font-weight: 600;
 }
+
+.feeding-notes {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #888888;
+}
