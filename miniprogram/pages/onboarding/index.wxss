@@ -1,0 +1,33 @@
+.onboarding-container {
+  height: 100vh;
+  background: #fff;
+}
+
+.onboarding-swiper {
+  height: 100vh;
+}
+
+.slide {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.zoom-area {
+  width: 100vw;
+  height: 100vh;
+}
+
+.zoom-view {
+  width: 100vw;
+  height: 100vh;
+}
+
+.slide-image {
+  width: 100vw;
+  height: 100vh;
+}

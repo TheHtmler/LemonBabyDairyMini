@@ -45,6 +45,7 @@
   visible="{{showAvatarCropper}}"
   imageSrc="{{avatarCropSrc}}"
   cropSize="{{300}}"
+  uploading="{{uploadingAvatar}}"
   bind:close="hideAvatarCropper"
   bind:confirm="onAvatarCropped"
 />

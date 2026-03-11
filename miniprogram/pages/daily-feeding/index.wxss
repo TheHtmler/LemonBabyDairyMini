@@ -2,6 +2,7 @@
   padding: 20rpx;
   background-color: #FFF9E6;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .section {
@@ -96,6 +97,71 @@
   height: 24rpx;
   background-color: #FFB800;
   border-radius: 3rpx;
+}
+
+.release-notice-banner {
+  width: calc(100% + 40rpx);
+  display: flex;
+  align-items: center;
+  padding: 10rpx 20rpx;
+  margin: -20rpx 0 24rpx -20rpx;
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(255, 184, 0, 0.92), rgba(255, 205, 64, 0.92));
+  box-shadow: 0 6rpx 16rpx rgba(255, 184, 0, 0.16);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.release-notice-fixed {
+  flex: 0 0 104rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40rpx;
+  margin-right: 16rpx;
+  padding-right: 16rpx;
+  border-right: 2rpx solid rgba(107, 60, 0, 0.18);
+  box-sizing: border-box;
+}
+
+.release-notice-prefix {
+  font-size: 22rpx;
+  line-height: 1.2;
+  color: #8A4B00;
+  font-weight: 700;
+}
+
+.release-notice-marquee {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.release-notice-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: release-notice-scroll 20s linear infinite;
+}
+
+.release-notice-copy {
+  flex-shrink: 0;
+  padding-right: 72rpx;
+  font-size: 22rpx;
+  color: #6B3C00;
+  font-weight: 500;
+}
+
+@keyframes release-notice-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* Weight Section */

@@ -49,6 +49,151 @@ Component({
   },
 
   methods: {
+    getSeriesName(series, index) {
+      return series.name || `系列${index + 1}`;
+    },
+
+    isSeriesHidden(series, index) {
+      const name = this.getSeriesName(series, index);
+      return !!(this._hiddenSeries && this._hiddenSeries[name]);
+    },
+
+    toggleSeriesVisibility(name) {
+      if (!this._hiddenSeries) this._hiddenSeries = {};
+      this._hiddenSeries[name] = !this._hiddenSeries[name];
+      if (this._lastChartData) {
+        this.drawChart(this._lastChartData);
+      }
+    },
+
+    clearLegendHitAreas() {
+      this._legendAreas = [];
+    },
+
+    setLegendHitAreas(areas = []) {
+      this._legendAreas = areas;
+    },
+
+    computeLegendLayout(series, colors, maxWidth, ctx, options = {}) {
+      const font = options.legendFont || '10px sans-serif';
+      const markerSize = options.legendMarkerSize || 12;
+      const markerGap = options.legendMarkerGap || 6;
+      const itemGap = options.legendItemGap || 12;
+      const rowGap = options.legendRowGap || 6;
+      const rowHeight = options.legendRowHeight || 16;
+      const maxRows = options.legendMaxRows || 0;
+      const ellipsis = options.legendEllipsis || '...';
+      const truncateEnabled = options.legendTruncate !== false;
+      ctx.font = font;
+
+      const truncateText = (text, maxTextWidth) => {
+        if (!maxTextWidth || maxTextWidth <= 0) return text;
+        if (ctx.measureText(text).width <= maxTextWidth) return text;
+        let trimmed = text;
+        while (trimmed.length > 0 && ctx.measureText(trimmed + ellipsis).width > maxTextWidth) {
+          trimmed = trimmed.slice(0, -1);
+        }
+        if (!trimmed) return text.slice(0, 1);
+        return `${trimmed}${ellipsis}`;
+      };
+
+      if (maxRows === 1) {
+        const items = [];
+        let x = 0;
+        if (truncateEnabled) {
+          const maxItemWidth = Math.max(1, (maxWidth - itemGap * (series.length - 1)) / series.length);
+          const maxTextWidth = Math.max(1, maxItemWidth - markerSize - markerGap);
+          series.forEach((s, index) => {
+            const name = this.getSeriesName(s, index);
+            const label = truncateText(name, maxTextWidth);
+            const textWidth = ctx.measureText(label).width;
+            items.push({
+              row: 0,
+              x: index * (maxItemWidth + itemGap),
+              width: markerSize + markerGap + textWidth,
+              name,
+              label,
+              color: colors[index % colors.length],
+              index
+            });
+          });
+        } else {
+          series.forEach((s, index) => {
+            const name = this.getSeriesName(s, index);
+            const label = name;
+            const textWidth = ctx.measureText(label).width;
+            const itemWidth = markerSize + markerGap + textWidth;
+            items.push({
+              row: 0,
+              x,
+              width: itemWidth,
+              name,
+              label,
+              color: colors[index % colors.length],
+              index
+            });
+            x += itemWidth + itemGap;
+          });
+        }
+        return {
+          rows: 1,
+          totalHeight: rowHeight,
+          items,
+          rowHeight,
+          rowGap,
+          markerSize,
+          markerGap,
+          font
+        };
+      }
+
+      let x = 0;
+      let row = 0;
+      const items = [];
+
+      series.forEach((s, index) => {
+        const name = this.getSeriesName(s, index);
+        const textWidth = ctx.measureText(name).width;
+        const itemWidth = markerSize + markerGap + textWidth;
+        if (x > 0 && x + itemWidth > maxWidth) {
+          row += 1;
+          x = 0;
+        }
+        items.push({
+          row,
+          x,
+          width: itemWidth,
+          name,
+          label: name,
+          color: colors[index % colors.length],
+          index
+        });
+        x += itemWidth + itemGap;
+      });
+
+      const rows = row + 1;
+      const totalHeight = rows * rowHeight + (rows - 1) * rowGap;
+      return {
+        rows,
+        totalHeight,
+        items,
+        rowHeight,
+        rowGap,
+        markerSize,
+        markerGap,
+        font
+      };
+    },
+
+    isTouchOnLegend(touchX, touchY) {
+      if (!this._legendAreas || this._legendAreas.length === 0) return null;
+      return this._legendAreas.find(area =>
+        touchX >= area.x &&
+        touchX <= area.x + area.width &&
+        touchY >= area.y &&
+        touchY <= area.y + area.height
+      );
+    },
     init() {
       if (this.data.isInit) {
         return;
@@ -74,6 +219,8 @@ Component({
         console.warn('图表数据不完整', chartData);
         return;
       }
+      this._lastChartData = chartData;
+      this.clearLegendHitAreas();
       
       // 根据图表类型选择绘制方法
       const options = chartData.options || {};
@@ -183,7 +330,23 @@ Component({
       console.log('绘制数据:', { xDataLength: xData.length, seriesCount: series.length });
 
       // 计算绘图区域
-      const padding = customPadding || { top: 40, right: 40, bottom: 60, left: 50 };
+      const basePadding = customPadding || { top: 40, right: 40, bottom: 60, left: 50 };
+      let padding = { ...basePadding };
+      const baseChartWidth = width - padding.left - padding.right;
+      const xAxisLabelSpace = opts.xAxisLabelSpace ?? 18;
+      const legendGap = opts.legendTopGap ?? 6;
+      let legendLayout = null;
+
+      if (showLegend && series.length > 0) {
+        legendLayout = this.computeLegendLayout(series, colors, baseChartWidth, ctx, opts);
+        const requiredBottom = xAxisLabelSpace + legendGap + legendLayout.totalHeight;
+        if (padding.bottom < requiredBottom) {
+          padding.bottom = requiredBottom;
+        }
+      } else if (padding.bottom < xAxisLabelSpace + 8) {
+        padding.bottom = xAxisLabelSpace + 8;
+      }
+
       const chartWidth = width - padding.left - padding.right;
       const chartHeight = height - padding.top - padding.bottom;
 
@@ -201,7 +364,10 @@ Component({
       let maxRightValue = 0;
       let minRightValue = Infinity;
 
-      series.forEach(s => {
+      series.forEach((s, index) => {
+        if (this.isSeriesHidden(s, index)) {
+          return;
+        }
         if (s.data && s.data.length > 0) {
           const validData = s.data.filter(v => !isNaN(v) && v !== null && v !== undefined && v !== 0);
           if (validData.length > 0) {
@@ -318,7 +484,7 @@ Component({
       const xStep = xData.length > 1 ? chartWidth / (xData.length - 1) : chartWidth / 2;
       xData.forEach((label, index) => {
         const x = padding.left + xStep * index;
-        const y = xAxisPosition === 'top' ? padding.top - 10 : padding.top + chartHeight + 20;
+        const y = xAxisPosition === 'top' ? padding.top - 10 : padding.top + chartHeight + xAxisLabelSpace;
         
         // 根据数据点数量决定显示策略
         let shouldShow = true;
@@ -335,6 +501,9 @@ Component({
 
       // 绘制数据线
       series.forEach((s, seriesIndex) => {
+        if (this.isSeriesHidden(s, seriesIndex)) {
+          return;
+        }
         if (!s.data || s.data.length === 0) {
           return;
         }
@@ -394,25 +563,38 @@ Component({
       });
 
       // 绘制图例
-      if (showLegend && series.length > 0) {
-        const legendY = height - 20;
-        let legendX = padding.left;
-        
-        series.forEach((s, index) => {
-          const color = colors[index % colors.length];
-          
-          // 绘制图例色块
-          ctx.fillStyle = color;
-          ctx.fillRect(legendX, legendY - 6, 12, 12);
-          
-          // 绘制图例文字
+      if (showLegend && series.length > 0 && legendLayout) {
+        const legendAreas = [];
+        const legendTop = padding.top + chartHeight + xAxisLabelSpace + legendGap;
+        const legendOffsetX = opts.legendOffsetX || 0;
+        ctx.font = legendLayout.font;
+
+        legendLayout.items.forEach((item) => {
+          const name = item.name;
+          const label = item.label || name;
+          const hidden = this.isSeriesHidden(series[item.index], item.index);
+          const x = padding.left + item.x + legendOffsetX;
+          const y = legendTop + item.row * (legendLayout.rowHeight + legendLayout.rowGap) + legendLayout.rowHeight / 2;
+
+          ctx.save();
+          ctx.globalAlpha = hidden ? 0.35 : 1;
+          ctx.fillStyle = item.color;
+          ctx.fillRect(x, y - legendLayout.markerSize / 2, legendLayout.markerSize, legendLayout.markerSize);
           ctx.fillStyle = '#666';
-          ctx.font = '10px sans-serif';
           ctx.textAlign = 'left';
-          ctx.fillText(s.name || `系列${index + 1}`, legendX + 16, legendY + 4);
-          
-          legendX += ctx.measureText(s.name || `系列${index + 1}`).width + 30;
+          ctx.fillText(label, x + legendLayout.markerSize + legendLayout.markerGap, y + 3);
+          ctx.restore();
+
+          legendAreas.push({
+            x,
+            y: y - legendLayout.rowHeight / 2,
+            width: item.width + legendLayout.markerSize + legendLayout.markerGap,
+            height: legendLayout.rowHeight,
+            name
+          });
         });
+
+        this.setLegendHitAreas(legendAreas);
       }
       
       // 保存图表信息用于交互
@@ -430,6 +612,9 @@ Component({
           yRightMin,
           yRightScale,
           layout: 'single',
+          tooltipPlacement: opts.tooltipPlacement,
+          tooltipWidth: opts.tooltipWidth,
+          tooltipTopOffset: opts.tooltipTopOffset,
           width,
           height
         }
@@ -463,20 +648,41 @@ Component({
         showBottomAxis = true
       } = opts;
 
-      const padding = customPadding || { top: 60, right: 50, bottom: 50, left: 50 };
+      const basePadding = customPadding || { top: 60, right: 50, bottom: 50, left: 50 };
+      let padding = { ...basePadding };
+      const xAxisLabelSpace = opts.xAxisLabelSpace ?? 18;
+      const legendGap = opts.legendTopGap ?? 6;
+      let legendLayout = null;
+
+      if (showLegend && series.length > 0) {
+        legendLayout = this.computeLegendLayout(
+          series,
+          colors,
+          width - padding.left - padding.right,
+          ctx,
+          opts
+        );
+        const requiredBottom = xAxisLabelSpace + legendGap + legendLayout.totalHeight;
+        if (padding.bottom < requiredBottom) {
+          padding.bottom = requiredBottom;
+        }
+      } else if (padding.bottom < xAxisLabelSpace + 8) {
+        padding.bottom = xAxisLabelSpace + 8;
+      }
+
       const chartWidth = width - padding.left - padding.right;
       const availableHeight = height - padding.top - padding.bottom;
       let panelHeight = (availableHeight - panelGap) / 2;
       const panels = [
         {
-          top: plotTop,
+          top: 0,
           height: panelHeight,
           label: upperAxisLabel,
           leftAxis: upperAxisLeft || {},
           rightAxis: upperAxisRight || {}
         },
         {
-          top: plotTop + panelHeight + panelGap,
+          top: 0,
           height: panelHeight,
           label: lowerAxisLabel,
           leftAxis: lowerAxisLeft || {},
@@ -506,10 +712,12 @@ Component({
       panels.forEach((panel, panelIndex) => {
         let maxValue = 0;
         let minValue = Infinity;
-        seriesByPanel[panelIndex].forEach((s) => {
-          if (!s.data || s.data.length === 0) return;
-          const validData = s.data.filter(v => !isNaN(v) && v !== null && v !== undefined && v !== 0);
-          if (validData.length === 0) return;
+      seriesByPanel[panelIndex].forEach((s) => {
+        const globalIndex = series.indexOf(s);
+        if (this.isSeriesHidden(s, globalIndex)) return;
+        if (!s.data || s.data.length === 0) return;
+        const validData = s.data.filter(v => !isNaN(v) && v !== null && v !== undefined && v !== 0);
+        if (validData.length === 0) return;
           const seriesMax = Math.max(...validData);
           const seriesMin = Math.min(...validData);
           if (seriesMax > maxValue) maxValue = seriesMax;
@@ -684,7 +892,7 @@ Component({
       if (showBottomAxis) {
         xData.forEach((label, index) => {
           const x = padding.left + xStep * index;
-          const y = plotTop + panelHeight * 2 + panelGap + 20;
+          const y = plotTop + panelHeight * 2 + panelGap + xAxisLabelSpace;
           let shouldShow = true;
           if (xData.length > 10) {
             const step = Math.ceil(xData.length / 7);
@@ -697,6 +905,7 @@ Component({
       }
 
       series.forEach((s, seriesIndex) => {
+        if (this.isSeriesHidden(s, seriesIndex)) return;
         if (!s.data || s.data.length === 0) return;
         const panelIndex = s.panelIndex === 1 ? 1 : 0;
         const panel = panels[panelIndex];
@@ -728,19 +937,34 @@ Component({
         // Dual panel style uses clean curves without point markers.
       });
 
-      if (showLegend && series.length > 0) {
-        const legendY = height - 10;
-        let legendX = padding.left;
-        series.forEach((s, index) => {
-          const color = colors[index % colors.length];
-          ctx.fillStyle = color;
-          ctx.fillRect(legendX, legendY - 6, 10, 10);
+      if (showLegend && series.length > 0 && legendLayout) {
+        const legendAreas = [];
+        const legendTop = plotTop + panelHeight * 2 + panelGap + xAxisLabelSpace + legendGap;
+        const legendOffsetX = opts.legendOffsetX || 0;
+        ctx.font = legendLayout.font;
+        legendLayout.items.forEach((item) => {
+          const name = item.name;
+          const label = item.label || name;
+          const hidden = this.isSeriesHidden(series[item.index], item.index);
+          const x = padding.left + item.x + legendOffsetX;
+          const y = legendTop + item.row * (legendLayout.rowHeight + legendLayout.rowGap) + legendLayout.rowHeight / 2;
+          ctx.save();
+          ctx.globalAlpha = hidden ? 0.35 : 1;
+          ctx.fillStyle = item.color;
+          ctx.fillRect(x, y - legendLayout.markerSize / 2, legendLayout.markerSize, legendLayout.markerSize);
           ctx.fillStyle = '#666';
-          ctx.font = '10px sans-serif';
           ctx.textAlign = 'left';
-          ctx.fillText(s.name || `系列${index + 1}`, legendX + 14, legendY + 3);
-          legendX += ctx.measureText(s.name || `系列${index + 1}`).width + 24;
+          ctx.fillText(label, x + legendLayout.markerSize + legendLayout.markerGap, y + 3);
+          ctx.restore();
+          legendAreas.push({
+            x,
+            y: y - legendLayout.rowHeight / 2,
+            width: item.width + legendLayout.markerSize + legendLayout.markerGap,
+            height: legendLayout.rowHeight,
+            name
+          });
         });
+        this.setLegendHitAreas(legendAreas);
       }
 
       this.setData({
@@ -754,6 +978,9 @@ Component({
           xStep,
           panels,
           layout: 'dualPanel',
+          tooltipPlacement: opts.tooltipPlacement,
+          tooltipWidth: opts.tooltipWidth,
+          tooltipTopOffset: opts.tooltipTopOffset,
           width,
           height
         }
@@ -771,8 +998,30 @@ Component({
     },
 
     // 触摸结束
-    onTouchEnd(e) {
-      // 延迟隐藏tooltip，让用户能看清数据
+  onTouchEnd(e) {
+      const touch = e.changedTouches && e.changedTouches[0];
+      if (touch) {
+        const query = this.createSelectorQuery();
+        query.select(`#${this.data.canvasId}`)
+          .boundingClientRect((rect) => {
+            if (!rect) return;
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            const legendHit = this.isTouchOnLegend(touchX, touchY);
+            if (legendHit) {
+              this.setData({ tooltipVisible: false });
+              this.toggleSeriesVisibility(legendHit.name);
+              return;
+            }
+            // 延迟隐藏tooltip，让用户能看清数据
+            setTimeout(() => {
+              this.setData({ tooltipVisible: false });
+            }, 1000);
+          })
+          .exec();
+        return;
+      }
+
       setTimeout(() => {
         this.setData({ tooltipVisible: false });
       }, 1000);
@@ -784,7 +1033,22 @@ Component({
       if (!chartInfo) return;
 
       const touch = e.touches[0];
-      const { padding, chartWidth, chartHeight, xData, series, colors, xStep, yMin, yScale, layout, panels } = chartInfo;
+      const {
+        padding,
+        chartWidth,
+        chartHeight,
+        xData,
+        series,
+        colors,
+        xStep,
+        yMin,
+        yScale,
+        layout,
+        panels,
+        tooltipPlacement,
+        tooltipWidth = 180,
+        tooltipTopOffset = 8
+      } = chartInfo;
       
       // 计算触摸点在画布上的相对位置
       const query = this.createSelectorQuery();
@@ -795,6 +1059,12 @@ Component({
           const touchX = touch.clientX - rect.left;
           const touchY = touch.clientY - rect.top;
           
+          const legendHit = this.isTouchOnLegend(touchX, touchY);
+          if (legendHit) {
+            this.setData({ tooltipVisible: false });
+            return;
+          }
+
           // 检查是否在图表区域内
           if (touchX < padding.left || touchX > padding.left + chartWidth ||
               touchY < padding.top || touchY > padding.top + chartHeight) {
@@ -820,6 +1090,9 @@ Component({
             activePanelIndex = panelHit === -1 ? 0 : panelHit;
           }
           series.forEach((s, index) => {
+            if (this.isSeriesHidden(s, index)) {
+              return;
+            }
             const panelIndex = s.panelIndex === 1 ? 1 : 0;
             if (layout === 'dualPanel' && panelIndex !== activePanelIndex) {
               return;
@@ -827,7 +1100,7 @@ Component({
             const value = s.data[dataIndex];
             if (value !== null && value !== undefined && !isNaN(value) && value !== 0) {
               values.push({
-                name: s.name || `系列${index + 1}`,
+                name: this.getSeriesName(s, index),
                 value: value,
                 color: colors[index % colors.length]
               });
@@ -842,13 +1115,24 @@ Component({
           // 计算tooltip位置
           let tooltipX = touchX + 10;
           let tooltipY = touchY - 60;
+
+          if (tooltipPlacement === 'top') {
+            tooltipX = touchX - tooltipWidth / 2;
+            tooltipY = padding.top + tooltipTopOffset;
+          }
           
           // 防止超出边界
-          if (tooltipX + 180 > rect.width) {
-            tooltipX = touchX - 190;
+          if (tooltipX + tooltipWidth > rect.width) {
+            tooltipX = rect.width - tooltipWidth - 6;
           }
-          if (tooltipY < 10) {
+          if (tooltipX < 6) {
+            tooltipX = 6;
+          }
+          if (tooltipPlacement !== 'top' && tooltipY < 10) {
             tooltipY = touchY + 10;
+          }
+          if (tooltipPlacement === 'top' && tooltipY < 6) {
+            tooltipY = 6;
           }
           
           // 显示tooltip
@@ -882,7 +1166,21 @@ Component({
       console.log('绘制堆叠柱状图:', { xDataLength: xData.length, seriesCount: series.length });
 
       // 计算绘图区域
-      const padding = { top: 40, right: 20, bottom: 60, left: 50 };
+      const basePadding = { top: 40, right: 20, bottom: 60, left: 50 };
+      let padding = { ...basePadding };
+      const baseChartWidth = width - padding.left - padding.right;
+      const xAxisLabelSpace = opts.xAxisLabelSpace ?? 18;
+      const legendGap = opts.legendTopGap ?? 6;
+      let legendLayout = null;
+      if (showLegend && series.length > 0) {
+        legendLayout = this.computeLegendLayout(series, colors, baseChartWidth, ctx, opts);
+        const requiredBottom = xAxisLabelSpace + legendGap + legendLayout.totalHeight;
+        if (padding.bottom < requiredBottom) {
+          padding.bottom = requiredBottom;
+        }
+      } else if (padding.bottom < xAxisLabelSpace + 8) {
+        padding.bottom = xAxisLabelSpace + 8;
+      }
       const chartWidth = width - padding.left - padding.right;
       const chartHeight = height - padding.top - padding.bottom;
 
@@ -898,7 +1196,10 @@ Component({
       let maxValue = 0;
       xData.forEach((_, index) => {
         let stackSum = 0;
-        series.forEach(s => {
+        series.forEach((s, seriesIndex) => {
+          if (this.isSeriesHidden(s, seriesIndex)) {
+            return;
+          }
           if (s.data && s.data[index] !== null && s.data[index] !== undefined && !isNaN(s.data[index])) {
             stackSum += parseFloat(s.data[index]);
           }
@@ -947,7 +1248,7 @@ Component({
       ctx.textAlign = 'center';
       xData.forEach((label, index) => {
         const x = padding.left + barGap * index + barGap / 2;
-        const y = padding.top + chartHeight + 20;
+        const y = padding.top + chartHeight + xAxisLabelSpace;
         
         // 根据数据点数量决定显示策略
         let shouldShow = true;
@@ -968,6 +1269,9 @@ Component({
         
         // 从下往上绘制每个系列
         series.forEach((s, seriesIndex) => {
+          if (this.isSeriesHidden(s, seriesIndex)) {
+            return;
+          }
           if (!s.data || !s.data[index]) return;
           
           const value = parseFloat(s.data[index]);
@@ -998,25 +1302,38 @@ Component({
       });
 
       // 绘制图例
-      if (showLegend && series.length > 0) {
-        const legendY = height - 20;
-        let legendX = padding.left;
-        
-        series.forEach((s, index) => {
-          const color = colors[index % colors.length];
-          
-          // 绘制图例色块
-          ctx.fillStyle = color;
-          ctx.fillRect(legendX, legendY - 6, 12, 12);
-          
-          // 绘制图例文字
+      if (showLegend && series.length > 0 && legendLayout) {
+        const legendAreas = [];
+        const legendTop = padding.top + chartHeight + xAxisLabelSpace + legendGap;
+        const legendOffsetX = opts.legendOffsetX || 0;
+        ctx.font = legendLayout.font;
+
+        legendLayout.items.forEach((item) => {
+          const name = item.name;
+          const label = item.label || name;
+          const hidden = this.isSeriesHidden(series[item.index], item.index);
+          const x = padding.left + item.x + legendOffsetX;
+          const y = legendTop + item.row * (legendLayout.rowHeight + legendLayout.rowGap) + legendLayout.rowHeight / 2;
+
+          ctx.save();
+          ctx.globalAlpha = hidden ? 0.35 : 1;
+          ctx.fillStyle = item.color;
+          ctx.fillRect(x, y - legendLayout.markerSize / 2, legendLayout.markerSize, legendLayout.markerSize);
           ctx.fillStyle = '#666';
-          ctx.font = '10px sans-serif';
           ctx.textAlign = 'left';
-          ctx.fillText(s.name || `系列${index + 1}`, legendX + 16, legendY + 4);
-          
-          legendX += ctx.measureText(s.name || `系列${index + 1}`).width + 30;
+          ctx.fillText(label, x + legendLayout.markerSize + legendLayout.markerGap, y + 3);
+          ctx.restore();
+
+          legendAreas.push({
+            x,
+            y: y - legendLayout.rowHeight / 2,
+            width: item.width + legendLayout.markerSize + legendLayout.markerGap,
+            height: legendLayout.rowHeight,
+            name
+          });
         });
+
+        this.setLegendHitAreas(legendAreas);
       }
     }
   }

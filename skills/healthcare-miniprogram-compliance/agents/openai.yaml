@@ -1,0 +1,4 @@
+interface:
+  display_name: "健康小程序合规守护"
+  short_description: "面向儿童健康场景的小程序审核、隐私与医疗表达边界"
+  default_prompt: "使用 $healthcare-miniprogram-compliance 检查健康类小程序的审核风险、隐私合规和医疗表达边界。"

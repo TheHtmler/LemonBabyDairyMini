@@ -1,0 +1,13 @@
+<view class="onboarding-container">
+  <swiper class="onboarding-swiper" indicator-dots="true" indicator-color="rgba(0,0,0,0.2)" indicator-active-color="#FFB800" circular="false" bindchange="onSlideChange">
+    <swiper-item wx:for="{{slides}}" wx:key="src" wx:for-index="idx">
+      <view class="slide">
+        <movable-area class="zoom-area">
+          <movable-view class="zoom-view" scale="true" scale-min="1" scale-max="3" scale-value="{{scales[idx]}}" bindscale="onScale" data-index="{{idx}}" inertia="true" direction="all" out-of-bounds="true">
+            <image class="slide-image" src="{{item.src}}" mode="aspectFit" bindtap="onImageTap" data-index="{{idx}}"></image>
+          </movable-view>
+        </movable-area>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "微信小程序专家"
+  short_description: "精通官方 API、基础库兼容、审核合规与变更跟踪"
+  default_prompt: "使用 $wechat-miniprogram-expert 评估微信小程序方案、API 选型、兼容性与合规风险。"

@@ -11,6 +11,10 @@ Component({
     cropSize: {
       type: Number,
       value: 300
+    },
+    uploading: {
+      type: Boolean,
+      value: false
     }
   },
   data: {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "喂养健康产品经理"
+  short_description: "深懂喂养健康类产品形态、交互策略与用户信任设计"
+  default_prompt: "使用 $feeding-health-product-manager 评估喂养或健康类产品的功能形态、用户流程、交互质量与产品方向。"

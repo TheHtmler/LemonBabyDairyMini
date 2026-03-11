@@ -42,6 +42,13 @@ Page({
         description: '查看周、月维度的数据趋势'
       },
       {
+        id: 11,
+        name: '新手指南',
+        icon: 'info',
+        path: '/pages/onboarding/index',
+        description: '快速了解核心功能与流程'
+      },
+      {
         id: 10,
         name: '成长记录',
         icon: 'growth',
@@ -77,7 +84,9 @@ Page({
     ],
     defaultAvatarUrl: '/images/LemonLogo.png',
     showAvatarCropper: false,
-    avatarCropSrc: ''
+    avatarCropSrc: '',
+    latestAvatarUrl: '',
+    uploadingAvatar: false
   },
 
   onLoad: function () {
@@ -98,7 +107,7 @@ Page({
   },
 
   onShow: function () {
-    // 刷新宝宝信息
+    if (this.data.uploadingAvatar) return;
     this.getBabyInfo();
   },
 
@@ -107,6 +116,9 @@ Page({
   },
 
   async resolveAvatarUrl(babyInfo) {
+    if (this.data.latestAvatarUrl) {
+      return this.data.latestAvatarUrl;
+    }
     const app = getApp();
     const babyUid = babyInfo?.babyUid || app.globalData.babyUid || wx.getStorageSync('baby_uid');
     const fileId = babyInfo?.avatarFileId;
@@ -142,14 +154,21 @@ Page({
   },
 
   // 获取宝宝信息
-  async getBabyInfo() {
+  async getBabyInfo(force = false) {
+    if (!force && this.data.uploadingAvatar && this.data.latestAvatarUrl) {
+      return;
+    }
     try {
       const app = getApp();
       
       // 如果全局有宝宝信息，直接使用
       if (app.globalData.babyInfo) {
+        console.log('==app.globalData.babyInfo==', app.globalData.babyInfo);
         this.setData({
-          babyInfo: app.globalData.babyInfo
+          babyInfo: {
+            ...app.globalData.babyInfo,
+            avatarUrl: this.data.latestAvatarUrl || app.globalData.babyInfo.avatarUrl
+          }
         });
         return;
       }
@@ -179,7 +198,7 @@ Page({
         // 构建宝宝信息数据
         const babyInfoData = {
           name: babyInfo.name || '柠檬宝宝',
-          avatarUrl: avatarUrl,
+          avatarUrl: this.data.latestAvatarUrl || avatarUrl,
           avatarFileId: babyInfo.avatarFileId || '',
           birthday: babyInfo.birthday || '',
           gender: babyInfo.gender || 'male',
@@ -250,7 +269,7 @@ Page({
   },
   
   // 上传头像到云存储
-  async uploadAvatarToCloud(tempFilePath) {
+  async uploadAvatarToCloud(tempFilePath, options = {}) {
     try {
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
@@ -266,12 +285,34 @@ Page({
       // 将临时文件上传到云存储
       const extMatch = (tempFilePath || '').match(/\.[a-zA-Z0-9]+$/);
       const ext = extMatch ? extMatch[0] : '.jpg';
-      const cloudPath = `baby_avatars/${babyUid}${ext}`;
+      const timestamp = Date.now();
+      const cloudPath = `baby_avatars/${babyUid}_${timestamp}${ext}`;
+      // 标记最新头像，防止其他刷新覆盖
+      this.setData({ latestAvatarUrl: tempFilePath, uploadingAvatar: true });
+      app.globalData.userInfo = { ...(app.globalData.userInfo || {}), avatarUrl: tempFilePath };
+      app.globalData.babyInfo = { ...(app.globalData.babyInfo || {}), avatarUrl: tempFilePath };
+
       const result = await wx.cloud.uploadFile({
         cloudPath,
         filePath: tempFilePath,
       });
       if (result.fileID) {
+        // 先用本地临时路径让界面立即刷新
+        this.setData({
+          'userInfo.avatarUrl': tempFilePath,
+          'babyInfo.avatarUrl': tempFilePath,
+          latestAvatarUrl: tempFilePath,
+          uploadingAvatar: true
+        });
+        app.globalData.userInfo = {
+          ...(app.globalData.userInfo || {}),
+          avatarUrl: tempFilePath
+        };
+        app.globalData.babyInfo = {
+          ...(app.globalData.babyInfo || {}),
+          avatarUrl: tempFilePath
+        };
+
         // 获取可访问的URL
         const fileList = [{ fileID: result.fileID, maxAge: 604800 }];
         const { fileList: fileUrlList } = await wx.cloud.getTempFileURL({
@@ -282,7 +323,9 @@ Page({
         this.setData({
           'userInfo.avatarUrl': avatarUrl,
           'babyInfo.avatarUrl': avatarUrl,
-          'babyInfo.avatarFileId': result.fileID
+          'babyInfo.avatarFileId': result.fileID,
+          latestAvatarUrl: avatarUrl,
+          uploadingAvatar: false
         });
         // 保存到应用的全局数据和数据库
         const updatedInfo = {
@@ -321,6 +364,7 @@ Page({
         wx.setStorageSync('baby_info', updatedBabyInfo);
 
         const cacheKey = this.getAvatarCacheKey(babyUid);
+        wx.removeStorageSync(cacheKey);
         wx.setStorageSync(cacheKey, {
           url: avatarUrl,
           expiresAt: Date.now() + 6 * 24 * 60 * 60 * 1000
@@ -331,6 +375,12 @@ Page({
           title: '头像已更新',
           icon: 'success',
         });
+        this.setData({ uploadingAvatar: false, latestAvatarUrl: avatarUrl });
+        if (options.closeAfter) {
+          this.hideAvatarCropper();
+        }
+        // 上传完成后强制刷新一次宝宝信息，拿最新DB数据
+        this.getBabyInfo(true);
       }
     } catch (error) {
       wx.hideLoading();
@@ -338,26 +388,42 @@ Page({
         title: '上传失败，请重试',
         icon: 'none',
       });
+      this.setData({ uploadingAvatar: false });
+      if (options.closeAfter) {
+        this.hideAvatarCropper();
+      }
     }
   },
   
   // 处理选择头像按钮点击
   onAvatarClick: function() {
-    // 提供选择头像的方式
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        // 显示加载中提示
-        wx.showLoading({
-          title: '正在处理...',
-        });
-        wx.hideLoading();
-        this.setData({
-          showAvatarCropper: true,
-          avatarCropSrc: res.tempFilePaths[0]
-        });
+        const path = (res.tempFilePaths && res.tempFilePaths[0]) || '';
+        if (!path) return;
+        wx.showLoading({ title: '准备图片...' });
+        const ext = (path.split('.').pop() || '').toLowerCase();
+        const needConvert = ['webp', 'heic', 'heif'].includes(ext);
+        const startCropper = (p) => {
+          this.setData({
+            showAvatarCropper: true,
+            avatarCropSrc: p
+          });
+          wx.hideLoading();
+        };
+        if (needConvert) {
+          wx.compressImage({
+            src: path,
+            quality: 80,
+            success: (r) => startCropper(r.tempFilePath || path),
+            fail: () => startCropper(path)
+          });
+        } else {
+          startCropper(path);
+        }
       }
     });
   },
@@ -371,11 +437,50 @@ Page({
 
   onAvatarCropped(e) {
     const tempFilePath = e.detail.tempFilePath;
-    this.hideAvatarCropper();
-    wx.showLoading({
-      title: '正在处理...'
+    const finish = (path) => {
+      // 本地先刷新头像
+      this.setData({
+        'userInfo.avatarUrl': path,
+        'babyInfo.avatarUrl': path,
+        latestAvatarUrl: path,
+        uploadingAvatar: true
+      });
+      const app = getApp();
+      app.globalData.userInfo = {
+        ...(app.globalData.userInfo || {}),
+        avatarUrl: path
+      };
+      app.globalData.babyInfo = {
+        ...(app.globalData.babyInfo || {}),
+        avatarUrl: path
+      };
+      wx.showLoading({
+        title: '正在处理...'
+      });
+      this.uploadAvatarToCloud(path, { closeAfter: true });
+    };
+
+    const ext = (tempFilePath.split('.').pop() || '').toLowerCase();
+    const needConvert = ['heic', 'heif', 'webp'].includes(ext);
+
+    // 尝试压缩/转码为兼容格式，避免 HEIC/WebP 黑屏
+    wx.compressImage({
+      src: tempFilePath,
+      quality: 80,
+      success: (res) => {
+        // compressImage 会转成 JPG，优先用转码后的
+        finish(res.tempFilePath || tempFilePath);
+      },
+      fail: () => {
+        // 如果不是需转码的格式，直接用原图
+        if (!needConvert) {
+          finish(tempFilePath);
+          return;
+        }
+        // 简易兜底：复制原路径（仍可能失败，但不会卡住）
+        finish(tempFilePath);
+      }
     });
-    this.uploadAvatarToCloud(tempFilePath);
   },
   
   // 保存用户资料

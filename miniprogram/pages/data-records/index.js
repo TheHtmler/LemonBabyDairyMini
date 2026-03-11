@@ -539,6 +539,210 @@ function formatTimeFromDate(dateInput) {
   return `${hours}:${minutes}`;
 }
 
+function toDateKey(dateInput) {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+    }
+    return '';
+  }
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function buildDateTimeFromDateKey(dateKey, timeValue = '00:00') {
+  const safeDateKey = toDateKey(dateKey);
+  if (!safeDateKey) return null;
+  const [year, month, day] = safeDateKey.split('-').map(Number);
+  const [hours, minutes] = (timeValue || '00:00').split(':').map(Number);
+  return new Date(
+    year,
+    month - 1,
+    day,
+    Number.isFinite(hours) ? hours : 0,
+    Number.isFinite(minutes) ? minutes : 0,
+    0
+  );
+}
+
+function createCopyEntryId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getDateTimestamp(value) {
+  if (!value) return 0;
+  const date = value instanceof Date ? value : new Date(value);
+  const ts = date.getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function getBasicInfoCompleteness(record = {}) {
+  const basicInfo = record.basicInfo || {};
+  let count = 0;
+  ['weight', 'height', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient'].forEach(key => {
+    const value = basicInfo[key];
+    if (value !== '' && value !== null && value !== undefined) {
+      count += 1;
+    }
+  });
+  return count;
+}
+
+function scoreFeedingRecord(record = {}) {
+  const feedingsCount = Array.isArray(record.feedings) ? record.feedings.length : 0;
+  const intakesCount = Array.isArray(record.intakes) ? record.intakes.length : 0;
+  const summaryCalories = Number(record.summary?.calories) || 0;
+  const basicInfoCompleteness = getBasicInfoCompleteness(record);
+  const updatedAtTs = getDateTimestamp(record.updatedAt);
+  const createdAtTs = getDateTimestamp(record.createdAt);
+  const dateTs = getDateTimestamp(record.date);
+
+  // Prefer the record that actually contains daily content; timestamps only break ties.
+  return (
+    feedingsCount * 1000000 +
+    intakesCount * 1000000 +
+    summaryCalories * 100 +
+    basicInfoCompleteness * 10 +
+    Math.max(updatedAtTs, createdAtTs, dateTs) / 1000000000000
+  );
+}
+
+function pickPrimaryFeedingRecord(records = []) {
+  if (!Array.isArray(records) || records.length === 0) return null;
+  return [...records].sort((a, b) => {
+    const scoreDiff = scoreFeedingRecord(b) - scoreFeedingRecord(a);
+    if (scoreDiff !== 0) return scoreDiff;
+    const updatedDiff = getDateTimestamp(b?.updatedAt) - getDateTimestamp(a?.updatedAt);
+    if (updatedDiff !== 0) return updatedDiff;
+    const createdDiff = getDateTimestamp(b?.createdAt) - getDateTimestamp(a?.createdAt);
+    if (createdDiff !== 0) return createdDiff;
+    return getDateTimestamp(b?.date) - getDateTimestamp(a?.date);
+  })[0];
+}
+
+function mergeBasicInfoFromRecords(records = []) {
+  if (!Array.isArray(records) || records.length === 0) return {};
+  return [...records]
+    .sort((a, b) => {
+      const completenessDiff = getBasicInfoCompleteness(b) - getBasicInfoCompleteness(a);
+      if (completenessDiff !== 0) return completenessDiff;
+      return getDateTimestamp(b?.updatedAt) - getDateTimestamp(a?.updatedAt);
+    })
+    .reduce((merged, record) => {
+      const basicInfo = record?.basicInfo || {};
+      Object.keys(basicInfo).forEach(key => {
+        const value = basicInfo[key];
+        if (value !== '' && value !== null && value !== undefined && merged[key] === undefined) {
+          merged[key] = value;
+        }
+      });
+      return merged;
+    }, {});
+}
+
+function dedupeIntakes(intakes = []) {
+  const seen = new Set();
+  return (intakes || []).filter(item => {
+    if (!item) return false;
+    const key = item._id || `${item.foodId || item.nameSnapshot || ''}_${item.recordedAt || ''}_${item.quantity || ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function mergeFeedingRecords(records = [], nutritionSettings = {}) {
+  const primary = pickPrimaryFeedingRecord(records);
+  if (!primary) return null;
+
+  const mergedFeedings = records.flatMap(record => Array.isArray(record?.feedings) ? record.feedings : []);
+  const mergedIntakes = dedupeIntakes(records.flatMap(record => Array.isArray(record?.intakes) ? record.intakes : []));
+  const mergedBasicInfo = mergeBasicInfoFromRecords(records);
+  const mergedSummary = calculateMacroSummary(mergedIntakes, mergedFeedings, nutritionSettings);
+
+  return {
+    ...primary,
+    basicInfo: mergedBasicInfo,
+    feedings: mergedFeedings,
+    intakes: mergedIntakes,
+    summary: mergedSummary
+  };
+}
+
+function cloneFeedingForDate(feeding = {}, selectedDate, babyUid) {
+  const now = new Date();
+  const startTime = feeding.startTime || formatTimeFromDate(feeding.startDateTime) || '00:00';
+  const {
+    formattedStartTime,
+    displayTime,
+    nutritionDisplay,
+    createdAt,
+    updatedAt,
+    ...rest
+  } = feeding;
+
+  return {
+    ...rest,
+    startTime,
+    endTime: feeding.endTime || '',
+    startDateTime: buildDateTimeFromDateKey(selectedDate, startTime),
+    endDateTime: null,
+    babyUid: babyUid || feeding.babyUid || '',
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+function cloneIntakeForDate(intake = {}, openid = '') {
+  const now = new Date();
+  const {
+    _id,
+    createdAt,
+    updatedAt,
+    createdBy,
+    ...rest
+  } = intake;
+
+  return {
+    ...rest,
+    _id: createCopyEntryId('intake'),
+    recordedAt: intake.recordedAt || formatTime(now),
+    createdAt: now,
+    updatedAt: now,
+    createdBy: openid || createdBy || ''
+  };
+}
+
+function cloneMedicationForDate(record = {}, selectedDate, babyUid) {
+  const now = new Date();
+  const actualTime = record.actualTime || formatTimeFromDate(record.actualDateTime) || '00:00';
+  const {
+    _id,
+    createdAt,
+    updatedAt,
+    actualDateTime,
+    date,
+    ...rest
+  } = record;
+
+  return {
+    ...rest,
+    babyUid: babyUid || record.babyUid || '',
+    date: buildDateTimeFromDateKey(selectedDate, '00:00'),
+    actualTime,
+    actualDateTime: buildDateTimeFromDateKey(selectedDate, actualTime),
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
 function calculateAgeInMonths(birthday, referenceDateStr) {
   if (!birthday) return null;
   const birthDate = new Date(birthday);
@@ -550,6 +754,13 @@ function calculateAgeInMonths(birthday, referenceDateStr) {
     months -= 1;
   }
   return months < 0 ? 0 : months;
+}
+
+function isFutureDateKey(dateStr) {
+  const target = toDateKey(dateStr);
+  const today = toDateKey(new Date());
+  if (!target || !today) return false;
+  return target > today;
 }
 
 Page({
@@ -634,6 +845,7 @@ Page({
     calendarYear: new Date().getFullYear(),
     calendarMonth: new Date().getMonth() + 1,
     calendarDays: [],
+    copyCalendarContext: null,
     // 滚动相关
     currentDateId: '',
     selectedDateIndex: 0,
@@ -1656,11 +1868,323 @@ Page({
   },
 
   showCalendar: function() {
-    this.setData({ showCalendarPicker: true });
+    this.setData({
+      showCalendarPicker: true,
+      copyCalendarContext: null
+    });
+  },
+
+  async getFeedingRecordByDate(dateStr) {
+    const babyUid = getBabyUid();
+    if (!babyUid) return null;
+    const db = wx.cloud.database();
+    const _ = db.command;
+    const targetDate = buildDateTimeFromDateKey(dateStr, '00:00');
+    const endOfDay = buildDateTimeFromDateKey(dateStr, '23:59');
+
+    const result = await db.collection('feeding_records').where({
+      babyUid,
+      date: _.gte(targetDate).and(_.lte(endOfDay))
+    }).get();
+
+    if (result.data && result.data.length > 0) {
+      return mergeFeedingRecords(result.data, this.data.nutritionSettings || {});
+    }
+
+    const legacyResult = await db.collection('feeding_records').where({
+      babyUid,
+      date: dateStr
+    }).get();
+    return legacyResult.data && legacyResult.data.length > 0
+      ? mergeFeedingRecords(legacyResult.data, this.data.nutritionSettings || {})
+      : null;
+  },
+
+  async consolidateFeedingRecords(records = []) {
+    if (!Array.isArray(records) || records.length <= 1) {
+      return records && records.length > 0 ? records[0] : null;
+    }
+
+    const mergedRecord = mergeFeedingRecords(records, this.data.nutritionSettings || {});
+    if (!mergedRecord?._id) return mergedRecord;
+
+    try {
+      const db = wx.cloud.database();
+      await db.collection('feeding_records').doc(mergedRecord._id).update({
+        data: {
+          basicInfo: mergedRecord.basicInfo || {},
+          feedings: mergedRecord.feedings || [],
+          intakes: mergedRecord.intakes || [],
+          summary: mergedRecord.summary || {},
+          updatedAt: db.serverDate()
+        }
+      });
+    } catch (error) {
+      console.error('合并同日记录失败:', error);
+    }
+
+    return mergedRecord;
+  },
+
+  openCopyCalendar(type) {
+    const configMap = {
+      feeding: {
+        hasSource: () => (this.data.feedings || []).length > 0,
+        emptyText: '当前日期暂无喂奶记录',
+        label: '喂奶记录'
+      },
+      food: {
+        hasSource: () => (this.data.foodIntakes || []).length > 0,
+        emptyText: '当前日期暂无食物记录',
+        label: '食物记录'
+      },
+      medication: {
+        hasSource: () => (this.data.medicationRecords || []).length > 0,
+        emptyText: '当前日期暂无用药记录',
+        label: '用药记录'
+      }
+    };
+
+    const config = configMap[type];
+    if (!config) return;
+
+    if (!config.hasSource()) {
+      wx.showToast({ title: config.emptyText, icon: 'none' });
+      return;
+    }
+
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    const [year, month] = selectedDate.split('-').map(Number);
+    this.initCalendar(year, month);
+    this.setData({
+      showCalendarPicker: true,
+      copyCalendarContext: {
+        type,
+        label: config.label
+      }
+    });
+  },
+
+  onCopyFeedingToDate() {
+    this.openCopyCalendar('feeding');
+  },
+
+  onCopyFoodToDate() {
+    this.openCopyCalendar('food');
+  },
+
+  onCopyMedicationToDate() {
+    this.openCopyCalendar('medication');
+  },
+
+  async handleCopyDatePicked(targetDateStr) {
+    if (!targetDateStr) return;
+    if (targetDateStr === this.data.selectedDate) {
+      wx.showToast({
+        title: '目标日期不能是当前日期',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const type = this.data.copyCalendarContext?.type;
+    this.setData({
+      showCalendarPicker: false,
+      copyCalendarContext: null
+    });
+
+    if (type === 'feeding') {
+      await this.applyFeedingCopyToDate(targetDateStr);
+      return;
+    }
+    if (type === 'food') {
+      await this.applyFoodCopyToDate(targetDateStr);
+      return;
+    }
+    if (type === 'medication') {
+      await this.applyMedicationCopyToDate(targetDateStr);
+    }
+  },
+
+  async confirmOverwriteForDimension({ targetDateStr, dimensionLabel, hasExisting }) {
+    if (!hasExisting) return true;
+
+    return new Promise(resolve => {
+      wx.showModal({
+        title: '目标日期已有记录',
+        content: `${this.formatDisplayDate(targetDateStr)} 已有${dimensionLabel}，是否确认覆盖？`,
+        confirmText: '确认覆盖',
+        success: res => resolve(!!res.confirm),
+        fail: () => resolve(false)
+      });
+    });
+  },
+
+  async applyFeedingCopyToDate(targetDateStr) {
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    const sourceFeedings = this.data.feedings || [];
+    const targetRecord = await this.getFeedingRecordByDate(targetDateStr);
+    const shouldContinue = await this.confirmOverwriteForDimension({
+      targetDateStr,
+      dimensionLabel: '喂奶记录',
+      hasExisting: !!(targetRecord && Array.isArray(targetRecord.feedings) && targetRecord.feedings.length > 0)
+    });
+    if (!shouldContinue) return;
+
+    const copiedFeedings = sourceFeedings.map(item => cloneFeedingForDate(item, targetDateStr, babyUid));
+    const targetIntakes = normalizeIntakes(targetRecord?.intakes || []);
+    const updatedSummary = calculateMacroSummary(targetIntakes, copiedFeedings, this.data.nutritionSettings || {});
+
+    wx.showLoading({ title: '复制中...' });
+    try {
+      const db = wx.cloud.database();
+      if (targetRecord?._id) {
+        await db.collection('feeding_records').doc(targetRecord._id).update({
+          data: {
+            feedings: copiedFeedings,
+            summary: updatedSummary,
+            updatedAt: db.serverDate()
+          }
+        });
+      } else {
+        await db.collection('feeding_records').add({
+          data: {
+            date: buildDateTimeFromDateKey(targetDateStr, '00:00'),
+            basicInfo: {},
+            feedings: copiedFeedings,
+            intakes: [],
+            medicationRecords: [],
+            summary: updatedSummary,
+            babyUid,
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          }
+        });
+      }
+      wx.hideLoading();
+      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+    } catch (error) {
+      console.error('复制喂奶记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '复制失败', icon: 'none' });
+    }
+  },
+
+  async applyFoodCopyToDate(targetDateStr) {
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    const sourceFoodIntakes = normalizeIntakes(this.data.foodIntakes || []);
+    const targetRecord = await this.getFeedingRecordByDate(targetDateStr);
+    const targetIntakes = normalizeIntakes(targetRecord?.intakes || []);
+    const targetNonFoodIntakes = targetIntakes.filter(item => item.type === 'milk');
+    const targetFoodCount = targetIntakes.filter(item => item.type !== 'milk').length;
+    const shouldContinue = await this.confirmOverwriteForDimension({
+      targetDateStr,
+      dimensionLabel: '食物记录',
+      hasExisting: targetFoodCount > 0
+    });
+    if (!shouldContinue) return;
+
+    const openid = wx.getStorageSync('openid') || '';
+    const copiedFoodIntakes = sourceFoodIntakes.map(item => cloneIntakeForDate(item, openid));
+    const mergedIntakes = [...targetNonFoodIntakes, ...copiedFoodIntakes];
+    const updatedSummary = calculateMacroSummary(mergedIntakes, targetRecord?.feedings || [], this.data.nutritionSettings || {});
+
+    wx.showLoading({ title: '复制中...' });
+    try {
+      const db = wx.cloud.database();
+      if (targetRecord?._id) {
+        await db.collection('feeding_records').doc(targetRecord._id).update({
+          data: {
+            intakes: mergedIntakes,
+            summary: updatedSummary,
+            updatedAt: db.serverDate()
+          }
+        });
+      } else {
+        await db.collection('feeding_records').add({
+          data: {
+            date: buildDateTimeFromDateKey(targetDateStr, '00:00'),
+            basicInfo: {},
+            feedings: [],
+            intakes: mergedIntakes,
+            medicationRecords: [],
+            summary: updatedSummary,
+            babyUid,
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          }
+        });
+      }
+      wx.hideLoading();
+      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+    } catch (error) {
+      console.error('复制食物记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '复制失败', icon: 'none' });
+    }
+  },
+
+  async applyMedicationCopyToDate(targetDateStr) {
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    const targetResult = await MedicationRecordModel.findByDate(targetDateStr, babyUid);
+    const targetRecords = (targetResult.success ? targetResult.data : []) || [];
+    const shouldContinue = await this.confirmOverwriteForDimension({
+      targetDateStr,
+      dimensionLabel: '用药记录',
+      hasExisting: targetRecords.length > 0
+    });
+    if (!shouldContinue) return;
+
+    const copiedMedicationRecords = (this.data.medicationRecords || []).map(record => cloneMedicationForDate(record, targetDateStr, babyUid));
+    const db = wx.cloud.database();
+
+    wx.showLoading({ title: '复制中...' });
+    try {
+      if (targetRecords.length > 0) {
+        await Promise.all(targetRecords.map(record => db.collection('medication_records').doc(record._id).remove()));
+      }
+      if (copiedMedicationRecords.length > 0) {
+        await Promise.all(
+          copiedMedicationRecords.map(record =>
+            db.collection('medication_records').add({
+              data: {
+                ...record,
+                createdAt: db.serverDate(),
+                updatedAt: db.serverDate()
+              }
+            })
+          )
+        );
+      }
+      wx.hideLoading();
+      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+    } catch (error) {
+      console.error('复制用药记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '复制失败', icon: 'none' });
+    }
   },
 
   hideCalendar: function() {
-    this.setData({ showCalendarPicker: false });
+    this.setData({
+      showCalendarPicker: false,
+      copyCalendarContext: null
+    });
   },
 
   prevMonth: function() {
@@ -1689,6 +2213,17 @@ Page({
 
   selectCalendarDay: function(e) {
     const selectedDate = e.currentTarget.dataset.date;
+    if (this.data.copyCalendarContext) {
+      if (isFutureDateKey(selectedDate)) {
+        wx.showToast({
+          title: '复制目标不能晚于今天',
+          icon: 'none'
+        });
+        return;
+      }
+      this.handleCopyDatePicked(selectedDate);
+      return;
+    }
     
     // 查找日期在列表中的索引，如果找到则更新滚动位置
     const index = this.data.dateList.findIndex(item => item.date === selectedDate);
@@ -1708,6 +2243,11 @@ Page({
   goToToday: function() {
     const today = new Date();
     const formattedDate = this.formatDate(today);
+
+    if (this.data.copyCalendarContext) {
+      this.handleCopyDatePicked(formattedDate);
+      return;
+    }
     
     this.setData({
       selectedDate: formattedDate,
@@ -1719,6 +2259,10 @@ Page({
     
     this.fetchDailyRecords(formattedDate);
     this.initCalendar(today.getFullYear(), today.getMonth() + 1);
+  },
+
+  isFutureCalendarDay(dateStr) {
+    return isFutureDateKey(dateStr);
   },
 
   switchTab: function(e) {
@@ -1789,7 +2333,7 @@ Page({
       }
 
       if (effectiveFeedingResult.data && effectiveFeedingResult.data.length > 0) {
-        const record = effectiveFeedingResult.data[0];
+        const record = await this.consolidateFeedingRecords(effectiveFeedingResult.data);
         const feedings = record.feedings || [];
         const intakes = normalizeIntakes(record.intakes || []);
         const foodIntakes = intakes.filter(item => item.type !== 'milk');
@@ -2609,9 +3153,10 @@ Page({
         feeding.notes = feedingNotes;
       }
 
-      if (res.data.length > 0) {
+      const existingRecord = pickPrimaryFeedingRecord(res.data || []);
+      if (existingRecord?._id) {
         // 更新现有记录
-        await db.collection('feeding_records').doc(res.data[0]._id).update({
+        await db.collection('feeding_records').doc(existingRecord._id).update({
           data: {
             feedings: _.push([feeding]),
             updatedAt: db.serverDate()
@@ -2890,7 +3435,16 @@ Page({
           return;
         }
 
-        const dayRecord = res.data[0];
+        const dayRecord = pickPrimaryFeedingRecord(res.data || []);
+        if (!dayRecord) {
+          wx.hideLoading();
+          wx.showToast({
+            title: '未找到记录',
+            icon: 'error'
+          });
+          this.hideDeleteConfirm();
+          return;
+        }
         const feedings = [...dayRecord.feedings];
         
         // 找到要删除的记录（通过对比时间和奶量来确定）
@@ -3308,7 +3862,15 @@ Page({
       }
       
       // 获取记录并更新
-      const record = res.data[0];
+      const record = pickPrimaryFeedingRecord(res.data || []);
+      if (!record) {
+        wx.hideLoading();
+        wx.showToast({
+          title: '未找到记录',
+          icon: 'error'
+        });
+        return;
+      }
       const feedings = [...record.feedings];
       
       // 找到要编辑的记录（通过对比时间和奶量来确定）
@@ -4248,12 +4810,13 @@ Page({
       return acc;
     }, { updatedAt: db.serverDate() });
 
-    if (res.data.length > 0) {
-      await db.collection('feeding_records').doc(res.data[0]._id).update({
+    const existingRecord = pickPrimaryFeedingRecord(res.data || []);
+    if (existingRecord?._id) {
+      await db.collection('feeding_records').doc(existingRecord._id).update({
         data: payload
       });
       if (!this.data.recordId) {
-        this.setData({ recordId: res.data[0]._id });
+        this.setData({ recordId: existingRecord._id });
       }
       return;
     }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "LemonBaby 数据模型守护"
+  short_description: "守护宝宝档案、协作角色、兼容表与本地缓存数据约束"
+  default_prompt: "使用 $lemonbaby-data-model-guardian 检查这个项目的数据模型、兼容逻辑、集合关系和改动风险。"

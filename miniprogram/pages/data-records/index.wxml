@@ -31,7 +31,7 @@
     <!-- 日期显示头部 -->
     <view class="date-header">
       <view class="selected-date">{{formattedSelectedDate}}</view>
-      <view class="calendar-icon" bindtap="showCalendar">日历</view>
+      <view class="header-action calendar-icon" bindtap="showCalendar">日历</view>
     </view>
     <block>
       <!-- 喂奶记录汇总卡片 -->
@@ -271,13 +271,17 @@
 
       <block wx:if="{{activeTab === 'food'}}">
         <view class="card">
-          <view class="card-title">
-            <text>食物摄入</text>
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="onCopyFoodToDate">
+              <text>复制数据</text>
+            </view>
             <view class="add-btn" bindtap="showFoodIntakeExperimentModal">
               <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
               <text>补充食物</text>
             </view>
           </view>
+        </view>
           <view class="intake-list" wx:if="{{foodIntakes.length > 0}}">
             <view class="food-record-item" wx:for="{{foodIntakes}}" wx:key="_id">
               <view class="record-content">
@@ -301,13 +305,17 @@
 
       <block wx:elif="{{activeTab === 'medication'}}">
         <view class="card">
-          <view class="card-title">
-            <text>用药记录</text>
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="onCopyMedicationToDate">
+              <text>复制数据</text>
+            </view>
             <view class="add-btn" bindtap="showAddMedicationModal">
               <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
               <text>补充记录</text>
             </view>
           </view>
+        </view>
           <view class="medication-group-records">
             <view class="medication-record-item" wx:for="{{medicationRecords}}" wx:key="_id" wx:for-item="record">
               <view class="record-content">
@@ -333,13 +341,17 @@
       <block wx:else>
         <!-- 喂奶记录列表 -->
         <view class="card">
-          <view class="card-title">
-            <text>喂奶详细记录</text>
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="onCopyFeedingToDate">
+              <text>复制数据</text>
+            </view>
             <view class="add-btn" bindtap="showAddFeedingModal">
               <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
               <text>补充记录</text>
             </view>
           </view>
+        </view>
           <view wx:if="{{feedingRecords.length > 0}}">
             <feeding-record-card
               wx:for="{{feedingRecords}}"
@@ -420,13 +432,16 @@
         <view class="month-title">{{calendarYear}}年{{calendarMonth}}月</view>
         <view bindtap="nextMonth">〉</view>
       </view>
+      <view class="calendar-mode-tip" wx:if="{{copyCalendarContext}}">
+        选择要应用 {{copyCalendarContext.label}} 的目标日期
+      </view>
       <view class="weekday-header">
         <view class="weekday-item" wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this">
           {{item}}
         </view>
       </view>
       <view class="calendar-grid">
-        <view class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}}" wx:for="{{calendarDays}}" wx:key="date" bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}" data-date="{{item.date}}">
+        <view class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate && !copyCalendarContext ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}} {{copyCalendarContext && isFutureCalendarDay(item.date) ? 'disabled-future' : ''}}" wx:for="{{calendarDays}}" wx:key="date" bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}" data-date="{{item.date}}">
           {{item.day}}
         </view>
       </view>

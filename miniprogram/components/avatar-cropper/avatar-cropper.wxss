@@ -37,6 +37,7 @@
 
 .cropper-footer {
   display: flex;
+  position: relative;
 }
 
 .cropper-btn {
@@ -61,4 +62,26 @@
   color: #fff;
   border-color: #FFB800;
   background: #FFB800;
+}
+
+.cropper-btn[disabled] {
+  opacity: 0.6;
+}
+
+.uploading-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 28rpx;
+  pointer-events: none;
+}
+
+.uploading-text {
+  background: rgba(0, 0, 0, 0.55);
+  padding: 12rpx 24rpx;
+  border-radius: 16rpx;
 }

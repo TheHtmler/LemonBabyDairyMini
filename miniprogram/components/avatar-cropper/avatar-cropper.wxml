@@ -16,8 +16,11 @@
       ></canvas>
     </view>
     <view class="cropper-footer">
-      <button class="cropper-btn cancel" bindtap="handleClose">取消</button>
-      <button class="cropper-btn confirm" bindtap="handleConfirm">确定</button>
+      <button class="cropper-btn cancel" bindtap="handleClose" disabled="{{uploading}}">取消</button>
+      <button class="cropper-btn confirm" bindtap="handleConfirm" disabled="{{uploading}}">{{uploading ? '上传中…' : '确定'}}</button>
+    </view>
+    <view class="uploading-mask" wx:if="{{uploading}}">
+      <view class="uploading-text">上传中…</view>
     </view>
   </view>
 </view>

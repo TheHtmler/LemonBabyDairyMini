@@ -1,0 +1,195 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">趋势加载中...</text>
+  </view>
+
+  <view wx:else class="content">
+    <view class="hero">
+      <view class="hero-header">
+        <view class="hero-title">趋势报告</view>
+        <view class="hero-range">{{rangeLabel}} · {{rangeText}}</view>
+      </view>
+      <view class="hero-metrics">
+        <view class="hero-metric">
+          <text class="metric-label">记录日均</text>
+          <view class="metric-value">
+            <text class="metric-number">{{summary.avgPerDay}}</text>
+            <text class="metric-unit">{{summary.avgPerDay === '--' ? '' : 'ml'}}</text>
+          </view>
+        </view>
+        <view class="hero-metric">
+          <text class="metric-label">趋势</text>
+          <view class="metric-value">
+            <text class="metric-number">{{summary.trendLabel}}</text>
+            <text class="metric-unit">{{summary.trendSlope === '--' ? '' : summary.trendSlope}}</text>
+          </view>
+        </view>
+        <view class="hero-metric">
+          <text class="metric-label">数据质量</text>
+          <view class="metric-value">
+            <text class="metric-number">{{summary.dataQuality}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="range-tabs">
+      <view class="tab-item {{rangeType === 'week' ? 'active' : ''}}" bindtap="onRangeChange" data-type="week">
+        <text class="tab-text">周趋势</text>
+      </view>
+      <view class="tab-item {{rangeType === 'month' ? 'active' : ''}}" bindtap="onRangeChange" data-type="month">
+        <text class="tab-text">月趋势</text>
+      </view>
+    </view>
+
+    <view class="range-actions">
+      <view class="range-info">当前区间：{{rangeText}}</view>
+      <button class="range-btn" bindtap="openRangePicker">自定义区间</button>
+    </view>
+
+    <view class="card">
+      <view class="card-title">核心指标</view>
+      <view class="stat-grid">
+        <view class="stat-item">
+          <text class="stat-label">区间日均奶量</text>
+          <text class="stat-value">{{summary.periodAvgPerDay}}{{summary.periodAvgPerDay === '--' ? '' : ' ml/天'}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">记录日均奶量</text>
+          <text class="stat-value">{{summary.avgPerDay}}{{summary.avgPerDay === '--' ? '' : ' ml/天'}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">单次均量</text>
+          <text class="stat-value">{{summary.avgPerFeed}}{{summary.avgPerFeed === '--' ? '' : ' ml/次'}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">奶量覆盖率</text>
+          <text class="stat-value">{{summary.coverage}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">奶类总热量</text>
+          <text class="stat-value">{{summary.milkCaloriesTotal}}{{summary.milkCaloriesTotal === '--' ? '' : ' kcal'}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">食物总热量</text>
+          <text class="stat-value">{{summary.foodCaloriesTotal}}{{summary.foodCaloriesTotal === '--' ? '' : ' kcal'}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">奶类记录笔数</text>
+          <text class="stat-value">{{summary.records}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">食物记录笔数</text>
+          <text class="stat-value">{{summary.foodRecords}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">结构分布</view>
+      <view class="mix-block">
+        <view class="mix-head">
+          <text class="mix-title">奶量结构（天然/特殊）</text>
+          <text class="mix-value">{{summary.naturalRatioText}} / {{summary.specialRatio}}</text>
+        </view>
+        <view class="stack-bar">
+          <view class="stack-seg natural" style="width: {{summary.naturalRatioValue}}%;"></view>
+          <view class="stack-seg special" style="width: {{summary.specialRatioValue}}%;"></view>
+        </view>
+      </view>
+      <view class="mix-block">
+        <view class="mix-head">
+          <text class="mix-title">热量结构（奶/食物）</text>
+          <text class="mix-value">{{summary.milkCalorieRatio}} / {{summary.foodCalorieRatio}}</text>
+        </view>
+        <view class="stack-bar">
+          <view class="stack-seg milk" style="width: {{summary.milkCalorieRatioValue}}%;"></view>
+          <view class="stack-seg food" style="width: {{summary.foodCalorieRatioValue}}%;"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">趋势图表</view>
+      <view class="chart-switch">
+        <view class="switch-item {{chartView === 'calorie' ? 'active' : ''}}" bindtap="onChartViewChange" data-view="calorie">热量</view>
+        <view class="switch-item {{chartView === 'protein' ? 'active' : ''}}" bindtap="onChartViewChange" data-view="protein">蛋白</view>
+        <view class="switch-item {{chartView === 'ratio' ? 'active' : ''}}" bindtap="onChartViewChange" data-view="ratio">占比</view>
+      </view>
+
+      <view wx:if="{{hasChartData}}" class="charts">
+        <view wx:if="{{chartView === 'calorie'}}" class="chart-section">
+          <view class="chart-header">
+            <text class="chart-title">🔥 热量趋势</text>
+            <text class="chart-subtitle">奶类与食物总热量</text>
+          </view>
+          <view class="chart-wrapper">
+            <ec-canvas id="calorie-chart" canvas-id="calorie-chart" ec="{{ec}}" bind:init="initCalorieChart"></ec-canvas>
+          </view>
+        </view>
+
+        <view wx:if="{{chartView === 'protein'}}" class="chart-section">
+          <view class="chart-header">
+            <text class="chart-title">🥛 蛋白趋势</text>
+            <text class="chart-subtitle">天然蛋白与特殊蛋白</text>
+          </view>
+          <view class="chart-wrapper">
+            <ec-canvas id="protein-chart" canvas-id="protein-chart" ec="{{ec}}" bind:init="initProteinChart"></ec-canvas>
+          </view>
+        </view>
+
+        <view wx:if="{{chartView === 'ratio'}}" class="chart-section">
+          <view class="chart-header">
+            <text class="chart-title">📊 结构占比</text>
+            <text class="chart-subtitle">奶类与食物热量占比</text>
+          </view>
+          <view class="chart-wrapper chart-wrapper--compact">
+            <ec-canvas id="ratio-chart" canvas-id="ratio-chart" ec="{{ec}}" bind:init="initRatioChart"></ec-canvas>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="empty">暂无趋势数据</view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">客观分析</view>
+      <view wx:if="{{objectiveFindings.length}}" class="finding-list">
+        <view class="finding-item" wx:for="{{objectiveFindings}}" wx:key="title">
+          <text class="finding-title">{{item.title}}</text>
+          <text class="finding-text">{{item.text}}</text>
+        </view>
+      </view>
+      <view wx:else class="empty">暂无结论</view>
+
+      <view class="section-subtitle">统计口径</view>
+      <view class="formula-list">
+        <view class="formula-item" wx:for="{{metricDefinitions}}" wx:key="text">
+          <text class="formula-text">{{item.text}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showRangePicker}}" class="range-picker-mask" bindtap="closeRangePicker">
+    <view class="range-picker-modal" catchtap="stopTap">
+      <view class="range-picker-title">选择日期范围</view>
+      <view class="range-picker-row">
+        <text class="range-picker-label">开始</text>
+        <picker mode="date" value="{{tempRangeStart}}" start="2020-01-01" end="{{todayStr}}" bindchange="onStartDateChange">
+          <view class="range-picker-value">{{tempRangeStart}}</view>
+        </picker>
+      </view>
+      <view class="range-picker-row">
+        <text class="range-picker-label">结束</text>
+        <picker mode="date" value="{{tempRangeEnd}}" start="2020-01-01" end="{{todayStr}}" bindchange="onEndDateChange">
+          <view class="range-picker-value">{{tempRangeEnd}}</view>
+        </picker>
+      </view>
+      <view class="range-picker-actions">
+        <view class="range-picker-btn ghost" bindtap="closeRangePicker">取消</view>
+        <view class="range-picker-btn primary" bindtap="applyCustomRange">确定</view>
+      </view>
+    </view>
+  </view>
+</view>

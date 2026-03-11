@@ -1,0 +1,4 @@
+interface:
+  display_name: "代谢病儿科与 MMA 专家"
+  short_description: "聚焦儿童代谢病、MMA、喂养结构与全球临床证据"
+  default_prompt: "使用 $pediatric-metabolic-mma-expert 分析儿童代谢病，尤其是 MMA 的喂养、饮食结构、证据与临床风险。"

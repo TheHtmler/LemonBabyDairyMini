@@ -2,6 +2,18 @@
   <!-- 点击空白处关闭菜单的覆盖层 -->
   <view class="menu-overlay" wx:if="{{activeFeedingMenu !== -1 || activeFoodMenu !== -1}}" bindtap="onTapPage"></view>
 
+  <view class="release-notice-banner" wx:if="{{releaseNoticeVisible && releaseNoticeText}}">
+    <view class="release-notice-fixed">
+      <text class="release-notice-prefix">公告</text>
+    </view>
+    <view class="release-notice-marquee">
+      <view class="release-notice-track">
+        <text class="release-notice-copy">{{releaseNoticeText}}</text>
+        <text class="release-notice-copy">{{releaseNoticeText}}</text>
+      </view>
+    </view>
+  </view>
+
   <!-- Baby Info Section -->
   <view class="section baby-info-section">
     <view class="baby-name">{{babyName}}</view>

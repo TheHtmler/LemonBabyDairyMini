@@ -269,6 +269,11 @@ Page({
     
     // === UI 标签页 ===
     activeTab: 'feeding',
+    releaseNoticeVisible: true,
+    releaseNoticeItems: [
+      '新增数据记录页复制数据功能，一键应用到目标日'
+    ],
+    releaseNoticeText: '新增数据记录页复制数据功能，一键应用到目标日。',
     
     // === 排便记录相关 ===
     selectedBowelRecord: null, // 选中的排便记录
@@ -292,6 +297,14 @@ Page({
   // 获取今日日期
   getTodayDate() {
     return uiUtils.formatters.formatDateDisplay(new Date(), 'YYYY年MM月DD日');
+  },
+
+  buildReleaseNoticeText(items = []) {
+    const validItems = items
+      .map(item => (item || '').toString().trim())
+      .filter(Boolean);
+    if (validItems.length === 0) return '';
+    return `${validItems.join('；')}。`;
   },
 
   // 获取分组的药物记录
@@ -427,7 +440,8 @@ Page({
 
   onLoad(options = {}) {
     this.setData({
-      autoOpenFoodModal: options.openFoodModal === '1'
+      autoOpenFoodModal: options.openFoodModal === '1',
+      releaseNoticeText: this.buildReleaseNoticeText(this.data.releaseNoticeItems)
     });
     this.initializePage();
   },
@@ -1024,6 +1038,45 @@ Page({
         const timeB = (b.recordedAt || '').replace(':', '');
         return timeB.localeCompare(timeA);
       });
+  },
+
+  mergeSameDayFeedingRecords(records = []) {
+    if (!Array.isArray(records) || records.length === 0) return null;
+
+    const resolveTimestamp = (record) => {
+      const candidates = [record?.updatedAt, record?.createdAt, record?.date];
+      for (const candidate of candidates) {
+        const timestamp = new Date(candidate).getTime();
+        if (!Number.isNaN(timestamp)) return timestamp;
+      }
+      return 0;
+    };
+
+    const sortedRecords = [...records].sort((a, b) => resolveTimestamp(b) - resolveTimestamp(a));
+    const latestRecord = sortedRecords[0] || {};
+    const mergedFeedings = sortedRecords.flatMap(record => Array.isArray(record?.feedings) ? record.feedings : []);
+    const mergedIntakes = this.normalizeIntakes(
+      sortedRecords.flatMap(record => Array.isArray(record?.intakes) ? record.intakes : [])
+    );
+
+    const mergedBasicInfo = sortedRecords.reduce((acc, record) => {
+      const current = record?.basicInfo || {};
+      return {
+        ...acc,
+        ...current
+      };
+    }, latestRecord?.basicInfo || {});
+
+    if (!mergedBasicInfo.weight && latestRecord?.weight) {
+      mergedBasicInfo.weight = latestRecord.weight;
+    }
+
+    return {
+      ...latestRecord,
+      basicInfo: mergedBasicInfo,
+      feedings: mergedFeedings,
+      intakes: mergedIntakes
+    };
   },
 
   // 计算宏量营养统计
@@ -1720,6 +1773,8 @@ Page({
       const db = wx.cloud.database();
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 获取今天的0点
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1); // 获取明天的0点
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
       // 获取宝宝UID
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
@@ -1733,7 +1788,7 @@ Page({
         // 查询喂养记录
         db.collection('feeding_records')
           .where({
-            date: db.command.gte(startOfDay),
+            date: db.command.gte(startOfDay).and(db.command.lt(endOfDay)),
             babyUid: babyUid
           })
           .get(),
@@ -1744,6 +1799,15 @@ Page({
       
       // 等待加载药物列表
       await this.loadMedications(silent);
+
+      let sameDayRecords = feedingResult.data || [];
+      if (sameDayRecords.length === 0) {
+        const legacyResult = await db.collection('feeding_records').where({
+          date: todayKey,
+          babyUid: babyUid
+        }).get();
+        sameDayRecords = legacyResult.data || [];
+      }
       
       // 处理喂养记录
       let feedingsToSet = [];
@@ -1758,8 +1822,8 @@ Page({
       let foodIntakesToSet = [];
       let macroSummary = this.calculateMacroSummary([], []);
 
-      if (feedingResult.data.length > 0) {
-        const record = feedingResult.data[0];
+      if (sameDayRecords.length > 0) {
+        const record = this.mergeSameDayFeedingRecords(sameDayRecords);
         feedingsToSet = this.sortFeedingsByTimeDesc(record.feedings || []).map(item => ({
           ...item,
           naturalMilkType: item.naturalMilkType || 'breast'
