@@ -36,20 +36,6 @@
     />
   </view>
 
-  <view class="section-card">
-    <view class="section-header">
-      <text class="section-title">联系方式</text>
-      <text class="section-meta">选填，方便我们联系你确认问题</text>
-    </view>
-    <input
-      class="contact-input"
-      maxlength="60"
-      placeholder="可填写微信号、手机号或邮箱"
-      value="{{contact}}"
-      bindinput="onContactInput"
-    />
-  </view>
-
   <view class="submit-bar">
     <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitFeedback">
       提交反馈
