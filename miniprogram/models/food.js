@@ -74,6 +74,50 @@ class FoodModel {
     }
   }
 
+  async resolveFoodImageUrls(foods = []) {
+    const list = Array.isArray(foods) ? foods : [];
+    const fileIds = Array.from(
+      new Set(
+        list
+          .map(food => (food?.image || '').toString().trim())
+          .filter(image => image.startsWith('cloud://'))
+      )
+    );
+
+    if (!fileIds.length) {
+      return list;
+    }
+
+    const imageUrlMap = new Map();
+    const chunkSize = 50;
+
+    try {
+      for (let i = 0; i < fileIds.length; i += chunkSize) {
+        const chunk = fileIds.slice(i, i + chunkSize);
+        const { fileList } = await wx.cloud.getTempFileURL({
+          fileList: chunk.map(fileID => ({ fileID, maxAge: 604800 }))
+        });
+
+        (fileList || []).forEach(item => {
+          if (item?.fileID && item.tempFileURL) {
+            imageUrlMap.set(item.fileID, item.tempFileURL);
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('解析食物图片临时地址失败:', error);
+      return list;
+    }
+
+    return list.map(food => {
+      const image = (food?.image || '').toString().trim();
+      return {
+        ...food,
+        imageUrl: imageUrlMap.get(image) || image || ''
+      };
+    });
+  }
+
   /**
    * 计算指定数量食物的营养值
    * @param {Object} food 食物对象
@@ -212,6 +256,7 @@ class FoodModel {
         .update({
           data: {
             ...payload,
+            defaultQuantity: _.remove(),
             sharedBabyUids: _.addToSet(babyUid)
           }
         });
@@ -256,8 +301,6 @@ class FoodModel {
     if (!food) return null;
     const category = food.categoryLevel1 || food.category || '婴幼儿辅食';
     const baseQuantity = Number(food.baseQuantity) || 100;
-    const defaultQuantity =
-      Number(food.defaultQuantity || food.baseQuantity || baseQuantity) || baseQuantity;
     return {
       ...food,
       _id: food._id || `system_${food.name}_${category}`,
@@ -266,7 +309,6 @@ class FoodModel {
       categoryLevel2: food.categoryLevel2 || '',
       baseUnit: food.baseUnit || 'g',
       baseQuantity,
-      defaultQuantity,
       nutritionPerUnit: this._normalizeNutrition(food.nutritionPerUnit || {}),
       proteinSource: food.proteinSource || 'natural',
       nutritionSource: food.nutritionSource || 'system',

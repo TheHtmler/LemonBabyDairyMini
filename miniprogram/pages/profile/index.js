@@ -1,3 +1,5 @@
+const { isDeveloperOpenid } = require('../../config/developer');
+
 Page({
   data: {
     userInfo: {},
@@ -6,6 +8,7 @@ Page({
     isEditingProfile: false,
     tempNickName: '',
     userRole: '', // 用户角色
+    isDeveloper: false,
     showInviteCode: false, // 是否显示邀请码（创建者可见）
     inviteCode: '', // 邀请码
     menuList: [
@@ -76,6 +79,28 @@ Page({
         path: '/pages/about/index'
       },
       {
+        id: 12,
+        name: '意见反馈',
+        icon: 'info',
+        path: '/pages/feedback/index',
+        description: '告诉我们问题、建议或想增加的功能'
+      },
+      {
+        id: 14,
+        name: '应急支持',
+        icon: 'info',
+        path: '/pages/emergency-support/index',
+        description: '查看急救卡与补液热量计算'
+      },
+      {
+        id: 13,
+        name: '反馈列表',
+        icon: 'info',
+        path: '/pages/feedback-list/index',
+        description: '查看用户提交的反馈并标记处理状态',
+        showForDeveloper: true
+      },
+      {
         id: 8,
         name: '注销账户',
         icon: 'logout',
@@ -98,8 +123,10 @@ Page({
     // 获取用户角色
     const app = getApp();
     const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
+    const openid = app.globalData.openid || wx.getStorageSync('openid') || '';
     this.setData({
-      userRole: userRole
+      userRole: userRole,
+      isDeveloper: isDeveloperOpenid(openid)
     });
 
     // 获取宝宝信息

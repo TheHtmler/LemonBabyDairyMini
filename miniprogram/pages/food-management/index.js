@@ -18,13 +18,38 @@ const DEFAULT_CATEGORY_SUGGESTIONS = [
 ];
 const NUTRITION_NUMBER_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'];
 
-const createEmptyFormData = (category = DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯') => ({
+function normalizeSearchText(value = '') {
+  return value.toString().trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function fuzzyIncludes(text = '', query = '') {
+  const source = normalizeSearchText(text);
+  const keyword = normalizeSearchText(query);
+  if (!keyword) return true;
+  if (!source) return false;
+  if (source.includes(keyword)) return true;
+
+  let queryIndex = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    if (source[i] === keyword[queryIndex]) {
+      queryIndex += 1;
+      if (queryIndex === keyword.length) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const DEFAULT_UNIT_SUGGESTIONS = ['g', 'ml', '袋', '勺', '份'];
+const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
+
+const createEmptyFormData = (category = '', unit = '') => ({
   name: '',
   category,
   categoryLevel2: '',
-  unit: 'g',
+  unit,
   baseQuantity: '100',
-  defaultQuantity: '100',
   calories: '',
   image: '',
   protein: '',
@@ -42,8 +67,19 @@ Page({
     loading: false,
     foods: [],
     groupedFoods: [],
+    searchQuery: '',
+    filteredFoodCount: 0,
+    activeCategory: '',
+    activeFoods: [],
+    categoryNavScrollIntoView: '',
+    foodPanelScrollTop: 0,
     showAddModal: false,
     formData: createEmptyFormData(),
+    energyKjInput: '',
+    foodImagePreviewUrl: '',
+    uploadingFoodImage: false,
+    categoryPickerIndex: 0,
+    unitPickerIndex: 0,
     proteinSourceOptions: [
       { label: '天然蛋白', value: 'natural' },
       { label: '特殊蛋白', value: 'special' }
@@ -51,14 +87,19 @@ Page({
     categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS],
     customCategories: [],
     customCategoryInput: '',
-    unitSuggestions: ['g', 'ml', '袋', '勺', '份'],
+    showCategoryCreator: false,
+    unitSuggestions: [...DEFAULT_UNIT_SUGGESTIONS],
+    customUnitInput: '',
+    showUnitCreator: false,
     babyUid: '',
     editingFoodId: '',
-    editingFoodName: ''
+    editingFoodName: '',
+    foodPlaceholderImage: FOOD_PLACEHOLDER_IMAGE
   },
 
-  async onLoad() {
+  async onLoad(options = {}) {
     try {
+      this.shouldOpenAddModal = options.openAdd === '1';
       await waitForAppInitialization();
       const babyUid = getBabyUid();
 
@@ -68,6 +109,10 @@ Page({
 
       await this.loadCustomCategories();
       await this.loadFoods();
+      if (this.shouldOpenAddModal) {
+        this.shouldOpenAddModal = false;
+        this.showAddModal();
+      }
     } catch (error) {
       handleError(error, { title: '加载食物失败' });
     }
@@ -84,8 +129,9 @@ Page({
       const babyUid = this.data.babyUid || getBabyUid();
       this.setData({ babyUid: babyUid || '' });
       const foodsFromDb = await FoodModel.getAvailableFoods(babyUid);
+      const foodsWithImageUrls = await FoodModel.resolveFoodImageUrls(foodsFromDb || []);
 
-      const mergedFoods = (foodsFromDb || [])
+      const mergedFoods = (foodsWithImageUrls || [])
         .filter(item => !!item && !!item._id)
         .map(food => {
           const normalizedCategory = this.normalizeCategoryValue(
@@ -100,8 +146,8 @@ Page({
             isCustom: !food.isSystem,
             baseUnit: food.baseUnit || 'g',
             baseQuantity: Number(food.baseQuantity) || 100,
-            defaultQuantity: Number(food.defaultQuantity || food.baseQuantity || 100),
             image: food.image || '',
+            displayImage: food.imageUrl || food.image || FOOD_PLACEHOLDER_IMAGE,
             nutritionPerUnit: food.nutritionPerUnit || {
               calories: 0,
               protein: 0,
@@ -115,18 +161,31 @@ Page({
         })
         .sort((a, b) => a.name.localeCompare(b.name));
 
-      const groupedFoods = this.groupFoodsByCategory(mergedFoods);
-
       const existingCategories = Array.from(
         new Set(
           mergedFoods.map(item => item.category || (DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯'))
         )
       );
+      const existingUnits = Array.from(
+        new Set(
+          mergedFoods.map(item => (item.baseUnit || '').toString().trim()).filter(Boolean)
+        )
+      );
+      const categorySuggestions = this.mergeCategorySuggestions(existingCategories);
+      const unitSuggestions = this.mergeUnitSuggestions(existingUnits);
 
       this.setData({
         foods: mergedFoods,
-        groupedFoods,
-        categorySuggestions: this.mergeCategorySuggestions(existingCategories)
+        categorySuggestions,
+        categoryPickerIndex: this.getCategoryPickerIndex(
+          this.data.formData?.category || '',
+          categorySuggestions
+        ),
+        unitSuggestions,
+        unitPickerIndex: this.getUnitPickerIndex(this.data.formData?.unit || '', unitSuggestions)
+      });
+      this.updateGroupedFoods(mergedFoods, {
+        searchQuery: this.data.searchQuery
       });
     } catch (error) {
       console.error('加载食物数据失败:', error);
@@ -145,7 +204,12 @@ Page({
       if (!babyUid) {
         this.setData({
           customCategories: [],
-          categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS]
+          categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS],
+          unitSuggestions: [...DEFAULT_UNIT_SUGGESTIONS],
+          unitPickerIndex: this.getUnitPickerIndex(
+            this.data.formData?.unit || '',
+            [...DEFAULT_UNIT_SUGGESTIONS]
+          )
         });
         return;
       }
@@ -165,13 +229,23 @@ Page({
 
       this.setData({
         customCategories: normalizedNames,
-        categorySuggestions: suggestions
+        categorySuggestions: suggestions,
+        categoryPickerIndex: this.getCategoryPickerIndex(this.data.formData?.category || '', suggestions)
       });
     } catch (error) {
       console.warn('加载自定义分类失败:', error);
       this.setData({
         customCategories: [],
-        categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS]
+        categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS],
+        categoryPickerIndex: this.getCategoryPickerIndex(
+          this.data.formData?.category || '',
+          [...DEFAULT_CATEGORY_SUGGESTIONS]
+        ),
+        unitSuggestions: [...DEFAULT_UNIT_SUGGESTIONS],
+        unitPickerIndex: this.getUnitPickerIndex(
+          this.data.formData?.unit || '',
+          [...DEFAULT_UNIT_SUGGESTIONS]
+        )
       });
     }
   },
@@ -188,10 +262,73 @@ Page({
 
     return Object.keys(groups)
       .sort((a, b) => a.localeCompare(b))
-      .map(category => ({
+      .map((category, index) => ({
+        navId: `food-category-${index}`,
         category,
         items: groups[category].sort((a, b) => a.name.localeCompare(b.name))
       }));
+  },
+
+  buildFoodSearchText(food = {}) {
+    return [
+      food.name || '',
+      food.category || '',
+      food.categoryLevel1 || '',
+      food.categoryLevel2 || '',
+      food.aliasText || '',
+      Array.isArray(food.alias) ? food.alias.join(' ') : (food.alias || '')
+    ].join(' ');
+  },
+
+  matchesFoodSearch(food, query = '') {
+    const normalized = normalizeSearchText(query);
+    if (!normalized) return true;
+    return fuzzyIncludes(this.buildFoodSearchText(food), normalized);
+  },
+
+  filterFoods(foods = [], query = '') {
+    const normalized = normalizeSearchText(query);
+    if (!normalized) {
+      return foods;
+    }
+
+    return foods.filter(food => this.matchesFoodSearch(food, normalized));
+  },
+
+  getNextActiveCategory(groupedFoods = [], preferredCategory = '') {
+    if (!groupedFoods.length) {
+      return '';
+    }
+
+    const candidate = preferredCategory || this.data.activeCategory || '';
+    const matchedGroup = groupedFoods.find(group => group.category === candidate);
+    if (matchedGroup) {
+      return matchedGroup.category;
+    }
+
+    return groupedFoods[0].category;
+  },
+
+  updateGroupedFoods(foods = this.data.foods || [], options = {}) {
+    const searchQuery =
+      options.searchQuery !== undefined ? options.searchQuery : (this.data.searchQuery || '');
+    const filteredFoods = this.filterFoods(foods, searchQuery);
+    const filteredGroups = this.groupFoodsByCategory(filteredFoods);
+    const activeCategory = this.getNextActiveCategory(
+      filteredGroups,
+      options.activeCategory !== undefined ? options.activeCategory : this.data.activeCategory
+    );
+    const activeGroup = filteredGroups.find(group => group.category === activeCategory);
+
+    this.setData({
+      groupedFoods: filteredGroups,
+      filteredFoodCount: filteredFoods.length,
+      searchQuery,
+      activeCategory,
+      activeFoods: activeGroup ? activeGroup.items : [],
+      categoryNavScrollIntoView: activeGroup ? activeGroup.navId : '',
+      foodPanelScrollTop: 0
+    });
   },
 
   normalizeCategoryValue(value) {
@@ -226,11 +363,34 @@ Page({
   },
 
   getDefaultCategory() {
-    return (
-      this.data.categorySuggestions?.[0] ||
-      DEFAULT_CATEGORY_SUGGESTIONS[0] ||
-      '主食及谷薯'
+    return '';
+  },
+
+  getCategoryPickerIndex(category = '', suggestions = this.data.categorySuggestions || []) {
+    if (!category) return 0;
+    const normalizedCategory = this.normalizeCategoryValue(category);
+    const index = (suggestions || []).findIndex(
+      item => this.normalizeCategoryValue(item) === normalizedCategory
     );
+    return index >= 0 ? index : 0;
+  },
+
+  mergeUnitSuggestions(additionalUnits = []) {
+    const suggestions = new Set(DEFAULT_UNIT_SUGGESTIONS);
+    (additionalUnits || []).forEach(unit => {
+      const normalizedUnit = (unit || '').toString().trim();
+      if (normalizedUnit) {
+        suggestions.add(normalizedUnit);
+      }
+    });
+    return Array.from(suggestions);
+  },
+
+  getUnitPickerIndex(unit = '', suggestions = this.data.unitSuggestions || []) {
+    if (!unit) return 0;
+    const normalizedUnit = (unit || '').toString().trim();
+    const index = (suggestions || []).findIndex(item => item === normalizedUnit);
+    return index >= 0 ? index : 0;
   },
 
   parseNumber(value) {
@@ -262,13 +422,8 @@ Page({
     const formData = this.data.formData;
     const trimmedName = formData.name.trim();
     const normalizedCategory = this.normalizeCategoryValue(formData.category);
-    const baseUnit = (formData.unit || '').trim() || 'g';
+    const baseUnit = (formData.unit || '').trim();
     const baseQuantity = this.parseNumber(formData.baseQuantity) || 100;
-    const defaultQuantityParsed = this.parseNumber(formData.defaultQuantity);
-    const defaultQuantity =
-      defaultQuantityParsed !== null && defaultQuantityParsed > 0
-        ? defaultQuantityParsed
-        : baseQuantity;
 
     return {
       name: trimmedName,
@@ -277,7 +432,6 @@ Page({
       categoryLevel2: formData.categoryLevel2 || '',
       baseUnit,
       baseQuantity: baseQuantity,
-      defaultQuantity,
       nutritionPerUnit: this.buildNutritionPayload(formData),
       proteinSource: this.getProteinSourceValue(formData.proteinSourceIndex),
       foodType: 'food',
@@ -292,7 +446,7 @@ Page({
 
   buildFormDataFromFood(food) {
     if (!food) {
-      return createEmptyFormData(this.getDefaultCategory());
+      return createEmptyFormData(this.getDefaultCategory(), '');
     }
 
     const nutrition = food.nutritionPerUnit || {};
@@ -304,11 +458,8 @@ Page({
       name: food.name || '',
       category: this.normalizeCategoryValue(food.category),
       categoryLevel2: food.categoryLevel2 || '',
-      unit: food.baseUnit || 'g',
+      unit: food.baseUnit || '',
       baseQuantity: String(food.baseQuantity != null ? food.baseQuantity : 100),
-      defaultQuantity: String(
-        food.defaultQuantity != null ? food.defaultQuantity : food.baseQuantity || 100
-      ),
       calories: nutrition.calories != null ? String(nutrition.calories) : '',
       image: food.image || '',
       protein: nutrition.protein != null ? String(nutrition.protein) : '',
@@ -331,10 +482,17 @@ Page({
 
     this.setData({
       showAddModal: true,
+      energyKjInput: '',
+      foodImagePreviewUrl: '',
       customCategoryInput: '',
+      customUnitInput: '',
+      showCategoryCreator: false,
+      showUnitCreator: false,
       editingFoodId: '',
       editingFoodName: '',
-      formData: createEmptyFormData(this.getDefaultCategory())
+      categoryPickerIndex: 0,
+      unitPickerIndex: 0,
+      formData: createEmptyFormData('', '')
     });
   },
 
@@ -357,7 +515,14 @@ Page({
       showAddModal: true,
       editingFoodId: target._id,
       editingFoodName: target.name || '',
+      energyKjInput: '',
+      foodImagePreviewUrl: target.displayImage || target.image || '',
       customCategoryInput: '',
+      customUnitInput: '',
+      showCategoryCreator: false,
+      showUnitCreator: false,
+      categoryPickerIndex: this.getCategoryPickerIndex(formData.category),
+      unitPickerIndex: this.getUnitPickerIndex(formData.unit),
       formData
     });
   },
@@ -365,10 +530,18 @@ Page({
   hideAddModal() {
     this.setData({
       showAddModal: false,
+      energyKjInput: '',
+      foodImagePreviewUrl: '',
+      uploadingFoodImage: false,
       editingFoodId: '',
       editingFoodName: '',
       customCategoryInput: '',
-      formData: createEmptyFormData(this.getDefaultCategory())
+      customUnitInput: '',
+      showCategoryCreator: false,
+      showUnitCreator: false,
+      categoryPickerIndex: 0,
+      unitPickerIndex: 0,
+      formData: createEmptyFormData('', '')
     });
   },
 
@@ -379,18 +552,188 @@ Page({
     });
   },
 
-  selectCategorySuggestion(e) {
-    const { value } = e.currentTarget.dataset;
+  onEnergyKjInput(e) {
     this.setData({
-      'formData.category': this.normalizeCategoryValue(value)
+      energyKjInput: e.detail.value || ''
     });
   },
 
-  selectUnitSuggestion(e) {
-    const { value } = e.currentTarget.dataset;
+  applyKjToKcal() {
+    const kjValue = this.parseNumber(this.data.energyKjInput);
+    if (kjValue === null || kjValue < 0) {
+      wx.showToast({ title: '请填写有效的 kJ 数值', icon: 'none' });
+      return;
+    }
+
+    const kcalValue = this.roundNumber(kjValue / 4.184, 2);
     this.setData({
+      'formData.calories': String(kcalValue)
+    });
+    wx.showToast({ title: '已换算为 kcal', icon: 'success' });
+  },
+
+  async chooseFoodImage() {
+    if (this.data.uploadingFoodImage) {
+      return;
+    }
+
+    try {
+      const chooseRes = await new Promise((resolve, reject) => {
+        wx.chooseImage({
+          count: 1,
+          sizeType: ['compressed'],
+          sourceType: ['album', 'camera'],
+          success: resolve,
+          fail: reject
+        });
+      });
+      const tempFilePath = chooseRes?.tempFilePaths?.[0];
+      if (!tempFilePath) {
+        return;
+      }
+
+      await this.uploadFoodImageToCloud(tempFilePath);
+    } catch (error) {
+      if (error && /cancel/i.test(error.errMsg || '')) {
+        return;
+      }
+      handleError(error, { title: '选择图片失败' });
+    }
+  },
+
+  async uploadFoodImageToCloud(tempFilePath) {
+    const babyUid = this.data.babyUid || getBabyUid();
+    if (!babyUid) {
+      wx.showToast({ title: '缺少宝宝信息，无法上传', icon: 'none' });
+      return;
+    }
+
+    try {
+      this.setData({
+        uploadingFoodImage: true,
+        foodImagePreviewUrl: tempFilePath,
+        'formData.image': tempFilePath
+      });
+      wx.showLoading({ title: '上传中...', mask: true });
+
+      const extMatch = (tempFilePath || '').match(/\.[a-zA-Z0-9]+$/);
+      const ext = extMatch ? extMatch[0] : '.jpg';
+      const cloudPath = `food_images/${babyUid}_${Date.now()}${ext}`;
+      const result = await wx.cloud.uploadFile({
+        cloudPath,
+        filePath: tempFilePath,
+        config: {
+          env: app.globalData.cloudEnvId
+        }
+      });
+
+      if (!result?.fileID) {
+        throw new Error('图片上传失败');
+      }
+
+      wx.hideLoading();
+      this.setData({
+        uploadingFoodImage: false,
+        foodImagePreviewUrl: tempFilePath,
+        'formData.image': result.fileID
+      });
+      wx.showToast({ title: '图片已上传', icon: 'success' });
+    } catch (error) {
+      wx.hideLoading();
+      this.setData({
+        uploadingFoodImage: false,
+        foodImagePreviewUrl: '',
+        'formData.image': ''
+      });
+      handleError(error, { title: '图片上传失败', hideLoading: false });
+    }
+  },
+
+  clearFoodImage() {
+    this.setData({
+      foodImagePreviewUrl: '',
+      'formData.image': ''
+    });
+  },
+
+  previewFoodImage(e) {
+    const { url } = e.currentTarget.dataset || {};
+    const current = (url || '').toString().trim();
+    if (!current) {
+      return;
+    }
+
+    wx.previewImage({
+      current,
+      urls: [current]
+    });
+  },
+
+  onCategoryPickerChange(e) {
+    const index = Number(e.detail.value);
+    const value = this.data.categorySuggestions?.[index] || '';
+    this.setData({
+      categoryPickerIndex: index,
+      'formData.category': value ? this.normalizeCategoryValue(value) : ''
+    });
+  },
+
+  toggleCategoryCreator() {
+    this.setData({
+      showCategoryCreator: !this.data.showCategoryCreator
+    });
+  },
+
+  onUnitPickerChange(e) {
+    const index = Number(e.detail.value);
+    const value = this.data.unitSuggestions?.[index] || '';
+    this.setData({
+      unitPickerIndex: index,
       'formData.unit': value
     });
+  },
+
+  toggleUnitCreator() {
+    this.setData({
+      showUnitCreator: !this.data.showUnitCreator
+    });
+  },
+
+  onCustomUnitInput(e) {
+    this.setData({
+      customUnitInput: e.detail.value
+    });
+  },
+
+  addCustomUnit() {
+    const value = (this.data.customUnitInput || '').trim();
+    if (!value) {
+      wx.showToast({ title: '请输入单位名称', icon: 'none' });
+      return;
+    }
+
+    const currentSuggestions = this.mergeUnitSuggestions(this.data.unitSuggestions || []);
+    if (currentSuggestions.includes(value)) {
+      this.setData({
+        customUnitInput: '',
+        showUnitCreator: false,
+        unitPickerIndex: this.getUnitPickerIndex(value, currentSuggestions),
+        'formData.unit': value,
+        unitSuggestions: currentSuggestions
+      });
+      wx.showToast({ title: '单位已存在', icon: 'none' });
+      return;
+    }
+
+    const nextSuggestions = this.mergeUnitSuggestions([...(this.data.unitSuggestions || []), value]);
+    this.setData({
+      unitSuggestions: nextSuggestions,
+      customUnitInput: '',
+      showUnitCreator: false,
+      unitPickerIndex: this.getUnitPickerIndex(value, nextSuggestions),
+      'formData.unit': value
+    });
+    wx.showToast({ title: '单位已添加', icon: 'success' });
   },
 
   onCustomCategoryInput(e) {
@@ -413,7 +756,12 @@ Page({
       : [];
     if (currentCustom.includes(normalizedValue)) {
       wx.showToast({ title: '分类已存在', icon: 'none' });
-      this.setData({ customCategoryInput: '', 'formData.category': normalizedValue });
+      this.setData({
+        customCategoryInput: '',
+        showCategoryCreator: false,
+        categoryPickerIndex: this.getCategoryPickerIndex(normalizedValue),
+        'formData.category': normalizedValue
+      });
       return;
     }
 
@@ -440,6 +788,8 @@ Page({
 
     this.setData({
       customCategoryInput: '',
+      showCategoryCreator: false,
+      categoryPickerIndex: this.getCategoryPickerIndex(normalizedValue),
       'formData.category': normalizedValue
     });
 
@@ -472,22 +822,27 @@ Page({
       wx.showToast({ title: '基础份量必须大于0', icon: 'none' });
       return false;
     }
-    const defaultQty = this.parseNumber(formData.defaultQuantity);
-    if (defaultQty !== null && defaultQty <= 0) {
-      wx.showToast({ title: '默认份量必须大于0', icon: 'none' });
-      return false;
-    }
-
     const caloriesVal = this.parseNumber(formData.calories);
     if (caloriesVal === null || caloriesVal < 0) {
       wx.showToast({ title: '请填写热量', icon: 'none' });
       return false;
     }
 
-    const optionalNumbers = [
+    const requiredNutritionNumbers = [
       { label: '蛋白质', value: formData.protein },
-      { label: '碳水', value: formData.carbs },
       { label: '脂肪', value: formData.fat },
+      { label: '碳水', value: formData.carbs }
+    ];
+
+    for (const item of requiredNutritionNumbers) {
+      const parsed = this.parseNumber(item.value);
+      if (parsed === null || parsed < 0) {
+        wx.showToast({ title: `请填写${item.label}`, icon: 'none' });
+        return false;
+      }
+    }
+
+    const optionalNumbers = [
       { label: '膳食纤维', value: formData.fiber },
       { label: '钠', value: formData.sodium }
     ];
@@ -547,6 +902,31 @@ Page({
       wx.hideLoading();
       handleError(error, { title: '保存失败' });
     }
+  },
+
+  onSearchInput(e) {
+    const query = e.detail.value || '';
+    this.updateGroupedFoods(this.data.foods || [], {
+      searchQuery: query
+    });
+  },
+
+  clearSearch() {
+    this.updateGroupedFoods(this.data.foods || [], {
+      searchQuery: ''
+    });
+  },
+
+  switchCategory(e) {
+    const { category } = e.currentTarget.dataset || {};
+    if (!category) return;
+    const activeGroup = (this.data.groupedFoods || []).find(group => group.category === category);
+    this.setData({
+      activeCategory: category,
+      activeFoods: activeGroup ? activeGroup.items : [],
+      categoryNavScrollIntoView: activeGroup ? activeGroup.navId : '',
+      foodPanelScrollTop: 0
+    });
   },
 
   onDeleteFood(e) {

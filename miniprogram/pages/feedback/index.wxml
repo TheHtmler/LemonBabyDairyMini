@@ -1,0 +1,58 @@
+<view class="feedback-page">
+  <view class="hero-card">
+    <text class="hero-title">告诉我们你的想法</text>
+    <text class="hero-subtitle">问题、建议、吐槽都可以，我们会据此继续优化小程序。</text>
+  </view>
+
+  <view class="section-card">
+    <view class="section-header">
+      <text class="section-title">反馈类型</text>
+      <text class="section-meta">先选一个最接近的分类</text>
+    </view>
+    <view class="type-chip-group">
+      <view
+        class="type-chip {{selectedType === item ? 'active' : ''}}"
+        wx:for="{{feedbackTypes}}"
+        wx:key="*this"
+        data-type="{{item}}"
+        bindtap="onTypeTap"
+      >
+        <text>{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <view class="section-header">
+      <text class="section-title">反馈内容</text>
+      <text class="section-meta">{{content.length}} 字</text>
+    </view>
+    <textarea
+      class="feedback-textarea"
+      maxlength="500"
+      placeholder="例如：哪里不好用、希望增加什么能力、遇到了什么问题"
+      value="{{content}}"
+      bindinput="onContentInput"
+    />
+  </view>
+
+  <view class="section-card">
+    <view class="section-header">
+      <text class="section-title">联系方式</text>
+      <text class="section-meta">选填，方便我们联系你确认问题</text>
+    </view>
+    <input
+      class="contact-input"
+      maxlength="60"
+      placeholder="可填写微信号、手机号或邮箱"
+      value="{{contact}}"
+      bindinput="onContactInput"
+    />
+  </view>
+
+  <view class="submit-bar">
+    <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitFeedback">
+      提交反馈
+    </button>
+  </view>
+</view>

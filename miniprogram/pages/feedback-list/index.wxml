@@ -1,0 +1,119 @@
+<view class="feedback-list-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="hero-card">
+      <view>
+        <text class="hero-title">反馈列表</text>
+        <text class="hero-subtitle">开发者可以在这里集中查看反馈，并定期处理。</text>
+      </view>
+      <text class="hero-meta">最近更新 {{lastUpdatedText || '--:--'}}</text>
+    </view>
+
+    <view class="filter-row">
+      <view
+        class="filter-chip {{statusFilter === item.value ? 'active' : ''}}"
+        wx:for="{{statusFilters}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="onFilterTap"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{!loading && !feedbackItems.length}}" class="empty-card">
+      <text class="empty-title">{{emptyText}}</text>
+      <text class="empty-subtitle">下拉页面可以手动刷新，页面也会定时自动更新。</text>
+    </view>
+
+    <view wx:for="{{feedbackItems}}" wx:key="_id" class="feedback-card">
+      <view class="feedback-card-head">
+        <view class="badge-row">
+          <text class="type-badge">{{item.type}}</text>
+          <text class="status-badge {{item.status}}">{{item.statusText}}</text>
+        </view>
+        <text class="feedback-time">{{item.displayTime}}</text>
+      </view>
+
+      <text class="feedback-content">{{item.content}}</text>
+
+      <view class="detail-block">
+        <view class="detail-row" wx:if="{{item.userNicknameText}}">
+          <text class="detail-label">昵称</text>
+          <text class="detail-value">{{item.userNicknameText}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">角色</text>
+          <text class="detail-value">{{item.roleText}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{item.contactText}}">
+          <text class="detail-label">联系方式</text>
+          <text class="detail-value">{{item.contactText}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">宝宝名称</text>
+          <text class="detail-value">{{item.babyNameDisplay}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{item.babyUidText}}">
+          <text class="detail-label">宝宝 UID</text>
+          <text class="detail-value">{{item.babyUidText}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{item.openidText}}">
+          <text class="detail-label">OpenID</text>
+          <text class="detail-value break-all">{{item.openidText}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{item.submitRouteText}}">
+          <text class="detail-label">提交页面</text>
+          <text class="detail-value break-all">{{item.submitRouteText}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{item.systemInfoText}}">
+          <text class="detail-label">设备信息</text>
+          <text class="detail-value break-all">{{item.systemInfoText}}</text>
+        </view>
+      </view>
+
+      <view class="action-row">
+        <view
+          wx:if="{{item.contactText}}"
+          class="action-pill ghost-btn"
+          data-value="{{item.contactText}}"
+          data-success-text="联系方式已复制"
+          bindtap="copyValue"
+        >
+          <text>复制联系</text>
+        </view>
+        <view
+          wx:if="{{item.openidText}}"
+          class="action-pill ghost-btn"
+          data-value="{{item.openidText}}"
+          data-success-text="OpenID 已复制"
+          bindtap="copyValue"
+        >
+          <text>复制 OpenID</text>
+        </view>
+        <view
+          class="action-pill primary-btn {{item.status === 'processed' ? 'secondary' : ''}}"
+          data-id="{{item._id}}"
+          data-status="{{item.status}}"
+          bindtap="toggleStatus"
+        >
+          <text>{{item.status === 'processed' ? '恢复未处理' : '标记已处理'}}</text>
+        </view>
+        <view
+          class="action-pill danger-btn"
+          data-id="{{item._id}}"
+          data-content="{{item.content}}"
+          bindtap="deleteFeedback"
+        >
+          <text>删除反馈</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading-tip">正在加载反馈列表...</view>
+  </view>
+
+  <view wx:else class="empty-card no-access">
+    <text class="empty-title">当前账号无权查看反馈列表</text>
+    <text class="empty-subtitle">请使用已配置的开发者账号进入。</text>
+  </view>
+</view>

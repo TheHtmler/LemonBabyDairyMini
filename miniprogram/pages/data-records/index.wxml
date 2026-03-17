@@ -14,11 +14,14 @@
             <text class="day">{{item.day}}</text>
             <text class="month">{{item.month}}月</text>
           </view>
-          <view class="date-more-indicator" bindtap="showCalendar">
-            <text>更多</text>
-          </view>
         </view>
       </scroll-view>
+      <view class="date-more-indicator" bindtap="showCalendar">
+        <view class="date-more-text">
+          <text>更</text>
+          <text>多</text>
+        </view>
+      </view>
     </view>
   </view>
   <fat-ratio-popup
@@ -28,16 +31,12 @@
   />
   <!-- 记录内容区域 -->
   <view class="records-wrapper" style="opacity: {{isDataLoading ? 0.5 : 1}};">
-    <!-- 日期显示头部 -->
-    <view class="date-header">
-      <view class="selected-date">{{formattedSelectedDate}}</view>
-      <view class="header-action calendar-icon" bindtap="showCalendar">日历</view>
-    </view>
     <block>
       <!-- 喂奶记录汇总卡片 -->
       <view class="card">
         <view class="card-title">
           <text>当日汇总数据</text>
+          <view class="card-title-date">{{formattedSelectedDate}}</view>
         </view>
         <view class="summary-section">
           <view class="section-subtitle">基础信息</view>
@@ -276,28 +275,72 @@
             <view class="copy-btn" bindtap="onCopyFoodToDate">
               <text>复制数据</text>
             </view>
-            <view class="add-btn" bindtap="showFoodIntakeExperimentModal">
+            <view class="add-btn" bindtap="navigateToMealEditor">
               <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
               <text>补充食物</text>
             </view>
           </view>
         </view>
-          <view class="intake-list" wx:if="{{foodIntakes.length > 0}}">
-            <view class="food-record-item" wx:for="{{foodIntakes}}" wx:key="_id">
+          <view class="meal-group-list" wx:if="{{foodMealGroups.length > 0}}">
+            <view class="meal-group-card" wx:for="{{foodMealGroups}}" wx:key="id">
+              <view class="meal-group-header" bindtap="toggleFoodMealGroup" data-id="{{item.id}}">
+                <view class="meal-group-top">
+                  <view class="meal-group-main">
+                    <text class="meal-group-title">{{item.mealLabel || '食物记录'}}</text>
+                    <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
+                  </view>
+                  <view class="meal-group-actions">
+                    <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑本顿</text>
+                    <text class="meal-group-toggle">{{item.expanded ? '收起' : '展开'}}</text>
+                  </view>
+                </view>
+                <view class="meal-group-summary-grid">
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">热量：</text>
+                    <text class="meal-group-summary-value">{{item.summary.calories}} kcal</text>
+                  </view>
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">蛋白：</text>
+                    <text class="meal-group-summary-value">{{item.summary.protein}} g</text>
+                  </view>
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">碳水：</text>
+                    <text class="meal-group-summary-value">{{item.summary.carbs}} g</text>
+                  </view>
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">脂肪：</text>
+                    <text class="meal-group-summary-value">{{item.summary.fat}} g</text>
+                  </view>
+                </view>
+              </view>
+              <view class="meal-group-note" wx:if="{{item.expanded && item.mealNote}}">
+                <text>{{item.mealNote}}</text>
+              </view>
+              <view class="meal-group-items" wx:if="{{item.expanded}}">
+                <view class="food-record-item" wx:for="{{item.items}}" wx:key="_id" wx:for-item="foodItem">
+                  <view class="record-content">
+                    <food-record-item record="{{foodItem}}" />
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="intake-list" wx:if="{{legacyFoodIntakes.length > 0}}">
+            <view class="food-record-item" wx:for="{{legacyFoodIntakes}}" wx:key="_id">
               <view class="record-content">
                 <food-record-item record="{{item}}" />
               </view>
               <view class="action-buttons">
-                <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{index}}" data-id="{{item._id}}">
+                <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{item.originalIndex}}" data-id="{{item._id}}">
                   <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
                 </view>
-                <view class="action-btn delete-btn" bindtap="deleteFoodIntake" data-index="{{index}}" data-id="{{item._id}}">
+                <view class="action-btn delete-btn" bindtap="deleteFoodIntake" data-index="{{item.originalIndex}}" data-id="{{item._id}}">
                   <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
                 </view>
               </view>
             </view>
           </view>
-          <view class="empty-data" wx:if="{{foodIntakes.length === 0}}">
+          <view class="empty-data" wx:if="{{foodMealGroups.length === 0 && legacyFoodIntakes.length === 0}}">
             <view class="empty-text">暂无食物记录</view>
           </view>
         </view>
@@ -445,8 +488,8 @@
           {{item.day}}
         </view>
       </view>
-      <view class="calendar-footer">
-        <view class="today-btn" bindtap="goToToday">今天</view>
+      <view class="calendar-footer" wx:if="{{!isSelectedToday}}">
+        <view class="today-btn" bindtap="goToToday">返回今天</view>
       </view>
     </view>
   </view>

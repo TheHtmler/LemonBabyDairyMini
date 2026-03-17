@@ -1,0 +1,250 @@
+.feedback-list-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(255, 226, 122, 0.35), transparent 26%),
+    linear-gradient(180deg, #FFF7DC 0%, #FFF2C8 100%);
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.hero-card,
+.feedback-card,
+.empty-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.08);
+}
+
+.hero-card {
+  padding: 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #5F3900;
+}
+
+.hero-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: rgba(95, 57, 0, 0.76);
+}
+
+.hero-meta {
+  font-size: 22rpx;
+  color: #8A7C60;
+  white-space: nowrap;
+}
+
+.filter-row {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  min-width: 132rpx;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+  color: #8A7C60;
+  font-size: 24rpx;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.filter-chip.active {
+  background: #FFB800;
+  border-color: #FFB800;
+  color: #ffffff;
+}
+
+.feedback-card {
+  padding: 22rpx 24rpx;
+}
+
+.feedback-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.type-badge,
+.status-badge {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.type-badge {
+  background: #FFF4D0;
+  color: #9A6500;
+}
+
+.status-badge.new {
+  background: #FFF0E8;
+  color: #D65B00;
+}
+
+.status-badge.processed {
+  background: #EAF8EE;
+  color: #1A9B4A;
+}
+
+.feedback-time {
+  font-size: 22rpx;
+  color: #9C8E73;
+  white-space: nowrap;
+}
+
+.feedback-content {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: #333333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-top: 18rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: #FFF7E3;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+}
+
+.detail-label {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #8A7C60;
+  min-width: 120rpx;
+}
+
+.detail-value {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #333333;
+  word-break: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+.action-row {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 14rpx;
+}
+
+.action-pill {
+  min-width: 0;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ghost-btn,
+.primary-btn,
+.danger-btn {
+  font-size: 22rpx;
+  line-height: 1;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ghost-btn {
+  color: #8A7C60;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+}
+
+.primary-btn {
+  color: #ffffff;
+  background: #FFB800;
+  box-shadow: 0 6rpx 14rpx rgba(255, 184, 0, 0.2);
+}
+
+.primary-btn.secondary {
+  background: #F2F5F9;
+  color: #4D5B6D;
+  box-shadow: none;
+}
+
+.danger-btn {
+  color: #D65B00;
+  background: #FFF0E8;
+  border: 2rpx solid rgba(214, 91, 0, 0.18);
+}
+
+.empty-card {
+  padding: 48rpx 28rpx;
+  text-align: center;
+}
+
+.empty-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #5F3900;
+}
+
+.empty-subtitle {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #8A7C60;
+}
+
+.no-access {
+  margin-top: 80rpx;
+}
+
+.loading-tip {
+  padding: 12rpx 0 24rpx;
+  font-size: 24rpx;
+  text-align: center;
+  color: #8A7C60;
+}

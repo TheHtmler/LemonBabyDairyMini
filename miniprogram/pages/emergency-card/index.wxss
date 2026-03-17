@@ -1,0 +1,67 @@
+.emergency-card-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(255, 226, 122, 0.35), transparent 26%),
+    linear-gradient(180deg, #FFF7DC 0%, #FFF2C8 100%);
+}
+
+.hero-card,
+.alert-card,
+.section-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.08);
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #5F3900;
+}
+
+.hero-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: rgba(95, 57, 0, 0.76);
+}
+
+.alert-card {
+  background: linear-gradient(135deg, #FFF0E8 0%, #FFF7E8 100%);
+  border-color: rgba(214, 91, 0, 0.12);
+}
+
+.alert-title,
+.section-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #5F3900;
+}
+
+.alert-text {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #8A5C2B;
+}
+
+.bullet-list {
+  margin-top: 12rpx;
+}
+
+.bullet-item {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #5D5444;
+}

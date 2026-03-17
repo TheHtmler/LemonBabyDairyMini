@@ -422,6 +422,88 @@ function normalizeIntakes(intakes = []) {
     });
 }
 
+function groupFoodIntakesByMeal(intakes = []) {
+  if (!Array.isArray(intakes) || intakes.length === 0) return [];
+
+  const groups = new Map();
+
+  intakes.forEach((intake, index) => {
+    if (!intake || intake.type === 'milk' || !intake.mealBatchId) return;
+
+    const mealTime = intake.mealTime || intake.recordedAt || '--:--';
+    const groupKey = intake.mealBatchId
+      ? `meal:${intake.mealBatchId}`
+      : `single:${intake._id || `${intake.foodId || intake.nameSnapshot || 'food'}_${index}`}`;
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, {
+        id: groupKey,
+        mealBatchId: intake.mealBatchId || '',
+        mealLabel: intake.mealLabel || '食物记录',
+        mealTime,
+        mealNote: intake.mealNote || '',
+        sortKey: Number(String(mealTime).replace(':', '')) || 0,
+        itemCount: 0,
+        summary: {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        },
+        items: []
+      });
+    }
+
+    const group = groups.get(groupKey);
+    const nutrition = intake.nutrition || {};
+
+    group.items.push({
+      ...intake,
+      originalIndex: index
+    });
+    group.itemCount += 1;
+    group.summary.calories += Number(nutrition.calories) || 0;
+    group.summary.protein += Number(nutrition.protein) || 0;
+    group.summary.carbs += Number(nutrition.carbs) || 0;
+    group.summary.fat += Number(nutrition.fat) || 0;
+
+    if (!group.mealNote && intake.mealNote) {
+      group.mealNote = intake.mealNote;
+    }
+  });
+
+  return Array.from(groups.values())
+    .map(group => ({
+      ...group,
+      expanded: false,
+      summary: {
+        calories: roundCalories(group.summary.calories),
+        protein: roundNumber(group.summary.protein, 2),
+        carbs: roundNumber(group.summary.carbs, 2),
+        fat: roundNumber(group.summary.fat, 2)
+      },
+      items: group.items.sort((a, b) => {
+        const timeA = String(a.recordedAt || '').replace(':', '');
+        const timeB = String(b.recordedAt || '').replace(':', '');
+        return timeB.localeCompare(timeA);
+      })
+    }))
+    .sort((a, b) => b.sortKey - a.sortKey);
+}
+
+function getLegacyFoodIntakes(intakes = []) {
+  if (!Array.isArray(intakes) || intakes.length === 0) return [];
+
+  return intakes.reduce((result, intake, index) => {
+    if (!intake || intake.type === 'milk' || intake.mealBatchId) return result;
+    result.push({
+      ...intake,
+      originalIndex: index
+    });
+    return result;
+  }, []);
+}
+
 function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = {}) {
   const summary = {
     calories: 0,
@@ -763,6 +845,13 @@ function isFutureDateKey(dateStr) {
   return target > today;
 }
 
+function parseDateKey(dateStr) {
+  if (!dateStr) return new Date();
+  const [year, month, day] = String(dateStr).split('-').map(Number);
+  if ([year, month, day].some(Number.isNaN)) return new Date(dateStr);
+  return new Date(year, month - 1, day);
+}
+
 Page({
   data: {
     selectedDate: '',
@@ -771,6 +860,8 @@ Page({
     feedingRecords: [],
     intakes: [],
     foodIntakes: [],
+    foodMealGroups: [],
+    legacyFoodIntakes: [],
     // 食物弹窗相关
     showFoodIntakeModal: false,
     showFoodIntakeExperimentModal: false,
@@ -846,6 +937,7 @@ Page({
     calendarMonth: new Date().getMonth() + 1,
     calendarDays: [],
     copyCalendarContext: null,
+    isSelectedToday: true,
     // 滚动相关
     currentDateId: '',
     selectedDateIndex: 0,
@@ -957,17 +1049,13 @@ Page({
       return;
     }
     const recordTime = formatTime(new Date());
-    const quantity = defaultFood?.defaultQuantity || defaultFood?.baseQuantity || 100;
-    const nutritionPreview = defaultFood
-      ? FoodModel.calculateNutrition(defaultFood, quantity)
-      : null;
     this.setData({
       'newFoodIntake.category': defaultCategory,
       'newFoodIntake.foodId': defaultFood?._id || '',
       'newFoodIntake.food': defaultFood || null,
-      'newFoodIntake.quantity': quantity,
+      'newFoodIntake.quantity': '',
       'newFoodIntake.unit': this._getFoodUnit(defaultFood),
-      'newFoodIntake.nutritionPreview': nutritionPreview,
+      'newFoodIntake.nutritionPreview': null,
       'newFoodIntake.proteinSource': defaultFood?.proteinSource || 'natural',
       'newFoodIntake.recordTime': recordTime,
       'newFoodIntake.notes': '',
@@ -1033,6 +1121,22 @@ Page({
         this.initFoodExperimentCategories(true);
         this.filterFoodExperimentOptions('');
       });
+    });
+  },
+
+  navigateToMealEditor() {
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pages/meal-editor/index?date=${selectedDate}&from=records`
+    });
+  },
+
+  navigateToMealGroupEditor(e) {
+    const mealBatchId = e.currentTarget.dataset.mealBatchId;
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    if (!mealBatchId) return;
+    wx.navigateTo({
+      url: `/pages/meal-editor/index?date=${selectedDate}&from=records&mealBatchId=${encodeURIComponent(mealBatchId)}`
     });
   },
 
@@ -1175,14 +1279,12 @@ Page({
     const { id } = e.detail;
     const selectedFood = (this.data.foodCatalog || []).find(food => food._id === id);
     if (!selectedFood) return;
-    const quantity = selectedFood?.defaultQuantity || selectedFood?.baseQuantity || 100;
-    const nutritionPreview = FoodModel.calculateNutrition(selectedFood, quantity);
     this.setData({
       'foodExperiment.foodId': selectedFood._id,
       'foodExperiment.food': selectedFood,
-      'foodExperiment.quantity': quantity,
+      'foodExperiment.quantity': '',
       'foodExperiment.unit': this._getFoodUnit(selectedFood),
-      'foodExperiment.nutritionPreview': nutritionPreview,
+      'foodExperiment.nutritionPreview': null,
       'foodExperiment.recordTime': this.data.foodExperiment.recordTime || formatTime(new Date())
     });
   },
@@ -1382,15 +1484,13 @@ Page({
     const id = e.currentTarget.dataset.id;
     const selectedFood = (this.data.foodCatalog || []).find(food => food._id === id);
     if (!selectedFood) return;
-    const quantity = selectedFood?.defaultQuantity || selectedFood?.baseQuantity || 100;
-    const nutritionPreview = FoodModel.calculateNutrition(selectedFood, quantity);
     this.setData({
       'newFoodIntake.category': selectedFood.category || '',
       'newFoodIntake.foodId': selectedFood._id,
       'newFoodIntake.food': selectedFood,
-      'newFoodIntake.quantity': quantity,
+      'newFoodIntake.quantity': '',
       'newFoodIntake.unit': this._getFoodUnit(selectedFood),
-      'newFoodIntake.nutritionPreview': nutritionPreview,
+      'newFoodIntake.nutritionPreview': null,
       'newFoodIntake.proteinSource': selectedFood.proteinSource || 'natural'
     });
   },
@@ -1511,6 +1611,8 @@ Page({
           this.setData({
             intakes: remainingIntakes,
             foodIntakes: remainingIntakes.filter(item => item.type !== 'milk'),
+            foodMealGroups: groupFoodIntakesByMeal(remainingIntakes.filter(item => item.type !== 'milk')),
+            legacyFoodIntakes: getLegacyFoodIntakes(remainingIntakes.filter(item => item.type !== 'milk')),
             macroSummary: updatedSummary,
             macroRatios: this.computeMacroRatios(updatedSummary),
             intakeOverview: updatedOverview
@@ -1525,6 +1627,17 @@ Page({
         }
       }
     });
+  },
+
+  toggleFoodMealGroup(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+
+    const nextGroups = (this.data.foodMealGroups || []).map(group => (
+      group.id === id ? { ...group, expanded: !group.expanded } : group
+    ));
+
+    this.setData({ foodMealGroups: nextGroups });
   },
 
   async saveFoodIntake() {
@@ -1654,6 +1767,8 @@ Page({
       this.setData({
         intakes: existingIntakes,
         foodIntakes: existingIntakes.filter(item => item.type !== 'milk'),
+        foodMealGroups: groupFoodIntakesByMeal(existingIntakes.filter(item => item.type !== 'milk')),
+        legacyFoodIntakes: getLegacyFoodIntakes(existingIntakes.filter(item => item.type !== 'milk')),
         macroSummary: updatedSummary,
         macroRatios: this.computeMacroRatios(updatedSummary),
         intakeOverview: updatedOverview
@@ -1693,7 +1808,8 @@ Page({
       formattedSelectedDate: this.formatDisplayDate(formattedDate),
       currentDateId: 'date-0', // 默认选中今天
       selectedDateIndex: 0,
-      todayFullDate: todayFullDate
+      todayFullDate: todayFullDate,
+      isSelectedToday: true
     });
     
     // 获取宝宝基本信息（用于获取默认体重）
@@ -1733,13 +1849,18 @@ Page({
   },
 
   // 初始化快速选择日期列表
-  initDateList: function() {
-    const today = new Date();
+  initDateList: function(baseDate = new Date()) {
+    const selectedDate = baseDate instanceof Date ? new Date(baseDate) : parseDateKey(baseDate);
+    const today = parseDateKey(this.formatDate(new Date()));
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysToToday = Math.max(0, Math.floor((today.getTime() - selectedDate.getTime()) / msPerDay));
+    const baseRangeLength = this.data.dateRangeLength || 30;
+    const rangeLength = Math.max(baseRangeLength, daysToToday + 8);
     const dateList = [];
     
-    // 获取最近30天的日期列表(增加显示范围)
-    for (let i = 0; i < this.data.dateRangeLength; i++) {
-      const date = new Date();
+    // 始终保持从今天向过去的连续时间轴，确保历史日期能被滚动到
+    for (let i = 0; i < rangeLength; i++) {
+      const date = new Date(today);
       date.setDate(today.getDate() - i);
       dateList.push({
         id: `date-${i}`,
@@ -1747,11 +1868,12 @@ Page({
         day: date.getDate(),
         month: date.getMonth() + 1,
         weekday: getWeekday(date),
-        isToday: i === 0
+        isToday: this.formatDate(date) === this.formatDate(new Date())
       });
     }
     
     this.setData({ dateList });
+    return Math.min(daysToToday, Math.max(rangeLength - 1, 0));
   },
 
   // 初始化日历数据
@@ -1856,7 +1978,8 @@ Page({
       selectedDate,
       formattedSelectedDate: this.formatDisplayDate(selectedDate),
       selectedDateIndex: index,
-      currentDateId: `date-${index}`
+      currentDateId: `date-${index}`,
+      isSelectedToday: selectedDate === this.formatDate(new Date())
     });
     
     this.fetchDailyRecords(selectedDate);
@@ -2225,16 +2348,15 @@ Page({
       return;
     }
     
-    // 查找日期在列表中的索引，如果找到则更新滚动位置
-    const index = this.data.dateList.findIndex(item => item.date === selectedDate);
-    const scrollId = index !== -1 ? `date-${index}` : '';
+    const selectedIndex = this.initDateList(parseDateKey(selectedDate));
     
     this.setData({ 
       selectedDate,
       formattedSelectedDate: this.formatDisplayDate(selectedDate),
       showCalendarPicker: false,
-      selectedDateIndex: index !== -1 ? index : this.data.selectedDateIndex,
-      currentDateId: scrollId
+      selectedDateIndex: selectedIndex,
+      currentDateId: `date-${selectedIndex}`,
+      isSelectedToday: selectedDate === this.formatDate(new Date())
     });
     
     this.fetchDailyRecords(selectedDate);
@@ -2249,12 +2371,14 @@ Page({
       return;
     }
     
+    const selectedIndex = this.initDateList(today);
     this.setData({
       selectedDate: formattedDate,
       formattedSelectedDate: this.formatDisplayDate(formattedDate),
       showCalendarPicker: false,
-      selectedDateIndex: 0,
-      currentDateId: 'date-0'
+      selectedDateIndex: selectedIndex,
+      currentDateId: `date-${selectedIndex}`,
+      isSelectedToday: true
     });
     
     this.fetchDailyRecords(formattedDate);
@@ -2377,6 +2501,8 @@ Page({
           feedings: feedings,
           intakes: intakes,
           foodIntakes: foodIntakes,
+          foodMealGroups: groupFoodIntakesByMeal(foodIntakes),
+          legacyFoodIntakes: getLegacyFoodIntakes(foodIntakes),
           macroSummary: macroSummary,
           macroRatios: this.computeMacroRatios(macroSummary),
           fatRatioRangeText: this.getFatRatioRangeText(dateStr),
@@ -2419,6 +2545,8 @@ Page({
           feedings: [],
           intakes: [],
           foodIntakes: [],
+          foodMealGroups: [],
+          legacyFoodIntakes: [],
           macroSummary: {
             calories: 0,
             protein: 0,
@@ -2488,6 +2616,8 @@ Page({
       feedingRecords: [],
       intakes: [],
       foodIntakes: [],
+      foodMealGroups: [],
+      legacyFoodIntakes: [],
       medicationRecords: [],
       groupedMedicationRecords: [],
       bowelRecords: [],

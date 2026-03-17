@@ -22,7 +22,7 @@
         <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}} {{item.action === 'share' ? 'share-item' : ''}}" 
           wx:for="{{menuList}}" 
           wx:key="id" 
-          wx:if="{{!item.showForCreator || (item.showForCreator && userRole === 'creator')}}"
+          wx:if="{{(!item.showForCreator || (item.showForCreator && userRole === 'creator')) && (!item.showForDeveloper || (item.showForDeveloper && isDeveloper))}}"
           data-item="{{item}}" 
           bindtap="handleMenuClick">
           <view class="menu-content">

@@ -1,0 +1,154 @@
+<view class="emergency-page">
+  <view class="hero-card">
+    <text class="hero-title">应急支持</text>
+    <text class="hero-subtitle">适用于特殊情况下的快速查看与辅助换算，不能替代临床处方。</text>
+  </view>
+
+  <view
+    class="support-card"
+    wx:for="{{supportCards}}"
+    wx:key="id"
+    data-id="{{item.id}}"
+    bindtap="handleCardTap"
+  >
+    <view class="support-card-main">
+      <view class="support-card-title-row">
+        <text class="support-card-title">{{item.title}}</text>
+        <text class="support-card-status">{{item.status}}</text>
+      </view>
+      <text class="support-card-desc">{{item.description}}</text>
+    </view>
+    <text class="support-card-arrow">></text>
+  </view>
+
+  <view class="calculator-card">
+    <view class="calculator-head">
+      <text class="calculator-title">补液热量计算</text>
+      <text class="calculator-tag">葡萄糖供能换算</text>
+    </view>
+    <text class="calculator-desc">用于快速换算补液中的葡萄糖热量，不含脂肪乳、氨基酸或口服摄入。</text>
+
+    <view class="input-group">
+      <text class="input-label">体重 (kg)</text>
+      <input
+        class="input-control"
+        type="digit"
+        placeholder="例如 10"
+        value="{{calculatorForm.weight}}"
+        bindinput="onWeightInput"
+      />
+    </view>
+
+    <view class="input-group">
+      <text class="input-label">补液浓度 (%)</text>
+      <view class="preset-row">
+        <view
+          class="preset-chip {{selectedPreset === item.value ? 'active' : ''}}"
+          wx:for="{{concentrationPresets}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="onPresetTap"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+      <input
+        class="input-control"
+        type="digit"
+        placeholder="可手动输入浓度，如 7.5"
+        value="{{calculatorForm.concentration}}"
+        bindinput="onConcentrationInput"
+      />
+    </view>
+
+    <view class="input-group">
+      <text class="input-label">补液量 (mL)</text>
+      <input
+        class="input-control"
+        type="digit"
+        placeholder="例如 500"
+        value="{{calculatorForm.volume}}"
+        bindinput="onVolumeInput"
+      />
+    </view>
+
+    <view class="input-group">
+      <text class="input-label">输液速度 (mL/h)</text>
+      <input
+        class="input-control"
+        type="digit"
+        placeholder="例如 40"
+        value="{{calculatorForm.rate}}"
+        bindinput="onRateInput"
+      />
+    </view>
+
+    <view class="result-grid">
+      <view class="result-item">
+        <text class="result-label">葡萄糖</text>
+        <text class="result-value">{{calculatorResult.dextroseGrams}} g</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">总热量</text>
+        <text class="result-value highlight">{{calculatorResult.totalCalories}} kcal</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">kcal/kg</text>
+        <text class="result-value">{{calculatorResult.kcalPerKg}} kcal/kg</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">每 mL 热量</text>
+        <text class="result-value">{{calculatorResult.kcalPerMl}} kcal/mL</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">GIR</text>
+        <text class="result-value">{{calculatorResult.gir}} mg/kg/min</text>
+      </view>
+    </view>
+
+    <view class="formula-card">
+      <text class="formula-title">换算公式</text>
+      <text class="formula-line">葡萄糖克数 = 浓度(%) × 液量(mL) / 100</text>
+      <text class="formula-line">热量(kcal) = 葡萄糖克数 × 3.4</text>
+      <text class="formula-line">GIR (mg/kg/min) = 浓度(%) × 速度(mL/h) × 10 / 体重(kg) / 60</text>
+      <text class="formula-note">注：静脉葡萄糖补液按 3.4 kcal/g 估算，不按口服碳水 4 kcal/g 计算。</text>
+    </view>
+
+    <view class="notice-card">
+      <text class="notice-title">使用提示</text>
+      <text class="notice-line">1. 仅作补液热量辅助换算，不替代急诊或代谢专科处方。</text>
+      <text class="notice-line">2. GIR 仅反映当前葡萄糖输入速率，不等于完整补液或能量处方。</text>
+      <text class="notice-line">3. 急性期总热量还应合并口服、管饲、脂肪乳等其他能量来源。</text>
+    </view>
+
+    <view class="reference-card">
+      <text class="reference-title">常用浓度速查</text>
+      <view
+        class="reference-item"
+        wx:for="{{concentrationReference}}"
+        wx:key="label"
+      >
+        <view class="reference-main">
+          <text class="reference-label">{{item.label}}</text>
+          <text class="reference-desc">{{item.concentration}} · {{item.kcalPerMl}} kcal/mL</text>
+        </view>
+        <text class="reference-note">{{item.note}}</text>
+      </view>
+    </view>
+
+    <view class="reference-card">
+      <text class="reference-title">快速示例</text>
+      <view
+        class="example-item"
+        wx:for="{{calculationExamples}}"
+        wx:key="title"
+      >
+        <view class="example-head">
+          <text class="example-title">{{item.title}}</text>
+          <text class="example-desc">{{item.description}}</text>
+        </view>
+        <text class="example-result">{{item.result}}</text>
+      </view>
+    </view>
+  </view>
+</view>

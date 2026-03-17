@@ -15,35 +15,64 @@
   </view>
 
   <!-- Baby Info Section -->
-  <view class="section baby-info-section">
-    <view class="baby-name">{{babyName}}</view>
-    <view class="baby-date">{{todayDate}}</view>
-    <view class="baby-days">已出生 {{babyDays}} 天</view>
+  <view class="section baby-info-section" bindtap="navigateToBabyInfo">
+    <view class="baby-card-head">
+      <view class="baby-profile">
+        <image class="baby-avatar" src="{{babyAvatarUrl || '/images/LemonLogo.png'}}" mode="aspectFill"></image>
+        <view class="baby-profile-main">
+          <view class="baby-name-row">
+            <view class="baby-name">{{babyName}}</view>
+            <view class="baby-gender-tag" wx:if="{{babyGender}}">{{babyGender === 'male' ? '男孩' : '女孩'}}</view>
+          </view>
+          <view class="baby-subline">
+            <text class="baby-birthday" wx:if="{{babyBirthdayText}}">{{babyBirthdayText}}</text>
+            <text class="baby-sub-separator" wx:if="{{babyBirthdayText && babyAgeMonthsText}}">·</text>
+            <text class="baby-age-months" wx:if="{{babyAgeMonthsText}}">{{babyAgeMonthsText}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="baby-info-entry">宝宝信息</view>
+    </view>
+    <view class="baby-card-foot">
+      <view class="baby-days-badge">已出生 {{babyDays}} 天</view>
+      <text class="baby-date">{{todayDate}}</text>
+    </view>
   </view>
 
   <!-- Weight Section -->
   <view class="section weight-section">
-    <text class="section-title">今日体重 (kg)</text>
-    <input type="digit" class="weight-input" value="{{weight}}" placeholder="请输入体重" bindinput="onWeightInput" />
+    <view class="light-section-head">
+      <text class="light-section-title">今日体重</text>
+      <text class="light-section-meta">kg</text>
+    </view>
+    <view class="weight-bar-row">
+      <input
+        type="digit"
+        class="weight-input compact"
+        value="{{weight}}"
+        placeholder="请输入体重"
+        bindinput="onWeightInput"
+      />
+    </view>
   </view>
 
   <!-- 目标系数改为喂奶弹窗内填写 -->
 
   <!-- Current Feeding Section -->
   <view class="section feeding-section">
-    <!-- 标题栏带有快捷记录按钮 -->
-    <view class="section-header">
-      <text class="section-title">喂养</text>
-      <view class="quick-actions">
-        <view class="quick-record-btn" bindtap="showQuickInputModal">
-          <text>添加喂奶</text>
-        </view>
-        <view class="quick-record-btn secondary" bindtap="showFoodIntakeExperimentModal">
-          <text>添加食物</text>
-        </view>
-        <view class="quick-record-btn secondary" bindtap="openMedicationModal">
-          <text>记录用药</text>
-        </view>
+    <view class="light-section-head">
+      <text class="light-section-title">快捷记录</text>
+      <text class="light-section-meta">今日操作</text>
+    </view>
+    <view class="quick-actions quick-actions-compact">
+      <view class="quick-record-btn primary" bindtap="showQuickInputModal">
+        <text>添加喂奶</text>
+      </view>
+      <view class="quick-record-btn secondary" bindtap="navigateToMealEditor">
+        <text>添加食物</text>
+      </view>
+      <view class="quick-record-btn neutral" bindtap="openMedicationModal">
+        <text>记录用药</text>
       </view>
     </view>
   </view>
@@ -232,20 +261,62 @@
     <!-- 食物记录 -->
     <view class="tab-content" hidden="{{activeTab !== 'food'}}">
       <view class="records-list">
-        <view class="food-record-item" wx:for="{{foodIntakes}}" wx:key="_id">
+        <view class="meal-group-card" wx:for="{{foodMealGroups}}" wx:key="id">
+          <view class="meal-group-header" bindtap="toggleFoodMealGroup" data-id="{{item.id}}">
+            <view class="meal-group-top">
+              <view class="meal-group-main">
+                <text class="meal-group-title">{{item.mealLabel || '食物记录'}}</text>
+                <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
+              </view>
+              <view class="meal-group-actions">
+                <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑本顿</text>
+                <text class="meal-group-toggle">{{item.expanded ? '收起' : '展开'}}</text>
+              </view>
+            </view>
+            <view class="meal-group-summary-grid">
+              <view class="meal-group-summary-item">
+                <text class="meal-group-summary-label">热量：</text>
+                <text class="meal-group-summary-value">{{item.summary.calories}} kcal</text>
+              </view>
+              <view class="meal-group-summary-item">
+                <text class="meal-group-summary-label">蛋白：</text>
+                <text class="meal-group-summary-value">{{item.summary.protein}} g</text>
+              </view>
+              <view class="meal-group-summary-item">
+                <text class="meal-group-summary-label">碳水：</text>
+                <text class="meal-group-summary-value">{{item.summary.carbs}} g</text>
+              </view>
+              <view class="meal-group-summary-item">
+                <text class="meal-group-summary-label">脂肪：</text>
+                <text class="meal-group-summary-value">{{item.summary.fat}} g</text>
+              </view>
+            </view>
+          </view>
+          <view class="meal-group-note" wx:if="{{item.expanded && item.mealNote}}">
+            <text>{{item.mealNote}}</text>
+          </view>
+          <view class="meal-group-items" wx:if="{{item.expanded}}">
+            <view class="food-record-item" wx:for="{{item.items}}" wx:key="_id" wx:for-item="foodItem">
+              <view class="record-content">
+                <food-record-item record="{{foodItem}}" />
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="food-record-item" wx:for="{{legacyFoodIntakes}}" wx:key="_id">
           <view class="record-content">
             <food-record-item record="{{item}}" />
           </view>
           <view class="action-buttons">
-            <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{index}}" data-id="{{item._id}}">
+            <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{item.originalIndex}}" data-id="{{item._id}}">
               <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
             </view>
-            <view class="action-btn delete-btn" bindtap="deleteFoodIntake" data-index="{{index}}" data-id="{{item._id}}">
+            <view class="action-btn delete-btn" bindtap="deleteFoodIntake" data-index="{{item.originalIndex}}" data-id="{{item._id}}">
               <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
             </view>
           </view>
         </view>
-        <view class="empty-record" wx:if="{{foodIntakes.length === 0}}">
+        <view class="empty-record" wx:if="{{foodMealGroups.length === 0 && legacyFoodIntakes.length === 0}}">
           <text>暂无食物摄入记录</text>
         </view>
       </view>

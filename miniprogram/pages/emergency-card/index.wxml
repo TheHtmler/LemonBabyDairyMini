@@ -1,0 +1,39 @@
+<view class="emergency-card-page">
+  <view class="hero-card">
+    <text class="hero-title">急救卡</text>
+    <text class="hero-subtitle">用于就诊时快速向急诊或相关科室说明孩子的特殊代谢病背景。页面内容应以专科医生确认版本为准。</text>
+  </view>
+
+  <view class="alert-card">
+    <text class="alert-title">使用原则</text>
+    <text class="alert-text">本页用于快速展示和沟通，不替代医院急诊流程、代谢专科医嘱或个体化处方。</text>
+  </view>
+
+  <view class="section-card">
+    <text class="section-title">到院时优先说明</text>
+    <view class="bullet-list">
+      <text class="bullet-item">1. 已确诊 MMA / PA 或其他有机酸血症风险，需要警惕代谢失代偿。</text>
+      <text class="bullet-item">2. 当前如有呕吐、拒食、嗜睡、发热、腹泻、感染、脱水或精神状态变差，应尽快评估。</text>
+      <text class="bullet-item">3. 请尽快联系代谢专科团队，急诊处理以专科与医院方案为准。</text>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <text class="section-title">建议随身准备的信息</text>
+    <view class="bullet-list">
+      <text class="bullet-item">1. 诊断名称、基因/分型信息、既往高风险事件。</text>
+      <text class="bullet-item">2. 当前体重、平时饮食结构、特殊配方粉或药物使用情况。</text>
+      <text class="bullet-item">3. 代谢专科医生、医院和家属联系电话。</text>
+      <text class="bullet-item">4. 最近化验单、出院小结、家庭急病处理卡图片或纸质版。</text>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <text class="section-title">后续建议</text>
+    <view class="bullet-list">
+      <text class="bullet-item">1. 后续可把经医生确认的正式急救卡图片版接进此页面。</text>
+      <text class="bullet-item">2. 可补充一键分享或导出，便于家属和医生快速查看。</text>
+      <text class="bullet-item">3. 若需家庭急病处理要点，建议由固定代谢中心版本统一维护。</text>
+    </view>
+  </view>
+</view>

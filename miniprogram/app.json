@@ -4,6 +4,7 @@
     "pages/invite-join/index",
     "pages/daily-feeding/index",
     "pages/data-records/index",
+    "pages/meal-editor/index",
     "pages/growth-records/index",
     "pages/data-analysis/index",
     "pages/analysis-report/index",
@@ -14,6 +15,10 @@
     "pages/nutrition-settings/index",
     "pages/food-management/index",
     "pages/medications/index",
+    "pages/feedback/index",
+    "pages/feedback-list/index",
+    "pages/emergency-support/index",
+    "pages/emergency-card/index",
     "pages/about/index",
     "pages/add-report/index",
     "pages/report-detail/index"

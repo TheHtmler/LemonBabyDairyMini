@@ -48,6 +48,8 @@ Page({
     feedingsDisplay: [],
     intakes: [],
     foodIntakes: [],
+    foodMealGroups: [],
+    legacyFoodIntakes: [],
     medicationRecords: [],
     bowelRecords: [], // 排便记录
     medicationsList: [],
@@ -258,6 +260,10 @@ Page({
     
     // === 宝宝信息缓存 ===
     babyName: '宝宝',
+    babyAvatarUrl: '/images/LemonLogo.png',
+    babyGender: '',
+    babyBirthdayText: '',
+    babyAgeMonthsText: '',
     babyDays: 0,
     todayDate: '', // 缓存今日日期
     
@@ -271,9 +277,10 @@ Page({
     activeTab: 'feeding',
     releaseNoticeVisible: true,
     releaseNoticeItems: [
-      '新增数据记录页复制数据功能，一键应用到目标日'
+      '1. 食物记录与食物选择体验已优化',
+      '2. 意见反馈入口已上线'
     ],
-    releaseNoticeText: '新增数据记录页复制数据功能，一键应用到目标日。',
+    releaseNoticeText: '1. 食物记录与食物选择体验已优化；2. 意见反馈入口已上线。',
     
     // === 排便记录相关 ===
     selectedBowelRecord: null, // 选中的排便记录
@@ -399,10 +406,15 @@ Page({
       const babyInfo = await getBabyInfo();
       const name = babyInfo?.name || '宝宝';
       const days = babyInfo?.birthday ? this.calculateBabyDays(babyInfo.birthday) : 0;
+      const ageMonths = babyInfo?.birthday ? this.calculateAgeInMonths(babyInfo.birthday) : null;
       const fatRatioRangeText = babyInfo?.birthday ? this.getFatRatioRangeText(babyInfo.birthday) : '';
 
       this.setData({
         babyName: name,
+        babyAvatarUrl: babyInfo?.avatarUrl || '/images/LemonLogo.png',
+        babyGender: babyInfo?.gender || '',
+        babyBirthdayText: babyInfo?.birthday || '',
+        babyAgeMonthsText: ageMonths === null ? '' : `${ageMonths} 月龄`,
         babyDays: days,
         fatRatioRangeText,
         todayDate: this.getTodayDate(), // 缓存今日日期
@@ -413,6 +425,10 @@ Page({
       // 使用默认值
       this.setData({
         babyName: '宝宝',
+        babyAvatarUrl: '/images/LemonLogo.png',
+        babyGender: '',
+        babyBirthdayText: '',
+        babyAgeMonthsText: '',
         babyDays: 0,
         fatRatioRangeText: '',
         todayDate: this.getTodayDate(), // 即使出错也要设置日期
@@ -1038,6 +1054,98 @@ Page({
         const timeB = (b.recordedAt || '').replace(':', '');
         return timeB.localeCompare(timeA);
       });
+  },
+
+  buildFoodMealGroups(intakes = []) {
+    if (!Array.isArray(intakes) || intakes.length === 0) return [];
+
+    const groups = new Map();
+
+    intakes.forEach((intake, index) => {
+      if (!intake || intake.type === 'milk' || !intake.mealBatchId) return;
+
+      const mealTime = intake.mealTime || intake.recordedAt || '--:--';
+      const groupKey = intake.mealBatchId
+        ? `meal:${intake.mealBatchId}`
+        : `single:${intake._id || `${intake.foodId || intake.nameSnapshot || 'food'}_${index}`}`;
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          id: groupKey,
+          mealBatchId: intake.mealBatchId || '',
+          mealLabel: intake.mealLabel || '食物记录',
+          mealTime,
+          mealNote: intake.mealNote || '',
+          sortKey: Number(String(mealTime).replace(':', '')) || 0,
+          itemCount: 0,
+          summary: {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+          },
+          items: []
+        });
+      }
+
+      const group = groups.get(groupKey);
+      const nutrition = intake.nutrition || {};
+      group.items.push({
+        ...intake,
+        originalIndex: index
+      });
+      group.itemCount += 1;
+      group.summary.calories += Number(nutrition.calories) || 0;
+      group.summary.protein += Number(nutrition.protein) || 0;
+      group.summary.carbs += Number(nutrition.carbs) || 0;
+      group.summary.fat += Number(nutrition.fat) || 0;
+
+      if (!group.mealNote && intake.mealNote) {
+        group.mealNote = intake.mealNote;
+      }
+    });
+
+    return Array.from(groups.values())
+      .map(group => ({
+        ...group,
+        expanded: false,
+        summary: {
+          calories: this._roundCalories(group.summary.calories),
+          protein: this._round(group.summary.protein, 2),
+          carbs: this._round(group.summary.carbs, 2),
+          fat: this._round(group.summary.fat, 2)
+        },
+        items: group.items.sort((a, b) => {
+          const timeA = String(a.recordedAt || '').replace(':', '');
+          const timeB = String(b.recordedAt || '').replace(':', '');
+          return timeB.localeCompare(timeA);
+        })
+      }))
+      .sort((a, b) => b.sortKey - a.sortKey);
+  },
+
+  buildLegacyFoodIntakes(intakes = []) {
+    if (!Array.isArray(intakes) || intakes.length === 0) return [];
+
+    return intakes.reduce((result, intake, index) => {
+      if (!intake || intake.type === 'milk' || intake.mealBatchId) return result;
+      result.push({
+        ...intake,
+        originalIndex: index
+      });
+      return result;
+    }, []);
+  },
+
+  toggleFoodMealGroup(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+
+    const nextGroups = (this.data.foodMealGroups || []).map(group => (
+      group.id === id ? { ...group, expanded: !group.expanded } : group
+    ));
+
+    this.setData({ foodMealGroups: nextGroups });
   },
 
   mergeSameDayFeedingRecords(records = []) {
@@ -1896,6 +2004,8 @@ Page({
         feedings: feedingsToSet,
         intakes: intakesToSet,
         foodIntakes: foodIntakesToSet,
+        foodMealGroups: this.buildFoodMealGroups(foodIntakesToSet),
+        legacyFoodIntakes: this.buildLegacyFoodIntakes(foodIntakesToSet),
         medicationRecords: medicationRecordsToSet,
         bowelRecords: bowelRecordsToSet,
         weight: weightToSet,
@@ -2637,18 +2747,13 @@ Page({
     }
     const recordTime = utils.formatTime(new Date());
 
-    const quantity = defaultFood?.defaultQuantity || defaultFood?.baseQuantity || 100;
-    const nutritionPreview = defaultFood
-      ? FoodModel.calculateNutrition(defaultFood, quantity)
-      : null;
-
     this.setData({
       'newFoodIntake.category': defaultCategory,
       'newFoodIntake.foodId': defaultFood?._id || '',
       'newFoodIntake.food': defaultFood || null,
-      'newFoodIntake.quantity': quantity,
+      'newFoodIntake.quantity': '',
       'newFoodIntake.unit': this._getFoodUnit(defaultFood),
-      'newFoodIntake.nutritionPreview': nutritionPreview,
+      'newFoodIntake.nutritionPreview': null,
       'newFoodIntake.proteinSource': defaultFood?.proteinSource || 'natural',
       'newFoodIntake.recordTime': recordTime,
       'newFoodIntake.notes': '',
@@ -2697,6 +2802,24 @@ Page({
         this.filterFoodExperimentOptions('');
         this.showModal('foodIntakeExperiment');
       });
+    });
+  },
+
+  navigateToMealEditor() {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    wx.navigateTo({
+      url: `/pages/meal-editor/index?date=${date}&from=daily`
+    });
+  },
+
+  navigateToMealGroupEditor(e) {
+    const mealBatchId = e.currentTarget.dataset.mealBatchId;
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (!mealBatchId) return;
+    wx.navigateTo({
+      url: `/pages/meal-editor/index?date=${date}&from=daily&mealBatchId=${encodeURIComponent(mealBatchId)}`
     });
   },
 
@@ -2768,40 +2891,13 @@ Page({
       return;
     }
 
-    const defaultQuantity = 10;
-    let nutritionPreview = null;
-    if (selectedFood.nutritionSource === 'babySettings') {
-      if (selectedFood.milkType === 'mother_milk') {
-        nutritionPreview = this.calculateMilkNutrition({
-          naturalMilkVolume: defaultQuantity,
-          specialMilkVolume: 0,
-          specialMilkPowder: 0
-        });
-      } else if (selectedFood.milkType === 'special_formula') {
-        const ratio = this.data.calculation_params?.special_milk_ratio;
-        let specialPowderWeight = 0;
-        if (ratio && ratio.water) {
-          specialPowderWeight = this._round((defaultQuantity * ratio.powder) / ratio.water, 2);
-        }
-        nutritionPreview = this.calculateMilkNutrition({
-          naturalMilkVolume: 0,
-          specialMilkVolume: defaultQuantity,
-          specialMilkPowder: specialPowderWeight
-        });
-      }
-    }
-
-    if (!nutritionPreview) {
-      nutritionPreview = FoodModel.calculateNutrition(selectedFood, defaultQuantity);
-    }
-
     this.setData({
       'newFoodIntake.category': category,
       'newFoodIntake.foodId': selectedFood._id,
       'newFoodIntake.food': selectedFood,
-      'newFoodIntake.quantity': defaultQuantity,
+      'newFoodIntake.quantity': '',
       'newFoodIntake.unit': this._getFoodUnit(selectedFood),
-      'newFoodIntake.nutritionPreview': nutritionPreview,
+      'newFoodIntake.nutritionPreview': null,
       'newFoodIntake.proteinSource': selectedFood.proteinSource || 'natural'
     }, () => {
       this.updateFoodIntakePreview();
@@ -2878,40 +2974,12 @@ Page({
     const selectedFood = (this.data.foodCatalog || []).find(food => food._id === id);
     if (!selectedFood) return;
     const selectedCategory = (selectedFood.category || '').toString().trim();
-    const defaultQuantity = 10;
-    let nutritionPreview = null;
-
-    if (selectedFood.nutritionSource === 'babySettings') {
-      if (selectedFood.milkType === 'mother_milk') {
-        nutritionPreview = this.calculateMilkNutrition({
-          naturalMilkVolume: defaultQuantity,
-          specialMilkVolume: 0,
-          specialMilkPowder: 0
-        });
-      } else if (selectedFood.milkType === 'special_formula') {
-        const ratio = this.data.calculation_params?.special_milk_ratio;
-        let specialPowderWeight = 0;
-        if (ratio && ratio.water) {
-          specialPowderWeight = this._round((defaultQuantity * ratio.powder) / ratio.water, 2);
-        }
-        nutritionPreview = this.calculateMilkNutrition({
-          naturalMilkVolume: 0,
-          specialMilkVolume: defaultQuantity,
-          specialMilkPowder: specialPowderWeight
-        });
-      }
-    }
-
-    if (!nutritionPreview) {
-      nutritionPreview = FoodModel.calculateNutrition(selectedFood, defaultQuantity);
-    }
-
     this.setData({
       'foodExperiment.foodId': selectedFood._id,
       'foodExperiment.food': selectedFood,
-      'foodExperiment.quantity': defaultQuantity,
+      'foodExperiment.quantity': '',
       'foodExperiment.unit': this._getFoodUnit(selectedFood),
-      'foodExperiment.nutritionPreview': nutritionPreview,
+      'foodExperiment.nutritionPreview': null,
       'foodExperiment.recordTime': this.data.foodExperiment.recordTime || utils.formatTime(new Date()),
       ...(selectedCategory ? { foodExperimentCategory: selectedCategory } : {})
     });
@@ -3121,6 +3189,8 @@ Page({
           this.setData({
             intakes: remainingIntakes,
             foodIntakes: remainingIntakes.filter(item => item.type !== 'milk'),
+            foodMealGroups: this.buildFoodMealGroups(remainingIntakes.filter(item => item.type !== 'milk')),
+            legacyFoodIntakes: this.buildLegacyFoodIntakes(remainingIntakes.filter(item => item.type !== 'milk')),
             macroSummary: updatedSummary,
             macroRatios: this.computeMacroRatios(updatedSummary),
             intakeOverview: updatedOverview,
@@ -3473,6 +3543,8 @@ Page({
       this.setData({
         intakes: existingIntakes,
         foodIntakes: existingIntakes.filter(item => item.type !== 'milk'),
+        foodMealGroups: this.buildFoodMealGroups(existingIntakes.filter(item => item.type !== 'milk')),
+        legacyFoodIntakes: this.buildLegacyFoodIntakes(existingIntakes.filter(item => item.type !== 'milk')),
         macroSummary: updatedSummary,
         intakeOverview: updatedOverview,
         macroRatios: this.computeMacroRatios(updatedSummary)
@@ -4481,6 +4553,12 @@ Page({
     } catch (error) {
       console.error('加载宝宝信息失败:', error);
     }
+  },
+
+  navigateToBabyInfo() {
+    wx.navigateTo({
+      url: '/pages/baby-info/index?from=daily-feeding'
+    });
   },
 
   // 切换选项卡
