@@ -193,7 +193,7 @@ class InvitationModel {
    */
   getShareInfo(inviteCode, babyName) {
     return {
-      title: `邀请您一起记录${babyName || '宝宝'}的成长`,
+      title: `邀请您一起记录宝宝的成长`,
       path: `/pages/role-selection/index?inviteCode=${inviteCode}`,
       imageUrl: '/images/LemonLogo.png'
     };
