@@ -1,0 +1,9 @@
+{
+  "name": "cleanFeedingRecords",
+  "version": "1.0.0",
+  "description": "清理 feeding_records 中混入其他宝宝的数据",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

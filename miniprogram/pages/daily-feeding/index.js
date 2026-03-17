@@ -1151,6 +1151,14 @@ Page({
   mergeSameDayFeedingRecords(records = []) {
     if (!Array.isArray(records) || records.length === 0) return null;
 
+    // 过滤掉不属于当前宝宝的记录
+    const currentBabyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    const safeRecords = currentBabyUid
+      ? records.filter(r => r.babyUid === currentBabyUid)
+      : records;
+    if (safeRecords.length === 0) return null;
+    if (safeRecords.length === 1) return safeRecords[0];
+
     const resolveTimestamp = (record) => {
       const candidates = [record?.updatedAt, record?.createdAt, record?.date];
       for (const candidate of candidates) {
@@ -1160,7 +1168,7 @@ Page({
       return 0;
     };
 
-    const sortedRecords = [...records].sort((a, b) => resolveTimestamp(b) - resolveTimestamp(a));
+    const sortedRecords = [...safeRecords].sort((a, b) => resolveTimestamp(b) - resolveTimestamp(a));
     const latestRecord = sortedRecords[0] || {};
     const mergedFeedings = sortedRecords.flatMap(record => Array.isArray(record?.feedings) ? record.feedings : []);
     const mergedIntakes = this.normalizeIntakes(
@@ -5017,16 +5025,18 @@ Page({
       // 获取宝宝UID
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
       
-      // 查询当天的记录
-      let query = {
-        date: _.gte(startOfDay).and(_.lte(endOfDay))
-      };
-      
-      // 如果有宝宝UID，添加到查询条件
-      if (babyUid) {
-        query.babyUid = babyUid;
+      if (!babyUid) {
+        wx.hideLoading();
+        wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+        return;
       }
-      
+
+      // 查询当天的记录
+      const query = {
+        date: _.gte(startOfDay).and(_.lte(endOfDay)),
+        babyUid: babyUid
+      };
+
       const res = await db.collection('feeding_records').where(query).get();
 
       const feeding = {

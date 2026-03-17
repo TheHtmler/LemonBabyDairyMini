@@ -55,4 +55,15 @@
       提交反馈
     </button>
   </view>
+
+  <view class="section-card qr-card" wx:if="{{groupQrUrl}}">
+    <view class="section-header">
+      <text class="section-title">加入用户群</text>
+      <text class="section-meta">交流使用心得、获取更新通知</text>
+    </view>
+    <view class="qr-body" bindtap="previewQrCode">
+      <image class="qr-image" src="{{groupQrUrl}}" mode="widthFix" />
+      <text class="qr-tip">长按识别或点击放大</text>
+    </view>
+  </view>
 </view>

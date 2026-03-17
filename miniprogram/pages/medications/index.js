@@ -47,13 +47,13 @@ Page({
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
       
-      // 构建查询条件，根据babyUid过滤
-      let query = {};
-      if (babyUid) {
-        query.babyUid = babyUid;
+      if (!babyUid) {
+        wx.hideLoading();
+        wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+        return;
       }
-      
-      const res = await db.collection('medications').where(query).get();
+
+      const res = await db.collection('medications').where({ babyUid }).get();
       this.setData({ medications: res.data });
     } catch (error) {
       console.error('加载药物列表失败:', error);

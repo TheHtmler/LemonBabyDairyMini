@@ -8,15 +8,42 @@ Page({
     selectedType: FEEDBACK_TYPES[0],
     content: '',
     contact: '',
-    submitting: false
+    submitting: false,
+    groupQrUrl: ''
   },
 
   async onLoad() {
     try {
       await waitForAppInitialization();
+      this.loadGroupQrCode();
     } catch (error) {
       handleError(error, { title: '初始化失败' });
     }
+  },
+
+  async loadGroupQrCode() {
+    try {
+      const db = wx.cloud.database();
+      const res = await db.collection('app_config').where({ key: 'group_qrcode' }).limit(1).get();
+      if (res.data && res.data.length > 0 && res.data[0].fileId) {
+        const { fileList } = await wx.cloud.getTempFileURL({
+          fileList: [res.data[0].fileId]
+        });
+        if (fileList && fileList[0] && fileList[0].tempFileURL) {
+          this.setData({ groupQrUrl: fileList[0].tempFileURL });
+        }
+      }
+    } catch (err) {
+      console.warn('加载群二维码失败:', err);
+    }
+  },
+
+  previewQrCode() {
+    if (!this.data.groupQrUrl) return;
+    wx.previewImage({
+      current: this.data.groupQrUrl,
+      urls: [this.data.groupQrUrl]
+    });
   },
 
   onTypeTap(e) {

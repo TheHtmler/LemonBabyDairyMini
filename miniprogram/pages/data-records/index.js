@@ -17,7 +17,7 @@ const MedicationRecordModel = require('../../models/medicationRecord');
 const FoodModel = require('../../models/food');
 const InvitationModel = require('../../models/invitation');
 // 通用工具
-const { getBabyUid } = require('../../utils/index');
+const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -1793,37 +1793,63 @@ Page({
         traceUser: true,
       });
     }
-    
+
     this.initDateList();
-    
+
     // 获取并格式化今天的日期
     const today = new Date();
     const formattedDate = this.formatDate(today);
-    
+
     // 格式化今日完整日期显示（年月日）
     const todayFullDate = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
-    
+
     this.setData({
       selectedDate: formattedDate,
       formattedSelectedDate: this.formatDisplayDate(formattedDate),
-      currentDateId: 'date-0', // 默认选中今天
+      currentDateId: 'date-0',
       selectedDateIndex: 0,
       todayFullDate: todayFullDate,
       isSelectedToday: true
     });
-    
-    // 获取宝宝基本信息（用于获取默认体重）
-    this.getBabyInfo();
-    
-    // 先加载配奶参数设置，再加载记录数据
-    this.loadNutritionSettings().then(() => {
-      // 只在onLoad时获取一次数据，避免重复查询
-      this.fetchDailyRecords(formattedDate);
-    });
-    
+
     this.initCalendar(today.getFullYear(), today.getMonth() + 1);
-    this.loadMedications();
-    this.loadFoodCatalog();
+
+    // 等待应用初始化完成后再加载数据
+    this.initializePage(formattedDate);
+  },
+
+  async initializePage(formattedDate) {
+    try {
+      wx.showLoading({ title: '加载中...', mask: true });
+
+      await waitForAppInitialization();
+
+      const hasPermission = await checkUserPermission();
+      if (!hasPermission) {
+        wx.hideLoading();
+        wx.showModal({
+          title: '权限不足',
+          content: '您没有权限访问此页面，请重新登录',
+          showCancel: false,
+          success: () => {
+            wx.reLaunch({ url: '/pages/role-selection/index' });
+          }
+        });
+        return;
+      }
+
+      // 初始化完成后再加载数据
+      this.getBabyInfo();
+      await this.loadNutritionSettings();
+      this.fetchDailyRecords(formattedDate);
+      this.loadMedications();
+      this.loadFoodCatalog();
+
+      wx.hideLoading();
+    } catch (error) {
+      wx.hideLoading();
+      console.error('data-records 初始化失败:', error);
+    }
   },
 
   onShow: async function() {
@@ -2024,11 +2050,25 @@ Page({
   },
 
   async consolidateFeedingRecords(records = []) {
-    if (!Array.isArray(records) || records.length <= 1) {
+    if (!Array.isArray(records) || records.length === 0) {
       return records && records.length > 0 ? records[0] : null;
     }
 
-    const mergedRecord = mergeFeedingRecords(records, this.data.nutritionSettings || {});
+    // 校验 babyUid 一致性，过滤掉不属于当前宝宝的记录
+    const app = getApp();
+    const currentBabyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    const safeRecords = currentBabyUid
+      ? records.filter(r => r.babyUid === currentBabyUid)
+      : records;
+
+    if (safeRecords.length === 0) {
+      return null;
+    }
+    if (safeRecords.length === 1) {
+      return safeRecords[0];
+    }
+
+    const mergedRecord = mergeFeedingRecords(safeRecords, this.data.nutritionSettings || {});
     if (!mergedRecord?._id) return mergedRecord;
 
     try {
@@ -2429,17 +2469,16 @@ Page({
       // 获取宝宝UID
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-      
-      let query = {
-        date: _.gte(startOfDay).and(_.lte(endOfDay))
-      };
-      
-      // 如果有宝宝UID，添加到查询条件
-      if (babyUid) {
-        query.babyUid = babyUid;
-      } else {
-        console.warn('未找到宝宝UID，将查询所有记录（可能不准确）');
+
+      if (!babyUid) {
+        console.error('未找到宝宝UID，跳过数据查询');
+        return;
       }
+
+      let query = {
+        date: _.gte(startOfDay).and(_.lte(endOfDay)),
+        babyUid: babyUid
+      };
       
       // 并行查询喂养记录、药物记录和排便记录
       const [feedingResult, medicationResult, bowelResult] = await Promise.all([
@@ -2452,7 +2491,7 @@ Page({
       ]);
       let effectiveFeedingResult = feedingResult;
       if (!feedingResult.data || feedingResult.data.length === 0) {
-        const legacyQuery = babyUid ? { date: dateStr, babyUid } : { date: dateStr };
+        const legacyQuery = { date: dateStr, babyUid };
         effectiveFeedingResult = await db.collection('feeding_records').where(legacyQuery).get();
       }
 
@@ -3252,17 +3291,19 @@ Page({
       // 获取宝宝UID
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-      
-      // 查询当天的记录
-      let query = {
-        date: _.gte(startOfDay).and(_.lte(endOfDay))
-      };
-      
-      // 如果有宝宝UID，添加到查询条件
-      if (babyUid) {
-        query.babyUid = babyUid;
+
+      if (!babyUid) {
+        wx.hideLoading();
+        wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+        return;
       }
-      
+
+      // 查询当天的记录
+      const query = {
+        date: _.gte(startOfDay).and(_.lte(endOfDay)),
+        babyUid: babyUid
+      };
+
       const res = await db.collection('feeding_records').where(query).get();
 
       const feeding = {
@@ -3545,13 +3586,16 @@ Page({
         const app = getApp();
         const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
         
-        let deleteQuery = {
-          date: db.command.gte(startOfDay).and(db.command.lte(endOfDay))
-        };
-        
-        if (babyUid) {
-          deleteQuery.babyUid = babyUid;
+        if (!babyUid) {
+          wx.hideLoading();
+          wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+          return;
         }
+
+        const deleteQuery = {
+          date: db.command.gte(startOfDay).and(db.command.lte(endOfDay)),
+          babyUid: babyUid
+        };
         
         const res = await db.collection('feeding_records').where(deleteQuery).get();
 
@@ -3688,12 +3732,9 @@ Page({
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
       
-      let query = {};
-      if (babyUid) {
-        query.babyUid = babyUid;
-      }
-      
-      const res = await db.collection('baby_info').where(query).limit(1).get();
+      if (!babyUid) return;
+
+      const res = await db.collection('baby_info').where({ babyUid }).limit(1).get();
       if (res.data && res.data.length > 0) {
         this.setData({
           babyInfo: res.data[0],
@@ -3970,13 +4011,16 @@ Page({
       const app = getApp();
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
       
-      let whereQuery = {
-        date: _.gte(startOfDay).and(_.lte(endOfDay))
-      };
-      
-      if (babyUid) {
-        whereQuery.babyUid = babyUid;
+      if (!babyUid) {
+        wx.hideLoading();
+        wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+        return;
       }
+
+      const whereQuery = {
+        date: _.gte(startOfDay).and(_.lte(endOfDay)),
+        babyUid: babyUid
+      };
       
       const res = await db.collection('feeding_records')
         .where(whereQuery)
@@ -4929,10 +4973,12 @@ Page({
     const appInstance = getApp();
     const babyUid = appInstance.globalData.babyUid || wx.getStorageSync('baby_uid');
 
-    const query = { date: _.gte(startOfDay).and(_.lte(endOfDay)) };
-    if (babyUid) {
-      query.babyUid = babyUid;
-    }
+    if (!babyUid) return;
+
+    const query = {
+      date: _.gte(startOfDay).and(_.lte(endOfDay)),
+      babyUid: babyUid
+    };
 
     const res = await db.collection('feeding_records').where(query).get();
     const payload = Object.keys(updates).reduce((acc, key) => {
