@@ -1,105 +1,101 @@
-<view class="container">
+<view class="page">
   <!-- 页面标题 -->
-  <view class="page-header">
-    <text class="page-title">药物管理</text>
+  <view class="hero-card">
+    <text class="hero-title">药物管理</text>
+    <text class="hero-subtitle">管理宝宝的用药配置，记录时可快速选择</text>
   </view>
-  
+
   <!-- 药物列表 -->
-  <view class="medication-list">
-    <view class="no-data" wx:if="{{!medications || medications.length === 0}}">
-      暂无药物配置，请点击右下角添加
+  <view class="med-list">
+    <view class="empty-card" wx:if="{{!medications || medications.length === 0}}">
+      <text class="empty-text">暂无药物，点击下方按钮添加</text>
     </view>
-    <view class="medication-item" wx:for="{{medications}}" wx:key="_id">
-      <view class="medication-info">
-        <view class="medication-name">{{item.name}}</view>
-        <view class="medication-details">
-          <text class="medication-detail">剂量: {{item.dosage}}{{item.unit}}</text>
-          <text class="medication-detail">频率: {{item.frequency}}</text>
-          <text class="medication-detail" wx:if="{{item.notes}}">备注: {{item.notes}}</text>
+    <view class="med-card" wx:for="{{medications}}" wx:key="_id">
+      <view class="med-main">
+        <text class="med-name">{{item.name}}</text>
+        <view class="med-tags">
+          <text class="med-tag">{{item.dosage}}{{item.unit}}/次</text>
+          <text class="med-tag">{{item.frequency}}</text>
         </view>
+        <text class="med-notes" wx:if="{{item.notes}}">{{item.notes}}</text>
       </view>
-      <view class="medication-actions">
-        <view class="edit-btn" bindtap="editMedication" data-id="{{item._id}}">编辑</view>
-        <view class="delete-btn" bindtap="deleteMedication" data-id="{{item._id}}">删除</view>
+      <view class="med-actions">
+        <view class="action-btn edit" bindtap="editMedication" data-id="{{item._id}}">编辑</view>
+        <view class="action-btn delete" bindtap="deleteMedication" data-id="{{item._id}}">删除</view>
       </view>
     </view>
   </view>
 
   <!-- 添加按钮 -->
-  <view class="add-btn" bindtap="showAddModal">
-    <text class="add-icon">+</text>
+  <view class="fab" bindtap="showAddModal">
+    <text class="fab-icon">+</text>
   </view>
 
   <!-- 添加/编辑药物弹窗 -->
-  <view class="modal" wx:if="{{showModal}}">
-    <view class="modal-mask" bindtap="hideModal"></view>
-    <view class="modal-content">
-      <view class="modal-header">
-        {{editingMedication ? '编辑药物' : '添加药物'}}
+  <view class="mask {{showModal ? 'show' : ''}}" bindtap="hideModal" catchtouchmove="preventScroll">
+    <view class="sheet {{showModal ? 'show' : ''}}" catchtap="stopPropagation">
+      <view class="sheet-handle"></view>
+      <view class="sheet-header">
+        <text class="sheet-title">{{editingMedication ? '编辑药物' : '添加药物'}}</text>
       </view>
-      <view class="modal-body">
+
+      <scroll-view class="sheet-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="sheet-body">
         <!-- 药物名称 -->
-        <view class="form-item">
-          <text class="form-label">药物名称</text>
-          <view class="input-container">
-            <input class="input" placeholder="如: 精氨酸/左卡尼丁" value="{{formData.name}}" bindinput="onNameInput"/>
+        <view class="field-group">
+          <text class="field-label">药物名称</text>
+          <view class="field-input-wrap">
+            <input class="field-input" placeholder="如：精氨酸 / 左卡尼丁" placeholder-class="input-placeholder" value="{{formData.name}}" bindinput="onNameInput"/>
           </view>
         </view>
-        
+
         <!-- 剂量和单位 -->
-        <view class="form-item">
-          <text class="form-label">药物剂量（次）</text>
-          <view class="form-row">
-            <view class="input-half" style="flex: 2;">
-              <view class="input-container">
-                <input class="input" type="digit" placeholder="请输入剂量数值" value="{{formData.dosage}}" bindinput="onDosageInput"/>
-              </view>
+        <view class="field-group">
+          <text class="field-label">每次剂量</text>
+          <view class="dosage-row">
+            <view class="field-input-wrap" style="flex:1;">
+              <input class="field-input" type="digit" placeholder="请输入剂量" placeholder-class="input-placeholder" value="{{formData.dosage}}" bindinput="onDosageInput"/>
             </view>
-            <view class="input-half unit-picker">
-              <picker class="picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
-                <view class="picker-view">{{units[formData.unitIndex]}}</view>
-              </picker>
-            </view>
+            <picker class="unit-picker" bindchange="onUnitChange" value="{{formData.unitIndex}}" range="{{units}}">
+              <view class="unit-tag">{{units[formData.unitIndex]}} <text class="unit-arrow">›</text></view>
+            </picker>
           </view>
         </view>
-        
-        <!-- 服用频率设置 -->
-        <view class="form-item">
-          <text class="form-label">服用频率</text>
-          <view class="frequency-container">
-            <view class="frequency-row">
-              <text class="frequency-text">每</text>
-              <view class="frequency-input-container">
-                <input class="frequency-input" type="number" value="{{formData.frequencyDays}}" bindinput="onFrequencyDaysInput"/>
-              </view>
-              <text class="frequency-text">天服用</text>
-              <view class="frequency-input-container">
-                <input class="frequency-input" type="number" value="{{formData.frequencyTimes}}" bindinput="onFrequencyTimesInput"/>
-              </view>
-              <text class="frequency-text">次</text>
+
+        <!-- 服用频率 -->
+        <view class="field-group">
+          <text class="field-label">服用频率</text>
+          <view class="freq-box">
+            <view class="freq-row">
+              <text class="freq-text">每</text>
+              <input class="freq-num" type="number" value="{{formData.frequencyDays}}" bindinput="onFrequencyDaysInput"/>
+              <text class="freq-text">天服用</text>
+              <input class="freq-num" type="number" value="{{formData.frequencyTimes}}" bindinput="onFrequencyTimesInput"/>
+              <text class="freq-text">次</text>
             </view>
           </view>
-          
-          <!-- 常用频率选择 -->
-          <view class="frequency-quickselect">
-            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="1" data-times="1">每日1次</view>
-            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="1" data-times="2">每日2次</view>
-            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="1" data-times="3">每日3次</view>
-            <view class="frequency-quick-item" bindtap="selectFrequency" data-days="2" data-times="1">每2天1次</view>
+          <view class="freq-chips">
+            <view class="freq-chip" bindtap="selectFrequency" data-days="1" data-times="1">每日1次</view>
+            <view class="freq-chip" bindtap="selectFrequency" data-days="1" data-times="2">每日2次</view>
+            <view class="freq-chip" bindtap="selectFrequency" data-days="1" data-times="3">每日3次</view>
+            <view class="freq-chip" bindtap="selectFrequency" data-days="2" data-times="1">隔日1次</view>
           </view>
         </view>
-        
+
         <!-- 备注 -->
-        <view class="form-item">
-          <text class="form-label">备注说明</text>
-          <textarea class="textarea" placeholder="可填写特殊说明" value="{{formData.notes}}" bindinput="onNotesInput"></textarea>
+        <view class="field-group">
+          <text class="field-label">备注说明</text>
+          <view class="field-textarea-wrap">
+            <textarea class="field-textarea" placeholder="可选，记录特殊说明" placeholder-class="input-placeholder" value="{{formData.notes}}" bindinput="onNotesInput" auto-height maxlength="200"></textarea>
+          </view>
         </view>
       </view>
-      
-      <view class="modal-footer">
-        <button class="btn cancel" bindtap="hideModal">取消</button>
-        <button class="btn confirm" bindtap="saveMedication">确定</button>
+      </scroll-view>
+
+      <view class="sheet-footer">
+        <button class="btn-cancel" bindtap="hideModal">取消</button>
+        <button class="btn-confirm" bindtap="saveMedication">确定</button>
       </view>
     </view>
   </view>
-</view> 
+</view>

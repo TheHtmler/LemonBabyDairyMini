@@ -316,6 +316,10 @@ Component({
         this._drawDualPanelChart(ctx, width, height, data, opts);
         return;
       }
+      if (opts.layout === 'compositeAxis') {
+        this._drawCompositeAxisChart(ctx, width, height, data, opts);
+        return;
+      }
       const {
         colors = ['#FFB800', '#4CAF50', '#2196F3'],
         title = '',
@@ -427,13 +431,14 @@ Component({
       console.log('图表Y轴范围:', yMin, '-', yMax, '数据范围:', minValue.toFixed(2), '-', maxValue.toFixed(2));
       console.log('图表右Y轴范围:', yRightMin, '-', yRightMax, '数据范围:', minRightValue.toFixed(2), '-', maxRightValue.toFixed(2));
 
-      // 绘制网格
+      // 网格线数量（可配置）
+      const gridLines = opts.gridLines || 5;
+
+      // 绘制网格（水平 + 垂直）
       if (showGrid) {
         ctx.strokeStyle = '#E0E0E0';
         ctx.lineWidth = 0.5;
-        
-        // 横向网格线
-        const gridLines = 5;
+        // 水平网格线
         for (let i = 0; i <= gridLines; i++) {
           const y = padding.top + (chartHeight / gridLines) * i;
           ctx.beginPath();
@@ -441,19 +446,35 @@ Component({
           ctx.lineTo(padding.left + chartWidth, y);
           ctx.stroke();
         }
+        // 垂直网格线
+        const vStep = xData.length > 1 ? chartWidth / (xData.length - 1) : chartWidth;
+        const vLabelStep = xData.length > 10 ? Math.ceil(xData.length / 18) : 1;
+        for (let i = 0; i < xData.length; i++) {
+          if (i % vLabelStep !== 0 && i !== xData.length - 1) continue;
+          const x = padding.left + vStep * i;
+          ctx.beginPath();
+          ctx.moveTo(x, padding.top);
+          ctx.lineTo(x, padding.top + chartHeight);
+          ctx.stroke();
+        }
       }
 
-      // 绘制Y轴标签
+      // 轴颜色
+      const leftAxisColor = opts.yAxisColor || '#666';
+      const rightAxisColor = opts.yAxisRightColor || '#666';
+
+      // 左侧Y轴标签（主轴：身长 cm）
       ctx.font = '10px sans-serif';
-      ctx.fillStyle = '#666';
+      ctx.fillStyle = leftAxisColor;
       ctx.textAlign = 'right';
-      const gridLines = 5;
+      const yLabelMin = opts.yAxisLabelMin ?? -Infinity;
+      const yLabelMax = opts.yAxisLabelMax ?? Infinity;
       for (let i = 0; i <= gridLines; i++) {
         const y = padding.top + (chartHeight / gridLines) * i;
         const value = yMax - (yRange / gridLines) * i;
-        // 根据数值大小决定小数位数
+        if (value < yLabelMin || value > yLabelMax) continue;
         const displayValue = value < 10 ? value.toFixed(1) : Math.round(value);
-        ctx.fillText(displayValue.toString(), padding.left - 10, y + 4);
+        ctx.fillText(displayValue.toString(), padding.left - 5, y + 4);
       }
 
       // 左侧Y轴说明
@@ -462,42 +483,135 @@ Component({
         ctx.fillText(yAxisLabel, padding.left, padding.top - 10);
       }
 
-      // 绘制右侧Y轴标签
-      if (opts.yAxisRightMax !== undefined || yAxisRightLabel) {
-        ctx.textAlign = 'left';
+      // 左侧副轴标签（如果配置了 leftSecondaryAxis，在左侧也显示右轴的值）
+      const leftSec = opts.leftSecondaryAxis;
+      if (leftSec) {
+        ctx.fillStyle = leftSec.color || rightAxisColor;
+        ctx.textAlign = 'right';
+        const secMin = leftSec.labelMin ?? -Infinity;
+        const secMax = leftSec.labelMax ?? Infinity;
         for (let i = 0; i <= gridLines; i++) {
           const y = padding.top + (chartHeight / gridLines) * i;
           const value = yRightMax - (yRightRange / gridLines) * i;
+          if (value < secMin || value > secMax) continue;
           const displayValue = value < 10 ? value.toFixed(1) : Math.round(value);
-          ctx.fillText(displayValue.toString(), padding.left + chartWidth + 10, y + 4);
+          ctx.fillText(displayValue.toString(), padding.left - (leftSec.offset || 35), y + 4);
+        }
+        if (leftSec.label) {
+          ctx.textAlign = 'left';
+          ctx.fillText(leftSec.label, padding.left - (leftSec.offset || 35) - 10, padding.top + chartHeight + 14);
+        }
+      }
+
+      // 右侧Y轴标签（主轴：体重 kg）
+      if (opts.yAxisRightMax !== undefined || yAxisRightLabel) {
+        ctx.fillStyle = rightAxisColor;
+        ctx.textAlign = 'left';
+        const rLabelMin = opts.yAxisRightLabelMin ?? -Infinity;
+        const rLabelMax = opts.yAxisRightLabelMax ?? Infinity;
+        for (let i = 0; i <= gridLines; i++) {
+          const y = padding.top + (chartHeight / gridLines) * i;
+          const value = yRightMax - (yRightRange / gridLines) * i;
+          if (value < rLabelMin || value > rLabelMax) continue;
+          const displayValue = value < 10 ? value.toFixed(1) : Math.round(value);
+          ctx.fillText(displayValue.toString(), padding.left + chartWidth + 5, y + 4);
         }
       }
 
       // 右侧Y轴说明
       if (yAxisRightLabel) {
+        ctx.fillStyle = rightAxisColor;
         ctx.textAlign = 'right';
         ctx.fillText(yAxisRightLabel, padding.left + chartWidth, padding.top - 10);
       }
 
-      // 绘制X轴标签
+      // 右侧副轴标签（如果配置了 rightSecondaryAxis，在右侧也显示左轴的值）
+      const rightSec = opts.rightSecondaryAxis;
+      if (rightSec) {
+        ctx.fillStyle = rightSec.color || leftAxisColor;
+        ctx.textAlign = 'left';
+        const secMin = rightSec.labelMin ?? -Infinity;
+        const secMax = rightSec.labelMax ?? Infinity;
+        for (let i = 0; i <= gridLines; i++) {
+          const y = padding.top + (chartHeight / gridLines) * i;
+          const value = yMax - (yRange / gridLines) * i;
+          if (value < secMin || value > secMax) continue;
+          const displayValue = value < 10 ? value.toFixed(1) : Math.round(value);
+          ctx.fillText(displayValue.toString(), padding.left + chartWidth + (rightSec.offset || 40), y + 4);
+        }
+        if (rightSec.label) {
+          ctx.textAlign = 'right';
+          ctx.fillText(rightSec.label, padding.left + chartWidth + (rightSec.offset || 40) + 10, padding.top - 10);
+        }
+      }
+
+      // 绘制X轴标签（底部）
       ctx.textAlign = 'center';
       const xStep = xData.length > 1 ? chartWidth / (xData.length - 1) : chartWidth / 2;
+      const xLabelStep = xData.length > 10 ? Math.ceil(xData.length / 18) : 1;
       xData.forEach((label, index) => {
         const x = padding.left + xStep * index;
-        const y = xAxisPosition === 'top' ? padding.top - 10 : padding.top + chartHeight + xAxisLabelSpace;
-        
-        // 根据数据点数量决定显示策略
-        let shouldShow = true;
-        if (xData.length > 10) {
-          // 数据点多时，隔几个显示
-          const step = Math.ceil(xData.length / 7);
-          shouldShow = index % step === 0 || index === xData.length - 1;
-        }
-        
+        const y = padding.top + chartHeight + xAxisLabelSpace;
+        const shouldShow = index % xLabelStep === 0 || index === xData.length - 1;
         if (shouldShow) {
           ctx.fillText(label || '', x, y);
         }
       });
+
+      // 绘制顶部X轴标签
+      if (opts.showTopAxis) {
+        xData.forEach((label, index) => {
+          const x = padding.left + xStep * index;
+          const y = padding.top - 10;
+          const shouldShow = index % xLabelStep === 0 || index === xData.length - 1;
+          if (shouldShow) {
+            ctx.fillText(label || '', x, y);
+          }
+        });
+      }
+
+      // 绘制填充带（bands）
+      const bands = data.bands || [];
+      if (bands.length > 0) {
+        const seriesMap = {};
+        series.forEach((s) => { seriesMap[s.name] = s; });
+
+        bands.forEach((band) => {
+          const upperSeries = seriesMap[band.upper];
+          const lowerSeries = seriesMap[band.lower];
+          if (!upperSeries || !lowerSeries) return;
+          if (!upperSeries.data || !lowerSeries.data) return;
+
+          const upperPoints = [];
+          const lowerPoints = [];
+          for (let i = 0; i < xData.length; i++) {
+            const uv = upperSeries.data[i];
+            const lv = lowerSeries.data[i];
+            if (uv == null || isNaN(uv) || lv == null || isNaN(lv)) continue;
+            const x = padding.left + xStep * i;
+            const isRight = upperSeries.yAxisIndex === 1;
+            const scale = isRight ? yRightScale : yScale;
+            const axisMin = isRight ? yRightMin : yMin;
+            const uy = Math.max(padding.top, Math.min(padding.top + chartHeight, padding.top + chartHeight - ((uv - axisMin) * scale)));
+            const ly = Math.max(padding.top, Math.min(padding.top + chartHeight, padding.top + chartHeight - ((lv - axisMin) * scale)));
+            upperPoints.push({ x, y: uy });
+            lowerPoints.push({ x, y: ly });
+          }
+          if (upperPoints.length < 2) return;
+
+          ctx.beginPath();
+          ctx.moveTo(upperPoints[0].x, upperPoints[0].y);
+          for (let i = 1; i < upperPoints.length; i++) {
+            ctx.lineTo(upperPoints[i].x, upperPoints[i].y);
+          }
+          for (let i = lowerPoints.length - 1; i >= 0; i--) {
+            ctx.lineTo(lowerPoints[i].x, lowerPoints[i].y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = band.color;
+          ctx.fill();
+        });
+      }
 
       // 绘制数据线
       series.forEach((s, seriesIndex) => {
@@ -511,55 +625,77 @@ Component({
         const color = colors[seriesIndex % colors.length];
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
-        ctx.lineWidth = 2;
+        const lw = s.lineWidth === undefined ? 2 : s.lineWidth;
+        ctx.lineWidth = lw;
 
-        // 绘制线条
-        ctx.beginPath();
-        let hasStarted = false;
-        
-        s.data.forEach((value, index) => {
-          if (value === null || value === undefined || isNaN(value)) {
-            return;
+        // 绘制线条（lineWidth 为 0 的系列仅用于填充带数据，不画线）
+        if (lw > 0) {
+          ctx.beginPath();
+          let hasStarted = false;
+
+          s.data.forEach((value, index) => {
+            if (value === null || value === undefined || isNaN(value)) {
+              return;
+            }
+
+            const x = padding.left + xStep * index;
+            const isRightAxis = s.yAxisIndex === 1;
+            const scale = isRightAxis ? yRightScale : yScale;
+            const axisMin = isRightAxis ? yRightMin : yMin;
+            let y = padding.top + chartHeight - ((value - axisMin) * scale);
+            y = Math.max(padding.top, Math.min(y, padding.top + chartHeight));
+
+            if (!hasStarted) {
+              ctx.moveTo(x, y);
+              hasStarted = true;
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+
+          if (hasStarted) {
+            ctx.stroke();
           }
-
-          const x = padding.left + xStep * index;
-          const isRightAxis = s.yAxisIndex === 1;
-          const scale = isRightAxis ? yRightScale : yScale;
-          const axisMin = isRightAxis ? yRightMin : yMin;
-          // 确保Y坐标在图表范围内
-          let y = padding.top + chartHeight - ((value - axisMin) * scale);
-          y = Math.max(padding.top, Math.min(y, padding.top + chartHeight));
-
-          if (!hasStarted) {
-            ctx.moveTo(x, y);
-            hasStarted = true;
-          } else {
-            ctx.lineTo(x, y);
-          }
-        });
-        
-        if (hasStarted) {
-          ctx.stroke();
         }
 
-        // 绘制数据点
-        s.data.forEach((value, index) => {
-          if (value === null || value === undefined || isNaN(value) || value === 0) {
-            return;
+        // 绘制数据点（仅对标记了 showDots 的系列）
+        if (s.showDots) {
+          s.data.forEach((value, index) => {
+            if (value === null || value === undefined || isNaN(value) || value === 0) {
+              return;
+            }
+
+            const x = padding.left + xStep * index;
+            const isRightAxis = s.yAxisIndex === 1;
+            const scale = isRightAxis ? yRightScale : yScale;
+            const axisMin = isRightAxis ? yRightMin : yMin;
+            let y = padding.top + chartHeight - ((value - axisMin) * scale);
+            y = Math.max(padding.top, Math.min(y, padding.top + chartHeight));
+
+            ctx.beginPath();
+            ctx.arc(x, y, s.dotRadius || 3, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+
+        // 在曲线末端标注百分位数字
+        const pMatch = s.name && s.name.match(/P(\d+)$/);
+        if (pMatch && !s.showDots) {
+          const lastIdx = s.data.length - 1;
+          const lastVal = s.data[lastIdx];
+          if (lastVal != null && !isNaN(lastVal)) {
+            const isRightAxis = s.yAxisIndex === 1;
+            const scale = isRightAxis ? yRightScale : yScale;
+            const axisMin = isRightAxis ? yRightMin : yMin;
+            const lx = padding.left + xStep * lastIdx + 2;
+            let ly = padding.top + chartHeight - ((lastVal - axisMin) * scale);
+            ly = Math.max(padding.top + 6, Math.min(ly + 3, padding.top + chartHeight - 2));
+            ctx.font = '8px sans-serif';
+            ctx.fillStyle = colors[seriesIndex % colors.length];
+            ctx.textAlign = 'left';
+            ctx.fillText(pMatch[1], lx, ly);
           }
-
-          const x = padding.left + xStep * index;
-          const isRightAxis = s.yAxisIndex === 1;
-          const scale = isRightAxis ? yRightScale : yScale;
-          const axisMin = isRightAxis ? yRightMin : yMin;
-          // 确保Y坐标在图表范围内
-          let y = padding.top + chartHeight - ((value - axisMin) * scale);
-          y = Math.max(padding.top, Math.min(y, padding.top + chartHeight));
-
-          ctx.beginPath();
-          ctx.arc(x, y, 3, 0, Math.PI * 2);
-          ctx.fill();
-        });
+        }
       });
 
       // 绘制图例
@@ -617,6 +753,248 @@ Component({
           tooltipTopOffset: opts.tooltipTopOffset,
           width,
           height
+        }
+      });
+    },
+
+    // WHO/WS/T 423-2022 混合轴生长曲线图
+    // 1kg 步长 = 5cm 步长 = 同像素高度。左右都是「下体重上身长」混合轴，标签范围不同但网格水平对齐。
+    // 左轴: 体重1-10 + gap + 身长45-110  (9+1+13=23步)
+    // 右轴: 体重1-18 + gap + 身长85-110  (17+1+5=23步)
+    _drawCompositeAxisChart(ctx, width, height, data, opts) {
+      const xData = data.xData || [];
+      const series = data.series || [];
+      const bands = data.bands || [];
+      const {
+        colors = [],
+        showGrid = true,
+        padding: customPadding,
+        leftWeightMax = 10,
+        rightLengthMin = 85,
+        weightColor = '#E07A5F',
+        lengthColor = '#3F51B5',
+        showTopAxis = true,
+        showBottomAxis = true
+      } = opts;
+
+      const padding = customPadding || { top: 30, right: 50, bottom: 30, left: 50 };
+      const plotLeft = padding.left;
+      const plotRight = width - padding.right;
+      const plotTop = padding.top;
+      const plotBottom = height - padding.bottom;
+      const plotWidth = plotRight - plotLeft;
+      const plotHeight = plotBottom - plotTop;
+
+      // 统一坐标系: 1步 = 1kg = 5cm 像素高度
+      // 体重 w → step = w - 1       (weight 1 at step 0)
+      // 身长 l → step = gap + l/5    (确保左右对齐)
+      // 左: weight 1-10 (step 0-9), gap (step 9→10), length 45-110 (step 10-23)  → 总23步
+      // 右: weight 1-18 (step 0-17), gap (step 17→18), length 85-110 (step 18-23) → 总23步
+      const gapSteps = 1;
+      const totalSteps = gapSteps + 110 / 5; // = 1 + 22 = 23
+      const pps = plotHeight / totalSteps; // pixels per step
+
+      function weightToY(w) { return plotBottom - (w - 1) * pps; }
+      function lengthToY(l) { return plotBottom - (gapSteps + l / 5) * pps; }
+      function toY(value, metric) { return metric === 'weight' ? weightToY(value) : lengthToY(value); }
+
+      const xLen = xData.length;
+      const xStep = xLen > 1 ? plotWidth / (xLen - 1) : plotWidth;
+
+      // --- 水平网格线（每个有标签的步进位置画一条）---
+      if (showGrid) {
+        ctx.strokeStyle = '#D8D8D8';
+        ctx.lineWidth = 0.5;
+        // 所有步进位置 0-23 都画网格线（除了gap位置）
+        for (let s = 0; s <= totalSteps; s++) {
+          // 跳过左侧gap区间(step 9→10)和右侧gap区间(step 17→18)中间的非刻度位置
+          // 实际上每个整数step都对应某侧的一个刻度，所以都画
+          const y = plotBottom - s * pps;
+          ctx.beginPath(); ctx.moveTo(plotLeft, y); ctx.lineTo(plotRight, y); ctx.stroke();
+        }
+        // 垂直网格线（每3个月）
+        for (let i = 3; i < xLen; i += 3) {
+          const x = plotLeft + i * xStep;
+          ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotBottom); ctx.stroke();
+        }
+      }
+
+      // --- 边框 ---
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(plotLeft, plotTop, plotWidth, plotHeight);
+
+      // --- 填充带 ---
+      const seriesByName = {};
+      series.forEach(s => { seriesByName[s.name] = s; });
+      bands.forEach(band => {
+        const upperS = seriesByName[band.upper];
+        const lowerS = seriesByName[band.lower];
+        if (!upperS || !lowerS) return;
+        const metric = band.metric || upperS.metric || 'length';
+        ctx.fillStyle = band.color || 'rgba(0,0,0,0.03)';
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i < xLen; i++) {
+          const v = upperS.data[i];
+          if (v === null || v === undefined) continue;
+          const x = plotLeft + i * xStep;
+          const y = toY(v, metric);
+          if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        }
+        for (let i = xLen - 1; i >= 0; i--) {
+          const v = lowerS.data[i];
+          if (v === null || v === undefined) continue;
+          ctx.lineTo(plotLeft + i * xStep, toY(v, metric));
+        }
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // --- 曲线 ---
+      series.forEach((s, sIdx) => {
+        if (!s.data || s.data.length === 0) return;
+        const metric = s.metric || 'length';
+        const color = colors[sIdx % colors.length] || '#555';
+        const lineWidth = s.lineWidth ?? 1;
+        if (lineWidth > 0) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = lineWidth;
+          ctx.beginPath();
+          let started = false;
+          for (let i = 0; i < xLen; i++) {
+            const v = s.data[i];
+            if (v === null || v === undefined) { started = false; continue; }
+            const y = toY(v, metric);
+            if (!started) { ctx.moveTo(plotLeft + i * xStep, y); started = true; }
+            else ctx.lineTo(plotLeft + i * xStep, y);
+          }
+          ctx.stroke();
+        }
+        if (s.showDots) {
+          const dotRadius = s.dotRadius || 3;
+          ctx.fillStyle = color;
+          for (let i = 0; i < xLen; i++) {
+            const v = s.data[i];
+            if (v === null || v === undefined) continue;
+            const y = toY(v, metric);
+            ctx.beginPath(); ctx.arc(plotLeft + i * xStep, y, dotRadius, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      });
+
+      // --- 左轴标签：体重 1-10, gap, 身长 45-110 ---
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 0.5;
+      // 体重
+      ctx.fillStyle = weightColor;
+      for (let w = 1; w <= leftWeightMax; w++) {
+        const y = weightToY(w);
+        ctx.fillText(w.toFixed(0), plotLeft - 4, y + 3);
+        ctx.beginPath(); ctx.moveTo(plotLeft, y); ctx.lineTo(plotLeft - 3, y); ctx.stroke();
+      }
+      // 身长
+      ctx.fillStyle = lengthColor;
+      for (let l = 45; l <= 110; l += 5) {
+        const y = lengthToY(l);
+        ctx.fillText(l.toFixed(0), plotLeft - 4, y + 3);
+        ctx.beginPath(); ctx.moveTo(plotLeft, y); ctx.lineTo(plotLeft - 3, y); ctx.stroke();
+      }
+      // 左轴单位
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = weightColor;
+      ctx.save();
+      ctx.translate(plotLeft - 28, weightToY((1 + leftWeightMax) / 2));
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('kg', 0, 0);
+      ctx.restore();
+      ctx.fillStyle = lengthColor;
+      ctx.save();
+      ctx.translate(plotLeft - 28, lengthToY(77));
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('cm', 0, 0);
+      ctx.restore();
+
+      // --- 右轴标签：体重 1-18, gap, 身长 85-110 ---
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      // 体重
+      ctx.fillStyle = weightColor;
+      for (let w = 1; w <= 18; w++) {
+        const y = weightToY(w);
+        ctx.fillText(w.toFixed(0), plotRight + 4, y + 3);
+        ctx.beginPath(); ctx.moveTo(plotRight, y); ctx.lineTo(plotRight + 3, y); ctx.stroke();
+      }
+      // 身长
+      ctx.fillStyle = lengthColor;
+      for (let l = rightLengthMin; l <= 110; l += 5) {
+        const y = lengthToY(l);
+        ctx.fillText(l.toFixed(0), plotRight + 4, y + 3);
+        ctx.beginPath(); ctx.moveTo(plotRight, y); ctx.lineTo(plotRight + 3, y); ctx.stroke();
+      }
+      // 右轴单位
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = weightColor;
+      ctx.save();
+      ctx.translate(plotRight + 28, weightToY(9.5));
+      ctx.rotate(Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('kg', 0, 0);
+      ctx.restore();
+      ctx.fillStyle = lengthColor;
+      ctx.save();
+      ctx.translate(plotRight + 28, lengthToY(97));
+      ctx.rotate(Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('cm', 0, 0);
+      ctx.restore();
+
+      // --- X轴标注 ---
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = '#666';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < xLen; i++) {
+        if (i % 3 !== 0) continue;
+        const x = plotLeft + i * xStep;
+        if (showBottomAxis) ctx.fillText(xData[i], x, plotBottom + 14);
+        if (showTopAxis) ctx.fillText(xData[i], x, plotTop - 5);
+      }
+
+      // --- 右端百分位标注 ---
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'left';
+      const labelPositions = [];
+      series.forEach((s, sIdx) => {
+        const match = s.name.match(/P(\d+)$/);
+        if (!match) return;
+        const metric = s.metric || 'length';
+        const lastVal = s.data[xLen - 1];
+        if (lastVal === null || lastVal === undefined) return;
+        const y = toY(lastVal, metric);
+        labelPositions.push({ label: match[0], y, color: colors[sIdx % colors.length] || '#555', metric });
+      });
+      ['weight', 'length'].forEach(m => {
+        const group = labelPositions.filter(lp => lp.metric === m);
+        group.sort((a, b) => a.y - b.y);
+        for (let i = 1; i < group.length; i++) {
+          if (group[i].y - group[i - 1].y < 9) group[i].y = group[i - 1].y + 9;
+        }
+      });
+      labelPositions.forEach(lp => {
+        ctx.fillStyle = lp.color;
+        ctx.fillText(lp.label, plotRight + 38, lp.y + 3);
+      });
+
+      // --- 存储交互信息 ---
+      this.setData({
+        chartInfo: {
+          padding, chartWidth: plotWidth, chartHeight: plotHeight,
+          xData, series, colors, xStep,
+          layout: 'compositeAxis', width, height
         }
       });
     },
@@ -889,10 +1267,11 @@ Component({
           }
         });
       }
+      const plotBottom = panels[1].top + panels[1].height;
       if (showBottomAxis) {
         xData.forEach((label, index) => {
           const x = padding.left + xStep * index;
-          const y = plotTop + panelHeight * 2 + panelGap + xAxisLabelSpace;
+          const y = plotBottom + xAxisLabelSpace;
           let shouldShow = true;
           if (xData.length > 10) {
             const step = Math.ceil(xData.length / 7);
@@ -904,6 +1283,52 @@ Component({
         });
       }
 
+      // 绘制填充带（bands）
+      const bands = data.bands || [];
+      if (bands.length > 0) {
+        const seriesMap = {};
+        series.forEach((s) => { seriesMap[s.name] = s; });
+
+        bands.forEach((band) => {
+          const upperSeries = seriesMap[band.upper];
+          const lowerSeries = seriesMap[band.lower];
+          if (!upperSeries || !lowerSeries) return;
+          if (!upperSeries.data || !lowerSeries.data) return;
+
+          const pi = band.panelIndex != null ? band.panelIndex : (upperSeries.panelIndex === 1 ? 1 : 0);
+          const panel = panels[pi];
+          const useRight = upperSeries.axisSide === 'right';
+          const axis = useRight ? panel.rightAxis : panel.leftAxis;
+
+          const upperPoints = [];
+          const lowerPoints = [];
+          for (let i = 0; i < xData.length; i++) {
+            const uv = upperSeries.data[i];
+            const lv = lowerSeries.data[i];
+            if (uv == null || isNaN(uv) || lv == null || isNaN(lv)) continue;
+            const x = padding.left + xStep * i;
+            const uy = Math.max(panel.top, Math.min(panel.top + panel.height, panel.top + panel.height - ((uv - axis.min) * axis.scale)));
+            const ly = Math.max(panel.top, Math.min(panel.top + panel.height, panel.top + panel.height - ((lv - axis.min) * axis.scale)));
+            upperPoints.push({ x, y: uy });
+            lowerPoints.push({ x, y: ly });
+          }
+          if (upperPoints.length < 2) return;
+
+          ctx.beginPath();
+          ctx.moveTo(upperPoints[0].x, upperPoints[0].y);
+          for (let i = 1; i < upperPoints.length; i++) {
+            ctx.lineTo(upperPoints[i].x, upperPoints[i].y);
+          }
+          for (let i = lowerPoints.length - 1; i >= 0; i--) {
+            ctx.lineTo(lowerPoints[i].x, lowerPoints[i].y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = band.color;
+          ctx.fill();
+        });
+      }
+
+      // 绘制数据线
       series.forEach((s, seriesIndex) => {
         if (this.isSeriesHidden(s, seriesIndex)) return;
         if (!s.data || s.data.length === 0) return;
@@ -914,7 +1339,7 @@ Component({
         const color = colors[seriesIndex % colors.length];
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = s.lineWidth || 1.5;
 
         ctx.beginPath();
         let hasStarted = false;
@@ -934,12 +1359,51 @@ Component({
           ctx.stroke();
         }
 
-        // Dual panel style uses clean curves without point markers.
+        // 绘制数据点（仅对 showDots 的系列）
+        if (s.showDots) {
+          s.data.forEach((value, index) => {
+            if (value === null || value === undefined || isNaN(value) || value === 0) return;
+            const x = padding.left + xStep * index;
+            let y = panel.top + panel.height - ((value - axis.min) * axis.scale);
+            y = Math.max(panel.top, Math.min(y, panel.top + panel.height));
+            ctx.beginPath();
+            ctx.arc(x, y, s.dotRadius || 3, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+
+        // 在曲线末端标注百分位数字（如 3, 10, 25, 50, 75, 90, 97）
+        const pMatch = s.name && s.name.match(/P(\d+)$/);
+        if (pMatch && !s.showDots) {
+          const lastVal = s.data[s.data.length - 1];
+          if (lastVal != null && !isNaN(lastVal)) {
+            const lx = padding.left + xStep * (s.data.length - 1) + 4;
+            let ly = panel.top + panel.height - ((lastVal - axis.min) * axis.scale);
+            ly = Math.max(panel.top + 6, Math.min(ly + 3, panel.top + panel.height - 2));
+            ctx.font = '8px sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'left';
+            ctx.fillText(pMatch[1], lx, ly);
+          }
+        }
       });
+
+      // 绘制区域标签（身长 / 体重）
+      const areaLabels = opts.panelLabels;
+      if (areaLabels && Array.isArray(areaLabels)) {
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = 'rgba(60,60,60,0.5)';
+        ctx.textAlign = 'center';
+        areaLabels.forEach((lbl, pi) => {
+          if (!lbl || !panels[pi]) return;
+          const p = panels[pi];
+          ctx.fillText(lbl, padding.left + chartWidth / 2, p.top + p.height / 2 + 4);
+        });
+      }
 
       if (showLegend && series.length > 0 && legendLayout) {
         const legendAreas = [];
-        const legendTop = plotTop + panelHeight * 2 + panelGap + xAxisLabelSpace + legendGap;
+        const legendTop = plotBottom + xAxisLabelSpace + legendGap;
         const legendOffsetX = opts.legendOffsetX || 0;
         ctx.font = legendLayout.font;
         legendLayout.items.forEach((item) => {

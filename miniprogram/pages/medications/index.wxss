@@ -1,400 +1,440 @@
-.container {
-  padding: 20rpx;
+/* ===== 页面 ===== */
+.page {
   min-height: 100vh;
-  background-color: #FFF9E6;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: 24rpx;
+  background:
+    radial-gradient(circle at top right, rgba(255, 226, 122, 0.4), transparent 28%),
+    linear-gradient(180deg, #FFF7DC 0%, #FFF2C8 100%);
   box-sizing: border-box;
-  width: 100%;
 }
 
-/* 药物列表样式 */
-.medication-list {
-  padding-bottom: 120rpx;
-  width: 90%;
+/* ===== 顶部卡片 ===== */
+.hero-card {
+  background: linear-gradient(135deg, #FFCB38 0%, #FFB800 100%);
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.18);
 }
 
-.no-data {
+.hero-title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #5F3900;
+}
+
+.hero-subtitle {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: rgba(95, 57, 0, 0.72);
+  line-height: 1.5;
+}
+
+/* ===== 药物列表 ===== */
+.med-list {
+  padding-bottom: 140rpx;
+}
+
+.empty-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 24rpx;
+  padding: 60rpx 24rpx;
   text-align: center;
-  color: #999;
-  padding: 40rpx 0;
-  background-color: #ffffff;
-  border-radius: 12rpx;
-  margin-top: 20rpx;
-  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.08);
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
 }
 
-.medication-item {
-  background-color: #fff;
-  border-radius: 12rpx;
-  padding: 20rpx;
+.empty-text {
+  font-size: 28rpx;
+  color: #8A7C60;
+}
+
+.med-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 24rpx;
+  padding: 24rpx;
   margin-bottom: 20rpx;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
-  border: 2rpx solid rgba(255, 184, 0, 0.2);
-}
-
-.medication-info {
-  flex: 1;
-}
-
-.medication-name {
-  font-size: 32rpx;
-  color: #333;
-  margin-bottom: 8rpx;
-  font-weight: 500;
-}
-
-.medication-volume {
-  font-size: 28rpx;
-  color: #666;
-}
-
-.medication-actions {
-  display: flex;
   gap: 20rpx;
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.08);
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
 }
 
-.edit-btn, .delete-btn {
-  padding: 10rpx 20rpx;
-  border-radius: 8rpx;
-  font-size: 28rpx;
+.med-main {
+  flex: 1;
+  min-width: 0;
 }
 
-.edit-btn {
-  background-color: #FFB800;
-  color: #fff;
+.med-name {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
 }
 
-.delete-btn {
-  background-color: #ff4d4f;
-  color: #fff;
+.med-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 12rpx;
 }
 
-/* 添加按钮样式 */
-.add-btn {
+.med-tag {
+  font-size: 22rpx;
+  color: #8A7C60;
+  background: #FFF7E3;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+}
+
+.med-notes {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+.med-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  text-align: center;
+}
+
+.action-btn.edit {
+  background: rgba(255, 184, 0, 0.12);
+  color: #E6A600;
+  border: 2rpx solid rgba(255, 184, 0, 0.25);
+}
+
+.action-btn.edit:active {
+  background: rgba(255, 184, 0, 0.22);
+}
+
+.action-btn.delete {
+  background: rgba(255, 77, 79, 0.08);
+  color: #ff4d4f;
+  border: 2rpx solid rgba(255, 77, 79, 0.18);
+}
+
+.action-btn.delete:active {
+  background: rgba(255, 77, 79, 0.16);
+}
+
+/* ===== FAB ===== */
+.fab {
   position: fixed;
   right: 40rpx;
-  bottom: 40rpx;
+  bottom: 60rpx;
   width: 100rpx;
   height: 100rpx;
-  background-color: #FFB800;
+  background: linear-gradient(135deg, #FFC933 0%, #FFB800 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
+  box-shadow: 0 12rpx 28rpx rgba(255, 184, 0, 0.35);
   z-index: 100;
 }
 
-.add-icon {
-  color: #fff;
-  font-size: 60rpx;
-  font-weight: bold;
+.fab:active {
+  transform: scale(0.92);
 }
 
-/* 弹窗样式 */
-.modal {
+.fab-icon {
+  color: #fff;
+  font-size: 56rpx;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* ===== 遮罩 ===== */
+.mask {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0);
+  z-index: 9999;
+  pointer-events: none;
+  transition: background 0.3s ease;
 }
 
-.modal-mask {
-  position: absolute;
-  top: 0;
+.mask.show {
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+/* ===== 底部面板 ===== */
+.sheet {
+  position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #fff;
-  border-radius: 30rpx 30rpx 0 0;
-  padding: 40rpx 30rpx;
+  background: #FFFDF5;
+  border-radius: 32rpx 32rpx 0 0;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  z-index: 10000;
   max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  font-size: 34rpx;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 40rpx;
-  color: #333;
-}
-
-.modal-body {
-  margin-bottom: 40rpx;
-}
-
-.modal-footer {
-  display: flex;
-  gap: 30rpx;
-  margin-top: 40rpx;
-}
-
-.btn {
-  flex: 1;
-  padding: 24rpx;
-  text-align: center;
-  border-radius: 12rpx;
-  font-size: 30rpx;
-}
-
-.cancel {
-  background-color: #f5f5f5;
-  color: #666;
-}
-
-.confirm {
-  background-color: #FFB800;
-  color: #fff;
-  font-weight: 500;
-}
-
-/* 页面标题样式 */
-.page-header {
-  width: 90%;
-  margin-bottom: 20rpx;
-  padding: 20rpx 0;
-}
-
-.page-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
-  position: relative;
-  padding-left: 20rpx;
-}
-
-.page-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 25%;
-  height: 50%;
-  width: 8rpx;
-  background-color: #FFB800;
-  border-radius: 4rpx;
-}
-
-/* 药物列表详情样式 */
-.medication-details {
   display: flex;
   flex-direction: column;
-  margin-top: 10rpx;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.medication-detail {
-  font-size: 24rpx;
-  color: #666;
-  margin-top: 4rpx;
+.sheet.show {
+  transform: translateY(0);
 }
 
-/* 表单样式 */
-.form-item {
-  margin-bottom: 36rpx;
+.sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4rpx;
+  margin: 16rpx auto 0;
 }
 
-.form-label {
-  display: block;
-  font-size: 30rpx;
+.sheet-header {
+  padding: 24rpx 32rpx 16rpx;
+  text-align: center;
+}
+
+.sheet-title {
+  font-size: 34rpx;
+  font-weight: 700;
   color: #333;
-  margin-bottom: 20rpx;
+}
+
+/* ===== 表单区 ===== */
+.sheet-scroll {
+  flex: 1;
+  overflow: hidden;
+}
+
+.sheet-body {
+  padding: 8rpx 32rpx 16rpx;
+}
+
+.field-group {
+  margin-bottom: 28rpx;
+}
+
+.field-label {
+  display: block;
+  font-size: 26rpx;
+  color: #8A7C60;
+  margin-bottom: 12rpx;
   font-weight: 500;
 }
 
-.form-row {
+.field-input-wrap {
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 16rpx;
   display: flex;
-  gap: 20rpx;
-  align-items: flex-start;
+  align-items: center;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.input-half {
-  flex: 1;
-  position: relative;
+.field-input-wrap:focus-within {
+  border-color: #FFB800;
+  background: #FFF2CC;
 }
+
+.field-input {
+  width: 100%;
+  height: 100%;
+  font-size: 30rpx;
+  color: #333;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.input-placeholder {
+  color: #C4B896;
+}
+
+/* 剂量行 */
+.dosage-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
 
 .unit-picker {
+  flex-shrink: 0;
+}
+
+.unit-tag {
   height: 88rpx;
-  margin-bottom: 20rpx;
-  position: relative;
+  line-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #8A7C60;
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 16rpx;
+  white-space: nowrap;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
 }
 
-.unit-picker .picker {
-  height: 100%;
-  min-height: 100%;
-  width: 100%;
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-  box-sizing: border-box;
+.unit-arrow {
+  font-size: 32rpx;
+  color: #C4B896;
+  font-weight: 300;
 }
 
-.unit-picker .picker-view {
-  height: 100%;
+/* 频率 */
+.freq-box {
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+.freq-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 88rpx;
-  pointer-events: none;
 }
 
-.input-container {
-  position: relative;
-  height: 88rpx;
-  width: 100%;
+.freq-text {
+  font-size: 28rpx;
+  color: #5F3900;
+  padding: 0 8rpx;
+  line-height: 72rpx;
 }
 
-.input {
-  background-color: #f9f9f9;
-  padding: 0 24rpx;
+.freq-num {
+  width: 100rpx;
+  height: 72rpx;
+  background: #fff;
+  border: 2rpx solid rgba(255, 184, 0, 0.25);
   border-radius: 12rpx;
-  margin-bottom: 20rpx;
-  border: 2rpx solid rgba(255, 184, 0, 0.2);
   font-size: 30rpx;
+  color: #333;
+  text-align: center;
+  margin: 0 4rpx;
   box-sizing: border-box;
-  width: 100%;
-  height: 88rpx;
-  min-height: 88rpx;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
-/* 确保备注文本框样式不受影响 */
-.textarea {
-  background-color: #f9f9f9;
-  padding: 24rpx;
-  border-radius: 12rpx;
-  width: 100%;
-  height: 160rpx;
-  box-sizing: border-box;
-  font-size: 30rpx;
-  border: 2rpx solid rgba(255, 184, 0, 0.2);
-  position: relative;
-  display: block;
-}
-
-/* 添加输入框聚焦效果 */
-.input:focus, .textarea:focus {
+.freq-num:focus {
   border-color: #FFB800;
-  background-color: rgba(255, 247, 230, 0.5);
 }
 
-.picker {
-  background-color: #f9f9f9;
-  padding: 0 24rpx;
-  border-radius: 12rpx;
-  border: 2rpx solid rgba(255, 184, 0, 0.2);
-  height: 88rpx;
-  min-height: 88rpx;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.picker-view {
-  color: #333;
-  font-size: 30rpx;
-  width: 100%;
-  text-align: center;
-  line-height: 88rpx;
-}
-
-/* 优化频率容器 */
-.frequency-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: #fefaf0;
-  padding: 30rpx 20rpx;
-  border-radius: 12rpx;
-  border: 2rpx solid rgba(255, 184, 0, 0.1);
-  margin-bottom: 10rpx;
-}
-
-.frequency-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0;
-  width: 100%;
-}
-
-.frequency-text {
-  font-size: 30rpx;
-  color: #333;
-  padding: 0 10rpx;
-  line-height: 88rpx;
-}
-
-.frequency-input-container {
-  width: 120rpx;
-  height: 88rpx;
-  position: relative;
-  margin: 0 10rpx;
-}
-
-.frequency-input {
-  width: 100% !important;
-  height: 88rpx !important;
-  min-height: 88rpx !important;
-  background-color: #f9f9f9;
-  border-radius: 12rpx;
-  border: 2rpx solid rgba(255, 184, 0, 0.2);
-  font-size: 30rpx;
-  text-align: center;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-/* 频率快速选择 */
-.frequency-quickselect {
+.freq-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
-  margin-top: 20rpx;
+  gap: 14rpx;
+  margin-top: 16rpx;
 }
 
-.frequency-quick-item {
-  padding: 14rpx 24rpx;
-  border-radius: 30rpx;
-  font-size: 26rpx;
-  background-color: #FFF5D6;
-  color: #FF9800;
-  border: 2rpx solid rgba(255, 184, 0, 0.3);
-  text-align: center;
-  box-shadow: 0 2rpx 6rpx rgba(255, 184, 0, 0.1);
+.freq-chip {
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #8A7C60;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
 }
 
-.frequency-quick-item:active {
-  background-color: #FFB800;
+.freq-chip:active {
+  background: #FFB800;
   color: #fff;
-  transform: scale(0.98);
-  transition: all 0.1s;
-} 
+  border-color: #FFB800;
+}
+
+/* 备注 */
+.field-textarea-wrap {
+  padding: 20rpx 24rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 16rpx;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.field-textarea-wrap:focus-within {
+  border-color: #FFB800;
+  background: #FFF2CC;
+}
+
+.field-textarea {
+  width: 100%;
+  min-height: 120rpx;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* ===== 底部按钮 ===== */
+.sheet-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 16rpx 32rpx 24rpx;
+}
+
+.btn-cancel,
+.btn-confirm {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.btn-cancel {
+  background: #F5F0E5;
+  color: #8A7C60;
+}
+
+.btn-cancel::after {
+  border: none;
+}
+
+.btn-cancel:active {
+  opacity: 0.7;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #FFC933 0%, #FFB800 100%);
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(255, 184, 0, 0.25);
+}
+
+.btn-confirm::after {
+  border: none;
+}
+
+.btn-confirm:active {
+  opacity: 0.85;
+}

@@ -373,6 +373,7 @@
     bind:timechange="onMedicationTimeChange"
     bind:noteschange="onMedicationNotesChange"
     bind:confirm="recordMedication"
+    bind:manage="goToMedicationManage"
   />
   
   <!-- 编辑记录弹窗 -->
@@ -406,6 +407,7 @@
     bind:timechange="onMedicationRecordTimeChange"
     bind:noteschange="onMedicationRecordNotesChange"
     bind:confirm="saveMedicationRecordChanges"
+    bind:manage="goToMedicationManage"
   />
   
   <!-- 快捷记录弹窗 -->

@@ -30,7 +30,6 @@ Page({
       title: '',
       notes: ''
     },
-    chartData: null,
     ec: {
       lazyLoad: true
     }
@@ -69,7 +68,7 @@ Page({
     const { babyInfo } = this.data;
     const genderText = babyInfo.gender === 'female' ? '女童' : '男童';
     this.setData({
-      chartInfoText: `身长 & 体重 · 0-36月 · ${genderText} · 标准 P3/P50/P97`
+      chartInfoText: `身长 & 体重 · 0-36月 · ${genderText} · P3/P15/P50/P85/P97`
     });
     this.renderChart();
   },
@@ -103,21 +102,29 @@ Page({
     };
   },
 
+  percentileKeys: ['P3', 'P10', 'P25', 'P50', 'P75', 'P90', 'P97'],
+
   buildPercentileSeries(rows, maxMonth) {
-    const points = rows.map(row => ({
-      month: row.month,
-      values: {
-        P3: row.P3,
-        P50: row.P50,
-        P97: row.P97
-      }
-    }));
+    const keys = this.percentileKeys;
+    const points = rows.map(row => {
+      const values = {};
+      keys.forEach(k => { values[k] = row[k]; });
+      return { month: row.month, values };
+    });
     const interpolated = growthUtils.interpolateMonthlySeries(points, maxMonth);
-    return {
-      P3: interpolated.map(item => item.P3 || null),
-      P50: interpolated.map(item => item.P50 || null),
-      P97: interpolated.map(item => item.P97 || null)
-    };
+    const result = {};
+    keys.forEach(k => {
+      result[k] = interpolated.map(item => item[k] ?? null);
+    });
+    return result;
+  },
+
+  // 从已有的 P10/P25 和 P75/P90 线性插值出 P15/P85
+  interpolatePercentile(seriesMap, from1, from2, fraction) {
+    return seriesMap[from1].map((v, i) => {
+      const a = v, b = seriesMap[from2][i];
+      return a !== null && b !== null ? a + (b - a) * fraction : null;
+    });
   },
 
   buildChartData() {
@@ -132,62 +139,99 @@ Page({
 
     const lengthSeries = this.buildPercentileSeries(lengthRows, maxMonth);
     const weightSeries = this.buildPercentileSeries(weightRows, maxMonth);
+
+    // 插值 P15 = P10 + (P25-P10)*1/3，P85 = P75 + (P90-P75)*2/3
+    lengthSeries['P15'] = this.interpolatePercentile(lengthSeries, 'P10', 'P25', 1 / 3);
+    lengthSeries['P85'] = this.interpolatePercentile(lengthSeries, 'P75', 'P90', 2 / 3);
+    weightSeries['P15'] = this.interpolatePercentile(weightSeries, 'P10', 'P25', 1 / 3);
+    weightSeries['P85'] = this.interpolatePercentile(weightSeries, 'P75', 'P90', 2 / 3);
+
+    const displayKeys = ['P3', 'P15', 'P50', 'P85', 'P97'];
     const monthLabels = Array.from({ length: maxMonth + 1 }, (_, i) => `${i}`);
+
     const actualLength = new Array(maxMonth + 1).fill(null);
     const actualWeight = new Array(maxMonth + 1).fill(null);
     growthRecords.forEach(record => {
-      if (record.monthAge === null || record.monthAge === undefined) return;
-      if (record.monthAge > maxMonth || record.monthAge < 0) return;
-      if (record.length !== null && record.length !== undefined) {
-        actualLength[record.monthAge] = Number(record.length);
-      }
-      if (record.weight !== null && record.weight !== undefined) {
-        actualWeight[record.monthAge] = Number(record.weight);
-      }
+      if (record.monthAge == null || record.monthAge > maxMonth || record.monthAge < 0) return;
+      if (record.length != null) actualLength[record.monthAge] = Number(record.length);
+      if (record.weight != null) actualWeight[record.monthAge] = Number(record.weight);
     });
+
+    // 复合轴布局：体重(kg)和身长(cm)各自独立映射到全图高度
+    // 体重值小(2-18)自然在下方，身长值大(45-105)自然在上方，中部重合
+    const series = [];
+    const colors = [];
+    const lengthLineColor = '#3F51B5';
+    const weightLineColor = '#E07A5F';
+
+    // 身长百分位线
+    displayKeys.forEach(k => {
+      series.push({
+        name: `身长${k}`,
+        data: lengthSeries[k],
+        metric: 'length',
+        lineWidth: k === 'P50' ? 2 : (k === 'P3' || k === 'P97' ? 1 : 0.5),
+        showDots: false
+      });
+      colors.push(lengthLineColor);
+    });
+    series.push({
+      name: '身长实测',
+      data: actualLength,
+      metric: 'length',
+      lineWidth: 2.5,
+      showDots: true,
+      dotRadius: 3
+    });
+    colors.push('#1B5E20');
+
+    // 体重百分位线
+    displayKeys.forEach(k => {
+      series.push({
+        name: `体重${k}`,
+        data: weightSeries[k],
+        metric: 'weight',
+        lineWidth: k === 'P50' ? 2 : (k === 'P3' || k === 'P97' ? 1 : 0.5),
+        showDots: false
+      });
+      colors.push(weightLineColor);
+    });
+    series.push({
+      name: '体重实测',
+      data: actualWeight,
+      metric: 'weight',
+      lineWidth: 2.5,
+      showDots: true,
+      dotRadius: 3
+    });
+    colors.push('#BF360C');
+
+    // 填充带（身长用蓝色调，体重用暖色调）
+    const bands = [];
+    bands.push(
+      { upper: '身长P97', lower: '身长P85', metric: 'length', color: 'rgba(63,81,181,0.08)' },
+      { upper: '身长P85', lower: '身长P15', metric: 'length', color: 'rgba(63,81,181,0.04)' },
+      { upper: '身长P15', lower: '身长P3',  metric: 'length', color: 'rgba(63,81,181,0.08)' },
+      { upper: '体重P97', lower: '体重P85', metric: 'weight', color: 'rgba(224,122,95,0.08)' },
+      { upper: '体重P85', lower: '体重P15', metric: 'weight', color: 'rgba(224,122,95,0.04)' },
+      { upper: '体重P15', lower: '体重P3',  metric: 'weight', color: 'rgba(224,122,95,0.08)' }
+    );
 
     return {
       xData: monthLabels,
-      series: [
-        { name: '身长P3', data: lengthSeries.P3, panelIndex: 0, axisSide: 'left' },
-        { name: '身长P50', data: lengthSeries.P50, panelIndex: 0, axisSide: 'left' },
-        { name: '身长P97', data: lengthSeries.P97, panelIndex: 0, axisSide: 'left' },
-        { name: '身长实测', data: actualLength, panelIndex: 0, axisSide: 'left' },
-        { name: '体重P3', data: weightSeries.P3, panelIndex: 1, axisSide: 'right' },
-        { name: '体重P50', data: weightSeries.P50, panelIndex: 1, axisSide: 'right' },
-        { name: '体重P97', data: weightSeries.P97, panelIndex: 1, axisSide: 'right' },
-        { name: '体重实测', data: actualWeight, panelIndex: 1, axisSide: 'right' }
-      ],
+      series,
+      bands,
       options: {
-        colors: [
-          '#9BB7D4',
-          '#3F88C5',
-          '#1C3F66',
-          '#7BBF6A',
-          '#F4B860',
-          '#E07A5F',
-          '#B34D3B',
-          '#5A9367'
-        ],
+        layout: 'compositeAxis',
+        colors,
         showGrid: true,
-        showLegend: true,
-        layout: 'dualPanel',
-        upperAxisLabel: '身长 (cm)',
-        lowerAxisLabel: '体重 (kg)',
-        upperAxisRightLabel: '身长 (cm)',
-        lowerAxisRightLabel: '体重 (kg)',
-        upperAxisLeft: { min: 45, max: 110, step: 1, labelEvery: 5, labelStart: 45 },
-        upperAxisRight: { min: 80, max: 105, step: 1, labelEvery: 5, labelStart: 80 },
-        lowerAxisLeft: { min: 2, max: 18, step: 1, labelEvery: 2, labelStart: 2 },
-        lowerAxisRight: { min: 6, max: 20, step: 1, labelEvery: 2, labelStart: 6 },
-        showRightAxis: true,
+        showLegend: false,
         showTopAxis: true,
         showBottomAxis: true,
-        rightAxisAlignMode: 'panel',
-        upperAxisPixelPerStep: 8,
-        lowerAxisPixelPerStep: 14,
-        panelGap: 0,
-        padding: { top: 60, right: 50, bottom: 50, left: 50 }
+        // 左轴标签范围
+        leftWeightMax: 10,     // 左轴体重标到10kg
+        rightLengthMin: 85,    // 右轴身长从85cm起标
+        padding: { top: 30, right: 45, bottom: 30, left: 40 }
       }
     };
   },
@@ -197,23 +241,78 @@ Page({
       const babyUid = getBabyUid();
       if (!babyUid) return;
       const db = wx.cloud.database();
-      const res = await db.collection('growth_records')
-        .where({ babyUid })
-        .orderBy('recordDate', 'asc')
-        .get();
       const parseValue = (value) => {
         if (value === '' || value === null || value === undefined) return null;
         const parsed = Number(value);
         return Number.isNaN(parsed) ? null : parsed;
       };
-      const records = (res.data || []).map(record => ({
+
+      // 1. 从 growth_records 加载手动测量记录
+      const growthRes = await db.collection('growth_records')
+        .where({ babyUid })
+        .orderBy('recordDate', 'asc')
+        .get();
+      const manualRecords = (growthRes.data || []).map(record => ({
         ...record,
         weight: parseValue(record.weight),
         length: parseValue(record.length),
         head: parseValue(record.head)
       }));
+
+      // 2. 从 feeding_records 分页加载全部每日体重
+      const batchSize = 100;
+      let allFeedingData = [];
+      let skip = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const batch = await db.collection('feeding_records')
+          .where({ babyUid })
+          .orderBy('date', 'asc')
+          .skip(skip)
+          .limit(batchSize)
+          .get();
+        allFeedingData = allFeedingData.concat(batch.data || []);
+        hasMore = (batch.data || []).length === batchSize;
+        skip += batchSize;
+      }
+      const feedingRes = { data: allFeedingData };
+      const { babyInfo } = this.data;
+      const dailyWeightRecords = (feedingRes.data || [])
+        .filter(r => r.basicInfo && r.basicInfo.weight)
+        .map(r => {
+          const dateStr = this.formatDate(r.date);
+          const monthAge = babyInfo.birthday
+            ? growthUtils.calculateAgeMonths(babyInfo.birthday, dateStr)
+            : null;
+          return {
+            recordDate: r.date,
+            monthAge,
+            weight: parseValue(r.basicInfo.weight),
+            length: null,
+            head: null,
+            _fromFeeding: true
+          };
+        });
+
+      // 3. 合并：同月龄优先手动记录（有身长），每日体重补充
+      const byMonth = {};
+      manualRecords.forEach(r => {
+        if (r.monthAge == null) return;
+        if (!byMonth[r.monthAge] || r.length != null) {
+          byMonth[r.monthAge] = r;
+        }
+      });
+      dailyWeightRecords.forEach(r => {
+        if (r.monthAge == null) return;
+        if (!byMonth[r.monthAge]) {
+          byMonth[r.monthAge] = r;
+        } else if (byMonth[r.monthAge].weight == null && r.weight != null) {
+          byMonth[r.monthAge].weight = r.weight;
+        }
+      });
+
       this.setData({
-        growthRecords: records
+        growthRecords: Object.values(byMonth)
       });
     } catch (error) {
       handleError(error, { title: '获取测量记录失败' });

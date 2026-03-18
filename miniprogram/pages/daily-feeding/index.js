@@ -728,6 +728,7 @@ Page({
         this.loadCalculationParams({ silent: true }),
         this.loadTodayData(false),
         this.initBabyInfoCache(), // 更新宝宝信息缓存
+        this.loadMedications(true),
         this.loadFoodCatalog()
       ]);
       
@@ -2381,6 +2382,12 @@ Page({
       selectedMedicationInfo: medInfo,
       currentModalDosage: medInfo.dosage || this.data.currentModalDosage
     });
+  },
+
+  goToMedicationManage() {
+    this.hideModal('medication');
+    this.hideModal('medicationRecord');
+    wx.navigateTo({ url: '/pages/medications/index' });
   },
 
   // Close medication modal

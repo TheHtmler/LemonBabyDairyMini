@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__exa__web_search_exa",
+      "WebFetch(domain:www.who.int)",
+      "WebSearch",
+      "WebFetch(domain:www.cdc.gov)",
+      "Bash(brew install:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(python3 -c \"import fitz; print\\(''fitz available''\\)\")",
+      "mcp__Playwright__browser_navigate",
+      "mcp__Playwright__browser_take_screenshot"
+    ]
+  }
+}

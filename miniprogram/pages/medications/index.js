@@ -21,20 +21,10 @@ Page({
       frequencyDays: '1', // 服用周期天数
       notes: ''
     },
-    canEdit: false
   },
 
   async onLoad() {
-    // 先默认允许编辑
-    this.setData({
-      canEdit: true
-    });
-    
-    // 然后加载药物列表
     await this.loadMedications();
-    
-    // 检查用户角色
-    await this.checkUserRole();
   },
 
   // 加载药物列表
@@ -68,13 +58,6 @@ Page({
 
   // 显示添加弹窗
   showAddModal() {
-    if (!this.data.canEdit) {
-      wx.showToast({
-        title: '暂无编辑权限',
-        icon: 'none'
-      })
-      return
-    }
     this.setData({
       showModal: true,
       editingMedication: null,
@@ -98,13 +81,6 @@ Page({
 
   // 显示编辑弹窗
   editMedication(e) {
-    if (!this.data.canEdit) {
-      wx.showToast({
-        title: '暂无编辑权限',
-        icon: 'none'
-      })
-      return
-    }
     const { id } = e.currentTarget.dataset;
     const medication = this.data.medications.find(m => m._id === id);
     if (medication) {
@@ -160,6 +136,9 @@ Page({
       return { frequencyTimes: '1', frequencyDays: '1' };
     }
   },
+
+  stopPropagation() {},
+  preventScroll() {},
 
   // 隐藏弹窗
   hideModal() {
@@ -221,13 +200,6 @@ Page({
 
   // 保存药物
   async saveMedication() {
-    if (!this.data.canEdit) {
-      wx.showToast({
-        title: '暂无编辑权限',
-        icon: 'none'
-      })
-      return
-    }
     const { formData, editingMedication, units, concentrationUnits, volumeUnits } = this.data;
     
     // 表单验证
@@ -306,9 +278,12 @@ Page({
 
       if (editingMedication) {
         // 更新现有药物
-        await db.collection('medications').doc(editingMedication._id).update({
+        const updateRes = await db.collection('medications').doc(editingMedication._id).update({
           data: medicationData
         });
+        if (!updateRes || !updateRes.stats || updateRes.stats.updated === 0) {
+          throw new Error('更新未生效，请检查权限');
+        }
       } else {
         // 添加新药物
         medicationData.createdAt = db.serverDate();
@@ -317,14 +292,14 @@ Page({
         });
       }
 
+      this.hideModal();
+      // 先刷新列表，再提示成功
+      await this.loadMedications();
       wx.hideLoading();
       wx.showToast({
         title: '保存成功',
         icon: 'success'
       });
-
-      this.hideModal();
-      this.loadMedications();
     } catch (error) {
       console.error('保存药物失败:', error);
       wx.hideLoading();
@@ -337,13 +312,6 @@ Page({
 
   // 删除药物
   async deleteMedication(e) {
-    if (!this.data.canEdit) {
-      wx.showToast({
-        title: '暂无删除权限',
-        icon: 'none'
-      })
-      return
-    }
     const { id } = e.currentTarget.dataset;
     
     try {
@@ -437,56 +405,4 @@ Page({
     });
   },
 
-  // 检查用户角色和权限
-  async checkUserRole() {
-    try {
-      const app = getApp();
-      
-      // 检查是否是创建者
-      const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
-      const isCreator = userRole === 'creator';
-      
-      // 如果是创建者，设置编辑权限为true
-      if (isCreator) {
-        console.log('用户是创建者，可以编辑药物');
-        this.setData({
-          canEdit: true
-        });
-        return;
-      }
-      
-      // 如果不是创建者，尝试从app获取权限状态
-      try {
-        await app.checkPermission();
-        const canEdit = app.globalData.permission || false;
-        console.log('用户权限检查结果:', canEdit ? '可以编辑' : '不可编辑');
-        this.setData({
-          canEdit: canEdit
-        });
-      } catch (permError) {
-        console.error('检查权限出错:', permError);
-        this.setData({
-          canEdit: false
-        });
-        
-        wx.showToast({
-          title: '权限检查失败，暂不可编辑',
-          icon: 'none',
-          duration: 2000
-        });
-      }
-    } catch (error) {
-      console.error('检查用户角色失败:', error);
-      // 检查失败时默认不允许编辑，提高安全性
-      this.setData({
-        canEdit: false
-      });
-      
-      wx.showToast({
-        title: '权限检查失败，请重新进入页面',
-        icon: 'none',
-        duration: 2000
-      });
-    }
-  }
-}); 
+});

@@ -76,6 +76,9 @@ Component({
     },
     handleConfirm() {
       this.triggerEvent('confirm');
+    },
+    handleManageMedications() {
+      this.triggerEvent('manage');
     }
   }
 });

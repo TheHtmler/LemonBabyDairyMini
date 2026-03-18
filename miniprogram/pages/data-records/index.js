@@ -1858,6 +1858,7 @@ Page({
     }
     await this.loadNutritionSettings();
     this.fetchDailyRecords(this.data.selectedDate);
+    this.loadMedications();
     this.loadFoodCatalog();
   },
 
@@ -3135,6 +3136,11 @@ Page({
     });
   },
 
+  goToMedicationManage() {
+    this.setData({ showAddMedicationModal: false, showEditMedicationModal: false });
+    wx.navigateTo({ url: '/pages/medications/index' });
+  },
+
   // 隐藏补充用药记录弹窗
   hideAddMedicationModal() {
     console.log('隐藏用药记录弹窗');
@@ -3473,7 +3479,10 @@ Page({
   async loadMedications() {
     try {
       const db = wx.cloud.database();
-      const res = await db.collection('medications').get();
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      if (!babyUid) return;
+      const res = await db.collection('medications').where({ babyUid }).get();
       this.setData({ medications: res.data });
     } catch (error) {
       console.error('加载药物配置失败:', error);
@@ -3491,7 +3500,8 @@ Page({
       ...this.data.newMedication,
       name: medication.name,
       dosage: medication.dosage,
-      unit: medication.unit
+      unit: medication.unit,
+      frequency: medication.frequency || ''
     };
     this.setData({ newMedication, selectedMedicationIndex: index });
   },

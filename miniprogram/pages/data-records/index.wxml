@@ -618,6 +618,7 @@
     dosage="{{newMedication.dosage}}"
     unit="{{newMedication.unit}}"
     time="{{newMedication.time}}"
+    frequency="{{newMedication.frequency}}"
     notes="{{newMedication.notes}}"
     confirmText="保存"
     bind:close="hideAddMedicationModal"
@@ -626,6 +627,7 @@
     bind:timechange="onNewMedicationTimeChange"
     bind:noteschange="onNewMedicationInput"
     bind:confirm="saveNewMedication"
+    bind:manage="goToMedicationManage"
   />
   <!-- 删除确认弹窗 -->
   <view class="confirm-modal" wx:if="{{showDeleteConfirm}}" bindtap="hideDeleteConfirm">
@@ -668,6 +670,7 @@
     bind:timechange="onEditMedicationTimeChange"
     bind:noteschange="onEditMedicationInput"
     bind:confirm="saveEditedMedication"
+    bind:manage="goToMedicationManage"
   />
   <!-- 补充排便记录弹窗 -->
   <view class="modal" wx:if="{{showAddBowelModal}}" bindtap="hideAddBowelModal" catchtouchmove="preventBubble">

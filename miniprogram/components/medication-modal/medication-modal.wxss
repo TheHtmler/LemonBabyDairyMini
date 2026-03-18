@@ -1,184 +1,259 @@
-.modal {
+/* ===== 遮罩层 ===== */
+.mask {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: rgba(0, 0, 0, 0);
   z-index: 9999;
-  overflow: hidden;
+  pointer-events: none;
+  transition: background 0.3s ease;
 }
 
-.modal-content {
-  width: 80%;
-  max-height: 80vh;
-  background-color: #fff;
-  border-radius: 16rpx;
-  overflow: hidden;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+.mask.show {
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
 }
 
-.modal-header {
-  padding: 24rpx;
-  font-size: 32rpx;
-  font-weight: bold;
-  text-align: center;
-  background-color: #FFF9E6;
-  border-bottom: 1rpx solid rgba(255, 184, 0, 0.2);
-  color: #333;
-}
-
-.modal-body {
-  padding: 30rpx;
-  max-height: 60vh;
-}
-
-.modal-footer {
-  display: flex;
-  background: #ffffff;
-}
-
-.modal-btn {
-  flex: 1;
-  height: 72rpx;
-  text-align: center;
-  font-size: 28rpx;
-  border: 2rpx solid;
-  border-radius: 0;
-  background: none;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-btn.cancel {
-  color: #666;
-  border-color: #e0e0e0;
-  background: #f8f8f8;
-}
-
-.modal-btn.cancel:active {
-  background: #f0f0f0;
-  transform: scale(0.98);
-}
-
-.modal-btn.confirm {
-  color: #ffffff;
-  border-color: #FFB800;
-  background: #FFB800;
-  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.3);
-}
-
-.modal-btn.confirm:active {
-  background: #E6A600;
-  border-color: #E6A600;
-  transform: scale(0.98);
-  box-shadow: 0 2rpx 8rpx rgba(255, 184, 0, 0.4);
-}
-
-.modal-info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20rpx;
-}
-
-.modal-label {
-  color: #666;
-  font-size: 28rpx;
-}
-
-.modal-value {
-  color: #333;
-  font-size: 28rpx;
-  font-weight: 500;
-}
-
-.modal-picker {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  padding: 16rpx 20rpx;
-  background-color: #f8f8f8;
-  border-radius: 12rpx;
-  border: 1rpx solid #eee;
-}
-
-.modal-time-picker {
-  display: flex;
-  align-items: center;
-  font-size: 28rpx;
-  color: #333;
-  font-weight: 500;
-}
-
-.modal-notes {
-  margin-top: 20rpx;
+/* ===== 底部面板 ===== */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #FFFDF5;
+  border-radius: 32rpx 32rpx 0 0;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  z-index: 10000;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.notes-input {
-  width: 100%;
-  min-height: 120rpx;
-  padding: 16rpx;
-  border: 2rpx solid #eee;
-  border-radius: 12rpx;
-  background: #f8f8f8;
-  font-size: 28rpx;
+.sheet.show {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 64rpx;
+  height: 8rpx;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4rpx;
+  margin: 16rpx auto 0;
+}
+
+/* ===== 头部 ===== */
+.sheet-header {
+  padding: 24rpx 32rpx 16rpx;
+  text-align: center;
+}
+
+.sheet-title {
+  font-size: 34rpx;
+  font-weight: 700;
   color: #333;
-  line-height: 1.5;
-  box-sizing: border-box;
 }
 
-.notes-input:focus {
-  border-color: #FFB800;
-  background: #FFF9E6;
+/* ===== 表单区 ===== */
+.sheet-body {
+  padding: 8rpx 32rpx 16rpx;
+  overflow-y: auto;
+  flex: 1;
 }
 
-.edit-icon {
-  font-size: 24rpx;
-  color: #999;
-  margin-left: 4rpx;
+.field-group {
+  margin-bottom: 28rpx;
 }
 
-.dosage-input-container {
+.field-label {
+  display: block;
+  font-size: 26rpx;
+  color: #8A7C60;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.field-label-row {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  width: 50%;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
 }
 
-.dosage-input {
-  flex: 1;
-  height: 64rpx;
-  background: #FFF9E6;
-  border: 2rpx solid #FFB800;
-  border-radius: 8rpx;
-  padding: 0 16rpx;
-  font-size: 28rpx;
-  color: #333333;
-  box-sizing: border-box;
-  outline: none;
-  transition: border-color 0.2s;
+.field-label-row .field-label {
+  margin-bottom: 0;
 }
 
-.dosage-input:focus {
-  border-color: #FFD700;
-  background: #FFF6CC;
-}
-
-.dosage-unit {
+.field-link-btn {
+  padding: 8rpx 20rpx;
   font-size: 24rpx;
-  color: #666666;
-  background-color: rgba(255, 184, 0, 0.1);
-  padding: 8rpx 12rpx;
-  border-radius: 6rpx;
+  color: #FFB800;
+  font-weight: 500;
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 999rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.25);
+}
+
+.field-link-btn:active {
+  background: rgba(255, 184, 0, 0.2);
+}
+
+/* 选择器行 */
+.field-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 16rpx;
+}
+
+.field-picker-text {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.field-picker-text.placeholder {
+  color: #C4B896;
+  font-weight: 400;
+}
+
+.field-arrow {
+  font-size: 36rpx;
+  color: #C4B896;
+  font-weight: 300;
+}
+
+/* 只读值 */
+.field-value-static {
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+  background: #FFF7E3;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+}
+
+.field-value-static.muted {
+  color: #8A7C60;
+  background: #FFFAF0;
+  border-color: rgba(255, 184, 0, 0.08);
+}
+
+/* 剂量输入行 */
+.dosage-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.field-input {
+  flex: 1;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  color: #333;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.field-input:focus {
+  border-color: #FFB800;
+  background: #FFF2CC;
+}
+
+.input-placeholder {
+  color: #C4B896;
+}
+
+.unit-tag {
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  color: #8A7C60;
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 16rpx;
   white-space: nowrap;
+  font-weight: 500;
+}
+
+/* 备注 */
+.field-textarea {
+  width: 100%;
+  min-height: 140rpx;
+  padding: 20rpx 24rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.field-textarea:focus {
+  border-color: #FFB800;
+  background: #FFF2CC;
+}
+
+/* ===== 底部按钮 ===== */
+.sheet-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 16rpx 32rpx 24rpx;
+}
+
+.btn-cancel,
+.btn-confirm {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.btn-cancel {
+  background: #F5F0E5;
+  color: #8A7C60;
+}
+
+.btn-cancel::after {
+  border: none;
+}
+
+.btn-cancel:active {
+  opacity: 0.7;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #FFC933 0%, #FFB800 100%);
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(255, 184, 0, 0.25);
+}
+
+.btn-confirm::after {
+  border: none;
+}
+
+.btn-confirm:active {
+  opacity: 0.85;
 }

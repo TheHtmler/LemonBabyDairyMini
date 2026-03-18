@@ -1,49 +1,67 @@
-<view class="modal" wx:if="{{visible}}" bindtap="handleMaskTap" catchtouchmove="stop">
-  <view class="modal-content" catchtap="stop">
-    <view class="modal-header">
-      <text>{{title}}</text>
+<view class="mask {{visible ? 'show' : ''}}" bindtap="handleMaskTap" catchtouchmove="stop">
+  <view class="sheet {{visible ? 'show' : ''}}" catchtap="stop">
+    <view class="sheet-handle"></view>
+    <view class="sheet-header">
+      <text class="sheet-title">{{title}}</text>
     </view>
-    <view class="modal-body">
-      <view class="modal-info-row">
-        <text class="modal-label">药物名称:</text>
+
+    <view class="sheet-body">
+      <!-- 药物名称 -->
+      <view class="field-group">
+        <view class="field-label-row">
+          <text class="field-label">药物名称</text>
+          <view class="field-link-btn" catchtap="handleManageMedications">管理药物 ›</view>
+        </view>
         <block wx:if="{{showMedicationPicker}}">
           <picker mode="selector" range="{{medications}}" range-key="name" value="{{selectedMedicationIndex}}" bindchange="handleMedicationChange">
-            <view class="modal-picker">
-              <text class="modal-value">{{selectedMedicationName ? selectedMedicationName : '请选择药物'}}</text>
-              <text class="edit-icon">▼</text>
+            <view class="field-picker">
+              <text class="field-picker-text {{selectedMedicationName ? '' : 'placeholder'}}">{{selectedMedicationName ? selectedMedicationName : '请选择药物'}}</text>
+              <text class="field-arrow">›</text>
             </view>
           </picker>
         </block>
         <block wx:else>
-          <text class="modal-value">{{selectedMedicationName}}</text>
+          <view class="field-value-static">{{selectedMedicationName}}</view>
         </block>
       </view>
-      <view class="modal-info-row">
-        <text class="modal-label">药物剂量:</text>
-        <view class="dosage-input-container">
-          <input type="digit" class="dosage-input" value="{{dosage}}" bindinput="handleDosageInput" placeholder="请输入药物剂量" />
-          <text class="dosage-unit">{{unit}}</text>
+
+      <!-- 药物剂量 -->
+      <view class="field-group">
+        <text class="field-label">药物剂量</text>
+        <view class="dosage-row">
+          <input type="digit" class="field-input" value="{{dosage}}" bindinput="handleDosageInput" placeholder="请输入剂量" placeholder-class="input-placeholder" />
+          <view class="unit-tag">{{unit}}</view>
         </view>
       </view>
-      <view class="modal-info-row" wx:if="{{frequency}}">
-        <text class="modal-label">服用频率:</text>
-        <text class="modal-value">{{frequency}}</text>
+
+      <!-- 服用频率（只读） -->
+      <view class="field-group" wx:if="{{frequency}}">
+        <text class="field-label">服用频率</text>
+        <view class="field-value-static muted">{{frequency}}</view>
       </view>
-      <view class="modal-info-row">
-        <text class="modal-label">服用时间:</text>
+
+      <!-- 服用时间 -->
+      <view class="field-group">
+        <text class="field-label">服用时间</text>
         <picker mode="time" value="{{time}}" start="00:00" end="23:59" bindchange="handleTimeChange">
-          <view class="modal-time-picker">{{time}} <text class="edit-icon">✎</text></view>
+          <view class="field-picker">
+            <text class="field-picker-text">{{time}}</text>
+            <text class="field-arrow">›</text>
+          </view>
         </picker>
       </view>
-      <view class="modal-notes">
-        <text class="modal-label">备注</text>
-        <textarea class="notes-input" placeholder="可选，记录特殊说明"
-                  value="{{notes}}" bindinput="handleNotesInput"></textarea>
+
+      <!-- 备注 -->
+      <view class="field-group">
+        <text class="field-label">备注</text>
+        <textarea class="field-textarea" placeholder="可选，记录特殊说明" placeholder-class="input-placeholder"
+                  value="{{notes}}" bindinput="handleNotesInput" auto-height maxlength="200"></textarea>
       </view>
     </view>
-    <view class="modal-footer">
-      <button class="modal-btn cancel" bindtap="handleCancel">{{cancelText}}</button>
-      <button class="modal-btn confirm" bindtap="handleConfirm">{{confirmText}}</button>
+
+    <view class="sheet-footer">
+      <button class="btn-cancel" bindtap="handleCancel">{{cancelText}}</button>
+      <button class="btn-confirm" bindtap="handleConfirm">{{confirmText}}</button>
     </view>
   </view>
 </view>

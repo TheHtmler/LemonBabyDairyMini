@@ -35,7 +35,7 @@ class MedicationRecordModel {
     
     const record = {
       babyUid: babyUid,
-      date: this.getDateStart(new Date()),
+      date: data.date ? this.getDateStart(new Date(data.date.replace(/-/g, '/'))) : this.getDateStart(new Date()),
       medicationId: data.medicationId,
       medicationName: data.medicationName,
       dosage: data.dosage,
