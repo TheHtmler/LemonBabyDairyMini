@@ -341,6 +341,75 @@ App({
     }
   },
 
+  getDefaultBabyAvatarUrl() {
+    return '/images/LemonLogo.png';
+  },
+
+  getAvatarCacheKey(babyUid) {
+    return babyUid ? `baby_avatar_cache_${babyUid}` : '';
+  },
+
+  async resolveBabyAvatarUrl(babyInfo, options = {}) {
+    const { forceRefresh = false } = options;
+    const babyUid = babyInfo?.babyUid || this.globalData.babyUid || wx.getStorageSync('baby_uid');
+    const fileId = babyInfo?.avatarFileId || '';
+    const cacheKey = this.getAvatarCacheKey(babyUid);
+    const now = Date.now();
+    const cached = cacheKey ? wx.getStorageSync(cacheKey) : null;
+
+    if (
+      !forceRefresh &&
+      cached &&
+      cached.url &&
+      cached.expiresAt > now &&
+      cached.fileId === fileId
+    ) {
+      return cached.url;
+    }
+
+    if (!babyUid || !fileId) {
+      return babyInfo?.avatarUrl || this.getDefaultBabyAvatarUrl();
+    }
+
+    try {
+      const { fileList } = await wx.cloud.getTempFileURL({
+        fileList: [{ fileID: fileId, maxAge: 604800 }],
+        config: { env: this.globalData.cloudEnvId }
+      });
+      const url = fileList?.[0]?.tempFileURL;
+      if (url) {
+        wx.setStorageSync(cacheKey, {
+          fileId,
+          url,
+          expiresAt: now + 6 * 24 * 60 * 60 * 1000
+        });
+        return url;
+      }
+    } catch (error) {
+      console.error('解析宝宝头像失败:', error);
+    }
+
+    return babyInfo?.avatarUrl || this.getDefaultBabyAvatarUrl();
+  },
+
+  async cacheBabyInfo(babyInfo, options = {}) {
+    if (!babyInfo) return null;
+
+    const avatarUrl = await this.resolveBabyAvatarUrl(babyInfo, options);
+    const normalizedBabyInfo = {
+      ...babyInfo,
+      avatarUrl: avatarUrl || this.getDefaultBabyAvatarUrl()
+    };
+
+    if (normalizedBabyInfo.babyUid) {
+      this.globalData.babyUid = normalizedBabyInfo.babyUid;
+    }
+    this.globalData.babyInfo = normalizedBabyInfo;
+    wx.setStorageSync('baby_info', normalizedBabyInfo);
+
+    return normalizedBabyInfo;
+  },
+
   /**
    * 从数据库验证宝宝信息
    * 初始化时使用，确保数据是最新的
@@ -373,7 +442,7 @@ App({
           
           // 更新全局数据
           this.globalData.babyUid = babyUid;
-          this.globalData.babyInfo = babyInfo;
+          await this.cacheBabyInfo(babyInfo, { forceRefresh: true });
           
           return true;
         } else {
@@ -494,17 +563,31 @@ App({
    * 获取宝宝信息
    * 主要用于页面逻辑中的快速读取
    */
-  async getBabyInfo() {
+  async getBabyInfo(options = {}) {
     try {
+      const {
+        forceDb = false,
+        refreshAvatar = true,
+        forceRefreshAvatar = false
+      } = options;
+
       // 首先检查本地缓存
-      const babyUid = wx.getStorageSync('baby_uid');
+      const babyUid = this.globalData.babyUid || wx.getStorageSync('baby_uid');
       const babyInfoCompleted = wx.getStorageSync('baby_info_completed');
-      if (babyUid && babyInfoCompleted) {
+      if (!forceDb && this.globalData.babyInfo) {
+        console.log('从全局缓存获取宝宝信息');
+        return refreshAvatar
+          ? await this.cacheBabyInfo(this.globalData.babyInfo, { forceRefresh: forceRefreshAvatar })
+          : this.globalData.babyInfo;
+      }
+      if (!forceDb && babyUid && babyInfoCompleted) {
         // 尝试从本地缓存获取完整信息
         const cachedBabyInfo = wx.getStorageSync('baby_info');
         if (cachedBabyInfo) {
           console.log('从本地缓存获取宝宝信息');
-          return cachedBabyInfo;
+          return refreshAvatar
+            ? await this.cacheBabyInfo(cachedBabyInfo, { forceRefresh: forceRefreshAvatar })
+            : cachedBabyInfo;
         }
       }
       
@@ -518,12 +601,9 @@ App({
 
         if (babyInfoResult.data && babyInfoResult.data.length > 0) {
           const babyInfo = babyInfoResult.data[0];
-          
-          // 更新本地缓存
-          wx.setStorageSync('baby_info', babyInfo);
-          this.globalData.babyInfo = babyInfo;
-          
-          return babyInfo;
+          return refreshAvatar
+            ? await this.cacheBabyInfo(babyInfo, { forceRefresh: forceRefreshAvatar })
+            : await this.cacheBabyInfo(babyInfo);
         }
       }
       

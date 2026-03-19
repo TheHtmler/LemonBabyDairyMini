@@ -94,7 +94,7 @@ Page({
       wx.setStorageSync('baby_uid', babyInfo.babyUid);
       wx.setStorageSync('baby_info_completed', true);
       app.globalData.babyUid = babyInfo.babyUid;
-      app.globalData.babyInfo = babyInfo;
+      await app.cacheBabyInfo(babyInfo);
 
       wx.hideLoading();
       

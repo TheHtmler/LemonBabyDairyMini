@@ -139,45 +139,14 @@ Page({
   },
 
   getAvatarCacheKey(babyUid) {
-    return `baby_avatar_cache_${babyUid}`;
+    return getApp().getAvatarCacheKey(babyUid);
   },
 
   async resolveAvatarUrl(babyInfo) {
     if (this.data.latestAvatarUrl) {
       return this.data.latestAvatarUrl;
     }
-    const app = getApp();
-    const babyUid = babyInfo?.babyUid || app.globalData.babyUid || wx.getStorageSync('baby_uid');
-    const fileId = babyInfo?.avatarFileId;
-    const cacheKey = babyUid ? this.getAvatarCacheKey(babyUid) : '';
-    const cached = cacheKey ? wx.getStorageSync(cacheKey) : null;
-    const now = Date.now();
-    if (cached && cached.url && cached.expiresAt && cached.expiresAt > now) {
-      return cached.url;
-    }
-
-    if (!babyUid || !fileId) {
-      return babyInfo?.avatarUrl || this.data.defaultAvatarUrl;
-    }
-
-    try {
-      const { fileList } = await wx.cloud.getTempFileURL({
-        fileList: [{ fileID: fileId, maxAge: 604800 }],
-        config: { env: app.globalData.cloudEnvId }
-      });
-      const url = fileList?.[0]?.tempFileURL;
-      if (url) {
-        wx.setStorageSync(cacheKey, {
-          url,
-          expiresAt: now + 6 * 24 * 60 * 60 * 1000
-        });
-        return url;
-      }
-    } catch (error) {
-      console.error('获取头像临时链接失败:', error);
-    }
-
-    return babyInfo?.avatarUrl || this.data.defaultAvatarUrl;
+    return getApp().resolveBabyAvatarUrl(babyInfo);
   },
 
   // 获取宝宝信息
@@ -187,19 +156,7 @@ Page({
     }
     try {
       const app = getApp();
-      
-      // 如果全局有宝宝信息，直接使用
-      if (app.globalData.babyInfo) {
-        console.log('==app.globalData.babyInfo==', app.globalData.babyInfo);
-        this.setData({
-          babyInfo: {
-            ...app.globalData.babyInfo,
-            avatarUrl: this.data.latestAvatarUrl || app.globalData.babyInfo.avatarUrl
-          }
-        });
-        return;
-      }
-      
+
       // 获取角色信息
       const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
       const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
@@ -209,40 +166,22 @@ Page({
         this.getUserInfo(); // 回退到使用用户信息
         return;
       }
-      
-      // 从数据库查询宝宝信息
-      const db = wx.cloud.database();
-      
-      // 根据babyUid查询宝宝信息
-      const res = await db.collection('baby_info').where({
-        babyUid: babyUid
-      }).limit(1).get();
-      
-      if (res.data && res.data.length > 0) {
-        const babyInfo = res.data[0];
-        const avatarUrl = await this.resolveAvatarUrl(babyInfo);
-        
-        // 构建宝宝信息数据
-        const babyInfoData = {
-          name: babyInfo.name || '柠檬宝宝',
-          avatarUrl: this.data.latestAvatarUrl || avatarUrl,
-          avatarFileId: babyInfo.avatarFileId || '',
-          birthday: babyInfo.birthday || '',
-          gender: babyInfo.gender || 'male',
-          babyUid: babyInfo.babyUid
-        };
 
-        // 如果是创建者且有邀请码，显示邀请码信息
-        const showInviteCode = userRole === 'creator' && babyInfo.inviteCode;
-        
+      const babyInfo = await app.getBabyInfo({
+        forceDb: force,
+        refreshAvatar: true,
+        forceRefreshAvatar: force
+      });
+
+      if (babyInfo && babyInfo.babyUid) {
         this.setData({
-          babyInfo: babyInfoData,
-          showInviteCode: showInviteCode,
+          babyInfo: {
+            ...babyInfo,
+            avatarUrl: this.data.latestAvatarUrl || babyInfo.avatarUrl || this.data.defaultAvatarUrl
+          },
+          showInviteCode: userRole === 'creator' && !!babyInfo.inviteCode,
           inviteCode: babyInfo.inviteCode || ''
         });
-        
-        // 缓存到app全局
-        app.globalData.babyInfo = babyInfo;
       } else {
         // 没找到宝宝信息，回退到使用用户信息
         console.log('未找到宝宝信息，使用用户信息');
@@ -393,6 +332,7 @@ Page({
         const cacheKey = this.getAvatarCacheKey(babyUid);
         wx.removeStorageSync(cacheKey);
         wx.setStorageSync(cacheKey, {
+          fileId: result.fileID,
           url: avatarUrl,
           expiresAt: Date.now() + 6 * 24 * 60 * 60 * 1000
         });
