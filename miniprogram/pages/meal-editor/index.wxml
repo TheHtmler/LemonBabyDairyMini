@@ -65,6 +65,7 @@
         <text class="meal-item-name">{{item.nameSnapshot}}</text>
         <text class="meal-item-meta">{{item.quantity}}{{item.unit}} · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.protein || 0}} g</text>
         <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g · 纤维 {{item.nutrition.fiber || 0}} g</text>
+        <text class="meal-item-note" wx:if="{{item.notes}}">备注: {{item.notes}}</text>
       </view>
       <view class="meal-item-actions">
         <view class="text-btn" data-id="{{item.localId}}" bindtap="editMealItem">编辑</view>
@@ -185,6 +186,15 @@
           bindinput="onDraftQuantityInput"
         />
         <text class="unit-text">{{currentFoodDraft.unit || 'g'}}</text>
+      </view>
+      <view class="field-block">
+        <text class="field-label block">备注</text>
+        <textarea
+          class="notes-input compact"
+          value="{{currentFoodDraft.notes}}"
+          placeholder="可选，记录这项食物的特殊说明"
+          bindinput="onDraftNotesInput"
+        />
       </view>
       <view class="preview-grid" wx:if="{{currentFoodDraft.nutritionPreview}}">
         <view class="preview-item">

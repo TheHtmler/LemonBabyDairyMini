@@ -269,7 +269,8 @@
                 <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
               </view>
               <view class="meal-group-actions">
-                <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑本顿</text>
+                <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑</text>
+                <text class="meal-group-delete" catchtap="deleteMealGroup" data-meal-batch-id="{{item.mealBatchId}}" data-meal-label="{{item.mealLabel}}" data-item-count="{{item.itemCount}}">删除</text>
                 <text class="meal-group-toggle">{{item.expanded ? '收起' : '展开'}}</text>
               </view>
             </view>

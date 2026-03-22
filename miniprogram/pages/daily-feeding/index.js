@@ -2838,6 +2838,68 @@ Page({
     });
   },
 
+  async deleteMealGroup(e) {
+    const { mealBatchId, mealLabel, itemCount } = e.currentTarget.dataset || {};
+    if (!mealBatchId) {
+      wx.showToast({ title: '餐次不存在', icon: 'none' });
+      return;
+    }
+
+    const label = mealLabel || '本顿食物';
+    const count = Number(itemCount) || 0;
+    const remainingIntakes = (this.data.intakes || []).filter(item => item.mealBatchId !== mealBatchId);
+    if (remainingIntakes.length === (this.data.intakes || []).length) {
+      wx.showToast({ title: '未找到可删除的食物', icon: 'none' });
+      return;
+    }
+
+    wx.showModal({
+      title: '确认删除',
+      content: `确定要删除${label}${count ? `（${count}项食物）` : ''}吗？`,
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          const db = wx.cloud.database();
+          const updatedSummary = this.applyCalorieCoefficient(
+            this.calculateMacroSummary(remainingIntakes, this.data.feedings),
+            this.data.weight
+          );
+
+          if (this.data.recordId) {
+            await db.collection('feeding_records').doc(this.data.recordId).update({
+              data: {
+                intakes: remainingIntakes,
+                summary: updatedSummary,
+                updatedAt: db.serverDate()
+              }
+            });
+          }
+
+          const updatedOverview = this.calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight);
+          this.setData({
+            intakes: remainingIntakes,
+            foodIntakes: remainingIntakes.filter(item => item.type !== 'milk'),
+            foodMealGroups: this.buildFoodMealGroups(remainingIntakes.filter(item => item.type !== 'milk')),
+            legacyFoodIntakes: this.buildLegacyFoodIntakes(remainingIntakes.filter(item => item.type !== 'milk')),
+            macroSummary: updatedSummary,
+            macroRatios: this.computeMacroRatios(updatedSummary),
+            intakeOverview: updatedOverview,
+            activeFoodMenu: -1
+          });
+
+          wx.hideLoading();
+          wx.showToast({ title: '本顿已删除', icon: 'success' });
+          await this.loadTodayData(true);
+        } catch (error) {
+          console.error('删除本顿食物失败:', error);
+          wx.hideLoading();
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        }
+      }
+    });
+  },
+
   async showMilkFoodIntakeModal() {
     const opened = await this.showFoodIntakeModal({ matchMilk: true });
     if (!opened) {

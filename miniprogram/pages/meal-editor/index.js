@@ -219,7 +219,8 @@ Page({
       food: null,
       quantity: '',
       unit: 'g',
-      nutritionPreview: null
+      nutritionPreview: null,
+      notes: ''
     },
     editingItemId: '',
     isSaving: false
@@ -384,7 +385,8 @@ Page({
         food: null,
         quantity: '',
         unit: 'g',
-        nutritionPreview: null
+        nutritionPreview: null,
+        notes: ''
       },
       editingItemId: '',
       drawerStep: 'select',
@@ -437,7 +439,8 @@ Page({
         food,
         quantity: '',
         unit: food.baseUnit || 'g',
-        nutritionPreview: null
+        nutritionPreview: null,
+        notes: ''
       }
     });
   },
@@ -470,6 +473,12 @@ Page({
     });
   },
 
+  onDraftNotesInput(e) {
+    this.setData({
+      'currentFoodDraft.notes': e.detail.value || ''
+    });
+  },
+
   updateCurrentFoodDraftPreview() {
     const { food, quantity } = this.data.currentFoodDraft;
     if (!food || !quantity) {
@@ -487,7 +496,7 @@ Page({
   },
 
   buildMealItemFromDraft(showToast = true) {
-    const { foodId, food, quantity, nutritionPreview } = this.data.currentFoodDraft;
+    const { foodId, food, quantity, nutritionPreview, notes } = this.data.currentFoodDraft;
     if (!foodId || !food) {
       if (showToast) wx.showToast({ title: '请选择食物', icon: 'none' });
       return null;
@@ -542,7 +551,8 @@ Page({
       proteinSource,
       naturalProtein: roundNumber(naturalProtein, 2),
       specialProtein: roundNumber(specialProtein, 2),
-      milkType: food.milkType || ''
+      milkType: food.milkType || '',
+      notes: String(notes || '').trim()
     };
   },
 
@@ -585,7 +595,8 @@ Page({
         food: target.food,
         quantity: String(target.quantity),
         unit: target.unit || 'g',
-        nutritionPreview: target.nutrition || null
+        nutritionPreview: target.nutrition || null,
+        notes: target.notes || ''
       }
     });
   },
@@ -604,7 +615,8 @@ Page({
           food: null,
           quantity: '',
           unit: 'g',
-          nutritionPreview: null
+          nutritionPreview: null,
+          notes: ''
         }
       } : {})
     });
@@ -692,7 +704,8 @@ Page({
           proteinSource: intake.proteinSource || fallbackFood.proteinSource || 'natural',
           naturalProtein: typeof intake.naturalProtein === 'number' ? intake.naturalProtein : 0,
           specialProtein: typeof intake.specialProtein === 'number' ? intake.specialProtein : 0,
-          milkType: intake.milkType || ''
+          milkType: intake.milkType || '',
+          notes: intake.notes || ''
         };
       });
 
@@ -732,6 +745,7 @@ Page({
       naturalProtein: item.naturalProtein || 0,
       specialProtein: item.specialProtein || 0,
       milkType: item.milkType || '',
+      notes: String(item.notes || '').trim(),
       recordedAt: mealTime,
       mealBatchId,
       mealTime,

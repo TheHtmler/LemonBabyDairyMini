@@ -119,6 +119,12 @@
   margin-top: 8rpx;
 }
 
+.field-label.block {
+  display: block;
+  width: auto;
+  margin-bottom: 12rpx;
+}
+
 .field-label {
   flex-shrink: 0;
   width: 88rpx;
@@ -264,6 +270,12 @@
   line-height: 1.5;
 }
 
+.meal-item-note {
+  font-size: 22rpx;
+  color: #8A7C60;
+  line-height: 1.5;
+}
+
 .meal-item-actions {
   display: flex;
   align-items: center;
@@ -406,6 +418,10 @@
   flex-direction: column;
   min-height: 0;
   height: 52vh;
+}
+
+.notes-input.compact {
+  min-height: 112rpx;
 }
 
 .search-input {

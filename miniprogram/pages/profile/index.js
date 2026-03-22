@@ -45,13 +45,6 @@ Page({
         description: '查看周、月维度的数据趋势'
       },
       {
-        id: 11,
-        name: '新手指南',
-        icon: 'info',
-        path: '/pages/onboarding/index',
-        description: '快速了解核心功能与流程'
-      },
-      {
         id: 10,
         name: '成长记录',
         icon: 'growth',
@@ -67,6 +60,35 @@ Page({
         showForCreator: true
       },
       {
+        id: 12,
+        name: '意见反馈',
+        icon: 'info',
+        path: '/pages/feedback/index',
+        description: '告诉我们问题、建议或想增加的功能'
+      },
+      {
+        id: 13,
+        name: '反馈列表',
+        icon: 'info',
+        path: '/pages/feedback-list/index',
+        description: '查看用户提交的反馈并标记处理状态',
+        showForDeveloper: true
+      },
+      {
+        id: 14,
+        name: '应急支持',
+        icon: 'info',
+        path: '/pages/emergency-support/index',
+        description: '查看急救卡与补液热量计算'
+      },
+      {
+        id: 11,
+        name: '新手指南',
+        icon: 'info',
+        path: '/pages/onboarding/index',
+        description: '快速了解核心功能与流程'
+      },
+      {
         id: 6,
         name: '数据标识说明',
         icon: 'info',
@@ -77,28 +99,6 @@ Page({
         name: '关于我们',
         icon: 'info',
         path: '/pages/about/index'
-      },
-      {
-        id: 12,
-        name: '意见反馈',
-        icon: 'info',
-        path: '/pages/feedback/index',
-        description: '告诉我们问题、建议或想增加的功能'
-      },
-      {
-        id: 14,
-        name: '应急支持',
-        icon: 'info',
-        path: '/pages/emergency-support/index',
-        description: '查看急救卡与补液热量计算'
-      },
-      {
-        id: 13,
-        name: '反馈列表',
-        icon: 'info',
-        path: '/pages/feedback-list/index',
-        description: '查看用户提交的反馈并标记处理状态',
-        showForDeveloper: true
       },
       {
         id: 8,
