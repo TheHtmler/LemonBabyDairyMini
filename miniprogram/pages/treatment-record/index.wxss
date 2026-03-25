@@ -1,0 +1,393 @@
+.page {
+  min-height: 100vh;
+  padding: 16rpx 16rpx 124rpx;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #FFF8E8 0%, #FFFDF7 100%);
+}
+
+.hero-card,
+.card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 18rpx rgba(255, 184, 0, 0.08);
+}
+
+.hero-card {
+  padding: 18rpx 20rpx;
+  margin-bottom: 14rpx;
+  background: linear-gradient(135deg, #FFF4D2, #FFFFFF);
+  border: 1rpx solid rgba(255, 184, 0, 0.18);
+}
+
+.hero-title,
+.section-title {
+  color: #332600;
+  font-weight: 700;
+}
+
+.hero-title {
+  font-size: 28rpx;
+}
+
+.hero-subtitle,
+.section-tip,
+.field-label,
+.group-summary,
+.text-btn,
+.summary-chip-label {
+  color: #7C6B45;
+  font-size: 20rpx;
+}
+
+.hero-subtitle {
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.card {
+  padding: 16rpx;
+  margin-bottom: 14rpx;
+}
+
+.compact-card {
+  padding-bottom: 14rpx;
+}
+
+.section-head,
+.group-head,
+.group-head-main,
+.switch-row,
+.footer-actions,
+.summary-strip,
+.compact-grid {
+  display: flex;
+}
+
+.section-head,
+.group-head,
+.switch-row {
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.section-head {
+  margin-bottom: 18rpx;
+}
+
+.section-title {
+  font-size: 26rpx;
+}
+
+.section-tip {
+  margin-top: 6rpx;
+}
+
+.compact-grid {
+  gap: 10rpx;
+  flex-wrap: wrap;
+}
+
+.compact-field {
+  flex: 1;
+  min-width: calc(50% - 6rpx);
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.compact-picker,
+.compact-input,
+.group-name-input,
+.notes-area {
+  width: 100%;
+  min-height: 60rpx;
+  padding: 14rpx 16rpx;
+  box-sizing: border-box;
+  border-radius: 14rpx;
+  background: #FFF9EA;
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+  color: #302400;
+  font-size: 22rpx;
+}
+
+.compact-picker {
+  display: flex;
+  align-items: center;
+}
+
+.fixed-value {
+  color: #8B6D24;
+  font-weight: 600;
+}
+
+.notes-area {
+  min-height: 96rpx;
+  margin-top: 8rpx;
+}
+
+.group-card {
+  background: #FFFDF8;
+  border: 1rpx solid rgba(255, 184, 0, 0.14);
+  border-radius: 16rpx;
+  padding: 14rpx;
+  margin-bottom: 12rpx;
+}
+
+.group-head-main {
+  flex: 1;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.group-name-fixed {
+  font-size: 24rpx;
+  color: #3A2D08;
+  font-weight: 700;
+}
+
+.group-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin: 10rpx 0 10rpx;
+}
+
+.empty-group {
+  padding: 18rpx 16rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 184, 0, 0.06);
+  color: #9C875B;
+  font-size: 20rpx;
+  margin-bottom: 10rpx;
+}
+
+.item-card {
+  padding: 12rpx;
+  border-radius: 14rpx;
+  background: #FFFFFF;
+  border: 1rpx solid rgba(255, 184, 0, 0.1);
+  margin-bottom: 10rpx;
+}
+
+.drug-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.drug-row picker:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.custom-name-inline {
+  flex: 1;
+  min-width: 0;
+  height: 48rpx;
+  line-height: 48rpx;
+  padding: 0 12rpx;
+  box-sizing: border-box;
+  border-radius: 12rpx;
+  background: #FFF9EA;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  color: #3A2D08;
+  font-size: 21rpx;
+}
+
+.drug-picker {
+  min-height: 48rpx;
+  padding: 10rpx 12rpx;
+  box-sizing: border-box;
+  border-radius: 12rpx;
+  background: #FFF9EA;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  color: #3A2D08;
+  font-size: 21rpx;
+  display: flex;
+  align-items: center;
+}
+
+.drug-picker.placeholder {
+  color: #A69672;
+}
+
+.dose-input {
+  width: 116rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  padding: 0 12rpx;
+  box-sizing: border-box;
+  border-radius: 12rpx;
+  background: #FFF9EA;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  font-size: 22rpx;
+  color: #302400;
+}
+
+.unit-pill {
+  min-width: 72rpx;
+  min-height: 48rpx;
+  padding: 0 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 184, 0, 0.12);
+  color: #8B6D24;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.delete-icon-btn {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 71, 87, 0.12);
+}
+
+.delete-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.nutrition-inline {
+  margin-top: 10rpx;
+  min-height: 40rpx;
+  padding: 8rpx 12rpx;
+  border-radius: 12rpx;
+  background: #FFF9EA;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  color: #6C571D;
+  font-size: 20rpx;
+  flex-wrap: wrap;
+}
+
+.nutrition-inline.muted {
+  color: #8D7440;
+}
+
+.mini-btn,
+.text-btn,
+.primary-action,
+.ghost-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.mini-btn {
+  min-height: 48rpx;
+  padding: 0 16rpx;
+  color: #A36A00;
+  background: rgba(255, 184, 0, 0.12);
+}
+
+.mini-btn.secondary {
+  flex: 1;
+  margin-top: 8rpx;
+}
+
+.group-action-row {
+  display: flex;
+  gap: 10rpx;
+}
+
+.mini-btn.outline {
+  color: #8B6D24;
+  background: transparent;
+  border: 2rpx solid rgba(255, 184, 0, 0.18);
+}
+
+.text-btn {
+  color: #8D7440;
+}
+
+.text-btn.danger {
+  color: #D45454;
+}
+
+.summary-card {
+  padding-bottom: 18rpx;
+}
+
+.summary-strip {
+  gap: 8rpx;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.summary-chip {
+  min-width: calc(50% - 5rpx);
+  padding: 14rpx;
+  border-radius: 14rpx;
+  background: #FFF9EA;
+  box-sizing: border-box;
+}
+
+.summary-chip-value {
+  display: block;
+  margin-top: 6rpx;
+  color: #2F2400;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.summary-note {
+  margin-top: 12rpx;
+  padding: 12rpx 14rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 184, 0, 0.08);
+  color: #7B6322;
+  font-size: 20rpx;
+  line-height: 1.5;
+}
+
+.group-note {
+  margin-top: 4rpx;
+}
+
+.combined-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  background: rgba(255, 184, 0, 0.05);
+  color: #8D7440;
+  margin-bottom: 4rpx;
+}
+
+.footer-actions {
+  position: fixed;
+  left: 16rpx;
+  right: 16rpx;
+  bottom: 16rpx;
+  gap: 12rpx;
+}
+
+.primary-action,
+.ghost-action {
+  flex: 1;
+  height: 68rpx;
+}
+
+.primary-action {
+  background: linear-gradient(135deg, #FFB800, #FFCC4D);
+  color: #FFFFFF;
+}
+
+.ghost-action {
+  background: #FFFFFF;
+  color: #D45454;
+  border: 2rpx solid rgba(212, 84, 84, 0.18);
+}

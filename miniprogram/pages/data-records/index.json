@@ -7,6 +7,7 @@
     "feeding-record-card": "/components/feeding-record-card/feeding-record-card",
     "food-record-item": "/components/food-record-item/food-record-item",
     "medication-record-item": "/components/medication-record-item/medication-record-item",
+    "treatment-record-list": "/components/treatment-record-list/treatment-record-list",
     "feeding-modal": "/components/feeding-modal/feeding-modal",
     "food-intake-modal": "/components/food-intake-modal/food-intake-modal",
     "fat-ratio-popup": "/components/fat-ratio-popup/fat-ratio-popup",

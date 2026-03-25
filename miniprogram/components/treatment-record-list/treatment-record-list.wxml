@@ -1,0 +1,53 @@
+<view class="treatment-panel">
+  <view class="treatment-panel-header">
+    <text class="treatment-panel-title">{{title}}</text>
+    <view class="treatment-panel-action" bindtap="handleAdd">
+      <text class="treatment-panel-action-text">{{actionText}}</text>
+    </view>
+  </view>
+
+  <view class="treatment-card-list" wx:if="{{records.length > 0}}">
+    <view class="treatment-card" wx:for="{{records}}" wx:key="_id" wx:for-item="record">
+      <view class="treatment-card-main">
+        <view class="treatment-card-header">
+          <text class="treatment-time">{{record.displayTime || '--:--'}}</text>
+          <text class="treatment-type">{{record.typeLabel}}</text>
+        </view>
+
+        <view class="treatment-count-row">
+          <text class="treatment-count">{{record.groupCount || 0}}组</text>
+        </view>
+
+        <view class="treatment-group-list">
+          <view class="treatment-group-line" wx:for="{{record.groupPreviewLines}}" wx:key="*this">
+            <text class="treatment-group-text">{{item}}</text>
+          </view>
+          <text class="treatment-group-more" wx:if="{{record.overflowGroupCount > 0}}">另 {{record.overflowGroupCount}} 组</text>
+        </view>
+
+        <view class="treatment-metric-row">
+          <text class="treatment-metric">热量 {{record.summary.totalCalories || 0}} kcal</text>
+          <text class="treatment-metric-divider">|</text>
+          <text class="treatment-metric">碳水 {{record.summary.carbs || 0}} g</text>
+        </view>
+
+        <view class="treatment-note-row" wx:if="{{record.notePreview}}">
+          <text class="treatment-note-text">备注: {{record.notePreview}}</text>
+        </view>
+      </view>
+
+      <view class="treatment-card-actions">
+        <view class="treatment-action-btn treatment-action-edit" bindtap="handleEdit" data-record-id="{{record._id}}">
+          <image class="treatment-action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+        </view>
+        <view class="treatment-action-btn treatment-action-delete" bindtap="handleDelete" data-record-id="{{record._id}}">
+          <image class="treatment-action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="treatment-empty" wx:else>
+    <text class="treatment-empty-text">{{emptyText}}</text>
+  </view>
+</view>

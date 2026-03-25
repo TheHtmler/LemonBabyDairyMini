@@ -18,6 +18,7 @@
     "pages/feedback/index",
     "pages/feedback-list/index",
     "pages/emergency-support/index",
+    "pages/treatment-record/index",
     "pages/emergency-card/index",
     "pages/about/index",
     "pages/add-report/index",

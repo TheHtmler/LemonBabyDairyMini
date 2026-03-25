@@ -1,0 +1,187 @@
+.treatment-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.treatment-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.treatment-panel-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.treatment-panel-action {
+  min-width: 112rpx;
+  height: 48rpx;
+  padding: 0 18rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 184, 0, 0.14);
+  border: 1rpx solid rgba(255, 184, 0, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treatment-panel-action-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #8A4B00;
+}
+
+.treatment-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.treatment-card {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #FFF9E6;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.12);
+}
+
+.treatment-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.treatment-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 2rpx;
+}
+
+.treatment-time {
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.treatment-type {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 600;
+}
+
+.treatment-count-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 4rpx;
+}
+
+.treatment-count {
+  font-size: 28rpx;
+  color: #FFB800;
+  font-weight: 600;
+}
+
+.treatment-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  margin-bottom: 2rpx;
+}
+
+.treatment-group-line {
+  min-width: 0;
+}
+
+.treatment-group-text {
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: #555555;
+}
+
+.treatment-group-more {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+.treatment-metric-row {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 8rpx;
+  gap: 12rpx;
+  font-size: 24rpx;
+  color: #555555;
+}
+
+.treatment-metric {
+  color: #555555;
+}
+
+.treatment-metric-divider {
+  color: #DDDDDD;
+}
+
+.treatment-note-row {
+  margin-top: 6rpx;
+}
+
+.treatment-note-text {
+  font-size: 24rpx;
+  color: #888888;
+  line-height: 1.45;
+}
+
+.treatment-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.treatment-action-btn {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.treatment-action-edit {
+  background-color: rgba(255, 184, 0, 0.15);
+  border: 1rpx solid rgba(255, 184, 0, 0.3);
+}
+
+.treatment-action-delete {
+  background-color: rgba(255, 71, 87, 0.15);
+  border: 1rpx solid rgba(255, 71, 87, 0.3);
+}
+
+.treatment-action-icon {
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.9;
+}
+
+.treatment-empty {
+  padding: 32rpx 0;
+  text-align: center;
+}
+
+.treatment-empty-text {
+  font-size: 26rpx;
+  color: #999999;
+}

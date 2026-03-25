@@ -87,6 +87,11 @@
               <view class="summary-unit">kcal</view>
             </view>
             <view class="summary-item">
+              <view class="summary-label">治疗热量</view>
+              <view class="summary-number">{{intakeOverview.treatment.totalCalories || 0}}</view>
+              <view class="summary-unit">kcal</view>
+            </view>
+            <view class="summary-item">
               <view class="summary-label">热量系数</view>
               <view class="summary-number">{{caloriePerKg !== '' ? caloriePerKg : '--'}}</view>
               <view class="summary-unit">kcal/kg/d</view>
@@ -253,6 +258,21 @@
               </view>
             </view>
           </view>
+          <view class="summary-card food-card">
+            <view class="card-header">
+              <text class="card-title">治疗</text>
+              <text class="card-meta">热量 {{intakeOverview.treatment.totalCalories || 0}} kcal</text>
+            </view>
+            <view class="card-body food-body">
+              <view class="body-summary">
+                <text>记录 {{intakeOverview.treatment.count || 0}} 条</text>
+                <text>碳水 {{intakeOverview.treatment.carbs || 0}} g · 脂肪 {{intakeOverview.treatment.fat || 0}} g</text>
+              </view>
+              <view class="empty-record" wx:if="{{treatmentRecords.length === 0}}">
+                <text>暂无治疗记录</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
       <!-- 记录选项卡 -->
@@ -265,6 +285,9 @@
         </view>
         <view class="tab {{activeTab === 'medication' ? 'active' : ''}}" data-tab="medication" bindtap="switchTab">
           <text>用药记录</text>
+        </view>
+        <view class="tab {{activeTab === 'treatment' ? 'active' : ''}}" data-tab="treatment" bindtap="switchTab">
+          <text>治疗记录</text>
         </view>
       </view>
 
@@ -380,6 +403,20 @@
           <view class="empty-data" wx:if="{{medicationRecords.length === 0}}">
             <view class="empty-text">暂无用药记录</view>
           </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'treatment'}}">
+        <view class="card">
+          <treatment-record-list
+            title="治疗记录"
+            action-text="补充记录"
+            records="{{treatmentRecords}}"
+            empty-text="暂无治疗记录"
+            bind:add="navigateToTreatmentRecord"
+            bind:edit="openEditTreatmentRecord"
+            bind:delete="deleteTreatmentRecord"
+          />
         </view>
       </block>
 

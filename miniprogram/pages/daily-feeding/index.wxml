@@ -74,6 +74,9 @@
       <view class="quick-record-btn neutral" bindtap="openMedicationModal">
         <text>记录用药</text>
       </view>
+      <view class="quick-record-btn neutral" bindtap="navigateToTreatmentRecord">
+        <text>治疗记录</text>
+      </view>
     </view>
   </view>
 
@@ -224,6 +227,22 @@
           </view>
         </view>
       </view>
+
+      <view class="summary-card food-card">
+        <view class="card-header">
+          <text class="card-title">治疗</text>
+          <text class="card-meta">热量 {{intakeOverview.treatment.totalCalories || 0}} kcal</text>
+        </view>
+        <view class="card-body food-body">
+          <view class="body-summary">
+            <text>记录 {{intakeOverview.treatment.count || 0}} 条</text>
+            <text>碳水 {{intakeOverview.treatment.carbs || 0}} g · 脂肪 {{intakeOverview.treatment.fat || 0}} g</text>
+          </view>
+          <view class="empty-record" wx:if="{{treatmentRecords.length === 0}}">
+            <text>暂无治疗记录</text>
+          </view>
+        </view>
+      </view>
     </view>
     
     <!-- 选项卡标题 -->
@@ -236,6 +255,9 @@
       </view>
       <view class="tab {{activeTab === 'medication' ? 'active' : ''}}" bindtap="switchTab" data-tab="medication">
         <text>用药记录</text>
+      </view>
+      <view class="tab {{activeTab === 'treatment' ? 'active' : ''}}" bindtap="switchTab" data-tab="treatment">
+        <text>治疗记录</text>
       </view>
     </view>
     
@@ -345,6 +367,20 @@
         <view class="empty-record" wx:if="{{medicationRecords.length === 0}}">
           <text>暂无用药记录</text>
         </view>
+      </view>
+    </view>
+
+    <view class="tab-content" hidden="{{activeTab !== 'treatment'}}">
+      <view class="medication-records">
+        <treatment-record-list
+          title="治疗记录"
+          action-text="新增"
+          records="{{treatmentRecords}}"
+          empty-text="暂无治疗记录"
+          bind:add="navigateToTreatmentRecord"
+          bind:edit="openEditTreatmentRecord"
+          bind:delete="deleteTreatmentRecord"
+        />
       </view>
     </view>
   </view>

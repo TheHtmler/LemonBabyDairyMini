@@ -2,8 +2,15 @@
 const NutritionModel = require('../../models/nutrition');
 // 导入药物记录模型
 const MedicationRecordModel = require('../../models/medicationRecord');
+const TreatmentRecordModel = require('../../models/treatmentRecord');
 // 导入食物模型
 const FoodModel = require('../../models/food');
+const {
+  createEmptyTreatmentOverview,
+  mergeTreatmentIntoMacroSummary,
+  mergeTreatmentIntoOverview,
+  formatTreatmentRecordsForDisplay
+} = require('../../utils/treatmentUtils');
 // 系统默认食物
 const MILK_CATEGORY_ALIASES = ['milk', '奶类', '奶制品', '乳制品', '乳类及制品'];
 
@@ -51,6 +58,7 @@ Page({
     foodMealGroups: [],
     legacyFoodIntakes: [],
     medicationRecords: [],
+    treatmentRecords: [],
     bowelRecords: [], // 排便记录
     medicationsList: [],
     calculation_params: null,
@@ -105,7 +113,8 @@ Page({
         specialProtein: 0,
         carbs: 0,
         fat: 0
-      }
+      },
+      treatment: createEmptyTreatmentOverview()
     },
 
     // === 当前操作数据 ===
@@ -317,6 +326,10 @@ Page({
   // 获取分组的药物记录
   getGroupedMedicationRecords() {
     return MedicationRecordModel.groupRecordsByMedication(this.data.medicationRecords);
+  },
+
+  formatTreatmentRecords(records = []) {
+    return formatTreatmentRecordsForDisplay(records);
   },
 
   // 获取选中药物的完整信息
@@ -1197,7 +1210,7 @@ Page({
   },
 
   // 计算宏量营养统计
-  calculateMacroSummary(intakes = [], feedings = []) {
+  calculateMacroSummary(intakes = [], feedings = [], treatmentRecords = this.data.treatmentRecords || []) {
     const summary = {
       calories: 0,
       protein: 0,
@@ -1300,7 +1313,7 @@ Page({
     summary.carbs = this._round(summary.carbs, 2);
     summary.fat = this._round(summary.fat, 2);
 
-    return summary;
+    return mergeTreatmentIntoMacroSummary(summary, treatmentRecords);
   },
 
   applyCalorieCoefficient(summary, weightOverride) {
@@ -1336,7 +1349,7 @@ Page({
   },
 
   // 计算摄入概览（天然 / 特奶 / 食物）
-  calculateIntakeOverview(feedings = [], intakes = [], weight = 0) {
+  calculateIntakeOverview(feedings = [], intakes = [], weight = 0, treatmentRecords = this.data.treatmentRecords || []) {
     const overview = {
       milk: {
         totalCalories: 0,
@@ -1352,7 +1365,8 @@ Page({
         carbs: 0,
         fat: 0,
         coefficient: ''
-      }
+      },
+      treatment: createEmptyTreatmentOverview()
     };
 
     // 先按类型聚合体积，再统一计算营养，减少逐条取整误差
@@ -1517,7 +1531,7 @@ Page({
     overview.food.fat = this._round(overview.food.fat, 2);
     overview.food.coefficient = parsedWeight > 0 ? this._round(overview.food.protein / parsedWeight, 2) : '';
 
-    return overview;
+    return mergeTreatmentIntoOverview(overview, treatmentRecords);
   },
 
   // 计算单次喂养的营养值
@@ -1900,8 +1914,8 @@ Page({
         console.warn('未找到宝宝UID，可能加载到错误的记录');
       }
       
-      // 并行查询喂养记录和药物记录
-      const [feedingResult, medicationResult] = await Promise.all([
+      // 并行查询喂养记录、药物记录和治疗记录
+      const [feedingResult, medicationResult, treatmentResult] = await Promise.all([
         // 查询喂养记录
         db.collection('feeding_records')
           .where({
@@ -1911,7 +1925,10 @@ Page({
           .get(),
         
         // 查询今日药物记录
-        babyUid ? MedicationRecordModel.getTodayRecords(babyUid) : Promise.resolve({ data: [] })
+        babyUid ? MedicationRecordModel.getTodayRecords(babyUid) : Promise.resolve({ data: [] }),
+
+        // 查询今日治疗记录
+        babyUid ? TreatmentRecordModel.findByDate(todayKey, babyUid) : Promise.resolve({ success: true, data: [] })
       ]);
       
       // 等待加载药物列表
@@ -1937,7 +1954,8 @@ Page({
       
       let intakesToSet = [];
       let foodIntakesToSet = [];
-      let macroSummary = this.calculateMacroSummary([], []);
+      const treatmentRecordsToSet = this.formatTreatmentRecords((treatmentResult.success ? treatmentResult.data : []) || []);
+      let macroSummary = this.calculateMacroSummary([], [], treatmentRecordsToSet);
 
       if (sameDayRecords.length > 0) {
         const record = this.mergeSameDayFeedingRecords(sameDayRecords);
@@ -1948,7 +1966,7 @@ Page({
         recordId = record._id;
         intakesToSet = this.normalizeIntakes(record.intakes || []);
         foodIntakesToSet = intakesToSet.filter(item => item.type !== 'milk');
-        macroSummary = this.calculateMacroSummary(intakesToSet, feedingsToSet);
+        macroSummary = this.calculateMacroSummary(intakesToSet, feedingsToSet, treatmentRecordsToSet);
         
         // 获取基本信息（兼容旧数据结构）
         if (record.basicInfo) {
@@ -2016,6 +2034,7 @@ Page({
         foodMealGroups: this.buildFoodMealGroups(foodIntakesToSet),
         legacyFoodIntakes: this.buildLegacyFoodIntakes(foodIntakesToSet),
         medicationRecords: medicationRecordsToSet,
+        treatmentRecords: treatmentRecordsToSet,
         bowelRecords: bowelRecordsToSet,
         weight: weightToSet,
         naturalProteinCoefficientInput: naturalCoefficientToSet,
@@ -2825,6 +2844,50 @@ Page({
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     wx.navigateTo({
       url: `/pages/meal-editor/index?date=${date}&from=daily`
+    });
+  },
+
+  navigateToTreatmentRecord() {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    wx.navigateTo({
+      url: `/pages/treatment-record/index?date=${date}`
+    });
+  },
+
+  openEditTreatmentRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (!recordId) return;
+    wx.navigateTo({
+      url: `/pages/treatment-record/index?id=${encodeURIComponent(recordId)}&date=${date}`
+    });
+  },
+
+  deleteTreatmentRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    if (!recordId) return;
+    wx.showModal({
+      title: '删除治疗记录',
+      content: '确认删除这条治疗记录吗？',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          const result = await TreatmentRecordModel.delete(recordId);
+          if (!result.success) {
+            throw new Error(result.message || '删除失败');
+          }
+          wx.hideLoading();
+          wx.showToast({ title: '已删除', icon: 'success' });
+          await this.loadTodayData(true);
+        } catch (error) {
+          wx.hideLoading();
+          console.error('删除治疗记录失败:', error);
+          wx.showToast({ title: error.message || '删除失败', icon: 'none' });
+        }
+      }
     });
   },
 

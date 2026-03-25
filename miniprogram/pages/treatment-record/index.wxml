@@ -1,0 +1,136 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-title">治疗记录</view>
+    <view class="hero-subtitle">按组记录不同配药组合，时间统一记在治疗记录上。</view>
+  </view>
+
+  <view class="card compact-card">
+    <view class="compact-grid">
+      <view class="compact-field">
+        <text class="field-label">日期</text>
+        <picker mode="date" value="{{dateKey}}" bindchange="onDateChange">
+          <view class="compact-picker">{{dateKey}}</view>
+        </picker>
+      </view>
+      <view class="compact-field">
+        <text class="field-label">开始时间</text>
+        <picker mode="time" value="{{form.startTime}}" bindchange="onStartTimeChange">
+          <view class="compact-picker">{{form.startTime || '请选择'}}</view>
+        </picker>
+      </view>
+    </view>
+    <view class="compact-field fixed-type-field">
+      <text class="field-label">类型</text>
+      <view class="compact-picker fixed-value">输液</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-head">
+      <view>
+        <view class="section-title">治疗组</view>
+        <view class="section-tip">每组只记录一套组合，按序号展示</view>
+      </view>
+      <view class="mini-btn" bindtap="addTreatmentGroup">新增一组</view>
+    </view>
+
+    <view class="group-card" wx:for="{{form.groups}}" wx:key="id">
+      <view class="group-head">
+        <view class="group-head-main">
+          <view class="group-name-fixed">第{{index + 1}}组</view>
+        </view>
+        <text class="text-btn danger" bindtap="removeTreatmentGroup" data-group-index="{{index}}">删除组</text>
+      </view>
+
+      <view class="group-summary">
+        <text>热量 {{item.summary.totalCalories || 0}} kcal</text>
+        <text>碳水 {{item.summary.carbs || 0}} g</text>
+        <text>脂肪 {{item.summary.fat || 0}} g</text>
+      </view>
+
+      <view class="empty-group" wx:if="{{item.items.length === 0}}">
+        <text>点击下方添加按钮，新增一行药物</text>
+      </view>
+
+      <view class="item-card" wx:for="{{item.items}}" wx:key="id" wx:for-item="ingredient" wx:for-index="itemIndex">
+        <view class="drug-row">
+          <block wx:if="{{ingredient.category === 'custom'}}">
+            <input
+              class="custom-name-inline"
+              value="{{ingredient.name}}"
+              placeholder="自定义药物"
+              bindinput="onItemInput"
+              data-group-index="{{index}}"
+              data-item-index="{{itemIndex}}"
+              data-field="name"
+            />
+          </block>
+          <block wx:else>
+            <picker range="{{categoryOptions}}" range-key="label" value="{{ingredient.categoryIndex >= 0 ? ingredient.categoryIndex : 0}}" bindchange="onItemCategoryChange" data-group-index="{{index}}" data-item-index="{{itemIndex}}">
+              <view class="drug-picker {{ingredient.category ? '' : 'placeholder'}}">{{ingredient.name || '药物'}}</view>
+            </picker>
+          </block>
+          <input class="dose-input" type="digit" value="{{ingredient.amount}}" placeholder="剂量" bindinput="onItemInput" data-group-index="{{index}}" data-item-index="{{itemIndex}}" data-field="amount" />
+          <picker range="{{unitOptions}}" value="{{ingredient.unitIndex || 0}}" bindchange="onItemUnitChange" data-group-index="{{index}}" data-item-index="{{itemIndex}}">
+            <view class="unit-pill">{{ingredient.unit || 'ml'}}</view>
+          </picker>
+          <view class="delete-icon-btn" bindtap="removeTreatmentItem" data-group-index="{{index}}" data-item-index="{{itemIndex}}">
+            <image class="delete-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+          </view>
+        </view>
+
+        <view class="nutrition-inline" wx:if="{{ingredient.category === 'dextrose_10' || ingredient.category === 'dextrose_5'}}">
+          <text>热量 {{ingredient.calories || 0}} kcal</text>
+          <text>碳水 {{ingredient.carbsG || 0}} g</text>
+        </view>
+
+        <view class="nutrition-inline muted" wx:if="{{ingredient.category === 'custom'}}">
+          <text>自定义药物暂不支持营养成分换算</text>
+        </view>
+      </view>
+
+      <view class="group-action-row">
+        <view class="mini-btn secondary" bindtap="addTreatmentItem" data-group-index="{{index}}">添加药物</view>
+        <view class="mini-btn secondary outline" bindtap="addCustomTreatmentItem" data-group-index="{{index}}">自定义</view>
+      </view>
+
+    </view>
+
+    <view class="summary-note group-note combined-note">
+      <text>1. 输液葡萄糖热量按肠外营养口径估算：1 g 葡萄糖约 3.4 kcal。</text>
+      <text>2. 参考葡萄糖注射液说明书及肠外营养临床资料，和普通食物按 4 kcal/g 的口径不同。</text>
+    </view>
+  </view>
+
+  <view class="card summary-card">
+    <view class="section-title">总计入营养</view>
+    <view class="summary-strip">
+      <view class="summary-chip">
+        <text class="summary-chip-label">热量</text>
+        <text class="summary-chip-value">{{summary.totalCalories}} kcal</text>
+      </view>
+      <view class="summary-chip">
+        <text class="summary-chip-label">碳水</text>
+        <text class="summary-chip-value">{{summary.carbs}} g</text>
+      </view>
+      <view class="summary-chip">
+        <text class="summary-chip-label">蛋白</text>
+        <text class="summary-chip-value">{{summary.protein}} g</text>
+      </view>
+      <view class="summary-chip">
+        <text class="summary-chip-label">脂肪</text>
+        <text class="summary-chip-value">{{summary.fat}} g</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card summary-card">
+    <view class="section-title">备注</view>
+    <textarea class="notes-area" value="{{form.notes}}" placeholder="选填本次治疗说明" bindinput="onNotesInput" />
+  </view>
+
+  <view class="footer-actions">
+    <view class="ghost-action" wx:if="{{isEdit}}" bindtap="deleteRecord">删除</view>
+    <view class="primary-action" bindtap="saveRecord">保存</view>
+  </view>
+</view>

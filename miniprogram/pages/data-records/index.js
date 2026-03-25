@@ -13,9 +13,16 @@ function getWeekday(date) {
 const NutritionModel = require('../../models/nutrition');
 // 引入药物记录模型
 const MedicationRecordModel = require('../../models/medicationRecord');
+const TreatmentRecordModel = require('../../models/treatmentRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
 const InvitationModel = require('../../models/invitation');
+const {
+  createEmptyTreatmentOverview,
+  mergeTreatmentIntoMacroSummary,
+  mergeTreatmentIntoOverview,
+  formatTreatmentRecordsForDisplay
+} = require('../../utils/treatmentUtils');
 // 通用工具
 const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
 
@@ -204,11 +211,12 @@ function createEmptyIntakeOverview() {
       specialProtein: 0,
       carbs: 0,
       fat: 0
-    }
+    },
+    treatment: createEmptyTreatmentOverview()
   };
 }
 
-function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutritionSettings = {}) {
+function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutritionSettings = {}, treatmentRecords = []) {
   const overview = createEmptyIntakeOverview();
   const addMilkStats = (group, { volume = 0, calories = 0, protein = 0, carbs = 0, fat = 0 }) => {
     group.volume += volume;
@@ -372,7 +380,7 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
   overview.food.carbs = roundNumber(overview.food.carbs, 2);
   overview.food.fat = roundNumber(overview.food.fat, 2);
 
-  return overview;
+  return mergeTreatmentIntoOverview(overview, treatmentRecords);
 }
 
 function normalizeIntakes(intakes = []) {
@@ -504,7 +512,7 @@ function getLegacyFoodIntakes(intakes = []) {
   }, []);
 }
 
-function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = {}) {
+function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = {}, treatmentRecords = []) {
   const summary = {
     calories: 0,
     protein: 0,
@@ -606,7 +614,7 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
   summary.carbs = roundNumber(summary.carbs, 2);
   summary.fat = roundNumber(summary.fat, 2);
 
-  return summary;
+  return mergeTreatmentIntoMacroSummary(summary, treatmentRecords);
 }
 
 function formatTimeFromDate(dateInput) {
@@ -652,6 +660,10 @@ function buildDateTimeFromDateKey(dateKey, timeValue = '00:00') {
     Number.isFinite(minutes) ? minutes : 0,
     0
   );
+}
+
+function formatTreatmentRecords(records = []) {
+  return formatTreatmentRecordsForDisplay(records);
 }
 
 function createCopyEntryId(prefix) {
@@ -901,6 +913,7 @@ Page({
     recentFoodOptions: [],
     intakeOverview: createEmptyIntakeOverview(),
     medicationRecords: [],
+    treatmentRecords: [],
     groupedMedicationRecords: [], // 按药物名称分组的药物记录
     bowelRecords: [], // 排便记录
     groupedBowelRecords: [], // 按类型分组的排便记录
@@ -1131,6 +1144,48 @@ Page({
     });
   },
 
+  navigateToTreatmentRecord() {
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pages/treatment-record/index?date=${selectedDate}`
+    });
+  },
+
+  openEditTreatmentRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    if (!recordId) return;
+    wx.navigateTo({
+      url: `/pages/treatment-record/index?id=${encodeURIComponent(recordId)}&date=${selectedDate}`
+    });
+  },
+
+  deleteTreatmentRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    if (!recordId) return;
+    wx.showModal({
+      title: '删除治疗记录',
+      content: '确认删除这条治疗记录吗？',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          const result = await TreatmentRecordModel.delete(recordId);
+          if (!result.success) {
+            throw new Error(result.message || '删除失败');
+          }
+          wx.hideLoading();
+          wx.showToast({ title: '已删除', icon: 'success' });
+          await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
+        } catch (error) {
+          wx.hideLoading();
+          console.error('删除治疗记录失败:', error);
+          wx.showToast({ title: error.message || '删除失败', icon: 'none' });
+        }
+      }
+    });
+  },
+
   navigateToMealGroupEditor(e) {
     const mealBatchId = e.currentTarget.dataset.mealBatchId;
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
@@ -1163,8 +1218,8 @@ Page({
         try {
           wx.showLoading({ title: '删除中...' });
           const db = wx.cloud.database();
-          const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {});
-          const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {});
+          const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
+          const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
           if (this.data.recordId) {
             await db.collection('feeding_records').doc(this.data.recordId).update({
@@ -1655,8 +1710,8 @@ Page({
           wx.showLoading({ title: '删除中...' });
           const db = wx.cloud.database();
           const remainingIntakes = (this.data.intakes || []).filter(item => item._id !== target._id);
-          const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {});
-          const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {});
+          const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
+          const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
           if (this.data.recordId) {
             await db.collection('feeding_records').doc(this.data.recordId).update({
               data: {
@@ -1789,8 +1844,8 @@ Page({
         existingIntakes.unshift(intake);
       }
 
-      const updatedSummary = calculateMacroSummary(existingIntakes, this.data.feedings, this.data.nutritionSettings || {});
-      const updatedOverview = calculateIntakeOverview(this.data.feedings || [], existingIntakes, this.data.weight, this.data.nutritionSettings || {});
+      const updatedSummary = calculateMacroSummary(existingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
+      const updatedOverview = calculateIntakeOverview(this.data.feedings || [], existingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
       if (recordId) {
         await db.collection('feeding_records').doc(recordId).update({
@@ -2260,7 +2315,7 @@ Page({
 
     const copiedFeedings = sourceFeedings.map(item => cloneFeedingForDate(item, targetDateStr, babyUid));
     const targetIntakes = normalizeIntakes(targetRecord?.intakes || []);
-    const updatedSummary = calculateMacroSummary(targetIntakes, copiedFeedings, this.data.nutritionSettings || {});
+    const updatedSummary = calculateMacroSummary(targetIntakes, copiedFeedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
     wx.showLoading({ title: '复制中...' });
     try {
@@ -2319,7 +2374,7 @@ Page({
     const openid = wx.getStorageSync('openid') || '';
     const copiedFoodIntakes = sourceFoodIntakes.map(item => cloneIntakeForDate(item, openid));
     const mergedIntakes = [...targetNonFoodIntakes, ...copiedFoodIntakes];
-    const updatedSummary = calculateMacroSummary(mergedIntakes, targetRecord?.feedings || [], this.data.nutritionSettings || {});
+    const updatedSummary = calculateMacroSummary(mergedIntakes, targetRecord?.feedings || [], this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
     wx.showLoading({ title: '复制中...' });
     try {
@@ -2539,15 +2594,17 @@ Page({
         babyUid: babyUid
       };
       
-      // 并行查询喂养记录、药物记录和排便记录
-      const [feedingResult, medicationResult, bowelResult] = await Promise.all([
+      // 并行查询喂养记录、药物记录、治疗记录和排便记录
+      const [feedingResult, medicationResult, treatmentResult, bowelResult] = await Promise.all([
         db.collection('feeding_records').where(query).get(),
         MedicationRecordModel.findByDate(dateStr, babyUid),
+        TreatmentRecordModel.findByDate(dateStr, babyUid),
         db.collection('bowel_records').where({
           babyUid: babyUid,
           recordTime: _.gte(startOfDay).and(_.lte(endOfDay))
         }).orderBy('recordTime', 'desc').get()
       ]);
+      const treatmentRecordsToSet = formatTreatmentRecords((treatmentResult.success ? treatmentResult.data : []) || []);
       let effectiveFeedingResult = feedingResult;
       if (!feedingResult.data || feedingResult.data.length === 0) {
         const legacyQuery = { date: dateStr, babyUid };
@@ -2576,8 +2633,8 @@ Page({
           recordHeight = record.height;
         }
 
-        const macroSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {});
-        const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {});
+        const macroSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
+        const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
         const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
 
         const weightForCalorie = recordWeight || (this.data.babyInfo ? this.data.babyInfo.weight : '');
@@ -2605,6 +2662,7 @@ Page({
           macroRatios: this.computeMacroRatios(macroSummary),
           fatRatioRangeText: this.getFatRatioRangeText(dateStr),
           medicationRecords: medicationRecordsToSet,
+          treatmentRecords: treatmentRecordsToSet,
           bowelRecords: bowelRecordsToSet,
           weight: weightForCalorie || '--',
           height: heightForDisplay || '--',
@@ -2631,11 +2689,19 @@ Page({
         const defaultWeight = this.data.babyInfo ? this.data.babyInfo.weight : '--';
         const defaultHeight = this.data.babyInfo ? this.data.babyInfo.height : '--';
         const calorieMetrics = this.computeCalorieMetrics({
-          totalCalories: 0,
+          totalCalories: treatmentRecordsToSet.reduce((sum, record) => sum + (Number(record.summary?.totalCalories) || 0), 0),
           weight: defaultWeight,
           dateStr: dateStr
         });
-        const intakeOverview = createEmptyIntakeOverview();
+        const intakeOverview = mergeTreatmentIntoOverview(createEmptyIntakeOverview(), treatmentRecordsToSet);
+        const macroSummary = mergeTreatmentIntoMacroSummary({
+          calories: 0,
+          protein: 0,
+          naturalProtein: 0,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 0
+        }, treatmentRecordsToSet);
         const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
         
         this.setData({
@@ -2645,21 +2711,15 @@ Page({
           foodIntakes: [],
           foodMealGroups: [],
           legacyFoodIntakes: [],
-          macroSummary: {
-            calories: 0,
-            protein: 0,
-            naturalProtein: 0,
-            specialProtein: 0,
-            carbs: 0,
-            fat: 0
-          },
-          macroRatios: { protein: 0, carbs: 0, fat: 0 },
+          macroSummary,
+          macroRatios: this.computeMacroRatios(macroSummary),
           fatRatioRangeText: this.getFatRatioRangeText(dateStr),
           medicationRecords: medicationRecordsToSet,
+          treatmentRecords: treatmentRecordsToSet,
           bowelRecords: bowelRecordsToSet,
           weight: defaultWeight,
           height: defaultHeight,
-          hasRecord: medicationRecordsToSet.length > 0 || bowelRecordsToSet.length > 0, // 如果有药物记录或排便记录，也算有记录
+          hasRecord: medicationRecordsToSet.length > 0 || treatmentRecordsToSet.length > 0 || bowelRecordsToSet.length > 0, // 如果有药物/治疗/排便记录，也算有记录
           feedingRecords: [],
           totalNaturalMilk: 0,
           totalSpecialMilk: 0,
@@ -2717,6 +2777,7 @@ Page({
       foodMealGroups: [],
       legacyFoodIntakes: [],
       medicationRecords: [],
+      treatmentRecords: [],
       groupedMedicationRecords: [],
       bowelRecords: [],
       groupedBowelRecords: [],
@@ -2753,7 +2814,7 @@ Page({
         weight: this.data.weight,
         dateStr: this.data.selectedDate
       });
-      const intakeOverview = calculateIntakeOverview([], intakes, this.data.weight, this.data.nutritionSettings || {});
+      const intakeOverview = calculateIntakeOverview([], intakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
       this.setData({
         noFeeding: true,
@@ -2842,7 +2903,7 @@ Page({
       };
     });
 
-    const intakeOverview = calculateIntakeOverview(processedRecords, intakes, this.data.weight, this.data.nutritionSettings || {});
+    const intakeOverview = calculateIntakeOverview(processedRecords, intakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
     this.setData({
       noFeeding: false,
       feedingRecords: processedRecords,
@@ -2917,7 +2978,7 @@ Page({
     let naturalProteinCoefficient = '';
     let specialProteinCoefficient = '';
     // 以摄入总览为准计算蛋白量，避免只按奶量估算
-    const overview = this.data.intakeOverview || calculateIntakeOverview(records, this.data.intakes || [], this.data.weight, this.data.nutritionSettings || {});
+    const overview = this.data.intakeOverview || calculateIntakeOverview(records, this.data.intakes || [], this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
     const naturalProteinFromOverview = (overview?.milk?.normal?.protein || 0) + (overview?.food?.naturalProtein || 0);
     const specialProteinFromOverview = (overview?.milk?.special?.protein || 0) + (overview?.food?.specialProtein || 0);
     
@@ -2965,7 +3026,7 @@ Page({
   },
 
   refreshMacroSummary() {
-    const summary = calculateMacroSummary(this.data.intakes || [], this.data.feedings || [], this.data.nutritionSettings || {});
+    const summary = calculateMacroSummary(this.data.intakes || [], this.data.feedings || [], this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
     const calorieMetrics = this.computeCalorieMetrics({
       totalCalories: summary.calories,
       weight: this.data.weight,
@@ -4961,7 +5022,8 @@ Page({
       (intakeOverview?.milk?.normal?.protein || 0) +
       (intakeOverview?.milk?.special?.protein || 0) +
       (intakeOverview?.food?.naturalProtein || 0) +
-      (intakeOverview?.food?.specialProtein || 0)
+      (intakeOverview?.food?.specialProtein || 0) +
+      (intakeOverview?.treatment?.protein || 0)
     ).toFixed(2);
     return { natural, special, total };
   },
