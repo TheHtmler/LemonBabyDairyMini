@@ -1,11 +1,6 @@
 <view class="container">
   <!-- 日期选择器 -->
   <view class="date-selector">
-    <!-- 当前日期显示 -->
-    <view class="current-date">
-      <text class="date-text">{{todayFullDate}}</text>
-    </view>
-    <!-- 日期滑动区域1 -->
     <view class="date-scroll-container">
       <scroll-view scroll-x="true" scroll-into-view="{{currentDateId}}" scroll-with-animation="true" class="date-list" enhanced="true" show-scrollbar="false" enable-flex="{{false}}" bounces="{{true}}" fast-deceleration="{{true}}">
         <view class="date-items-container">
@@ -29,247 +24,114 @@
     lines="{{fatRatioPopupLines}}"
     bind:close="hideFatRatioPopup"
   />
+  <view class="metric-info-overlay" wx:if="{{activeMetricInfoLabel}}" bindtap="hideMetricInfo"></view>
   <!-- 记录内容区域 -->
   <view class="records-wrapper" style="opacity: {{isDataLoading ? 0.5 : 1}};">
     <block>
-      <!-- 喂奶记录汇总卡片 -->
-      <view class="card">
-        <view class="card-title">
-          <text>当日汇总数据</text>
-          <view class="card-title-date">{{formattedSelectedDate}}</view>
-        </view>
-        <view class="summary-section">
-          <view class="section-subtitle">基础信息</view>
-          <view class="summary-grid">
-            <view class="summary-item">
-              <view class="summary-label">体重</view>
-              <view class="summary-number weight-number">
-                <input class="weight-input" type="digit" value="{{weight}}" placeholder="请输入体重" bindinput="onWeightInput" bindblur="onWeightBlur" />
+      <view class="summary-card summary-card-main">
+        <view class="summary-header">
+          <view>
+            <text class="summary-title">当日汇总数据</text>
+            <text class="summary-date">{{summaryPreview.displayDate}}</text>
+          </view>
+          <view class="hero-badges">
+            <view class="hero-badge" wx:for="{{summaryPreview.heroBadges}}" wx:key="label">
+              <view class="hero-badge-head">
+                <text class="hero-badge-label">{{item.label}}</text>
+                <view class="hero-badge-edit" wx:if="{{item.field}}" bindtap="openBasicInfoEditor" data-field="{{item.field}}" data-label="{{item.label}}" data-unit="{{item.unit}}">
+                  <image class="hero-badge-edit-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
               </view>
-              <view class="summary-unit">kg</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">身高</view>
-              <view class="summary-number height-number">
-                <input class="weight-input" type="digit" value="{{height}}" placeholder="请输入身高" bindinput="onHeightInput" bindblur="onHeightBlur" />
-              </view>
-              <view class="summary-unit">cm</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">总奶量</view>
-              <view class="summary-number">{{totalMilk || 0}}</view>
-              <view class="summary-unit">ml</view>
+              <text class="hero-badge-value">{{item.value}}{{item.unit}}</text>
             </view>
           </view>
         </view>
 
-        <view class="summary-section">
-          <view class="section-subtitle">热量统计</view>
-          <view class="summary-grid">
-            <view class="summary-item">
-              <view class="summary-label">总热量</view>
-              <view class="summary-number">{{dailyCaloriesTotal || 0}}</view>
-              <view class="summary-unit">kcal/d</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">普奶热量</view>
-              <view class="summary-number">{{intakeOverview.milk.normal.calories || 0}}</view>
-              <view class="summary-unit">kcal</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">特奶热量</view>
-              <view class="summary-number">{{intakeOverview.milk.special.calories || 0}}</view>
-              <view class="summary-unit">kcal</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">食物热量</view>
-              <view class="summary-number">{{intakeOverview.food.totalCalories || 0}}</view>
-              <view class="summary-unit">kcal</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">治疗热量</view>
-              <view class="summary-number">{{intakeOverview.treatment.totalCalories || 0}}</view>
-              <view class="summary-unit">kcal</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">热量系数</view>
-              <view class="summary-number">{{caloriePerKg !== '' ? caloriePerKg : '--'}}</view>
-              <view class="summary-unit">kcal/kg/d</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">目标热量系数</view>
-              <view class="summary-number">
-                {{calorieGoalPerKgRange.min}}~{{calorieGoalPerKgRange.max}}
+        <view class="metric-grid">
+          <view class="metric-item {{activeMetricInfoLabel === item.label ? 'metric-item-active' : ''}}" wx:for="{{summaryPreview.topMetrics}}" wx:key="label">
+            <view class="metric-label-row">
+              <text class="metric-label">{{item.label}}</text>
+              <view class="metric-info-anchor" wx:if="{{item.infoLines}}">
+                <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+                <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                  <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                  <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+                </view>
               </view>
-              <view class="summary-unit">kcal/kg/d</view>
-              <!-- <view class="summary-subtext" wx:if="{{goalKcalRange.min && goalKcalRange.max}}">
-                约 {{goalKcalRange.min}}~{{goalKcalRange.max}} kcal/d
-              </view> -->
-              <view class="summary-subtext" wx:if="{{calorieGoalPerKgRange.label}}">
-                {{calorieGoalPerKgRange.label}}
+            </view>
+            <view class="metric-value-row">
+              <text class="metric-value">{{item.value}}</text>
+              <text class="metric-unit">{{item.unit}}</text>
+            </view>
+            <text class="metric-detail" wx:if="{{item.detail}}">{{item.detail}}</text>
+          </view>
+        </view>
+
+        <view class="nutrition-strip">
+          <view class="nutrition-pill" wx:for="{{summaryPreview.nutritionStrip}}" wx:key="label">
+            <view class="nutrition-pill-copy">
+              <view class="nutrition-pill-label-row">
+                <text class="nutrition-pill-label">{{item.label}}系数</text>
+              </view>
+              <view class="nutrition-pill-metric">
+                <view class="nutrition-pill-detail-row" wx:if="{{item.detail}}">
+                  <text class="nutrition-pill-detail">{{item.detailValue || item.detail}}</text>
+                  <text class="nutrition-pill-detail-unit" wx:if="{{item.detailUnit}}">{{item.detailUnit}}</text>
+                </view>
+                <view class="nutrition-pill-value-row nutrition-pill-protein-row">
+                  <text class="nutrition-pill-protein-label">蛋白</text>
+                  <text class="nutrition-pill-value nutrition-pill-value-secondary nutrition-pill-protein-value">{{item.value}}</text>
+                  <text class="nutrition-pill-unit nutrition-pill-unit-secondary" wx:if="{{item.unit}}">{{item.unit}}</text>
+                  <text class="nutrition-pill-separator" wx:if="{{item.source}}">|</text>
+                  <text class="nutrition-pill-source nutrition-pill-source-inline" wx:if="{{item.source}}">{{item.source}}</text>
+                </view>
               </view>
             </view>
           </view>
         </view>
 
-        <view class="summary-section">
-          <view class="section-subtitle">蛋白统计</view>
-          <view class="summary-grid">
-            <view class="summary-item">
-              <view class="summary-label">总蛋白</view>
-              <view class="summary-number">
-                {{proteinSummaryDisplay.total}}
+        <view class="ratio-inline-list macro-strip">
+          <view class="ratio-inline-item {{activeMetricInfoLabel === item.label ? 'ratio-inline-item-active' : ''}}" wx:for="{{summaryPreview.macroRows}}" wx:key="label">
+            <view class="ratio-inline-label-row">
+              <text class="ratio-inline-label">{{item.label}}</text>
+              <view class="metric-info-anchor" wx:if="{{item.infoLines && item.infoLines.length}}">
+                <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+                <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                  <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                  <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+                </view>
               </view>
-              <view class="summary-unit">g</view>
             </view>
-            <view class="summary-item">
-              <view class="summary-label">天然蛋白</view>
-              <view class="summary-number">
-                {{proteinSummaryDisplay.natural}}
-              </view>
-              <view class="summary-unit">g</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">特殊蛋白</view>
-              <view class="summary-number">
-                {{proteinSummaryDisplay.special}}
-              </view>
-              <view class="summary-unit">g</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">天然蛋白系数</view>
-              <view class="summary-number">{{naturalProteinCoefficient || '--'}}</view>
-              <view class="summary-unit">g/kg/d</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">特殊蛋白系数</view>
-              <view class="summary-number">{{specialProteinCoefficient || '--'}}</view>
-              <view class="summary-unit">g/kg/d</view>
-            </view>
+            <text class="ratio-inline-value">{{item.value}}</text>
           </view>
         </view>
 
-        <view class="summary-section">
-          <view class="macro-ratio-header">
-            <view class="section-subtitle">供能占比</view>
-          </view>
-          <view class="summary-grid">
-            <view class="summary-item">
-              <view class="summary-label">蛋白</view>
-              <view class="summary-number">{{macroRatios.protein || 0}}%</view>
-              <view class="summary-subtext">参考 10%-15%</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label">碳水</view>
-              <view class="summary-number">{{macroRatios.carbs || 0}}%</view>
-              <view class="summary-subtext">参考 55%-60%</view>
-            </view>
-            <view class="summary-item">
-              <view class="summary-label-row">
-                <text class="summary-label">脂肪</text>
-                <text class="ratio-info-icon" bindtap="showFatRatioPopup">i</text>
-              </view>
-              <view class="summary-number">{{macroRatios.fat || 0}}%</view>
-              <view class="summary-subtext">参考 {{fatRatioRangeText || '--'}}</view>
+        <view class="overview-card">
+          <view class="overview-head">
+            <view>
+              <text class="overview-title">摄入概览</text>
             </view>
           </view>
-        </view>
-      </view>
-      <!-- 食物摄入卡片 -->
-      <view class="card intake-overview-card">
-        <view class="card-title">
-          <text>摄入概览</text>
-        </view>
-        <view class="records-summary">
-          <view class="summary-card milk-card">
-            <view class="card-header">
-              <text class="card-title">喂奶</text>
-              <text class="card-meta">热量 {{intakeOverview.milk.totalCalories || 0}} kcal</text>
+          <view class="overview-section" wx:for="{{summaryPreview.sourceSections}}" wx:key="label">
+            <view class="overview-section-head">
+              <text class="overview-section-label">{{item.label}}</text>
+              <text class="overview-section-meta" wx:if="{{item.meta}}">{{item.meta}}</text>
             </view>
-            <view class="card-body milk-body">
-              <view class="milk-column">
-                <text class="column-title">天然喂养</text>
-                <view class="stat-row">
-                  <text>体积</text>
-                  <text>{{intakeOverview.milk.normal.volume || 0}} ml</text>
-                </view>
-                <view class="stat-row">
-                  <text>蛋白</text>
-                  <text>{{intakeOverview.milk.normal.protein || 0}} g</text>
-                </view>
-                <view class="stat-row">
-                  <text>蛋白系数</text>
-                  <text>{{intakeOverview.milk.normal.coefficient !== '' ? intakeOverview.milk.normal.coefficient : '—'}} g/kg/d</text>
-                </view>
-                <view class="stat-row">
-                  <text>热量</text>
-                  <text>{{intakeOverview.milk.normal.calories || 0}} kcal</text>
-                </view>
-                <view class="stat-row">
-                  <text>碳水</text>
-                  <text>{{intakeOverview.milk.normal.carbs || 0}} g</text>
-                </view>
-                <view class="stat-row">
-                  <text>脂肪</text>
-                  <text>{{intakeOverview.milk.normal.fat || 0}} g</text>
-                </view>
-              </view>
-              <view class="milk-column">
-                <text class="column-title">特奶</text>
-                <view class="stat-row">
-                  <text>体积</text>
-                  <text>{{intakeOverview.milk.special.volume || 0}} ml</text>
-                </view>
-                <view class="stat-row">
-                  <text>蛋白</text>
-                  <text>{{intakeOverview.milk.special.protein || 0}} g</text>
-                </view>
-                <view class="stat-row">
-                  <text>蛋白系数</text>
-                  <text>{{intakeOverview.milk.special.coefficient !== '' ? intakeOverview.milk.special.coefficient : '—'}} g/kg/d</text>
-                </view>
-                <view class="stat-row">
-                  <text>热量</text>
-                  <text>{{intakeOverview.milk.special.calories || 0}} kcal</text>
-                </view>
-                <view class="stat-row">
-                  <text>碳水</text>
-                  <text>{{intakeOverview.milk.special.carbs || 0}} g</text>
-                </view>
-                <view class="stat-row">
-                  <text>脂肪</text>
-                  <text>{{intakeOverview.milk.special.fat || 0}} g</text>
+            <view class="overview-milk-grid" wx:if="{{item.type === 'milk'}}">
+              <view class="overview-milk-card" wx:for="{{item.columns}}" wx:key="label" wx:for-item="column">
+                <text class="overview-milk-card-title">{{column.label}}</text>
+                <view class="overview-stat-list">
+                  <view class="overview-stat-row" wx:for="{{column.stats}}" wx:key="label" wx:for-item="stat">
+                    <text class="overview-stat-label">{{stat.label}}</text>
+                    <text class="overview-stat-value">{{stat.value}}</text>
+                  </view>
                 </view>
               </view>
             </view>
-          </view>
-          <view class="summary-card food-card">
-            <view class="card-header">
-              <text class="card-title">食物</text>
-              <text class="card-meta">热量 {{intakeOverview.food.totalCalories || 0}} kcal</text>
-            </view>
-            <view class="card-body food-body">
-              <view class="body-summary">
-                <text>蛋白 {{intakeOverview.food.protein || 0}} g</text>
-                <text>碳水 {{intakeOverview.food.carbs || 0}} g · 脂肪 {{intakeOverview.food.fat || 0}} g</text>
-              </view>
-              <view class="empty-record" wx:if="{{intakeOverview.food.count === 0}}">
-                <text>暂无食物摄入记录</text>
-              </view>
-            </view>
-          </view>
-          <view class="summary-card food-card">
-            <view class="card-header">
-              <text class="card-title">治疗</text>
-              <text class="card-meta">热量 {{intakeOverview.treatment.totalCalories || 0}} kcal</text>
-            </view>
-            <view class="card-body food-body">
-              <view class="body-summary">
-                <text>记录 {{intakeOverview.treatment.count || 0}} 条</text>
-                <text>碳水 {{intakeOverview.treatment.carbs || 0}} g · 脂肪 {{intakeOverview.treatment.fat || 0}} g</text>
-              </view>
-              <view class="empty-record" wx:if="{{treatmentRecords.length === 0}}">
-                <text>暂无治疗记录</text>
+            <view class="overview-stat-compact-grid" wx:else>
+              <view class="overview-stat-compact-item" wx:for="{{item.stats}}" wx:key="label" wx:for-item="stat">
+                <text class="overview-stat-compact-label">{{stat.label}}</text>
+                <text class="overview-stat-compact-value">{{stat.value}}</text>
               </view>
             </view>
           </view>
@@ -529,6 +391,30 @@
       </view>
       <view class="calendar-footer" wx:if="{{!isSelectedToday}}">
         <view class="today-btn" bindtap="goToToday">返回今天</view>
+      </view>
+    </view>
+  </view>
+  <view class="basic-info-modal" wx:if="{{showBasicInfoModal}}" bindtap="closeBasicInfoModal">
+    <view class="basic-info-modal-content" catchtap="preventBubble">
+      <view class="basic-info-modal-header">
+        <text class="basic-info-modal-title">编辑{{editingLabel}}</text>
+      </view>
+      <view class="basic-info-modal-body">
+        <view class="basic-info-input-shell">
+          <input
+            class="basic-info-input"
+            type="digit"
+            value="{{editBasicInfoValue}}"
+            placeholder="请输入{{editingLabel}}"
+            bindinput="onBasicInfoModalInput"
+            focus
+          />
+          <text class="basic-info-input-unit">{{editingUnit}}</text>
+        </view>
+      </view>
+      <view class="basic-info-modal-footer">
+        <view class="basic-info-modal-btn secondary" bindtap="closeBasicInfoModal">取消</view>
+        <view class="basic-info-modal-btn primary" bindtap="confirmBasicInfoEdit">确认</view>
       </view>
     </view>
   </view>

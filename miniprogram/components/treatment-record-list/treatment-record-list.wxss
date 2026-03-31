@@ -92,11 +92,19 @@
   font-weight: 600;
 }
 
+.treatment-calorie {
+  font-size: 22rpx;
+  color: #8A4B00;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 184, 0, 0.12);
+}
+
 .treatment-group-list {
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  margin-bottom: 2rpx;
+  margin-top: 2rpx;
 }
 
 .treatment-group-line {
@@ -112,23 +120,6 @@
 .treatment-group-more {
   font-size: 22rpx;
   color: #888888;
-}
-
-.treatment-metric-row {
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: 8rpx;
-  gap: 12rpx;
-  font-size: 24rpx;
-  color: #555555;
-}
-
-.treatment-metric {
-  color: #555555;
-}
-
-.treatment-metric-divider {
-  color: #DDDDDD;
 }
 
 .treatment-note-row {

@@ -16,19 +16,14 @@
 
         <view class="treatment-count-row">
           <text class="treatment-count">{{record.groupCount || 0}}组</text>
+          <text class="treatment-calorie">热量 {{record.summary.totalCalories || 0}} kcal</text>
+          <text class="treatment-calorie">碳水 {{record.summary.carbs || 0}} g</text>
         </view>
 
         <view class="treatment-group-list">
           <view class="treatment-group-line" wx:for="{{record.groupPreviewLines}}" wx:key="*this">
             <text class="treatment-group-text">{{item}}</text>
           </view>
-          <text class="treatment-group-more" wx:if="{{record.overflowGroupCount > 0}}">另 {{record.overflowGroupCount}} 组</text>
-        </view>
-
-        <view class="treatment-metric-row">
-          <text class="treatment-metric">热量 {{record.summary.totalCalories || 0}} kcal</text>
-          <text class="treatment-metric-divider">|</text>
-          <text class="treatment-metric">碳水 {{record.summary.carbs || 0}} g</text>
         </view>
 
         <view class="treatment-note-row" wx:if="{{record.notePreview}}">

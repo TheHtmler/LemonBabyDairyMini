@@ -111,33 +111,19 @@
         <text class="value">{{macroSummary.specialCoefficient !== '' ? macroSummary.specialCoefficient : '—'}} g/kg/d</text>
       </view>
     </view>
-    <view class="macro-ratio">
-      <view class="macro-ratio-header">
-        <view class="macro-ratio-title">供能占比</view>
-      </view>
-      <view class="macro-ratio-row">
-        <view class="macro-ratio-row-main">
-          <text class="macro-ratio-label">蛋白</text>
-          <text class="macro-ratio-value">{{macroRatios.protein || 0}}%</text>
-        </view>
-        <text class="macro-ratio-row-hint">参考 10%-15%</text>
-      </view>
-      <view class="macro-ratio-row">
-        <view class="macro-ratio-row-main">
-          <text class="macro-ratio-label">碳水</text>
-          <text class="macro-ratio-value">{{macroRatios.carbs || 0}}%</text>
-        </view>
-        <text class="macro-ratio-row-hint">参考 55%-60%</text>
-      </view>
-      <view class="macro-ratio-row">
-        <view class="macro-ratio-row-main">
-          <view class="macro-ratio-label-group">
-            <text class="macro-ratio-label">脂肪</text>
-            <text class="ratio-info-icon" bindtap="showFatRatioPopup">i</text>
+    <view class="ratio-inline-list macro-strip">
+      <view class="ratio-inline-item {{activeMetricInfoLabel === item.label ? 'ratio-inline-item-active' : ''}}" wx:for="{{summaryMacroRows}}" wx:key="label">
+        <view class="ratio-inline-label-row">
+          <text class="ratio-inline-label">{{item.label}}</text>
+          <view class="metric-info-anchor" wx:if="{{item.infoLines && item.infoLines.length}}">
+            <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+            <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+              <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+              <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+            </view>
           </view>
-          <text class="macro-ratio-value">{{macroRatios.fat || 0}}%</text>
         </view>
-        <text class="macro-ratio-row-hint">参考 {{fatRatioRangeText || '--'}}</text>
+        <text class="ratio-inline-value">{{item.value}}</text>
       </view>
     </view>
   </view>
@@ -390,6 +376,7 @@
     lines="{{fatRatioPopupLines}}"
     bind:close="hideFatRatioPopup"
   />
+  <view class="metric-info-overlay" wx:if="{{activeMetricInfoLabel}}" bindtap="hideMetricInfo"></view>
 
   <medication-modal
     visible="{{modals.medication}}"

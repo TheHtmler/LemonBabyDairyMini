@@ -23,6 +23,9 @@ const {
   mergeTreatmentIntoOverview,
   formatTreatmentRecordsForDisplay
 } = require('../../utils/treatmentUtils');
+const {
+  buildDataRecordsSummaryPreview
+} = require('../../utils/dataRecordsSummaryPreview');
 // 通用工具
 const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
 
@@ -59,6 +62,15 @@ function roundCalories(value) {
   const num = Number(value);
   if (isNaN(num)) return 0;
   return Math.round(num);
+}
+
+function pickFirstFilled(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== '') {
+      return value;
+    }
+  }
+  return '';
 }
 
 function calculateFormulaPowder(naturalMilkVolume, calculation_params = {}) {
@@ -939,6 +951,8 @@ Page({
     // 生长数据
     weight: '--',
     height: '--',
+    weightSource: 'empty',
+    heightSource: 'empty',
     naturalProteinCoefficientInput: '',
     specialProteinCoefficientInput: '',
     // 蛋白质系数
@@ -1037,6 +1051,15 @@ Page({
       '>6岁: 25%-30%'
     ],
     activeTab: 'feeding',
+    summaryPreview: buildDataRecordsSummaryPreview({}),
+    activeMetricInfoLabel: '',
+    activeMetricInfoTitle: '',
+    activeMetricInfoLines: [],
+    showBasicInfoModal: false,
+    editingField: '',
+    editingLabel: '',
+    editingUnit: '',
+    editBasicInfoValue: ''
   },
 
   // 显示食物摄入弹窗
@@ -1864,9 +1887,7 @@ Page({
             medicationRecords: [],
             summary: updatedSummary,
             babyUid: babyUid,
-            basicInfo: {
-              weight: this.data.weight || ''
-            },
+            basicInfo: this.buildPersistedBasicInfoForDate({}, this.data.selectedDate),
             createdAt: db.serverDate(),
             updatedAt: db.serverDate()
           }
@@ -2604,6 +2625,7 @@ Page({
           recordTime: _.gte(startOfDay).and(_.lte(endOfDay))
         }).orderBy('recordTime', 'desc').get()
       ]);
+      const historicalBasicInfoSnapshot = await this.loadHistoricalBasicInfoSnapshot(dateStr, babyUid);
       const treatmentRecordsToSet = formatTreatmentRecords((treatmentResult.success ? treatmentResult.data : []) || []);
       let effectiveFeedingResult = feedingResult;
       if (!feedingResult.data || feedingResult.data.length === 0) {
@@ -2616,29 +2638,16 @@ Page({
         const feedings = record.feedings || [];
         const intakes = normalizeIntakes(record.intakes || []);
         const foodIntakes = intakes.filter(item => item.type !== 'milk');
-        let recordWeight = '';
-        let recordHeight = '';
-        // 设置体重数据，兼容新旧数据结构
-        
-        // 新数据结构
-        if (record.basicInfo && record.basicInfo.weight !== undefined) {
-          recordWeight = record.basicInfo.weight;
-        } else if (record.weight !== undefined) {
-          recordWeight = record.weight;
-        }
-
-        if (record.basicInfo && record.basicInfo.height !== undefined) {
-          recordHeight = record.basicInfo.height;
-        } else if (record.height !== undefined) {
-          recordHeight = record.height;
-        }
+        const basicInfoSnapshot = this.resolveBasicInfoSnapshot(record, dateStr, historicalBasicInfoSnapshot);
+        const recordWeight = basicInfoSnapshot.weight;
+        const recordHeight = basicInfoSnapshot.height;
 
         const macroSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
         const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
         const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
 
-        const weightForCalorie = recordWeight || (this.data.babyInfo ? this.data.babyInfo.weight : '');
-        const heightForDisplay = recordHeight || (this.data.babyInfo ? this.data.babyInfo.height : '');
+        const weightForCalorie = recordWeight;
+        const heightForDisplay = recordHeight;
         const calorieMetrics = this.computeCalorieMetrics({
           totalCalories: macroSummary.calories,
           weight: weightForCalorie,
@@ -2666,6 +2675,8 @@ Page({
           bowelRecords: bowelRecordsToSet,
           weight: weightForCalorie || '--',
           height: heightForDisplay || '--',
+          weightSource: basicInfoSnapshot.weightSource,
+          heightSource: basicInfoSnapshot.heightSource,
           naturalProteinCoefficientInput: record.basicInfo?.naturalProteinCoefficient || '',
           specialProteinCoefficientInput: record.basicInfo?.specialProteinCoefficient || '',
           intakeOverview,
@@ -2674,6 +2685,21 @@ Page({
           caloriePerKg: calorieMetrics.caloriePerKg,
           goalKcalRange: calorieMetrics.goalKcalRange,
           calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+          summaryPreview: this.buildSummaryPreviewData({
+            formattedSelectedDate: this.formatDisplayDate(dateStr),
+            feedings,
+            intakeOverview,
+            proteinSummaryDisplay,
+            weight: weightForCalorie || '--',
+            height: heightForDisplay || '--',
+            totalMilk: (intakeOverview?.milk?.normal?.volume || 0) + (intakeOverview?.milk?.special?.volume || 0),
+            dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+            caloriePerKg: calorieMetrics.caloriePerKg,
+            calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+            macroRatios: this.computeMacroRatios(macroSummary),
+            naturalProteinCoefficient: record.basicInfo?.naturalProteinCoefficient || '',
+            specialProteinCoefficient: record.basicInfo?.specialProteinCoefficient || ''
+          }),
           hasRecord: true,
           isDataLoading: false // 设置数据加载完成
         });
@@ -2686,11 +2712,12 @@ Page({
         // 没有喂养记录，但可能有药物记录和排便记录
         const medicationRecordsToSet = (medicationResult.success ? medicationResult.data : []) || [];
         const bowelRecordsToSet = bowelResult.data || [];
-        const defaultWeight = this.data.babyInfo ? this.data.babyInfo.weight : '--';
-        const defaultHeight = this.data.babyInfo ? this.data.babyInfo.height : '--';
+        const basicInfoSnapshot = this.resolveBasicInfoSnapshot({}, dateStr, historicalBasicInfoSnapshot);
+        const defaultWeight = basicInfoSnapshot.weight || '--';
+        const defaultHeight = basicInfoSnapshot.height || '--';
         const calorieMetrics = this.computeCalorieMetrics({
           totalCalories: treatmentRecordsToSet.reduce((sum, record) => sum + (Number(record.summary?.totalCalories) || 0), 0),
-          weight: defaultWeight,
+          weight: basicInfoSnapshot.weight,
           dateStr: dateStr
         });
         const intakeOverview = mergeTreatmentIntoOverview(createEmptyIntakeOverview(), treatmentRecordsToSet);
@@ -2719,6 +2746,8 @@ Page({
           bowelRecords: bowelRecordsToSet,
           weight: defaultWeight,
           height: defaultHeight,
+          weightSource: basicInfoSnapshot.weightSource,
+          heightSource: basicInfoSnapshot.heightSource,
           hasRecord: medicationRecordsToSet.length > 0 || treatmentRecordsToSet.length > 0 || bowelRecordsToSet.length > 0, // 如果有药物/治疗/排便记录，也算有记录
           feedingRecords: [],
           totalNaturalMilk: 0,
@@ -2737,6 +2766,21 @@ Page({
           specialProteinCoefficientInput: '',
           intakeOverview,
           proteinSummaryDisplay,
+          summaryPreview: this.buildSummaryPreviewData({
+            formattedSelectedDate: this.formatDisplayDate(dateStr),
+            feedings: [],
+            intakeOverview,
+            proteinSummaryDisplay,
+            weight: defaultWeight,
+            height: defaultHeight,
+            totalMilk: 0,
+            dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+            caloriePerKg: calorieMetrics.caloriePerKg,
+            calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+            macroRatios: this.computeMacroRatios(macroSummary),
+            naturalProteinCoefficient: '',
+            specialProteinCoefficient: ''
+          }),
           isDataLoading: false // 设置数据加载完成
         });
         
@@ -2832,7 +2876,17 @@ Page({
         naturalProteinCoefficient: 0,
         specialProteinCoefficient: 0,
         intakeOverview,
-        proteinSummaryDisplay: this.computeProteinSummaryDisplay(intakeOverview)
+        proteinSummaryDisplay: this.computeProteinSummaryDisplay(intakeOverview),
+        summaryPreview: this.buildSummaryPreviewData({
+          feedings: [],
+          intakeOverview,
+          proteinSummaryDisplay: this.computeProteinSummaryDisplay(intakeOverview),
+          totalMilk: 0,
+          dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+          caloriePerKg: calorieMetrics.caloriePerKg,
+          calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+          macroRatios: this.computeMacroRatios(this.data.macroSummary)
+        })
       });
       return;
     }
@@ -2904,15 +2958,15 @@ Page({
     });
 
     const intakeOverview = calculateIntakeOverview(processedRecords, intakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
+    const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
     this.setData({
       noFeeding: false,
       feedingRecords: processedRecords,
       intakeOverview,
-      proteinSummaryDisplay: this.computeProteinSummaryDisplay(intakeOverview)
+      proteinSummaryDisplay
+    }, () => {
+      this.calculateTotalMilk(processedRecords);
     });
-
-    // 计算总量
-    this.calculateTotalMilk(processedRecords);
   },
 
   buildFeedingDisplay(record) {
@@ -3019,7 +3073,15 @@ Page({
       goalKcalRange: calorieMetrics.goalKcalRange,
       calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
       caloriePerKg: calorieMetrics.caloriePerKg,
-      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal
+      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+      summaryPreview: this.buildSummaryPreviewData({
+        totalMilk: Math.round(totalMilk),
+        dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+        caloriePerKg: calorieMetrics.caloriePerKg,
+        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+        naturalProteinCoefficient,
+        specialProteinCoefficient
+      })
     });
 
     this.refreshMacroSummary();
@@ -3038,7 +3100,13 @@ Page({
       goalKcalRange: calorieMetrics.goalKcalRange,
       calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
       caloriePerKg: calorieMetrics.caloriePerKg,
-      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal
+      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+      summaryPreview: this.buildSummaryPreviewData({
+        dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+        caloriePerKg: calorieMetrics.caloriePerKg,
+        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+        macroRatios: this.computeMacroRatios(summary)
+      })
     });
   },
 
@@ -3460,9 +3528,7 @@ Page({
         });
       } else {
         // 创建新记录，使用新的数据结构
-        const basicInfo = {
-          weight: this.data.weight || '' // 添加体重记录到basicInfo
-        };
+        const basicInfo = this.buildPersistedBasicInfoForDate({}, this.data.selectedDate);
         
         await db.collection('feeding_records').add({
           data: {
@@ -3870,11 +3936,22 @@ Page({
           fatRatioRangeText: this.getFatRatioRangeText(this.data.selectedDate, res.data[0].birthday)
         });
         
-        // 如果当前没有体重记录，则使用宝宝信息中的体重作为默认值
-        if (this.data.weight === '--' || this.data.weight === '') {
-          this.setData({
-            weight: res.data[0].weight || '--'
-          });
+        if (this.isTodayDate(this.data.selectedDate)) {
+          const fallbackUpdates = {};
+          if ((this.data.weight === '--' || this.data.weight === '') && this.data.weightSource !== 'record') {
+            fallbackUpdates.weight = res.data[0].weight || '--';
+            fallbackUpdates.weightSource = res.data[0].weight ? 'global' : 'empty';
+          }
+          if ((this.data.height === '--' || this.data.height === '') && this.data.heightSource !== 'record') {
+            fallbackUpdates.height = res.data[0].height || '--';
+            fallbackUpdates.heightSource = res.data[0].height ? 'global' : 'empty';
+          }
+          if (Object.keys(fallbackUpdates).length > 0) {
+            this.setData({
+              ...fallbackUpdates,
+              summaryPreview: this.buildSummaryPreviewData(fallbackUpdates)
+            });
+          }
         }
 
         // 更新热量相关区间，确保年龄段范围使用最新生日信息
@@ -5015,6 +5092,235 @@ Page({
     return { min: 72, max: 109, label: '默认参考' };
   },
 
+  isTodayDate(dateStr = this.data.selectedDate) {
+    return !!dateStr && dateStr === this.formatDate(new Date());
+  },
+
+  pickHistoricalBasicInfoSnapshot(feedingSnapshot = {}, growthSnapshot = {}) {
+    const pickField = (feedingCandidate, growthCandidate, fallbackField) => {
+      if (!feedingCandidate && !growthCandidate) {
+        return { value: '', source: 'empty', timestamp: 0 };
+      }
+      if (!feedingCandidate) {
+        return growthCandidate;
+      }
+      if (!growthCandidate) {
+        return feedingCandidate;
+      }
+      if ((growthCandidate.timestamp || 0) >= (feedingCandidate.timestamp || 0)) {
+        return growthCandidate;
+      }
+      return feedingCandidate;
+    };
+
+    const weightCandidate = pickField(
+      feedingSnapshot.weight ? {
+        value: feedingSnapshot.weight,
+        source: feedingSnapshot.weightSource || 'history-feeding',
+        timestamp: feedingSnapshot.weightTimestamp || 0
+      } : null,
+      growthSnapshot.weight ? {
+        value: growthSnapshot.weight,
+        source: growthSnapshot.weightSource || 'history-growth',
+        timestamp: growthSnapshot.weightTimestamp || 0
+      } : null
+    );
+
+    const heightCandidate = pickField(
+      feedingSnapshot.height ? {
+        value: feedingSnapshot.height,
+        source: feedingSnapshot.heightSource || 'history-feeding',
+        timestamp: feedingSnapshot.heightTimestamp || 0
+      } : null,
+      growthSnapshot.height ? {
+        value: growthSnapshot.height,
+        source: growthSnapshot.heightSource || 'history-growth',
+        timestamp: growthSnapshot.heightTimestamp || 0
+      } : null
+    );
+
+    return {
+      weight: weightCandidate.value,
+      height: heightCandidate.value,
+      weightSource: weightCandidate.source,
+      heightSource: heightCandidate.source,
+      weightTimestamp: weightCandidate.timestamp,
+      heightTimestamp: heightCandidate.timestamp
+    };
+  },
+
+  async loadHistoricalBasicInfoSnapshot(dateStr = this.data.selectedDate, babyUid) {
+    if (!babyUid || !dateStr) {
+      return this.pickHistoricalBasicInfoSnapshot();
+    }
+
+    const db = wx.cloud.database();
+    const _ = db.command;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
+    const pageSize = 100;
+
+    const feedingSnapshot = {};
+    let feedingSkip = 0;
+    let moreFeedings = true;
+    while (moreFeedings && (!feedingSnapshot.weight || !feedingSnapshot.height)) {
+      const res = await db.collection('feeding_records')
+        .where({
+          babyUid,
+          date: _.lte(endOfDay)
+        })
+        .orderBy('date', 'desc')
+        .skip(feedingSkip)
+        .limit(pageSize)
+        .get();
+
+      const batch = (res.data || []).sort((a, b) => {
+        const dateDiff = getDateTimestamp(b?.date) - getDateTimestamp(a?.date);
+        if (dateDiff !== 0) return dateDiff;
+        return getDateTimestamp(b?.updatedAt) - getDateTimestamp(a?.updatedAt);
+      });
+
+      batch.forEach((record) => {
+        const basicInfo = record?.basicInfo || {};
+        if (!feedingSnapshot.weight && basicInfo.weight !== '' && basicInfo.weight !== null && basicInfo.weight !== undefined) {
+          feedingSnapshot.weight = basicInfo.weight;
+          feedingSnapshot.weightSource = 'history-feeding';
+          feedingSnapshot.weightTimestamp = getDateTimestamp(record?.date);
+        }
+        if (!feedingSnapshot.height && basicInfo.height !== '' && basicInfo.height !== null && basicInfo.height !== undefined) {
+          feedingSnapshot.height = basicInfo.height;
+          feedingSnapshot.heightSource = 'history-feeding';
+          feedingSnapshot.heightTimestamp = getDateTimestamp(record?.date);
+        }
+      });
+
+      moreFeedings = batch.length === pageSize;
+      feedingSkip += pageSize;
+    }
+
+    const growthSnapshot = {};
+    let growthSkip = 0;
+    let moreGrowth = true;
+    while (moreGrowth && (!growthSnapshot.weight || !growthSnapshot.height)) {
+      const res = await db.collection('growth_records')
+        .where({
+          babyUid,
+          recordDate: _.lte(endOfDay)
+        })
+        .orderBy('recordDate', 'desc')
+        .skip(growthSkip)
+        .limit(pageSize)
+        .get();
+
+      const batch = (res.data || []).sort((a, b) => {
+        const dateDiff = getDateTimestamp(b?.recordDate) - getDateTimestamp(a?.recordDate);
+        if (dateDiff !== 0) return dateDiff;
+        return getDateTimestamp(b?.updatedAt) - getDateTimestamp(a?.updatedAt);
+      });
+
+      batch.forEach((record) => {
+        if (!growthSnapshot.weight && record?.weight !== '' && record?.weight !== null && record?.weight !== undefined) {
+          growthSnapshot.weight = record.weight;
+          growthSnapshot.weightSource = 'history-growth';
+          growthSnapshot.weightTimestamp = getDateTimestamp(record?.recordDate);
+        }
+        if (!growthSnapshot.height && record?.length !== '' && record?.length !== null && record?.length !== undefined) {
+          growthSnapshot.height = record.length;
+          growthSnapshot.heightSource = 'history-growth';
+          growthSnapshot.heightTimestamp = getDateTimestamp(record?.recordDate);
+        }
+      });
+
+      moreGrowth = batch.length === pageSize;
+      growthSkip += pageSize;
+    }
+
+    return this.pickHistoricalBasicInfoSnapshot(feedingSnapshot, growthSnapshot);
+  },
+
+  resolveBasicInfoSnapshot(record = {}, dateStr = this.data.selectedDate, historicalSnapshot = {}) {
+    const basicInfo = record?.basicInfo || {};
+    const recordWeight = basicInfo.weight !== undefined ? basicInfo.weight : record?.weight;
+    const recordHeight = basicInfo.height !== undefined ? basicInfo.height : record?.height;
+    const globalWeight = this.data.babyInfo?.weight ?? '';
+    const globalHeight = this.data.babyInfo?.height ?? '';
+    const allowGlobalFallback = this.isTodayDate(dateStr);
+
+    const hasRecordWeight = recordWeight !== undefined && recordWeight !== null && recordWeight !== '';
+    const hasRecordHeight = recordHeight !== undefined && recordHeight !== null && recordHeight !== '';
+    const hasGlobalWeight = globalWeight !== undefined && globalWeight !== null && globalWeight !== '';
+    const hasGlobalHeight = globalHeight !== undefined && globalHeight !== null && globalHeight !== '';
+
+    return {
+      weight: hasRecordWeight ? recordWeight : (historicalSnapshot.weight !== '' && historicalSnapshot.weight !== undefined && historicalSnapshot.weight !== null
+        ? historicalSnapshot.weight
+        : (allowGlobalFallback && hasGlobalWeight ? globalWeight : '')),
+      height: hasRecordHeight ? recordHeight : (historicalSnapshot.height !== '' && historicalSnapshot.height !== undefined && historicalSnapshot.height !== null
+        ? historicalSnapshot.height
+        : (allowGlobalFallback && hasGlobalHeight ? globalHeight : '')),
+      weightSource: hasRecordWeight ? 'record' : (historicalSnapshot.weightSource || (allowGlobalFallback && hasGlobalWeight ? 'global' : 'empty')),
+      heightSource: hasRecordHeight ? 'record' : (historicalSnapshot.heightSource || (allowGlobalFallback && hasGlobalHeight ? 'global' : 'empty'))
+    };
+  },
+
+  buildPersistedBasicInfoForDate(updates = {}, dateStr = this.data.selectedDate) {
+    const weightValue = Object.prototype.hasOwnProperty.call(updates, 'weight')
+      ? updates.weight
+      : (this.data.weightSource === 'record' && this.isNumberValue(this.data.weight) ? Number(this.data.weight) : '');
+    const heightValue = Object.prototype.hasOwnProperty.call(updates, 'height')
+      ? updates.height
+      : (this.data.heightSource === 'record' && this.isNumberValue(this.data.height) ? Number(this.data.height) : '');
+
+    return {
+      weight: weightValue,
+      height: heightValue,
+      naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
+      specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
+      ...updates
+    };
+  },
+
+  inferNaturalMilkType(feedings = this.data.feedings || []) {
+    if (!Array.isArray(feedings) || feedings.length === 0) {
+      return 'formula';
+    }
+    return feedings.some(item => item?.naturalMilkType === 'breast') ? 'breast' : 'formula';
+  },
+
+  buildSummaryPreviewData(overrides = {}) {
+    const snapshot = {
+      formattedSelectedDate: overrides.formattedSelectedDate ?? this.data.formattedSelectedDate,
+      weight: overrides.weight ?? this.data.weight,
+      height: overrides.height ?? this.data.height,
+      totalMilk: overrides.totalMilk ?? this.data.totalMilk,
+      dailyCaloriesTotal: overrides.dailyCaloriesTotal ?? this.data.dailyCaloriesTotal,
+      caloriePerKg: overrides.caloriePerKg ?? this.data.caloriePerKg,
+      proteinSummaryDisplay: overrides.proteinSummaryDisplay ?? this.data.proteinSummaryDisplay,
+      naturalProteinCoefficient: pickFirstFilled(
+        overrides.naturalProteinCoefficient,
+        this.data.naturalProteinCoefficientInput,
+        this.data.naturalProteinCoefficient
+      ),
+      specialProteinCoefficient: pickFirstFilled(
+        overrides.specialProteinCoefficient,
+        this.data.specialProteinCoefficientInput,
+        this.data.specialProteinCoefficient
+      ),
+      calorieGoalPerKgRange: overrides.calorieGoalPerKgRange ?? this.data.calorieGoalPerKgRange,
+      macroRatios: overrides.macroRatios ?? this.data.macroRatios,
+      fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines,
+      intakeOverview: overrides.intakeOverview ?? this.data.intakeOverview,
+      naturalMilkType: overrides.naturalMilkType ?? this.inferNaturalMilkType(overrides.feedings ?? this.data.feedings)
+    };
+    return buildDataRecordsSummaryPreview(snapshot);
+  },
+
+  updateSummaryPreview(overrides = {}) {
+    this.setData({
+      summaryPreview: this.buildSummaryPreviewData(overrides)
+    });
+  },
+
   computeProteinSummaryDisplay(intakeOverview = this.data.intakeOverview) {
     const natural = ((intakeOverview?.milk?.normal?.protein || 0) + (intakeOverview?.food?.naturalProtein || 0)).toFixed(2);
     const special = ((intakeOverview?.milk?.special?.protein || 0) + (intakeOverview?.food?.specialProtein || 0)).toFixed(2);
@@ -5061,6 +5367,132 @@ Page({
 
   hideFatRatioPopup() {
     this.setData({ showFatRatioPopup: false });
+  },
+
+  toggleMetricInfo(e) {
+    const { label = '', title = '', lines = [] } = e.currentTarget.dataset || {};
+    if (!label || !lines.length) return;
+    if (this.data.activeMetricInfoLabel === label) {
+      this.setData({
+        activeMetricInfoLabel: '',
+        activeMetricInfoTitle: '',
+        activeMetricInfoLines: []
+      });
+      return;
+    }
+    this.setData({
+      activeMetricInfoLabel: label,
+      activeMetricInfoTitle: title,
+      activeMetricInfoLines: lines
+    });
+  },
+
+  hideMetricInfo() {
+    this.setData({
+      activeMetricInfoLabel: '',
+      activeMetricInfoTitle: '',
+      activeMetricInfoLines: []
+    });
+  },
+
+  stopBubble() {},
+
+  openBasicInfoEditor(e) {
+    const { field = '', label = '', unit = '' } = e.currentTarget.dataset || {};
+    if (!field) return;
+    const currentValue = this.data[field];
+    this.setData({
+      showBasicInfoModal: true,
+      editingField: field,
+      editingLabel: label,
+      editingUnit: unit,
+      editBasicInfoValue: currentValue === '--' ? '' : String(currentValue || '')
+    });
+  },
+
+  closeBasicInfoModal() {
+    this.setData({
+      showBasicInfoModal: false,
+      editingField: '',
+      editingLabel: '',
+      editingUnit: '',
+      editBasicInfoValue: ''
+    });
+  },
+
+  onBasicInfoModalInput(e) {
+    this.setData({
+      editBasicInfoValue: e.detail.value || ''
+    });
+  },
+
+  async confirmBasicInfoEdit() {
+    const { editingField, editingLabel, editBasicInfoValue, selectedDate } = this.data;
+    const rawValue = String(editBasicInfoValue || '').trim();
+    if (!editingField) return;
+    if (!rawValue) {
+      wx.showToast({ title: `请输入有效${editingLabel}`, icon: 'none' });
+      return;
+    }
+    const parsed = parseFloat(rawValue);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      wx.showToast({ title: `请输入有效${editingLabel}`, icon: 'none' });
+      return;
+    }
+
+    const nextValue = roundNumber(parsed, 2);
+    const nextState = {
+      [editingField]: nextValue,
+      ...(editingField === 'weight' ? { weightSource: 'record' } : { heightSource: 'record' })
+    };
+
+    if (editingField === 'weight') {
+      const nextOverview = calculateIntakeOverview(
+        this.data.feedings || [],
+        this.data.intakes || [],
+        nextValue,
+        this.data.nutritionSettings || {},
+        this.data.treatmentRecords || []
+      );
+      const nextProteinSummary = this.computeProteinSummaryDisplay(nextOverview);
+      const calorieMetrics = this.computeCalorieMetrics({
+        totalCalories: this.data.macroSummary?.calories || 0,
+        weight: nextValue,
+        dateStr: selectedDate
+      });
+      Object.assign(nextState, {
+        intakeOverview: nextOverview,
+        proteinSummaryDisplay: nextProteinSummary,
+        caloriePerKg: calorieMetrics.caloriePerKg,
+        dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+        goalKcalRange: calorieMetrics.goalKcalRange,
+        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange
+      });
+    }
+
+    this.setData({
+      ...nextState,
+      showBasicInfoModal: false,
+      editingField: '',
+      editingLabel: '',
+      editingUnit: '',
+      editBasicInfoValue: '',
+      summaryPreview: this.buildSummaryPreviewData(nextState)
+    });
+
+    if (editingField === 'weight') {
+      this.calculateTotalMilk(this.data.feedingRecords || []);
+    } else {
+      this.updateSummaryPreview({ height: nextValue });
+    }
+
+    try {
+      await this.saveBasicInfoFields({ [editingField]: nextValue });
+      wx.showToast({ title: `${editingLabel}已保存`, icon: 'success' });
+    } catch (err) {
+      console.error(`保存${editingLabel}失败`, err);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
   },
 
   async handleCoefficientBlur(type, rawValue) {
@@ -5127,12 +5559,7 @@ Page({
       return;
     }
 
-    const basicInfo = {
-      weight: this.isNumberValue(this.data.weight) ? Number(this.data.weight) : '',
-      naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
-      specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
-      ...updates
-    };
+    const basicInfo = this.buildPersistedBasicInfoForDate(updates, selectedDate);
 
     const addRes = await db.collection('feeding_records').add({
       data: {

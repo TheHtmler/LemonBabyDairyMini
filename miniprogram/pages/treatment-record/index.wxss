@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 16rpx 16rpx 124rpx;
+  padding: 16rpx 16rpx calc(180rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   background: linear-gradient(180deg, #FFF8E8 0%, #FFFDF7 100%);
 }
@@ -32,7 +32,6 @@
 .hero-subtitle,
 .section-tip,
 .field-label,
-.group-summary,
 .text-btn,
 .summary-chip-label {
   color: #7C6B45;
@@ -146,13 +145,6 @@
   font-size: 24rpx;
   color: #3A2D08;
   font-weight: 700;
-}
-
-.group-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10rpx;
-  margin: 10rpx 0 10rpx;
 }
 
 .empty-group {
@@ -369,10 +361,15 @@
 
 .footer-actions {
   position: fixed;
-  left: 16rpx;
-  right: 16rpx;
-  bottom: 16rpx;
+  left: 0;
+  right: 0;
+  bottom: 0;
   gap: 12rpx;
+  padding: 16rpx 16rpx calc(16rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: rgba(255, 246, 216, 0.98);
+  box-shadow: 0 -8rpx 20rpx rgba(255, 184, 0, 0.08);
+  z-index: 30;
 }
 
 .primary-action,

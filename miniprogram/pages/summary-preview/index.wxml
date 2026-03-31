@@ -1,0 +1,321 @@
+<view class="page">
+  <view class="metric-info-overlay" wx:if="{{activeMetricInfoLabel}}" bindtap="hideMetricInfo"></view>
+
+  <view class="date-selector">
+    <view class="date-scroll-container">
+      <scroll-view
+        scroll-x="true"
+        scroll-into-view="{{currentDateId}}"
+        scroll-with-animation="true"
+        class="date-list"
+        show-scrollbar="false"
+      >
+        <view class="date-items-container">
+          <view
+            id="date-{{index}}"
+            class="date-item {{selectedDateIndex === index ? 'selected' : ''}} {{index === 0 ? 'today' : ''}}"
+            wx:for="{{dateList}}"
+            wx:key="date"
+            data-date="{{item.date}}"
+            bindtap="onDateItemClick"
+          >
+            <text class="weekday">{{item.weekday}}</text>
+            <text class="day">{{item.day}}</text>
+            <text class="month">{{item.month}}月</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="date-more-indicator" bindtap="showCalendar">
+        <view class="date-more-text">
+          <text>更</text>
+          <text>多</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="records-wrapper">
+    <view class="summary-card">
+      <view class="summary-header">
+        <view>
+          <text class="summary-title">当日汇总数据</text>
+          <text class="summary-date">{{preview.displayDate}}</text>
+        </view>
+        <view class="hero-badges">
+          <view class="hero-badge" wx:for="{{preview.heroBadges}}" wx:key="label">
+            <view class="hero-badge-head">
+              <text class="hero-badge-label">{{item.label}}</text>
+              <view
+                class="hero-badge-edit"
+                wx:if="{{item.field}}"
+                bindtap="openBasicInfoEditor"
+                data-field="{{item.field}}"
+                data-label="{{item.label}}"
+                data-unit="{{item.unit}}"
+              >
+                <image class="hero-badge-edit-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+              </view>
+            </view>
+            <text class="hero-badge-value">{{item.value}}{{item.unit}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="metric-grid">
+        <view class="metric-item {{activeMetricInfoLabel === item.label ? 'metric-item-active' : ''}}" wx:for="{{preview.topMetrics}}" wx:key="label">
+          <view class="metric-label-row">
+            <text class="metric-label">{{item.label}}</text>
+            <view class="metric-info-anchor" wx:if="{{item.infoLines}}">
+              <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+              <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="metric-value-row">
+            <text class="metric-value">{{item.value}}</text>
+            <text class="metric-unit">{{item.unit}}</text>
+          </view>
+          <text class="metric-detail" wx:if="{{item.detail}}">{{item.detail}}</text>
+        </view>
+      </view>
+
+      <view class="nutrition-strip">
+          <view class="nutrition-pill" wx:for="{{preview.nutritionStrip}}" wx:key="label">
+          <view class="nutrition-pill-copy">
+            <view class="nutrition-pill-label-row">
+              <text class="nutrition-pill-label">{{item.label}}系数</text>
+              <view class="metric-info-anchor" wx:if="{{item.infoLines && item.infoLines.length}}">
+                <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+                <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                  <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                  <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+                </view>
+              </view>
+              </view>
+              <view class="nutrition-pill-metric">
+                <view class="nutrition-pill-detail-row" wx:if="{{item.detail}}">
+                  <text class="nutrition-pill-detail">{{item.detailValue || item.detail}}</text>
+                  <text class="nutrition-pill-detail-unit" wx:if="{{item.detailUnit}}">{{item.detailUnit}}</text>
+                </view>
+                <view class="nutrition-pill-value-row nutrition-pill-protein-row">
+                  <text class="nutrition-pill-protein-label">蛋白</text>
+                  <text class="nutrition-pill-value nutrition-pill-value-secondary nutrition-pill-protein-value">{{item.value}}</text>
+                  <text class="nutrition-pill-unit nutrition-pill-unit-secondary" wx:if="{{item.unit}}">{{item.unit}}</text>
+                  <text class="nutrition-pill-separator" wx:if="{{item.source}}">|</text>
+                  <text class="nutrition-pill-source nutrition-pill-source-inline" wx:if="{{item.source}}">{{item.source}}</text>
+                </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="ratio-inline-list macro-strip">
+        <view class="ratio-inline-item" wx:for="{{preview.macroRows}}" wx:key="label">
+          <view class="ratio-inline-label-row">
+            <text class="ratio-inline-label">{{item.label}}</text>
+            <view class="metric-info-anchor" wx:if="{{item.infoLines && item.infoLines.length}}">
+              <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+              <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+              </view>
+            </view>
+          </view>
+          <text class="ratio-inline-value">{{item.value}}</text>
+        </view>
+      </view>
+
+      <view class="overview-card">
+        <view class="overview-head">
+          <view>
+            <text class="overview-title">摄入概览</text>
+          </view>
+        </view>
+        <view class="overview-section" wx:for="{{preview.sourceSections}}" wx:key="label">
+          <view class="overview-section-head">
+            <text class="overview-section-label">{{item.label}}</text>
+            <text class="overview-section-meta" wx:if="{{item.meta}}">{{item.meta}}</text>
+          </view>
+          <view class="overview-milk-grid" wx:if="{{item.type === 'milk'}}">
+            <view class="overview-milk-card" wx:for="{{item.columns}}" wx:key="label" wx:for-item="column">
+              <text class="overview-milk-card-title">{{column.label}}</text>
+              <view class="overview-stat-list">
+                <view class="overview-stat-row" wx:for="{{column.stats}}" wx:key="label" wx:for-item="stat">
+                  <text class="overview-stat-label">{{stat.label}}</text>
+                  <text class="overview-stat-value">{{stat.value}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="overview-stat-compact-grid" wx:else>
+            <view class="overview-stat-compact-item" wx:for="{{item.stats}}" wx:key="label" wx:for-item="stat">
+              <text class="overview-stat-compact-label">{{stat.label}}</text>
+              <text class="overview-stat-compact-value">{{stat.value}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="tabs">
+      <view class="tab {{activeTab === 'feeding' ? 'active' : ''}}" data-tab="feeding" bindtap="switchTab">
+        <text>喂奶记录</text>
+      </view>
+      <view class="tab {{activeTab === 'food' ? 'active' : ''}}" data-tab="food" bindtap="switchTab">
+        <text>食物记录</text>
+      </view>
+      <view class="tab {{activeTab === 'medication' ? 'active' : ''}}" data-tab="medication" bindtap="switchTab">
+        <text>用药记录</text>
+      </view>
+      <view class="tab {{activeTab === 'treatment' ? 'active' : ''}}" data-tab="treatment" bindtap="switchTab">
+        <text>治疗记录</text>
+      </view>
+    </view>
+
+    <block wx:if="{{activeTab === 'feeding'}}">
+      <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="showPreviewToast"><text>复制数据</text></view>
+            <view class="add-btn" bindtap="showPreviewToast"><text>补充记录</text></view>
+          </view>
+        </view>
+        <view class="record-preview-list" wx:if="{{feedingPreviewRecords.length > 0}}">
+          <view class="record-preview-item" wx:for="{{feedingPreviewRecords}}" wx:key="time">
+            <view class="record-preview-time">{{item.time}}</view>
+            <view class="record-preview-main">
+              <view class="record-preview-head">
+                <text class="record-preview-title">{{item.title}}</text>
+                <text class="record-preview-meta">{{item.meta}}</text>
+              </view>
+              <text class="record-preview-detail">{{item.detail}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:elif="{{activeTab === 'food'}}">
+      <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="showPreviewToast"><text>复制数据</text></view>
+            <view class="add-btn" bindtap="showPreviewToast"><text>补充食物</text></view>
+          </view>
+        </view>
+        <view class="record-preview-list" wx:if="{{foodPreviewRecords.length > 0}}">
+          <view class="record-preview-item meal-preview-item" wx:for="{{foodPreviewRecords}}" wx:key="title">
+            <view class="record-preview-main full-width">
+              <view class="record-preview-head">
+                <text class="record-preview-title">{{item.title}}</text>
+                <text class="record-preview-meta">{{item.meta}}</text>
+              </view>
+              <text class="record-preview-detail">{{item.detail}}</text>
+              <text class="record-preview-note" wx:if="{{item.note}}">{{item.note}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:elif="{{activeTab === 'medication'}}">
+      <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="showPreviewToast"><text>复制数据</text></view>
+            <view class="add-btn" bindtap="showPreviewToast"><text>补充记录</text></view>
+          </view>
+        </view>
+        <view class="record-preview-list" wx:if="{{medicationPreviewRecords.length > 0}}">
+          <view class="record-preview-item" wx:for="{{medicationPreviewRecords}}" wx:key="title">
+            <view class="record-preview-time">{{item.time}}</view>
+            <view class="record-preview-main">
+              <view class="record-preview-head">
+                <text class="record-preview-title">{{item.title}}</text>
+                <text class="record-preview-meta">{{item.meta}}</text>
+              </view>
+              <text class="record-preview-detail">{{item.detail}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="add-btn" bindtap="showPreviewToast"><text>补充记录</text></view>
+          </view>
+        </view>
+        <view class="record-preview-list" wx:if="{{treatmentPreviewRecords.length > 0}}">
+          <view class="record-preview-item treatment-preview-item" wx:for="{{treatmentPreviewRecords}}" wx:key="time">
+            <view class="record-preview-time">{{item.time}}</view>
+            <view class="record-preview-main">
+              <view class="record-preview-head">
+                <text class="record-preview-title">{{item.title}}</text>
+                <text class="record-preview-meta">{{item.meta}}</text>
+              </view>
+              <text class="record-preview-detail multiline">{{item.detail}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="calendar-picker" wx:if="{{showCalendarPicker}}" bindtap="hideCalendar">
+    <view class="calendar-content" catchtap="preventBubble">
+      <view class="calendar-header">
+        <view bindtap="prevMonth">〈</view>
+        <view class="month-title">{{calendarYear}}年{{calendarMonth}}月</view>
+        <view bindtap="nextMonth">〉</view>
+      </view>
+      <view class="weekday-header">
+        <view class="weekday-item" wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this">{{item}}</view>
+      </view>
+      <view class="calendar-grid">
+        <view
+          class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}}"
+          wx:for="{{calendarDays}}"
+          wx:key="date"
+          bindtap="selectCalendarDay"
+          data-date="{{item.date}}"
+          data-current="{{item.isCurrentMonth}}"
+        >
+          {{item.day}}
+        </view>
+      </view>
+      <view class="calendar-footer" wx:if="{{!isSelectedToday}}">
+        <view class="today-btn" bindtap="goToToday">返回今天</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="basic-info-modal" wx:if="{{showBasicInfoModal}}" bindtap="closeBasicInfoModal">
+    <view class="basic-info-modal-content" catchtap="preventBubble">
+      <view class="basic-info-modal-header">
+        <text class="basic-info-modal-title">编辑{{editingLabel}}</text>
+      </view>
+      <view class="basic-info-modal-body">
+        <view class="basic-info-input-shell">
+          <input
+            class="basic-info-input"
+            type="digit"
+            value="{{editBasicInfoValue}}"
+            placeholder="请输入{{editingLabel}}"
+            bindinput="onBasicInfoInput"
+            focus
+          />
+          <text class="basic-info-input-unit">{{editingUnit}}</text>
+        </view>
+      </view>
+      <view class="basic-info-modal-footer">
+        <view class="basic-info-modal-btn secondary" bindtap="closeBasicInfoModal">取消</view>
+        <view class="basic-info-modal-btn primary" bindtap="confirmBasicInfoEdit">确认</view>
+      </view>
+    </view>
+  </view>
+</view>

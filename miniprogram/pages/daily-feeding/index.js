@@ -39,6 +39,9 @@ const {
   validation
 } = require('../../utils/index');
 const InvitationModel = require('../../models/invitation');
+const {
+  buildDataRecordsSummaryPreview
+} = require('../../utils/dataRecordsSummaryPreview');
 
 const app = getApp();
 
@@ -79,6 +82,7 @@ Page({
       carbs: 0,
       fat: 0
     },
+    summaryMacroRows: buildDataRecordsSummaryPreview({}).macroRows,
     fatRatioRangeText: '',
     showFatRatioPopup: false,
     fatRatioPopupLines: [
@@ -116,6 +120,9 @@ Page({
       },
       treatment: createEmptyTreatmentOverview()
     },
+    activeMetricInfoLabel: '',
+    activeMetricInfoTitle: '',
+    activeMetricInfoLines: [],
 
     // === 当前操作数据 ===
     currentFeeding: {
@@ -412,6 +419,34 @@ Page({
   hideFatRatioPopup() {
     this.setData({ showFatRatioPopup: false });
   },
+
+  toggleMetricInfo(e) {
+    const { label = '', title = '', lines = [] } = e.currentTarget.dataset || {};
+    if (!label || !lines.length) return;
+    if (this.data.activeMetricInfoLabel === label) {
+      this.setData({
+        activeMetricInfoLabel: '',
+        activeMetricInfoTitle: '',
+        activeMetricInfoLines: []
+      });
+      return;
+    }
+    this.setData({
+      activeMetricInfoLabel: label,
+      activeMetricInfoTitle: title,
+      activeMetricInfoLines: lines
+    });
+  },
+
+  hideMetricInfo() {
+    this.setData({
+      activeMetricInfoLabel: '',
+      activeMetricInfoTitle: '',
+      activeMetricInfoLines: []
+    });
+  },
+
+  stopBubble() {},
 
   // 初始化宝宝信息缓存
   async initBabyInfoCache() {
@@ -1348,6 +1383,13 @@ Page({
     };
   },
 
+  buildSummaryMacroRows(overrides = {}) {
+    return buildDataRecordsSummaryPreview({
+      macroRatios: overrides.macroRatios ?? this.data.macroRatios,
+      fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines
+    }).macroRows;
+  },
+
   // 计算摄入概览（天然 / 特奶 / 食物）
   calculateIntakeOverview(feedings = [], intakes = [], weight = 0, treatmentRecords = this.data.treatmentRecords || []) {
     const overview = {
@@ -2042,7 +2084,10 @@ Page({
         calorieCoefficientInput: calorieCoefficientToSet,
         recordId: recordId,
         macroSummary: macroSummary,
-        macroRatios: this.computeMacroRatios(macroSummary)
+        macroRatios: this.computeMacroRatios(macroSummary),
+        summaryMacroRows: this.buildSummaryMacroRows({
+          macroRatios: this.computeMacroRatios(macroSummary)
+        })
       });
       
       // 更新计算与概览
@@ -2586,7 +2631,10 @@ Page({
     this.setData({
       macroSummary: summary,
       intakeOverview: overview,
-      macroRatios: this.computeMacroRatios(summary)
+      macroRatios: this.computeMacroRatios(summary),
+      summaryMacroRows: this.buildSummaryMacroRows({
+        macroRatios: this.computeMacroRatios(summary)
+      })
     }, () => {
       this.updateQuickGoalSuggestion();
     });
@@ -2947,6 +2995,9 @@ Page({
             legacyFoodIntakes: this.buildLegacyFoodIntakes(remainingIntakes.filter(item => item.type !== 'milk')),
             macroSummary: updatedSummary,
             macroRatios: this.computeMacroRatios(updatedSummary),
+            summaryMacroRows: this.buildSummaryMacroRows({
+              macroRatios: this.computeMacroRatios(updatedSummary)
+            }),
             intakeOverview: updatedOverview,
             activeFoodMenu: -1
           });
@@ -3333,6 +3384,9 @@ Page({
             legacyFoodIntakes: this.buildLegacyFoodIntakes(remainingIntakes.filter(item => item.type !== 'milk')),
             macroSummary: updatedSummary,
             macroRatios: this.computeMacroRatios(updatedSummary),
+            summaryMacroRows: this.buildSummaryMacroRows({
+              macroRatios: this.computeMacroRatios(updatedSummary)
+            }),
             intakeOverview: updatedOverview,
             activeFoodMenu: -1
           });
@@ -3687,7 +3741,10 @@ Page({
         legacyFoodIntakes: this.buildLegacyFoodIntakes(existingIntakes.filter(item => item.type !== 'milk')),
         macroSummary: updatedSummary,
         intakeOverview: updatedOverview,
-        macroRatios: this.computeMacroRatios(updatedSummary)
+        macroRatios: this.computeMacroRatios(updatedSummary),
+        summaryMacroRows: this.buildSummaryMacroRows({
+          macroRatios: this.computeMacroRatios(updatedSummary)
+        })
       });
 
       this.loadRecentFoodOptions();

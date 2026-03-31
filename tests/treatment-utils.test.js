@@ -6,7 +6,8 @@ const {
   mergeTreatmentIntoMacroSummary,
   mergeTreatmentIntoOverview,
   createEmptyTreatmentOverview,
-  formatTreatmentRecordsForDisplay
+  formatTreatmentRecordsForDisplay,
+  TREATMENT_ITEM_UNITS
 } = require('../miniprogram/utils/treatmentUtils');
 
 test('summarizeTreatmentRecords only counts nutrition-enabled items', () => {
@@ -176,21 +177,21 @@ test('formatTreatmentRecordsForDisplay builds compact group summaries for list c
         {
           name: '第1组',
           items: [
-            { name: '10%葡萄糖' },
-            { name: '精氨酸' }
+            { name: '10%葡萄糖', amount: 250, unit: 'ml' },
+            { name: '精氨酸', amount: 1, unit: '剂' }
           ]
         },
         {
           name: '第2组',
           items: [
-            { name: '5%葡萄糖' },
-            { name: '碳酸氢钠' }
+            { name: '5%葡萄糖', amount: 250, unit: 'ml' },
+            { name: '碳酸氢钠', amount: 5, unit: 'ml' }
           ]
         },
         {
           name: '第3组',
           items: [
-            { name: '左卡尼丁' }
+            { name: '左卡尼丁', amount: 1, unit: '剂' }
           ]
         }
       ]
@@ -207,7 +208,7 @@ test('formatTreatmentRecordsForDisplay builds compact group summaries for list c
         fat: 0
       },
       items: [
-        { category: 'dextrose_10', name: '10%葡萄糖' }
+        { category: 'dextrose_10', name: '10%葡萄糖', amount: 100, unit: 'ml' }
       ]
     }
   ]);
@@ -215,16 +216,17 @@ test('formatTreatmentRecordsForDisplay builds compact group summaries for list c
   assert.equal(formatted[0]._id, 'newer');
   assert.equal(formatted[0].groupCount, 1);
   assert.deepEqual(formatted[0].groupPreviewLines, [
-    '第1组 · 10%葡萄糖'
+    '第1组 · 10%葡萄糖 100ml'
   ]);
 
   assert.equal(formatted[1]._id, 'older');
   assert.equal(formatted[1].typeLabel, '输液');
   assert.deepEqual(formatted[1].groupPreviewLines, [
-    '第1组 · 10%葡萄糖 + 精氨酸',
-    '第2组 · 5%葡萄糖 + 碳酸氢钠'
+    '第1组 · 10%葡萄糖 250ml + 精氨酸 1剂',
+    '第2组 · 5%葡萄糖 250ml + 碳酸氢钠 5ml',
+    '第3组 · 左卡尼丁 1剂'
   ]);
-  assert.equal(formatted[1].overflowGroupCount, 1);
+  assert.equal(formatted[1].overflowGroupCount, 0);
   assert.equal(formatted[1].notePreview, '第一天住院补液观察耐受');
 });
 
@@ -257,4 +259,8 @@ test('summarizeTreatmentRecords falls back to record summary for legacy treatmen
   assert.equal(summary.itemCount, 1);
   assert.equal(summary.totalCalories, 85);
   assert.equal(summary.carbs, 25);
+});
+
+test('treatment unit options include 剂 for unclear medication units', () => {
+  assert.equal(TREATMENT_ITEM_UNITS.includes('剂'), true);
 });

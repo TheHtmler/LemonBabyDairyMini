@@ -42,12 +42,6 @@
         <text class="text-btn danger" bindtap="removeTreatmentGroup" data-group-index="{{index}}">删除组</text>
       </view>
 
-      <view class="group-summary">
-        <text>热量 {{item.summary.totalCalories || 0}} kcal</text>
-        <text>碳水 {{item.summary.carbs || 0}} g</text>
-        <text>脂肪 {{item.summary.fat || 0}} g</text>
-      </view>
-
       <view class="empty-group" wx:if="{{item.items.length === 0}}">
         <text>点击下方添加按钮，新增一行药物</text>
       </view>

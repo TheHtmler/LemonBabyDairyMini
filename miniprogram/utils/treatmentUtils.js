@@ -11,7 +11,7 @@ const TREATMENT_ITEM_CATEGORIES = [
   { value: 'custom', label: '自定义药物' }
 ];
 
-const TREATMENT_ITEM_UNITS = ['ml', 'mg', 'g', 'ug', '袋', '支', '片'];
+const TREATMENT_ITEM_UNITS = ['ml', 'mg', 'g', 'ug', '袋', '支', '片', '剂'];
 
 const DEFAULT_NUTRITION_CATEGORIES = ['dextrose_10', 'dextrose_5'];
 
@@ -130,7 +130,14 @@ function normalizeGroups(record = {}) {
 function buildTreatmentGroupLine(group = {}, index = 0) {
   const groupName = group.name || getDefaultTreatmentGroupName(index);
   const names = (Array.isArray(group.items) ? group.items : [])
-    .map(item => item.name || getTreatmentCategoryLabel(item.category))
+    .map(item => {
+      const itemName = item.name || getTreatmentCategoryLabel(item.category);
+      const amount = item.amount === '' || item.amount === undefined || item.amount === null ? '' : `${item.amount}`;
+      const unit = item.unit || '';
+      const dosageText = amount ? `${amount}${unit}` : '';
+      if (!itemName) return '';
+      return dosageText ? `${itemName} ${dosageText}` : itemName;
+    })
     .filter(Boolean);
   return names.length > 0 ? `${groupName} · ${names.join(' + ')}` : groupName;
 }
@@ -141,9 +148,7 @@ function formatTreatmentRecordsForDisplay(records = []) {
     .map(record => {
       const groups = normalizeGroups(record);
       const summary = record.summary || createEmptyTreatmentOverview();
-      const groupPreviewLines = groups
-        .slice(0, 2)
-        .map((group, index) => buildTreatmentGroupLine(group, index));
+      const groupPreviewLines = groups.map((group, index) => buildTreatmentGroupLine(group, index));
 
       return {
         ...record,
@@ -153,7 +158,7 @@ function formatTreatmentRecordsForDisplay(records = []) {
         displayTime: record.startTime || '',
         summary,
         groupPreviewLines,
-        overflowGroupCount: Math.max(groups.length - groupPreviewLines.length, 0),
+        overflowGroupCount: 0,
         notePreview: (record.notes || '').toString().trim()
       };
     })

@@ -52,6 +52,13 @@ Page({
         description: '身高体重曲线与成长里程碑'
       },
       {
+        id: 15,
+        name: '汇总改版预览',
+        icon: 'nutrition',
+        path: '/pages/summary-preview/index',
+        description: '独立预览数据记录页汇总模块的新布局'
+      },
+      {
         id: 5,
         name: '分享数据',
         icon: 'participant',
