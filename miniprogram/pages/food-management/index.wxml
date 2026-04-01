@@ -314,9 +314,9 @@
           <view class="form-item">
             <text class="form-label">蛋白来源</text>
             <view class="form-control">
-              <picker class="picker" mode="selector" range="{{proteinSourceOptions}}" range-key="label" value="{{formData.proteinSourceIndex}}" bindchange="onProteinSourceChange">
+              <picker class="picker" mode="selector" range="{{proteinTypeOptions}}" range-key="label" value="{{formData.proteinTypeIndex}}" bindchange="onProteinTypeChange">
                 <view class="picker-display">
-                  {{proteinSourceOptions[formData.proteinSourceIndex].label}}
+                  {{proteinTypeOptions[formData.proteinTypeIndex].label}}
                 </view>
               </picker>
             </view>

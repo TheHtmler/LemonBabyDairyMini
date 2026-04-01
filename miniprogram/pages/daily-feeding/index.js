@@ -1094,7 +1094,8 @@ Page({
           },
           naturalProtein: typeof item.naturalProtein === 'number' ? item.naturalProtein : null,
           specialProtein: typeof item.specialProtein === 'number' ? item.specialProtein : null,
-          proteinSource
+          proteinSource,
+          proteinQuality: item.proteinQuality || ''
         };
       })
       .filter(Boolean)
@@ -1251,6 +1252,8 @@ Page({
       protein: 0,
       naturalProtein: 0,
       specialProtein: 0,
+      premiumProtein: 0,
+      regularProtein: 0,
       carbs: 0,
       fat: 0
     };
@@ -1269,6 +1272,11 @@ Page({
       summary.protein += protein;
       summary.naturalProtein += naturalProtein;
       summary.specialProtein += specialProtein;
+      if (intake.proteinQuality === 'premium') {
+        summary.premiumProtein += naturalProtein;
+      } else if (naturalProtein > 0) {
+        summary.regularProtein += naturalProtein;
+      }
       summary.carbs += Number(nutrition.carbs) || 0;
       summary.fat += Number(nutrition.fat) || 0;
     };
@@ -1308,6 +1316,7 @@ Page({
       summary.calories += nutrition.naturalCalories || 0;
       summary.protein += nutrition.naturalProtein || 0;
       summary.naturalProtein += nutrition.naturalProtein || 0;
+      summary.premiumProtein += nutrition.naturalProtein || 0;
       summary.carbs += nutrition.carbs || 0;
       summary.fat += nutrition.fat || 0;
     }
@@ -1322,6 +1331,7 @@ Page({
       summary.calories += nutrition.naturalCalories || 0;
       summary.protein += nutrition.naturalProtein || 0;
       summary.naturalProtein += nutrition.naturalProtein || 0;
+      summary.premiumProtein += nutrition.naturalProtein || 0;
       summary.carbs += nutrition.carbs || 0;
       summary.fat += nutrition.fat || 0;
     }
@@ -1345,6 +1355,8 @@ Page({
     summary.protein = this._round(summary.protein, 2);
     summary.naturalProtein = this._round(summary.naturalProtein, 2);
     summary.specialProtein = this._round(summary.specialProtein, 2);
+    summary.premiumProtein = this._round(summary.premiumProtein, 2);
+    summary.regularProtein = this._round(summary.regularProtein, 2);
     summary.carbs = this._round(summary.carbs, 2);
     summary.fat = this._round(summary.fat, 2);
 
@@ -1362,6 +1374,10 @@ Page({
     } else {
       summary.caloriesPerKg = '';
     }
+    const naturalP = summary.naturalProtein || 0;
+    summary.premiumRatio = naturalP > 0
+      ? Math.round((summary.premiumProtein || 0) / naturalP * 100)
+      : 0;
     return summary;
   },
 
@@ -1384,9 +1400,17 @@ Page({
   },
 
   buildSummaryMacroRows(overrides = {}) {
+    const summary = overrides.macroSummary ?? this.data.macroSummary ?? {};
+    const naturalP = summary.naturalProtein || 0;
+    const premiumP = summary.premiumProtein || 0;
+    const premiumRatio = naturalP > 0 ? Math.round(premiumP / naturalP * 100) : 0;
     return buildDataRecordsSummaryPreview({
       macroRatios: overrides.macroRatios ?? this.data.macroRatios,
-      fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines
+      fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines,
+      proteinSummaryDisplay: {
+        premium: premiumP.toFixed(2),
+        premiumRatio
+      }
     }).macroRows;
   },
 
@@ -2086,7 +2110,8 @@ Page({
         macroSummary: macroSummary,
         macroRatios: this.computeMacroRatios(macroSummary),
         summaryMacroRows: this.buildSummaryMacroRows({
-          macroRatios: this.computeMacroRatios(macroSummary)
+          macroRatios: this.computeMacroRatios(macroSummary),
+          macroSummary
         })
       });
       
@@ -2633,7 +2658,8 @@ Page({
       intakeOverview: overview,
       macroRatios: this.computeMacroRatios(summary),
       summaryMacroRows: this.buildSummaryMacroRows({
-        macroRatios: this.computeMacroRatios(summary)
+        macroRatios: this.computeMacroRatios(summary),
+        macroSummary: summary
       })
     }, () => {
       this.updateQuickGoalSuggestion();
@@ -2996,7 +3022,8 @@ Page({
             macroSummary: updatedSummary,
             macroRatios: this.computeMacroRatios(updatedSummary),
             summaryMacroRows: this.buildSummaryMacroRows({
-              macroRatios: this.computeMacroRatios(updatedSummary)
+              macroRatios: this.computeMacroRatios(updatedSummary),
+              macroSummary: updatedSummary
             }),
             intakeOverview: updatedOverview,
             activeFoodMenu: -1
@@ -3385,7 +3412,8 @@ Page({
             macroSummary: updatedSummary,
             macroRatios: this.computeMacroRatios(updatedSummary),
             summaryMacroRows: this.buildSummaryMacroRows({
-              macroRatios: this.computeMacroRatios(updatedSummary)
+              macroRatios: this.computeMacroRatios(updatedSummary),
+              macroSummary: updatedSummary
             }),
             intakeOverview: updatedOverview,
             activeFoodMenu: -1
@@ -3656,6 +3684,7 @@ Page({
       unit: food.baseUnit || 'g',
       quantity: numQuantity,
       proteinSource,
+      proteinQuality: food.proteinQuality || '',
       nutrition: normalizedNutrition,
       naturalProtein: this._round(naturalProtein, 2),
       specialProtein: this._round(specialProtein, 2),

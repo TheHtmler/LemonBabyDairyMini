@@ -132,6 +132,8 @@ source: buildProteinBreakdownLine([
 { label: '奶', value: naturalMilkProtein },
 { label: '食物', value: naturalFoodProtein }
 ]),
+premiumRatio: input.proteinSummaryDisplay?.premiumRatio || 0,
+premiumValue: normalizeValue(input.proteinSummaryDisplay?.premium || 0),
 detailLabel: '天然蛋白系数',
 detailValue: buildCoefficientParts(input.naturalProteinCoefficient).value,
 detailUnit: buildCoefficientParts(input.naturalProteinCoefficient).unit,
@@ -224,6 +226,8 @@ macroRows: [
 {
 label: '蛋白',
  value: `${normalizeValue(macroRatios.protein || 0)}%`,
+ premiumRatio: input.proteinSummaryDisplay?.premiumRatio || 0,
+ premiumValue: normalizeValue(input.proteinSummaryDisplay?.premium || 0),
  infoTitle: '蛋白供能占比参考',
  infoLines: ['参考 10%-15%']
 },

@@ -357,6 +357,8 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     protein: 0,
     naturalProtein: 0,
     specialProtein: 0,
+    premiumProtein: 0,
+    regularProtein: 0,
     carbs: 0,
     fat: 0
   };
@@ -367,6 +369,12 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.protein += Number(nutrition.protein) || 0;
     summary.naturalProtein += Number(intake.naturalProtein) || 0;
     summary.specialProtein += Number(intake.specialProtein) || 0;
+    const naturalP = Number(intake.naturalProtein) || 0;
+    if (intake.proteinQuality === 'premium') {
+      summary.premiumProtein += naturalP;
+    } else if (naturalP > 0) {
+      summary.regularProtein += naturalP;
+    }
     summary.carbs += Number(nutrition.carbs) || 0;
     summary.fat += Number(nutrition.fat) || 0;
   });
@@ -396,6 +404,7 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.protein += nutrition.protein;
     summary.naturalProtein += nutrition.naturalProtein;
     summary.specialProtein += nutrition.specialProtein;
+    summary.premiumProtein += nutrition.naturalProtein;
     summary.carbs += nutrition.carbs;
     summary.fat += nutrition.fat;
   };
@@ -419,6 +428,8 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
   summary.protein = roundNumber(summary.protein, 2);
   summary.naturalProtein = roundNumber(summary.naturalProtein, 2);
   summary.specialProtein = roundNumber(summary.specialProtein, 2);
+  summary.premiumProtein = roundNumber(summary.premiumProtein, 2);
+  summary.regularProtein = roundNumber(summary.regularProtein, 2);
   summary.carbs = roundNumber(summary.carbs, 2);
   summary.fat = roundNumber(summary.fat, 2);
   return mergeTreatmentIntoMacroSummary(summary, treatmentRecords);

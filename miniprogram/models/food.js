@@ -311,6 +311,7 @@ class FoodModel {
       baseQuantity,
       nutritionPerUnit: this._normalizeNutrition(food.nutritionPerUnit || {}),
       proteinSource: food.proteinSource || 'natural',
+      proteinQuality: food.proteinQuality || '',
       nutritionSource: food.nutritionSource || 'system',
       source: food.source || '',
       isSystem: true,

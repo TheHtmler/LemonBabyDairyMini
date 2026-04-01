@@ -221,6 +221,8 @@ function createEmptyIntakeOverview() {
       protein: 0,
       naturalProtein: 0,
       specialProtein: 0,
+      premiumProtein: 0,
+      regularProtein: 0,
       carbs: 0,
       fat: 0
     },
@@ -355,6 +357,11 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     overview.food.protein += protein;
     overview.food.naturalProtein += naturalProtein;
     overview.food.specialProtein += specialProtein;
+    if (intake.proteinQuality === 'premium') {
+      overview.food.premiumProtein += naturalProtein;
+    } else if (naturalProtein > 0) {
+      overview.food.regularProtein += naturalProtein;
+    }
     overview.food.carbs += Number(nutrition.carbs) || 0;
     overview.food.fat += Number(nutrition.fat) || 0;
   });
@@ -389,6 +396,8 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
   overview.food.protein = roundNumber(overview.food.protein, 2);
   overview.food.naturalProtein = roundNumber(overview.food.naturalProtein, 2);
   overview.food.specialProtein = roundNumber(overview.food.specialProtein, 2);
+  overview.food.premiumProtein = roundNumber(overview.food.premiumProtein, 2);
+  overview.food.regularProtein = roundNumber(overview.food.regularProtein, 2);
   overview.food.carbs = roundNumber(overview.food.carbs, 2);
   overview.food.fat = roundNumber(overview.food.fat, 2);
 
@@ -431,7 +440,8 @@ function normalizeIntakes(intakes = []) {
         },
         naturalProtein: typeof item.naturalProtein === 'number' ? item.naturalProtein : null,
         specialProtein: typeof item.specialProtein === 'number' ? item.specialProtein : null,
-        proteinSource
+        proteinSource,
+        proteinQuality: item.proteinQuality || ''
       };
     })
     .filter(Boolean)
@@ -1681,6 +1691,7 @@ Page({
       baseUnit: target.unit || 'g',
       category: target.category || '',
       proteinSource: target.proteinSource || 'natural',
+      proteinQuality: target.proteinQuality || '',
       milkType: target.milkType || '',
       nutritionSource: target.milkType ? 'babySettings' : '',
       aliasText: target.aliasText || ''
@@ -1811,6 +1822,7 @@ Page({
     const isMilk = foodType === 'milk';
     const now = new Date();
     const recordTimeValue = recordTime || formatTime(now);
+    const proteinQuality = food.proteinQuality || '';
     const intake = {
       _id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       type: isMilk ? 'milk' : 'food',
@@ -1821,6 +1833,7 @@ Page({
       unit: food.baseUnit || 'g',
       quantity: numQuantity,
       proteinSource,
+      proteinQuality,
       nutrition: {
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
@@ -5322,16 +5335,25 @@ Page({
   },
 
   computeProteinSummaryDisplay(intakeOverview = this.data.intakeOverview) {
-    const natural = ((intakeOverview?.milk?.normal?.protein || 0) + (intakeOverview?.food?.naturalProtein || 0)).toFixed(2);
-    const special = ((intakeOverview?.milk?.special?.protein || 0) + (intakeOverview?.food?.specialProtein || 0)).toFixed(2);
-    const total = (
-      (intakeOverview?.milk?.normal?.protein || 0) +
-      (intakeOverview?.milk?.special?.protein || 0) +
-      (intakeOverview?.food?.naturalProtein || 0) +
-      (intakeOverview?.food?.specialProtein || 0) +
-      (intakeOverview?.treatment?.protein || 0)
-    ).toFixed(2);
-    return { natural, special, total };
+    const milkNormalProtein = intakeOverview?.milk?.normal?.protein || 0;
+    const milkSpecialProtein = intakeOverview?.milk?.special?.protein || 0;
+    const foodNaturalProtein = intakeOverview?.food?.naturalProtein || 0;
+    const foodSpecialProtein = intakeOverview?.food?.specialProtein || 0;
+    const foodPremiumProtein = intakeOverview?.food?.premiumProtein || 0;
+    const foodRegularProtein = intakeOverview?.food?.regularProtein || 0;
+    const treatmentProtein = intakeOverview?.treatment?.protein || 0;
+
+    const natural = (milkNormalProtein + foodNaturalProtein).toFixed(2);
+    const special = (milkSpecialProtein + foodSpecialProtein).toFixed(2);
+    const total = (milkNormalProtein + milkSpecialProtein + foodNaturalProtein + foodSpecialProtein + treatmentProtein).toFixed(2);
+
+    // 优质蛋白 = 奶类天然蛋白（奶均为优质）+ 食物中标记为 premium 的天然蛋白
+    const premium = (milkNormalProtein + foodPremiumProtein).toFixed(2);
+    const regular = foodRegularProtein.toFixed(2);
+    const naturalNum = Number(natural);
+    const premiumRatio = naturalNum > 0 ? Math.round((Number(premium) / naturalNum) * 100) : 0;
+
+    return { natural, special, total, premium, regular, premiumRatio };
   },
 
   computeMacroRatios(summary = this.data.macroSummary) {

@@ -124,6 +124,7 @@
           </view>
         </view>
         <text class="ratio-inline-value">{{item.value}}</text>
+        <text class="ratio-inline-value" wx:if="{{item.premiumRatio > 0}}" style="font-size: 20rpx; color: #999; margin-top: 4rpx;">优质 {{item.premiumValue}}g / {{item.premiumRatio}}%</text>
       </view>
     </view>
   </view>

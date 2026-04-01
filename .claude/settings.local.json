@@ -9,7 +9,13 @@
       "Bash(python3 -c \":*)",
       "Bash(python3 -c \"import fitz; print\\(''fitz available''\\)\")",
       "mcp__Playwright__browser_navigate",
-      "mcp__Playwright__browser_take_screenshot"
+      "mcp__Playwright__browser_take_screenshot",
+      "Bash(python3 -c ':*)",
+      "Bash(python3:*)",
+      "Bash(npx jest:*)",
+      "Bash(node --test tests/data-records-summary-preview.test.js)",
+      "Bash(node --test tests/report-workbench-data.test.js)",
+      "Bash(node --test tests/data-records-layout.test.js)"
     ]
   }
 }

@@ -88,7 +88,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
     { label: '总奶量', value: '720', unit: 'ml', detail: '母：420ml · 特：300ml' }
   ]);
   assert.deepEqual(preview.nutritionStrip, [
-    { label: '天然蛋白', value: '8.3', unit: 'g', source: '奶 5.1g · 食物 3.2g', detailLabel: '天然蛋白系数', detailValue: '1.2', detailUnit: 'g/kg/d', detail: '1.2 g/kg/d' },
+    { label: '天然蛋白', value: '8.3', unit: 'g', source: '奶 5.1g · 食物 3.2g', premiumRatio: 0, premiumValue: '0', detailLabel: '天然蛋白系数', detailValue: '1.2', detailUnit: 'g/kg/d', detail: '1.2 g/kg/d' },
     { label: '特殊蛋白', value: '4.1', unit: 'g', source: '特奶 4.1g', detailLabel: '特殊蛋白系数', detailValue: '0.8', detailUnit: 'g/kg/d', detail: '0.8 g/kg/d' }
   ]);
   assert.deepEqual(preview.sourceSections, [
@@ -149,7 +149,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
     { label: '特殊蛋白系数', value: '0.8 g/kg/d' }
   ]);
   assert.deepEqual(preview.macroRows, [
-    { label: '蛋白', value: '12%', infoTitle: '蛋白供能占比参考', infoLines: ['参考 10%-15%'] },
+    { label: '蛋白', value: '12%', premiumRatio: 0, premiumValue: '0', infoTitle: '蛋白供能占比参考', infoLines: ['参考 10%-15%'] },
     { label: '碳水', value: '48%', infoTitle: '碳水供能占比参考', infoLines: ['参考 55%-60%'] },
     { label: '脂肪', value: '40%', infoTitle: '脂肪供能占比参考', infoLines: ['0-6月: 45%-50%', '>6月: 35%-40%', '1-2岁: 30%-35%', '>6岁: 25%-30%'] }
   ]);

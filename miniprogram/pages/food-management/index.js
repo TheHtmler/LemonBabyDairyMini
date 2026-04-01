@@ -57,7 +57,7 @@ const createEmptyFormData = (category = '', unit = '') => ({
   fat: '',
   fiber: '',
   sodium: '',
-  proteinSourceIndex: 0
+  proteinTypeIndex: 0
 });
 
 const app = getApp();
@@ -80,9 +80,10 @@ Page({
     uploadingFoodImage: false,
     categoryPickerIndex: 0,
     unitPickerIndex: 0,
-    proteinSourceOptions: [
-      { label: '天然蛋白', value: 'natural' },
-      { label: '特殊蛋白', value: 'special' }
+    proteinTypeOptions: [
+      { label: '天然蛋白（优质）', value: 'natural', quality: 'premium' },
+      { label: '天然蛋白（普通）', value: 'natural', quality: 'regular' },
+      { label: '特殊蛋白', value: 'special', quality: '' }
     ],
     categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS],
     customCategories: [],
@@ -405,8 +406,8 @@ Page({
     return Math.round(value * factor) / factor;
   },
 
-  getProteinSourceValue(index) {
-    return this.data.proteinSourceOptions?.[index]?.value || 'natural';
+  getProteinTypeOption(index) {
+    return this.data.proteinTypeOptions?.[index] || this.data.proteinTypeOptions[0];
   },
 
   buildNutritionPayload(formData) {
@@ -433,7 +434,8 @@ Page({
       baseUnit,
       baseQuantity: baseQuantity,
       nutritionPerUnit: this.buildNutritionPayload(formData),
-      proteinSource: this.getProteinSourceValue(formData.proteinSourceIndex),
+      proteinSource: this.getProteinTypeOption(formData.proteinTypeIndex).value,
+      proteinQuality: this.getProteinTypeOption(formData.proteinTypeIndex).quality,
       foodType: 'food',
       image: formData.image ? formData.image.trim() : '',
       isLiquid: baseUnit.toLowerCase() === 'ml',
@@ -450,9 +452,11 @@ Page({
     }
 
     const nutrition = food.nutritionPerUnit || {};
-    const proteinSourceValue = food.proteinSource || 'natural';
-    const sourceIndex =
-      this.data.proteinSourceOptions.findIndex(item => item.value === proteinSourceValue) || 0;
+    const proteinSource = food.proteinSource || 'natural';
+    const proteinQuality = food.proteinQuality || '';
+    const typeIndex = this.data.proteinTypeOptions.findIndex(
+      opt => opt.value === proteinSource && opt.quality === proteinQuality
+    );
 
     return {
       name: food.name || '',
@@ -467,7 +471,7 @@ Page({
       fat: nutrition.fat != null ? String(nutrition.fat) : '',
       fiber: nutrition.fiber != null ? String(nutrition.fiber) : '',
       sodium: nutrition.sodium != null ? String(nutrition.sodium) : '',
-      proteinSourceIndex: sourceIndex >= 0 ? sourceIndex : 0
+      proteinTypeIndex: typeIndex >= 0 ? typeIndex : 0
     };
   },
 
@@ -796,9 +800,9 @@ Page({
     wx.showToast({ title: '分类已添加', icon: 'success' });
   },
 
-  onProteinSourceChange(e) {
+  onProteinTypeChange(e) {
     this.setData({
-      'formData.proteinSourceIndex': Number(e.detail.value)
+      'formData.proteinTypeIndex': Number(e.detail.value)
     });
   },
 

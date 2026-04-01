@@ -549,6 +549,7 @@ Page({
         sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
       },
       proteinSource,
+      proteinQuality: food.proteinQuality || '',
       naturalProtein: roundNumber(naturalProtein, 2),
       specialProtein: roundNumber(specialProtein, 2),
       milkType: food.milkType || '',
@@ -686,7 +687,8 @@ Page({
           category: intake.category || '辅食',
           baseUnit: intake.unit || 'g',
           milkType: intake.milkType || '',
-          proteinSource: intake.proteinSource || 'natural'
+          proteinSource: intake.proteinSource || 'natural',
+          proteinQuality: intake.proteinQuality || ''
         };
 
         return {
@@ -702,6 +704,7 @@ Page({
           quantity: Number(intake.quantity) || 0,
           nutrition: intake.nutrition || {},
           proteinSource: intake.proteinSource || fallbackFood.proteinSource || 'natural',
+          proteinQuality: intake.proteinQuality || (catalogFood?.proteinQuality) || '',
           naturalProtein: typeof intake.naturalProtein === 'number' ? intake.naturalProtein : 0,
           specialProtein: typeof intake.specialProtein === 'number' ? intake.specialProtein : 0,
           milkType: intake.milkType || '',
@@ -741,6 +744,7 @@ Page({
       unit: item.unit || 'g',
       quantity: item.quantity,
       proteinSource: item.proteinSource || 'natural',
+      proteinQuality: item.proteinQuality || '',
       nutrition: item.nutrition || {},
       naturalProtein: item.naturalProtein || 0,
       specialProtein: item.specialProtein || 0,
