@@ -52,11 +52,11 @@ Page({
         description: '身高体重曲线与成长里程碑'
       },
       {
-        id: 15,
-        name: '汇总改版预览',
+        id: 16,
+        name: '报告工作台预览',
         icon: 'nutrition',
-        path: '/pages/summary-preview/index',
-        description: '独立预览数据记录页汇总模块的新布局'
+        path: '/pages/report-workbench-preview/index',
+        description: '独立预览报告对比、趋势和营养暴露摘要的新工作台'
       },
       {
         id: 5,

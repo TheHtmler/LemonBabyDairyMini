@@ -34,10 +34,12 @@ Page({
   onLoad: function (options) {
     const mode = options.mode || 'add';
     const reportId = options.reportId || '';
+    const selectedReportType = options.type || this.data.selectedReportType;
     
     this.setData({
       mode: mode,
-      reportId: reportId
+      reportId: reportId,
+      selectedReportType
     });
 
     this.initPage();

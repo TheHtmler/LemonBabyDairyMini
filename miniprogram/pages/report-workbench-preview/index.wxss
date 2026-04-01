@@ -1,0 +1,626 @@
+.preview-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background:
+    radial-gradient(circle at top right, rgba(255, 217, 128, 0.28), transparent 34%),
+    linear-gradient(180deg, #fffaf0 0%, #fff4db 100%);
+  box-sizing: border-box;
+}
+
+.hero-card,
+.report-archive-list,
+.compare-overview-card,
+.trend-section,
+.nutrition-window-card,
+.all-indicators-card,
+.doctor-summary-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1rpx solid rgba(201, 136, 23, 0.14);
+  border-radius: 28rpx;
+  box-shadow: 0 10rpx 28rpx rgba(133, 93, 23, 0.08);
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, #fff2c6 0%, #ffe3a3 100%);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.hero-title {
+  font-size: 40rpx;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.hero-subtitle {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #7a5a24;
+}
+
+.hero-pill {
+  display: inline-flex;
+  margin-top: 18rpx;
+  align-self: flex-start;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(95, 61, 0, 0.08);
+  color: #5f3d00;
+  font-size: 22rpx;
+}
+
+.quick-action,
+.indicator-item {
+  border-radius: 22rpx;
+  background: #fffaf0;
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
+}
+
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20rpx;
+}
+
+.quick-action {
+  padding: 20rpx;
+}
+
+.quick-action.primary {
+  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
+  border-color: rgba(201, 136, 23, 0.28);
+}
+
+.quick-action-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #2c1d09;
+}
+
+.quick-action-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #6e5a3f;
+}
+
+.report-type-tabs {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.type-tab {
+  min-width: 150rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1rpx solid rgba(201, 136, 23, 0.12);
+}
+
+.type-tab.active {
+  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
+  border-color: rgba(201, 136, 23, 0.3);
+  box-shadow: 0 10rpx 24rpx rgba(201, 136, 23, 0.18);
+}
+
+.type-tab-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #5f3d00;
+}
+
+.type-tab-count {
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  background: rgba(95, 61, 0, 0.08);
+  font-size: 20rpx;
+  color: #7b6441;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1rpx solid rgba(201, 136, 23, 0.14);
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 28rpx rgba(133, 93, 23, 0.08);
+  padding: 28rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.loading-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.loading-desc {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #7b6441;
+}
+
+.archive-empty {
+  margin-top: 18rpx;
+  padding: 28rpx 22rpx;
+  border-radius: 22rpx;
+  background: #fffaf0;
+  border: 1rpx dashed rgba(201, 136, 23, 0.18);
+}
+
+.archive-empty-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.archive-empty-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #7b6441;
+}
+
+.archive-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.archive-card {
+  border-radius: 22rpx;
+  padding: 20rpx;
+  background: #fffaf0;
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
+}
+
+.archive-card.active {
+  background: linear-gradient(180deg, #fff6de 0%, #fffaf0 100%);
+  border-color: rgba(201, 136, 23, 0.28);
+  box-shadow: 0 10rpx 24rpx rgba(201, 136, 23, 0.12);
+}
+
+.archive-card-head,
+.archive-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.archive-card-date {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #2c1d09;
+}
+
+.archive-card-type {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #7b6441;
+}
+
+.archive-status {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+}
+
+.archive-status.normal {
+  background: rgba(63, 132, 90, 0.12);
+  color: #2f7a4d;
+}
+
+.archive-status.abnormal {
+  background: rgba(214, 74, 54, 0.12);
+  color: #b63f2e;
+}
+
+.archive-card-body {
+  margin-top: 14rpx;
+}
+
+.archive-key-summary {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #4e3b1d;
+}
+
+.archive-card-footer {
+  margin-top: 16rpx;
+  flex-wrap: wrap;
+}
+
+.archive-meta {
+  font-size: 20rpx;
+  color: #8d7449;
+}
+
+.archive-meta.emphasize {
+  color: #b57900;
+  font-weight: 700;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2c1d09;
+}
+
+.section-subtitle {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: #7b6441;
+}
+
+.section-badges {
+  display: flex;
+  gap: 10rpx;
+}
+
+.meta-badge,
+.window-badge,
+.summary-actions {
+  padding: 10rpx 16rpx;
+  border-radius: 18rpx;
+  background: #fff6db;
+  color: #7a5a24;
+  font-size: 20rpx;
+}
+
+.meta-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.meta-badge.warm {
+  background: #ffecc2;
+}
+
+.meta-badge-label {
+  font-size: 18rpx;
+  color: #8d7449;
+}
+
+.meta-badge-value {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.status-note,
+.window-note {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #6e5a3f;
+}
+
+.compare-grid,
+.nutrition-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.compare-card,
+.nutrition-metric,
+.trend-card {
+  border-radius: 22rpx;
+  background: #fffaf0;
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
+  padding: 18rpx;
+}
+
+.compare-card-head,
+.trend-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.compare-card-title,
+.trend-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #2c1d09;
+}
+
+.status-tag {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 18rpx;
+}
+
+.status-tag.high {
+  background: rgba(214, 74, 54, 0.12);
+  color: #b63f2e;
+}
+
+.status-tag.low {
+  background: rgba(232, 144, 31, 0.14);
+  color: #b36500;
+}
+
+.status-tag.normal {
+  background: rgba(63, 132, 90, 0.12);
+  color: #2f7a4d;
+}
+
+.compare-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.value-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.value-block.previous {
+  align-items: flex-end;
+}
+
+.value-label,
+.nutrition-metric-label {
+  font-size: 18rpx;
+  color: #8d7449;
+}
+
+.value-primary,
+.nutrition-metric-value {
+  font-size: 36rpx;
+  line-height: 1;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.value-secondary {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #8d7449;
+}
+
+.delta-row,
+.nutrition-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-top: 16rpx;
+}
+
+.delta-chip {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.delta-chip.up {
+  background: rgba(214, 74, 54, 0.12);
+  color: #b63f2e;
+}
+
+.delta-chip.down {
+  background: rgba(63, 132, 90, 0.12);
+  color: #2f7a4d;
+}
+
+.delta-unit,
+.nutrition-metric-unit,
+.trend-overlay {
+  font-size: 20rpx;
+  color: #8d7449;
+}
+
+.trend-section {
+  padding-bottom: 8rpx;
+}
+
+.report-compare-panel {
+  margin-top: 4rpx;
+}
+
+.trend-card {
+  margin-top: 18rpx;
+}
+
+.trend-points {
+  display: flex;
+  justify-content: space-between;
+  gap: 8rpx;
+  margin-top: 18rpx;
+}
+
+.trend-point {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.trend-point-value {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #8d7449;
+}
+
+.trend-point-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: #d8b26d;
+  box-shadow: 0 0 0 8rpx rgba(216, 178, 109, 0.16);
+}
+
+.trend-point.active .trend-point-dot {
+  background: #ffb800;
+  box-shadow: 0 0 0 10rpx rgba(255, 184, 0, 0.18);
+}
+
+.trend-point.active .trend-point-value {
+  color: #5f3d00;
+}
+
+.trend-point-date {
+  font-size: 18rpx;
+  color: #8d7449;
+}
+
+.indicator-group + .indicator-group {
+  margin-top: 18rpx;
+}
+
+.indicator-group-head {
+  margin-top: 18rpx;
+  margin-bottom: 12rpx;
+}
+
+.indicator-group-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #2c1d09;
+}
+
+.indicator-group-hint {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: #8d7449;
+}
+
+.indicator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.indicator-item {
+  padding: 18rpx;
+}
+
+.indicator-main,
+.indicator-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.indicator-main {
+  align-items: flex-start;
+}
+
+.indicator-values {
+  margin-top: 12rpx;
+  flex-wrap: wrap;
+}
+
+.indicator-name {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #2c1d09;
+}
+
+.indicator-abbr,
+.indicator-previous {
+  font-size: 20rpx;
+  color: #8d7449;
+}
+
+.indicator-current {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #5f3d00;
+}
+
+.indicator-delta {
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.indicator-delta.up {
+  color: #b63f2e;
+}
+
+.indicator-delta.down {
+  color: #2f7a4d;
+}
+
+.indicator-delta.flat {
+  color: #8d7449;
+}
+
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: #fffaf0;
+}
+
+.summary-bullet {
+  font-size: 26rpx;
+  line-height: 1.4;
+  color: #b57900;
+}
+
+.summary-text {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #4e3b1d;
+}
