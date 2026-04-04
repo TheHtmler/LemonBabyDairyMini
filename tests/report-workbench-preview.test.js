@@ -58,16 +58,22 @@ test('report workbench preview page renders compare, trend, nutrition and doctor
   assert.match(wxml, /quick-actions/);
   assert.match(wxml, /report-type-tabs/);
   assert.match(wxml, /report-archive-list/);
-  assert.match(wxml, /report-compare-panel/);
+  assert.match(wxml, /archive-view/);
+  assert.match(wxml, /detail-view/);
+  assert.match(wxml, /trend-view/);
   assert.doesNotMatch(wxml, /当前模式/);
-  assert.match(wxml, /compare-overview-card/);
+  assert.match(wxml, /detail-summary-card/);
+  assert.match(wxml, /detail-indicators-card/);
+  assert.match(wxml, /trend-summary-card/);
   assert.match(wxml, /trend-section/);
   assert.match(wxml, /nutrition-window-card/);
-  assert.match(wxml, /all-indicators-card/);
   assert.match(wxml, /doctor-summary-card/);
   assert.match(wxml, /bindtap="goToAddReport"/);
   assert.match(wxml, /bindtap="handleTypeFilterChange"/);
-  assert.match(wxml, /bindtap="handleCompareReport"/);
+  assert.match(wxml, /bindtap="openDetailPreview"/);
+  assert.match(wxml, /bindtap="openTrendPreview"/);
+  assert.match(wxml, /bindtap="goBackToArchive"/);
+  assert.match(wxml, /bindtap="openReportDetailFromTrend"/);
 });
 
 test('report workbench preview page wires real data aggregation utility', () => {
@@ -78,9 +84,14 @@ test('report workbench preview page wires real data aggregation utility', () => 
 
   assert.match(js, /buildReportWorkbenchView/);
   assert.match(js, /buildReportArchivePreview/);
+  assert.match(js, /buildReportDetailPreview/);
+  assert.match(js, /buildReportTrendPreview/);
   assert.match(js, /loadRealReports/);
   assert.match(js, /goToAddReport/);
   assert.match(js, /handleTypeFilterChange/);
-  assert.match(js, /handleCompareReport/);
+  assert.match(js, /openDetailPreview/);
+  assert.match(js, /openTrendPreview/);
+  assert.match(js, /goBackToArchive/);
+  assert.match(js, /openReportDetailFromTrend/);
   assert.doesNotMatch(js, /const REPORTS = \[/);
 });

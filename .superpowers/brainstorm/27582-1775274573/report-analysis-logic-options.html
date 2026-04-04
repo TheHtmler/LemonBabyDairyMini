@@ -1,0 +1,97 @@
+<h2>报告分析页换一种思路</h2>
+<p class="subtitle">下面不是视觉皮肤，而是三种完全不同的信息结构。先选更符合你使用习惯的“主逻辑”。</p>
+
+<div class="cards">
+  <div class="card" data-choice="archive-first" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 A: 病历夹式</div>
+        <div class="mockup-body">
+          <div class="mock-nav">报告分类 Tabs</div>
+          <div class="section">
+            <div class="mock-content">按类型排列的报告卡片列表</div>
+          </div>
+          <div class="section">
+            <div class="mock-content">点一份报告后展开单次详情</div>
+          </div>
+          <div class="section">
+            <div class="mock-content">底部再进入“同类报告对比”</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>先记录，再分析</h3>
+      <p>像病历夹，适合先把不同类型报告收好，再选同类报告做对比。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="compare-first" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 B: 对比台式</div>
+        <div class="mockup-body">
+          <div class="mock-nav">类型切换 + 新增报告</div>
+          <div class="section">
+            <div class="mock-content">上方是左右两份报告选择器</div>
+          </div>
+          <div class="section">
+            <div class="mock-content">中间固定是趋势图和关键差异</div>
+          </div>
+          <div class="section">
+            <div class="mock-content">下方挂这段时间的喂养摘要</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>先对比，再回看原始报告</h3>
+      <p>页面核心就是“这次和上次有什么变化，期间怎么喂养”。适合门诊交流。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="timeline-first" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 C: 时间轴式</div>
+        <div class="mockup-body">
+          <div class="section">
+            <div class="mock-content">纵向时间轴：每次报告一个节点</div>
+          </div>
+          <div class="section">
+            <div class="mock-content">节点之间显示该段喂养概况</div>
+          </div>
+          <div class="section">
+            <div class="mock-content">点节点展开单次报告，点两点进入对比</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>先看过程，再看细节</h3>
+      <p>更像病程记录，天然适合把“报告变化”和“这段时间喂养”串起来。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>我的当前判断</h3>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>更可能适合你的</h4>
+      <ul>
+        <li>如果你最在意“记录不同类型报告”，偏 A</li>
+        <li>如果你最在意“门诊拿给医生直接比”，偏 B</li>
+        <li>如果你最在意“把结果和喂养过程串起来”，偏 C</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>我觉得之前的问题</h4>
+      <ul>
+        <li>把“列表、单次查看、对比、喂养解释”塞进一层</li>
+        <li>缺少一个真正清晰的主任务</li>
+        <li>用户不知道自己现在是在“记录”还是在“分析”</li>
+      </ul>
+    </div>
+  </div>
+</div>

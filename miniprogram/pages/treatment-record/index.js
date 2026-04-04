@@ -326,6 +326,15 @@ Page({
     }));
   },
 
+  async notifyPreviousPageRefresh() {
+    const pages = getCurrentPages();
+    const prevPage = pages[pages.length - 2];
+    if (!prevPage || prevPage.route !== 'pages/daily-feeding/index' || typeof prevPage.loadTodayData !== 'function') {
+      return;
+    }
+    await prevPage.loadTodayData(true);
+  },
+
   async saveRecord() {
     if (this.data.saving) return;
     const { form, dateKey, recordId, isEdit } = this.data;
@@ -387,6 +396,7 @@ Page({
         throw new Error(result.message || '保存失败');
       }
       wx.showToast({ title: '保存成功', icon: 'success' });
+      await this.notifyPreviousPageRefresh();
       setTimeout(() => {
         if (getCurrentPages().length > 1) {
           wx.navigateBack();
@@ -417,6 +427,7 @@ Page({
             throw new Error(result.message || '删除失败');
           }
           wx.showToast({ title: '已删除', icon: 'success' });
+          await this.notifyPreviousPageRefresh();
           setTimeout(() => {
             wx.navigateBack();
           }, 400);

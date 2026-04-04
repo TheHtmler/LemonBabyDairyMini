@@ -78,12 +78,9 @@
                   <text class="nutrition-pill-detail">{{item.detailValue || item.detail}}</text>
                   <text class="nutrition-pill-detail-unit" wx:if="{{item.detailUnit}}">{{item.detailUnit}}</text>
                 </view>
-                <view class="nutrition-pill-value-row nutrition-pill-protein-row">
-                  <text class="nutrition-pill-protein-label">蛋白</text>
-                  <text class="nutrition-pill-value nutrition-pill-value-secondary nutrition-pill-protein-value">{{item.value}}</text>
-                  <text class="nutrition-pill-unit nutrition-pill-unit-secondary" wx:if="{{item.unit}}">{{item.unit}}</text>
-                  <text class="nutrition-pill-separator" wx:if="{{item.source}}">|</text>
-                  <text class="nutrition-pill-source nutrition-pill-source-inline" wx:if="{{item.source}}">{{item.source}}</text>
+                <view class="nutrition-pill-source-row" wx:if="{{item.source || item.premiumRatio > 0}}">
+                  <text class="nutrition-pill-source nutrition-pill-source-block" wx:if="{{item.source}}">{{item.source}}</text>
+                  <text class="nutrition-pill-source-accent" wx:if="{{item.premiumRatio > 0}}">优质蛋白 {{item.premiumValue}}g · {{item.premiumRatio}}%</text>
                 </view>
               </view>
             </view>
@@ -103,7 +100,6 @@
               </view>
             </view>
             <text class="ratio-inline-value">{{item.value}}</text>
-            <text class="ratio-inline-value" wx:if="{{item.premiumRatio > 0}}" style="font-size: 20rpx; color: #999; margin-top: 4rpx;">优质 {{item.premiumValue}}g / {{item.premiumRatio}}%</text>
           </view>
         </view>
 

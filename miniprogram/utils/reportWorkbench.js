@@ -691,6 +691,20 @@ function buildIndicatorItem(config = {}, currentReport = {}, previousReport = {}
   };
 }
 
+function buildDetailIndicatorItem(config = {}, currentReport = {}) {
+  const current = currentReport.indicators?.[config.key] || {};
+  return {
+    key: config.key,
+    name: config.name || config.key,
+    abbr: config.abbr || config.key,
+    current: formatCompactNumber(current.value, 2),
+    status: current.status || 'unknown',
+    unit: config.unit || '',
+    minRange: current.minRange || '',
+    maxRange: current.maxRange || ''
+  };
+}
+
 function splitIndicatorGroups(reportType, indicatorConfigs = []) {
   if (reportType === ReportModel.REPORT_TYPES.BLOOD_MS) {
     return [
@@ -748,6 +762,18 @@ function buildAllIndicatorGroups(currentReport, previousReport) {
   })).filter((group) => group.items.length);
 }
 
+function buildDetailIndicatorGroups(currentReport) {
+  const indicatorConfigs = ReportModel.getIndicators(currentReport.reportType);
+  return splitIndicatorGroups(currentReport.reportType, indicatorConfigs).map((group) => ({
+    key: group.key,
+    title: group.title,
+    hint: group.hint,
+    items: group.configs
+      .filter((config) => currentReport.indicators?.[config.key])
+      .map((config) => buildDetailIndicatorItem(config, currentReport))
+  })).filter((group) => group.items.length);
+}
+
 function buildReportArchivePreview({ reports = [], filterType = 'all', selectedCompareReportId = '' }) {
   const sortedReports = [...reports].sort((a, b) => parseDateKey(toDateKey(b.reportDate)).getTime() - parseDateKey(toDateKey(a.reportDate)).getTime());
   const tabs = REPORT_TYPE_FILTERS.map((tab) => ({
@@ -788,23 +814,26 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
   };
 }
 
-function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecords = [], nutritionSettings = {}, fallbackWeight = 0 }) {
+function resolveTrendContext({ selectedReportId = '', reports = [], feedingRecords = [], nutritionSettings = {}, fallbackWeight = 0, reportType = '' }) {
   const sortedReports = [...reports].sort((a, b) => parseDateKey(toDateKey(b.reportDate)).getTime() - parseDateKey(toDateKey(a.reportDate)).getTime());
-  const currentReport = pickSelectedReport(sortedReports, selectedReportId);
-  if (!currentReport) return null;
+  const inferredReportType = reportType || pickSelectedReport(sortedReports, selectedReportId)?.reportType || '';
+  const sameTypeReports = sortedReports.filter((report) => report.reportType === inferredReportType);
+  const currentReport = selectedReportId
+    ? pickSelectedReport(sameTypeReports, selectedReportId)
+    : sameTypeReports[0] || null;
 
-  const sameTypeReports = sortedReports.filter((report) => report.reportType === currentReport.reportType);
+  if (!currentReport) {
+    return null;
+  }
+
   const previousReport = sameTypeReports
     .filter((report) => toDateKey(report.reportDate) < toDateKey(currentReport.reportDate))
     .sort((a, b) => parseDateKey(toDateKey(b.reportDate)).getTime() - parseDateKey(toDateKey(a.reportDate)).getTime())[0];
 
-  const compareCards = buildCompareCards(currentReport, previousReport);
-  const trendMetrics = buildTrendMetrics(currentReport, sameTypeReports);
   const currentDateKey = toDateKey(currentReport.reportDate);
   const intervalStart = previousReport ? addDays(toDateKey(previousReport.reportDate), 1) : addDays(currentDateKey, -7);
   const intervalEnd = addDays(currentDateKey, -1);
   const last7Start = daysBetweenInclusive(intervalStart, intervalEnd) > 7 ? addDays(currentDateKey, -7) : intervalStart;
-
   const feedingRecordsByDate = feedingRecords.reduce((map, record) => {
     const key = toDateKey(record.date);
     if (!key) return map;
@@ -812,7 +841,6 @@ function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecor
     map[key].push(record);
     return map;
   }, {});
-
   const metricFourLabel = currentReport.reportType === ReportModel.REPORT_TYPES.BLOOD_MS ? '碳水' : '脂肪';
   const intervalMetrics = Object.keys(feedingRecordsByDate)
     .filter((dateKey) => dateKey >= intervalStart && dateKey <= intervalEnd)
@@ -820,9 +848,7 @@ function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecor
     .map((dateKey) => mergeFeedingRecords(feedingRecordsByDate[dateKey], nutritionSettings))
     .filter(Boolean)
     .map((record) => buildDailyNutritionMetric(record, nutritionSettings, fallbackWeight));
-
   const last7Metrics = intervalMetrics.filter((record) => record.date >= last7Start && record.date <= intervalEnd);
-
   const intervalSummary = {
     recordedDays: intervalMetrics.length,
     totalDays: daysBetweenInclusive(intervalStart, intervalEnd),
@@ -835,6 +861,121 @@ function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecor
     special: averageMetric(last7Metrics, 'specialProteinCoefficient', 2),
     calorie: averageMetric(last7Metrics, 'calorieCoefficient', 1)
   };
+
+  return {
+    currentReport,
+    previousReport,
+    sameTypeReports,
+    currentDateKey,
+    metricFourLabel,
+    intervalStart,
+    intervalEnd,
+    last7Start,
+    intervalMetrics,
+    last7Metrics,
+    intervalSummary,
+    shortTermSummary
+  };
+}
+
+function buildReportDetailPreview({ selectedReportId, reports = [] }) {
+  const sortedReports = [...reports].sort((a, b) => parseDateKey(toDateKey(b.reportDate)).getTime() - parseDateKey(toDateKey(a.reportDate)).getTime());
+  const currentReport = pickSelectedReport(sortedReports, selectedReportId);
+  if (!currentReport) return null;
+
+  const summary = ReportModel.getReportSummary(currentReport);
+  const filledCount = Object.values(currentReport.indicators || {}).filter((indicator) => indicator?.value !== '' && indicator?.value !== undefined && indicator?.value !== null).length;
+
+  return {
+    reportId: getReportId(currentReport),
+    reportType: currentReport.reportType,
+    reportTypeLabel: ReportModel.getReportTypeName(currentReport.reportType),
+    reportDate: toDateKey(currentReport.reportDate),
+    summary: {
+      ...summary,
+      filledCount
+    },
+    keySummary: buildKeySummary(currentReport),
+    keyIndicators: buildCompareCards(currentReport, null),
+    indicatorGroups: buildDetailIndicatorGroups(currentReport)
+  };
+}
+
+function buildReportTrendPreview({ reportType = '', selectedReportId = '', reports = [], feedingRecords = [], nutritionSettings = {}, fallbackWeight = 0 }) {
+  const context = resolveTrendContext({
+    reportType,
+    selectedReportId,
+    reports,
+    feedingRecords,
+    nutritionSettings,
+    fallbackWeight
+  });
+  if (!context) return null;
+
+  const {
+    currentReport,
+    previousReport,
+    sameTypeReports,
+    currentDateKey,
+    metricFourLabel,
+    intervalStart,
+    intervalEnd,
+    last7Start,
+    intervalMetrics,
+    last7Metrics,
+    intervalSummary,
+    shortTermSummary
+  } = context;
+
+  return {
+    reportType: currentReport.reportType,
+    reportTypeLabel: ReportModel.getReportTypeName(currentReport.reportType),
+    reportCount: sameTypeReports.length,
+    selectedReportId: getReportId(currentReport),
+    selectedReportDate: currentDateKey,
+    previousReportId: previousReport ? getReportId(previousReport) : '',
+    previousReportDate: previousReport ? toDateKey(previousReport.reportDate) : '',
+    compareCards: buildCompareCards(currentReport, previousReport),
+    trendMetrics: buildTrendMetrics(currentReport, sameTypeReports),
+    nutritionWindows: [
+      buildWindowSummary(intervalMetrics, intervalStart, intervalEnd, '区间摘要', metricFourLabel),
+      buildWindowSummary(last7Metrics, last7Start, intervalEnd, '近检摘要', metricFourLabel)
+    ],
+    doctorSummary: buildDoctorSummary(buildCompareCards(currentReport, previousReport), intervalSummary, shortTermSummary),
+    detailLinks: {
+      currentReportId: getReportId(currentReport),
+      previousReportId: previousReport ? getReportId(previousReport) : ''
+    }
+  };
+}
+
+function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecords = [], nutritionSettings = {}, fallbackWeight = 0 }) {
+  const context = resolveTrendContext({
+    selectedReportId,
+    reports,
+    feedingRecords,
+    nutritionSettings,
+    fallbackWeight
+  });
+  if (!context) return null;
+
+  const {
+    currentReport,
+    previousReport,
+    sameTypeReports,
+    currentDateKey,
+    metricFourLabel,
+    intervalStart,
+    intervalEnd,
+    last7Start,
+    intervalMetrics,
+    last7Metrics,
+    intervalSummary,
+    shortTermSummary
+  } = context;
+
+  const compareCards = buildCompareCards(currentReport, previousReport);
+  const trendMetrics = buildTrendMetrics(currentReport, sameTypeReports);
 
   const indicatorCount = ReportModel.getIndicators(currentReport.reportType).length;
   const filledCount = Object.values(currentReport.indicators || {}).filter((indicator) => indicator?.value !== '' && indicator?.value !== undefined && indicator?.value !== null).length;
@@ -861,6 +1002,8 @@ function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecor
 
 module.exports = {
   buildReportArchivePreview,
+  buildReportDetailPreview,
+  buildReportTrendPreview,
   buildReportWorkbenchView,
   toDateKey
 };

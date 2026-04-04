@@ -41,14 +41,31 @@ test('data-records page uses compact summary layout and basic info modal', () =>
     require.resolve('../miniprogram/pages/data-records/index.wxml'),
     'utf8'
   );
+  const wxss = fs.readFileSync(
+    require.resolve('../miniprogram/pages/data-records/index.wxss'),
+    'utf8'
+  );
 
   assert.match(wxml, /hero-badge-edit/);
   assert.match(wxml, /nutrition-strip/);
+  assert.match(wxml, /nutrition-pill-source-block/);
+  assert.match(wxml, /nutrition-pill-source-accent/);
+  assert.match(wxml, /优质蛋白 \{\{item\.premiumValue\}\}g · \{\{item\.premiumRatio\}\}%/);
   assert.match(wxml, /ratio-inline-list/);
   assert.match(wxml, /overview-stat-compact-grid/);
   assert.match(wxml, /basic-info-modal/);
+  assert.doesNotMatch(wxml, /nutrition-pill-protein-row/);
+  assert.doesNotMatch(wxml, /class="ratio-inline-value" wx:if="\{\{item\.premiumRatio > 0\}\}"/);
   assert.doesNotMatch(wxml, /section-subtitle">基础信息/);
   assert.doesNotMatch(wxml, /section-subtitle">热量统计/);
+  assert.match(wxss, /\.nutrition-pill\{[^}]*padding:20rpx/);
+  assert.match(wxss, /\.nutrition-pill\{[^}]*border-radius:24rpx/);
+  assert.match(wxss, /\.nutrition-pill-label\{[^}]*font-size:22rpx/);
+  assert.match(wxss, /\.nutrition-pill-metric\{[^}]*margin-top:10rpx/);
+  assert.match(wxss, /\.nutrition-pill-source-row\{[^}]*display:flex/);
+  assert.match(wxss, /\.nutrition-pill-source-block\{/);
+  assert.match(wxss, /\.nutrition-pill-source-accent\{[^}]*white-space:nowrap/);
+  assert.match(wxss, /\.nutrition-pill-source-accent\{/);
 });
 
 test('data-records summaryPreview falls back to computed protein coefficients when input fields are empty', () => {

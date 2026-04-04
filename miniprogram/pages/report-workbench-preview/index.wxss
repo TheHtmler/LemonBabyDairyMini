@@ -9,11 +9,13 @@
 
 .hero-card,
 .report-archive-list,
-.compare-overview-card,
+.detail-summary-card,
+.detail-indicators-card,
+.trend-summary-card,
 .trend-section,
 .nutrition-window-card,
-.all-indicators-card,
-.doctor-summary-card {
+.doctor-summary-card,
+.loading-card {
   background: rgba(255, 255, 255, 0.96);
   border: 1rpx solid rgba(201, 136, 23, 0.14);
   border-radius: 28rpx;
@@ -56,17 +58,44 @@
   font-size: 22rpx;
 }
 
-.quick-action,
-.indicator-item {
-  border-radius: 22rpx;
-  background: #fffaf0;
-  border: 1rpx solid rgba(201, 136, 23, 0.1);
+.loading-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.loading-desc {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #7b6441;
+}
+
+.archive-view,
+.detail-view,
+.trend-view {
+  display: block;
 }
 
 .quick-actions {
   display: flex;
   flex-direction: column;
+  gap: 14rpx;
   margin-bottom: 20rpx;
+}
+
+.quick-action,
+.archive-card,
+.detail-stat,
+.nutrition-metric,
+.trend-card,
+.indicator-item,
+.summary-item {
+  border-radius: 22rpx;
+  background: #fffaf0;
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
 }
 
 .quick-action {
@@ -137,28 +166,35 @@
   justify-content: center;
 }
 
-.loading-card {
-  background: rgba(255, 255, 255, 0.96);
-  border: 1rpx solid rgba(201, 136, 23, 0.14);
-  border-radius: 24rpx;
-  box-shadow: 0 10rpx 28rpx rgba(133, 93, 23, 0.08);
-  padding: 28rpx 24rpx;
-  margin-bottom: 20rpx;
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
 }
 
-.loading-title {
+.section-title {
   display: block;
-  font-size: 28rpx;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #5f3d00;
+  color: #2c1d09;
 }
 
-.loading-desc {
+.section-subtitle {
   display: block;
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   font-size: 22rpx;
-  line-height: 1.5;
+  line-height: 1.45;
   color: #7b6441;
+}
+
+.summary-actions,
+.window-badge {
+  padding: 10rpx 16rpx;
+  border-radius: 18rpx;
+  background: #fff6db;
+  color: #7a5a24;
+  font-size: 20rpx;
 }
 
 .archive-empty {
@@ -183,7 +219,9 @@
   color: #7b6441;
 }
 
-.archive-card-list {
+.archive-card-list,
+.indicator-list,
+.summary-list {
   display: flex;
   flex-direction: column;
   gap: 14rpx;
@@ -191,16 +229,7 @@
 }
 
 .archive-card {
-  border-radius: 22rpx;
   padding: 20rpx;
-  background: #fffaf0;
-  border: 1rpx solid rgba(201, 136, 23, 0.1);
-}
-
-.archive-card.active {
-  background: linear-gradient(180deg, #fff6de 0%, #fffaf0 100%);
-  border-color: rgba(201, 136, 23, 0.28);
-  box-shadow: 0 10rpx 24rpx rgba(201, 136, 23, 0.12);
 }
 
 .archive-card-head,
@@ -225,27 +254,37 @@
   color: #7b6441;
 }
 
-.archive-status {
+.archive-status,
+.status-tag {
   padding: 8rpx 14rpx;
   border-radius: 999rpx;
   font-size: 20rpx;
 }
 
-.archive-status.normal {
+.archive-status.normal,
+.status-tag.normal {
   background: rgba(63, 132, 90, 0.12);
   color: #2f7a4d;
 }
 
-.archive-status.abnormal {
+.archive-status.abnormal,
+.status-tag.high {
   background: rgba(214, 74, 54, 0.12);
   color: #b63f2e;
+}
+
+.status-tag.low {
+  background: rgba(232, 144, 31, 0.14);
+  color: #b36500;
 }
 
 .archive-card-body {
   margin-top: 14rpx;
 }
 
-.archive-key-summary {
+.archive-key-summary,
+.detail-stat-copy,
+.summary-text {
   display: block;
   font-size: 24rpx;
   line-height: 1.5;
@@ -257,7 +296,15 @@
   flex-wrap: wrap;
 }
 
-.archive-meta {
+.archive-meta,
+.indicator-abbr,
+.indicator-range,
+.nutrition-metric-label,
+.trend-overlay,
+.window-note,
+.indicator-group-hint,
+.detail-stat-label,
+.trend-point-date {
   font-size: 20rpx;
   color: #8d7449;
 }
@@ -267,74 +314,21 @@
   font-weight: 700;
 }
 
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16rpx;
+.preview-topbar {
+  margin-bottom: 16rpx;
 }
 
-.section-title {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #2c1d09;
-}
-
-.section-subtitle {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  line-height: 1.45;
-  color: #7b6441;
-}
-
-.section-badges {
-  display: flex;
-  gap: 10rpx;
-}
-
-.meta-badge,
-.window-badge,
-.summary-actions {
+.preview-back {
+  display: inline-flex;
   padding: 10rpx 16rpx;
-  border-radius: 18rpx;
-  background: #fff6db;
-  color: #7a5a24;
-  font-size: 20rpx;
-}
-
-.meta-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.meta-badge.warm {
-  background: #ffecc2;
-}
-
-.meta-badge-label {
-  font-size: 18rpx;
-  color: #8d7449;
-}
-
-.meta-badge-value {
-  font-size: 24rpx;
-  font-weight: 700;
+  border-radius: 999rpx;
+  background: rgba(95, 61, 0, 0.08);
   color: #5f3d00;
-}
-
-.status-note,
-.window-note {
-  display: block;
-  margin-top: 16rpx;
   font-size: 22rpx;
-  line-height: 1.5;
-  color: #6e5a3f;
 }
 
-.compare-grid,
+.detail-summary-grid,
+.trend-summary-grid,
 .nutrition-metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -342,16 +336,51 @@
   margin-top: 18rpx;
 }
 
-.compare-card,
-.nutrition-metric,
-.trend-card {
-  border-radius: 22rpx;
-  background: #fffaf0;
-  border: 1rpx solid rgba(201, 136, 23, 0.1);
+.detail-stat {
   padding: 18rpx;
 }
 
-.compare-card-head,
+.detail-stat.long {
+  grid-column: 1 / -1;
+}
+
+.detail-stat-value,
+.nutrition-metric-value {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #5f3d00;
+}
+
+.detail-stat-value.warn {
+  color: #b63f2e;
+}
+
+.trend-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.trend-link-chip {
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
+  color: #5f3d00;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.trend-link-chip.secondary {
+  background: #fff6db;
+}
+
+.trend-card {
+  padding: 18rpx;
+  margin-top: 18rpx;
+}
+
 .trend-card-head {
   display: flex;
   justify-content: space-between;
@@ -359,113 +388,12 @@
   gap: 10rpx;
 }
 
-.compare-card-title,
-.trend-title {
+.trend-title,
+.indicator-group-title,
+.indicator-name {
   font-size: 24rpx;
   font-weight: 600;
   color: #2c1d09;
-}
-
-.status-tag {
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  font-size: 18rpx;
-}
-
-.status-tag.high {
-  background: rgba(214, 74, 54, 0.12);
-  color: #b63f2e;
-}
-
-.status-tag.low {
-  background: rgba(232, 144, 31, 0.14);
-  color: #b36500;
-}
-
-.status-tag.normal {
-  background: rgba(63, 132, 90, 0.12);
-  color: #2f7a4d;
-}
-
-.compare-values {
-  display: flex;
-  justify-content: space-between;
-  gap: 12rpx;
-  margin-top: 18rpx;
-}
-
-.value-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.value-block.previous {
-  align-items: flex-end;
-}
-
-.value-label,
-.nutrition-metric-label {
-  font-size: 18rpx;
-  color: #8d7449;
-}
-
-.value-primary,
-.nutrition-metric-value {
-  font-size: 36rpx;
-  line-height: 1;
-  font-weight: 700;
-  color: #5f3d00;
-}
-
-.value-secondary {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #8d7449;
-}
-
-.delta-row,
-.nutrition-metric-value-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8rpx;
-  margin-top: 16rpx;
-}
-
-.delta-chip {
-  padding: 8rpx 14rpx;
-  border-radius: 999rpx;
-  font-size: 20rpx;
-  font-weight: 600;
-}
-
-.delta-chip.up {
-  background: rgba(214, 74, 54, 0.12);
-  color: #b63f2e;
-}
-
-.delta-chip.down {
-  background: rgba(63, 132, 90, 0.12);
-  color: #2f7a4d;
-}
-
-.delta-unit,
-.nutrition-metric-unit,
-.trend-overlay {
-  font-size: 20rpx;
-  color: #8d7449;
-}
-
-.trend-section {
-  padding-bottom: 8rpx;
-}
-
-.report-compare-panel {
-  margin-top: 4rpx;
-}
-
-.trend-card {
-  margin-top: 18rpx;
 }
 
 .trend-points {
@@ -506,8 +434,19 @@
   color: #5f3d00;
 }
 
-.trend-point-date {
-  font-size: 18rpx;
+.nutrition-metric {
+  padding: 18rpx;
+}
+
+.nutrition-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-top: 16rpx;
+}
+
+.nutrition-metric-unit {
+  font-size: 20rpx;
   color: #8d7449;
 }
 
@@ -518,26 +457,6 @@
 .indicator-group-head {
   margin-top: 18rpx;
   margin-bottom: 12rpx;
-}
-
-.indicator-group-title {
-  display: block;
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #2c1d09;
-}
-
-.indicator-group-hint {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 20rpx;
-  color: #8d7449;
-}
-
-.indicator-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
 }
 
 .indicator-item {
@@ -560,47 +479,10 @@
   flex-wrap: wrap;
 }
 
-.indicator-name {
-  display: block;
-  font-size: 24rpx;
-  font-weight: 600;
-  color: #2c1d09;
-}
-
-.indicator-abbr,
-.indicator-previous {
-  font-size: 20rpx;
-  color: #8d7449;
-}
-
 .indicator-current {
   font-size: 22rpx;
   font-weight: 600;
   color: #5f3d00;
-}
-
-.indicator-delta {
-  font-size: 20rpx;
-  font-weight: 600;
-}
-
-.indicator-delta.up {
-  color: #b63f2e;
-}
-
-.indicator-delta.down {
-  color: #2f7a4d;
-}
-
-.indicator-delta.flat {
-  color: #8d7449;
-}
-
-.summary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
-  margin-top: 18rpx;
 }
 
 .summary-item {
@@ -608,19 +490,10 @@
   align-items: flex-start;
   gap: 10rpx;
   padding: 16rpx 18rpx;
-  border-radius: 18rpx;
-  background: #fffaf0;
 }
 
 .summary-bullet {
   font-size: 26rpx;
   line-height: 1.4;
   color: #b57900;
-}
-
-.summary-text {
-  flex: 1;
-  font-size: 24rpx;
-  line-height: 1.55;
-  color: #4e3b1d;
 }

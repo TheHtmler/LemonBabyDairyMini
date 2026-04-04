@@ -83,6 +83,7 @@ Page({
       fat: 0
     },
     summaryMacroRows: buildDataRecordsSummaryPreview({}).macroRows,
+    overviewSourceSections: buildDataRecordsSummaryPreview({}).sourceSections,
     fatRatioRangeText: '',
     showFatRatioPopup: false,
     fatRatioPopupLines: [
@@ -293,10 +294,10 @@ Page({
     activeTab: 'feeding',
     releaseNoticeVisible: true,
     releaseNoticeItems: [
-      '1. 食物记录与食物选择体验已优化',
-      '2. 意见反馈入口已上线'
+      '1. 数据记录页已改版',
+      '2. 汇总结构更清晰，新增摄入概览与蛋白展示优化'
     ],
-    releaseNoticeText: '1. 食物记录与食物选择体验已优化；2. 意见反馈入口已上线。',
+    releaseNoticeText: '1. 数据记录页已改版；2. 汇总结构更清晰，新增摄入概览与蛋白展示优化。',
     
     // === 排便记录相关 ===
     selectedBowelRecord: null, // 选中的排便记录
@@ -1400,18 +1401,24 @@ Page({
   },
 
   buildSummaryMacroRows(overrides = {}) {
-    const summary = overrides.macroSummary ?? this.data.macroSummary ?? {};
-    const naturalP = summary.naturalProtein || 0;
-    const premiumP = summary.premiumProtein || 0;
-    const premiumRatio = naturalP > 0 ? Math.round(premiumP / naturalP * 100) : 0;
     return buildDataRecordsSummaryPreview({
       macroRatios: overrides.macroRatios ?? this.data.macroRatios,
-      fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines,
-      proteinSummaryDisplay: {
-        premium: premiumP.toFixed(2),
-        premiumRatio
-      }
+      fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines
     }).macroRows;
+  },
+
+  inferNaturalMilkType(feedings = this.data.feedings || []) {
+    if (!Array.isArray(feedings) || feedings.length === 0) {
+      return 'formula';
+    }
+    return feedings.some(item => item?.naturalMilkType === 'breast') ? 'breast' : 'formula';
+  },
+
+  buildOverviewSourceSections(overrides = {}) {
+    return buildDataRecordsSummaryPreview({
+      intakeOverview: overrides.intakeOverview ?? this.data.intakeOverview,
+      naturalMilkType: overrides.naturalMilkType ?? this.inferNaturalMilkType(overrides.feedings ?? this.data.feedings)
+    }).sourceSections;
   },
 
   // 计算摄入概览（天然 / 特奶 / 食物）
@@ -2112,11 +2119,15 @@ Page({
         summaryMacroRows: this.buildSummaryMacroRows({
           macroRatios: this.computeMacroRatios(macroSummary),
           macroSummary
+        }),
+        overviewSourceSections: this.buildOverviewSourceSections({
+          intakeOverview: this.calculateIntakeOverview(feedingsToSet, intakesToSet, weightToSet, treatmentRecordsToSet),
+          feedings: feedingsToSet
         })
+      }, () => {
+        // setData 异步提交后再重算，避免概览继续读取旧 intakes。
+        this.updateCalculations();
       });
-      
-      // 更新计算与概览
-      this.updateCalculations();
       
       if (!silent) {
         wx.hideLoading();
@@ -2657,6 +2668,10 @@ Page({
       macroSummary: summary,
       intakeOverview: overview,
       macroRatios: this.computeMacroRatios(summary),
+      overviewSourceSections: this.buildOverviewSourceSections({
+        intakeOverview: overview,
+        feedings
+      }),
       summaryMacroRows: this.buildSummaryMacroRows({
         macroRatios: this.computeMacroRatios(summary),
         macroSummary: summary
@@ -3024,6 +3039,10 @@ Page({
             summaryMacroRows: this.buildSummaryMacroRows({
               macroRatios: this.computeMacroRatios(updatedSummary),
               macroSummary: updatedSummary
+            }),
+            overviewSourceSections: this.buildOverviewSourceSections({
+              intakeOverview: updatedOverview,
+              feedings: this.data.feedings || []
             }),
             intakeOverview: updatedOverview,
             activeFoodMenu: -1
@@ -3415,6 +3434,10 @@ Page({
               macroRatios: this.computeMacroRatios(updatedSummary),
               macroSummary: updatedSummary
             }),
+            overviewSourceSections: this.buildOverviewSourceSections({
+              intakeOverview: updatedOverview,
+              feedings: this.data.feedings || []
+            }),
             intakeOverview: updatedOverview,
             activeFoodMenu: -1
           });
@@ -3773,6 +3796,10 @@ Page({
         macroRatios: this.computeMacroRatios(updatedSummary),
         summaryMacroRows: this.buildSummaryMacroRows({
           macroRatios: this.computeMacroRatios(updatedSummary)
+        }),
+        overviewSourceSections: this.buildOverviewSourceSections({
+          intakeOverview: updatedOverview,
+          feedings: this.data.feedings || []
         })
       });
 

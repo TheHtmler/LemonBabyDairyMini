@@ -762,6 +762,15 @@ Page({
     }));
   },
 
+  async notifyPreviousPageRefresh() {
+    const pages = getCurrentPages();
+    const prevPage = pages[pages.length - 2];
+    if (!prevPage || prevPage.route !== 'pages/daily-feeding/index' || typeof prevPage.loadTodayData !== 'function') {
+      return;
+    }
+    await prevPage.loadTodayData(true);
+  },
+
   async saveMeal() {
     if (this.data.isSaving) return;
     if (isFutureDateKey(this.data.selectedDate)) {
@@ -838,6 +847,7 @@ Page({
 
       wx.hideLoading();
       wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });
+      await this.notifyPreviousPageRefresh();
       setTimeout(() => {
         wx.navigateBack();
       }, 300);

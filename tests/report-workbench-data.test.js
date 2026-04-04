@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 
 const {
   buildReportArchivePreview,
+  buildReportDetailPreview,
+  buildReportTrendPreview,
   buildReportWorkbenchView
 } = require('../miniprogram/utils/reportWorkbench');
 
@@ -230,4 +232,97 @@ test('buildReportArchivePreview groups reports by type and exposes compare-ready
   assert.equal(archive.reportCards[0].abnormalCount, 2);
   assert.match(archive.reportCards[0].keySummary, /甲基丙二酸/);
   assert.equal(archive.selectedCompareReportId, 'urine-current');
+});
+
+test('buildReportDetailPreview builds grouped indicator detail for a selected report', () => {
+  const reports = [
+    {
+      _id: 'blood-current',
+      reportType: 'blood_ms',
+      reportDate: new Date('2026-12-20T00:00:00+08:00'),
+      indicators: {
+        iso_leu: { value: '42', status: 'normal' },
+        met: { value: '18', status: 'low' },
+        val: { value: '75', status: 'normal' },
+        thr: { value: '66', status: 'normal' },
+        c0: { value: '20', status: 'normal' },
+        c2: { value: '22', status: 'normal' },
+        c3: { value: '8.1', status: 'high' },
+        c3_c0: { value: '0.41', status: 'high' },
+        c3_c2: { value: '0.36', status: 'high' }
+      }
+    }
+  ];
+
+  const detail = buildReportDetailPreview({
+    selectedReportId: 'blood-current',
+    reports
+  });
+
+  assert.equal(detail.reportId, 'blood-current');
+  assert.equal(detail.reportTypeLabel, '血串联质谱');
+  assert.equal(detail.summary.abnormalCount, 4);
+  assert.equal(detail.indicatorGroups[0].title, '氨基酸相关指标');
+  assert.ok(detail.indicatorGroups[0].items.some((item) => item.name === '蛋氨酸/甲硫氨酸'));
+});
+
+test('buildReportTrendPreview links same-type trend data to previous report and feeding windows', () => {
+  const reports = [
+    {
+      _id: 'urine-current',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-16T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '120', status: 'high' },
+        methylcitric_acid: { value: '9', status: 'high' },
+        hydroxypropionic_acid: { value: '3.5', status: 'normal' },
+        hydroxybutyric_acid: { value: '2.1', status: 'normal' }
+      }
+    },
+    {
+      _id: 'urine-previous',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-12T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '100', status: 'high' },
+        methylcitric_acid: { value: '8', status: 'high' },
+        hydroxypropionic_acid: { value: '3.6', status: 'normal' },
+        hydroxybutyric_acid: { value: '2.4', status: 'normal' }
+      }
+    }
+  ];
+
+  const feedingRecords = [
+    {
+      _id: 'f1',
+      date: '2026-11-13',
+      basicInfo: { weight: 5 },
+      feedings: [],
+      intakes: [
+        {
+          type: 'food',
+          proteinSource: 'natural',
+          nutrition: { calories: 100, protein: 2, carbs: 10, fat: 5 },
+          naturalProtein: 2,
+          specialProtein: 0
+        }
+      ]
+    }
+  ];
+
+  const trend = buildReportTrendPreview({
+    reportType: 'urine_ms',
+    selectedReportId: 'urine-current',
+    reports,
+    feedingRecords,
+    nutritionSettings: {},
+    fallbackWeight: 5
+  });
+
+  assert.equal(trend.reportTypeLabel, '尿串联质谱');
+  assert.equal(trend.selectedReportId, 'urine-current');
+  assert.equal(trend.previousReportId, 'urine-previous');
+  assert.equal(trend.detailLinks.currentReportId, 'urine-current');
+  assert.equal(trend.detailLinks.previousReportId, 'urine-previous');
+  assert.equal(trend.nutritionWindows[0].dateRange, '11-13 至 11-15');
 });

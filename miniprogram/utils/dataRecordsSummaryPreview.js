@@ -7,8 +7,8 @@ return String(value);
 function toNumber(value) {
 return Number(value || 0);
 }
-function formatOneDecimal(value) {
-return normalizeValue(Number(toNumber(value).toFixed(1)));
+function formatTwoDecimals(value) {
+return normalizeValue(Number(toNumber(value).toFixed(2)).toFixed(2));
 }
 function buildRangeValue(range) {
 if (!range || range.min === undefined || range.max === undefined) {
@@ -39,7 +39,7 @@ function buildSourceBreakdownLine(parts = []) {
 return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}`).join(' · ');
 }
 function buildProteinBreakdownLine(parts = []) {
-return parts.map(({ label, value }) => `${label} ${formatOneDecimal(value)}g`).join(' · ');
+return parts.map(({ label, value }) => `${label} ${formatTwoDecimals(value)}g`).join(' · ');
 }
 function buildStatValue(value, unit) {
 return `${normalizeValue(value)} ${unit}`;
@@ -156,7 +156,7 @@ sourceSections: [
 {
 label: '喂奶',
 type: 'milk',
-summaryText: `${normalMilkColumnLabel} ${normalizeValue(normalMilk.volume || 0)}ml ${normalizeValue(normalMilk.calories || 0)}kcal ${formatOneDecimal(normalMilk.protein || 0)}g蛋白 · 特奶 ${normalizeValue(specialMilk.volume || 0)}ml ${normalizeValue(specialMilk.calories || 0)}kcal ${formatOneDecimal(specialMilk.protein || 0)}g蛋白`,
+summaryText: `${normalMilkColumnLabel} ${normalizeValue(normalMilk.volume || 0)}ml ${normalizeValue(normalMilk.calories || 0)}kcal ${formatTwoDecimals(normalMilk.protein || 0)}g蛋白 · 特奶 ${normalizeValue(specialMilk.volume || 0)}ml ${normalizeValue(specialMilk.calories || 0)}kcal ${formatTwoDecimals(specialMilk.protein || 0)}g蛋白`,
 columns: [
 {
 label: normalMilkColumnLabel,
@@ -226,8 +226,6 @@ macroRows: [
 {
 label: '蛋白',
  value: `${normalizeValue(macroRatios.protein || 0)}%`,
- premiumRatio: input.proteinSummaryDisplay?.premiumRatio || 0,
- premiumValue: normalizeValue(input.proteinSummaryDisplay?.premium || 0),
  infoTitle: '蛋白供能占比参考',
  infoLines: ['参考 10%-15%']
 },

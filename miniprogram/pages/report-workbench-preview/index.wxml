@@ -15,202 +15,232 @@
   </view>
 
   <view wx:else>
-
-  <view class="quick-actions">
-    <view class="quick-action primary" bindtap="goToAddReport">
-      <text class="quick-action-title">录入新报告</text>
-      <text class="quick-action-desc">{{selectedFilterType === 'all' ? '跳到正式录入页' : '按当前分类进入录入'}}</text>
-    </view>
-  </view>
-
-  <view class="report-type-tabs">
-    <view
-      wx:for="{{reportTypeTabs}}"
-      wx:key="key"
-      class="type-tab {{item.active ? 'active' : ''}}"
-      data-type="{{item.key}}"
-      bindtap="handleTypeFilterChange"
-    >
-      <text class="type-tab-label">{{item.label}}</text>
-      <text class="type-tab-count">{{item.count}}</text>
-    </view>
-  </view>
-
-  <view class="report-archive-list">
-    <view class="section-head">
-      <view>
-        <text class="section-title">报告列表</text>
-        <text class="section-subtitle">按报告类型归档，先记录，再选择同类报告进入对比。</text>
+    <view wx:if="{{previewMode === 'archive'}}" class="archive-view">
+      <view class="quick-actions">
+        <view class="quick-action primary" bindtap="goToAddReport">
+          <text class="quick-action-title">录入新报告</text>
+          <text class="quick-action-desc">{{selectedFilterType === 'all' ? '跳到正式录入页' : '按当前分类进入录入'}}</text>
+        </view>
+        <view class="quick-action secondary" bindtap="openTrendPreview">
+          <text class="quick-action-title">查看本类趋势</text>
+          <text class="quick-action-desc">{{selectedFilterType === 'all' ? '先切到某一类报告' : '查看当前分类的指标趋势'}}</text>
+        </view>
       </view>
-    </view>
-    <view wx:if="{{archiveReportCards.length === 0}}" class="archive-empty">
-      <text class="archive-empty-title">当前分类还没有报告</text>
-      <text class="archive-empty-desc">可以先补录这类报告，再开始做趋势对比。</text>
-    </view>
-    <view wx:else class="archive-card-list">
-      <view
-        wx:for="{{archiveReportCards}}"
-        wx:key="reportId"
-        class="archive-card {{selectedCompareReportId === item.reportId ? 'active' : ''}}"
-        data-report-id="{{item.reportId}}"
-        bindtap="handleCompareReport"
-      >
-        <view class="archive-card-head">
+
+      <view class="report-type-tabs">
+        <view
+          wx:for="{{reportTypeTabs}}"
+          wx:key="key"
+          class="type-tab {{item.active ? 'active' : ''}}"
+          data-type="{{item.key}}"
+          bindtap="handleTypeFilterChange"
+        >
+          <text class="type-tab-label">{{item.label}}</text>
+          <text class="type-tab-count">{{item.count}}</text>
+        </view>
+      </view>
+
+      <view class="report-archive-list">
+        <view class="section-head">
           <view>
-            <text class="archive-card-date">{{item.formattedDate}}</text>
-            <text class="archive-card-type">{{item.reportTypeLabel}}</text>
-          </view>
-          <view class="archive-status {{item.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
-            <text>{{item.statusText}}</text>
+            <text class="section-title">报告档案</text>
+            <text class="section-subtitle">先按类型记录与回看，再从同类报告进入趋势分析。</text>
           </view>
         </view>
-        <view class="archive-card-body">
-          <text class="archive-key-summary">{{item.keySummary}}</text>
+        <view wx:if="{{archiveReportCards.length === 0}}" class="archive-empty">
+          <text class="archive-empty-title">当前分类还没有报告</text>
+          <text class="archive-empty-desc">可以先补录这类报告，再开始看同类趋势。</text>
         </view>
-        <view class="archive-card-footer">
-          <text class="archive-meta">总指标 {{item.totalCount}}</text>
-          <text class="archive-meta">正常 {{item.normalCount}}</text>
-          <text class="archive-meta emphasize">对比这份</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <view wx:if="{{reportView}}" class="report-compare-panel">
-  <view class="compare-overview-card">
-    <view class="section-head">
-      <view>
-        <text class="section-title">报告对比</text>
-        <text class="section-subtitle">{{reportView.reportTypeLabel}} · 本次 {{reportView.reportDate}} · 对比 {{reportView.compareDate}}</text>
-      </view>
-      <view class="section-badges">
-        <view class="meta-badge">
-          <text class="meta-badge-label">完整度</text>
-          <text class="meta-badge-value">{{reportView.completion}}</text>
-        </view>
-        <view class="meta-badge warm">
-          <text class="meta-badge-label">覆盖率</text>
-          <text class="meta-badge-value">{{reportView.coverageRate}}</text>
-        </view>
-      </view>
-    </view>
-    <text class="status-note">{{reportView.statusNote}}</text>
-    <view class="compare-grid">
-      <view wx:for="{{reportView.compareCards}}" wx:key="key" class="compare-card">
-        <view class="compare-card-head">
-          <text class="compare-card-title">{{item.name}}</text>
-          <text class="status-tag {{item.status}}">{{item.status === 'high' ? '超参考' : item.status === 'low' ? '偏低' : '范围内'}}</text>
-        </view>
-        <view class="compare-values">
-          <view class="value-block">
-            <text class="value-label">本次</text>
-            <text class="value-primary">{{item.current}}</text>
-          </view>
-          <view class="value-block previous">
-            <text class="value-label">上次</text>
-            <text class="value-secondary">{{item.previous}}</text>
-          </view>
-        </view>
-        <view class="delta-row">
-          <text class="delta-chip {{item.direction}}">{{item.direction === 'up' ? '↑' : '↓'}} {{item.delta}}</text>
-          <text class="delta-unit" wx:if="{{item.unit}}">{{item.unit}}</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <view class="trend-section">
-    <view class="section-head">
-      <view>
-        <text class="section-title">指标趋势</text>
-        <text class="section-subtitle">默认展示近 4 次同类报告，并预留营养曲线叠加位</text>
-      </view>
-    </view>
-    <view wx:for="{{reportView.trendMetrics}}" wx:key="key" class="trend-card">
-      <view class="trend-card-head">
-        <text class="trend-title">{{item.name}}</text>
-        <text class="trend-overlay">{{item.overlayLabel}}</text>
-      </view>
-      <view class="trend-points">
-        <view wx:for="{{item.points}}" wx:key="date" class="trend-point {{point.active ? 'active' : ''}}" wx:for-item="point">
-          <text class="trend-point-value">{{point.value}}</text>
-          <view class="trend-point-dot"></view>
-          <text class="trend-point-date">{{point.date}}</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <view wx:for="{{reportView.nutritionWindows}}" wx:key="key" class="nutrition-window-card">
-    <view class="section-head">
-      <view>
-        <text class="section-title">{{item.label}}</text>
-        <text class="section-subtitle">{{item.dateRange}}</text>
-      </view>
-      <view class="window-badge">
-        <text>{{item.badge}}</text>
-      </view>
-    </view>
-    <view class="nutrition-metrics-grid">
-      <view wx:for="{{item.metrics}}" wx:key="label" wx:for-item="metric" class="nutrition-metric">
-        <text class="nutrition-metric-label">{{metric.label}}</text>
-        <view class="nutrition-metric-value-row">
-          <text class="nutrition-metric-value">{{metric.value}}</text>
-          <text class="nutrition-metric-unit">{{metric.unit}}</text>
-        </view>
-      </view>
-    </view>
-    <text class="window-note">{{item.note}}</text>
-  </view>
-
-  <view class="all-indicators-card">
-    <view class="section-head">
-      <view>
-        <text class="section-title">完整指标区</text>
-        <text class="section-subtitle">把关键氨基酸、酰基肉碱和比值完整展开，适合和医生逐项核对。</text>
-      </view>
-    </view>
-    <view wx:for="{{reportView.allIndicatorGroups}}" wx:key="key" class="indicator-group">
-      <view class="indicator-group-head">
-        <text class="indicator-group-title">{{item.title}}</text>
-        <text class="indicator-group-hint">{{item.hint}}</text>
-      </view>
-      <view class="indicator-list">
-        <view wx:for="{{item.items}}" wx:key="key" wx:for-item="indicator" class="indicator-item">
-          <view class="indicator-main">
-            <view>
-              <text class="indicator-name">{{indicator.name}}</text>
-              <text class="indicator-abbr">{{indicator.abbr}}</text>
+        <view wx:else class="archive-card-list">
+          <view
+            wx:for="{{archiveReportCards}}"
+            wx:key="reportId"
+            class="archive-card"
+            data-report-id="{{item.reportId}}"
+            bindtap="openDetailPreview"
+          >
+            <view class="archive-card-head">
+              <view>
+                <text class="archive-card-date">{{item.formattedDate}}</text>
+                <text class="archive-card-type">{{item.reportTypeLabel}}</text>
+              </view>
+              <view class="archive-status {{item.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
+                <text>{{item.statusText}}</text>
+              </view>
             </view>
-            <text class="status-tag {{indicator.status}}">{{indicator.status === 'high' ? '超参考' : indicator.status === 'low' ? '偏低' : '范围内'}}</text>
-          </view>
-          <view class="indicator-values">
-            <text class="indicator-current">本次 {{indicator.current}}</text>
-            <text class="indicator-previous">上次 {{indicator.previous}}</text>
-            <text class="indicator-delta {{indicator.direction}}">{{indicator.direction === 'up' ? '↑' : indicator.direction === 'down' ? '↓' : '≈'}} {{indicator.delta || '0'}}</text>
+            <view class="archive-card-body">
+              <text class="archive-key-summary">{{item.keySummary}}</text>
+            </view>
+            <view class="archive-card-footer">
+              <text class="archive-meta">总指标 {{item.totalCount}}</text>
+              <text class="archive-meta">正常 {{item.normalCount}}</text>
+              <text class="archive-meta emphasize">查看详情</text>
+            </view>
           </view>
         </view>
       </view>
     </view>
-  </view>
 
-  <view class="doctor-summary-card">
-    <view class="section-head">
-      <view>
-        <text class="section-title">医生摘要卡</text>
-        <text class="section-subtitle">适合门诊时直接查看或截图</text>
+    <view wx:if="{{previewMode === 'detail' && currentDetailView}}" class="detail-view">
+      <view class="preview-topbar">
+        <view class="preview-back" bindtap="goBackToArchive">
+          <text>← 返回档案</text>
+        </view>
       </view>
-      <view class="summary-actions" bindtap="showPreviewToast">
-        <text>预览导出</text>
+
+      <view class="detail-summary-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">{{currentDetailView.reportTypeLabel}}</text>
+            <text class="section-subtitle">{{currentDetailView.reportDate}} · 查看这一份完整报告</text>
+          </view>
+          <view class="summary-actions" data-report-id="{{currentDetailView.reportId}}" bindtap="openTrendPreview">
+            <text>查看本类趋势</text>
+          </view>
+        </view>
+        <view class="detail-summary-grid">
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentDetailView.summary.filledCount}}</text>
+            <text class="detail-stat-label">已填写指标</text>
+          </view>
+          <view class="detail-stat">
+            <text class="detail-stat-value warn">{{currentDetailView.summary.abnormalCount}}</text>
+            <text class="detail-stat-label">异常项</text>
+          </view>
+          <view class="detail-stat long">
+            <text class="detail-stat-label">关键摘要</text>
+            <text class="detail-stat-copy">{{currentDetailView.keySummary}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="detail-indicators-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">完整指标区</text>
+            <text class="section-subtitle">按报告类型分组展示，适合逐项核对这一次结果。</text>
+          </view>
+        </view>
+        <view wx:for="{{currentDetailView.indicatorGroups}}" wx:key="key" class="indicator-group">
+          <view class="indicator-group-head">
+            <text class="indicator-group-title">{{item.title}}</text>
+            <text class="indicator-group-hint">{{item.hint}}</text>
+          </view>
+          <view class="indicator-list">
+            <view wx:for="{{item.items}}" wx:key="key" wx:for-item="indicator" class="indicator-item">
+              <view class="indicator-main">
+                <view>
+                  <text class="indicator-name">{{indicator.name}}</text>
+                  <text class="indicator-abbr">{{indicator.abbr}}</text>
+                </view>
+                <text class="status-tag {{indicator.status}}">{{indicator.status === 'high' ? '偏高' : indicator.status === 'low' ? '偏低' : indicator.status === 'normal' ? '范围内' : '待补充'}}</text>
+              </view>
+              <view class="indicator-values">
+                <text class="indicator-current">本次 {{indicator.current}}</text>
+                <text wx:if="{{indicator.minRange || indicator.maxRange}}" class="indicator-range">参考 {{indicator.minRange || '--'}} - {{indicator.maxRange || '--'}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
-    <view class="summary-list">
-      <view wx:for="{{reportView.doctorSummary}}" wx:key="*this" class="summary-item">
-        <text class="summary-bullet">•</text>
-        <text class="summary-text">{{item}}</text>
+
+    <view wx:if="{{previewMode === 'trend' && currentTrendView}}" class="trend-view">
+      <view class="preview-topbar">
+        <view class="preview-back" bindtap="goBackToArchive">
+          <text>← 返回档案</text>
+        </view>
+      </view>
+
+      <view class="trend-summary-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">{{currentTrendView.reportTypeLabel}}趋势</text>
+            <text class="section-subtitle">选中 {{currentTrendView.selectedReportDate}}，自动对比上一份同类报告。</text>
+          </view>
+        </view>
+        <view class="trend-summary-grid">
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentTrendView.reportCount}}</text>
+            <text class="detail-stat-label">同类报告数</text>
+          </view>
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentTrendView.selectedReportDate}}</text>
+            <text class="detail-stat-label">本次报告</text>
+          </view>
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentTrendView.previousReportDate || '--'}}</text>
+            <text class="detail-stat-label">上次报告</text>
+          </view>
+        </view>
+        <view class="trend-link-row">
+          <view class="trend-link-chip" data-report-id="{{currentTrendView.detailLinks.currentReportId}}" bindtap="openReportDetailFromTrend">
+            <text>查看本次详情</text>
+          </view>
+          <view wx:if="{{currentTrendView.detailLinks.previousReportId}}" class="trend-link-chip secondary" data-report-id="{{currentTrendView.detailLinks.previousReportId}}" bindtap="openReportDetailFromTrend">
+            <text>查看上次详情</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="trend-section">
+        <view class="section-head">
+          <view>
+            <text class="section-title">同类指标趋势</text>
+            <text class="section-subtitle">默认展示本类最核心的指标级趋势。</text>
+          </view>
+        </view>
+        <view wx:for="{{currentTrendView.trendMetrics}}" wx:key="key" class="trend-card">
+          <view class="trend-card-head">
+            <text class="trend-title">{{item.name}}</text>
+            <text class="trend-overlay">{{item.overlayLabel}}</text>
+          </view>
+          <view class="trend-points">
+            <view wx:for="{{item.points}}" wx:key="date" class="trend-point {{point.active ? 'active' : ''}}" wx:for-item="point">
+              <text class="trend-point-value">{{point.value}}</text>
+              <view class="trend-point-dot"></view>
+              <text class="trend-point-date">{{point.date}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:for="{{currentTrendView.nutritionWindows}}" wx:key="key" class="nutrition-window-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">{{item.label}}</text>
+            <text class="section-subtitle">{{item.dateRange}}</text>
+          </view>
+          <view class="window-badge">
+            <text>{{item.badge}}</text>
+          </view>
+        </view>
+        <view class="nutrition-metrics-grid">
+          <view wx:for="{{item.metrics}}" wx:key="label" wx:for-item="metric" class="nutrition-metric">
+            <text class="nutrition-metric-label">{{metric.label}}</text>
+            <view class="nutrition-metric-value-row">
+              <text class="nutrition-metric-value">{{metric.value}}</text>
+              <text class="nutrition-metric-unit">{{metric.unit}}</text>
+            </view>
+          </view>
+        </view>
+        <text class="window-note">{{item.note}}</text>
+      </view>
+
+      <view class="doctor-summary-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">区间对比摘要</text>
+            <text class="section-subtitle">把同类趋势和这段时间的喂养背景串起来看。</text>
+          </view>
+        </view>
+        <view class="summary-list">
+          <view wx:for="{{currentTrendView.doctorSummary}}" wx:key="*this" class="summary-item">
+            <text class="summary-bullet">•</text>
+            <text class="summary-text">{{item}}</text>
+          </view>
+        </view>
       </view>
     </view>
-  </view>
-  </view>
   </view>
 </view>

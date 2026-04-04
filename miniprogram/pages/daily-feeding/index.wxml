@@ -97,6 +97,7 @@
       <view class="summary-item">
         <text class="label">天然蛋白</text>
         <text class="value">{{macroSummary.naturalProtein || 0}} g</text>
+        <text class="summary-item-meta" wx:if="{{macroSummary.premiumRatio > 0}}">优质蛋白 {{macroSummary.premiumProtein || 0}}g · 占天然蛋白 {{macroSummary.premiumRatio}}%</text>
       </view>
       <view class="summary-item">
         <text class="label">特殊蛋白</text>
@@ -124,7 +125,6 @@
           </view>
         </view>
         <text class="ratio-inline-value">{{item.value}}</text>
-        <text class="ratio-inline-value" wx:if="{{item.premiumRatio > 0}}" style="font-size: 20rpx; color: #999; margin-top: 4rpx;">优质 {{item.premiumValue}}g / {{item.premiumRatio}}%</text>
       </view>
     </view>
   </view>
@@ -135,98 +135,33 @@
     
     <!-- 摄入来源概览 -->
     <view class="records-summary">
-      <view class="summary-card milk-card">
-        <view class="card-header">
-          <text class="card-title">喂奶</text>
-          <text class="card-meta">热量 {{intakeOverview.milk.totalCalories || 0}} kcal</text>
-        </view>
-        <view class="card-body milk-body">
-          <view class="milk-column">
-            <text class="column-title">天然</text>
-            <view class="stat-row">
-              <text>体积</text>
-              <text>{{intakeOverview.milk.normal.volume || 0}} ml</text>
-            </view>
-            <view class="stat-row">
-              <text>蛋白</text>
-              <text>{{intakeOverview.milk.normal.protein || 0}} g</text>
-            </view>
-            <view class="stat-row">
-              <text>蛋白系数</text>
-              <text>{{intakeOverview.milk.normal.coefficient !== '' ? intakeOverview.milk.normal.coefficient : '—'}} g/kg/d</text>
-            </view>
-            <view class="stat-row">
-              <text>热量</text>
-              <text>{{intakeOverview.milk.normal.calories || 0}} kcal</text>
-            </view>
-            <view class="stat-row">
-              <text>碳水</text>
-              <text>{{intakeOverview.milk.normal.carbs || 0}} g</text>
-            </view>
-            <view class="stat-row">
-              <text>脂肪</text>
-              <text>{{intakeOverview.milk.normal.fat || 0}} g</text>
-            </view>
-          </view>
-          <view class="milk-column">
-            <text class="column-title">特奶</text>
-            <view class="stat-row">
-              <text>体积</text>
-              <text>{{intakeOverview.milk.special.volume || 0}} ml</text>
-            </view>
-            <view class="stat-row">
-              <text>蛋白</text>
-              <text>{{intakeOverview.milk.special.protein || 0}} g</text>
-            </view>
-            <view class="stat-row">
-              <text>蛋白系数</text>
-              <text>{{intakeOverview.milk.special.coefficient !== '' ? intakeOverview.milk.special.coefficient : '—'}} g/kg/d</text>
-            </view>
-            <view class="stat-row">
-              <text>热量</text>
-              <text>{{intakeOverview.milk.special.calories || 0}} kcal</text>
-            </view>
-            <view class="stat-row">
-              <text>碳水</text>
-              <text>{{intakeOverview.milk.special.carbs || 0}} g</text>
-            </view>
-            <view class="stat-row">
-              <text>脂肪</text>
-              <text>{{intakeOverview.milk.special.fat || 0}} g</text>
-            </view>
+      <view class="overview-card">
+        <view class="overview-head">
+          <view>
+            <text class="overview-title">摄入概览</text>
           </view>
         </view>
-      </view>
-
-      <view class="summary-card food-card">
-        <view class="card-header">
-          <text class="card-title">食物</text>
-          <text class="card-meta">热量 {{intakeOverview.food.totalCalories || 0}} kcal</text>
-        </view>
-        <view class="card-body food-body">
-          <view class="body-summary">
-            <text>蛋白 {{intakeOverview.food.protein || 0}} g</text>
-            <text>蛋白系数 {{intakeOverview.food.coefficient !== '' ? intakeOverview.food.coefficient : '—'}} g/kg/d</text>
-            <text>碳水 {{intakeOverview.food.carbs || 0}} g · 脂肪 {{intakeOverview.food.fat || 0}} g</text>
+        <view class="overview-section" wx:for="{{overviewSourceSections}}" wx:key="label">
+          <view class="overview-section-head">
+            <text class="overview-section-label">{{item.label}}</text>
+            <text class="overview-section-meta" wx:if="{{item.meta}}">{{item.meta}}</text>
           </view>
-          <view class="empty-record" wx:if="{{foodIntakes.length === 0}}">
-            <text>暂无食物摄入记录</text>
+          <view class="overview-milk-grid" wx:if="{{item.type === 'milk'}}">
+            <view class="overview-milk-card" wx:for="{{item.columns}}" wx:key="label" wx:for-item="column">
+              <text class="overview-milk-card-title">{{column.label}}</text>
+              <view class="overview-stat-list">
+                <view class="overview-stat-row" wx:for="{{column.stats}}" wx:key="label" wx:for-item="stat">
+                  <text class="overview-stat-label">{{stat.label}}</text>
+                  <text class="overview-stat-value">{{stat.value}}</text>
+                </view>
+              </view>
+            </view>
           </view>
-        </view>
-      </view>
-
-      <view class="summary-card food-card">
-        <view class="card-header">
-          <text class="card-title">治疗</text>
-          <text class="card-meta">热量 {{intakeOverview.treatment.totalCalories || 0}} kcal</text>
-        </view>
-        <view class="card-body food-body">
-          <view class="body-summary">
-            <text>记录 {{intakeOverview.treatment.count || 0}} 条</text>
-            <text>碳水 {{intakeOverview.treatment.carbs || 0}} g · 脂肪 {{intakeOverview.treatment.fat || 0}} g</text>
-          </view>
-          <view class="empty-record" wx:if="{{treatmentRecords.length === 0}}">
-            <text>暂无治疗记录</text>
+          <view class="overview-stat-compact-grid" wx:else>
+            <view class="overview-stat-compact-item" wx:for="{{item.stats}}" wx:key="label" wx:for-item="stat">
+              <text class="overview-stat-compact-label">{{stat.label}}</text>
+              <text class="overview-stat-compact-value">{{stat.value}}</text>
+            </view>
           </view>
         </view>
       </view>
