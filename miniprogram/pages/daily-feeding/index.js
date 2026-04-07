@@ -11,6 +11,7 @@ const {
   mergeTreatmentIntoOverview,
   formatTreatmentRecordsForDisplay
 } = require('../../utils/treatmentUtils');
+const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
 // 系统默认食物
 const MILK_CATEGORY_ALIASES = ['milk', '奶类', '奶制品', '乳制品', '乳类及制品'];
 
@@ -2238,14 +2239,8 @@ Page({
         updatePayload[`basicInfo.${key}`] = updates[key];
       });
 
-      if (this.data.recordId) {
-        await db.collection('feeding_records').doc(this.data.recordId).update({
-          data: updatePayload
-        });
-      } else {
-        if (!app.globalData.userInfo) {
-          return;
-        }
+      if (!this.data.recordId) {
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         const basicInfo = {
           weight: this.data.weight || '',
           naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
@@ -2253,21 +2248,12 @@ Page({
           calorieCoefficient: this.data.calorieCoefficientInput || '',
           ...updates
         };
-        const result = await db.collection('feeding_records').add({
-          data: {
-            date: today,
-            basicInfo,
-            feedings: [],
-            medicationRecords: [],
-            userInfo: app.globalData.userInfo,
-            nickName: app.globalData.userInfo.nickName,
-            babyUid: babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-        this.setData({ recordId: result._id });
+        const { recordId } = await findOrCreateDailyRecord(todayKey, babyUid, basicInfo);
+        this.setData({ recordId });
       }
+      await db.collection('feeding_records').doc(this.data.recordId).update({
+        data: updatePayload
+      });
     } catch (error) {
       console.error('更新日常基础信息失败:', error);
     }
@@ -3754,33 +3740,19 @@ Page({
         this.data.weight
       );
 
-      if (recordId) {
-        await db.collection('feeding_records').doc(recordId).update({
-          data: {
-            intakes: existingIntakes,
-            summary: updatedSummary,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        const result = await db.collection('feeding_records').add({
-          data: {
-            date: recordDate,
-            feedings: [],
-            intakes: existingIntakes,
-            medicationRecords: [],
-            summary: updatedSummary,
-            babyUid: babyUid,
-            basicInfo: {
-              weight: this.data.weight || ''
-            },
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-        recordId = result._id;
+      if (!recordId) {
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const result = await findOrCreateDailyRecord(todayKey, babyUid, { weight: this.data.weight || '' });
+        recordId = result.recordId;
         this.setData({ recordId });
       }
+      await db.collection('feeding_records').doc(recordId).update({
+        data: {
+          intakes: existingIntakes,
+          summary: updatedSummary,
+          updatedAt: db.serverDate()
+        }
+      });
 
       wx.hideLoading();
       wx.showToast({ title: isEdit ? '修改成功' : '添加成功', icon: 'success' });
@@ -3934,31 +3906,25 @@ Page({
         }
       }
       
-      // 如果不是当天的记录或没有记录ID，创建新记录
+      // 如果不是当天的记录或没有记录ID，查找或创建
       if (shouldCreateNewRecord) {
+        const todayKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
         const basicInfo = {
           weight: this.data.weight || '',
           naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
           specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
           calorieCoefficient: this.data.calorieCoefficientInput || ''
         };
-        
-        const result = await db.collection('feeding_records').add({
+        const result = await findOrCreateDailyRecord(todayKey, babyUid, basicInfo);
+        recordId = result.recordId;
+        this.setData({ recordId });
+
+        await db.collection('feeding_records').doc(recordId).update({
           data: {
-            date: currentDate,
-            basicInfo: basicInfo,
-            feedings: [feeding],
-            medicationRecords: [],
-            babyUid: babyUid,
-            createdAt: db.serverDate(),
+            feedings: db.command.push(feeding),
+            'basicInfo.weight': this.data.weight || '',
             updatedAt: db.serverDate()
           }
-        });
-        
-        // 保存新记录的ID
-        recordId = result._id;
-        this.setData({
-          recordId: recordId
         });
       }
       
@@ -4122,32 +4088,24 @@ Page({
         }
       }
       
-      // 如果不是当天的记录或没有记录ID，创建新记录
+      // 如果不是当天的记录或没有记录ID，查找或创建
       if (shouldCreateNewRecord) {
-        // 创建基本信息对象
+        const todayKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
         const basicInfo = {
           weight: this.data.weight || '',
           naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
           specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
           calorieCoefficient: this.data.calorieCoefficientInput || ''
-          // 可以在这里添加更多基本信息，如身高等
         };
-        
-        const result = await db.collection('feeding_records').add({
+        const result = await findOrCreateDailyRecord(todayKey, babyUid, basicInfo);
+        this.setData({ recordId: result.recordId });
+
+        await db.collection('feeding_records').doc(result.recordId).update({
           data: {
-            date: currentDate,
-            basicInfo: basicInfo, // 使用新的数据结构
-            feedings: [feeding],
-            medicationRecords: [],
-            babyUid: babyUid,
-            createdAt: db.serverDate(),
+            feedings: db.command.push(feeding),
+            'basicInfo.weight': this.data.weight || '',
             updatedAt: db.serverDate()
           }
-        });
-        
-        // 保存新记录的ID
-        this.setData({
-          recordId: result._id
         });
       }
       

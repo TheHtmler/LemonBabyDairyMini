@@ -1,5 +1,6 @@
 const FoodModel = require('../../models/food');
 const { getBabyUid } = require('../../utils/index');
+const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
 
 const app = getApp();
 const MAX_RECENT_FOODS = 10;
@@ -819,31 +820,16 @@ Page({
         : existingIntakes;
       const updatedIntakes = [...mealIntakes, ...remainingIntakes];
 
-      if (mergedRecord?._id) {
-        await db.collection('feeding_records').doc(mergedRecord._id).update({
-          data: {
-            date: startOfDay,
-            basicInfo: mergedRecord.basicInfo || {},
-            feedings: mergedRecord.feedings || [],
-            intakes: updatedIntakes,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        await db.collection('feeding_records').add({
-          data: {
-            date: startOfDay,
-            basicInfo: {},
-            feedings: [],
-            intakes: updatedIntakes,
-            medicationRecords: [],
-            summary: {},
-            babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-      }
+      const targetId = mergedRecord?._id || (await findOrCreateDailyRecord(this.data.selectedDate, babyUid)).recordId;
+      await db.collection('feeding_records').doc(targetId).update({
+        data: {
+          date: startOfDay,
+          basicInfo: mergedRecord?.basicInfo || {},
+          feedings: mergedRecord?.feedings || [],
+          intakes: updatedIntakes,
+          updatedAt: db.serverDate()
+        }
+      });
 
       wx.hideLoading();
       wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });

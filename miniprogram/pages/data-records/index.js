@@ -26,6 +26,7 @@ const {
 const {
   buildDataRecordsSummaryPreview
 } = require('../../utils/dataRecordsSummaryPreview');
+const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
 // 通用工具
 const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
 
@@ -1883,31 +1884,18 @@ Page({
       const updatedSummary = calculateMacroSummary(existingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
       const updatedOverview = calculateIntakeOverview(this.data.feedings || [], existingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
-      if (recordId) {
-        await db.collection('feeding_records').doc(recordId).update({
-          data: {
-            intakes: existingIntakes,
-            summary: updatedSummary,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        const result = await db.collection('feeding_records').add({
-          data: {
-            date: recordDate,
-            feedings: [],
-            intakes: existingIntakes,
-            medicationRecords: [],
-            summary: updatedSummary,
-            babyUid: babyUid,
-            basicInfo: this.buildPersistedBasicInfoForDate({}, this.data.selectedDate),
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-        recordId = result._id;
+      if (!recordId) {
+        const result = await findOrCreateDailyRecord(this.data.selectedDate, babyUid, this.buildPersistedBasicInfoForDate({}, this.data.selectedDate));
+        recordId = result.recordId;
         this.setData({ recordId });
       }
+      await db.collection('feeding_records').doc(recordId).update({
+        data: {
+          intakes: existingIntakes,
+          summary: updatedSummary,
+          updatedAt: db.serverDate()
+        }
+      });
 
       wx.hideLoading();
       wx.showToast({ title: isEdit ? '修改成功' : '添加成功', icon: 'success' });
@@ -2216,25 +2204,7 @@ Page({
       return safeRecords[0];
     }
 
-    const mergedRecord = mergeFeedingRecords(safeRecords, this.data.nutritionSettings || {});
-    if (!mergedRecord?._id) return mergedRecord;
-
-    try {
-      const db = wx.cloud.database();
-      await db.collection('feeding_records').doc(mergedRecord._id).update({
-        data: {
-          basicInfo: mergedRecord.basicInfo || {},
-          feedings: mergedRecord.feedings || [],
-          intakes: mergedRecord.intakes || [],
-          summary: mergedRecord.summary || {},
-          updatedAt: db.serverDate()
-        }
-      });
-    } catch (error) {
-      console.error('合并同日记录失败:', error);
-    }
-
-    return mergedRecord;
+    return mergeFeedingRecords(safeRecords, this.data.nutritionSettings || {});
   },
 
   openCopyCalendar(type) {
@@ -2354,29 +2324,14 @@ Page({
     wx.showLoading({ title: '复制中...' });
     try {
       const db = wx.cloud.database();
-      if (targetRecord?._id) {
-        await db.collection('feeding_records').doc(targetRecord._id).update({
-          data: {
-            feedings: copiedFeedings,
-            summary: updatedSummary,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        await db.collection('feeding_records').add({
-          data: {
-            date: buildDateTimeFromDateKey(targetDateStr, '00:00'),
-            basicInfo: {},
-            feedings: copiedFeedings,
-            intakes: [],
-            medicationRecords: [],
-            summary: updatedSummary,
-            babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-      }
+      const targetId = targetRecord?._id || (await findOrCreateDailyRecord(targetDateStr, babyUid)).recordId;
+      await db.collection('feeding_records').doc(targetId).update({
+        data: {
+          feedings: copiedFeedings,
+          summary: updatedSummary,
+          updatedAt: db.serverDate()
+        }
+      });
       wx.hideLoading();
       wx.showToast({ title: '已复制到目标日期', icon: 'success' });
     } catch (error) {
@@ -2413,29 +2368,14 @@ Page({
     wx.showLoading({ title: '复制中...' });
     try {
       const db = wx.cloud.database();
-      if (targetRecord?._id) {
-        await db.collection('feeding_records').doc(targetRecord._id).update({
-          data: {
-            intakes: mergedIntakes,
-            summary: updatedSummary,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        await db.collection('feeding_records').add({
-          data: {
-            date: buildDateTimeFromDateKey(targetDateStr, '00:00'),
-            basicInfo: {},
-            feedings: [],
-            intakes: mergedIntakes,
-            medicationRecords: [],
-            summary: updatedSummary,
-            babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-      }
+      const targetId = targetRecord?._id || (await findOrCreateDailyRecord(targetDateStr, babyUid)).recordId;
+      await db.collection('feeding_records').doc(targetId).update({
+        data: {
+          intakes: mergedIntakes,
+          summary: updatedSummary,
+          updatedAt: db.serverDate()
+        }
+      });
       wx.hideLoading();
       wx.showToast({ title: '已复制到目标日期', icon: 'success' });
     } catch (error) {
@@ -3531,30 +3471,13 @@ Page({
       }
 
       const existingRecord = pickPrimaryFeedingRecord(res.data || []);
-      if (existingRecord?._id) {
-        // 更新现有记录
-        await db.collection('feeding_records').doc(existingRecord._id).update({
-          data: {
-            feedings: _.push([feeding]),
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        // 创建新记录，使用新的数据结构
-        const basicInfo = this.buildPersistedBasicInfoForDate({}, this.data.selectedDate);
-        
-        await db.collection('feeding_records').add({
-          data: {
-            date: startOfDay,
-            basicInfo: basicInfo,   // 使用新的结构
-            feedings: [feeding],
-            medicationRecords: [],
-            babyUid: babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-      }
+      const targetId = existingRecord?._id || (await findOrCreateDailyRecord(this.data.selectedDate, babyUid, this.buildPersistedBasicInfoForDate({}, this.data.selectedDate))).recordId;
+      await db.collection('feeding_records').doc(targetId).update({
+        data: {
+          feedings: _.push([feeding]),
+          updatedAt: db.serverDate()
+        }
+      });
 
       wx.hideLoading();
       wx.showToast({
@@ -3782,104 +3705,22 @@ Page({
 
     try {
       if (deleteType === 'feeding') {
-        // 处理喂奶记录删除
+        // 处理喂奶记录删除 — 与 daily-feeding 保持一致
+        const recordId = this.data.recordId;
+        if (!recordId) {
+          throw new Error('未找到当天记录');
+        }
+
+        const updatedFeedings = (this.data.feedingRecords || []).filter((_, i) => i !== deleteIndex);
+
         const db = wx.cloud.database();
-
-        // 将日期字符串转换为 Date 对象
-        const [year, month, day] = selectedDate.split('-').map(Number);
-        const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-        const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-
-        // 查询当天的记录（添加babyUid条件）
-        const app = getApp();
-        const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-        
-        if (!babyUid) {
-          wx.hideLoading();
-          wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
-          return;
-        }
-
-        const deleteQuery = {
-          date: db.command.gte(startOfDay).and(db.command.lte(endOfDay)),
-          babyUid: babyUid
-        };
-        
-        const res = await db.collection('feeding_records').where(deleteQuery).get();
-
-        if (res.data.length === 0) {
-          wx.hideLoading();
-          wx.showToast({
-            title: '未找到记录',
-            icon: 'error'
-          });
-          this.hideDeleteConfirm();
-          return;
-        }
-
-        const dayRecord = pickPrimaryFeedingRecord(res.data || []);
-        if (!dayRecord) {
-          wx.hideLoading();
-          wx.showToast({
-            title: '未找到记录',
-            icon: 'error'
-          });
-          this.hideDeleteConfirm();
-          return;
-        }
-        const feedings = [...dayRecord.feedings];
-        
-        // 找到要删除的记录（通过对比时间和奶量来确定）
-        const targetFeeding = this.data.feedingRecords[deleteIndex];
-        let targetIndex = -1;
-        
-        // 尝试通过时间和奶量匹配找到对应的记录
-        for (let i = 0; i < feedings.length; i++) {
-          const feeding = feedings[i];
-          let feedingStartTime = '';
-          
-          // 处理时间格式
-          if (feeding.startTime && typeof feeding.startTime === 'string' && feeding.startTime.includes(':')) {
-            feedingStartTime = feeding.startTime;
-          } else if (feeding.startDateTime) {
-            const date = new Date(feeding.startDateTime);
-            if (!isNaN(date.getTime())) {
-              feedingStartTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-            }
+        await db.collection('feeding_records').doc(recordId).update({
+          data: {
+            feedings: updatedFeedings,
+            updatedAt: db.serverDate()
           }
-          
-          // 匹配条件：时间相同且天然奶量相同
-          if (feedingStartTime === targetFeeding.formattedStartTime && 
-              Math.abs(parseFloat(feeding.naturalMilkVolume || 0) - parseFloat(targetFeeding.naturalMilkVolume || 0)) < 0.1) {
-            targetIndex = i;
-            break;
-          }
-        }
-        
-        if (targetIndex >= 0) {
-          feedings.splice(targetIndex, 1);
-          
-          // 更新数据库
-          const deleteResult = await db.collection('feeding_records').doc(dayRecord._id).update({
-            data: { 
-              feedings,
-              updatedAt: db.serverDate()
-            }
-          });
-          
-          console.log('删除喂奶记录数据库更新结果:', deleteResult);
-        } else {
-          console.error('删除喂奶记录失败: 未找到匹配的记录', {
-            targetIndex,
-            targetFeeding,
-            feedingsInDb: feedings.map(f => ({
-              startTime: f.startTime,
-              naturalMilkVolume: f.naturalMilkVolume
-            }))
-          });
-          throw new Error('未找到要删除的记录');
-        }
-        
+        });
+
       } else if (deleteType === 'medication') {
         // 删除用药记录 - 使用新的药物记录模型
         const recordId = this.data.deleteRecordId;
@@ -5549,52 +5390,24 @@ Page({
     const selectedDate = this.data.selectedDate;
     if (!selectedDate) return;
 
-    const db = wx.cloud.database();
-    const _ = db.command;
-    const [year, month, day] = selectedDate.split('-').map(Number);
-    const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
     const appInstance = getApp();
     const babyUid = appInstance.globalData.babyUid || wx.getStorageSync('baby_uid');
-
     if (!babyUid) return;
 
-    const query = {
-      date: _.gte(startOfDay).and(_.lte(endOfDay)),
-      babyUid: babyUid
-    };
-
-    const res = await db.collection('feeding_records').where(query).get();
+    const db = wx.cloud.database();
     const payload = Object.keys(updates).reduce((acc, key) => {
       acc[`basicInfo.${key}`] = updates[key];
       return acc;
     }, { updatedAt: db.serverDate() });
 
-    const existingRecord = pickPrimaryFeedingRecord(res.data || []);
-    if (existingRecord?._id) {
-      await db.collection('feeding_records').doc(existingRecord._id).update({
-        data: payload
-      });
-      if (!this.data.recordId) {
-        this.setData({ recordId: existingRecord._id });
-      }
-      return;
-    }
-
     const basicInfo = this.buildPersistedBasicInfoForDate(updates, selectedDate);
-
-    const addRes = await db.collection('feeding_records').add({
-      data: {
-        date: startOfDay,
-        basicInfo,
-        feedings: [],
-        medicationRecords: [],
-        babyUid: babyUid,
-        createdAt: db.serverDate(),
-        updatedAt: db.serverDate()
-      }
+    const { recordId } = await findOrCreateDailyRecord(selectedDate, babyUid, basicInfo);
+    if (!this.data.recordId) {
+      this.setData({ recordId });
+    }
+    await db.collection('feeding_records').doc(recordId).update({
+      data: payload
     });
-    this.setData({ recordId: addRes._id });
   },
 
   isNumberValue(value) {
