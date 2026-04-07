@@ -1,152 +1,250 @@
-<!--pages/analysis-report/index.wxml-->
 <view class="container">
-  <!-- 加载状态 -->
-  <view wx:if="{{loading}}" class="loading-container">
-    <view class="loading-spinner"></view>
-    <text class="loading-text">加载中...</text>
+  <view wx:if="{{loading}}" class="loading-card">
+    <text class="loading-title">正在整理报告档案</text>
+    <text class="loading-desc">会先读取同类报告，再把趋势和喂养区间串起来。</text>
   </view>
 
-  <!-- 主要内容 -->
   <view wx:else class="content">
-    <!-- 统计信息卡片 -->
-    <view class="statistics-card">
-      <view class="stats-header">
-        <text class="stats-title">检测报告概览</text>
-        <text wx:if="{{statistics.lastReportDate}}" class="stats-date">最近检测：{{statistics.lastReportDate}}</text>
-      </view>
-      
-      <view class="stats-content">
-        <view class="stat-item">
-          <text class="stat-number">{{statistics.totalReports}}</text>
-          <text class="stat-label">总报告数</text>
-        </view>
-        <view class="stat-divider"></view>
-        <view class="stat-item">
-          <text class="stat-number" style="color: #4CAF50;">{{statistics.normalRate}}%</text>
-          <text class="stat-label">正常率</text>
-        </view>
-        <view class="stat-divider"></view>
-        <view class="stat-item">
-          <text class="stat-number" style="color: #F44336;">{{statistics.abnormalCount}}</text>
-          <text class="stat-label">异常报告</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 报告类型筛选器 -->
-    <view class="filter-section">
-      <scroll-view class="filter-scroll" scroll-x="true" show-scrollbar="false">
-        <view class="filter-item {{filterType === 'all' ? 'active' : ''}}" 
-              bindtap="onFilterChange" data-type="all">
-          <text class="filter-icon">📊</text>
-          <text class="filter-text">全部</text>
-        </view>
-        <view class="filter-item {{filterType === 'blood_ms' ? 'active' : ''}}" 
-              bindtap="onFilterChange" data-type="blood_ms">
-          <text class="filter-icon">🩸</text>
-          <text class="filter-text">血串联质谱</text>
-        </view>
-        <view class="filter-item {{filterType === 'urine_ms' ? 'active' : ''}}" 
-              bindtap="onFilterChange" data-type="urine_ms">
-          <text class="filter-icon">🧪</text>
-          <text class="filter-text">尿串联质谱</text>
-        </view>
-        <view class="filter-item {{filterType === 'blood_gas' ? 'active' : ''}}" 
-              bindtap="onFilterChange" data-type="blood_gas">
-          <text class="filter-icon">💨</text>
-          <text class="filter-text">血气分析</text>
-        </view>
-        <view class="filter-item {{filterType === 'blood_ammonia' ? 'active' : ''}}" 
-              bindtap="onFilterChange" data-type="blood_ammonia">
-          <text class="filter-icon">⚡</text>
-          <text class="filter-text">血氨检测</text>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- 报告列表 -->
-    <view class="report-list">
-      <!-- 空状态 -->
-      <view wx:if="{{reportList.length === 0}}" class="empty-state">
-        <view class="empty-icon">📋</view>
-        <text class="empty-title">暂无检测报告</text>
-        <text class="empty-desc">点击右下角按钮添加第一个报告</text>
+    <view wx:if="{{previewMode === 'archive'}}" class="archive-view">
+      <view class="page-header">
+        <text class="page-title">检测报告</text>
+        <text class="page-subtitle">{{modeHint}}</text>
       </view>
 
-      <!-- 报告卡片列表 -->
-      <view wx:else class="report-cards">
-        <view wx:for="{{reportList}}" wx:key="_id" class="report-card" 
-              bindtap="onViewReport" data-report-id="{{item._id}}">
-          
-          <!-- 卡片头部 -->
-          <view class="card-header">
-            <view class="card-date">
-              <text class="date-text">{{item.formattedDate}}</text>
-              <text class="report-type">{{item.reportTypeName}}</text>
-            </view>
-            <view class="card-actions">
-              <view class="action-btn" catchtap="onEditReport" 
-                    data-report-id="{{item._id}}">
-                <text class="action-icon">✏️</text>
-              </view>
-              <view class="action-btn" catchtap="onDeleteReport" 
-                    data-report-id="{{item._id}}" data-index="{{index}}">
-                <text class="action-icon">🗑️</text>
-              </view>
-            </view>
+      <view class="quick-actions">
+        <view class="quick-action primary" bindtap="onAddReport">
+          <text class="quick-action-title">新增报告</text>
+          <text class="quick-action-desc">{{selectedFilterType === 'all' ? '先选择报告类型或直接进入录入' : '按当前分类进入录入'}}</text>
+        </view>
+        <view class="quick-action secondary" bindtap="openTrendView">
+          <text class="quick-action-title">查看本类趋势</text>
+          <text class="quick-action-desc">{{selectedFilterType === 'all' ? '先切换到某一类报告' : '查看当前分类的指标趋势'}}</text>
+        </view>
+      </view>
+
+      <view class="report-type-tabs">
+        <view
+          wx:for="{{reportTypeTabs}}"
+          wx:key="key"
+          class="type-tab {{item.active ? 'active' : ''}}"
+          data-type="{{item.key}}"
+          bindtap="handleTypeFilterChange"
+        >
+          <text class="type-tab-label">{{item.label}}</text>
+          <text class="type-tab-count">{{item.count}}</text>
+        </view>
+      </view>
+
+      <view class="report-archive-list">
+        <view class="section-head">
+          <view>
+            <text class="section-title">报告档案</text>
+            <text class="section-subtitle">按类型记录和回看报告，再进入同类趋势。</text>
           </view>
-
-          <!-- 卡片内容 -->
-          <view class="card-content">
-            <view class="summary-stats">
-              <view class="summary-item">
-                <text class="summary-label">总指标</text>
-                <text class="summary-value">{{item.summary.totalCount}}</text>
+        </view>
+        <view wx:if="{{archiveReportCards.length === 0}}" class="archive-empty">
+          <text class="archive-empty-title">当前分类还没有报告</text>
+          <text class="archive-empty-desc">可以先录入这类报告，再开始看趋势。</text>
+        </view>
+        <view wx:else class="archive-card-list">
+          <view
+            wx:for="{{archiveReportCards}}"
+            wx:key="reportId"
+            class="archive-card"
+            data-report-id="{{item.reportId}}"
+            bindtap="openDetailView"
+          >
+            <view class="archive-card-head">
+              <view>
+                <text class="archive-card-date">{{item.formattedDate}}</text>
+                <text class="archive-card-type">{{item.reportTypeLabel}}</text>
               </view>
-              <view class="summary-item">
-                <text class="summary-label">正常</text>
-                <text class="summary-value normal">{{item.summary.normalCount}}</text>
-              </view>
-              <view class="summary-item">
-                <text class="summary-label">异常</text>
-                <text class="summary-value abnormal">{{item.summary.abnormalCount}}</text>
-              </view>
-              <view class="summary-item">
-                <text class="summary-label">正常率</text>
-                <text class="summary-value rate">{{item.summary.normalRate}}%</text>
+              <view class="archive-status {{item.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
+                <text>{{item.statusText}}</text>
               </view>
             </view>
-          </view>
-
-          <!-- 卡片底部状态 -->
-          <view class="card-footer">
-            <view class="status-indicator {{item.summary.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
-                {{item.summary.abnormalCount > 0 ? '存在异常指标' : '指标正常'}}
+            <view class="archive-card-body">
+              <text class="archive-key-summary">{{item.keySummary}}</text>
             </view>
-            <view class="view-detail">
-              <text class="detail-text">查看详情</text>
-              <text class="detail-arrow">→</text>
+            <view class="archive-card-footer">
+              <text class="archive-meta">总指标 {{item.totalCount}}</text>
+              <text class="archive-meta">正常 {{item.normalCount}}</text>
+              <text class="archive-meta emphasize">查看详情</text>
             </view>
           </view>
         </view>
       </view>
+    </view>
 
-      <!-- 加载更多 -->
-      <view wx:if="{{loadingMore}}" class="loading-more">
-        <text class="loading-more-text">加载更多...</text>
+    <view wx:if="{{previewMode === 'detail' && currentDetailView}}" class="detail-view">
+      <view class="preview-topbar">
+        <view class="preview-back" bindtap="goBackToArchive">
+          <text>← 返回档案</text>
+        </view>
       </view>
-      
-      <!-- 没有更多数据 -->
-      <view wx:elif="{{!hasMore && reportList.length > 0}}" class="no-more">
-        <text class="no-more-text">没有更多数据了</text>
+
+      <view class="detail-summary-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">{{currentDetailView.reportTypeLabel}}</text>
+            <text class="section-subtitle">{{currentDetailView.reportDate}} · 查看这一份完整报告</text>
+          </view>
+          <view class="summary-actions" data-report-id="{{currentDetailView.reportId}}" bindtap="openTrendView">
+            <text>查看本类趋势</text>
+          </view>
+        </view>
+        <view class="detail-summary-grid">
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentDetailView.summary.filledCount}}</text>
+            <text class="detail-stat-label">已填写指标</text>
+          </view>
+          <view class="detail-stat">
+            <text class="detail-stat-value warn">{{currentDetailView.summary.abnormalCount}}</text>
+            <text class="detail-stat-label">异常项</text>
+          </view>
+          <view class="detail-stat long">
+            <text class="detail-stat-label">关键摘要</text>
+            <text class="detail-stat-copy">{{currentDetailView.keySummary}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="detail-indicators-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">完整指标区</text>
+            <text class="section-subtitle">按报告类型分组展示这一份报告的完整指标。</text>
+          </view>
+        </view>
+        <view wx:for="{{currentDetailView.indicatorGroups}}" wx:key="key" class="indicator-group">
+          <view class="indicator-group-head">
+            <text class="indicator-group-title">{{item.title}}</text>
+            <text class="indicator-group-hint">{{item.hint}}</text>
+          </view>
+          <view class="indicator-list">
+            <view wx:for="{{item.items}}" wx:key="key" wx:for-item="indicator" class="indicator-item">
+              <view class="indicator-main">
+                <view>
+                  <text class="indicator-name">{{indicator.name}}</text>
+                  <text class="indicator-abbr">{{indicator.abbr}}</text>
+                </view>
+                <text class="status-tag {{indicator.status}}">{{indicator.status === 'high' ? '偏高' : indicator.status === 'low' ? '偏低' : indicator.status === 'normal' ? '范围内' : '待补充'}}</text>
+              </view>
+              <view class="indicator-values">
+                <text class="indicator-current">本次 {{indicator.current}}</text>
+                <text wx:if="{{indicator.minRange || indicator.maxRange}}" class="indicator-range">参考 {{indicator.minRange || '--'}} - {{indicator.maxRange || '--'}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="bottom-actions">
+        <button class="action-button edit" bindtap="onEditReport">
+          <text class="btn-text">编辑报告</text>
+        </button>
+        <button class="action-button delete" bindtap="onDeleteReport">
+          <text class="btn-text">删除报告</text>
+        </button>
       </view>
     </view>
-  </view>
 
-  <!-- 悬浮添加按钮 -->
-  <view class="fab-container">
-    <button class="fab-button" bindtap="onAddReport">
-      <text class="fab-icon">+</text>
-    </button>
+    <view wx:if="{{previewMode === 'trend' && currentTrendView}}" class="trend-view">
+      <view class="preview-topbar">
+        <view class="preview-back" bindtap="goBackToArchive">
+          <text>← 返回档案</text>
+        </view>
+      </view>
+
+      <view class="trend-summary-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">{{currentTrendView.reportTypeLabel}}趋势</text>
+            <text class="section-subtitle">选中 {{currentTrendView.selectedReportDate}}，自动对比上一份同类报告。</text>
+          </view>
+        </view>
+        <view class="trend-summary-grid">
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentTrendView.reportCount}}</text>
+            <text class="detail-stat-label">同类报告数</text>
+          </view>
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentTrendView.selectedReportDate}}</text>
+            <text class="detail-stat-label">本次报告</text>
+          </view>
+          <view class="detail-stat">
+            <text class="detail-stat-value">{{currentTrendView.previousReportDate || '--'}}</text>
+            <text class="detail-stat-label">上次报告</text>
+          </view>
+        </view>
+        <view class="trend-link-row">
+          <view class="trend-link-chip" data-report-id="{{currentTrendView.detailLinks.currentReportId}}" bindtap="openReportDetailFromTrend">
+            <text>查看本次详情</text>
+          </view>
+          <view wx:if="{{currentTrendView.detailLinks.previousReportId}}" class="trend-link-chip secondary" data-report-id="{{currentTrendView.detailLinks.previousReportId}}" bindtap="openReportDetailFromTrend">
+            <text>查看上次详情</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="trend-section">
+        <view class="section-head">
+          <view>
+            <text class="section-title">同类指标趋势</text>
+            <text class="section-subtitle">默认展示本类最核心的指标级趋势。</text>
+          </view>
+        </view>
+        <view wx:for="{{currentTrendView.trendMetrics}}" wx:key="key" class="trend-card">
+          <view class="trend-card-head">
+            <text class="trend-title">{{item.name}}</text>
+            <text class="trend-overlay">{{item.overlayLabel}}</text>
+          </view>
+          <view class="trend-points">
+            <view wx:for="{{item.points}}" wx:key="date" class="trend-point {{point.active ? 'active' : ''}}" wx:for-item="point">
+              <text class="trend-point-value">{{point.value}}</text>
+              <view class="trend-point-dot"></view>
+              <text class="trend-point-date">{{point.date}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:for="{{currentTrendView.nutritionWindows}}" wx:key="key" class="nutrition-window-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">{{item.label}}</text>
+            <text class="section-subtitle">{{item.dateRange}}</text>
+          </view>
+          <view class="window-badge">
+            <text>{{item.badge}}</text>
+          </view>
+        </view>
+        <view class="nutrition-metrics-grid">
+          <view wx:for="{{item.metrics}}" wx:key="label" wx:for-item="metric" class="nutrition-metric">
+            <text class="nutrition-metric-label">{{metric.label}}</text>
+            <view class="nutrition-metric-value-row">
+              <text class="nutrition-metric-value">{{metric.value}}</text>
+              <text class="nutrition-metric-unit">{{metric.unit}}</text>
+            </view>
+          </view>
+        </view>
+        <text class="window-note">{{item.note}}</text>
+      </view>
+
+      <view class="doctor-summary-card">
+        <view class="section-head">
+          <view>
+            <text class="section-title">区间对比摘要</text>
+            <text class="section-subtitle">把同类趋势和这段时间的喂养背景串起来看。</text>
+          </view>
+        </view>
+        <view class="summary-list">
+          <view wx:for="{{currentTrendView.doctorSummary}}" wx:key="*this" class="summary-item">
+            <text class="summary-bullet">•</text>
+            <text class="summary-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </view>

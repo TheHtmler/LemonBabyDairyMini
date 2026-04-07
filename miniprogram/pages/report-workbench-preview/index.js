@@ -1,4 +1,5 @@
 const NutritionModel = require('../../models/nutrition');
+const ReportRepository = require('../../models/reportRepository');
 const {
   buildReportArchivePreview,
   buildReportDetailPreview,
@@ -25,7 +26,9 @@ const DEMO_REPORTS = [
     reportDate: new Date('2026-12-20T00:00:00+08:00'),
     indicators: {
       methylmalonic_acid: { value: '356', status: 'high' },
-      methylcitric_acid: { value: '22.4', status: 'high' },
+      methylcitric_acid_1: { value: '22.4', status: 'high' },
+      methylcitric_acid_2: { value: '11.2', status: 'high' },
+      lactate: { value: '1.4', status: 'normal' },
       hydroxypropionic_acid: { value: '6.2', status: 'normal' },
       hydroxybutyric_acid: { value: '2.8', status: 'normal' }
     }
@@ -36,7 +39,9 @@ const DEMO_REPORTS = [
     reportDate: new Date('2026-11-12T00:00:00+08:00'),
     indicators: {
       methylmalonic_acid: { value: '298', status: 'high' },
-      methylcitric_acid: { value: '18.9', status: 'high' },
+      methylcitric_acid_1: { value: '18.9', status: 'high' },
+      methylcitric_acid_2: { value: '9.6', status: 'high' },
+      lactate: { value: '1.2', status: 'normal' },
       hydroxypropionic_acid: { value: '6.4', status: 'normal' },
       hydroxybutyric_acid: { value: '3.1', status: 'normal' }
     }
@@ -47,7 +52,8 @@ const DEMO_REPORTS = [
     reportDate: new Date('2026-10-08T00:00:00+08:00'),
     indicators: {
       methylmalonic_acid: { value: '280', status: 'high' },
-      methylcitric_acid: { value: '16.7', status: 'high' },
+      methylcitric_acid_1: { value: '16.7', status: 'high' },
+      lactate: { value: '1.1', status: 'normal' },
       hydroxypropionic_acid: { value: '5.9', status: 'normal' },
       hydroxybutyric_acid: { value: '3.0', status: 'normal' }
     }
@@ -256,20 +262,13 @@ Page({
       const babyInfo = app.globalData.babyInfo || wx.getStorageSync('baby_info') || {};
       const fallbackWeight = babyInfo.weight || '';
 
-      const db = wx.cloud.database();
-      const reportRes = await db.collection('baby_reports')
-        .where({ babyUid })
-        .orderBy('reportDate', 'desc')
-        .orderBy('createdAt', 'desc')
-        .limit(100)
-        .get();
-
-      const reports = reportRes.data || [];
+      const reports = await ReportRepository.listReportsByBaby(babyUid, { limit: 100 });
       if (!reports.length) {
         this.applyDemoState();
         return;
       }
 
+      const db = wx.cloud.database();
       const feedingRes = await db.collection('feeding_records')
         .where({ babyUid })
         .orderBy('updatedAt', 'desc')

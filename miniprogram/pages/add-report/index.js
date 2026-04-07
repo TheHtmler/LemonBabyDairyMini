@@ -1,4 +1,5 @@
 const ReportModel = require('../../models/report');
+const ReportRepository = require('../../models/reportRepository');
 
 Page({
   data: {
@@ -91,10 +92,10 @@ Page({
     try {
       this.setData({ loading: true });
 
-      const db = wx.cloud.database();
-      const result = await db.collection('baby_reports').doc(this.data.reportId).get();
-      
-      const reportData = result.data;
+      const reportData = await ReportRepository.getReportById(this.data.reportId);
+      if (!reportData) {
+        throw new Error('report_not_found');
+      }
       
       this.setData({
         reportDate: ReportModel.formatDate(reportData.reportDate),
@@ -132,39 +133,12 @@ Page({
         return {};
       }
 
-      const db = wx.cloud.database();
-      const result = await db.collection('baby_reports')
-        .where({
-          babyUid: this.data.babyInfo.babyUid,
-          reportType: reportType
-        })
-        .orderBy('reportDate', 'desc')
-        .limit(1)
-        .get();
-
-      if (result.data && result.data.length > 0) {
-        const latestReport = result.data[0];
-        const historicalRanges = {};
-        
-        // 提取每个指标的范围值（只提取非比值指标的范围）
-        if (latestReport.indicators) {
-          Object.keys(latestReport.indicators).forEach(indicatorKey => {
-            const indicatorData = latestReport.indicators[indicatorKey];
-            // 只保存有minRange和maxRange的指标（排除比值指标）
-            if (indicatorData.minRange && indicatorData.maxRange) {
-              historicalRanges[indicatorKey] = {
-                minRange: indicatorData.minRange,
-                maxRange: indicatorData.maxRange
-              };
-            }
-          });
-        }
-
-        console.log('获取到历史范围值:', historicalRanges);
-        return historicalRanges;
-      }
-
-      return {};
+      const historicalRanges = await ReportRepository.getHistoricalRanges(
+        this.data.babyInfo.babyUid,
+        reportType
+      );
+      console.log('获取到历史范围值:', historicalRanges);
+      return historicalRanges;
     } catch (error) {
       console.error('获取历史范围值失败:', error);
       return {};
@@ -328,6 +302,7 @@ Page({
 
     // 重新计算该指标状态
     this.calculateIndicatorStatus(indicator);
+    this.calculateRatioIndicators();
   },
 
   // 计算单个指标状态
@@ -364,9 +339,6 @@ Page({
     this.setData({
       indicatorData: indicatorData
     });
-
-    // 计算比值指标
-    this.calculateRatioIndicators();
   },
 
   // 计算比值指标
@@ -428,6 +400,7 @@ Page({
         this.calculateIndicatorStatus(indicator.key);
       }
     });
+    this.calculateRatioIndicators();
   },
 
   // 保存报告
@@ -451,29 +424,14 @@ Page({
       const { babyInfo, reportDate, selectedReportType, indicatorData, mode, reportId } = this.data;
       
       // 创建报告数据
-      const reportData = ReportModel.createReportData(
-        babyInfo.babyUid,
-        new Date(reportDate),
-        selectedReportType,
-        indicatorData
-      );
-
-      const db = wx.cloud.database();
-
-      if (mode === 'edit') {
-        // 更新报告
-        await db.collection('baby_reports').doc(reportId).update({
-          data: {
-            ...reportData,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        // 新增报告
-        await db.collection('baby_reports').add({
-          data: reportData
-        });
-      }
+      await ReportRepository.saveReport({
+        mode,
+        reportId,
+        babyUid: babyInfo.babyUid,
+        reportDate: new Date(reportDate),
+        reportType: selectedReportType,
+        indicators: indicatorData
+      });
 
       wx.showToast({
         title: '保存成功',

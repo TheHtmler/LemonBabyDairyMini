@@ -1,4 +1,6 @@
 const ReportModel = require('../../models/report');
+const ReportRepository = require('../../models/reportRepository');
+const ANALYSIS_REPORT_FOCUS_KEY = 'analysis_report_focus';
 
 Page({
   data: {
@@ -67,13 +69,16 @@ Page({
     try {
       this.setData({ loading: true });
 
-      const db = wx.cloud.database();
-      const result = await db.collection('baby_reports').doc(this.data.reportId).get();
-      
-      const reportData = result.data;
+      const reportData = await ReportRepository.getReportById(this.data.reportId);
+      if (!reportData) {
+        throw new Error('report_not_found');
+      }
       
       // 获取指标配置
-      const indicatorConfigs = ReportModel.getIndicators(reportData.reportType);
+      const indicatorConfigs = ReportModel.getIndicators(reportData.reportType).map((indicator) => ({
+        ...indicator,
+        displayName: ReportModel.getIndicatorDisplayName(indicator)
+      }));
       
       // 计算报告摘要（基于指标配置）
       const reportSummary = this.calculateReportSummary(reportData, indicatorConfigs);
@@ -150,8 +155,7 @@ Page({
     try {
       this.setData({ deleting: true });
 
-      const db = wx.cloud.database();
-      await db.collection('baby_reports').doc(this.data.reportId).remove();
+      await ReportRepository.deleteReport(this.data.reportId);
 
       wx.showToast({
         title: '删除成功',
@@ -232,6 +236,21 @@ Page({
     wx.showToast({
       title: '趋势功能开发中',
       icon: 'none'
+    });
+  },
+
+  onOpenSameTypeTrend: function () {
+    if (!this.data.reportData) return;
+
+    wx.setStorageSync(ANALYSIS_REPORT_FOCUS_KEY, {
+      reportType: this.data.reportData.reportType,
+      reportId: this.data.reportId,
+      previewMode: 'trend',
+      createdAt: Date.now()
+    });
+
+    wx.switchTab({
+      url: '/pages/analysis-report/index'
     });
   },
 

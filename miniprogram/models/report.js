@@ -26,7 +26,9 @@ class ReportModel {
     { key: 'methylmalonic_acid', name: '甲基丙二酸', unit: '', abbr: 'MMA' },
     { key: 'hydroxypropionic_acid', name: '3-羟基丙酸', unit: '', abbr: '3-HPA' },
     { key: 'hydroxybutyric_acid', name: '3-羟基丁酸', unit: '', abbr: '3-HBA' },
-    { key: 'methylcitric_acid', name: '甲基枸橼酸', unit: '', abbr: 'MCA' }
+    { key: 'methylcitric_acid_1', name: '甲基枸橼酸(1)', unit: '', abbr: 'MCA(1)' },
+    { key: 'methylcitric_acid_2', name: '甲基枸橼酸(2)', unit: '', abbr: 'MCA(2)', optional: true },
+    { key: 'lactate', name: '乳酸', unit: '', abbr: 'Lac' }
   ];
 
   // 血气指标配置（待补充）
@@ -97,9 +99,21 @@ class ReportModel {
   // 氨基酸指标列表（用于计算最优范围）
   static AMINO_ACID_INDICATORS = ['iso_leu', 'met', 'val', 'thr'];
 
+  // 展示时优先使用简写的指标
+  static ABBR_DISPLAY_INDICATORS = ['c0', 'c2', 'c3'];
+
   // 判断是否为氨基酸指标
   static isAminoAcidIndicator(indicatorKey) {
     return this.AMINO_ACID_INDICATORS.includes(indicatorKey);
+  }
+
+  // 获取指标展示名
+  static getIndicatorDisplayName(indicatorConfig = {}) {
+    if (!indicatorConfig) return '';
+    if (this.ABBR_DISPLAY_INDICATORS.includes(indicatorConfig.key)) {
+      return indicatorConfig.abbr || indicatorConfig.name || indicatorConfig.key;
+    }
+    return indicatorConfig.name || indicatorConfig.abbr || indicatorConfig.key;
   }
 
   // 生成报告数据结构

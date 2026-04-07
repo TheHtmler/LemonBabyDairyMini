@@ -13,13 +13,13 @@ const BREAST_MILK_KCAL = 0.67;
 const SPECIAL_MILK_KCAL = 0.70;
 
 const KEY_METRICS_BY_REPORT_TYPE = {
-  [ReportModel.REPORT_TYPES.URINE_MS]: ['methylmalonic_acid', 'methylcitric_acid', 'hydroxypropionic_acid', 'hydroxybutyric_acid'],
+  [ReportModel.REPORT_TYPES.URINE_MS]: ['methylmalonic_acid', 'methylcitric_acid_1', 'methylcitric_acid_2', 'lactate', 'hydroxypropionic_acid', 'hydroxybutyric_acid'],
   [ReportModel.REPORT_TYPES.BLOOD_MS]: ['c3', 'c3_c2', 'c3_c0', 'c0'],
   [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be'],
   [ReportModel.REPORT_TYPES.BLOOD_AMMONIA]: ['ammonia']
 };
 
-const TREND_OVERLAY_LABELS = ['叠加：天然蛋白系数', '叠加：热卡系数'];
+const TREND_OVERLAY_LABELS = ['可结合查看：天然蛋白系数', '可结合查看：热卡系数'];
 const REPORT_TYPE_FILTERS = [
   { key: 'all', label: '全部' },
   { key: ReportModel.REPORT_TYPES.BLOOD_MS, label: '血串联' },
@@ -563,18 +563,23 @@ function buildWindowSummary(records = [], startDateKey, endDateKey, label, metri
   const totalDays = daysBetweenInclusive(startDateKey, endDateKey);
   const recordedDays = records.length;
   const coverageRate = totalDays > 0 ? Math.round((recordedDays / totalDays) * 100) : 0;
+  const hasData = recordedDays > 0;
   return {
     key: label === '区间摘要' ? 'interval' : 'last7',
     label,
     dateRange: `${startDateKey.slice(5)} 至 ${endDateKey.slice(5)}`,
-    badge: label === '区间摘要' ? `记录覆盖率 ${coverageRate}%` : '化验前 7 天',
+    badge: hasData
+      ? (label === '区间摘要' ? `记录覆盖率 ${coverageRate}%` : '化验前 7 天')
+      : '暂无喂养记录',
     metrics: [
       { label: '天然蛋白系数', value: averageMetric(records, 'naturalProteinCoefficient', 2), unit: 'g/kg/d' },
       { label: '特殊蛋白系数', value: averageMetric(records, 'specialProteinCoefficient', 2), unit: 'g/kg/d' },
       { label: '热卡系数', value: averageMetric(records, 'calorieCoefficient', 1), unit: 'kcal/kg/d' },
       { label: metricFourLabel, value: averageMetric(records, metricFourLabel === '脂肪' ? 'fat' : 'carbs', 2), unit: 'g/d' }
     ],
-    note: label === '区间摘要' ? '记录日均，适合看整个两次化验间的执行结构。' : '更贴近本次报告前的近期营养背景。'
+    note: hasData
+      ? (label === '区间摘要' ? '记录日均，适合看整个两次化验间的执行结构。' : '更贴近本次报告前的近期营养背景。')
+      : '该时间窗口内暂无喂养记录，所以这里暂时不能生成营养摘要。'
   };
 }
 
@@ -613,7 +618,7 @@ function buildCompareCards(currentReport, previousReport) {
 
       return {
         key,
-        name: config.name || key,
+        name: ReportModel.getIndicatorDisplayName(config) || key,
         current: formatCompactNumber(currentValue, 2),
         previous: formatCompactNumber(previousValue, 2),
         delta: formatDelta(currentValue, previousValue),
@@ -626,7 +631,9 @@ function buildCompareCards(currentReport, previousReport) {
 
 function buildTrendMetrics(currentReport, sameTypeReports = []) {
   const metricConfigMap = getMetricConfigMap(currentReport.reportType);
-  const keys = (KEY_METRICS_BY_REPORT_TYPE[currentReport.reportType] || []).slice(0, 2);
+  const keys = currentReport.reportType === ReportModel.REPORT_TYPES.URINE_MS
+    ? ['methylmalonic_acid', 'methylcitric_acid_1', 'lactate']
+    : (KEY_METRICS_BY_REPORT_TYPE[currentReport.reportType] || []).slice(0, 2);
   const pointsBase = [...sameTypeReports]
     .sort((a, b) => parseDateKey(toDateKey(a.reportDate)).getTime() - parseDateKey(toDateKey(b.reportDate)).getTime())
     .slice(-4);
@@ -663,7 +670,7 @@ function buildKeySummary(report = {}) {
   const summaryParts = keys
     .filter((key) => report.indicators?.[key]?.value !== undefined && report.indicators?.[key]?.value !== '')
     .slice(0, 2)
-    .map((key) => `${metricConfigMap[key]?.name || key} ${formatCompactNumber(report.indicators[key].value, 2)}`);
+    .map((key) => `${ReportModel.getIndicatorDisplayName(metricConfigMap[key]) || key} ${formatCompactNumber(report.indicators[key].value, 2)}`);
   return summaryParts.length ? summaryParts.join('，') : '可进入详情页补充查看完整指标。';
 }
 
@@ -680,7 +687,7 @@ function buildIndicatorItem(config = {}, currentReport = {}, previousReport = {}
 
   return {
     key: config.key,
-    name: config.name || config.key,
+    name: ReportModel.getIndicatorDisplayName(config) || config.key,
     abbr: config.abbr || config.key,
     current: formatCompactNumber(currentValue, 2),
     previous: formatCompactNumber(previousValue, 2),
@@ -695,9 +702,9 @@ function buildDetailIndicatorItem(config = {}, currentReport = {}) {
   const current = currentReport.indicators?.[config.key] || {};
   return {
     key: config.key,
-    name: config.name || config.key,
+    name: ReportModel.getIndicatorDisplayName(config) || config.key,
     abbr: config.abbr || config.key,
-    current: formatCompactNumber(current.value, 2),
+    current: formatCompactNumber(current.value, 3),
     status: current.status || 'unknown',
     unit: config.unit || '',
     minRange: current.minRange || '',

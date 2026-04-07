@@ -95,3 +95,14 @@ test('report workbench preview page wires real data aggregation utility', () => 
   assert.match(js, /openReportDetailFromTrend/);
   assert.doesNotMatch(js, /const REPORTS = \[/);
 });
+
+test('report workbench preview page loads reports through report repository', () => {
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pages/report-workbench-preview/index.js'),
+    'utf8'
+  );
+
+  assert.match(js, /require\('\.\.\/\.\.\/models\/reportRepository'\)/);
+  assert.match(js, /ReportRepository\.listReportsByBaby/);
+  assert.doesNotMatch(js, /collection\('baby_reports'\)/);
+});

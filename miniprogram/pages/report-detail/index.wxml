@@ -55,6 +55,10 @@
       <view class="overall-status {{reportSummary.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
           {{reportSummary.abnormalCount > 0 ? '存在异常指标，请注意' : '所有指标正常'}}
       </view>
+
+      <view class="trend-entry" bindtap="onOpenSameTypeTrend">
+        <text class="trend-entry-text">查看本类趋势</text>
+      </view>
     </view>
 
     <!-- 指标详情列表 -->
@@ -68,7 +72,7 @@
             <!-- 指标头部 -->
             <view class="indicator-header">
               <view class="indicator-info">
-                <text class="indicator-name">{{item.name}}</text>
+                <text class="indicator-name">{{item.displayName || item.name}}</text>
                 <text class="indicator-abbr">({{item.abbr}})</text>
               </view>
               
