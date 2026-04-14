@@ -51,7 +51,7 @@ Page({
     archiveReportCards: [],
     currentDetailView: null,
     currentTrendView: null,
-    modeHint: '按类型记录报告，再进入同类趋势查看变化。'
+    modeHint: '按类型记录、回看和对比报告'
   },
 
   onLoad() {

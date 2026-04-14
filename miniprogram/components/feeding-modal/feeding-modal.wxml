@@ -48,7 +48,7 @@
           <text>热量 {{feedingData.specialCalories || 0}} kcal</text>
         </view>
         <view class="nutrient-row">
-          <text>粉重 {{feedingData.specialPowderWeight || feedingData.specialMilkPowder || 0}} g</text>
+          <text>粉重 {{feedingData.specialMilkPowder || 0}} g</text>
         </view>
 
         <view class="goal-hint-card" wx:if="{{showGoalHint}}">

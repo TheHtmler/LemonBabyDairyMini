@@ -1,5 +1,6 @@
 const app = getApp();
 const NutritionModel = require('../../models/nutrition');
+const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BREAST_MILK_KCAL = 0.67;
 const SPECIAL_MILK_KCAL = 0.70;
@@ -48,7 +49,7 @@ function calculateSpecialMilkPowder(specialMilkVolume, nutritionSettings = {}) {
 function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
   const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
-  const specialPowderWeight = parseFloat(feeding.specialMilkPowder) || 0;
+  const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
   let naturalProtein = 0;

@@ -12,6 +12,10 @@
   width: 100%;
 }
 
+.content.archive-page {
+  width: 100%;
+}
+
 .loading-card,
 .report-archive-list,
 .detail-summary-card,
@@ -63,14 +67,6 @@
   color: #7b6441;
 }
 
-.quick-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
-  margin-bottom: 20rpx;
-}
-
-.quick-action,
 .archive-card,
 .detail-stat,
 .nutrition-metric,
@@ -82,23 +78,23 @@
   border: 1rpx solid rgba(201, 136, 23, 0.1);
 }
 
-.quick-action {
-  padding: 20rpx;
-}
-
-.quick-action.primary {
+.primary-entry {
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+  border-radius: 26rpx;
   background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
   border-color: rgba(201, 136, 23, 0.28);
+  box-shadow: 0 12rpx 24rpx rgba(201, 136, 23, 0.16);
 }
 
-.quick-action-title {
+.primary-entry-title {
   display: block;
-  font-size: 26rpx;
+  font-size: 28rpx;
   font-weight: 700;
   color: #2c1d09;
 }
 
-.quick-action-desc {
+.primary-entry-desc {
   display: block;
   margin-top: 8rpx;
   font-size: 22rpx;
@@ -126,9 +122,9 @@
 }
 
 .type-tab.active {
-  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
-  border-color: rgba(201, 136, 23, 0.3);
-  box-shadow: 0 10rpx 24rpx rgba(201, 136, 23, 0.18);
+  background: #fff0c2;
+  border-color: rgba(201, 136, 23, 0.24);
+  box-shadow: 0 8rpx 18rpx rgba(201, 136, 23, 0.12);
 }
 
 .type-tab-label {
@@ -142,12 +138,43 @@
   height: 36rpx;
   padding: 0 8rpx;
   border-radius: 999rpx;
-  background: rgba(95, 61, 0, 0.08);
+  background: rgba(95, 61, 0, 0.06);
   font-size: 20rpx;
-  color: #7b6441;
+  color: #8d7449;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.trend-entry-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18rpx 22rpx;
+  margin-bottom: 20rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
+}
+
+.trend-entry-title {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #5f3d00;
+}
+
+.trend-entry-desc {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: #8d7449;
+}
+
+.trend-entry-arrow {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #b57900;
 }
 
 .section-head {
@@ -216,14 +243,6 @@
   padding: 20rpx;
 }
 
-.archive-card-head,
-.archive-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12rpx;
-}
-
 .archive-card-date {
   display: block;
   font-size: 26rpx;
@@ -262,22 +281,22 @@
   color: #b36500;
 }
 
-.archive-card-body {
-  margin-top: 14rpx;
-}
-
 .archive-key-summary,
 .detail-stat-copy,
 .summary-text {
   display: block;
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.5;
   color: #4e3b1d;
 }
 
-.archive-card-footer {
+.archive-card-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
   margin-top: 16rpx;
-  flex-wrap: wrap;
 }
 
 .archive-meta,
@@ -293,8 +312,9 @@
   color: #8d7449;
 }
 
-.archive-meta.emphasize {
+.archive-detail-link {
   color: #b57900;
+  font-size: 22rpx;
   font-weight: 700;
 }
 

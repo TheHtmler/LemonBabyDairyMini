@@ -1,5 +1,6 @@
 // pages/data-analysis/index.js
 const NutritionModel = require('../../models/nutrition');
+const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -50,7 +51,7 @@ function calculateSpecialMilkPowder(specialMilkVolume, nutritionSettings = {}) {
 function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
   const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
-  const specialPowderWeight = parseFloat(feeding.specialMilkPowder) || 0;
+  const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
   let naturalProtein = 0;

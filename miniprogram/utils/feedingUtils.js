@@ -23,15 +23,13 @@ const utils = {
 
   // 验证喂奶数据
   validateFeedingData(data) {
-    const { naturalMilkVolume, totalVolume } = data;
-    
-    if (!naturalMilkVolume || !totalVolume) {
+    const naturalMilk = parseFloat(data?.naturalMilkVolume) || 0;
+    const total = calculator.getTotalVolume(data);
+
+    if (total <= 0) {
       throw new Error('请填写所有必要信息');
     }
-    
-    const naturalMilk = parseFloat(naturalMilkVolume);
-    const total = parseFloat(totalVolume);
-    
+
     if (isNaN(naturalMilk) || isNaN(total) || naturalMilk < 0 || total < 0) {
       throw new Error('请输入有效的奶量');
     }
@@ -65,8 +63,21 @@ const utils = {
   }
 };
 
+function hasValue(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
 // 计算相关的工具函数
 const calculator = {
+  roundValue(value, precision = 2) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      return 0;
+    }
+    const multiplier = Math.pow(10, precision);
+    return Math.round((num + Number.EPSILON) * multiplier) / multiplier;
+  },
+
   // 计算特奶量和特奶粉
   calculateSpecialMilk(naturalMilkVolume, totalVolume, calculation_params) {
     const specialMilkVolume = Math.max(0, totalVolume - naturalMilkVolume);
@@ -90,7 +101,61 @@ const calculator = {
     }
     
     const ratio = params.special_milk_ratio.powder / params.special_milk_ratio.water;
-    return Math.round(specialMilkVolume * ratio * 10) / 10;
+    return this.roundValue(specialMilkVolume * ratio, 2);
+  },
+
+  getSpecialMilkVolume(feeding = {}) {
+    const explicitSpecialVolume = Number.parseFloat(feeding.specialMilkVolume);
+    if (Number.isFinite(explicitSpecialVolume) && explicitSpecialVolume >= 0) {
+      return this.roundValue(explicitSpecialVolume, 2);
+    }
+
+    const naturalMilkVolume = Number.parseFloat(feeding.naturalMilkVolume);
+    const totalVolume = Number.parseFloat(feeding.totalVolume);
+    if (!Number.isFinite(totalVolume) || totalVolume <= 0) {
+      return 0;
+    }
+
+    const naturalMilkValue = Number.isFinite(naturalMilkVolume) ? naturalMilkVolume : 0;
+    return this.roundValue(Math.max(0, totalVolume - naturalMilkValue), 2);
+  },
+
+  getTotalVolume(feeding = {}) {
+    const hasNaturalMilkVolume = hasValue(feeding.naturalMilkVolume);
+    const hasSpecialMilkVolume = hasValue(feeding.specialMilkVolume);
+
+    if (hasNaturalMilkVolume || hasSpecialMilkVolume) {
+      const naturalMilkVolume = Number.parseFloat(feeding.naturalMilkVolume);
+      const naturalMilkValue = Number.isFinite(naturalMilkVolume) ? naturalMilkVolume : 0;
+      const specialMilkValue = this.getSpecialMilkVolume(feeding);
+      return this.roundValue(naturalMilkValue + specialMilkValue, 2);
+    }
+
+    const storedTotalVolume = Number.parseFloat(feeding.totalVolume);
+    if (Number.isFinite(storedTotalVolume) && storedTotalVolume >= 0) {
+      return this.roundValue(storedTotalVolume, 2);
+    }
+
+    return 0;
+  },
+
+  getSpecialMilkPowder(feeding = {}, calculation_params) {
+    const explicitPowder = Number.parseFloat(feeding.specialMilkPowder);
+    if (Number.isFinite(explicitPowder) && explicitPowder > 0) {
+      return this.roundValue(explicitPowder, 2);
+    }
+
+    const legacyPowder = Number.parseFloat(feeding.specialPowderWeight);
+    if (Number.isFinite(legacyPowder) && legacyPowder > 0) {
+      return this.roundValue(legacyPowder, 2);
+    }
+
+    const specialMilkVolume = this.getSpecialMilkVolume(feeding);
+    if (specialMilkVolume <= 0) {
+      return 0;
+    }
+
+    return this.calculateSpecialMilkPowder(specialMilkVolume, calculation_params);
   },
 
   // 计算每餐建议奶量

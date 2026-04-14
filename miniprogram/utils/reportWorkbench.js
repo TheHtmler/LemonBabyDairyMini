@@ -1,4 +1,5 @@
 const ReportModel = require('../models/report');
+const { calculator: feedingCalculator } = require('./feedingUtils');
 const {
   mergeTreatmentIntoMacroSummary,
   mergeTreatmentIntoOverview
@@ -102,7 +103,7 @@ function calculateSpecialMilkPowder(specialMilkVolume, nutritionSettings = {}) {
 function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
   const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
-  const specialPowderWeight = parseFloat(feeding.specialMilkPowder) || 0;
+  const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
   let naturalProtein = 0;

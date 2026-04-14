@@ -4,22 +4,16 @@
     <text class="loading-desc">会先读取同类报告，再把趋势和喂养区间串起来。</text>
   </view>
 
-  <view wx:else class="content">
+  <view wx:else class="content archive-page">
     <view wx:if="{{previewMode === 'archive'}}" class="archive-view">
       <view class="page-header">
         <text class="page-title">检测报告</text>
         <text class="page-subtitle">{{modeHint}}</text>
       </view>
 
-      <view class="quick-actions">
-        <view class="quick-action primary" bindtap="onAddReport">
-          <text class="quick-action-title">新增报告</text>
-          <text class="quick-action-desc">{{selectedFilterType === 'all' ? '先选择报告类型或直接进入录入' : '按当前分类进入录入'}}</text>
-        </view>
-        <view class="quick-action secondary" bindtap="openTrendView">
-          <text class="quick-action-title">查看本类趋势</text>
-          <text class="quick-action-desc">{{selectedFilterType === 'all' ? '先切换到某一类报告' : '查看当前分类的指标趋势'}}</text>
-        </view>
+      <view class="primary-entry" bindtap="onAddReport">
+        <text class="primary-entry-title">新增报告</text>
+        <text class="primary-entry-desc">{{selectedFilterType === 'all' ? '进入录入页' : '按当前分类进入录入'}}</text>
       </view>
 
       <view class="report-type-tabs">
@@ -35,16 +29,21 @@
         </view>
       </view>
 
+      <view wx:if="{{selectedFilterType !== 'all'}}" class="trend-entry-inline" bindtap="openTrendView">
+        <view>
+          <text class="trend-entry-title">查看本类趋势</text>
+          <text class="trend-entry-desc">查看当前分类的连续变化</text>
+        </view>
+        <text class="trend-entry-arrow">></text>
+      </view>
+
       <view class="report-archive-list">
         <view class="section-head">
-          <view>
-            <text class="section-title">报告档案</text>
-            <text class="section-subtitle">按类型记录和回看报告，再进入同类趋势。</text>
-          </view>
+          <text class="section-title">报告档案</text>
         </view>
         <view wx:if="{{archiveReportCards.length === 0}}" class="archive-empty">
           <text class="archive-empty-title">当前分类还没有报告</text>
-          <text class="archive-empty-desc">可以先录入这类报告，再开始看趋势。</text>
+          <text class="archive-empty-desc">先录入一份，再开始看趋势</text>
         </view>
         <view wx:else class="archive-card-list">
           <view
@@ -54,22 +53,14 @@
             data-report-id="{{item.reportId}}"
             bindtap="openDetailView"
           >
-            <view class="archive-card-head">
-              <view>
-                <text class="archive-card-date">{{item.formattedDate}}</text>
-                <text class="archive-card-type">{{item.reportTypeLabel}}</text>
-              </view>
+            <text class="archive-card-date">{{item.formattedDate}}</text>
+            <text class="archive-card-type">{{item.reportTypeLabel}}</text>
+            <text class="archive-key-summary">{{item.keySummary}}</text>
+            <view class="archive-card-status-row">
               <view class="archive-status {{item.abnormalCount > 0 ? 'abnormal' : 'normal'}}">
                 <text>{{item.statusText}}</text>
               </view>
-            </view>
-            <view class="archive-card-body">
-              <text class="archive-key-summary">{{item.keySummary}}</text>
-            </view>
-            <view class="archive-card-footer">
-              <text class="archive-meta">总指标 {{item.totalCount}}</text>
-              <text class="archive-meta">正常 {{item.normalCount}}</text>
-              <text class="archive-meta emphasize">查看详情</text>
+              <text class="archive-detail-link">查看详情</text>
             </view>
           </view>
         </view>

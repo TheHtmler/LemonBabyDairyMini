@@ -27,6 +27,7 @@ const {
   buildDataRecordsSummaryPreview
 } = require('../../utils/dataRecordsSummaryPreview');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
+const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 // 通用工具
 const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
 
@@ -111,8 +112,8 @@ function formatTime(date = new Date()) {
 
 function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-  const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
-  const specialPowderWeight = parseFloat(feeding.specialMilkPowder) || 0;
+  const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+  const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
   let naturalProtein = 0;
@@ -990,7 +991,7 @@ Page({
       naturalMilkType: 'breast',
       totalVolume: '',
       specialMilkVolume: 0,
-      specialPowderWeight: 0,
+      specialMilkPowder: 0,
       notes: ''
     },
     newFeedingDisplay: null,
@@ -2930,14 +2931,14 @@ Page({
     const nutrition = calculateMilkNutrition({
       naturalMilkVolume,
       specialMilkVolume,
-      specialMilkPowder: record.specialPowderWeight || record.specialMilkPowder || 0,
+      specialMilkPowder: feedingCalculator.getSpecialMilkPowder(record, settings),
       naturalMilkType: record.naturalMilkType || 'breast'
     }, settings);
 
     const formulaPowderWeight = record.naturalMilkType === 'formula'
       ? calculateFormulaPowder(naturalMilkVolume, settings)
       : 0;
-    const specialPowderWeight = record.specialPowderWeight
+    const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(record, settings)
       || calculateSpecialMilkPowder(specialMilkVolume, settings);
 
     return {
@@ -3184,14 +3185,14 @@ Page({
     const totalVolume = naturalMilk + specialMilk;
     
     // 计算特奶粉重量
-    let specialPowderWeight = 0;
+    let specialMilkPowder = 0;
     if (specialMilk > 0) {
       if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
         const ratio = this.data.nutritionSettings.special_milk_ratio;
-        specialPowderWeight = Math.round((specialMilk * ratio.powder / ratio.water) * 10) / 10;
+        specialMilkPowder = Math.round((specialMilk * ratio.powder / ratio.water) * 10) / 10;
       } else {
         // 使用默认配比 13.5g/90ml
-        specialPowderWeight = Math.round((specialMilk * 13.5 / 90) * 10) / 10;
+        specialMilkPowder = Math.round((specialMilk * 13.5 / 90) * 10) / 10;
       }
     }
 
@@ -3201,7 +3202,7 @@ Page({
       naturalMilkType: defaultValues.naturalMilkType || 'breast',
       specialMilkVolume: defaultValues.specialMilkVolume,
       totalVolume: totalVolume.toString(),
-      specialPowderWeight: specialPowderWeight,
+      specialMilkPowder: specialMilkPowder,
       notes: ''
     };
 
@@ -3315,10 +3316,10 @@ Page({
       // 计算特奶奶粉重量（根据配比 13.5g/90ml）
       if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
         const ratio = this.data.nutritionSettings.special_milk_ratio;
-        newFeeding.specialPowderWeight = Math.round((special * ratio.powder / ratio.water) * 10) / 10;
+        newFeeding.specialMilkPowder = Math.round((special * ratio.powder / ratio.water) * 10) / 10;
       } else {
         // 使用默认配比 13.5g/90ml
-        newFeeding.specialPowderWeight = Math.round((special * 13.5 / 90) * 10) / 10;
+        newFeeding.specialMilkPowder = Math.round((special * 13.5 / 90) * 10) / 10;
       }
     }
     
@@ -3397,7 +3398,8 @@ Page({
     }
     console.log('保存喂奶记录', this.data.newFeeding);
     
-    const { startTime, naturalMilkVolume, totalVolume } = this.data.newFeeding;
+    const { startTime } = this.data.newFeeding;
+    const totalVolume = feedingCalculator.getTotalVolume(this.data.newFeeding);
     
     // 验证输入
     if (!startTime) {
@@ -3408,7 +3410,7 @@ Page({
       return;
     }
     
-    if (!naturalMilkVolume || !totalVolume) {
+    if (totalVolume <= 0) {
       wx.showToast({
         title: '请输入奶量',
         icon: 'none'
@@ -3457,11 +3459,11 @@ Page({
         endTime: '',                    // 保留字段，兼容旧数据
         startDateTime: startDateTime,   // Date对象，用于排序和比较
         endDateTime: null,
-        naturalMilkVolume: parseFloat(naturalMilkVolume) || 0,
+        naturalMilkVolume: parseFloat(this.data.newFeeding.naturalMilkVolume) || 0,
         naturalMilkType: this.data.newFeeding.naturalMilkType || 'breast',
         specialMilkVolume: parseFloat(this.data.newFeeding.specialMilkVolume) || 0,
-        totalVolume: parseFloat(this.data.newFeeding.totalVolume) || 0,
-        specialPowderWeight: parseFloat(this.data.newFeeding.specialPowderWeight) || 0,
+        totalVolume: feedingCalculator.getTotalVolume(this.data.newFeeding),
+        specialMilkPowder: parseFloat(this.data.newFeeding.specialMilkPowder) || 0,
         babyUid: babyUid,          // 添加宝宝UID关联
         createdAt: new Date()      // 添加创建时间戳
       };
@@ -3879,20 +3881,17 @@ Page({
     const feeding = this.data.feedingRecords[index];
 
     // 计算总奶量（如果没有的话）
-    let totalVolume = feeding.totalVolume;
-    if (!totalVolume && (feeding.naturalMilkVolume || feeding.specialMilkVolume)) {
-      totalVolume = (parseFloat(feeding.naturalMilkVolume) || 0) + (parseFloat(feeding.specialMilkVolume) || 0);
-    }
+    const totalVolume = feedingCalculator.getTotalVolume(feeding);
     
     // 计算特奶奶粉重量
-    const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
-    let specialPowderWeight = 0;
+    const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+    let specialMilkPowder = 0;
     if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
       const ratio = this.data.nutritionSettings.special_milk_ratio;
-      specialPowderWeight = Math.round((specialMilkVolume * ratio.powder / ratio.water) * 10) / 10;
+      specialMilkPowder = Math.round((specialMilkVolume * ratio.powder / ratio.water) * 10) / 10;
     } else {
       // 使用默认配比 13.5g/90ml
-      specialPowderWeight = Math.round((specialMilkVolume * 13.5 / 90) * 10) / 10;
+      specialMilkPowder = Math.round((specialMilkVolume * 13.5 / 90) * 10) / 10;
     }
 
     let formattedStartTime = feeding.formattedStartTime;
@@ -3915,7 +3914,7 @@ Page({
         naturalMilkType: feeding.naturalMilkType || 'breast',
         formattedStartTime: formattedStartTime || '',
         totalVolume: totalVolume,
-        specialPowderWeight: specialPowderWeight
+        specialMilkPowder: specialMilkPowder
       }
     }, () => {
       this.updateFeedingDisplay('edit');
@@ -3949,10 +3948,10 @@ Page({
       // 计算特奶奶粉重量（根据配比 13.5g/90ml）
       if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
         const ratio = this.data.nutritionSettings.special_milk_ratio;
-        editingFeeding.specialPowderWeight = Math.round((special * ratio.powder / ratio.water) * 10) / 10;
+        editingFeeding.specialMilkPowder = Math.round((special * ratio.powder / ratio.water) * 10) / 10;
       } else {
         // 使用默认配比 13.5g/90ml
-        editingFeeding.specialPowderWeight = Math.round((special * 13.5 / 90) * 10) / 10;
+        editingFeeding.specialMilkPowder = Math.round((special * 13.5 / 90) * 10) / 10;
       }
       
     }
@@ -4145,10 +4144,8 @@ Page({
           naturalMilkVolume: parseFloat(editingFeeding.naturalMilkVolume) || 0,
           naturalMilkType: editingFeeding.naturalMilkType || 'breast',
           specialMilkVolume: parseFloat(editingFeeding.specialMilkVolume) || 0,
-          totalVolume: parseFloat(editingFeeding.totalVolume) || 
-                      (parseFloat(editingFeeding.naturalMilkVolume) || 0) + 
-                      (parseFloat(editingFeeding.specialMilkVolume) || 0),
-          specialPowderWeight: parseFloat(editingFeeding.specialPowderWeight) || 0,
+          totalVolume: feedingCalculator.getTotalVolume(editingFeeding),
+          specialMilkPowder: parseFloat(editingFeeding.specialMilkPowder) || 0,
           babyUid: babyUid, // 确保记录包含babyUid
           notes: editingFeeding.notes || ''
         };
@@ -5465,17 +5462,7 @@ Page({
   },
 
   getSpecialMilkVolumeFromFeeding(feeding) {
-    if (!feeding) return 0;
-    const specialMilk = parseFloat(feeding.specialMilkVolume);
-    if (!isNaN(specialMilk)) {
-      return specialMilk;
-    }
-    const naturalMilk = parseFloat(feeding.naturalMilkVolume);
-    const totalVolume = parseFloat(feeding.totalVolume);
-    if (isNaN(naturalMilk) || isNaN(totalVolume)) {
-      return 0;
-    }
-    return Math.max(0, totalVolume - naturalMilk);
+    return feedingCalculator.getSpecialMilkVolume(feeding);
   },
 
   ensureFeedingSettings(scope, feedingOverride) {

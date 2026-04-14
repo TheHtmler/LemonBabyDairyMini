@@ -12,10 +12,13 @@ test('analysis-report page uses archive, detail, and trend views instead of norm
   assert.match(wxml, /archive-view/);
   assert.match(wxml, /detail-view/);
   assert.match(wxml, /trend-view/);
+  assert.match(wxml, /primary-entry/);
+  assert.match(wxml, /trend-entry-inline/);
   assert.match(wxml, /report-type-tabs/);
   assert.match(wxml, /report-archive-list/);
-  assert.match(wxml, /detail-summary-card/);
-  assert.match(wxml, /trend-summary-card/);
+  assert.match(wxml, /archive-card-status-row/);
+  assert.doesNotMatch(wxml, /quick-actions/);
+  assert.doesNotMatch(wxml, /archive-card-footer/);
   assert.doesNotMatch(wxml, /正常率/);
 });
 

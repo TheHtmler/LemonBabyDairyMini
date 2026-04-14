@@ -43,6 +43,7 @@ const InvitationModel = require('../../models/invitation');
 const {
   buildDataRecordsSummaryPreview
 } = require('../../utils/dataRecordsSummaryPreview');
+const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 
 const app = getApp();
 
@@ -148,7 +149,6 @@ Page({
       normalCalories: 0,
       specialProtein: 0,
       specialCalories: 0,
-      specialPowderWeight: 0,
       formulaPowderWeight: 0,
       notes: ''
     },
@@ -188,7 +188,7 @@ Page({
       naturalMilkType: 'breast',
       totalVolume: '',
       specialMilkVolume: 0,
-      specialPowderWeight: 0,
+      specialMilkPowder: 0,
       formulaPowderWeight: 0,
       notes: ''
     },
@@ -1612,8 +1612,8 @@ Page({
   calculateMilkNutrition(feeding) {
     const settings = this.data.calculation_params || {};
     const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-    const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
-    const specialPowderWeight = parseFloat(feeding.specialMilkPowder) || 0;
+    const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+    const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, settings);
     const naturalType = feeding.naturalMilkType || 'breast';
 
     let naturalProtein = 0;
@@ -1810,11 +1810,11 @@ Page({
         endTime: endTime,
         startDateTime: now,
         endDateTime: endDateTime,
-        naturalMilkVolume: Math.round(parseFloat(this.data.currentFeeding.naturalMilkVolume || 0)).toString(),
+        naturalMilkVolume: Math.round(parseFloat(this.data.currentFeeding.naturalMilkVolume || 0)),
         naturalMilkType: this.data.currentFeeding.naturalMilkType || 'breast',
-        specialMilkVolume: Math.round(parseFloat(this.data.currentFeeding.specialMilkVolume || 0)).toString(),
-        specialMilkPowder: parseFloat(this.data.currentFeeding.specialMilkPowder || 0).toFixed(1),
-        totalVolume: Math.round(parseFloat(this.data.currentFeeding.totalVolume || 0)).toString(),
+        specialMilkVolume: Math.round(parseFloat(this.data.currentFeeding.specialMilkVolume || 0)),
+        specialMilkPowder: feedingCalculator.roundValue(this.data.currentFeeding.specialMilkPowder || 0, 2),
+        totalVolume: Math.round(feedingCalculator.getTotalVolume(this.data.currentFeeding)),
         isTemporary: true // 标记为临时记录
       };
       
@@ -1904,18 +1904,18 @@ Page({
         await this.updateTempFeedingRecord(endTime, endDateTime);
       } else {
         // 如果没有临时记录（意外情况），创建新记录
-        const { naturalMilkVolume, specialMilkVolume, specialMilkPowder, totalVolume } = this.data.currentFeeding;
+        const { naturalMilkVolume, specialMilkVolume, specialMilkPowder } = this.data.currentFeeding;
         
         const feeding = {
           startTime: this.data.currentFeeding.startTime,
           endTime: endTime,
           startDateTime: utils.createTimeObject(this.data.currentFeeding.startTime),
           endDateTime: endDateTime,
-          naturalMilkVolume: Math.round(parseFloat(naturalMilkVolume || 0)).toString(),
+          naturalMilkVolume: Math.round(parseFloat(naturalMilkVolume || 0)),
           naturalMilkType: this.data.currentFeeding.naturalMilkType || 'breast',
-          specialMilkVolume: Math.round(parseFloat(specialMilkVolume || 0)).toString(),
-          specialMilkPowder: parseFloat(specialMilkPowder || 0).toFixed(1),
-          totalVolume: Math.round(parseFloat(totalVolume || 0)).toString()
+          specialMilkVolume: Math.round(parseFloat(specialMilkVolume || 0)),
+          specialMilkPowder: feedingCalculator.roundValue(specialMilkPowder || 0, 2),
+          totalVolume: Math.round(feedingCalculator.getTotalVolume(this.data.currentFeeding))
         };
         
         await this.saveFeedingRecord(feeding);
@@ -2297,9 +2297,10 @@ Page({
       return;
     }
     // 检查必要字段是否填写
-    const { naturalMilkVolume, totalVolume, startTime } = this.data.quickFeedingData;
+    const { naturalMilkVolume, startTime } = this.data.quickFeedingData;
+    const totalVolumeNum = feedingCalculator.getTotalVolume(this.data.quickFeedingData);
     
-    if (!naturalMilkVolume || !totalVolume || !startTime) {
+    if (totalVolumeNum <= 0 || !startTime) {
       wx.showToast({
         title: '请填写所有必要信息',
         icon: 'none'
@@ -2307,12 +2308,11 @@ Page({
       return;
     }
     
-    const naturalMilkNum = parseFloat(naturalMilkVolume);
+    const naturalMilkNum = parseFloat(naturalMilkVolume) || 0;
     const specialMilkNum = parseFloat(this.data.quickFeedingData.specialMilkVolume) || 0;
-    const totalVolumeNum = parseFloat(this.data.quickFeedingData.totalVolume) || 0;
     
     // 验证数据有效性
-    if (isNaN(naturalMilkNum) || isNaN(specialMilkNum) || naturalMilkNum < 0 || specialMilkNum < 0) {
+    if (isNaN(naturalMilkNum) || isNaN(specialMilkNum) || naturalMilkNum < 0 || specialMilkNum < 0 || totalVolumeNum <= 0) {
       wx.showToast({
         title: '请输入有效的奶量',
         icon: 'none'
@@ -2336,11 +2336,11 @@ Page({
       startDateTime: startDateTime, // 添加标准时间对象
       endTime: '',
       endDateTime: null,
-      naturalMilkVolume: naturalMilkNum.toString(),
+      naturalMilkVolume: naturalMilkNum,
       naturalMilkType: this.data.quickFeedingData.naturalMilkType || 'breast',
-      specialMilkVolume: specialMilkNum.toString(),
-      specialMilkPowder: specialMilkPowder.toFixed(1),
-      totalVolume: totalVolumeNum.toString()
+      specialMilkVolume: specialMilkNum,
+      specialMilkPowder: feedingCalculator.roundValue(specialMilkPowder, 2),
+      totalVolume: totalVolumeNum
     };
     const feedingNotes = (this.data.quickFeedingData.notes || '').trim();
     if (feedingNotes) {
@@ -4526,10 +4526,10 @@ Page({
       const { formulaPowderWeight, ...cleanEditingFeeding } = this.data.editingFeeding || {};
       const editedFeeding = {
         ...cleanEditingFeeding,
-        naturalMilkVolume: Math.round(parseFloat(this.data.editingFeeding.naturalMilkVolume) || 0).toString(),
-        specialMilkVolume: Math.round(parseFloat(this.data.editingFeeding.specialMilkVolume) || 0).toString(),
-        totalVolume: Math.round(parseFloat(this.data.editingFeeding.totalVolume) || 0).toString(),
-        specialMilkPowder: parseFloat(this.data.editingFeeding.specialMilkPowder || 0).toFixed(1),
+        naturalMilkVolume: Math.round(parseFloat(this.data.editingFeeding.naturalMilkVolume) || 0),
+        specialMilkVolume: Math.round(parseFloat(this.data.editingFeeding.specialMilkVolume) || 0),
+        totalVolume: Math.round(feedingCalculator.getTotalVolume(this.data.editingFeeding)),
+        specialMilkPowder: feedingCalculator.roundValue(this.data.editingFeeding.specialMilkPowder || 0, 2),
         babyUid: babyUid // 确保记录中包含babyUid
       };
       
@@ -4998,17 +4998,7 @@ Page({
   },
 
   getSpecialMilkVolumeFromFeeding(feeding) {
-    if (!feeding) return 0;
-    const specialMilk = parseFloat(feeding.specialMilkVolume);
-    if (!isNaN(specialMilk)) {
-      return specialMilk;
-    }
-    const naturalMilk = parseFloat(feeding.naturalMilkVolume);
-    const totalVolume = parseFloat(feeding.totalVolume);
-    if (isNaN(naturalMilk) || isNaN(totalVolume)) {
-      return 0;
-    }
-    return Math.max(0, totalVolume - naturalMilk);
+    return feedingCalculator.getSpecialMilkVolume(feeding);
   },
 
   ensureFeedingSettings(scope, feedingOverride) {
@@ -5186,7 +5176,8 @@ Page({
     if (!this.ensureFeedingSettings('new')) {
       return;
     }
-    const { startTime, endTime, startDateTime, endDateTime, naturalMilkVolume, totalVolume } = this.data.newFeeding;
+    const { startTime, endTime, startDateTime, endDateTime, naturalMilkVolume } = this.data.newFeeding;
+    const totalVolumeNum = feedingCalculator.getTotalVolume(this.data.newFeeding);
     
     // 验证输入
     if (!startTime || !endTime) {
@@ -5197,7 +5188,7 @@ Page({
       return;
     }
     
-    if (!naturalMilkVolume || !totalVolume) {
+    if (totalVolumeNum <= 0) {
       wx.showToast({
         title: '请输入奶量',
         icon: 'none'
@@ -5249,7 +5240,7 @@ Page({
         endDateTime: endDateTime,
         naturalMilkVolume: parseFloat(naturalMilkVolume) || 0,
         specialMilkVolume: parseFloat(this.data.newFeeding.specialMilkVolume) || 0,
-        totalVolume: parseFloat(totalVolume) || 0,
+        totalVolume: feedingCalculator.getTotalVolume(this.data.newFeeding),
         babyUid: babyUid,
         createdAt: new Date()
       };
@@ -5428,14 +5419,7 @@ Page({
     const newFeeding = { ...this.data.newFeeding };
     
     newFeeding[field] = value;
-    
-    // 如果改变了天然奶量或总奶量，重新计算特奶量
-    if (field === 'naturalMilkVolume' || field === 'totalVolume') {
-      const naturalMilk = parseFloat(newFeeding.naturalMilkVolume) || 0;
-      const totalVolume = parseFloat(newFeeding.totalVolume) || 0;
-      newFeeding.specialMilkVolume = Math.max(0, totalVolume - naturalMilk);
-    }
-    
+
     this.setData({ newFeeding });
   },
 
@@ -6017,7 +6001,6 @@ Page({
       'quickFeedingData.normalCalories': normalMilk.naturalCalories || 0,
       'quickFeedingData.specialProtein': specialMilk.specialProtein || 0,
       'quickFeedingData.specialCalories': specialMilk.specialCalories || 0,
-      'quickFeedingData.specialPowderWeight': this._round(specialPowderWeight, 2),
       'quickFeedingData.specialMilkPowder': this._round(specialPowderWeight, 2),
       'quickFeedingData.formulaPowderWeight': formulaPowderWeight
     });
