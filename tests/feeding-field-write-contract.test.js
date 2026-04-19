@@ -95,5 +95,8 @@ test('daily-feeding exposes a separate milk feeding editor entry', () => {
   assert.match(wxml, /bindtap="navigateToMilkFeedingEditor"/);
   assert.match(wxml, /<text>添加奶<\/text>/);
   assert.match(js, /navigateToMilkFeedingEditor\(\)\s*\{/);
-  assert.match(js, /url:\s*'\/pages\/milk-feeding-editor\/index'/);
+  assert.match(
+    js,
+    /navigateToMilkFeedingEditor\(\)\s*\{[\s\S]*?wx\.navigateTo\(\{\s*url:\s*[`'"]\/pages\/milk-feeding-editor\/index/
+  );
 });

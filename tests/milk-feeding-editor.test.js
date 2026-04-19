@@ -310,6 +310,271 @@ test('milk feeding editor opens and closes the remaining-milk dialog', () => {
   assert.equal(instance.data.showGoalDialog, false);
 });
 
+test('milk feeding editor loads edit context for a selected date and sorted feeding index', async () => {
+  const selectedDate = '2026-04-19';
+  const dbRecords = [
+    {
+      _id: 'record-1',
+      date: new Date('2026-04-19T00:00:00+08:00'),
+      basicInfo: {
+        weight: '5.2',
+        naturalProteinCoefficient: '1.4',
+        specialProteinCoefficient: '0.6',
+        calorieCoefficient: '100'
+      },
+      feedings: [
+        {
+          startTime: '09:00',
+          naturalMilkType: 'breast',
+          naturalMilkVolume: 60,
+          specialMilkVolume: 0,
+          specialMilkPowder: 0
+        },
+        {
+          startTime: '11:30',
+          naturalMilkType: 'formula',
+          naturalMilkVolume: 40,
+          formulaPowderWeight: 5,
+          specialMilkVolume: 80,
+          specialMilkPowder: 6,
+          ratioMode: {
+            natural: 'custom',
+            special: 'custom'
+          },
+          notes: 'custom mix'
+        }
+      ],
+      intakes: []
+    }
+  ];
+  let navTitle = '';
+  const wx = {
+    cloud: {
+      database() {
+        return {
+          command: {
+            gte: (value) => ({
+              and: (nextValue) => ({ $gte: value, $and: nextValue })
+            }),
+            lt: (value) => ({ $lt: value }),
+            push: (value) => value
+          },
+          serverDate() {
+            return '__server_date__';
+          },
+          collection() {
+            return {
+              where() {
+                return {
+                  orderBy() {
+                    return {
+                      limit() {
+                        return {
+                          get: async () => ({ data: dbRecords })
+                        };
+                      }
+                    };
+                  },
+                  get: async () => ({ data: dbRecords })
+                };
+              },
+              doc() {
+                return {
+                  update: async () => ({})
+                };
+              }
+            };
+          }
+        };
+      }
+    },
+    showToast() {},
+    showModal() {},
+    showLoading() {},
+    hideLoading() {},
+    navigateBack() {},
+    setNavigationBarTitle({ title }) {
+      navTitle = title;
+    }
+  };
+  const page = loadMilkFeedingEditorPage({
+    wx,
+    utilsOverrides: {
+      getBabyUid: () => 'baby-1'
+    }
+  });
+  const instance = createPageInstance(page, {
+    calculation_params: {
+      formula_milk_ratio: { powder: 10, water: 100 },
+      special_milk_ratio: { powder: 10, water: 100 }
+    }
+  });
+
+  const previousWx = global.wx;
+  global.wx = wx;
+  try {
+    await page.onLoad.call(instance, {
+      mode: 'edit',
+      date: selectedDate,
+      index: '0',
+      source: 'records'
+    });
+  } finally {
+    global.wx = previousWx;
+  }
+
+  assert.equal(navTitle, '编辑奶');
+  assert.equal(instance.data.entryDate, selectedDate);
+  assert.equal(instance.data.editorMode, 'edit');
+  assert.equal(instance.data.editingRecordId, 'record-1');
+  assert.equal(instance.data.editingFeedingIndex, 1);
+  assert.equal(instance.data.recordTime, '11:30');
+  assert.equal(instance.data.naturalMilkType, 'formula');
+  assert.equal(instance.data.naturalVolume, '40');
+  assert.equal(instance.data.formulaPowderWeight, '5');
+  assert.equal(instance.data.specialVolume, '80');
+  assert.equal(instance.data.specialPowderWeight, '6');
+  assert.equal(instance.data.formulaRatioMode, 'custom');
+  assert.equal(instance.data.specialRatioMode, 'custom');
+  assert.equal(instance.data.notes, 'custom mix');
+  assert.equal(instance.data.weight, '5.2');
+});
+
+test('milk feeding editor saveFeeding updates an existing feeding in edit mode instead of pushing a new one', async () => {
+  let updatedDocId = '';
+  let updatedFeedings = null;
+  let pushCalled = false;
+  const dbRecords = [
+    {
+      _id: 'record-1',
+      date: new Date('2026-04-19T00:00:00+08:00'),
+      basicInfo: {
+        weight: '5.2',
+        naturalProteinCoefficient: '1.4',
+        specialProteinCoefficient: '0.6',
+        calorieCoefficient: '100'
+      },
+      feedings: [
+        {
+          startTime: '09:00',
+          naturalMilkType: 'breast',
+          naturalMilkVolume: 60,
+          specialMilkVolume: 0,
+          specialMilkPowder: 0
+        },
+        {
+          startTime: '11:30',
+          naturalMilkType: 'formula',
+          naturalMilkVolume: 40,
+          formulaPowderWeight: 5,
+          specialMilkVolume: 80,
+          specialMilkPowder: 6,
+          ratioMode: {
+            natural: 'custom',
+            special: 'custom'
+          },
+          createdAt: new Date('2026-04-19T11:30:00+08:00')
+        }
+      ],
+      intakes: []
+    }
+  ];
+  const wx = {
+    cloud: {
+      database() {
+        return {
+          command: {
+            gte: (value) => ({
+              and: (nextValue) => ({ $gte: value, $and: nextValue })
+            }),
+            lt: (value) => ({ $lt: value }),
+            push() {
+              pushCalled = true;
+              return null;
+            }
+          },
+          serverDate() {
+            return '__server_date__';
+          },
+          collection() {
+            return {
+              where() {
+                return {
+                  get: async () => ({ data: dbRecords })
+                };
+              },
+              doc(id) {
+                return {
+                  update: async ({ data }) => {
+                    updatedDocId = id;
+                    updatedFeedings = data.feedings;
+                    return {};
+                  }
+                };
+              }
+            };
+          }
+        };
+      }
+    },
+    showToast() {},
+    showModal() {},
+    showLoading() {},
+    hideLoading() {},
+    navigateBack() {}
+  };
+  const page = loadMilkFeedingEditorPage({
+    wx,
+    utilsOverrides: {
+      getBabyUid: () => 'baby-1'
+    }
+  });
+  const instance = createPageInstance(page, {
+    editorMode: 'edit',
+    entryDate: '2026-04-19',
+    editingRecordId: 'record-1',
+    editingFeedingIndex: 1,
+    recordTime: '12:15',
+    naturalMilkType: 'formula',
+    naturalVolume: '45',
+    formulaPowderWeight: '5.5',
+    formulaRatioMode: 'custom',
+    specialVolume: '60',
+    specialPowderWeight: '6.5',
+    specialRatioMode: 'custom',
+    weight: '5.2',
+    naturalProteinCoefficientInput: '1.4',
+    specialProteinCoefficientInput: '0.6',
+    calorieCoefficientInput: '100',
+    notes: 'updated note',
+    calculation_params: {
+      formula_milk_ratio: { powder: 10, water: 100 },
+      special_milk_ratio: { powder: 10, water: 100 },
+      natural_milk_protein: 1.1,
+      formula_milk_protein: 20,
+      special_milk_protein: 20
+    }
+  });
+
+  const previousWx = global.wx;
+  global.wx = wx;
+  try {
+    await page.saveFeeding.call(instance);
+  } finally {
+    global.wx = previousWx;
+  }
+
+  assert.equal(pushCalled, false);
+  assert.equal(updatedDocId, 'record-1');
+  assert.equal(updatedFeedings.length, 2);
+  assert.equal(updatedFeedings[1].startTime, '12:15');
+  assert.equal(updatedFeedings[1].naturalMilkVolume, 45);
+  assert.equal(updatedFeedings[1].formulaPowderWeight, 5.5);
+  assert.equal(updatedFeedings[1].specialMilkVolume, 60);
+  assert.equal(updatedFeedings[1].specialMilkPowder, 6.5);
+  assert.equal(updatedFeedings[1].notes, 'updated note');
+});
+
 test('milk feeding editor standard formula mode syncs powder from water and water from powder', () => {
   const page = loadMilkFeedingEditorPage();
   const instance = createPageInstance(page, {
@@ -619,7 +884,11 @@ test('milk feeding editor exposes recent defaults hint and clear action resets c
         database() {
           return {
             command: {
-              gte: (value) => ({ $gte: value })
+              gte: (value) => ({
+                $gte: value,
+                and: (nextValue) => ({ $gte: value, $and: nextValue })
+              }),
+              lt: (value) => ({ $lt: value })
             },
             collection() {
               return {
@@ -658,7 +927,11 @@ test('milk feeding editor exposes recent defaults hint and clear action resets c
       database() {
         return {
           command: {
-            gte: (value) => ({ $gte: value })
+            gte: (value) => ({
+              $gte: value,
+              and: (nextValue) => ({ $gte: value, $and: nextValue })
+            }),
+            lt: (value) => ({ $lt: value })
           },
           collection() {
             return {

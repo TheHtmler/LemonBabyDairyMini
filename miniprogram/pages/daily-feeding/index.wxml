@@ -195,8 +195,8 @@
           record="{{item}}"
           index="{{index}}"
           showLabel="{{false}}"
-          bind:recordtap="openEditModal"
-          bind:edit="openEditModal"
+          bind:recordtap="navigateToMilkFeedingEditorForEdit"
+          bind:edit="navigateToMilkFeedingEditorForEdit"
           bind:delete="deleteFeeding"
         />
         <view class="empty-record" wx:if="{{feedingsDisplay.length === 0}}">

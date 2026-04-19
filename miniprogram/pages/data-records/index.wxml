@@ -287,7 +287,7 @@
             <view class="copy-btn" bindtap="onCopyFeedingToDate">
               <text>复制数据</text>
             </view>
-            <view class="add-btn" bindtap="showAddFeedingModal">
+            <view class="add-btn" bindtap="navigateToMilkFeedingEditor">
               <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
               <text>补充记录</text>
             </view>
@@ -300,7 +300,7 @@
               record="{{item}}"
               index="{{index}}"
               showLabel="{{false}}"
-              bind:edit="openEditFeedingModal"
+              bind:edit="navigateToMilkFeedingEditorForEdit"
               bind:delete="deleteFeeding"
             />
           </view>

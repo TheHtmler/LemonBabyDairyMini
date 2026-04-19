@@ -330,6 +330,44 @@ test('daily-feeding saveEditedFeeding persists formulaPowderWeight for custom fo
   assert.equal(updatedFeedings[0].formulaPowderWeight, 5);
 });
 
+test('daily-feeding routes add and edit actions to milk feeding editor with context params', () => {
+  let navigatedUrl = '';
+  const wx = createDefaultWx();
+  wx.navigateTo = ({ url }) => {
+    navigatedUrl = url;
+  };
+  const page = loadDailyFeedingPage({ wx });
+  const instance = createPageInstance(page, {
+    feedings: [
+      {
+        startTime: '10:00'
+      }
+    ]
+  });
+
+  const previousWx = global.wx;
+  global.wx = wx;
+  try {
+    page.navigateToMilkFeedingEditor.call(instance);
+    assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
+    assert.match(navigatedUrl, /mode=create/);
+    assert.match(navigatedUrl, /source=daily/);
+
+    page.navigateToMilkFeedingEditorForEdit.call(instance, {
+      detail: {
+        index: 0
+      }
+    });
+  } finally {
+    global.wx = previousWx;
+  }
+
+  assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
+  assert.match(navigatedUrl, /mode=edit/);
+  assert.match(navigatedUrl, /source=daily/);
+  assert.match(navigatedUrl, /index=0/);
+});
+
 test('data-records edit modal keeps stored special powder weight for custom special milk records', () => {
   const page = loadDataRecordsPage();
   const instance = createPageInstance(page, {
@@ -497,6 +535,48 @@ test('data-records saveEditedFeeding persists formulaPowderWeight for custom for
   }
 
   assert.equal(updatedFeedings[0].formulaPowderWeight, 5);
+});
+
+test('data-records routes add and edit actions to milk feeding editor with selected date context', () => {
+  let navigatedUrl = '';
+  const wx = createDefaultWx();
+  wx.navigateTo = ({ url }) => {
+    navigatedUrl = url;
+  };
+  const page = loadDataRecordsPage({ wx });
+  const instance = createPageInstance(page, {
+    selectedDate: '2026-04-19',
+    feedingRecords: [
+      {
+        startTime: '10:00',
+        naturalMilkVolume: 40
+      }
+    ]
+  });
+
+  const previousWx = global.wx;
+  global.wx = wx;
+  try {
+    page.navigateToMilkFeedingEditor.call(instance);
+    assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
+    assert.match(navigatedUrl, /mode=create/);
+    assert.match(navigatedUrl, /source=records/);
+    assert.match(navigatedUrl, /date=2026-04-19/);
+
+    page.navigateToMilkFeedingEditorForEdit.call(instance, {
+      detail: {
+        index: 0
+      }
+    });
+  } finally {
+    global.wx = previousWx;
+  }
+
+  assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
+  assert.match(navigatedUrl, /mode=edit/);
+  assert.match(navigatedUrl, /source=records/);
+  assert.match(navigatedUrl, /date=2026-04-19/);
+  assert.match(navigatedUrl, /index=0/);
 });
 
 test('report workbench nutrition windows use explicit powder weights for custom formula records', () => {

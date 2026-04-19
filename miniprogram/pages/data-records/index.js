@@ -1174,6 +1174,22 @@ Page({
     });
   },
 
+  navigateToMilkFeedingEditor() {
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pages/milk-feeding-editor/index?mode=create&source=records&date=${selectedDate}`
+    });
+  },
+
+  navigateToMilkFeedingEditorForEdit(e) {
+    const index = (e.detail && e.detail.index !== undefined) ? e.detail.index : e.currentTarget?.dataset?.index;
+    if (index === undefined || index === null || index < 0) return;
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pages/milk-feeding-editor/index?mode=edit&source=records&date=${selectedDate}&index=${encodeURIComponent(index)}`
+    });
+  },
+
   navigateToTreatmentRecord() {
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
     wx.navigateTo({

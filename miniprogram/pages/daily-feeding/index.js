@@ -2919,8 +2919,18 @@ Page({
   },
 
   navigateToMilkFeedingEditor() {
+    const date = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
     wx.navigateTo({
-      url: '/pages/milk-feeding-editor/index'
+      url: `/pages/milk-feeding-editor/index?mode=create&source=daily&date=${date}`
+    });
+  },
+
+  navigateToMilkFeedingEditorForEdit(e) {
+    const index = (e.detail && e.detail.index !== undefined) ? e.detail.index : e.currentTarget?.dataset?.index;
+    if (index === undefined || index === null || index < 0) return;
+    const date = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    wx.navigateTo({
+      url: `/pages/milk-feeding-editor/index?mode=edit&source=daily&date=${date}&index=${encodeURIComponent(index)}`
     });
   },
 

@@ -30,6 +30,18 @@ function formatDateKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function parseDateKey(dateKey) {
+  const [year, month, day] = String(dateKey || '').split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+}
+
+function buildDateTimeFromDateKey(dateKey, timeText = '00:00') {
+  const [hours, minutes] = String(timeText || '00:00').split(':').map(Number);
+  const date = parseDateKey(dateKey);
+  date.setHours(hours || 0, minutes || 0, 0, 0);
+  return date;
+}
+
 function roundMacro(value) {
   return feedingCalculator.roundValue(value, 2);
 }
@@ -37,6 +49,12 @@ function roundMacro(value) {
 function parseRecordTimestamp(feeding) {
   const raw = feeding?.startDateTime || feeding?.createdAt;
   if (!raw) return 0;
+  const parsed = new Date(raw).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getRecordTimestamp(record = {}) {
+  const raw = record?.updatedAt || record?.createdAt || record?.date;
   const parsed = new Date(raw).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -262,8 +280,56 @@ function calculateRecordMacroSummary(record = {}, settings = {}) {
   return mergeTreatmentIntoMacroSummary(summary, record.treatmentRecords || []);
 }
 
+function hasBasicInfoValue(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function mergeBasicInfo(records = []) {
+  return [...records]
+    .sort((left, right) => getRecordTimestamp(right) - getRecordTimestamp(left))
+    .reduce((merged, record) => {
+      const basicInfo = record?.basicInfo || {};
+      Object.keys(basicInfo).forEach((key) => {
+        if (!hasBasicInfoValue(merged[key]) && hasBasicInfoValue(basicInfo[key])) {
+          merged[key] = basicInfo[key];
+        }
+      });
+      return merged;
+    }, {});
+}
+
+function sortFeedingsByTimeDesc(feedings = []) {
+  return [...feedings].sort((left, right) => {
+    const diff = parseRecordTimestamp(right) - parseRecordTimestamp(left);
+    if (diff !== 0) return diff;
+    return String(right?.startTime || '').localeCompare(String(left?.startTime || ''));
+  });
+}
+
+function mergeDailyRecords(records = [], settings = {}) {
+  const mergedFeedings = records.flatMap((record) => record?.feedings || []);
+  const mergedIntakes = records.flatMap((record) => record?.intakes || []);
+  return {
+    basicInfo: mergeBasicInfo(records),
+    feedings: sortFeedingsByTimeDesc(mergedFeedings),
+    intakes: mergedIntakes,
+    treatmentRecords: records.flatMap((record) => record?.treatmentRecords || []),
+    summary: calculateRecordMacroSummary({
+      feedings: mergedFeedings,
+      intakes: mergedIntakes,
+      treatmentRecords: records.flatMap((record) => record?.treatmentRecords || [])
+    }, settings)
+  };
+}
+
 Page({
   data: {
+    entryDate: formatDateKey(new Date()),
+    editorMode: 'create',
+    sourcePage: '',
+    sourceFeedingIndex: -1,
+    editingRecordId: '',
+    editingFeedingIndex: -1,
     recordTime: formatTime(new Date()),
     notes: '',
     weight: app.globalData.weight || '',
@@ -300,9 +366,31 @@ Page({
     }
   },
 
-  async onLoad() {
+  async onLoad(options = {}) {
+    const entryDate = options.date || formatDateKey(new Date());
+    const editorMode = options.mode === 'edit' ? 'edit' : 'create';
+    const sourcePage = options.source || options.from || '';
+    const sourceFeedingIndex = Number.parseInt(options.index, 10);
+
+    this.setData({
+      entryDate,
+      editorMode,
+      sourcePage,
+      sourceFeedingIndex: Number.isInteger(sourceFeedingIndex) ? sourceFeedingIndex : -1
+    });
+
+    if (typeof wx.setNavigationBarTitle === 'function') {
+      wx.setNavigationBarTitle({
+        title: editorMode === 'edit' ? '编辑奶' : '添加奶'
+      });
+    }
+
     await this.loadCalculationParams();
-    await this.loadRecentDefaults();
+    if (editorMode === 'edit') {
+      await this.loadEditContext();
+    } else {
+      await this.loadRecentDefaults();
+    }
     await this.loadGoalContext();
     this.updateRatioDisplays();
     this.updateNutritionPreview();
@@ -334,20 +422,127 @@ Page({
     });
   },
 
+  async fetchRecordsForDate(dateKey = this.data.entryDate) {
+    const babyUid = getBabyUid();
+    if (!babyUid || !dateKey) return [];
+
+    const db = wx.cloud.database();
+    const startOfDay = buildDateTimeFromDateKey(dateKey, '00:00');
+    const nextDay = new Date(startOfDay);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    let result = await db.collection('feeding_records').where({
+      babyUid,
+      date: db.command.gte(startOfDay).and(db.command.lt(nextDay))
+    }).get();
+
+    if (!result.data || result.data.length === 0) {
+      result = await db.collection('feeding_records').where({
+        babyUid,
+        date: dateKey
+      }).get();
+    }
+
+    return result.data || [];
+  },
+
+  resolveEditTarget(records = [], sourceIndex = this.data.sourceFeedingIndex) {
+    if (!Array.isArray(records) || records.length === 0 || sourceIndex < 0) {
+      return null;
+    }
+
+    const candidates = sortFeedingsByTimeDesc(
+      records.flatMap((record) => (record.feedings || []).map((feeding, feedingIndex) => ({
+        ...feeding,
+        _recordId: record._id,
+        _feedingIndex: feedingIndex
+      })))
+    );
+    const target = candidates[sourceIndex];
+    if (!target) return null;
+
+    return {
+      recordId: target._recordId,
+      feedingIndex: target._feedingIndex,
+      feeding: target
+    };
+  },
+
+  async loadEditContext() {
+    try {
+      const records = await this.fetchRecordsForDate(this.data.entryDate);
+      const settings = this.data.calculation_params || {};
+      const target = this.resolveEditTarget(records, this.data.sourceFeedingIndex);
+      if (!target) {
+        wx.showToast({
+          title: '未找到要编辑的奶记录',
+          icon: 'none'
+        });
+        return;
+      }
+
+      const mergedRecord = mergeDailyRecords(records, settings);
+      const feeding = target.feeding || {};
+      const naturalMilkType = feeding.naturalMilkType === 'formula' ? 'formula' : 'breast';
+      const naturalVolume = Number(feeding.naturalMilkVolume) > 0
+        ? toVolumeInputValue(feeding.naturalMilkVolume)
+        : '';
+      const formulaRatioMode = feeding?.ratioMode?.natural === 'custom' ? 'custom' : 'standard';
+      const specialRatioMode = feeding?.ratioMode?.special === 'custom' ? 'custom' : 'standard';
+      const specialVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+
+      this.setData({
+        editingRecordId: target.recordId,
+        editingFeedingIndex: target.feedingIndex,
+        recordTime: feeding.startTime || formatTime(buildDateTimeFromDateKey(this.data.entryDate)),
+        notes: feeding.notes || '',
+        naturalMilkType,
+        naturalVolume,
+        breastVolumeDraft: naturalMilkType === 'breast' ? naturalVolume : '',
+        formulaVolumeDraft: naturalMilkType === 'formula' ? naturalVolume : '',
+        formulaPowderWeight: naturalMilkType === 'formula'
+          ? toInputValue(getFormulaPowderWeight(feeding, settings))
+          : '',
+        formulaRatioMode,
+        formulaLastEditedField: formulaRatioMode === 'custom' ? 'powder' : 'water',
+        specialVolume: specialVolume > 0 ? toVolumeInputValue(specialVolume) : '',
+        specialPowderWeight: specialVolume > 0
+          ? toInputValue(getSpecialPowderWeight(feeding, settings))
+          : '',
+        specialRatioMode,
+        specialLastEditedField: specialRatioMode === 'custom' ? 'powder' : 'water',
+        recentDefaultsLoaded: false,
+        recentDefaultText: '',
+        weight: mergedRecord.basicInfo?.weight || this.data.weight,
+        naturalProteinCoefficientInput: mergedRecord.basicInfo?.naturalProteinCoefficient || '',
+        specialProteinCoefficientInput: mergedRecord.basicInfo?.specialProteinCoefficient || '',
+        calorieCoefficientInput: mergedRecord.basicInfo?.calorieCoefficient || ''
+      });
+    } catch (error) {
+      console.error('加载编辑奶记录失败:', error);
+      wx.showToast({
+        title: '加载编辑数据失败',
+        icon: 'none'
+      });
+    }
+  },
+
   async loadRecentDefaults() {
     const babyUid = getBabyUid();
     if (!babyUid) return;
 
     try {
       const db = wx.cloud.database();
-      const today = new Date();
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 7);
+      const targetDate = buildDateTimeFromDateKey(this.data.entryDate, '00:00');
+      const sevenDaysAgo = new Date(targetDate);
+      sevenDaysAgo.setDate(targetDate.getDate() - 7);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
 
       const result = await db.collection('feeding_records')
         .where({
           babyUid,
-          date: db.command.gte(sevenDaysAgo)
+          date: db.command.gte(sevenDaysAgo).and(db.command.lt(nextDay))
         })
         .orderBy('date', 'desc')
         .limit(8)
@@ -420,15 +615,16 @@ Page({
 
     try {
       const db = wx.cloud.database();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 7);
+      const targetDate = buildDateTimeFromDateKey(this.data.entryDate, '00:00');
+      const sevenDaysAgo = new Date(targetDate);
+      sevenDaysAgo.setDate(targetDate.getDate() - 7);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
 
       const result = await db.collection('feeding_records')
         .where({
           babyUid,
-          date: db.command.gte(sevenDaysAgo)
+          date: db.command.gte(sevenDaysAgo).and(db.command.lt(nextDay))
         })
         .orderBy('date', 'desc')
         .limit(7)
@@ -439,16 +635,19 @@ Page({
         const basicInfo = record?.basicInfo || {};
         return basicInfo.weight || basicInfo.naturalProteinCoefficient || basicInfo.specialProteinCoefficient || basicInfo.calorieCoefficient;
       });
-      const todayRecord = records.find((record) => isSameDay(record?.date, today));
-      const basicInfo = latestBasicInfo?.basicInfo || {};
+      const sameDayRecords = records.filter((record) => formatDateKey(new Date(record?.date)) === this.data.entryDate);
+      const mergedRecord = sameDayRecords.length > 0
+        ? mergeDailyRecords(sameDayRecords, this.data.calculation_params || {})
+        : null;
+      const basicInfo = mergedRecord?.basicInfo || latestBasicInfo?.basicInfo || {};
 
       this.setData({
         weight: basicInfo.weight || fallbackWeight || '',
         naturalProteinCoefficientInput: basicInfo.naturalProteinCoefficient || '',
         specialProteinCoefficientInput: basicInfo.specialProteinCoefficient || '',
         calorieCoefficientInput: basicInfo.calorieCoefficient || '',
-        macroSummary: todayRecord
-          ? calculateRecordMacroSummary(todayRecord, this.data.calculation_params || {})
+        macroSummary: mergedRecord
+          ? calculateRecordMacroSummary(mergedRecord, this.data.calculation_params || {})
           : createEmptyMacroSummary()
       }, () => {
         this.updateGoalSuggestion();
@@ -1205,16 +1404,14 @@ Page({
       return;
     }
 
-    const todayKey = formatDateKey(new Date());
+    const dateKey = this.data.entryDate || formatDateKey(new Date());
     const basicInfo = {
       weight: this.data.weight || app.globalData.weight || '',
       naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
       specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
       calorieCoefficient: this.data.calorieCoefficientInput || ''
     };
-    const [hours, minutes] = this.data.recordTime.split(':').map(Number);
-    const startDateTime = new Date();
-    startDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+    const startDateTime = buildDateTimeFromDateKey(dateKey, this.data.recordTime);
 
     const feeding = {
       startTime: this.data.recordTime,
@@ -1238,31 +1435,66 @@ Page({
       specialMilkPowder: hasSpecialMilk
         ? feedingCalculator.roundValue(specialPowderWeightNum, 2)
         : 0,
-      totalVolume: Math.round(naturalVolumeNum + specialVolumeNum)
+      totalVolume: Math.round(naturalVolumeNum + specialVolumeNum),
+      notes: (this.data.notes || '').trim()
     };
-
-    if ((this.data.notes || '').trim()) {
-      feeding.notes = this.data.notes.trim();
-    }
 
     try {
       wx.showLoading({ title: '保存中...' });
-      const { recordId } = await findOrCreateDailyRecord(todayKey, babyUid, basicInfo);
       const db = wx.cloud.database();
-      await db.collection('feeding_records').doc(recordId).update({
-        data: {
-          'basicInfo.weight': basicInfo.weight,
-          'basicInfo.naturalProteinCoefficient': basicInfo.naturalProteinCoefficient,
-          'basicInfo.specialProteinCoefficient': basicInfo.specialProteinCoefficient,
-          'basicInfo.calorieCoefficient': basicInfo.calorieCoefficient,
-          feedings: db.command.push({
-            ...feeding,
-            babyUid,
-            createdAt: new Date()
-          }),
-          updatedAt: db.serverDate()
+      if (this.data.editorMode === 'edit') {
+        const records = await this.fetchRecordsForDate(dateKey);
+        let targetRecord = records.find((record) => record._id === this.data.editingRecordId) || null;
+        let targetFeedingIndex = this.data.editingFeedingIndex;
+
+        if (!targetRecord || targetFeedingIndex < 0) {
+          const resolvedTarget = this.resolveEditTarget(records, this.data.sourceFeedingIndex);
+          if (resolvedTarget) {
+            targetRecord = records.find((record) => record._id === resolvedTarget.recordId) || null;
+            targetFeedingIndex = resolvedTarget.feedingIndex;
+          }
         }
-      });
+
+        if (!targetRecord || targetFeedingIndex < 0) {
+          throw new Error('未找到要更新的奶记录');
+        }
+
+        const updatedFeedings = [...(targetRecord.feedings || [])];
+        const previousFeeding = updatedFeedings[targetFeedingIndex] || {};
+        updatedFeedings[targetFeedingIndex] = {
+          ...previousFeeding,
+          ...feeding,
+          babyUid: previousFeeding.babyUid || babyUid,
+          createdAt: previousFeeding.createdAt || new Date()
+        };
+
+        await db.collection('feeding_records').doc(targetRecord._id).update({
+          data: {
+            'basicInfo.weight': basicInfo.weight,
+            'basicInfo.naturalProteinCoefficient': basicInfo.naturalProteinCoefficient,
+            'basicInfo.specialProteinCoefficient': basicInfo.specialProteinCoefficient,
+            'basicInfo.calorieCoefficient': basicInfo.calorieCoefficient,
+            feedings: updatedFeedings,
+            updatedAt: db.serverDate()
+          }
+        });
+      } else {
+        const { recordId } = await findOrCreateDailyRecord(dateKey, babyUid, basicInfo);
+        await db.collection('feeding_records').doc(recordId).update({
+          data: {
+            'basicInfo.weight': basicInfo.weight,
+            'basicInfo.naturalProteinCoefficient': basicInfo.naturalProteinCoefficient,
+            'basicInfo.specialProteinCoefficient': basicInfo.specialProteinCoefficient,
+            'basicInfo.calorieCoefficient': basicInfo.calorieCoefficient,
+            feedings: db.command.push({
+              ...feeding,
+              babyUid,
+              createdAt: new Date()
+            }),
+            updatedAt: db.serverDate()
+          }
+        });
+      }
 
       wx.hideLoading();
       wx.showToast({
