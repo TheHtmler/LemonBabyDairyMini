@@ -130,6 +130,67 @@ test('data-records summaryPreview falls back to computed protein coefficients wh
   assert.equal(preview.nutritionStrip[1].detail, '0.7 g/kg/d');
 });
 
+test('data-records summaryPreview prefers computed protein coefficients over stale input values', () => {
+  const page = loadDataRecordsPage();
+  const instance = {
+    data: {
+      formattedSelectedDate: '2026年4月18日',
+      weight: 13.5,
+      height: 92,
+      totalMilk: 540,
+      dailyCaloriesTotal: 920,
+      caloriePerKg: 68.1,
+      proteinSummaryDisplay: {
+        natural: '11.92',
+        special: '0.00',
+        total: '11.92'
+      },
+      naturalProteinCoefficientInput: '0.85',
+      specialProteinCoefficientInput: '',
+      naturalProteinCoefficient: 0.88,
+      specialProteinCoefficient: '',
+      calorieGoalPerKgRange: {
+        min: 60,
+        max: 80,
+        label: '当前年龄段推荐'
+      },
+      macroRatios: {
+        protein: 14,
+        carbs: 46,
+        fat: 40
+      },
+      fatRatioPopupLines: [],
+      intakeOverview: {
+        milk: {
+          normal: { volume: 540, calories: 362, protein: 5.19, carbs: 0, fat: 0 },
+          special: { volume: 0, calories: 0, protein: 0, carbs: 0, fat: 0 }
+        },
+        food: {
+          count: 3,
+          totalCalories: 558,
+          naturalProtein: 6.73,
+          specialProtein: 0,
+          carbs: 40,
+          fat: 18
+        },
+        treatment: {
+          count: 0,
+          totalCalories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        }
+      },
+      feedings: [{ naturalMilkType: 'breast' }]
+    },
+    inferNaturalMilkType: page.inferNaturalMilkType
+  };
+
+  const preview = page.buildSummaryPreviewData.call(instance);
+
+  assert.equal(preview.nutritionStrip[0].detail, '0.88 g/kg/d');
+});
+
 test('data-records uses per-day basicInfo snapshot for historical dates instead of latest babyInfo', () => {
   const page = loadDataRecordsPage();
   const instance = {
@@ -257,4 +318,67 @@ test('data-records does not persist global fallback weight into historical recor
 
   assert.equal(basicInfo.weight, '');
   assert.equal(basicInfo.height, '');
+});
+
+test('data-records edit food save refreshes protein source from latest food catalog snapshot', async () => {
+  const page = loadDataRecordsPage();
+  const instance = {
+    data: {
+      foodCatalog: [
+        {
+          _id: 'food-1',
+          name: '测试食物',
+          baseUnit: 'g',
+          category: '乳类及制品',
+          proteinSource: 'special',
+          proteinQuality: '',
+          milkType: '',
+          aliasText: ''
+        }
+      ],
+      foodIntakes: [
+        {
+          _id: 'intake-1',
+          foodId: 'food-1',
+          nameSnapshot: '测试食物',
+          unit: 'g',
+          category: '乳类及制品',
+          proteinSource: 'natural',
+          proteinQuality: 'premium',
+          quantity: 25,
+          nutrition: { protein: 2.5 },
+          naturalProtein: 2.5,
+          specialProtein: 0,
+          recordedAt: '12:00',
+          notes: ''
+        }
+      ],
+      foodModalMode: 'create',
+      editingFoodIntakeId: '',
+      editingFoodIntakeIndex: -1,
+      foodExperiment: {},
+      newFoodIntake: {}
+    },
+    _getFoodUnit: page._getFoodUnit,
+    setData(patch, callback) {
+      Object.assign(this.data, patch);
+      if (callback) callback();
+    },
+    initFoodExperimentCategories() {},
+    filterFoodExperimentOptions() {},
+    async saveFoodIntake() {
+      assert.equal(this.data.newFoodIntake.proteinSource, 'special');
+    },
+    hideFoodIntakeExperimentModal() {}
+  };
+
+  page.openEditFoodModal.call(instance, {
+    currentTarget: {
+      dataset: { id: 'intake-1' }
+    }
+  });
+
+  assert.equal(instance.data.foodExperiment.food.proteinSource, 'special');
+
+  await page.saveFoodIntakeExperiment.call(instance);
 });

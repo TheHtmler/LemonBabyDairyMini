@@ -6,6 +6,7 @@
     "pages/data-records/index",
     "pages/report-workbench-preview/index",
     "pages/meal-editor/index",
+    "pages/milk-feeding-editor/index",
     "pages/growth-records/index",
     "pages/data-analysis/index",
     "pages/analysis-report/index",

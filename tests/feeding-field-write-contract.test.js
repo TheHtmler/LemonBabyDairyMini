@@ -8,7 +8,10 @@ test('data-records feeding persistence writes specialMilkPowder instead of speci
   assert.doesNotMatch(source, /specialPowderWeight:\s*parseFloat\(this\.data\.newFeeding\.specialPowderWeight\)/);
   assert.doesNotMatch(source, /specialPowderWeight:\s*parseFloat\(editingFeeding\.specialPowderWeight\)/);
   assert.match(source, /specialMilkPowder:\s*parseFloat\(this\.data\.newFeeding\.(specialMilkPowder|specialPowderWeight)\)/);
-  assert.match(source, /specialMilkPowder:\s*parseFloat\(editingFeeding\.(specialMilkPowder|specialPowderWeight)\)/);
+  assert.match(
+    source,
+    /specialMilkPowder:\s*(parseFloat\(editingFeeding\.(specialMilkPowder|specialPowderWeight)\)|feedingCalculator\.getSpecialMilkPowder\(editingFeeding,\s*this\.data\.nutritionSettings \|\| \{\}\))/
+  );
 });
 
 test('daily-feeding feeding persistence stores numeric milk fields instead of stringified values', () => {
@@ -67,7 +70,10 @@ test('feeding saves derive totalVolume from milk volumes instead of requiring ra
   assert.match(dailyFeedingSource, /const totalVolumeNum = feedingCalculator\.getTotalVolume\(this\.data\.quickFeedingData\);/);
   assert.match(dailyFeedingSource, /totalVolume:\s*feedingCalculator\.getTotalVolume\(this\.data\.newFeeding\)/);
   assert.match(dailyFeedingSource, /totalVolume:\s*Math\.round\(feedingCalculator\.getTotalVolume\(this\.data\.currentFeeding\)\)/);
-  assert.match(dailyFeedingSource, /totalVolume:\s*Math\.round\(feedingCalculator\.getTotalVolume\(this\.data\.editingFeeding\)\)/);
+  assert.match(
+    dailyFeedingSource,
+    /totalVolume:\s*Math\.round\(feedingCalculator\.getTotalVolume\((this\.data\.)?editingFeeding\)\)/
+  );
 
   assert.match(dataRecordsSource, /totalVolume:\s*feedingCalculator\.getTotalVolume\(this\.data\.newFeeding\)/);
   assert.match(dataRecordsSource, /totalVolume:\s*feedingCalculator\.getTotalVolume\(editingFeeding\)/);
@@ -78,4 +84,16 @@ test('feeding page no longer back-calculates special milk volume from editable t
 
   assert.doesNotMatch(dailyFeedingSource, /field === 'naturalMilkVolume' \|\| field === 'totalVolume'/);
   assert.doesNotMatch(dailyFeedingSource, /newFeeding\.specialMilkVolume = Math\.max\(0, totalVolume - naturalMilk\)/);
+});
+
+test('daily-feeding exposes a separate milk feeding editor entry', () => {
+  const js = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
+  const wxml = fs.readFileSync('miniprogram/pages/daily-feeding/index.wxml', 'utf8');
+  const appJson = fs.readFileSync('miniprogram/app.json', 'utf8');
+
+  assert.match(appJson, /"pages\/milk-feeding-editor\/index"/);
+  assert.match(wxml, /bindtap="navigateToMilkFeedingEditor"/);
+  assert.match(wxml, /<text>添加奶<\/text>/);
+  assert.match(js, /navigateToMilkFeedingEditor\(\)\s*\{/);
+  assert.match(js, /url:\s*'\/pages\/milk-feeding-editor\/index'/);
 });

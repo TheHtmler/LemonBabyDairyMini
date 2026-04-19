@@ -71,6 +71,9 @@
       <view class="quick-record-btn secondary" bindtap="navigateToMealEditor">
         <text>添加食物</text>
       </view>
+      <view class="quick-record-btn secondary" bindtap="navigateToMilkFeedingEditor">
+        <text>添加奶</text>
+      </view>
       <view class="quick-record-btn neutral" bindtap="openMedicationModal">
         <text>记录用药</text>
       </view>

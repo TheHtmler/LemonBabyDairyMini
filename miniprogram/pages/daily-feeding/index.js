@@ -47,6 +47,36 @@ const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 
 const app = getApp();
 
+function aggregateMilkComponentTotals(feedings = [], calculationParams = {}) {
+  return (feedings || []).reduce((totals, feeding) => {
+    const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
+    const naturalType = (feeding.naturalMilkType || 'breast') === 'formula' ? 'formula' : 'breast';
+
+    if (naturalVolume > 0) {
+      if (naturalType === 'formula') {
+        totals.formulaVolume += naturalVolume;
+        totals.formulaPowderWeight += feedingCalculator.getFormulaMilkPowder(feeding, calculationParams);
+      } else {
+        totals.breastVolume += naturalVolume;
+      }
+    }
+
+    const specialVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+    if (specialVolume > 0) {
+      totals.specialVolume += specialVolume;
+      totals.specialPowderWeight += feedingCalculator.getSpecialMilkPowder(feeding, calculationParams);
+    }
+
+    return totals;
+  }, {
+    breastVolume: 0,
+    formulaVolume: 0,
+    formulaPowderWeight: 0,
+    specialVolume: 0,
+    specialPowderWeight: 0
+  });
+}
+
 Page({
 
   data: {
@@ -987,7 +1017,7 @@ Page({
       this.calculateQuickNutrition();
     }
 
-    if (['current', 'quick', 'edit', 'new'].includes(type)) {
+    if (['current', 'quick'].includes(type)) {
       this.updateFormulaPowderForType(type);
     }
 
@@ -1285,32 +1315,11 @@ Page({
 
     (intakes || []).forEach(accumulateFromIntake);
 
-    // 聚合喂奶体积，避免逐条舍入误差
-    let totalNaturalVolumeBreast = 0;
-    let totalNaturalVolumeFormula = 0;
-    let totalSpecialVolume = 0;
+    const milkTotals = aggregateMilkComponentTotals(feedings, this.data.calculation_params || {});
 
-    (feedings || []).forEach(feeding => {
-      const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-      const specialVolume = parseFloat(feeding.specialMilkVolume) || 0;
-      const naturalTypeRaw = feeding.naturalMilkType || 'breast';
-      const naturalType = naturalTypeRaw === 'breast' ? 'breast' : 'formula';
-
-      if (naturalVolume > 0) {
-        if (naturalType === 'formula') {
-          totalNaturalVolumeFormula += naturalVolume;
-        } else {
-          totalNaturalVolumeBreast += naturalVolume;
-        }
-      }
-      if (specialVolume > 0) {
-        totalSpecialVolume += specialVolume;
-      }
-    });
-
-    if (totalNaturalVolumeBreast > 0) {
+    if (milkTotals.breastVolume > 0) {
       const nutrition = this.calculateMilkNutrition({
-        naturalMilkVolume: totalNaturalVolumeBreast,
+        naturalMilkVolume: milkTotals.breastVolume,
         naturalMilkType: 'breast',
         specialMilkVolume: 0,
         specialMilkPowder: 0
@@ -1323,10 +1332,11 @@ Page({
       summary.fat += nutrition.fat || 0;
     }
 
-    if (totalNaturalVolumeFormula > 0) {
+    if (milkTotals.formulaVolume > 0) {
       const nutrition = this.calculateMilkNutrition({
-        naturalMilkVolume: totalNaturalVolumeFormula,
+        naturalMilkVolume: milkTotals.formulaVolume,
         naturalMilkType: 'formula',
+        formulaPowderWeight: milkTotals.formulaPowderWeight,
         specialMilkVolume: 0,
         specialMilkPowder: 0
       });
@@ -1338,13 +1348,12 @@ Page({
       summary.fat += nutrition.fat || 0;
     }
 
-    if (totalSpecialVolume > 0) {
-      const specialPowder = this.calculateSpecialMilkPowder(totalSpecialVolume);
+    if (milkTotals.specialVolume > 0) {
       const nutrition = this.calculateMilkNutrition({
         naturalMilkVolume: 0,
         naturalMilkType: 'breast',
-        specialMilkVolume: totalSpecialVolume,
-        specialMilkPowder: specialPowder
+        specialMilkVolume: milkTotals.specialVolume,
+        specialMilkPowder: milkTotals.specialPowderWeight
       });
       summary.calories += nutrition.specialCalories || 0;
       summary.protein += nutrition.specialProtein || 0;
@@ -1443,27 +1452,7 @@ Page({
       treatment: createEmptyTreatmentOverview()
     };
 
-    // 先按类型聚合体积，再统一计算营养，减少逐条取整误差
-    let totalNaturalVolumeBreast = 0;
-    let totalNaturalVolumeFormula = 0;
-    let totalSpecialVolume = 0;
-
-    (feedings || []).forEach(feeding => {
-      const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-      const specialVolume = parseFloat(feeding.specialMilkVolume) || 0;
-      const naturalType = feeding.naturalMilkType || 'breast';
-
-      if (naturalVolume > 0) {
-        if (naturalType === 'formula') {
-          totalNaturalVolumeFormula += naturalVolume;
-        } else {
-          totalNaturalVolumeBreast += naturalVolume;
-        }
-      }
-      if (specialVolume > 0) {
-        totalSpecialVolume += specialVolume;
-      }
-    });
+    const milkTotals = aggregateMilkComponentTotals(feedings, this.data.calculation_params || {});
 
     const addMilkStats = (group, { volume = 0, calories = 0, protein = 0, carbs = 0, fat = 0 }) => {
       group.volume += volume;
@@ -1473,15 +1462,15 @@ Page({
       group.fat += fat || 0;
     };
 
-    if (totalNaturalVolumeBreast > 0) {
+    if (milkTotals.breastVolume > 0) {
       const nutrition = this.calculateMilkNutrition({
-        naturalMilkVolume: totalNaturalVolumeBreast,
+        naturalMilkVolume: milkTotals.breastVolume,
         naturalMilkType: 'breast',
         specialMilkVolume: 0,
         specialMilkPowder: 0
       });
       addMilkStats(overview.milk.normal, {
-        volume: totalNaturalVolumeBreast,
+        volume: milkTotals.breastVolume,
         calories: nutrition.naturalCalories || 0,
         protein: nutrition.naturalProtein || 0,
         carbs: nutrition.carbs || 0,
@@ -1489,15 +1478,16 @@ Page({
       });
     }
 
-    if (totalNaturalVolumeFormula > 0) {
+    if (milkTotals.formulaVolume > 0) {
       const nutrition = this.calculateMilkNutrition({
-        naturalMilkVolume: totalNaturalVolumeFormula,
+        naturalMilkVolume: milkTotals.formulaVolume,
         naturalMilkType: 'formula',
+        formulaPowderWeight: milkTotals.formulaPowderWeight,
         specialMilkVolume: 0,
         specialMilkPowder: 0
       });
       addMilkStats(overview.milk.normal, {
-        volume: totalNaturalVolumeFormula,
+        volume: milkTotals.formulaVolume,
         calories: nutrition.naturalCalories || 0,
         protein: nutrition.naturalProtein || 0,
         carbs: nutrition.carbs || 0,
@@ -1505,16 +1495,15 @@ Page({
       });
     }
 
-    if (totalSpecialVolume > 0) {
-      const specialPowder = this.calculateSpecialMilkPowder(totalSpecialVolume);
+    if (milkTotals.specialVolume > 0) {
       const nutrition = this.calculateMilkNutrition({
         naturalMilkVolume: 0,
         naturalMilkType: 'breast',
-        specialMilkVolume: totalSpecialVolume,
-        specialMilkPowder: specialPowder
+        specialMilkVolume: milkTotals.specialVolume,
+        specialMilkPowder: milkTotals.specialPowderWeight
       });
       addMilkStats(overview.milk.special, {
-        volume: totalSpecialVolume,
+        volume: milkTotals.specialVolume,
         calories: nutrition.specialCalories || 0,
         protein: nutrition.specialProtein || 0,
         carbs: nutrition.carbs || 0,
@@ -1614,6 +1603,7 @@ Page({
     const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
     const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
     const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, settings);
+    const formulaPowderWeight = feedingCalculator.getFormulaMilkPowder(feeding, settings);
     const naturalType = feeding.naturalMilkType || 'breast';
 
     let naturalProtein = 0;
@@ -1626,8 +1616,10 @@ Page({
       const formulaFatPer100g = Number(settings.formula_milk_fat) || 0;
       const formulaCarbsPer100g = Number(settings.formula_milk_carbs) || 0;
       const formulaFiberPer100g = Number(settings.formula_milk_fiber) || 0;
-      if (ratioWater > 0) {
-        const powderWeight = naturalMilkVolume * ratioPowder / ratioWater;
+      if (formulaPowderWeight > 0 || ratioWater > 0) {
+        const powderWeight = formulaPowderWeight > 0
+          ? formulaPowderWeight
+          : naturalMilkVolume * ratioPowder / ratioWater;
         naturalProtein = (powderWeight * formulaProteinPer100g) / 100;
         naturalFat = (powderWeight * formulaFatPer100g) / 100;
         naturalCarbs = (powderWeight * formulaCarbsPer100g) / 100;
@@ -1645,8 +1637,10 @@ Page({
       const ratioPowder = Number(settings.formula_milk_ratio?.powder) || DEFAULT_FORMULA_RATIO.powder;
       const ratioWater = Number(settings.formula_milk_ratio?.water) || DEFAULT_FORMULA_RATIO.water;
       const formulaCaloriesPer100g = Number(settings.formula_milk_calories) || DEFAULT_FORMULA_MILK_CALORIES;
-      if (ratioWater > 0 && formulaCaloriesPer100g) {
-        const powderWeight = naturalMilkVolume * ratioPowder / ratioWater;
+      if ((formulaPowderWeight > 0 || ratioWater > 0) && formulaCaloriesPer100g) {
+        const powderWeight = formulaPowderWeight > 0
+          ? formulaPowderWeight
+          : naturalMilkVolume * ratioPowder / ratioWater;
         naturalCalories = (powderWeight * formulaCaloriesPer100g) / 100;
       }
     } else {
@@ -1721,13 +1715,15 @@ Page({
   buildFeedingsDisplay(feedings = []) {
     const parsedWeight = parseFloat(this.data.weight);
     const hasWeight = !isNaN(parsedWeight) && parsedWeight > 0;
+    const settings = this.data.calculation_params || {};
 
     return (feedings || []).map(feeding => {
       const nutrition = this.calculateMilkNutrition({
         naturalMilkVolume: feeding.naturalMilkVolume,
         naturalMilkType: feeding.naturalMilkType || 'breast',
-        specialMilkVolume: feeding.specialMilkVolume,
-        specialMilkPowder: feeding.specialMilkPowder
+        formulaPowderWeight: feedingCalculator.getFormulaMilkPowder(feeding, settings),
+        specialMilkVolume: feedingCalculator.getSpecialMilkVolume(feeding),
+        specialMilkPowder: feedingCalculator.getSpecialMilkPowder(feeding, settings)
       });
       const calories = Number(nutrition.calories) || 0;
       const protein = Number(nutrition.protein) || 0;
@@ -2751,7 +2747,6 @@ Page({
   scheduleEditingNutritionUpdate() {
     if (!this.data.modals.edit) return;
     wx.nextTick(() => {
-      this.updateFormulaPowderForType('edit');
       this.updateEditingNutrition();
     });
   },
@@ -2763,8 +2758,9 @@ Page({
     }
     const nutrition = this.calculateMilkNutrition({
       naturalMilkVolume: parseFloat(editingFeeding.naturalMilkVolume) || 0,
-      specialMilkVolume: parseFloat(editingFeeding.specialMilkVolume) || 0,
-      specialMilkPowder: parseFloat(editingFeeding.specialMilkPowder) || 0,
+      formulaPowderWeight: feedingCalculator.getFormulaMilkPowder(editingFeeding, this.data.calculation_params || {}),
+      specialMilkVolume: feedingCalculator.getSpecialMilkVolume(editingFeeding),
+      specialMilkPowder: feedingCalculator.getSpecialMilkPowder(editingFeeding, this.data.calculation_params || {}),
       naturalMilkType: editingFeeding.naturalMilkType || 'breast'
     });
     this.setData({
@@ -2919,6 +2915,12 @@ Page({
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     wx.navigateTo({
       url: `/pages/meal-editor/index?date=${date}&from=daily`
+    });
+  },
+
+  navigateToMilkFeedingEditor() {
+    wx.navigateTo({
+      url: '/pages/milk-feeding-editor/index'
     });
   },
 
@@ -4281,6 +4283,7 @@ Page({
         this.updateQuickGoalSuggestion();
       } else if (scope === 'edit') {
         this.calculateTotalVolume('edit');
+        this.updateFormulaPowderForType('edit');
         this.scheduleEditingNutritionUpdate();
       }
     });
@@ -4324,11 +4327,11 @@ Page({
       endDateTime: endDateTime || null,
       endTime: feeding.endTime || ''
     };
-    if (editingFeeding.naturalMilkType === 'formula') {
-      editingFeeding.formulaPowderWeight = this.calculateFormulaPowderWeight(editingFeeding.naturalMilkVolume);
-    } else {
-      editingFeeding.formulaPowderWeight = 0;
-    }
+    const settings = this.data.calculation_params || {};
+    editingFeeding.formulaPowderWeight = editingFeeding.naturalMilkType === 'formula'
+      ? feedingCalculator.getFormulaMilkPowder(editingFeeding, settings)
+      : 0;
+    editingFeeding.specialMilkPowder = feedingCalculator.getSpecialMilkPowder(editingFeeding, settings);
     
     this.setData({
       'modals.edit': true,
@@ -4380,9 +4383,11 @@ Page({
       // 当输入天然奶量或特奶量时，重新计算总奶量
       if (field === 'naturalMilkVolume' || field === 'specialMilkVolume') {
         this.calculateTotalVolume('edit');
-        // 重新计算特奶粉量
-        if (this.data.calculation_params) {
+        if (field === 'specialMilkVolume' && this.data.calculation_params) {
           dataManager.updateSpecialMilkForType(this, 'edit');
+        }
+        if (field === 'naturalMilkVolume') {
+          this.updateFormulaPowderForType('edit');
         }
         this.scheduleEditingNutritionUpdate();
       }
@@ -4507,9 +4512,6 @@ Page({
       
       // 确保计算数据是最新的
       this.calculateTotalVolume('edit');
-      if (this.data.calculation_params) {
-        dataManager.updateSpecialMilkForType(this, 'edit');
-      }
 
       if (!this.ensureFeedingSettings('edit')) {
         wx.hideLoading();
@@ -4523,13 +4525,20 @@ Page({
       }
       
       // 获取编辑后的喂养记录
-      const { formulaPowderWeight, ...cleanEditingFeeding } = this.data.editingFeeding || {};
+      const settings = this.data.calculation_params || {};
+      const editingFeeding = this.data.editingFeeding || {};
       const editedFeeding = {
-        ...cleanEditingFeeding,
-        naturalMilkVolume: Math.round(parseFloat(this.data.editingFeeding.naturalMilkVolume) || 0),
-        specialMilkVolume: Math.round(parseFloat(this.data.editingFeeding.specialMilkVolume) || 0),
-        totalVolume: Math.round(feedingCalculator.getTotalVolume(this.data.editingFeeding)),
-        specialMilkPowder: feedingCalculator.roundValue(this.data.editingFeeding.specialMilkPowder || 0, 2),
+        ...editingFeeding,
+        naturalMilkVolume: Math.round(parseFloat(editingFeeding.naturalMilkVolume) || 0),
+        specialMilkVolume: Math.round(parseFloat(editingFeeding.specialMilkVolume) || 0),
+        totalVolume: Math.round(feedingCalculator.getTotalVolume(editingFeeding)),
+        formulaPowderWeight: editingFeeding.naturalMilkType === 'formula'
+          ? feedingCalculator.roundValue(feedingCalculator.getFormulaMilkPowder(editingFeeding, settings), 2)
+          : 0,
+        specialMilkPowder: feedingCalculator.roundValue(
+          feedingCalculator.getSpecialMilkPowder(editingFeeding, settings),
+          2
+        ),
         babyUid: babyUid // 确保记录中包含babyUid
       };
       
