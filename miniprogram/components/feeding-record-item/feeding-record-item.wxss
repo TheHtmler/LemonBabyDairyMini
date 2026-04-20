@@ -24,15 +24,31 @@
 .feeding-detail {
   display: flex;
   flex-direction: column;
-  gap: 4rpx;
   font-size: 26rpx;
   color: #555555;
 }
 
-.milk-row,
+.milk-summary-row {
+  display: block;
+  min-width: 0;
+  margin-bottom: 4rpx;
+}
+
+.milk-summary {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.55;
+  color: #D69A16;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .metric-row {
   display: flex;
   flex-wrap: wrap;
+  row-gap: 8rpx;
   gap: 12rpx;
 }
 
@@ -46,11 +62,6 @@
 
 .feeding-detail .detail {
   color: #555555;
-}
-
-.feeding-detail .detail-milk {
-  color: #FFB800;
-  font-weight: 600;
 }
 
 .feeding-notes {

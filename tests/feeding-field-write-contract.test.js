@@ -92,8 +92,11 @@ test('daily-feeding exposes a separate milk feeding editor entry', () => {
   const appJson = fs.readFileSync('miniprogram/app.json', 'utf8');
 
   assert.match(appJson, /"pages\/milk-feeding-editor\/index"/);
-  assert.match(wxml, /bindtap="navigateToMilkFeedingEditor"/);
-  assert.match(wxml, /<text>添加奶<\/text>/);
+  assert.match(
+    wxml,
+    /quick-record-btn primary" bindtap="navigateToMilkFeedingEditor">\s*<text>添加喂奶<\/text>/
+  );
+  assert.doesNotMatch(wxml, /quick-record-btn primary" bindtap="showQuickInputModal"/);
   assert.match(js, /navigateToMilkFeedingEditor\(\)\s*\{/);
   assert.match(
     js,
