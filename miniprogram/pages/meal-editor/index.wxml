@@ -42,6 +42,7 @@
       </view>
       <view class="section-action-group">
         <view class="section-action-btn" bindtap="openRecipePicker">从食谱添加</view>
+        <view class="section-action-btn secondary" bindtap="saveCurrentMealAsRecipe">存为食谱</view>
         <view class="section-action-btn secondary" bindtap="navigateToRecipeManagement">管理食谱</view>
       </view>
     </view>

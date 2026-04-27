@@ -2,12 +2,47 @@ const FoodModel = require('../../models/food');
 const RecipeModel = require('../../models/recipe');
 const { getBabyUid } = require('../../utils/index');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
-const { scaleRecipeItems } = require('../../utils/recipeUtils');
+const {
+  scaleRecipeItems,
+  buildRecipeItemsFromMealItems,
+  buildRecipeSourceMeta,
+  detectRecipeDrift
+} = require('../../utils/recipeUtils');
 
 const app = getApp();
+const wxApi = typeof wx !== 'undefined' ? wx : null;
 const MAX_RECENT_FOODS = 10;
 const MEAL_LABELS = ['早餐', '午餐', '晚餐', '加餐'];
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
+
+function getStoredValue(key) {
+  if (!wxApi || typeof wxApi.getStorageSync !== 'function') return '';
+  return wxApi.getStorageSync(key);
+}
+
+function showToast(options = {}) {
+  if (!wxApi || typeof wxApi.showToast !== 'function') return;
+  wxApi.showToast(options);
+}
+
+function showModalAsync(options = {}) {
+  return new Promise((resolve) => {
+    if (!wxApi || typeof wxApi.showModal !== 'function') {
+      resolve({ confirm: false, cancel: true });
+      return;
+    }
+
+    wxApi.showModal({
+      ...options,
+      success(res) {
+        resolve(res || { confirm: false, cancel: true });
+      },
+      fail() {
+        resolve({ confirm: false, cancel: true });
+      }
+    });
+  });
+}
 
 function formatDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -59,6 +94,36 @@ function parseConsumedRatio(value) {
 
 function toConsumedRatioInput(ratio) {
   return `${roundNumber(parseConsumedRatio(ratio) * 100, 2)}`;
+}
+
+function buildDefaultRecipeName(selectedDate = '', mealLabel = '') {
+  return [selectedDate, mealLabel || '本顿食物'].filter(Boolean).join(' ');
+}
+
+function resolveRecipeBaseQuantity(item = {}, ratio = 1) {
+  const explicitBaseQuantity = Number(item.recipeBaseQuantity);
+  if (Number.isFinite(explicitBaseQuantity) && explicitBaseQuantity > 0) {
+    return roundNumber(explicitBaseQuantity, 2);
+  }
+
+  const safeRatio = parseConsumedRatio(ratio);
+  if (safeRatio <= 0) {
+    return roundNumber(Number(item.quantity) || 0, 2);
+  }
+
+  return roundNumber((Number(item.quantity) || 0) / safeRatio, 2);
+}
+
+function buildRecipeContextFromIntakes(intakes = []) {
+  const recipeIntake = (intakes || []).find((item) => item && (item.recipeId || item.sourceType === 'recipe'));
+  if (!recipeIntake) return null;
+
+  return {
+    recipeId: recipeIntake.recipeId || '',
+    recipeNameSnapshot: recipeIntake.recipeNameSnapshot || '',
+    consumedRatio: parseConsumedRatio(recipeIntake.recipeConsumedRatio || 1),
+    sourceType: recipeIntake.sourceType || 'recipe'
+  };
 }
 
 function getDateTimestamp(value) {
@@ -240,6 +305,10 @@ Page({
     showRecipePicker: false,
     selectedRecipeId: '',
     recipeConsumedRatioInput: '100',
+    recipeSaveDraft: {
+      name: '',
+      note: ''
+    },
     drawerVisible: false,
     drawerStep: 'select',
     currentFoodDraft: {
@@ -529,6 +598,101 @@ Page({
     });
   },
 
+  async saveCurrentMealAsRecipe() {
+    const babyUid = getBabyUid();
+    const items = [...(this.data.mealDraft.items || [])];
+    if (!babyUid) {
+      showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return false;
+    }
+
+    if (!items.length) {
+      showToast({ title: '请先添加食物', icon: 'none' });
+      return false;
+    }
+
+    const defaultDraft = {
+      name: buildDefaultRecipeName(this.data.selectedDate, this.data.mealDraft.mealLabel),
+      note: String(this.data.mealDraft.mealNote || '').trim()
+    };
+    const recipeSaveDraft = {
+      ...defaultDraft,
+      ...(this.data.recipeSaveDraft || {})
+    };
+    const payload = {
+      babyUid,
+      name: String(recipeSaveDraft.name || defaultDraft.name || '本顿食谱').trim(),
+      note: String(recipeSaveDraft.note || '').trim(),
+      items: buildRecipeItemsFromMealItems(items),
+      createdFrom: {
+        mealBatchId: this.data.editMealBatchId || '',
+        date: this.data.selectedDate || ''
+      }
+    };
+
+    try {
+      const recipeId = await RecipeModel.createRecipe(payload);
+      await this.loadRecipeCatalog();
+      this.setData({
+        selectedRecipeId: recipeId || this.data.selectedRecipeId,
+        recipeSaveDraft: {
+          name: '',
+          note: ''
+        }
+      });
+      showToast({ title: '已存为食谱', icon: 'success' });
+      return recipeId || true;
+    } catch (error) {
+      console.error('保存食谱失败:', error);
+      showToast({ title: error.message || '保存食谱失败', icon: 'none' });
+      return false;
+    }
+  },
+
+  async syncRecipeTemplateIfNeeded(items = []) {
+    const recipeContext = this.data.mealDraft.recipeContext || null;
+    if (!recipeContext || recipeContext.sourceType !== 'recipe' || !recipeContext.recipeId) {
+      return true;
+    }
+
+    const recipe = (this.data.recipeCatalog || []).find((item) => item && item._id === recipeContext.recipeId);
+    if (!recipe) {
+      return true;
+    }
+
+    const drift = detectRecipeDrift(recipe, items, recipeContext.consumedRatio || 1);
+    if (!drift.changed) {
+      return true;
+    }
+
+    const modalResult = await showModalAsync({
+      title: '更新食谱',
+      content: `这次内容和食谱「${recipe.name || recipeContext.recipeNameSnapshot || '未命名食谱'}」不同，是否同步更新食谱？`,
+      confirmText: '更新食谱',
+      cancelText: '仅本次'
+    });
+
+    if (!modalResult.confirm) {
+      return true;
+    }
+
+    try {
+      await RecipeModel.updateRecipe(recipe._id, {
+        name: recipe.name || recipeContext.recipeNameSnapshot || '未命名食谱',
+        note: recipe.note || '',
+        items: drift.updatedItems,
+        createdFrom: recipe.createdFrom || null
+      }, getBabyUid());
+      await this.loadRecipeCatalog();
+      showToast({ title: '已更新食谱', icon: 'success' });
+      return true;
+    } catch (error) {
+      console.error('更新食谱失败:', error);
+      showToast({ title: error.message || '更新食谱失败', icon: 'none' });
+      return false;
+    }
+  },
+
   resetCurrentFoodDraft() {
     this.setData({
       currentFoodDraft: {
@@ -703,6 +867,7 @@ Page({
       proteinQuality: food.proteinQuality || '',
       naturalProtein: roundNumber(naturalProtein, 2),
       specialProtein: roundNumber(specialProtein, 2),
+      recipeBaseQuantity: typeof originalItem?.recipeBaseQuantity === 'number' ? originalItem.recipeBaseQuantity : 0,
       milkType: food.milkType || '',
       notes: String(notes || '').trim()
     };
@@ -830,6 +995,7 @@ Page({
 
       const catalogMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
       const firstIntake = targetIntakes[0];
+      const recipeContext = buildRecipeContextFromIntakes(targetIntakes);
       const items = targetIntakes.map((intake, index) => {
         const catalogFood = catalogMap.get(intake.foodId);
         const fallbackFood = {
@@ -853,6 +1019,7 @@ Page({
           category: intake.category || fallbackFood.category,
           unit: intake.unit || fallbackFood.baseUnit || 'g',
           quantity: Number(intake.quantity) || 0,
+          recipeBaseQuantity: resolveRecipeBaseQuantity(intake, intake.recipeConsumedRatio || recipeContext?.consumedRatio || 1),
           nutrition: intake.nutrition || {},
           proteinSource: intake.proteinSource || fallbackFood.proteinSource || 'natural',
           proteinQuality: intake.proteinQuality || (catalogFood?.proteinQuality) || '',
@@ -870,9 +1037,11 @@ Page({
           mealLabel: firstIntake.mealLabel || getDefaultMealLabel(firstIntake.mealTime || firstIntake.recordedAt || ''),
           mealNote: firstIntake.mealNote || '',
           items,
-          recipeContext: null
+          recipeContext
         },
-        mealSummary: calculateMealSummary(items)
+        mealSummary: calculateMealSummary(items),
+        selectedRecipeId: recipeContext?.recipeId || '',
+        recipeConsumedRatioInput: recipeContext ? toConsumedRatioInput(recipeContext.consumedRatio) : '100'
       });
       wx.hideLoading();
     } catch (error) {
@@ -884,9 +1053,19 @@ Page({
   },
 
   buildMealIntakes(mealBatchId) {
-    const { mealTime, mealLabel, mealNote, items } = this.data.mealDraft;
+    const { mealTime, mealLabel, mealNote, items, recipeContext } = this.data.mealDraft;
     const now = new Date();
     return (items || []).map((item, index) => ({
+      ...(recipeContext && recipeContext.sourceType === 'recipe'
+        ? buildRecipeSourceMeta(
+            {
+              _id: recipeContext.recipeId,
+              name: recipeContext.recipeNameSnapshot
+            },
+            recipeContext.consumedRatio || 1,
+            resolveRecipeBaseQuantity(item, recipeContext.consumedRatio || 1)
+          )
+        : {}),
       _id: item.originalIntakeId || `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
       type: 'food',
       foodType: 'food',
@@ -910,7 +1089,7 @@ Page({
       sortOrder: index,
       createdAt: item.createdAt || now,
       updatedAt: now,
-      createdBy: item.createdBy || app.globalData.openid || wx.getStorageSync('openid') || ''
+      createdBy: item.createdBy || app.globalData.openid || getStoredValue('openid') || ''
     }));
   },
 
@@ -954,6 +1133,16 @@ Page({
       return;
     }
 
+    this.setData({
+      'mealDraft.items': items,
+      mealSummary: calculateMealSummary(items)
+    });
+
+    const recipeSyncPassed = await this.syncRecipeTemplateIfNeeded(items);
+    if (!recipeSyncPassed) {
+      return;
+    }
+
     const mealBatchId = this.data.editMealBatchId || `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const mealIntakes = this.buildMealIntakes(mealBatchId);
 
@@ -981,6 +1170,14 @@ Page({
           updatedAt: db.serverDate()
         }
       });
+
+      if (this.data.mealDraft.recipeContext?.recipeId) {
+        try {
+          await RecipeModel.touchRecipeUsage(this.data.mealDraft.recipeContext.recipeId, babyUid);
+        } catch (touchError) {
+          console.error('更新食谱使用次数失败:', touchError);
+        }
+      }
 
       wx.hideLoading();
       wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });
