@@ -66,6 +66,14 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function formatRecipeConsumedRatioText(ratio) {
+  const num = Number(ratio);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  const percent = num <= 1 ? num * 100 : num;
+  const rounded = Math.round((percent + Number.EPSILON) * 100) / 100;
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(2).replace(/\.?0+$/, '')}%`;
+}
+
 function pickFirstFilled(...values) {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== '') {
@@ -488,6 +496,10 @@ function groupFoodIntakesByMeal(intakes = []) {
         mealLabel: intake.mealLabel || '食物记录',
         mealTime,
         mealNote: intake.mealNote || '',
+        recipeId: intake.recipeId || '',
+        recipeNameSnapshot: intake.recipeNameSnapshot || '',
+        recipeConsumedRatio: typeof intake.recipeConsumedRatio === 'number' ? intake.recipeConsumedRatio : (Number(intake.recipeConsumedRatio) || 0),
+        recipeConsumedRatioText: formatRecipeConsumedRatioText(intake.recipeConsumedRatio),
         sortKey: Number(String(mealTime).replace(':', '')) || 0,
         itemCount: 0,
         summary: {
@@ -515,6 +527,16 @@ function groupFoodIntakesByMeal(intakes = []) {
 
     if (!group.mealNote && intake.mealNote) {
       group.mealNote = intake.mealNote;
+    }
+    if (!group.recipeId && intake.recipeId) {
+      group.recipeId = intake.recipeId;
+    }
+    if (!group.recipeNameSnapshot && intake.recipeNameSnapshot) {
+      group.recipeNameSnapshot = intake.recipeNameSnapshot;
+    }
+    if (!group.recipeConsumedRatio && intake.recipeConsumedRatio) {
+      group.recipeConsumedRatio = Number(intake.recipeConsumedRatio) || 0;
+      group.recipeConsumedRatioText = formatRecipeConsumedRatioText(intake.recipeConsumedRatio);
     }
   });
 
@@ -1067,6 +1089,10 @@ Page({
     editingLabel: '',
     editingUnit: '',
     editBasicInfoValue: ''
+  },
+
+  buildFoodMealGroups(intakes = []) {
+    return groupFoodIntakesByMeal(intakes);
   },
 
   // 显示食物摄入弹窗
