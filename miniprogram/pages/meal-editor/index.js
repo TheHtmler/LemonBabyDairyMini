@@ -1,6 +1,8 @@
 const FoodModel = require('../../models/food');
+const RecipeModel = require('../../models/recipe');
 const { getBabyUid } = require('../../utils/index');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
+const { scaleRecipeItems } = require('../../utils/recipeUtils');
 
 const app = getApp();
 const MAX_RECENT_FOODS = 10;
@@ -36,6 +38,27 @@ function roundCalories(value) {
   const num = Number(value);
   if (isNaN(num)) return 0;
   return Math.round(num);
+}
+
+function normalizeConsumedRatioInput(value) {
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw) return '';
+  const num = Number(raw);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  return `${roundNumber(num, 2)}`;
+}
+
+function parseConsumedRatio(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return 1;
+  if (num <= 1) {
+    return roundNumber(num, 4);
+  }
+  return roundNumber(num / 100, 4);
+}
+
+function toConsumedRatioInput(ratio) {
+  return `${roundNumber(parseConsumedRatio(ratio) * 100, 2)}`;
 }
 
 function getDateTimestamp(value) {
@@ -208,11 +231,15 @@ Page({
     },
     mealSummary: createEmptyMealSummary(),
     foodCatalog: [],
+    recipeCatalog: [],
     foodCategories: [],
     activeCategory: 'recent',
     recentFoodOptions: [],
     filteredFoodOptions: [],
     foodSearchQuery: '',
+    showRecipePicker: false,
+    selectedRecipeId: '',
+    recipeConsumedRatioInput: '100',
     drawerVisible: false,
     drawerStep: 'select',
     currentFoodDraft: {
@@ -241,11 +268,13 @@ Page({
         mealTime,
         mealLabel: getDefaultMealLabel(mealTime),
         mealNote: '',
-        items: []
+        items: [],
+        recipeContext: null
       },
       mealSummary: createEmptyMealSummary()
     });
     await this.loadFoodCatalog();
+    await this.loadRecipeCatalog();
     if (editMealBatchId) {
       await this.loadExistingMeal(editMealBatchId);
     }
@@ -257,6 +286,7 @@ Page({
       return;
     }
     await this.loadFoodCatalog();
+    await this.loadRecipeCatalog();
   },
 
   async loadFoodCatalog() {
@@ -290,6 +320,24 @@ Page({
         recentFoodOptions: [],
         filteredFoodOptions: []
       });
+    }
+  },
+
+  async loadRecipeCatalog() {
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      this.setData({ recipeCatalog: [] });
+      return;
+    }
+
+    try {
+      const recipes = await RecipeModel.listRecipes(babyUid);
+      this.setData({
+        recipeCatalog: recipes || []
+      });
+    } catch (error) {
+      console.error('加载食谱列表失败:', error);
+      this.setData({ recipeCatalog: [] });
     }
   },
 
@@ -377,6 +425,108 @@ Page({
     const query = e.detail.value || '';
     this.setData({ foodSearchQuery: query });
     this.filterFoodOptions(query);
+  },
+
+  openRecipePicker() {
+    this.setData({
+      showRecipePicker: true,
+      selectedRecipeId: this.data.selectedRecipeId || ((this.data.recipeCatalog[0] || {})._id || ''),
+      recipeConsumedRatioInput: this.data.recipeConsumedRatioInput || '100'
+    });
+  },
+
+  closeRecipePicker() {
+    this.setData({
+      showRecipePicker: false
+    });
+  },
+
+  navigateToRecipeManagement() {
+    wx.navigateTo({
+      url: '/pages/recipe-management/index'
+    });
+  },
+
+  onRecipeOptionTap(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    this.setData({
+      selectedRecipeId: id
+    });
+  },
+
+  onRecipeConsumedRatioInput(e) {
+    this.setData({
+      recipeConsumedRatioInput: normalizeConsumedRatioInput(e.detail.value || '')
+    });
+  },
+
+  applySelectedRecipe() {
+    const recipeId = this.data.selectedRecipeId || ((this.data.recipeCatalog[0] || {})._id || '');
+    if (!recipeId) {
+      wx.showToast({ title: '请选择食谱', icon: 'none' });
+      return;
+    }
+
+    const recipe = (this.data.recipeCatalog || []).find((item) => item._id === recipeId);
+    if (!recipe) {
+      wx.showToast({ title: '未找到食谱', icon: 'none' });
+      return;
+    }
+
+    this.applyRecipeToMeal(recipe, this.data.recipeConsumedRatioInput || '100');
+  },
+
+  applyRecipeToMeal(recipe = {}, ratioInput = 1) {
+    const ratio = parseConsumedRatio(ratioInput);
+    const catalogMap = new Map((this.data.foodCatalog || []).map((food) => [food._id, food]));
+    const scaledItems = scaleRecipeItems(recipe.items || [], ratio).map((item, index) => {
+      const catalogFood = catalogMap.get(item.foodId);
+      const fallbackFood = {
+        _id: item.foodId || `recipe_food_${index}`,
+        name: item.nameSnapshot || '食物',
+        category: item.category || '辅食',
+        baseUnit: item.unit || 'g',
+        proteinSource: item.proteinSource || 'natural',
+        proteinQuality: item.proteinQuality || '',
+        milkType: item.milkType || ''
+      };
+
+      return {
+        localId: `recipe_item_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
+        originalIntakeId: '',
+        createdAt: null,
+        createdBy: '',
+        foodId: item.foodId || '',
+        food: catalogFood || fallbackFood,
+        nameSnapshot: item.nameSnapshot || fallbackFood.name,
+        category: item.category || fallbackFood.category,
+        unit: item.unit || fallbackFood.baseUnit || 'g',
+        quantity: Number(item.quantity) || 0,
+        recipeBaseQuantity: Number(item.recipeBaseQuantity) || 0,
+        nutrition: item.nutrition || {},
+        proteinSource: item.proteinSource || fallbackFood.proteinSource || 'natural',
+        proteinQuality: item.proteinQuality || fallbackFood.proteinQuality || '',
+        naturalProtein: typeof item.naturalProtein === 'number' ? item.naturalProtein : 0,
+        specialProtein: typeof item.specialProtein === 'number' ? item.specialProtein : 0,
+        milkType: item.milkType || '',
+        notes: item.notes || ''
+      };
+    });
+
+    this.setData({
+      'mealDraft.items': scaledItems,
+      'mealDraft.recipeContext': {
+        recipeId: recipe._id || '',
+        recipeNameSnapshot: recipe.name || '',
+        consumedRatio: ratio,
+        sourceType: 'recipe'
+      },
+      mealSummary: calculateMealSummary(scaledItems),
+      recipeConsumedRatioInput: toConsumedRatioInput(ratio),
+      selectedRecipeId: recipe._id || '',
+      showRecipePicker: false
+    });
   },
 
   resetCurrentFoodDraft() {
@@ -719,7 +869,8 @@ Page({
           mealTime: firstIntake.mealTime || firstIntake.recordedAt || formatTime(new Date()),
           mealLabel: firstIntake.mealLabel || getDefaultMealLabel(firstIntake.mealTime || firstIntake.recordedAt || ''),
           mealNote: firstIntake.mealNote || '',
-          items
+          items,
+          recipeContext: null
         },
         mealSummary: calculateMealSummary(items)
       });
