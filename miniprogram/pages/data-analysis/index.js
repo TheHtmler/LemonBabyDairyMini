@@ -24,6 +24,17 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function getDateTimestamp(value) {
+  if (!value) return 0;
+  const date = value instanceof Date ? value : new Date(value);
+  const timestamp = date.getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function hasBasicInfoValue(value) {
+  return value !== '' && value !== null && value !== undefined;
+}
+
 function calculateFormulaPowder(naturalMilkVolume, nutritionSettings = {}) {
   if (!naturalMilkVolume || naturalMilkVolume <= 0) {
     return 0;
@@ -48,9 +59,147 @@ function calculateSpecialMilkPowder(specialMilkVolume, nutritionSettings = {}) {
   return Math.round((specialMilkVolume * ratioPowder / ratioWater) * 10) / 10;
 }
 
+function getFeedingVolumes(feeding = {}) {
+  const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
+  const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+  return {
+    naturalMilkVolume,
+    specialMilkVolume
+  };
+}
+
+function getMilkIntakeVolumes(intakes = []) {
+  return (Array.isArray(intakes) ? intakes : []).reduce((totals, intake = {}) => {
+    const isMilkIntake = intake.type === 'milk' || !!intake.milkType;
+    if (!isMilkIntake) {
+      return totals;
+    }
+
+    const volume = parseFloat(intake.quantity) || 0;
+    if (volume <= 0) {
+      return totals;
+    }
+
+    const isSpecialMilk = intake.proteinSource === 'special' || intake.milkType === 'special_formula';
+    if (isSpecialMilk) {
+      totals.specialMilkVolume += volume;
+    } else {
+      totals.naturalMilkVolume += volume;
+    }
+    return totals;
+  }, {
+    naturalMilkVolume: 0,
+    specialMilkVolume: 0
+  });
+}
+
+function isFilledValue(value) {
+  return value !== '' && value !== null && value !== undefined;
+}
+
+function mergeFilledFields(...sources) {
+  return sources.reduce((merged, source = {}) => {
+    Object.keys(source || {}).forEach(key => {
+      if (isFilledValue(source[key]) && !isFilledValue(merged[key])) {
+        merged[key] = source[key];
+      }
+    });
+    return merged;
+  }, {});
+}
+
+function dedupeIntakes(intakes = []) {
+  const seen = new Set();
+  return (Array.isArray(intakes) ? intakes : []).filter(item => {
+    if (!item) return false;
+    const key = item._id || `${item.foodId || item.nameSnapshot || ''}_${item.recordedAt || ''}_${item.quantity || ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function mergeDailyAnalysisRecord(existing, record = {}) {
+  if (!existing) {
+    return {
+      ...record,
+      basicInfo: { ...(record.basicInfo || {}) },
+      feedings: Array.isArray(record.feedings) ? [...record.feedings] : [],
+      intakes: Array.isArray(record.intakes) ? [...record.intakes] : []
+    };
+  }
+
+  return {
+    ...existing,
+    ...record,
+    date: existing.date || record.date,
+    basicInfo: mergeFilledFields(existing.basicInfo, record.basicInfo),
+    feedings: [
+      ...(Array.isArray(existing.feedings) ? existing.feedings : []),
+      ...(Array.isArray(record.feedings) ? record.feedings : [])
+    ],
+    intakes: dedupeIntakes([
+      ...(Array.isArray(existing.intakes) ? existing.intakes : []),
+      ...(Array.isArray(record.intakes) ? record.intakes : [])
+    ])
+  };
+}
+
+function pickLatestBasicInfoSnapshot(feedingSnapshot = {}, growthSnapshot = {}) {
+  const pickField = (feedingCandidate, growthCandidate) => {
+    if (!feedingCandidate && !growthCandidate) {
+      return { value: '', source: 'empty', timestamp: 0 };
+    }
+    if (!feedingCandidate) {
+      return growthCandidate;
+    }
+    if (!growthCandidate) {
+      return feedingCandidate;
+    }
+    return (growthCandidate.timestamp || 0) >= (feedingCandidate.timestamp || 0)
+      ? growthCandidate
+      : feedingCandidate;
+  };
+
+  const weightCandidate = pickField(
+    hasBasicInfoValue(feedingSnapshot.weight) ? {
+      value: feedingSnapshot.weight,
+      source: feedingSnapshot.weightSource || 'history-feeding',
+      timestamp: feedingSnapshot.weightTimestamp || 0
+    } : null,
+    hasBasicInfoValue(growthSnapshot.weight) ? {
+      value: growthSnapshot.weight,
+      source: growthSnapshot.weightSource || 'history-growth',
+      timestamp: growthSnapshot.weightTimestamp || 0
+    } : null
+  );
+
+  const heightCandidate = pickField(
+    hasBasicInfoValue(feedingSnapshot.height) ? {
+      value: feedingSnapshot.height,
+      source: feedingSnapshot.heightSource || 'history-feeding',
+      timestamp: feedingSnapshot.heightTimestamp || 0
+    } : null,
+    hasBasicInfoValue(growthSnapshot.height) ? {
+      value: growthSnapshot.height,
+      source: growthSnapshot.heightSource || 'history-growth',
+      timestamp: growthSnapshot.heightTimestamp || 0
+    } : null
+  );
+
+  return {
+    weight: weightCandidate.value,
+    height: heightCandidate.value,
+    weightSource: weightCandidate.source,
+    heightSource: heightCandidate.source,
+    weightTimestamp: weightCandidate.timestamp,
+    heightTimestamp: heightCandidate.timestamp
+  };
+}
+
 function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-  const specialMilkVolume = parseFloat(feeding.specialMilkVolume) || 0;
+  const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
   const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
@@ -278,9 +427,10 @@ Page({
       
       // 从数据库查询数据
       const records = await this.fetchFeedingRecords(startDate, endDate);
+      const basicInfoSnapshots = await this.loadAnalysisBasicInfoSnapshots(startDate, endDate, records);
       
       // 处理数据
-      this.processAnalysisData(records, startDate, endDate);
+      this.processAnalysisData(records, startDate, endDate, basicInfoSnapshots);
       
       // 初始化图表
       this.initCharts();
@@ -412,12 +562,6 @@ Page({
         if (res.data.length < MAX_LIMIT) {
           hasMore = false;
         }
-        
-        // 安全限制：最多查询5页，避免死循环
-        if (skip >= 100) {
-          console.warn('已查询100条，停止分页');
-          hasMore = false;
-        }
       }
       
       console.log('分页查询完成，总共:', allData.length, '条');
@@ -462,30 +606,6 @@ Page({
         }
       }
       
-      // 额外查询：专门查询21-27号的数据看看存不存在
-      console.log('======== 额外验证：查询21-27号 ========');
-      const oct21 = new Date(queryStartDate);
-      oct21.setDate(21);
-      oct21.setHours(0, 0, 0, 0);
-      
-      const oct27 = new Date(queryStartDate);
-      oct27.setDate(27);
-      oct27.setHours(23, 59, 59, 999);
-      
-      const testRes = await db.collection('feeding_records')
-        .where({
-          babyUid: babyUid,
-          date: _.gte(oct21).and(_.lte(oct27))
-        })
-        .get();
-      
-      console.log('21-27号单独查询结果:', testRes.data.length, '条');
-      if (testRes.data.length > 0) {
-        testRes.data.forEach((r, i) => {
-          console.log(`  ${i+1}. 日期=${new Date(r.date).toLocaleDateString()}, babyUid=${r.babyUid}, feedings=${r.feedings?.length}`);
-        });
-      }
-      
       return res.data || [];
     } catch (error) {
       console.error('获取喂养记录失败:', error);
@@ -498,8 +618,127 @@ Page({
     }
   },
 
+  async fetchRecordsByDateUpperBound(collectionName, babyUid, dateField, endDate) {
+    const db = wx.cloud.database();
+    const _ = db.command;
+    const pageSize = 100;
+    let skip = 0;
+    let hasMore = true;
+    let allData = [];
+
+    while (hasMore) {
+      const res = await db.collection(collectionName)
+        .where({
+          babyUid,
+          [dateField]: _.lte(endDate)
+        })
+        .orderBy(dateField, 'desc')
+        .skip(skip)
+        .limit(pageSize)
+        .get();
+
+      const batch = res.data || [];
+      allData = allData.concat(batch);
+      skip += batch.length;
+      hasMore = batch.length === pageSize;
+    }
+
+    return allData;
+  },
+
+  buildAnalysisBasicInfoSnapshots(startDate, endDate, feedingRecords = [], growthRecords = []) {
+    const dateList = this.generateDateList(startDate, endDate);
+    const feedingCandidates = [];
+    const growthCandidates = [];
+
+    (Array.isArray(feedingRecords) ? feedingRecords : []).forEach(record => {
+      const basicInfo = record?.basicInfo || {};
+      const timestamp = getDateTimestamp(record?.date);
+      if (!timestamp) return;
+
+      const snapshot = {
+        weightTimestamp: timestamp,
+        heightTimestamp: timestamp
+      };
+      if (hasBasicInfoValue(basicInfo.weight ?? record?.weight)) {
+        snapshot.weight = basicInfo.weight ?? record.weight;
+        snapshot.weightSource = 'history-feeding';
+      }
+      if (hasBasicInfoValue(basicInfo.height ?? record?.height)) {
+        snapshot.height = basicInfo.height ?? record.height;
+        snapshot.heightSource = 'history-feeding';
+      }
+      if (hasBasicInfoValue(snapshot.weight) || hasBasicInfoValue(snapshot.height)) {
+        feedingCandidates.push(snapshot);
+      }
+    });
+
+    (Array.isArray(growthRecords) ? growthRecords : []).forEach(record => {
+      const timestamp = getDateTimestamp(record?.recordDate || record?.date);
+      if (!timestamp) return;
+
+      const snapshot = {
+        weightTimestamp: timestamp,
+        heightTimestamp: timestamp
+      };
+      if (hasBasicInfoValue(record?.weight)) {
+        snapshot.weight = record.weight;
+        snapshot.weightSource = 'history-growth';
+      }
+      if (hasBasicInfoValue(record?.length ?? record?.height)) {
+        snapshot.height = record.length ?? record.height;
+        snapshot.heightSource = 'history-growth';
+      }
+      if (hasBasicInfoValue(snapshot.weight) || hasBasicInfoValue(snapshot.height)) {
+        growthCandidates.push(snapshot);
+      }
+    });
+
+    const findLatestSnapshot = (candidates, date) => {
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      const endTimestamp = endOfDay.getTime();
+      return candidates
+        .filter(snapshot => {
+          const timestamp = Math.max(snapshot.weightTimestamp || 0, snapshot.heightTimestamp || 0);
+          return timestamp > 0 && timestamp <= endTimestamp;
+        })
+        .sort((a, b) => Math.max(b.weightTimestamp || 0, b.heightTimestamp || 0) - Math.max(a.weightTimestamp || 0, a.heightTimestamp || 0))[0] || {};
+    };
+
+    return dateList.reduce((snapshots, date) => {
+      const dateKey = this.formatDateKey(date);
+      snapshots[dateKey] = pickLatestBasicInfoSnapshot(
+        findLatestSnapshot(feedingCandidates, date),
+        findLatestSnapshot(growthCandidates, date)
+      );
+      return snapshots;
+    }, {});
+  },
+
+  async loadAnalysisBasicInfoSnapshots(startDate, endDate, records = []) {
+    try {
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      if (!babyUid) {
+        return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, records, []);
+      }
+
+      const queryEndDate = new Date(endDate);
+      queryEndDate.setHours(23, 59, 59, 999);
+      const [feedingHistory, growthHistory] = await Promise.all([
+        this.fetchRecordsByDateUpperBound('feeding_records', babyUid, 'date', queryEndDate),
+        this.fetchRecordsByDateUpperBound('growth_records', babyUid, 'recordDate', queryEndDate)
+      ]);
+      return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, feedingHistory, growthHistory);
+    } catch (error) {
+      console.warn('加载历史体重快照失败，降级使用当前范围记录:', error);
+      return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, records, []);
+    }
+  },
+
   // 处理分析数据
-  processAnalysisData(records, startDate, endDate) {
+  processAnalysisData(records, startDate, endDate, basicInfoSnapshots = {}) {
     console.log('========== 开始处理分析数据 ==========');
     console.log('收到记录数:', records.length);
     
@@ -549,7 +788,7 @@ Page({
       const day = recordDate.getDate().toString().padStart(2, '0');
       const dateKey = `${year}-${month}-${day}`;
       
-      dateMap.set(dateKey, record);
+      dateMap.set(dateKey, mergeDailyAnalysisRecord(dateMap.get(dateKey), record));
       // 只打印前3条和后3条
       if (index < 3 || index >= records.length - 3) {
         console.log(`记录${index + 1}: 原始日期=${record.date}, 解析后=${dateKey}, 喂养次数=${record.feedings ? record.feedings.length : 0}`);
@@ -598,21 +837,34 @@ Page({
         
         if (hasFeedings) {
           record.feedings.forEach(feeding => {
-            dayNaturalMilk += parseFloat(feeding.naturalMilkVolume || 0);
-            daySpecialMilk += parseFloat(feeding.specialMilkVolume || 0);
+            const volumes = getFeedingVolumes(feeding);
+            dayNaturalMilk += volumes.naturalMilkVolume;
+            daySpecialMilk += volumes.specialMilkVolume;
           });
+        }
+
+        if (hasIntakes) {
+          const milkIntakeVolumes = getMilkIntakeVolumes(record.intakes);
+          dayNaturalMilk += milkIntakeVolumes.naturalMilkVolume;
+          daySpecialMilk += milkIntakeVolumes.specialMilkVolume;
         }
         
         const dayTotalMilk = dayNaturalMilk + daySpecialMilk;
         const summary = this.calculateDailySummary(record);
         const dayCalories = summary.calories || 0;
         
-        // 获取当天体重
+        // 获取当天体重：当天记录优先，其次沿用历史体重，今天才使用宝宝信息兜底
+        const historicalSnapshot = basicInfoSnapshots[dateKey] || {};
+        const isToday = dateKey === this.formatDateKey(new Date());
         let weight = 0;
         if (record.basicInfo && record.basicInfo.weight) {
           weight = parseFloat(record.basicInfo.weight);
         } else if (record.weight) {
           weight = parseFloat(record.weight);
+        } else if (hasBasicInfoValue(historicalSnapshot.weight)) {
+          weight = parseFloat(historicalSnapshot.weight);
+        } else if (isToday && this.data.babyInfo && hasBasicInfoValue(this.data.babyInfo.weight)) {
+          weight = parseFloat(this.data.babyInfo.weight);
         }
         
         // 计算蛋白质系数 (g/kg)
@@ -771,8 +1023,7 @@ Page({
     let totalSpecialVolume = 0;
 
     (record.feedings || []).forEach(feeding => {
-      const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-      const specialVolume = parseFloat(feeding.specialMilkVolume) || 0;
+      const { naturalMilkVolume: naturalVolume, specialMilkVolume: specialVolume } = getFeedingVolumes(feeding);
       const naturalTypeRaw = feeding.naturalMilkType || 'breast';
       const naturalType = naturalTypeRaw === 'breast' ? 'breast' : 'formula';
 
