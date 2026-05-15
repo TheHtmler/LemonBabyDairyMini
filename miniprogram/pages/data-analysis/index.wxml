@@ -199,6 +199,7 @@
           <view>
             <text class="chart-title">蛋白摄入结构</text>
             <text class="chart-subtitle">蛋白系数与优质/普通占比</text>
+            <text class="chart-axis-hint">实线代表左边轴，虚线代表右边轴</text>
           </view>
           <text class="chart-card-meta">g/kg · %</text>
         </view>
@@ -212,6 +213,7 @@
           <view>
             <text class="chart-title">热量与热量系数</text>
             <text class="chart-subtitle">总热量与 kcal/kg 变化</text>
+            <text class="chart-axis-hint">实线代表左边轴，虚线代表右边轴</text>
           </view>
           <text class="chart-card-meta">kcal · kcal/kg</text>
         </view>

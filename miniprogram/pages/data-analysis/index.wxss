@@ -710,6 +710,14 @@
   color: #8D805F;
 }
 
+.chart-axis-hint {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  line-height: 1.35;
+  color: #A1977C;
+}
+
 .chart-card-meta {
   flex-shrink: 0;
   padding: 8rpx 14rpx;

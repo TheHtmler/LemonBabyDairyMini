@@ -33,6 +33,13 @@ test('data-analysis page uses grouped dashboard layout', () => {
   assert.match(wxml, /chart-title">奶量趋势/);
   assert.match(wxml, /chart-title">蛋白摄入结构/);
   assert.match(wxml, /chart-title">热量与热量系数/);
+  assert.equal(
+    (wxml.match(/实线代表左边轴，虚线代表右边轴/g) || []).length,
+    2
+  );
+  assert.equal((wxml.match(/chart-axis-hint/g) || []).length, 2);
+  assert.doesNotMatch(wxml, /占比 · 实线代表左边轴/);
+  assert.doesNotMatch(wxml, /变化 · 实线代表左边轴/);
   assert.doesNotMatch(wxml, /记录覆盖率/);
   assert.doesNotMatch(wxml, /\{\{statistics\.recordCoverage\}\}/);
   assert.doesNotMatch(wxml, /\{\{referenceRanges\.premiumProteinRatio\}\}/);
@@ -61,6 +68,7 @@ test('data-analysis page uses grouped dashboard layout', () => {
   assert.match(wxss, /\.refresh-indicator\s*\{/);
   assert.match(wxss, /\.stat-mini-grid\s*\{/);
   assert.match(wxss, /\.chart-card-meta\s*\{/);
+  assert.match(wxss, /\.chart-axis-hint\s*\{/);
   assert.match(wxss, /\.chart-section[\s\S]*padding:\s*24rpx 18rpx 18rpx/);
   assert.match(wxss, /\.chart-header[\s\S]*margin-bottom:\s*12rpx/);
 });
