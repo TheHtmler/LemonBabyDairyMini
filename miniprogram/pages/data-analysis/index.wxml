@@ -1,34 +1,42 @@
 <!-- pages/data-analysis/index.wxml -->
 <view class="container">
   <!-- 加载状态 -->
-  <view wx:if="{{loading}}" class="loading-container">
+  <view wx:if="{{loading && !hasLoadedAnalysis}}" class="loading-container">
     <view class="loading-spinner"></view>
     <text class="loading-text">数据加载中...</text>
   </view>
   <!-- 主要内容 -->
   <view wx:else class="content">
-    <!-- 时间维度选择 -->
-    <view class="dimension-selector">
-      <view class="dimension-tabs">
-        <view class="tab-item {{timeDimension === 'week' ? 'active' : ''}}" bindtap="onTimeDimensionChange" data-dimension="week">
-          <text class="tab-text">周视图</text>
+    <!-- 时间维度和日期范围 -->
+    <view class="analysis-control-panel">
+      <view class="analysis-control-header">
+        <view class="analysis-title-block">
+          <text class="analysis-eyebrow">{{timeDimension === 'week' ? '周维度分析' : '月维度分析'}}</text>
+          <text class="analysis-period-label">{{dateRangeText}}</text>
         </view>
-        <view class="tab-item {{timeDimension === 'month' ? 'active' : ''}}" bindtap="onTimeDimensionChange" data-dimension="month">
-          <text class="tab-text">月视图</text>
+        <view class="dimension-tabs">
+          <view class="tab-item {{timeDimension === 'week' ? 'active' : ''}}" bindtap="onTimeDimensionChange" data-dimension="week">
+            <text class="tab-text">周</text>
+          </view>
+          <view class="tab-item {{timeDimension === 'month' ? 'active' : ''}}" bindtap="onTimeDimensionChange" data-dimension="month">
+            <text class="tab-text">月</text>
+          </view>
         </view>
       </view>
-    </view>
-    <!-- 日期范围导航 -->
-    <view class="date-navigation">
-      <view class="nav-btn" bindtap="onPrevious" hover-class="nav-btn-hover">
-        <text class="nav-icon">◀</text>
+      <view class="period-controls">
+        <view class="period-nav-button prev" bindtap="onPrevious" hover-class="period-nav-hover">
+          <text>{{timeDimension === 'week' ? '上周' : '上月'}}</text>
+        </view>
+        <view class="date-range {{timeDimension === 'month' ? 'clickable' : ''}}" bindtap="{{timeDimension === 'month' ? 'onDatePicker' : ''}}">
+          <text class="date-text">{{timeDimension === 'month' ? '点击切换月份' : '当前周区间'}}</text>
+          <text wx:if="{{timeDimension === 'month'}}" class="date-picker-mark">月</text>
+        </view>
+        <view class="period-nav-button next" bindtap="onNext" hover-class="period-nav-hover">
+          <text>{{timeDimension === 'week' ? '下周' : '下月'}}</text>
+        </view>
       </view>
-      <view class="date-range {{timeDimension === 'month' ? 'clickable' : ''}}" bindtap="{{timeDimension === 'month' ? 'onDatePicker' : ''}}">
-        <text class="date-text">{{dateRangeText}}</text>
-        <text wx:if="{{timeDimension === 'month'}}" class="date-picker-icon">📅</text>
-      </view>
-      <view class="nav-btn" bindtap="onNext" hover-class="nav-btn-hover">
-        <text class="nav-icon">▶</text>
+      <view wx:if="{{refreshing}}" class="refresh-indicator">
+        <text>局部刷新中...</text>
       </view>
     </view>
     <!-- 日期选择器弹窗 -->
@@ -71,64 +79,96 @@
     <!-- 统计卡片 -->
     <view class="statistics-card">
       <view class="stat-header">
-        <text class="stat-title">数据概览</text>
-        <text class="stat-days">记录天数：{{statistics.totalDays}}天</text>
+        <view>
+          <text class="stat-title">摄入概览</text>
+          <text class="stat-subtitle">按有记录的日期计算均值</text>
+        </view>
+        <text class="stat-days">记录天数：{{statistics.totalDays}}/{{statistics.rangeDays}} 天</text>
       </view>
-      <view class="stat-grid">
-        <view class="stat-item">
-          <text class="stat-label">平均奶量</text>
-          <text class="stat-value">
-            {{statistics.avgMilkVolume}}
-            <text class="stat-unit">ml</text>
-          </text>
+      <view class="stat-summary-strip">
+        <view class="stat-summary-item">
+          <text class="stat-label">平均每日奶量</text>
+          <text class="stat-value">{{statistics.avgMilkVolume}}<text class="stat-unit">ml</text></text>
         </view>
-        <view class="stat-item">
+        <view class="stat-summary-item">
           <text class="stat-label">平均热量</text>
-          <text class="stat-value">
-            {{statistics.avgCalories}}
-            <text class="stat-unit">kcal</text>
-          </text>
+          <text class="stat-value">{{statistics.avgCalories}}<text class="stat-unit">kcal</text></text>
+          <text wx:if="{{statistics.avgTreatmentCalories > 0}}" class="stat-range">含治疗 {{statistics.avgTreatmentCalories}} kcal/日</text>
         </view>
-        <view class="stat-item">
-          <text class="stat-label">平均热量系数</text>
-          <text class="stat-value">
-            {{statistics.avgCalorieCoefficient}}
-            <text class="stat-unit">kcal/kg</text>
-          </text>
+        <view class="stat-summary-item">
+          <text class="stat-label">热量系数</text>
+          <text class="stat-value">{{statistics.avgCalorieCoefficient}}<text class="stat-unit">kcal/kg</text></text>
         </view>
-        <view class="stat-item">
-          <text class="stat-label">平均总蛋白系数</text>
-          <text class="stat-value">
-            {{statistics.avgTotalProteinCoefficient}}
-            <text class="stat-unit">g/kg</text>
-          </text>
+      </view>
+      <view wx:if="{{statistics.hasCalorieSourceBreakdown}}" class="calorie-source-card">
+        <view class="calorie-source-header">
+          <text class="calorie-source-title">热量来源</text>
+          <text class="calorie-source-subtitle">奶 / 食物 / 治疗 日均占比</text>
         </view>
-        <view class="stat-item">
-          <text class="stat-label">平均蛋白比例</text>
-          <text class="stat-value">
-            {{statistics.avgProteinRatio}}
-          </text>
+        <view class="calorie-source-bar">
+          <view wx:if="{{statistics.milkCalorieRatio > 0}}" class="calorie-source-segment milk" style="width: {{statistics.milkCalorieRatio}}%;"></view>
+          <view wx:if="{{statistics.foodCalorieRatio > 0}}" class="calorie-source-segment food" style="width: {{statistics.foodCalorieRatio}}%;"></view>
+          <view wx:if="{{statistics.treatmentCalorieRatio > 0}}" class="calorie-source-segment treatment" style="width: {{statistics.treatmentCalorieRatio}}%;"></view>
         </view>
-        <view class="stat-item">
-          <text class="stat-label">天然奶</text>
-          <text class="stat-value natural">
-            {{statistics.avgNaturalMilk}}
-            <text class="stat-unit">ml</text>
-          </text>
+        <view class="calorie-source-list">
+          <view class="calorie-source-item milk">
+            <text class="source-dot"></text>
+            <text class="source-name">奶类</text>
+            <text class="source-value">{{statistics.avgMilkCalories}} kcal · {{statistics.milkCalorieRatio}}%</text>
+          </view>
+          <view class="calorie-source-item food">
+            <text class="source-dot"></text>
+            <text class="source-name">食物</text>
+            <text class="source-value">{{statistics.avgFoodCalories}} kcal · {{statistics.foodCalorieRatio}}%</text>
+          </view>
+          <view class="calorie-source-item treatment">
+            <text class="source-dot"></text>
+            <text class="source-name">治疗</text>
+            <text class="source-value">{{statistics.avgTreatmentCalories}} kcal · {{statistics.treatmentCalorieRatio}}%</text>
+          </view>
         </view>
-        <view class="stat-item">
-          <text class="stat-label">特奶</text>
-          <text class="stat-value special">
-            {{statistics.avgSpecialMilk}}
-            <text class="stat-unit">ml</text>
-          </text>
+      </view>
+      <view class="stat-section">
+        <text class="stat-section-title">蛋白结构</text>
+        <view class="stat-mini-grid">
+          <view class="stat-item">
+            <text class="stat-label">总蛋白系数</text>
+            <text class="stat-value">{{statistics.avgTotalProteinCoefficient}}<text class="stat-unit">g/kg</text></text>
+            <text class="stat-range">天然蛋白目标：{{referenceRanges.naturalProteinCoefficient}}</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-label">蛋白比例</text>
+            <text class="stat-value">{{statistics.avgProteinRatio}}</text>
+            <text class="stat-range">天然:特殊，特奶按医嘱补充</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-label">优质蛋白</text>
+            <text class="stat-value natural">{{statistics.avgPremiumProteinRatio}}<text class="stat-unit">%</text></text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-label">普通蛋白</text>
+            <text class="stat-value regular">{{statistics.avgRegularProteinRatio}}<text class="stat-unit">%</text></text>
+          </view>
         </view>
-        <view class="stat-item">
-          <text class="stat-label">记录覆盖率</text>
-          <text class="stat-value">
-            {{statistics.recordCoverage}}
-            <text class="stat-unit">%</text>
-          </text>
+      </view>
+      <view class="stat-section">
+        <text class="stat-section-title">营养供能比例</text>
+        <view class="stat-mini-grid">
+          <view class="stat-item">
+            <text class="stat-label">蛋白</text>
+            <text class="stat-value">{{statistics.avgProteinEnergyRatio}}<text class="stat-unit">%</text></text>
+            <text class="stat-range">{{referenceRanges.proteinEnergy}}</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-label">碳水</text>
+            <text class="stat-value carbs">{{statistics.avgCarbsEnergyRatio}}<text class="stat-unit">%</text></text>
+            <text class="stat-range">{{referenceRanges.carbsEnergy}}</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-label">脂肪</text>
+            <text class="stat-value fat">{{statistics.avgFatEnergyRatio}}<text class="stat-unit">%</text></text>
+            <text class="stat-range">{{referenceRanges.fatEnergy}}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -140,31 +180,40 @@
     </view>
     <!-- 图表区域 -->
     <view wx:else class="charts-container">
-      <!-- 奶量统计曲线 -->
+      <!-- 奶量趋势 -->
       <view class="chart-section">
         <view class="chart-header">
-          <text class="chart-title">📈 奶量统计曲线</text>
-          <text class="chart-subtitle">每日奶量变化趋势</text>
+          <view>
+            <text class="chart-title">奶量趋势</text>
+            <text class="chart-subtitle">总量 / 天然 / 特奶</text>
+          </view>
+          <text class="chart-card-meta">ml</text>
         </view>
         <view class="chart-wrapper">
           <ec-canvas id="milk-chart" canvas-id="milk-chart" ec="{{ ec }}" bind:init="initMilkChart"></ec-canvas>
         </view>
       </view>
-      <!-- 蛋白质系数比例曲线 -->
+      <!-- 蛋白摄入结构 -->
       <view class="chart-section">
         <view class="chart-header">
-          <text class="chart-title">🥛 蛋白质系数曲线</text>
-          <text class="chart-subtitle">总蛋白、天然蛋白、特殊蛋白系数（g/kg）</text>
+          <view>
+            <text class="chart-title">蛋白摄入结构</text>
+            <text class="chart-subtitle">蛋白系数与优质/普通占比</text>
+          </view>
+          <text class="chart-card-meta">g/kg · %</text>
         </view>
         <view class="chart-wrapper">
           <ec-canvas id="protein-chart" canvas-id="protein-chart" ec="{{ ec }}" bind:init="initProteinChart"></ec-canvas>
         </view>
       </view>
-      <!-- 总热量曲线 -->
+      <!-- 热量与热量系数 -->
       <view class="chart-section">
         <view class="chart-header">
-          <text class="chart-title">🔥 热量曲线</text>
-          <text class="chart-subtitle">每日热量摄入与热量系数（kcal/kg）</text>
+          <view>
+            <text class="chart-title">热量与热量系数</text>
+            <text class="chart-subtitle">总热量与 kcal/kg 变化</text>
+          </view>
+          <text class="chart-card-meta">kcal · kcal/kg</text>
         </view>
         <view class="chart-wrapper">
           <ec-canvas id="calorie-chart" canvas-id="calorie-chart" ec="{{ ec }}" bind:init="initCalorieChart"></ec-canvas>

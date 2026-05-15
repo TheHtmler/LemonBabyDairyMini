@@ -26,6 +26,10 @@ Component({
       date: '',
       values: []
     },
+    crosshairVisible: false,
+    crosshairX: 0,
+    crosshairTop: 0,
+    crosshairHeight: 0,
     // 保存图表相关数据，用于交互
     chartInfo: null
   },
@@ -72,6 +76,193 @@ Component({
 
     setLegendHitAreas(areas = []) {
       this._legendAreas = areas;
+    },
+
+    applySeriesLineStyle(ctx, series = {}) {
+      if (typeof ctx.setLineDash === 'function') {
+        ctx.setLineDash(Array.isArray(series.lineDash) ? series.lineDash : []);
+      }
+    },
+
+    resetLineStyle(ctx) {
+      if (typeof ctx.setLineDash === 'function') {
+        ctx.setLineDash([]);
+      }
+    },
+
+    drawSeriesMarker(ctx, x, y, series = {}) {
+      const radius = series.dotRadius || 3;
+      if (series.dotShape === 'diamond') {
+        ctx.beginPath();
+        ctx.moveTo(x, y - radius);
+        ctx.lineTo(x + radius, y);
+        ctx.lineTo(x, y + radius);
+        ctx.lineTo(x - radius, y);
+        ctx.closePath();
+        ctx.fill();
+        return;
+      }
+
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    },
+
+    drawLegendMarker(ctx, x, y, layout, series = {}) {
+      const markerSize = layout.markerSize;
+      const lineY = y;
+
+      if (series.lineDash || series.lineStyle === 'solid' || series.showDots) {
+        ctx.save();
+        ctx.lineWidth = series.lineWidth === undefined ? 2 : Math.max(1, series.lineWidth);
+        this.applySeriesLineStyle(ctx, series);
+        ctx.beginPath();
+        ctx.moveTo(x, lineY);
+        ctx.lineTo(x + markerSize, lineY);
+        ctx.stroke();
+        this.resetLineStyle(ctx);
+        if (series.showDots) {
+          this.drawSeriesMarker(ctx, x + markerSize / 2, lineY, { ...series, dotRadius: Math.min(series.dotRadius || 3, markerSize / 3) });
+        }
+        ctx.restore();
+        return;
+      }
+
+      ctx.fillRect(x, y - markerSize / 2, markerSize, markerSize);
+    },
+
+    getXAxisLabelStep(xData = [], options = {}, fallbackDivisor = 18) {
+      const configuredInterval = Number(options.xAxisLabelInterval);
+      if (Number.isFinite(configuredInterval) && configuredInterval > 0) {
+        return Math.max(1, Math.floor(configuredInterval));
+      }
+      return xData.length > 10 ? Math.ceil(xData.length / fallbackDivisor) : 1;
+    },
+
+    hideInteractionGuide(force = false) {
+      if (!force && this.data.chartInfo?.keepCrosshairVisible) {
+        return;
+      }
+      this.setData({
+        tooltipVisible: false,
+        crosshairVisible: false
+      });
+    },
+
+    hideTooltipOnly() {
+      this.setData({
+        tooltipVisible: false
+      });
+    },
+
+    getTooltipValues(dataIndex, chartInfo = {}, touchY = null) {
+      const { series = [], colors = [], layout, panels } = chartInfo;
+      const values = [];
+      let activePanelIndex = 0;
+      if (layout === 'dualPanel' && Array.isArray(panels) && touchY !== null) {
+        const panelHit = panels.findIndex(panel =>
+          touchY >= panel.top && touchY <= panel.top + panel.height
+        );
+        activePanelIndex = panelHit === -1 ? 0 : panelHit;
+      }
+
+      series.forEach((s, index) => {
+        if (this.isSeriesHidden(s, index)) {
+          return;
+        }
+        const panelIndex = s.panelIndex === 1 ? 1 : 0;
+        if (layout === 'dualPanel' && panelIndex !== activePanelIndex) {
+          return;
+        }
+        const value = s.data[dataIndex];
+        if (value !== null && value !== undefined && !isNaN(value)) {
+          values.push({
+            name: s.axisLabel ? `${this.getSeriesName(s, index)} (${s.axisLabel})` : this.getSeriesName(s, index),
+            value: value,
+            color: colors[index % colors.length]
+          });
+        }
+      });
+
+      return values;
+    },
+
+    showGuideAtIndex(dataIndex, options = {}) {
+      const chartInfo = options.chartInfo || this.data.chartInfo;
+      if (!chartInfo || dataIndex < 0 || dataIndex >= chartInfo.xData.length) {
+        return;
+      }
+
+      const {
+        padding,
+        chartHeight,
+        xData,
+        xStep,
+        tooltipPlacement,
+        tooltipWidth = 180,
+        tooltipTopOffset = 8,
+        showCrosshair = false,
+        width
+      } = chartInfo;
+      const values = this.getTooltipValues(dataIndex, chartInfo, options.touchY ?? null);
+      if (values.length === 0) {
+        this.hideInteractionGuide();
+        return;
+      }
+
+      const guideX = padding.left + xStep * dataIndex;
+      const rectWidth = options.rectWidth || width || 0;
+      const showTooltip = options.showTooltip !== false;
+      let tooltipX = options.touchX !== undefined ? options.touchX + 10 : guideX + 10;
+      let tooltipY = options.touchY !== undefined ? options.touchY - 60 : padding.top + tooltipTopOffset;
+
+      if (tooltipPlacement === 'top') {
+        tooltipX = guideX - tooltipWidth / 2;
+        tooltipY = padding.top + tooltipTopOffset;
+      }
+
+      if (rectWidth && tooltipX + tooltipWidth > rectWidth) {
+        tooltipX = rectWidth - tooltipWidth - 6;
+      }
+      if (tooltipX < 6) {
+        tooltipX = 6;
+      }
+      if (tooltipPlacement !== 'top' && tooltipY < 10) {
+        tooltipY = options.touchY !== undefined ? options.touchY + 10 : padding.top + tooltipTopOffset;
+      }
+      if (tooltipPlacement === 'top' && tooltipY < 6) {
+        tooltipY = 6;
+      }
+
+      this._selectedCrosshairIndex = dataIndex;
+      this.setData({
+        tooltipVisible: showTooltip,
+        tooltipX,
+        tooltipY,
+        tooltipData: {
+          date: xData[dataIndex],
+          values
+        },
+        crosshairVisible: showCrosshair,
+        crosshairX: guideX,
+        crosshairTop: padding.top,
+        crosshairHeight: chartHeight
+      });
+    },
+
+    applyDefaultCrosshair(chartInfo = this.data.chartInfo) {
+      if (!chartInfo?.showCrosshair || !chartInfo.keepCrosshairVisible) {
+        return;
+      }
+      const selectedIndex = Number.isInteger(this._selectedCrosshairIndex)
+        ? this._selectedCrosshairIndex
+        : chartInfo.defaultCrosshairIndex;
+      if (Number.isInteger(selectedIndex) && selectedIndex >= 0) {
+        this.showGuideAtIndex(selectedIndex, {
+          chartInfo,
+          showTooltip: chartInfo.defaultCrosshairTooltipVisible === true
+        });
+      }
     },
 
     computeLegendLayout(series, colors, maxWidth, ctx, options = {}) {
@@ -548,7 +739,7 @@ Component({
       // 绘制X轴标签（底部）
       ctx.textAlign = 'center';
       const xStep = xData.length > 1 ? chartWidth / (xData.length - 1) : chartWidth / 2;
-      const xLabelStep = xData.length > 10 ? Math.ceil(xData.length / 18) : 1;
+      const xLabelStep = this.getXAxisLabelStep(xData, opts, 18);
       xData.forEach((label, index) => {
         const x = padding.left + xStep * index;
         const y = padding.top + chartHeight + xAxisLabelSpace;
@@ -627,6 +818,7 @@ Component({
         ctx.fillStyle = color;
         const lw = s.lineWidth === undefined ? 2 : s.lineWidth;
         ctx.lineWidth = lw;
+        this.applySeriesLineStyle(ctx, s);
 
         // 绘制线条（lineWidth 为 0 的系列仅用于填充带数据，不画线）
         if (lw > 0) {
@@ -657,6 +849,7 @@ Component({
             ctx.stroke();
           }
         }
+        this.resetLineStyle(ctx);
 
         // 绘制数据点（仅对标记了 showDots 的系列）
         if (s.showDots) {
@@ -672,9 +865,7 @@ Component({
             let y = padding.top + chartHeight - ((value - axisMin) * scale);
             y = Math.max(padding.top, Math.min(y, padding.top + chartHeight));
 
-            ctx.beginPath();
-            ctx.arc(x, y, s.dotRadius || 3, 0, Math.PI * 2);
-            ctx.fill();
+            this.drawSeriesMarker(ctx, x, y, s);
           });
         }
 
@@ -715,7 +906,8 @@ Component({
           ctx.save();
           ctx.globalAlpha = hidden ? 0.35 : 1;
           ctx.fillStyle = item.color;
-          ctx.fillRect(x, y - legendLayout.markerSize / 2, legendLayout.markerSize, legendLayout.markerSize);
+          ctx.strokeStyle = item.color;
+          this.drawLegendMarker(ctx, x, y, legendLayout, series[item.index]);
           ctx.fillStyle = '#666';
           ctx.textAlign = 'left';
           ctx.fillText(label, x + legendLayout.markerSize + legendLayout.markerGap, y + 3);
@@ -751,10 +943,15 @@ Component({
           tooltipPlacement: opts.tooltipPlacement,
           tooltipWidth: opts.tooltipWidth,
           tooltipTopOffset: opts.tooltipTopOffset,
+          showCrosshair: opts.showCrosshair === true,
+          keepCrosshairVisible: opts.keepCrosshairVisible === true,
+          defaultCrosshairTooltipVisible: opts.defaultCrosshairTooltipVisible === true,
+          defaultCrosshairIndex: Number.isInteger(opts.defaultCrosshairIndex) ? opts.defaultCrosshairIndex : -1,
           width,
           height
         }
       });
+      this.applyDefaultCrosshair();
     },
 
     // WHO/WS/T 423-2022 混合轴生长曲线图
@@ -860,6 +1057,7 @@ Component({
         if (lineWidth > 0) {
           ctx.strokeStyle = color;
           ctx.lineWidth = lineWidth;
+          this.applySeriesLineStyle(ctx, s);
           ctx.beginPath();
           let started = false;
           for (let i = 0; i < xLen; i++) {
@@ -870,15 +1068,15 @@ Component({
             else ctx.lineTo(plotLeft + i * xStep, y);
           }
           ctx.stroke();
+          this.resetLineStyle(ctx);
         }
         if (s.showDots) {
-          const dotRadius = s.dotRadius || 3;
           ctx.fillStyle = color;
           for (let i = 0; i < xLen; i++) {
             const v = s.data[i];
             if (v === null || v === undefined) continue;
             const y = toY(v, metric);
-            ctx.beginPath(); ctx.arc(plotLeft + i * xStep, y, dotRadius, 0, Math.PI * 2); ctx.fill();
+            this.drawSeriesMarker(ctx, plotLeft + i * xStep, y, s);
           }
         }
       });
@@ -1254,14 +1452,11 @@ Component({
 
       ctx.textAlign = 'center';
       if (showTopAxis) {
+        const xLabelStep = this.getXAxisLabelStep(xData, opts, 7);
         xData.forEach((label, index) => {
           const x = padding.left + xStep * index;
           const y = plotTop - 14;
-          let shouldShow = true;
-          if (xData.length > 10) {
-            const step = Math.ceil(xData.length / 7);
-            shouldShow = index % step === 0 || index === xData.length - 1;
-          }
+          const shouldShow = index % xLabelStep === 0 || index === xData.length - 1;
           if (shouldShow) {
             ctx.fillText(label || '', x, y);
           }
@@ -1269,14 +1464,11 @@ Component({
       }
       const plotBottom = panels[1].top + panels[1].height;
       if (showBottomAxis) {
+        const xLabelStep = this.getXAxisLabelStep(xData, opts, 7);
         xData.forEach((label, index) => {
           const x = padding.left + xStep * index;
           const y = plotBottom + xAxisLabelSpace;
-          let shouldShow = true;
-          if (xData.length > 10) {
-            const step = Math.ceil(xData.length / 7);
-            shouldShow = index % step === 0 || index === xData.length - 1;
-          }
+          const shouldShow = index % xLabelStep === 0 || index === xData.length - 1;
           if (shouldShow) {
             ctx.fillText(label || '', x, y);
           }
@@ -1340,6 +1532,7 @@ Component({
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
         ctx.lineWidth = s.lineWidth || 1.5;
+        this.applySeriesLineStyle(ctx, s);
 
         ctx.beginPath();
         let hasStarted = false;
@@ -1358,6 +1551,7 @@ Component({
         if (hasStarted) {
           ctx.stroke();
         }
+        this.resetLineStyle(ctx);
 
         // 绘制数据点（仅对 showDots 的系列）
         if (s.showDots) {
@@ -1366,9 +1560,7 @@ Component({
             const x = padding.left + xStep * index;
             let y = panel.top + panel.height - ((value - axis.min) * axis.scale);
             y = Math.max(panel.top, Math.min(y, panel.top + panel.height));
-            ctx.beginPath();
-            ctx.arc(x, y, s.dotRadius || 3, 0, Math.PI * 2);
-            ctx.fill();
+            this.drawSeriesMarker(ctx, x, y, s);
           });
         }
 
@@ -1415,7 +1607,8 @@ Component({
           ctx.save();
           ctx.globalAlpha = hidden ? 0.35 : 1;
           ctx.fillStyle = item.color;
-          ctx.fillRect(x, y - legendLayout.markerSize / 2, legendLayout.markerSize, legendLayout.markerSize);
+          ctx.strokeStyle = item.color;
+          this.drawLegendMarker(ctx, x, y, legendLayout, series[item.index]);
           ctx.fillStyle = '#666';
           ctx.textAlign = 'left';
           ctx.fillText(label, x + legendLayout.markerSize + legendLayout.markerGap, y + 3);
@@ -1445,10 +1638,15 @@ Component({
           tooltipPlacement: opts.tooltipPlacement,
           tooltipWidth: opts.tooltipWidth,
           tooltipTopOffset: opts.tooltipTopOffset,
+          showCrosshair: opts.showCrosshair === true,
+          keepCrosshairVisible: opts.keepCrosshairVisible === true,
+          defaultCrosshairTooltipVisible: opts.defaultCrosshairTooltipVisible === true,
+          defaultCrosshairIndex: Number.isInteger(opts.defaultCrosshairIndex) ? opts.defaultCrosshairIndex : -1,
           width,
           height
         }
       });
+      this.applyDefaultCrosshair();
     },
 
     // 触摸开始
@@ -1473,13 +1671,17 @@ Component({
             const touchY = touch.clientY - rect.top;
             const legendHit = this.isTouchOnLegend(touchX, touchY);
             if (legendHit) {
-              this.setData({ tooltipVisible: false });
+              this.hideInteractionGuide(true);
               this.toggleSeriesVisibility(legendHit.name);
+              return;
+            }
+            if (this.data.chartInfo?.keepCrosshairVisible) {
+              this.hideTooltipOnly();
               return;
             }
             // 延迟隐藏tooltip，让用户能看清数据
             setTimeout(() => {
-              this.setData({ tooltipVisible: false });
+              this.hideInteractionGuide();
             }, 1000);
           })
           .exec();
@@ -1487,7 +1689,7 @@ Component({
       }
 
       setTimeout(() => {
-        this.setData({ tooltipVisible: false });
+        this.hideInteractionGuide();
       }, 1000);
     },
 
@@ -1511,7 +1713,8 @@ Component({
         panels,
         tooltipPlacement,
         tooltipWidth = 180,
-        tooltipTopOffset = 8
+        tooltipTopOffset = 8,
+        showCrosshair = false
       } = chartInfo;
       
       // 计算触摸点在画布上的相对位置
@@ -1525,14 +1728,14 @@ Component({
           
           const legendHit = this.isTouchOnLegend(touchX, touchY);
           if (legendHit) {
-            this.setData({ tooltipVisible: false });
+            this.hideInteractionGuide(true);
             return;
           }
 
           // 检查是否在图表区域内
           if (touchX < padding.left || touchX > padding.left + chartWidth ||
               touchY < padding.top || touchY > padding.top + chartHeight) {
-            this.setData({ tooltipVisible: false });
+            this.hideInteractionGuide();
             return;
           }
           
@@ -1543,72 +1746,7 @@ Component({
           if (dataIndex < 0 || dataIndex >= xData.length) {
             return;
           }
-          
-          // 收集该数据点的所有系列值
-          const values = [];
-          let activePanelIndex = 0;
-          if (layout === 'dualPanel' && Array.isArray(panels)) {
-            const panelHit = panels.findIndex(panel =>
-              touchY >= panel.top && touchY <= panel.top + panel.height
-            );
-            activePanelIndex = panelHit === -1 ? 0 : panelHit;
-          }
-          series.forEach((s, index) => {
-            if (this.isSeriesHidden(s, index)) {
-              return;
-            }
-            const panelIndex = s.panelIndex === 1 ? 1 : 0;
-            if (layout === 'dualPanel' && panelIndex !== activePanelIndex) {
-              return;
-            }
-            const value = s.data[dataIndex];
-            if (value !== null && value !== undefined && !isNaN(value) && value !== 0) {
-              values.push({
-                name: this.getSeriesName(s, index),
-                value: value,
-                color: colors[index % colors.length]
-              });
-            }
-          });
-          
-          if (values.length === 0) {
-            this.setData({ tooltipVisible: false });
-            return;
-          }
-          
-          // 计算tooltip位置
-          let tooltipX = touchX + 10;
-          let tooltipY = touchY - 60;
-
-          if (tooltipPlacement === 'top') {
-            tooltipX = touchX - tooltipWidth / 2;
-            tooltipY = padding.top + tooltipTopOffset;
-          }
-          
-          // 防止超出边界
-          if (tooltipX + tooltipWidth > rect.width) {
-            tooltipX = rect.width - tooltipWidth - 6;
-          }
-          if (tooltipX < 6) {
-            tooltipX = 6;
-          }
-          if (tooltipPlacement !== 'top' && tooltipY < 10) {
-            tooltipY = touchY + 10;
-          }
-          if (tooltipPlacement === 'top' && tooltipY < 6) {
-            tooltipY = 6;
-          }
-          
-          // 显示tooltip
-          this.setData({
-            tooltipVisible: true,
-            tooltipX: tooltipX,
-            tooltipY: tooltipY,
-            tooltipData: {
-              date: xData[dataIndex],
-              values: values
-            }
-          });
+          this.showGuideAtIndex(dataIndex, { touchX, touchY, rectWidth: rect.width });
         })
         .exec();
     },
@@ -1710,16 +1848,11 @@ Component({
 
       // 绘制X轴标签
       ctx.textAlign = 'center';
+      const xLabelStep = this.getXAxisLabelStep(xData, opts, 7);
       xData.forEach((label, index) => {
         const x = padding.left + barGap * index + barGap / 2;
         const y = padding.top + chartHeight + xAxisLabelSpace;
-        
-        // 根据数据点数量决定显示策略
-        let shouldShow = true;
-        if (xData.length > 10) {
-          const step = Math.ceil(xData.length / 7);
-          shouldShow = index % step === 0 || index === xData.length - 1;
-        }
+        const shouldShow = index % xLabelStep === 0 || index === xData.length - 1;
         
         if (shouldShow) {
           ctx.fillText(label || '', x, y);

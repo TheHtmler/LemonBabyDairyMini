@@ -9,6 +9,29 @@
   height: 100%;
 }
 
+.crosshair-line {
+  position: absolute;
+  width: 2rpx;
+  margin-left: -1rpx;
+  background: rgba(255, 184, 0, 0.85);
+  border-radius: 999rpx;
+  pointer-events: none;
+  z-index: 900;
+  box-shadow: 0 0 0 1rpx rgba(255, 255, 255, 0.8), 0 4rpx 12rpx rgba(255, 184, 0, 0.28);
+}
+
+.crosshair-handle {
+  position: absolute;
+  top: -8rpx;
+  left: 50%;
+  width: 14rpx;
+  height: 14rpx;
+  margin-left: -7rpx;
+  border-radius: 50%;
+  background: #ffb800;
+  box-shadow: 0 0 0 4rpx rgba(255, 184, 0, 0.2);
+}
+
 .tooltip {
   position: absolute;
   background: rgba(0, 0, 0, 0.85);

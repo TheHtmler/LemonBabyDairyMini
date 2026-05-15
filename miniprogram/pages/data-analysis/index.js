@@ -1,6 +1,12 @@
 // pages/data-analysis/index.js
 const NutritionModel = require('../../models/nutrition');
 const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
+const {
+  buildDataRecordsSummaryPreview
+} = require('../../utils/dataRecordsSummaryPreview');
+const {
+  summarizeTreatmentRecords
+} = require('../../utils/treatmentUtils');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -11,6 +17,13 @@ const DEFAULT_FORMULA_MILK_PROTEIN = 2.1;
 const DEFAULT_FORMULA_MILK_CALORIES = 0;
 const DEFAULT_SPECIAL_MILK_PROTEIN = 13.1;
 const DEFAULT_SPECIAL_MILK_PROTEIN_ML = 1.97;
+const DEFAULT_NATURAL_PROTEIN_COEFFICIENT = 1.2;
+const FAT_RATIO_POPUP_LINES = [
+  '0-6月: 45%-50%',
+  '>6月: 35%-40%',
+  '1-2岁: 30%-35%',
+  '>6岁: 25%-30%'
+];
 
 function roundNumber(value, precision = 2) {
   if (isNaN(value)) return 0;
@@ -24,11 +37,89 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function calculateMacroEnergyRatios({ protein = 0, carbs = 0, fat = 0 } = {}) {
+  const proteinEnergy = (Number(protein) || 0) * 4;
+  const carbsEnergy = (Number(carbs) || 0) * 4;
+  const fatEnergy = (Number(fat) || 0) * 9;
+  const totalEnergy = proteinEnergy + carbsEnergy + fatEnergy;
+  if (totalEnergy <= 0) {
+    return {
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    };
+  }
+  return {
+    protein: roundNumber((proteinEnergy / totalEnergy) * 100, 1),
+    carbs: roundNumber((carbsEnergy / totalEnergy) * 100, 1),
+    fat: roundNumber((fatEnergy / totalEnergy) * 100, 1)
+  };
+}
+
+function calculateAgeInMonths(birthday, referenceDate = new Date()) {
+  if (!birthday) return null;
+  const birthDate = new Date(birthday);
+  const refDate = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  if (Number.isNaN(birthDate.getTime()) || Number.isNaN(refDate.getTime())) return null;
+  let months = (refDate.getFullYear() - birthDate.getFullYear()) * 12 + (refDate.getMonth() - birthDate.getMonth());
+  if (refDate.getDate() < birthDate.getDate()) {
+    months -= 1;
+  }
+  return months < 0 ? 0 : months;
+}
+
+function getFatEnergyReference(birthday, referenceDate) {
+  const ageMonths = calculateAgeInMonths(birthday, referenceDate);
+  if (ageMonths === null) {
+    return FAT_RATIO_POPUP_LINES.join('；');
+  }
+  if (ageMonths <= 6) return FAT_RATIO_POPUP_LINES[0];
+  if (ageMonths >= 72) return FAT_RATIO_POPUP_LINES[3];
+  if (ageMonths >= 12 && ageMonths < 24) return FAT_RATIO_POPUP_LINES[2];
+  return FAT_RATIO_POPUP_LINES[1];
+}
+
+function buildReferenceRanges(nutritionSettings = {}, babyInfo = {}, referenceDate = new Date()) {
+  const naturalProteinCoefficient = Number(
+    nutritionSettings.natural_protein_coefficient ||
+    babyInfo.nutritionSettings?.natural_protein_coefficient
+  ) || DEFAULT_NATURAL_PROTEIN_COEFFICIENT;
+  const macroRows = buildDataRecordsSummaryPreview({
+    fatRatioPopupLines: FAT_RATIO_POPUP_LINES
+  }).macroRows;
+  const macroRange = (label) => {
+    const row = macroRows.find(item => item.label === label);
+    return (row?.infoLines || []).join('；');
+  };
+  return {
+    naturalProteinCoefficient: `${roundNumber(naturalProteinCoefficient, 2)}g/kg/日`,
+    proteinEnergy: macroRange('蛋白'),
+    carbsEnergy: macroRange('碳水'),
+    fatEnergy: getFatEnergyReference(babyInfo.birthday, referenceDate)
+  };
+}
+
 function getDateTimestamp(value) {
   if (!value) return 0;
   const date = value instanceof Date ? value : new Date(value);
   const timestamp = date.getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function normalizeDateKey(value) {
+  if (!value) return 'unknown';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const date = value instanceof Date
+    ? value
+    : (typeof value === 'object' && value.$date ? new Date(value.$date) : new Date(value));
+  const timestamp = date.getTime();
+  if (Number.isNaN(timestamp)) return 'unknown';
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function hasBasicInfoValue(value) {
@@ -119,6 +210,23 @@ function dedupeIntakes(intakes = []) {
   });
 }
 
+function hasAnalysisContent(record = {}) {
+  return (Array.isArray(record.feedings) && record.feedings.length > 0) ||
+    (Array.isArray(record.intakes) && record.intakes.length > 0);
+}
+
+function getTreatmentRecordDateKey(record = {}) {
+  if (record.dateKey && typeof record.dateKey === 'string') {
+    return record.dateKey;
+  }
+  return normalizeDateKey(record.date || record.startDateTime);
+}
+
+function hasTreatmentNutritionContent(record = {}) {
+  const summary = summarizeTreatmentRecords([record]);
+  return summary.totalCalories > 0 || summary.carbs > 0 || summary.protein > 0 || summary.fat > 0;
+}
+
 function mergeDailyAnalysisRecord(existing, record = {}) {
   if (!existing) {
     return {
@@ -204,12 +312,18 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
   let naturalProtein = 0;
+  let naturalCarbs = 0;
+  let naturalFat = 0;
   let naturalCalories = naturalMilkVolume * BREAST_MILK_KCAL;
   if (naturalMilkType === 'formula') {
     const powderWeight = calculateFormulaPowder(naturalMilkVolume, nutritionSettings);
     const formulaProteinPer100g = Number(nutritionSettings.formula_milk_protein) || DEFAULT_FORMULA_MILK_PROTEIN;
+    const formulaCarbsPer100g = Number(nutritionSettings.formula_milk_carbs) || 0;
+    const formulaFatPer100g = Number(nutritionSettings.formula_milk_fat) || 0;
     if (powderWeight > 0 && formulaProteinPer100g > 0) {
       naturalProtein = (powderWeight * formulaProteinPer100g) / 100;
+      naturalCarbs = (powderWeight * formulaCarbsPer100g) / 100;
+      naturalFat = (powderWeight * formulaFatPer100g) / 100;
       const formulaCaloriesPer100g = Number(nutritionSettings.formula_milk_calories) || DEFAULT_FORMULA_MILK_CALORIES;
       if (formulaCaloriesPer100g) {
         naturalCalories = (powderWeight * formulaCaloriesPer100g) / 100;
@@ -221,6 +335,10 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   } else {
     const naturalProteinPer100ml = Number(nutritionSettings.natural_milk_protein) || DEFAULT_BREAST_MILK_PROTEIN;
     naturalProtein = (naturalMilkVolume * naturalProteinPer100ml) / 100;
+    const naturalCarbsPer100ml = Number(nutritionSettings.natural_milk_carbs) || 0;
+    const naturalFatPer100ml = Number(nutritionSettings.natural_milk_fat) || 0;
+    naturalCarbs = (naturalMilkVolume * naturalCarbsPer100ml) / 100;
+    naturalFat = (naturalMilkVolume * naturalFatPer100ml) / 100;
     const naturalCaloriesPer100ml = Number(nutritionSettings.natural_milk_calories);
     if (naturalCaloriesPer100ml > 0) {
       naturalCalories = (naturalMilkVolume * naturalCaloriesPer100ml) / 100;
@@ -229,10 +347,16 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
 
   let specialProtein = 0;
   let specialCalories = 0;
+  let specialCarbs = 0;
+  let specialFat = 0;
   if (specialPowderWeight > 0) {
     const specialProteinPer100g = Number(nutritionSettings.special_milk_protein) || DEFAULT_SPECIAL_MILK_PROTEIN;
     const specialCaloriesPer100g = Number(nutritionSettings.special_milk_calories);
+    const specialCarbsPer100g = Number(nutritionSettings.special_milk_carbs) || 0;
+    const specialFatPer100g = Number(nutritionSettings.special_milk_fat) || 0;
     specialProtein = (specialPowderWeight * specialProteinPer100g) / 100;
+    specialCarbs = (specialPowderWeight * specialCarbsPer100g) / 100;
+    specialFat = (specialPowderWeight * specialFatPer100g) / 100;
     if (specialCaloriesPer100g > 0) {
       specialCalories = (specialPowderWeight * specialCaloriesPer100g) / 100;
     } else {
@@ -242,11 +366,19 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
     const ratioPowder = Number(nutritionSettings.special_milk_ratio?.powder);
     const ratioWater = Number(nutritionSettings.special_milk_ratio?.water);
     const specialProteinPer100g = Number(nutritionSettings.special_milk_protein);
+    const specialCarbsPer100g = Number(nutritionSettings.special_milk_carbs);
+    const specialFatPer100g = Number(nutritionSettings.special_milk_fat);
     const powderWeight = ratioPowder > 0 && ratioWater > 0
       ? specialMilkVolume * ratioPowder / ratioWater
       : 0;
     if (powderWeight > 0 && specialProteinPer100g > 0) {
       specialProtein = (powderWeight * specialProteinPer100g) / 100;
+      if (specialCarbsPer100g > 0) {
+        specialCarbs = (powderWeight * specialCarbsPer100g) / 100;
+      }
+      if (specialFatPer100g > 0) {
+        specialFat = (powderWeight * specialFatPer100g) / 100;
+      }
     } else {
       const specialProteinPer100ml = Number(nutritionSettings.special_milk_protein_ml) || DEFAULT_SPECIAL_MILK_PROTEIN_ML;
       specialProtein = (specialMilkVolume * specialProteinPer100ml) / 100;
@@ -264,6 +396,8 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
     calories: roundCalories(naturalCalories + specialCalories),
     naturalProtein: roundNumber(naturalProtein, 2),
     specialProtein: roundNumber(specialProtein, 2),
+    carbs: roundNumber(naturalCarbs + specialCarbs, 2),
+    fat: roundNumber(naturalFat + specialFat, 2),
     naturalCalories: roundCalories(naturalCalories),
     specialCalories: roundCalories(specialCalories)
   };
@@ -294,6 +428,8 @@ Page({
       naturalProteinCoefficient: [], // 天然蛋白系数 (g/kg)
       specialProteinCoefficient: [], // 特殊蛋白系数 (g/kg)
       totalProteinCoefficient: [], // 总蛋白系数 (g/kg)
+      premiumProteinRatio: [], // 优质蛋白占比 (%)
+      regularProteinRatio: [], // 普通蛋白占比 (%)
       totalCalories: [], // 总热量
       calorieCoefficient: [] // 热量系数 (kcal/kg)
     },
@@ -307,12 +443,27 @@ Page({
       avgCalories: 0, // 平均热量
       avgCalorieCoefficient: 0, // 平均热量系数
       avgTotalProteinCoefficient: 0, // 平均总蛋白系数
-      recordCoverage: 0, // 记录覆盖率
-      totalDays: 0 // 记录天数
+      avgPremiumProteinRatio: 0, // 平均优质蛋白占比
+      avgRegularProteinRatio: 0, // 平均普通蛋白占比
+      avgProteinEnergyRatio: 0, // 平均蛋白供能比
+      avgCarbsEnergyRatio: 0, // 平均碳水供能比
+      avgFatEnergyRatio: 0, // 平均脂肪供能比
+      avgMilkCalories: 0, // 奶类日均热量
+      avgFoodCalories: 0, // 食物日均热量
+      avgTreatmentCalories: 0, // 治疗营养日均热量
+      milkCalorieRatio: 0, // 奶类热量占比
+      foodCalorieRatio: 0, // 食物热量占比
+      treatmentCalorieRatio: 0, // 治疗热量占比
+      hasCalorieSourceBreakdown: false,
+      totalDays: 0, // 有记录天数
+      rangeDays: 0 // 当前范围天数
     },
+    referenceRanges: buildReferenceRanges(),
     
     // 加载状态
     loading: true,
+    refreshing: false,
+    hasLoadedAnalysis: false,
     hasData: false,
     
     // 宝宝信息
@@ -395,29 +546,42 @@ Page({
       
       if (!babyUid) {
         const defaultSettings = NutritionModel.createDefaultSettings();
-        this.setData({ nutritionSettings: defaultSettings });
+        this.setData({
+          nutritionSettings: defaultSettings,
+          referenceRanges: buildReferenceRanges(defaultSettings, this.data.babyInfo)
+        });
         return;
       }
       
       const settings = await NutritionModel.getNutritionSettings(babyUid);
       
       if (settings) {
-        this.setData({ nutritionSettings: settings });
+        this.setData({
+          nutritionSettings: settings,
+          referenceRanges: buildReferenceRanges(settings, this.data.babyInfo)
+        });
       } else {
         const defaultSettings = NutritionModel.createDefaultSettings();
-        this.setData({ nutritionSettings: defaultSettings });
+        this.setData({
+          nutritionSettings: defaultSettings,
+          referenceRanges: buildReferenceRanges(defaultSettings, this.data.babyInfo)
+        });
       }
     } catch (error) {
       console.error('加载配奶设置失败:', error);
       const defaultSettings = NutritionModel.createDefaultSettings();
-      this.setData({ nutritionSettings: defaultSettings });
+      this.setData({
+        nutritionSettings: defaultSettings,
+        referenceRanges: buildReferenceRanges(defaultSettings, this.data.babyInfo)
+      });
     }
   },
 
   // 加载分析数据
   async loadAnalysisData() {
+    const isInitialLoad = !this.data.hasLoadedAnalysis;
     try {
-      this.setData({ loading: true });
+      this.setData(isInitialLoad ? { loading: true } : { refreshing: true });
       
       const { timeDimension, selectedWeek, selectedMonth } = this.data;
       const { startDate, endDate } = this.calculateDateRange(timeDimension, selectedWeek, selectedMonth);
@@ -426,23 +590,32 @@ Page({
       this.updateDateRangeText(startDate, endDate);
       
       // 从数据库查询数据
-      const records = await this.fetchFeedingRecords(startDate, endDate);
+      const [records, treatmentRecords] = await Promise.all([
+        this.fetchFeedingRecords(startDate, endDate),
+        this.fetchTreatmentRecords(startDate, endDate)
+      ]);
       const basicInfoSnapshots = await this.loadAnalysisBasicInfoSnapshots(startDate, endDate, records);
       
       // 处理数据
-      this.processAnalysisData(records, startDate, endDate, basicInfoSnapshots);
+      this.processAnalysisData(records, startDate, endDate, basicInfoSnapshots, treatmentRecords);
       
       // 初始化图表
       this.initCharts();
       
       this.setData({ 
         loading: false,
-        hasData: records.length > 0
+        refreshing: false,
+        hasLoadedAnalysis: true,
+        hasData: records.some(hasAnalysisContent) || treatmentRecords.some(hasTreatmentNutritionContent)
       });
       
     } catch (error) {
       console.error('加载分析数据失败:', error);
-      this.setData({ loading: false });
+      this.setData({
+        loading: false,
+        refreshing: false,
+        hasLoadedAnalysis: true
+      });
       wx.showToast({
         title: '加载数据失败',
         icon: 'none'
@@ -486,6 +659,13 @@ Page({
       console.log('startDate:', startDate);
       console.log('endDate:', endDate);
       console.log('月视图日期范围:', this.formatDateKey(startDate), '到', this.formatDateKey(endDate));
+    }
+
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+    const isCurrentPeriod = timeDimension === 'week' ? weekOffset === 0 : monthOffset === 0;
+    if (isCurrentPeriod && endDate > todayEnd) {
+      endDate = todayEnd;
     }
     
     return { startDate, endDate };
@@ -534,45 +714,66 @@ Page({
       console.log('查询日期范围:', this.formatDateKey(queryStartDate), '到', this.formatDateKey(queryEndDate));
       console.log('查询时间戳:', queryStartDate.getTime(), '到', queryEndDate.getTime());
       
-      // 使用分页查询获取所有数据（避免云数据库的20条默认限制）
-      console.log('======== 开始分页查询 ========');
-      let allData = [];
-      const MAX_LIMIT = 20; // 云数据库单次查询最大20条
-      let hasMore = true;
-      let skip = 0;
-      
-      while (hasMore) {
-        const res = await db.collection('feeding_records')
-          .where({
-            babyUid: babyUid,
-            date: _.gte(queryStartDate).and(_.lte(queryEndDate))
-          })
-          .skip(skip)
-          .limit(MAX_LIMIT)
-          .get();
+      const fetchPaged = async (whereObj) => {
+        // 使用分页查询获取所有数据（避免云数据库的20条默认限制）
+        console.log('======== 开始分页查询 ========');
+        let allData = [];
+        const MAX_LIMIT = 20; // 云数据库单次查询最大20条
+        let hasMore = true;
+        let skip = 0;
         
-        console.log(`分页查询 skip=${skip}, 返回${res.data.length}条`);
-        
-        if (res.data.length > 0) {
-          allData = allData.concat(res.data);
-          skip += res.data.length;
+        while (hasMore) {
+          let query = db.collection('feeding_records').where(whereObj);
+          if (typeof query.orderBy === 'function') {
+            query = query.orderBy('date', 'asc');
+          }
+          const res = await query
+            .skip(skip)
+            .limit(MAX_LIMIT)
+            .get();
+          const batch = res.data || [];
+          
+          console.log(`分页查询 skip=${skip}, 返回${batch.length}条`);
+          
+          if (batch.length > 0) {
+            allData = allData.concat(batch);
+            skip += batch.length;
+          }
+          
+          // 如果返回数量小于limit，说明已经查完了
+          if (batch.length < MAX_LIMIT) {
+            hasMore = false;
+          }
         }
-        
-        // 如果返回数量小于limit，说明已经查完了
-        if (res.data.length < MAX_LIMIT) {
-          hasMore = false;
-        }
-      }
+        return allData;
+      };
+
+      const startKey = this.formatDateKey(queryStartDate);
+      const endKey = this.formatDateKey(queryEndDate);
+      const [dateTypeRecords, stringTypeRecords] = await Promise.all([
+        fetchPaged({
+          babyUid: babyUid,
+          date: _.gte(queryStartDate).and(_.lte(queryEndDate))
+        }),
+        fetchPaged({
+          babyUid: babyUid,
+          date: _.gte(startKey).and(_.lte(endKey))
+        })
+      ]);
+
+      const mergedMap = new Map();
+      dateTypeRecords.concat(stringTypeRecords).forEach(record => {
+        if (!record) return;
+        const key = record._id || `${record.babyUid || ''}_${normalizeDateKey(record.date)}_${JSON.stringify(record.feedings || [])}_${JSON.stringify(record.intakes || [])}`;
+        mergedMap.set(key, record);
+      });
+      let allData = Array.from(mergedMap.values());
       
       console.log('分页查询完成，总共:', allData.length, '条');
       
-      // 在前端排序
+      // 在前端排序，兼容 Date 和 YYYY-MM-DD 字符串两种日期形态
       if (allData.length > 0) {
-        allData.sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateA - dateB;
-        });
+        allData.sort((a, b) => normalizeDateKey(a.date).localeCompare(normalizeDateKey(b.date)));
       }
       
       // 构造返回格式与原来一致
@@ -614,6 +815,74 @@ Page({
         title: '数据加载失败',
         icon: 'none'
       });
+      return [];
+    }
+  },
+
+  async fetchTreatmentRecords(startDate, endDate) {
+    try {
+      const db = wx.cloud.database();
+      const _ = db.command;
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+
+      if (!babyUid) {
+        return [];
+      }
+
+      const queryStartDate = new Date(startDate);
+      queryStartDate.setHours(0, 0, 0, 0);
+      const queryEndDate = new Date(endDate);
+      queryEndDate.setHours(23, 59, 59, 999);
+      const startKey = this.formatDateKey(queryStartDate);
+      const endKey = this.formatDateKey(queryEndDate);
+      const pageSize = 20;
+
+      const fetchPaged = async (whereObj, orderField) => {
+        let allData = [];
+        let skip = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          let query = db.collection('treatment_records').where(whereObj);
+          if (orderField && typeof query.orderBy === 'function') {
+            query = query.orderBy(orderField, 'asc');
+          }
+          const res = await query
+            .skip(skip)
+            .limit(pageSize)
+            .get();
+          const batch = res.data || [];
+          allData = allData.concat(batch);
+          skip += batch.length;
+          hasMore = batch.length === pageSize;
+        }
+
+        return allData;
+      };
+
+      const [dateRecords, dateKeyRecords] = await Promise.all([
+        fetchPaged({
+          babyUid,
+          date: _.gte(queryStartDate).and(_.lte(queryEndDate))
+        }, 'date'),
+        fetchPaged({
+          babyUid,
+          dateKey: _.gte(startKey).and(_.lte(endKey))
+        }, 'dateKey')
+      ]);
+
+      const mergedMap = new Map();
+      dateRecords.concat(dateKeyRecords).forEach(record => {
+        if (!record) return;
+        const key = record._id || `${record.babyUid || ''}_${getTreatmentRecordDateKey(record)}_${record.startTime || ''}`;
+        mergedMap.set(key, record);
+      });
+
+      return Array.from(mergedMap.values())
+        .sort((a, b) => getTreatmentRecordDateKey(a).localeCompare(getTreatmentRecordDateKey(b)));
+    } catch (error) {
+      console.warn('获取治疗记录失败，数据分析将仅展示喂养记录:', error);
       return [];
     }
   },
@@ -738,17 +1007,20 @@ Page({
   },
 
   // 处理分析数据
-  processAnalysisData(records, startDate, endDate, basicInfoSnapshots = {}) {
+  processAnalysisData(records, startDate, endDate, basicInfoSnapshots = {}, treatmentRecords = []) {
     console.log('========== 开始处理分析数据 ==========');
     console.log('收到记录数:', records.length);
     
     const dates = [];
+    const dateKeys = [];
     const milkVolumes = [];
     const naturalMilk = [];
     const specialMilk = [];
     const naturalProteinCoefficient = [];
     const specialProteinCoefficient = [];
     const totalProteinCoefficient = [];
+    const premiumProteinRatio = [];
+    const regularProteinRatio = [];
     const totalCalories = [];
     const calorieCoefficient = [];
     
@@ -771,22 +1043,10 @@ Page({
     // 创建日期到数据的映射
     const dateMap = new Map();
     records.forEach((record, index) => {
-      // 处理Date对象，确保时区正确
-      let recordDate;
-      if (record.date instanceof Date) {
-        recordDate = record.date;
-      } else if (typeof record.date === 'object' && record.date.$date) {
-        // 处理云数据库返回的特殊日期格式
-        recordDate = new Date(record.date.$date);
-      } else {
-        recordDate = new Date(record.date);
+      const dateKey = normalizeDateKey(record.date);
+      if (dateKey === 'unknown') {
+        return;
       }
-      
-      // 统一为本地时间的日期字符串（去掉时间部分）
-      const year = recordDate.getFullYear();
-      const month = (recordDate.getMonth() + 1).toString().padStart(2, '0');
-      const day = recordDate.getDate().toString().padStart(2, '0');
-      const dateKey = `${year}-${month}-${day}`;
       
       dateMap.set(dateKey, mergeDailyAnalysisRecord(dateMap.get(dateKey), record));
       // 只打印前3条和后3条
@@ -799,6 +1059,15 @@ Page({
     
     console.log('日期映射Map大小:', dateMap.size);
     console.log('日期映射Keys:', Array.from(dateMap.keys()));
+
+    const treatmentMap = new Map();
+    (Array.isArray(treatmentRecords) ? treatmentRecords : []).forEach(record => {
+      const dateKey = getTreatmentRecordDateKey(record);
+      if (dateKey === 'unknown') return;
+      const current = treatmentMap.get(dateKey) || [];
+      current.push(record);
+      treatmentMap.set(dateKey, current);
+    });
     
     // 统计变量
     let totalMilk = 0;
@@ -808,6 +1077,17 @@ Page({
     let totalNaturalProtein = 0;
     let totalSpecialProtein = 0;
     let totalCalorieCoefficient = 0;
+    let coefficientDays = 0;
+    let totalPremiumProteinRatio = 0;
+    let totalRegularProteinRatio = 0;
+    let proteinQualityDays = 0;
+    let totalProteinEnergyRatio = 0;
+    let totalCarbsEnergyRatio = 0;
+    let totalFatEnergyRatio = 0;
+    let macroRatioDays = 0;
+    let totalMilkCalories = 0;
+    let totalFoodCalories = 0;
+    let totalTreatmentCalories = 0;
     let recordDays = 0;
     
     // 按日期顺序处理数据
@@ -819,8 +1099,11 @@ Page({
       const dateKey = `${year}-${month}-${day}`;
       
       const record = dateMap.get(dateKey);
+      const dayTreatmentRecords = treatmentMap.get(dateKey) || [];
+      const hasTreatmentNutrition = dayTreatmentRecords.some(hasTreatmentNutritionContent);
       
       dates.push(this.formatDateDisplay(date));
+      dateKeys.push(dateKey);
       
       // 打印所有20号之后的日期匹配情况
       if (idx < 5 || !record || day >= 20) {
@@ -830,7 +1113,8 @@ Page({
       const hasFeedings = record && record.feedings && record.feedings.length > 0;
       const hasIntakes = record && Array.isArray(record.intakes) && record.intakes.length > 0;
 
-      if (record && (hasFeedings || hasIntakes)) {
+      if ((record && (hasFeedings || hasIntakes)) || hasTreatmentNutrition) {
+        const analysisRecord = record || {};
         // 计算当天的总量
         let dayNaturalMilk = 0;
         let daySpecialMilk = 0;
@@ -850,17 +1134,30 @@ Page({
         }
         
         const dayTotalMilk = dayNaturalMilk + daySpecialMilk;
-        const summary = this.calculateDailySummary(record);
+        const summary = this.calculateDailySummary(analysisRecord, dayTreatmentRecords);
         const dayCalories = summary.calories || 0;
+        const dayTreatmentCalories = summary.treatmentCalories || 0;
+        const dayQualityProtein = summary.naturalProtein || 0;
+        const dayPremiumProteinRatio = dayQualityProtein > 0
+          ? roundNumber((summary.premiumProtein / dayQualityProtein) * 100, 1)
+          : 0;
+        const dayRegularProteinRatio = dayQualityProtein > 0
+          ? roundNumber((summary.regularProtein / dayQualityProtein) * 100, 1)
+          : 0;
+        const macroRatios = calculateMacroEnergyRatios({
+          protein: (summary.naturalProtein || 0) + (summary.specialProtein || 0) + (summary.treatmentProtein || 0),
+          carbs: summary.carbs || 0,
+          fat: summary.fat || 0
+        });
         
         // 获取当天体重：当天记录优先，其次沿用历史体重，今天才使用宝宝信息兜底
         const historicalSnapshot = basicInfoSnapshots[dateKey] || {};
         const isToday = dateKey === this.formatDateKey(new Date());
         let weight = 0;
-        if (record.basicInfo && record.basicInfo.weight) {
-          weight = parseFloat(record.basicInfo.weight);
-        } else if (record.weight) {
-          weight = parseFloat(record.weight);
+        if (analysisRecord.basicInfo && analysisRecord.basicInfo.weight) {
+          weight = parseFloat(analysisRecord.basicInfo.weight);
+        } else if (analysisRecord.weight) {
+          weight = parseFloat(analysisRecord.weight);
         } else if (hasBasicInfoValue(historicalSnapshot.weight)) {
           weight = parseFloat(historicalSnapshot.weight);
         } else if (isToday && this.data.babyInfo && hasBasicInfoValue(this.data.babyInfo.weight)) {
@@ -880,6 +1177,20 @@ Page({
           totalNaturalProtein += parseFloat(dayNaturalProteinCoef);
           totalSpecialProtein += parseFloat(daySpecialProteinCoef);
           totalCalorieCoefficient += dayCalorieCoef;
+          coefficientDays++;
+        }
+
+        if (dayQualityProtein > 0) {
+          totalPremiumProteinRatio += dayPremiumProteinRatio;
+          totalRegularProteinRatio += dayRegularProteinRatio;
+          proteinQualityDays++;
+        }
+
+        if (macroRatios.protein > 0 || macroRatios.carbs > 0 || macroRatios.fat > 0) {
+          totalProteinEnergyRatio += macroRatios.protein;
+          totalCarbsEnergyRatio += macroRatios.carbs;
+          totalFatEnergyRatio += macroRatios.fat;
+          macroRatioDays++;
         }
         
         const dayTotalProteinCoef = parseFloat(dayNaturalProteinCoef) + parseFloat(daySpecialProteinCoef);
@@ -890,6 +1201,8 @@ Page({
         naturalProteinCoefficient.push(parseFloat(dayNaturalProteinCoef));
         specialProteinCoefficient.push(parseFloat(daySpecialProteinCoef));
         totalProteinCoefficient.push(parseFloat(dayTotalProteinCoef.toFixed(2)));
+        premiumProteinRatio.push(dayPremiumProteinRatio);
+        regularProteinRatio.push(dayRegularProteinRatio);
         totalCalories.push(dayCalories);
         calorieCoefficient.push(dayCalorieCoef);
         
@@ -898,6 +1211,9 @@ Page({
         totalNatural += dayNaturalMilk;
         totalSpecial += daySpecialMilk;
         totalCal += dayCalories;
+        totalMilkCalories += summary.milkCalories || 0;
+        totalFoodCalories += summary.foodCalories || 0;
+        totalTreatmentCalories += dayTreatmentCalories;
         recordDays++;
       } else {
         // 没有数据的日期
@@ -907,6 +1223,8 @@ Page({
         naturalProteinCoefficient.push(0);
         specialProteinCoefficient.push(0);
         totalProteinCoefficient.push(0);
+        premiumProteinRatio.push(0);
+        regularProteinRatio.push(0);
         totalCalories.push(0);
         calorieCoefficient.push(0);
       }
@@ -917,18 +1235,39 @@ Page({
     const avgNaturalMilk = recordDays > 0 ? Math.round(totalNatural / recordDays) : 0;
     const avgSpecialMilk = recordDays > 0 ? Math.round(totalSpecial / recordDays) : 0;
     const avgCalories = recordDays > 0 ? Math.round(totalCal / recordDays) : 0;
-    const avgNaturalProteinCoef = recordDays > 0 ? (totalNaturalProtein / recordDays).toFixed(2) : '0.00';
-    const avgSpecialProteinCoef = recordDays > 0 ? (totalSpecialProtein / recordDays).toFixed(2) : '0.00';
-    const avgTotalProteinCoefficient = recordDays > 0
+    const avgNaturalProteinCoef = coefficientDays > 0 ? (totalNaturalProtein / coefficientDays).toFixed(2) : '0.00';
+    const avgSpecialProteinCoef = coefficientDays > 0 ? (totalSpecialProtein / coefficientDays).toFixed(2) : '0.00';
+    const avgTotalProteinCoefficient = coefficientDays > 0
       ? roundNumber((Number(avgNaturalProteinCoef) || 0) + (Number(avgSpecialProteinCoef) || 0), 2)
       : 0;
-    const avgCalorieCoefficient = recordDays > 0
-      ? roundNumber(totalCalorieCoefficient / recordDays, 1)
+    const avgCalorieCoefficient = coefficientDays > 0
+      ? roundNumber(totalCalorieCoefficient / coefficientDays, 1)
       : 0;
+    const avgPremiumProteinRatio = proteinQualityDays > 0
+      ? roundNumber(totalPremiumProteinRatio / proteinQualityDays, 1)
+      : 0;
+    const avgRegularProteinRatio = proteinQualityDays > 0
+      ? roundNumber(totalRegularProteinRatio / proteinQualityDays, 1)
+      : 0;
+    const avgProteinEnergyRatio = macroRatioDays > 0
+      ? roundNumber(totalProteinEnergyRatio / macroRatioDays, 1)
+      : 0;
+    const avgCarbsEnergyRatio = macroRatioDays > 0
+      ? roundNumber(totalCarbsEnergyRatio / macroRatioDays, 1)
+      : 0;
+    const avgFatEnergyRatio = macroRatioDays > 0
+      ? roundNumber(totalFatEnergyRatio / macroRatioDays, 1)
+      : 0;
+    const avgMilkCalories = recordDays > 0 ? Math.round(totalMilkCalories / recordDays) : 0;
+    const avgFoodCalories = recordDays > 0 ? Math.round(totalFoodCalories / recordDays) : 0;
+    const avgTreatmentCalories = recordDays > 0 ? Math.round(totalTreatmentCalories / recordDays) : 0;
+    const milkCalorieRatio = totalCal > 0 ? roundNumber((totalMilkCalories / totalCal) * 100, 1) : 0;
+    const foodCalorieRatio = totalCal > 0 ? roundNumber((totalFoodCalories / totalCal) * 100, 1) : 0;
+    const treatmentCalorieRatio = totalCal > 0 ? roundNumber((totalTreatmentCalories / totalCal) * 100, 1) : 0;
+    const hasCalorieSourceBreakdown = totalCal > 0;
     const totalDaysInRange = dateList.length || 0;
-    const recordCoverage = totalDaysInRange > 0
-      ? Math.round((recordDays / totalDaysInRange) * 100)
-      : 0;
+    const todayKey = this.formatDateKey(new Date());
+    const defaultCrosshairIndex = dateKeys.indexOf(todayKey);
     
     // 计算平均蛋白质系数比例
     let avgProteinRatio = `${avgNaturalProteinCoef}:${avgSpecialProteinCoef}`;
@@ -942,12 +1281,16 @@ Page({
     this.setData({
       chartData: {
         dates,
+        dateKeys,
+        defaultCrosshairIndex,
         milkVolumes,
         naturalMilk,
         specialMilk,
         naturalProteinCoefficient,
         specialProteinCoefficient,
         totalProteinCoefficient,
+        premiumProteinRatio,
+        regularProteinRatio,
         totalCalories,
         calorieCoefficient
       },
@@ -959,9 +1302,22 @@ Page({
         avgCalories,
         avgCalorieCoefficient,
         avgTotalProteinCoefficient,
-        recordCoverage,
-        totalDays: recordDays
-      }
+        avgPremiumProteinRatio,
+        avgRegularProteinRatio,
+        avgProteinEnergyRatio,
+        avgCarbsEnergyRatio,
+        avgFatEnergyRatio,
+        avgMilkCalories,
+        avgFoodCalories,
+        avgTreatmentCalories,
+        milkCalorieRatio,
+        foodCalorieRatio,
+        treatmentCalorieRatio,
+        hasCalorieSourceBreakdown,
+        totalDays: recordDays,
+        rangeDays: totalDaysInRange
+      },
+      referenceRanges: buildReferenceRanges(this.data.nutritionSettings, this.data.babyInfo, endDate)
     });
   },
 
@@ -993,18 +1349,27 @@ Page({
     return `${month}/${day}`;
   },
 
-  calculateDailySummary(record) {
+  calculateDailySummary(record, treatmentRecords = []) {
     const nutritionSettings = this.data.nutritionSettings || {};
     const intakes = Array.isArray(record.intakes) ? record.intakes : [];
 
     const summary = {
       calories: 0,
       naturalProtein: 0,
-      specialProtein: 0
+      specialProtein: 0,
+      premiumProtein: 0,
+      regularProtein: 0,
+      carbs: 0,
+      fat: 0,
+      milkCalories: 0,
+      foodCalories: 0,
+      treatmentCalories: 0,
+      treatmentProtein: 0
     };
 
     intakes.forEach(intake => {
       const nutrition = intake.nutrition || {};
+      const calories = Number(nutrition.calories) || 0;
       const protein = Number(nutrition.protein) || 0;
       const naturalProtein = typeof intake.naturalProtein === 'number'
         ? intake.naturalProtein
@@ -1013,9 +1378,23 @@ Page({
         ? intake.specialProtein
         : (intake.proteinSource === 'special' ? protein : 0);
 
-      summary.calories += Number(nutrition.calories) || 0;
+      summary.calories += calories;
+      if (intake.type === 'milk' || intake.milkType) {
+        summary.milkCalories += calories;
+      } else {
+        summary.foodCalories += calories;
+      }
       summary.naturalProtein += Number(naturalProtein) || 0;
       summary.specialProtein += Number(specialProtein) || 0;
+      summary.carbs += Number(nutrition.carbs) || 0;
+      summary.fat += Number(nutrition.fat) || 0;
+      if (Number(naturalProtein) > 0) {
+        if (intake.type === 'milk' || intake.milkType || intake.proteinQuality === 'premium') {
+          summary.premiumProtein += Number(naturalProtein) || 0;
+        } else {
+          summary.regularProtein += Number(naturalProtein) || 0;
+        }
+      }
     });
 
     let totalNaturalVolumeBreast = 0;
@@ -1046,8 +1425,13 @@ Page({
         specialMilkVolume: 0,
         specialMilkPowder: 0
       }, nutritionSettings);
-      summary.calories += nutrition.naturalCalories || 0;
+      const calories = nutrition.naturalCalories || 0;
+      summary.calories += calories;
+      summary.milkCalories += calories;
       summary.naturalProtein += nutrition.naturalProtein || 0;
+      summary.premiumProtein += nutrition.naturalProtein || 0;
+      summary.carbs += nutrition.carbs || 0;
+      summary.fat += nutrition.fat || 0;
     }
 
     if (totalNaturalVolumeFormula > 0) {
@@ -1057,8 +1441,13 @@ Page({
         specialMilkVolume: 0,
         specialMilkPowder: 0
       }, nutritionSettings);
-      summary.calories += nutrition.naturalCalories || 0;
+      const calories = nutrition.naturalCalories || 0;
+      summary.calories += calories;
+      summary.milkCalories += calories;
       summary.naturalProtein += nutrition.naturalProtein || 0;
+      summary.premiumProtein += nutrition.naturalProtein || 0;
+      summary.carbs += nutrition.carbs || 0;
+      summary.fat += nutrition.fat || 0;
     }
 
     if (totalSpecialVolume > 0) {
@@ -1069,13 +1458,34 @@ Page({
         specialMilkVolume: totalSpecialVolume,
         specialMilkPowder: specialPowder
       }, nutritionSettings);
-      summary.calories += nutrition.specialCalories || 0;
+      const calories = nutrition.specialCalories || 0;
+      summary.calories += calories;
+      summary.milkCalories += calories;
       summary.specialProtein += nutrition.specialProtein || 0;
+      summary.carbs += nutrition.carbs || 0;
+      summary.fat += nutrition.fat || 0;
+    }
+
+    const treatmentSummary = summarizeTreatmentRecords(treatmentRecords);
+    if (treatmentSummary.totalCalories > 0 || treatmentSummary.carbs > 0 || treatmentSummary.protein > 0 || treatmentSummary.fat > 0) {
+      summary.calories += treatmentSummary.totalCalories || 0;
+      summary.carbs += treatmentSummary.carbs || 0;
+      summary.fat += treatmentSummary.fat || 0;
+      summary.treatmentCalories = treatmentSummary.totalCalories || 0;
+      summary.treatmentProtein = treatmentSummary.protein || 0;
     }
 
     summary.calories = roundCalories(summary.calories);
     summary.naturalProtein = roundNumber(summary.naturalProtein, 2);
     summary.specialProtein = roundNumber(summary.specialProtein, 2);
+    summary.premiumProtein = roundNumber(summary.premiumProtein, 2);
+    summary.regularProtein = roundNumber(summary.regularProtein, 2);
+    summary.carbs = roundNumber(summary.carbs, 2);
+    summary.fat = roundNumber(summary.fat, 2);
+    summary.milkCalories = roundCalories(summary.milkCalories);
+    summary.foodCalories = roundCalories(summary.foodCalories);
+    summary.treatmentCalories = roundCalories(summary.treatmentCalories);
+    summary.treatmentProtein = roundNumber(summary.treatmentProtein, 2);
 
     return summary;
   },
@@ -1087,7 +1497,30 @@ Page({
       this.setData({
         'ec.lazyLoad': false
       });
+      this.refreshInitializedCharts();
     }, 300);
+  },
+
+  refreshInitializedCharts() {
+    if (typeof this.selectComponent !== 'function') {
+      return;
+    }
+
+    [
+      { selector: '#milk-chart', draw: this.initMilkChart },
+      { selector: '#protein-chart', draw: this.initProteinChart },
+      { selector: '#calorie-chart', draw: this.initCalorieChart }
+    ].forEach(({ selector, draw }) => {
+      const component = this.selectComponent(selector);
+      if (!component || component.data?.isInit !== true || typeof component.drawChart !== 'function') {
+        return;
+      }
+      draw.call(this, {
+        detail: {
+          component
+        }
+      });
+    });
   },
 
   // 切换时间维度
@@ -1231,10 +1664,14 @@ Page({
     });
   },
 
+  getChartXAxisLabelInterval() {
+    return this.data.timeDimension === 'month' ? 5 : 1;
+  },
+
   // 初始化奶量统计图表
   initMilkChart(e) {
     const component = e.detail.component;
-    const { dates, naturalMilk, specialMilk, milkVolumes } = this.data.chartData;
+    const { dates, naturalMilk, specialMilk, milkVolumes, defaultCrosshairIndex } = this.data.chartData;
     
     if (!dates || dates.length === 0) {
       console.log('奶量图表：暂无数据');
@@ -1245,14 +1682,24 @@ Page({
       component.drawChart({
         xData: dates,
         series: [
-          { name: '总奶量', data: milkVolumes },
-          { name: '天然奶', data: naturalMilk },
-          { name: '特奶', data: specialMilk }
+          { name: '总量', data: milkVolumes, axisLabel: '左轴 ml', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 },
+          { name: '天然', data: naturalMilk, axisLabel: '左轴 ml', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 },
+          { name: '特奶', data: specialMilk, axisLabel: '左轴 ml', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 }
         ],
         options: {
           colors: ['#FFB800', '#4CAF50', '#2196F3'],
           showGrid: true,
-          showLegend: true
+          showLegend: true,
+          showCrosshair: true,
+          keepCrosshairVisible: true,
+          defaultCrosshairTooltipVisible: false,
+          defaultCrosshairIndex,
+          padding: { top: 24, right: 20, bottom: 42, left: 38 },
+          xAxisLabelSpace: 14,
+          xAxisLabelInterval: this.getChartXAxisLabelInterval(),
+          legendTopGap: 4,
+          legendFont: '9px sans-serif',
+          legendItemGap: 10
         }
       });
     }, 200);
@@ -1261,7 +1708,15 @@ Page({
   // 初始化蛋白质系数比例图表（曲线图）
   initProteinChart(e) {
     const component = e.detail.component;
-    const { dates, naturalProteinCoefficient, specialProteinCoefficient, totalProteinCoefficient } = this.data.chartData;
+    const {
+      dates,
+      naturalProteinCoefficient,
+      specialProteinCoefficient,
+      totalProteinCoefficient,
+      premiumProteinRatio,
+      regularProteinRatio,
+      defaultCrosshairIndex
+    } = this.data.chartData;
     
     if (!dates || dates.length === 0) {
       console.log('蛋白质系数图表：暂无数据');
@@ -1290,16 +1745,32 @@ Page({
       component.drawChart({
         xData: dates,
         series: [
-          { name: '总蛋白(g/kg)', data: totalProteinCoefficient },
-          { name: '天然蛋白(g/kg)', data: naturalProteinCoefficient },
-          { name: '特殊蛋白(g/kg)', data: specialProteinCoefficient }
+          { name: '总蛋白', data: totalProteinCoefficient, axisLabel: '左轴 g/kg', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 },
+          { name: '天然', data: naturalProteinCoefficient, axisLabel: '左轴 g/kg', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 },
+          { name: '特殊', data: specialProteinCoefficient, axisLabel: '左轴 g/kg', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 },
+          { name: '优质占比', data: premiumProteinRatio, yAxisIndex: 1, axisLabel: '右轴 %', lineDash: [6, 4], showDots: true, dotShape: 'diamond', dotRadius: 2.5 },
+          { name: '普通占比', data: regularProteinRatio, yAxisIndex: 1, axisLabel: '右轴 %', lineDash: [6, 4], showDots: true, dotShape: 'diamond', dotRadius: 2.5 }
         ],
         options: {
-          colors: ['#FF9800', '#4CAF50', '#2196F3'], // 橙色-总蛋白，绿色-天然，蓝色-特殊
+          colors: ['#FF9800', '#2E7D32', '#2196F3', '#7E57C2', '#795548'],
           showGrid: true,
           showLegend: true,
+          showCrosshair: true,
+          keepCrosshairVisible: true,
+          defaultCrosshairTooltipVisible: false,
+          defaultCrosshairIndex,
+          yAxisLabel: 'g/kg',
+          yAxisRightLabel: '%',
+          padding: { top: 24, right: 30, bottom: 48, left: 36 },
+          xAxisLabelSpace: 14,
+          xAxisLabelInterval: this.getChartXAxisLabelInterval(),
+          legendTopGap: 4,
+          legendFont: '9px sans-serif',
+          legendItemGap: 8,
           yAxisMax: yMax, // 动态调整最大值
-          yAxisMin: 0 // 最小值从0开始
+          yAxisMin: 0, // 最小值从0开始
+          yAxisRightMin: 0,
+          yAxisRightMax: 100
         }
       });
     }, 200);
@@ -1308,7 +1779,7 @@ Page({
   // 初始化热量图表
   initCalorieChart(e) {
     const component = e.detail.component;
-    const { dates, totalCalories, calorieCoefficient } = this.data.chartData;
+    const { dates, totalCalories, calorieCoefficient, defaultCrosshairIndex } = this.data.chartData;
     
     if (!dates || dates.length === 0) {
       console.log('热量图表：暂无数据');
@@ -1324,15 +1795,25 @@ Page({
       component.drawChart({
         xData: dates,
         series: [
-          { name: '总热量(kcal)', data: totalCalories },
-          { name: '热量系数(kcal/kg)', data: calorieCoefficient, yAxisIndex: 1 }
+          { name: '总热量', data: totalCalories, axisLabel: '左轴 kcal', lineStyle: 'solid', showDots: true, dotShape: 'circle', dotRadius: 2 },
+          { name: '热量系数', data: calorieCoefficient, yAxisIndex: 1, axisLabel: '右轴 kcal/kg', lineDash: [6, 4], showDots: true, dotShape: 'diamond', dotRadius: 2.5 }
         ],
         options: {
           colors: ['#FF5722', '#4CAF50'],
           showGrid: true,
           showLegend: true,
-          yAxisLabel: '总热量(kcal)',
+          showCrosshair: true,
+          keepCrosshairVisible: true,
+          defaultCrosshairTooltipVisible: false,
+          defaultCrosshairIndex,
+          yAxisLabel: 'kcal',
           yAxisRightLabel: 'kcal/kg',
+          padding: { top: 24, right: 30, bottom: 42, left: 38 },
+          xAxisLabelSpace: 14,
+          xAxisLabelInterval: this.getChartXAxisLabelInterval(),
+          legendTopGap: 4,
+          legendFont: '9px sans-serif',
+          legendItemGap: 10,
           yAxisRightMin: 0,
           yAxisRightMax: yRightMax
         }
