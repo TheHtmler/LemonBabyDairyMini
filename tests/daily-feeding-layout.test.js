@@ -12,7 +12,8 @@ test('daily-feeding uses shared macro ratio cards with info bubble interaction',
   assert.match(js, /buildSummaryMacroRows\(overrides = \{\}\)/);
   assert.match(js, /overviewSourceSections:\s*buildDataRecordsSummaryPreview\(\{\}\)\.sourceSections/);
   assert.match(js, /buildOverviewSourceSections\(overrides = \{\}\)/);
-  assert.match(js, /数据记录页已改版/);
+  assert.match(js, /数据分析图表已补充左右轴提示/);
+  assert.match(js, /食谱相关入口暂时下线/);
   assert.match(js, /overviewSourceSections:\s*this\.buildOverviewSourceSections\(\{/);
   assert.match(js, /\},\s*\(\)\s*=>\s*\{\s*\/\/ setData 异步提交后再重算，避免概览继续读取旧 intakes。\s*this\.updateCalculations\(\);/);
   assert.match(js, /toggleMetricInfo\(e\)/);

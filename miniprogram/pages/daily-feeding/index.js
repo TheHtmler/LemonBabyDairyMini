@@ -325,10 +325,10 @@ Page({
     activeTab: 'feeding',
     releaseNoticeVisible: true,
     releaseNoticeItems: [
-      '1. 数据记录页已改版',
-      '2. 汇总结构更清晰，新增摄入概览与蛋白展示优化'
+      '1. 数据分析图表已补充左右轴提示',
+      '2. 食谱相关入口暂时下线，日常记录和喂奶编辑保持可用'
     ],
-    releaseNoticeText: '1. 数据记录页已改版；2. 汇总结构更清晰，新增摄入概览与蛋白展示优化。',
+    releaseNoticeText: '1. 数据分析图表已补充左右轴提示；2. 食谱相关入口暂时下线，日常记录和喂奶编辑保持可用。',
     
     // === 排便记录相关 ===
     selectedBowelRecord: null, // 选中的排便记录
