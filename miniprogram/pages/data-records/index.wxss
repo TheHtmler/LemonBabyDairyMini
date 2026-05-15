@@ -1174,13 +1174,6 @@
   margin-top: 0;
 }
 
-.meal-group-recipe-meta {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  color: #A36400;
-}
-
 .meal-group-toggle {
   font-size: 22rpx;
   color: #C78200;
