@@ -144,7 +144,8 @@ label: '特殊蛋白',
 value: normalizeValue(input.proteinSummaryDisplay?.special || 0),
 unit: 'g',
 source: buildProteinBreakdownLine([
-{ label: '特奶', value: specialMilkProtein }
+{ label: '特奶', value: specialMilkProtein },
+...(specialFoodProtein > 0 ? [{ label: '食物', value: specialFoodProtein }] : [])
 ]),
 detailLabel: '特殊蛋白系数',
 detailValue: buildCoefficientParts(input.specialProteinCoefficient).value,

@@ -54,6 +54,43 @@ test('getSpecialMilkPowder falls back to specialPowderWeight, then volume ratio'
   );
 });
 
+test('calculatePowderFromWater and calculateWaterFromPowder convert with the configured ratio', () => {
+  assert.equal(
+    calculator.calculatePowderFromWater(40, {
+      powder: 5,
+      water: 30
+    }),
+    6.67
+  );
+
+  assert.equal(
+    calculator.calculateWaterFromPowder(5, {
+      powder: 5,
+      water: 30
+    }),
+    30
+  );
+});
+
+test('getFormulaMilkPowder prefers explicit formulaPowderWeight over ratio-derived powder', () => {
+  assert.equal(
+    calculator.getFormulaMilkPowder(
+      {
+        naturalMilkType: 'formula',
+        naturalMilkVolume: 40,
+        formulaPowderWeight: 5
+      },
+      {
+        formula_milk_ratio: {
+          powder: 5,
+          water: 30
+        }
+      }
+    ),
+    5
+  );
+});
+
 test('getTotalVolume prefers natural and special milk fields over stored totalVolume', () => {
   assert.equal(
     calculator.getTotalVolume({

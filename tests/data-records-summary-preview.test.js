@@ -189,3 +189,43 @@ test('buildDataRecordsSummaryPreview falls back to placeholders for missing valu
   assert.equal(preview.sourceSections[2].meta, '0条记录');
   assert.equal(preview.coefficientRows[0].value, '--');
 });
+
+test('buildDataRecordsSummaryPreview shows food special protein under special protein coefficient module', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    proteinSummaryDisplay: {
+      total: '12.0',
+      natural: '7.9',
+      special: '4.1'
+    },
+    specialProteinCoefficient: '0.3',
+    intakeOverview: {
+      milk: {
+        normal: {
+          volume: 420,
+          calories: 260,
+          protein: 5.1
+        },
+        special: {
+          volume: 180,
+          calories: 120,
+          protein: 2.8
+        }
+      },
+      food: {
+        count: 2,
+        totalCalories: 160,
+        naturalProtein: 2.8,
+        specialProtein: 1.3,
+        carbs: 18
+      },
+      treatment: {
+        count: 0,
+        totalCalories: 0,
+        carbs: 0
+      }
+    }
+  });
+
+  assert.equal(preview.nutritionStrip[1].source, '特奶 2.80g · 食物 1.30g');
+  assert.equal(preview.nutritionStrip[1].detail, '0.3 g/kg/d');
+});

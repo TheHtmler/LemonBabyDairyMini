@@ -1,13 +1,19 @@
 <view class="record-item">
-  <view class="record-content" bindtap="handleRecordTap">
-    <feeding-record-item record="{{record}}" showLabel="{{showLabel}}" />
+  <view class="record-header">
+    <view class="record-header-main" bindtap="handleRecordTap">
+      <text class="record-time">{{record.formattedStartTime || record.startTime || '--:--'}}</text>
+      <text class="record-label" wx:if="{{showLabel}}">喂奶</text>
+    </view>
+    <view class="action-buttons" wx:if="{{showActions}}">
+      <view class="action-btn edit-btn" wx:if="{{showEdit}}" bindtap="handleEdit">
+        <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+      </view>
+      <view class="action-btn delete-btn" wx:if="{{showDelete}}" bindtap="handleDelete">
+        <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+      </view>
+    </view>
   </view>
-  <view class="action-buttons" wx:if="{{showActions}}">
-    <view class="action-btn edit-btn" wx:if="{{showEdit}}" bindtap="handleEdit">
-      <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
-    </view>
-    <view class="action-btn delete-btn" wx:if="{{showDelete}}" bindtap="handleDelete">
-      <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
-    </view>
+  <view class="record-content" bindtap="handleRecordTap">
+    <feeding-record-item record="{{record}}" showLabel="{{showLabel}}" showHeader="{{false}}" />
   </view>
 </view>

@@ -78,6 +78,26 @@ const calculator = {
     return Math.round((num + Number.EPSILON) * multiplier) / multiplier;
   },
 
+  calculatePowderFromWater(waterVolume, ratio = {}) {
+    const waterNum = Number(waterVolume);
+    const powder = Number(ratio.powder);
+    const water = Number(ratio.water);
+    if (!Number.isFinite(waterNum) || waterNum <= 0 || !Number.isFinite(powder) || powder <= 0 || !Number.isFinite(water) || water <= 0) {
+      return 0;
+    }
+    return this.roundValue((waterNum * powder) / water, 2);
+  },
+
+  calculateWaterFromPowder(powderWeight, ratio = {}) {
+    const powderNum = Number(powderWeight);
+    const powder = Number(ratio.powder);
+    const water = Number(ratio.water);
+    if (!Number.isFinite(powderNum) || powderNum <= 0 || !Number.isFinite(powder) || powder <= 0 || !Number.isFinite(water) || water <= 0) {
+      return 0;
+    }
+    return this.roundValue((powderNum * water) / powder, 2);
+  },
+
   // 计算特奶量和特奶粉
   calculateSpecialMilk(naturalMilkVolume, totalVolume, calculation_params) {
     const specialMilkVolume = Math.max(0, totalVolume - naturalMilkVolume);
@@ -156,6 +176,24 @@ const calculator = {
     }
 
     return this.calculateSpecialMilkPowder(specialMilkVolume, calculation_params);
+  },
+
+  getFormulaMilkPowder(feeding = {}, calculation_params = {}) {
+    const explicitPowder = Number.parseFloat(feeding.formulaPowderWeight);
+    if (Number.isFinite(explicitPowder) && explicitPowder > 0) {
+      return this.roundValue(explicitPowder, 2);
+    }
+
+    if (feeding.naturalMilkType !== 'formula') {
+      return 0;
+    }
+
+    const naturalMilkVolume = Number.parseFloat(feeding.naturalMilkVolume);
+    if (!Number.isFinite(naturalMilkVolume) || naturalMilkVolume <= 0) {
+      return 0;
+    }
+
+    return this.calculatePowderFromWater(naturalMilkVolume, calculation_params.formula_milk_ratio || {});
   },
 
   // 计算每餐建议奶量

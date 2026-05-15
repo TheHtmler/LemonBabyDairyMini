@@ -66,6 +66,14 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function formatRecipeConsumedRatioText(ratio) {
+  const num = Number(ratio);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  const percent = num <= 1 ? num * 100 : num;
+  const rounded = Math.round((percent + Number.EPSILON) * 100) / 100;
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(2).replace(/\.?0+$/, '')}%`;
+}
+
 function pickFirstFilled(...values) {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== '') {
@@ -87,6 +95,10 @@ function calculateFormulaPowder(naturalMilkVolume, calculation_params = {}) {
   return Math.round((naturalMilkVolume * ratioPowder / ratioWater) * 10) / 10;
 }
 
+function getFormulaMilkPowder(feeding, nutritionSettings = {}) {
+  return feedingCalculator.getFormulaMilkPowder(feeding, nutritionSettings);
+}
+
 function calculateSpecialMilkPowder(specialMilkVolume, calculation_params = {}) {
   if (!calculation_params || !specialMilkVolume || specialMilkVolume <= 0) {
     return 0;
@@ -97,6 +109,36 @@ function calculateSpecialMilkPowder(specialMilkVolume, calculation_params = {}) 
     return 0;
   }
   return Math.round((specialMilkVolume * ratioPowder / ratioWater) * 10) / 10;
+}
+
+function aggregateMilkComponentTotals(feedings = [], nutritionSettings = {}) {
+  return (feedings || []).reduce((totals, feeding) => {
+    const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
+    const naturalType = (feeding.naturalMilkType || 'breast') === 'formula' ? 'formula' : 'breast';
+
+    if (naturalVolume > 0) {
+      if (naturalType === 'formula') {
+        totals.formulaVolume += naturalVolume;
+        totals.formulaPowderWeight += feedingCalculator.getFormulaMilkPowder(feeding, nutritionSettings);
+      } else {
+        totals.breastVolume += naturalVolume;
+      }
+    }
+
+    const specialVolume = feedingCalculator.getSpecialMilkVolume(feeding);
+    if (specialVolume > 0) {
+      totals.specialVolume += specialVolume;
+      totals.specialPowderWeight += feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
+    }
+
+    return totals;
+  }, {
+    breastVolume: 0,
+    formulaVolume: 0,
+    formulaPowderWeight: 0,
+    specialVolume: 0,
+    specialPowderWeight: 0
+  });
 }
 
 function isMilkCategory(category) {
@@ -114,6 +156,7 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
   const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
   const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
+  const formulaPowderWeight = getFormulaMilkPowder(feeding, nutritionSettings);
   const naturalMilkType = feeding.naturalMilkType || 'breast';
 
   let naturalProtein = 0;
@@ -121,7 +164,7 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
   let naturalCarbs = 0;
   let naturalCalories = naturalMilkVolume * BREAST_MILK_KCAL;
   if (naturalMilkType === 'formula') {
-    const powderWeight = calculateFormulaPowder(naturalMilkVolume, nutritionSettings);
+    const powderWeight = formulaPowderWeight || calculateFormulaPowder(naturalMilkVolume, nutritionSettings);
     const formulaProteinPer100g = Number(nutritionSettings.formula_milk_protein) || DEFAULT_FORMULA_MILK_PROTEIN;
     const formulaFatPer100g = Number(nutritionSettings.formula_milk_fat) || 0;
     const formulaCarbsPer100g = Number(nutritionSettings.formula_milk_carbs) || 0;
@@ -242,38 +285,17 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     group.fat += fat || 0;
   };
 
-  // 先聚合奶量再计算，避免逐条舍入
-  let totalNaturalVolumeBreast = 0;
-  let totalNaturalVolumeFormula = 0;
-  let totalSpecialVolume = 0;
+  const milkTotals = aggregateMilkComponentTotals(feedings, nutritionSettings);
 
-  (feedings || []).forEach(feeding => {
-    const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-    const specialVolume = parseFloat(feeding.specialMilkVolume) || 0;
-    const naturalTypeRaw = feeding.naturalMilkType || 'breast';
-    const naturalType = naturalTypeRaw === 'breast' ? 'breast' : 'formula';
-
-    if (naturalVolume > 0) {
-      if (naturalType === 'formula') {
-        totalNaturalVolumeFormula += naturalVolume;
-      } else {
-        totalNaturalVolumeBreast += naturalVolume;
-      }
-    }
-    if (specialVolume > 0) {
-      totalSpecialVolume += specialVolume;
-    }
-  });
-
-  if (totalNaturalVolumeBreast > 0) {
+  if (milkTotals.breastVolume > 0) {
     const nutrition = calculateMilkNutrition({
-      naturalMilkVolume: totalNaturalVolumeBreast,
+      naturalMilkVolume: milkTotals.breastVolume,
       naturalMilkType: 'breast',
       specialMilkVolume: 0,
       specialMilkPowder: 0
     }, nutritionSettings);
     addMilkStats(overview.milk.normal, {
-      volume: totalNaturalVolumeBreast,
+      volume: milkTotals.breastVolume,
       calories: nutrition.naturalCalories || 0,
       protein: nutrition.naturalProtein || 0,
       carbs: nutrition.carbs || 0,
@@ -281,15 +303,16 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     });
   }
 
-  if (totalNaturalVolumeFormula > 0) {
+  if (milkTotals.formulaVolume > 0) {
     const nutrition = calculateMilkNutrition({
-      naturalMilkVolume: totalNaturalVolumeFormula,
+      naturalMilkVolume: milkTotals.formulaVolume,
       naturalMilkType: 'formula',
+      formulaPowderWeight: milkTotals.formulaPowderWeight,
       specialMilkVolume: 0,
       specialMilkPowder: 0
     }, nutritionSettings);
     addMilkStats(overview.milk.normal, {
-      volume: totalNaturalVolumeFormula,
+      volume: milkTotals.formulaVolume,
       calories: nutrition.naturalCalories || 0,
       protein: nutrition.naturalProtein || 0,
       carbs: nutrition.carbs || 0,
@@ -297,16 +320,15 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     });
   }
 
-  if (totalSpecialVolume > 0) {
-    const specialPowder = calculateSpecialMilkPowder(totalSpecialVolume, nutritionSettings);
+  if (milkTotals.specialVolume > 0) {
     const nutrition = calculateMilkNutrition({
       naturalMilkVolume: 0,
       naturalMilkType: 'breast',
-      specialMilkVolume: totalSpecialVolume,
-      specialMilkPowder: specialPowder
+      specialMilkVolume: milkTotals.specialVolume,
+      specialMilkPowder: milkTotals.specialPowderWeight
     }, nutritionSettings);
     addMilkStats(overview.milk.special, {
-      volume: totalSpecialVolume,
+      volume: milkTotals.specialVolume,
       calories: nutrition.specialCalories || 0,
       protein: nutrition.specialProtein || 0,
       carbs: nutrition.carbs || 0,
@@ -474,6 +496,10 @@ function groupFoodIntakesByMeal(intakes = []) {
         mealLabel: intake.mealLabel || '食物记录',
         mealTime,
         mealNote: intake.mealNote || '',
+        recipeId: intake.recipeId || '',
+        recipeNameSnapshot: intake.recipeNameSnapshot || '',
+        recipeConsumedRatio: typeof intake.recipeConsumedRatio === 'number' ? intake.recipeConsumedRatio : (Number(intake.recipeConsumedRatio) || 0),
+        recipeConsumedRatioText: formatRecipeConsumedRatioText(intake.recipeConsumedRatio),
         sortKey: Number(String(mealTime).replace(':', '')) || 0,
         itemCount: 0,
         summary: {
@@ -501,6 +527,16 @@ function groupFoodIntakesByMeal(intakes = []) {
 
     if (!group.mealNote && intake.mealNote) {
       group.mealNote = intake.mealNote;
+    }
+    if (!group.recipeId && intake.recipeId) {
+      group.recipeId = intake.recipeId;
+    }
+    if (!group.recipeNameSnapshot && intake.recipeNameSnapshot) {
+      group.recipeNameSnapshot = intake.recipeNameSnapshot;
+    }
+    if (!group.recipeConsumedRatio && intake.recipeConsumedRatio) {
+      group.recipeConsumedRatio = Number(intake.recipeConsumedRatio) || 0;
+      group.recipeConsumedRatioText = formatRecipeConsumedRatioText(intake.recipeConsumedRatio);
     }
   });
 
@@ -564,30 +600,11 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.fat += Number(nutrition.fat) || 0;
   });
 
-  // 聚合奶量后再计算，避免逐条舍入导致的总量偏差
-  let totalNaturalVolumeBreast = 0;
-  let totalNaturalVolumeFormula = 0;
-  let totalSpecialVolume = 0;
-  (feedings || []).forEach(feeding => {
-    const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
-    const specialVolume = parseFloat(feeding.specialMilkVolume) || 0;
-    const naturalTypeRaw = feeding.naturalMilkType || 'breast';
-    const naturalType = naturalTypeRaw === 'breast' ? 'breast' : 'formula';
-    if (naturalVolume > 0) {
-      if (naturalType === 'formula') {
-        totalNaturalVolumeFormula += naturalVolume;
-      } else {
-        totalNaturalVolumeBreast += naturalVolume;
-      }
-    }
-    if (specialVolume > 0) {
-      totalSpecialVolume += specialVolume;
-    }
-  });
+  const milkTotals = aggregateMilkComponentTotals(feedings, nutritionSettings);
 
-  if (totalNaturalVolumeBreast > 0) {
+  if (milkTotals.breastVolume > 0) {
     const nutrition = calculateMilkNutrition({
-      naturalMilkVolume: totalNaturalVolumeBreast,
+      naturalMilkVolume: milkTotals.breastVolume,
       naturalMilkType: 'breast',
       specialMilkVolume: 0,
       specialMilkPowder: 0
@@ -600,10 +617,11 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.fat += nutrition.fat;
   }
 
-  if (totalNaturalVolumeFormula > 0) {
+  if (milkTotals.formulaVolume > 0) {
     const nutrition = calculateMilkNutrition({
-      naturalMilkVolume: totalNaturalVolumeFormula,
+      naturalMilkVolume: milkTotals.formulaVolume,
       naturalMilkType: 'formula',
+      formulaPowderWeight: milkTotals.formulaPowderWeight,
       specialMilkVolume: 0,
       specialMilkPowder: 0
     }, nutritionSettings);
@@ -615,13 +633,12 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.fat += nutrition.fat;
   }
 
-  if (totalSpecialVolume > 0) {
-    const specialPowder = calculateSpecialMilkPowder(totalSpecialVolume, nutritionSettings);
+  if (milkTotals.specialVolume > 0) {
     const nutrition = calculateMilkNutrition({
       naturalMilkVolume: 0,
       naturalMilkType: 'breast',
-      specialMilkVolume: totalSpecialVolume,
-      specialMilkPowder: specialPowder
+      specialMilkVolume: milkTotals.specialVolume,
+      specialMilkPowder: milkTotals.specialPowderWeight
     }, nutritionSettings);
     summary.calories += nutrition.calories;
     summary.protein += nutrition.protein;
@@ -968,8 +985,8 @@ Page({
     naturalProteinCoefficientInput: '',
     specialProteinCoefficientInput: '',
     // 蛋白质系数
-    naturalProteinCoefficient: 0, // 天然蛋白系数 g/kg
-    specialProteinCoefficient: 0, // 特殊蛋白系数 g/kg
+    naturalProteinCoefficient: '', // 天然蛋白系数 g/kg
+    specialProteinCoefficient: '', // 特殊蛋白系数 g/kg
     // 日历相关数据
     showCalendarPicker: false,
     calendarYear: new Date().getFullYear(),
@@ -1074,6 +1091,10 @@ Page({
     editBasicInfoValue: ''
   },
 
+  buildFoodMealGroups(intakes = []) {
+    return groupFoodIntakesByMeal(intakes);
+  },
+
   // 显示食物摄入弹窗
   showFoodIntakeModal(options = {}) {
     if (options && options.currentTarget) {
@@ -1176,6 +1197,22 @@ Page({
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
     wx.navigateTo({
       url: `/pages/meal-editor/index?date=${selectedDate}&from=records`
+    });
+  },
+
+  navigateToMilkFeedingEditor() {
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pages/milk-feeding-editor/index?mode=create&source=records&date=${selectedDate}`
+    });
+  },
+
+  navigateToMilkFeedingEditorForEdit(e) {
+    const index = (e.detail && e.detail.index !== undefined) ? e.detail.index : e.currentTarget?.dataset?.index;
+    if (index === undefined || index === null || index < 0) return;
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pages/milk-feeding-editor/index?mode=edit&source=records&date=${selectedDate}&index=${encodeURIComponent(index)}`
     });
   },
 
@@ -2714,8 +2751,8 @@ Page({
           dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
           caloriePerKg: calorieMetrics.caloriePerKg,
           totalFormulaPowderWeight: 0,
-          naturalProteinCoefficient: 0,
-          specialProteinCoefficient: 0,
+          naturalProteinCoefficient: '',
+          specialProteinCoefficient: '',
           naturalProteinCoefficientInput: '',
           specialProteinCoefficientInput: '',
           intakeOverview,
@@ -2827,8 +2864,8 @@ Page({
         caloriePerKg: calorieMetrics.caloriePerKg,
         dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
         totalFormulaPowderWeight: 0,
-        naturalProteinCoefficient: 0,
-        specialProteinCoefficient: 0,
+        naturalProteinCoefficient: '',
+        specialProteinCoefficient: '',
         intakeOverview,
         proteinSummaryDisplay: this.computeProteinSummaryDisplay(intakeOverview),
         summaryPreview: this.buildSummaryPreviewData({
@@ -2891,8 +2928,9 @@ Page({
 
       const nutrition = calculateMilkNutrition({
         naturalMilkVolume: record.naturalMilkVolume,
-        specialMilkVolume: record.specialMilkVolume,
-        specialMilkPowder: record.specialMilkPowder,
+        formulaPowderWeight: getFormulaMilkPowder(record, nutritionSettings),
+        specialMilkVolume: feedingCalculator.getSpecialMilkVolume(record),
+        specialMilkPowder: feedingCalculator.getSpecialMilkPowder(record, nutritionSettings),
         naturalMilkType: record.naturalMilkType || 'breast'
       }, nutritionSettings);
 
@@ -2927,16 +2965,17 @@ Page({
     if (!record) return null;
     const settings = this.data.nutritionSettings || {};
     const naturalMilkVolume = record.naturalMilkVolume || 0;
-    const specialMilkVolume = record.specialMilkVolume || 0;
+    const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(record);
     const nutrition = calculateMilkNutrition({
       naturalMilkVolume,
+      formulaPowderWeight: getFormulaMilkPowder(record, settings),
       specialMilkVolume,
       specialMilkPowder: feedingCalculator.getSpecialMilkPowder(record, settings),
       naturalMilkType: record.naturalMilkType || 'breast'
     }, settings);
 
     const formulaPowderWeight = record.naturalMilkType === 'formula'
-      ? calculateFormulaPowder(naturalMilkVolume, settings)
+      ? getFormulaMilkPowder(record, settings)
       : 0;
     const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(record, settings)
       || calculateSpecialMilkPowder(specialMilkVolume, settings);
@@ -3883,16 +3922,10 @@ Page({
     // 计算总奶量（如果没有的话）
     const totalVolume = feedingCalculator.getTotalVolume(feeding);
     
-    // 计算特奶奶粉重量
-    const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
-    let specialMilkPowder = 0;
-    if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
-      const ratio = this.data.nutritionSettings.special_milk_ratio;
-      specialMilkPowder = Math.round((specialMilkVolume * ratio.powder / ratio.water) * 10) / 10;
-    } else {
-      // 使用默认配比 13.5g/90ml
-      specialMilkPowder = Math.round((specialMilkVolume * 13.5 / 90) * 10) / 10;
-    }
+    const specialMilkPowder = feedingCalculator.getSpecialMilkPowder(
+      feeding,
+      this.data.nutritionSettings || {}
+    );
 
     let formattedStartTime = feeding.formattedStartTime;
     if (!formattedStartTime) {
@@ -3945,15 +3978,15 @@ Page({
       const special = parseFloat(editingFeeding.specialMilkVolume) || 0;
       editingFeeding.totalVolume = (natural + special).toFixed(1);
       
-      // 计算特奶奶粉重量（根据配比 13.5g/90ml）
-      if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
-        const ratio = this.data.nutritionSettings.special_milk_ratio;
-        editingFeeding.specialMilkPowder = Math.round((special * ratio.powder / ratio.water) * 10) / 10;
-      } else {
-        // 使用默认配比 13.5g/90ml
-        editingFeeding.specialMilkPowder = Math.round((special * 13.5 / 90) * 10) / 10;
+      if (field === 'specialMilkVolume') {
+        if (this.data.nutritionSettings && this.data.nutritionSettings.special_milk_ratio) {
+          const ratio = this.data.nutritionSettings.special_milk_ratio;
+          editingFeeding.specialMilkPowder = Math.round((special * ratio.powder / ratio.water) * 10) / 10;
+        } else {
+          // 使用默认配比 13.5g/90ml
+          editingFeeding.specialMilkPowder = Math.round((special * 13.5 / 90) * 10) / 10;
+        }
       }
-      
     }
     
     this.setData({ editingFeeding }, () => {
@@ -4145,7 +4178,10 @@ Page({
           naturalMilkType: editingFeeding.naturalMilkType || 'breast',
           specialMilkVolume: parseFloat(editingFeeding.specialMilkVolume) || 0,
           totalVolume: feedingCalculator.getTotalVolume(editingFeeding),
-          specialMilkPowder: parseFloat(editingFeeding.specialMilkPowder) || 0,
+          formulaPowderWeight: editingFeeding.naturalMilkType === 'formula'
+            ? feedingCalculator.getFormulaMilkPowder(editingFeeding, this.data.nutritionSettings || {})
+            : 0,
+          specialMilkPowder: feedingCalculator.getSpecialMilkPowder(editingFeeding, this.data.nutritionSettings || {}),
           babyUid: babyUid, // 确保记录包含babyUid
           notes: editingFeeding.notes || ''
         };
@@ -5149,13 +5185,13 @@ Page({
       proteinSummaryDisplay: overrides.proteinSummaryDisplay ?? this.data.proteinSummaryDisplay,
       naturalProteinCoefficient: pickFirstFilled(
         overrides.naturalProteinCoefficient,
-        this.data.naturalProteinCoefficientInput,
-        this.data.naturalProteinCoefficient
+        this.data.naturalProteinCoefficient,
+        this.data.naturalProteinCoefficientInput
       ),
       specialProteinCoefficient: pickFirstFilled(
         overrides.specialProteinCoefficient,
-        this.data.specialProteinCoefficientInput,
-        this.data.specialProteinCoefficient
+        this.data.specialProteinCoefficient,
+        this.data.specialProteinCoefficientInput
       ),
       calorieGoalPerKgRange: overrides.calorieGoalPerKgRange ?? this.data.calorieGoalPerKgRange,
       macroRatios: overrides.macroRatios ?? this.data.macroRatios,

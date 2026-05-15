@@ -36,8 +36,19 @@
 
   <view class="section-card items-card">
     <view class="section-header">
-      <text class="section-title">本顿食物</text>
-      <text class="section-meta">已添加 {{mealDraft.items.length}} 种</text>
+      <view>
+        <text class="section-title">本顿食物</text>
+        <text class="section-meta">已添加 {{mealDraft.items.length}} 种</text>
+      </view>
+      <view class="section-action-group">
+        <view class="section-action-btn" bindtap="openRecipePicker">从食谱添加</view>
+        <view class="section-action-btn secondary" bindtap="saveCurrentMealAsRecipe">存为食谱</view>
+        <view class="section-action-btn secondary" bindtap="navigateToRecipeManagement">管理食谱</view>
+      </view>
+    </view>
+    <view class="recipe-source-card" wx:if="{{mealDraft.recipeContext && mealDraft.recipeContext.recipeId}}">
+      <text class="recipe-source-title">来自食谱：{{mealDraft.recipeContext.recipeNameSnapshot}}</text>
+      <text class="recipe-source-meta">当前按 {{recipeConsumedRatioInput}}% 展开到本顿草稿</text>
     </view>
     <view class="meal-summary-grid" wx:if="{{mealDraft.items.length > 0}}">
       <view class="meal-summary-item">
@@ -95,6 +106,53 @@
     <button class="footer-btn confirm" bindtap="saveMeal" disabled="{{mealDraft.items.length === 0}}">
       {{mode === 'edit' ? '保存修改' : '保存本顿'}}
     </button>
+  </view>
+
+  <view class="drawer-mask" wx:if="{{showRecipePicker}}" bindtap="closeRecipePicker"></view>
+  <view class="recipe-picker {{showRecipePicker ? 'visible' : ''}}">
+    <view class="drawer-handle"></view>
+    <view class="drawer-header">
+      <view class="drawer-header-main">
+        <text class="drawer-title">从食谱添加</text>
+        <text class="drawer-subtitle">选择一个模板，再设置本次实际吃掉的比例</text>
+      </view>
+      <view class="drawer-close" bindtap="closeRecipePicker">关闭</view>
+    </view>
+    <view class="drawer-body">
+      <view class="field-row ratio-row">
+        <text class="field-label">食用比例</text>
+        <input
+          type="digit"
+          class="quantity-input"
+          value="{{recipeConsumedRatioInput}}"
+          placeholder="100"
+          bindinput="onRecipeConsumedRatioInput"
+        />
+        <text class="unit-text">%</text>
+      </view>
+      <view class="drawer-utility-row">
+        <view class="drawer-utility-btn" bindtap="navigateToRecipeManagement">去管理食谱</view>
+      </view>
+      <scroll-view class="recipe-option-list" scroll-y="true">
+        <view
+          class="recipe-option {{selectedRecipeId === item._id ? 'active' : ''}}"
+          wx:for="{{recipeCatalog}}"
+          wx:key="_id"
+          data-id="{{item._id}}"
+          bindtap="onRecipeOptionTap"
+        >
+          <view class="recipe-option-main">
+            <text class="recipe-option-name">{{item.name}}</text>
+            <text class="recipe-option-meta">{{item.items.length}} 种食物</text>
+          </view>
+          <text class="recipe-option-check">{{selectedRecipeId === item._id ? '已选' : '选择'}}</text>
+        </view>
+        <view class="empty-state compact" wx:if="{{recipeCatalog.length === 0}}">
+          <text>还没有可用食谱，先去创建一个。</text>
+        </view>
+      </scroll-view>
+      <button class="add-item-btn" bindtap="applySelectedRecipe">按当前比例加入本顿</button>
+    </view>
   </view>
 
   <view class="drawer-mask" wx:if="{{drawerVisible}}" bindtap="closeFoodDrawer"></view>

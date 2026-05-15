@@ -65,7 +65,7 @@
       <text class="light-section-meta">今日操作</text>
     </view>
     <view class="quick-actions quick-actions-compact">
-      <view class="quick-record-btn primary" bindtap="showQuickInputModal">
+      <view class="quick-record-btn primary" bindtap="navigateToMilkFeedingEditor">
         <text>添加喂奶</text>
       </view>
       <view class="quick-record-btn secondary" bindtap="navigateToMealEditor">
@@ -192,8 +192,8 @@
           record="{{item}}"
           index="{{index}}"
           showLabel="{{false}}"
-          bind:recordtap="openEditModal"
-          bind:edit="openEditModal"
+          bind:recordtap="navigateToMilkFeedingEditorForEdit"
+          bind:edit="navigateToMilkFeedingEditorForEdit"
           bind:delete="deleteFeeding"
         />
         <view class="empty-record" wx:if="{{feedingsDisplay.length === 0}}">
@@ -211,6 +211,8 @@
               <view class="meal-group-main">
                 <text class="meal-group-title">{{item.mealLabel || '食物记录'}}</text>
                 <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
+                <text class="meal-group-recipe-meta" wx:if="{{item.recipeNameSnapshot}}">来自食谱：{{item.recipeNameSnapshot}}</text>
+                <text class="meal-group-recipe-meta" wx:if="{{item.recipeConsumedRatioText}}">食用 {{item.recipeConsumedRatioText}}</text>
               </view>
               <view class="meal-group-actions">
                 <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑</text>
