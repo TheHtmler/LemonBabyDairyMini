@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   buildReportArchivePreview,
@@ -413,4 +415,13 @@ test('buildReportTrendPreview uses explanatory overlay copy and explicit empty n
   assert.match(trend.nutritionWindows[0].note, /暂无喂养记录/);
   assert.equal(trend.nutritionWindows[1].badge, '暂无喂养记录');
   assert.match(trend.nutritionWindows[1].note, /暂无喂养记录/);
+});
+
+test('report workbench does not read persisted feeding record summary as nutrition source', () => {
+  const source = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/utils/reportWorkbench.js'),
+    'utf8'
+  );
+
+  assert.doesNotMatch(source, /record\.summary\??\./);
 });

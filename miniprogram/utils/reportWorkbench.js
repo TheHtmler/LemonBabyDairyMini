@@ -461,12 +461,10 @@ function getDateTimestamp(value) {
 function scoreFeedingRecord(record = {}) {
   const feedingsCount = Array.isArray(record.feedings) ? record.feedings.length : 0;
   const intakesCount = Array.isArray(record.intakes) ? record.intakes.length : 0;
-  const summaryCalories = Number(record.summary?.calories) || 0;
   const basicInfoCompleteness = getBasicInfoCompleteness(record);
   return (
     feedingsCount * 1000000 +
     intakesCount * 1000000 +
-    summaryCalories * 100 +
     basicInfoCompleteness * 10 +
     Math.max(getDateTimestamp(record.updatedAt), getDateTimestamp(record.createdAt), getDateTimestamp(record.date)) / 1000000000000
   );

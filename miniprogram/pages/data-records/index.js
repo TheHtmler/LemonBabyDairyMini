@@ -711,7 +711,6 @@ function getBasicInfoCompleteness(record = {}) {
 function scoreFeedingRecord(record = {}) {
   const feedingsCount = Array.isArray(record.feedings) ? record.feedings.length : 0;
   const intakesCount = Array.isArray(record.intakes) ? record.intakes.length : 0;
-  const summaryCalories = Number(record.summary?.calories) || 0;
   const basicInfoCompleteness = getBasicInfoCompleteness(record);
   const updatedAtTs = getDateTimestamp(record.updatedAt);
   const createdAtTs = getDateTimestamp(record.createdAt);
@@ -721,7 +720,6 @@ function scoreFeedingRecord(record = {}) {
   return (
     feedingsCount * 1000000 +
     intakesCount * 1000000 +
-    summaryCalories * 100 +
     basicInfoCompleteness * 10 +
     Math.max(updatedAtTs, createdAtTs, dateTs) / 1000000000000
   );

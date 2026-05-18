@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   buildDataRecordsSummaryPreview
@@ -228,4 +230,13 @@ test('buildDataRecordsSummaryPreview shows food special protein under special pr
 
   assert.equal(preview.nutritionStrip[1].source, '特奶 2.80g · 食物 1.30g');
   assert.equal(preview.nutritionStrip[1].detail, '0.3 g/kg/d');
+});
+
+test('data records does not rank feeding records by persisted summary calories', () => {
+  const source = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pages/data-records/index.js'),
+    'utf8'
+  );
+
+  assert.doesNotMatch(source, /summaryCalories/);
 });
