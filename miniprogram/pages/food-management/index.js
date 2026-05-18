@@ -17,6 +17,8 @@ const DEFAULT_CATEGORY_SUGGESTIONS = [
   '油脂及调味品'
 ];
 const NUTRITION_NUMBER_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'];
+const PREMIUM_PROTEIN_CATEGORY_KEYWORDS = ['肉', '禽', '鱼', '虾', '蟹', '贝', '水产', '蛋', '乳', '奶', '豆'];
+const REGULAR_PROTEIN_CATEGORY_KEYWORDS = ['主食', '谷', '薯', '蔬菜', '水果', '辅食', '零食', '饮品', '甜品'];
 
 function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
@@ -57,7 +59,7 @@ const createEmptyFormData = (category = '', unit = '') => ({
   fat: '',
   fiber: '',
   sodium: '',
-  proteinTypeIndex: 0
+  proteinTypeIndex: -1
 });
 
 const app = getApp();
@@ -92,6 +94,8 @@ Page({
     unitSuggestions: [...DEFAULT_UNIT_SUGGESTIONS],
     customUnitInput: '',
     showUnitCreator: false,
+    proteinTypeTouched: false,
+    proteinTypeRecommendationText: '',
     babyUid: '',
     editingFoodId: '',
     editingFoodName: '',
@@ -407,7 +411,45 @@ Page({
   },
 
   getProteinTypeOption(index) {
-    return this.data.proteinTypeOptions?.[index] || this.data.proteinTypeOptions[0];
+    const option = this.data.proteinTypeOptions?.[index];
+    return option || null;
+  },
+
+  getProteinTypeOptionIndex(value, quality) {
+    return (this.data.proteinTypeOptions || []).findIndex(
+      opt => opt.value === value && opt.quality === quality
+    );
+  },
+
+  inferProteinTypeIndexByCategory(category = '') {
+    const normalizedCategory = this.normalizeCategoryValue(category);
+    const lower = normalizedCategory.toLowerCase();
+    if (lower.includes('特殊') || lower.includes('特奶')) {
+      const specialIndex = this.getProteinTypeOptionIndex('special', '');
+      return specialIndex >= 0 ? specialIndex : -1;
+    }
+    if (PREMIUM_PROTEIN_CATEGORY_KEYWORDS.some(keyword => normalizedCategory.includes(keyword))) {
+      const premiumIndex = this.getProteinTypeOptionIndex('natural', 'premium');
+      return premiumIndex >= 0 ? premiumIndex : -1;
+    }
+    if (REGULAR_PROTEIN_CATEGORY_KEYWORDS.some(keyword => normalizedCategory.includes(keyword))) {
+      const regularIndex = this.getProteinTypeOptionIndex('natural', 'regular');
+      return regularIndex >= 0 ? regularIndex : -1;
+    }
+    return -1;
+  },
+
+  applyProteinTypeRecommendation(category = '') {
+    if (this.data.proteinTypeTouched) {
+      this.setData({ proteinTypeRecommendationText: '' });
+      return;
+    }
+    const index = this.inferProteinTypeIndexByCategory(category);
+    const option = this.getProteinTypeOption(index);
+    this.setData({
+      'formData.proteinTypeIndex': index,
+      proteinTypeRecommendationText: option ? `已根据分类推荐：${option.label}` : ''
+    });
   },
 
   buildNutritionPayload(formData) {
@@ -471,7 +513,7 @@ Page({
       fat: nutrition.fat != null ? String(nutrition.fat) : '',
       fiber: nutrition.fiber != null ? String(nutrition.fiber) : '',
       sodium: nutrition.sodium != null ? String(nutrition.sodium) : '',
-      proteinTypeIndex: typeIndex >= 0 ? typeIndex : 0
+      proteinTypeIndex: typeIndex >= 0 ? typeIndex : -1
     };
   },
 
@@ -496,6 +538,8 @@ Page({
       editingFoodName: '',
       categoryPickerIndex: 0,
       unitPickerIndex: 0,
+      proteinTypeTouched: false,
+      proteinTypeRecommendationText: '',
       formData: createEmptyFormData('', '')
     });
   },
@@ -527,6 +571,8 @@ Page({
       showUnitCreator: false,
       categoryPickerIndex: this.getCategoryPickerIndex(formData.category),
       unitPickerIndex: this.getUnitPickerIndex(formData.unit),
+      proteinTypeTouched: true,
+      proteinTypeRecommendationText: '',
       formData
     });
   },
@@ -545,6 +591,8 @@ Page({
       showUnitCreator: false,
       categoryPickerIndex: 0,
       unitPickerIndex: 0,
+      proteinTypeTouched: false,
+      proteinTypeRecommendationText: '',
       formData: createEmptyFormData('', '')
     });
   },
@@ -679,6 +727,8 @@ Page({
     this.setData({
       categoryPickerIndex: index,
       'formData.category': value ? this.normalizeCategoryValue(value) : ''
+    }, () => {
+      this.applyProteinTypeRecommendation(this.data.formData.category);
     });
   },
 
@@ -765,6 +815,8 @@ Page({
         showCategoryCreator: false,
         categoryPickerIndex: this.getCategoryPickerIndex(normalizedValue),
         'formData.category': normalizedValue
+      }, () => {
+        this.applyProteinTypeRecommendation(normalizedValue);
       });
       return;
     }
@@ -795,6 +847,8 @@ Page({
       showCategoryCreator: false,
       categoryPickerIndex: this.getCategoryPickerIndex(normalizedValue),
       'formData.category': normalizedValue
+    }, () => {
+      this.applyProteinTypeRecommendation(normalizedValue);
     });
 
     wx.showToast({ title: '分类已添加', icon: 'success' });
@@ -802,7 +856,9 @@ Page({
 
   onProteinTypeChange(e) {
     this.setData({
-      'formData.proteinTypeIndex': Number(e.detail.value)
+      'formData.proteinTypeIndex': Number(e.detail.value),
+      proteinTypeTouched: true,
+      proteinTypeRecommendationText: ''
     });
   },
 
@@ -818,6 +874,10 @@ Page({
     }
     if (!formData.unit.trim()) {
       wx.showToast({ title: '请填写单位', icon: 'none' });
+      return false;
+    }
+    if (!this.getProteinTypeOption(formData.proteinTypeIndex)) {
+      wx.showToast({ title: '请选择蛋白来源，会影响蛋白占比统计', icon: 'none' });
       return false;
     }
 

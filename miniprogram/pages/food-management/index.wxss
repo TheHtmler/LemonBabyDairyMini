@@ -469,6 +469,14 @@
   color: #9b8b6d;
 }
 
+.protein-source-hint {
+  color: #c47b00;
+}
+
+.protein-source-hint.warning {
+  color: #d86b2a;
+}
+
 .input,
 .picker-display {
   width: 100%;

@@ -256,6 +256,19 @@
           </view>
 
           <view class="form-item">
+            <text class="form-label">蛋白来源</text>
+            <view class="form-control form-control-stack">
+              <picker class="picker" mode="selector" range="{{proteinTypeOptions}}" range-key="label" value="{{formData.proteinTypeIndex >= 0 ? formData.proteinTypeIndex : 0}}" bindchange="onProteinTypeChange">
+                <view class="picker-display {{formData.proteinTypeIndex >= 0 ? '' : 'placeholder'}}">
+                  {{formData.proteinTypeIndex >= 0 ? proteinTypeOptions[formData.proteinTypeIndex].label : '请选择蛋白来源'}}
+                </view>
+              </picker>
+              <text class="field-hint protein-source-hint" wx:if="{{proteinTypeRecommendationText}}">{{proteinTypeRecommendationText}}</text>
+              <text class="field-hint protein-source-hint warning" wx:else>会影响天然/特殊蛋白和优质蛋白占比统计</text>
+            </view>
+          </view>
+
+          <view class="form-item">
             <text class="form-label">脂肪 (g)</text>
             <view class="form-control">
               <input class="input" type="digit" placeholder="必填" value="{{formData.fat}}" data-field="fat" bindinput="onInputChange" />
@@ -273,7 +286,7 @@
         <view class="form-section">
           <view class="form-section-header">
             <text class="form-section-title">扩展信息</text>
-            <text class="form-section-subtitle">可补充图片、膳食纤维、钠和蛋白来源</text>
+            <text class="form-section-subtitle">可补充图片、膳食纤维和钠</text>
           </view>
 
           <view class="form-item">
@@ -311,16 +324,6 @@
             </view>
           </view>
 
-          <view class="form-item">
-            <text class="form-label">蛋白来源</text>
-            <view class="form-control">
-              <picker class="picker" mode="selector" range="{{proteinTypeOptions}}" range-key="label" value="{{formData.proteinTypeIndex}}" bindchange="onProteinTypeChange">
-                <view class="picker-display">
-                  {{proteinTypeOptions[formData.proteinTypeIndex].label}}
-                </view>
-              </picker>
-            </view>
-          </view>
         </view>
       </view>
       <view class="modal-footer">
