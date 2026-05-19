@@ -15,6 +15,7 @@
     "pages/share-data/index",
     "pages/baby-info/index",
     "pages/nutrition-settings/index",
+    "pages/nutrition-profile-settings/index",
     "pages/food-management/index",
     "pages/medications/index",
     "pages/feedback/index",

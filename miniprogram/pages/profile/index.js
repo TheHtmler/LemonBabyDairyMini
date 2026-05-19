@@ -25,6 +25,13 @@ Page({
         path: '/pages/nutrition-settings/index'
       },
       {
+        id: 17,
+        name: '配奶管理v2',
+        icon: 'setting',
+        path: '/pages/nutrition-profile-settings/index',
+        description: '新版配方粉档案，支持多种普奶、特奶和能量补充粉'
+      },
+      {
         id: 9,
         name: '食物管理',
         icon: 'add',

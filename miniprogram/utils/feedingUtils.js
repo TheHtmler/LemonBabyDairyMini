@@ -2,6 +2,10 @@
  * 喂养相关工具函数
  * 用于处理喂养记录、计算特奶量等功能
  */
+const {
+  calculatePowderNutrition,
+  createFormulaComponentsFromLegacyFeeding
+} = require('./formulaPowderUtils');
 
 // 通用工具函数
 const utils = {
@@ -141,6 +145,19 @@ const calculator = {
   },
 
   getTotalVolume(feeding = {}) {
+    if (Array.isArray(feeding.formulaComponents) && feeding.formulaComponents.length > 0) {
+      const componentTotal = feeding.formulaComponents.reduce((total, component) => {
+        if (component.kind === 'breast_milk') {
+          return total + (Number.parseFloat(component.volume) || 0);
+        }
+        if (component.kind === 'formula_powder') {
+          return total + (Number.parseFloat(component.waterVolume) || 0);
+        }
+        return total;
+      }, 0);
+      return this.roundValue(componentTotal, 2);
+    }
+
     const hasNaturalMilkVolume = hasValue(feeding.naturalMilkVolume);
     const hasSpecialMilkVolume = hasValue(feeding.specialMilkVolume);
 
@@ -194,6 +211,101 @@ const calculator = {
     }
 
     return this.calculatePowderFromWater(naturalMilkVolume, calculation_params.formula_milk_ratio || {});
+  },
+
+  getFormulaComponents(feeding = {}, calculation_params = {}) {
+    if (Array.isArray(feeding.formulaComponents) && feeding.formulaComponents.length > 0) {
+      return feeding.formulaComponents;
+    }
+
+    return createFormulaComponentsFromLegacyFeeding(feeding, calculation_params);
+  },
+
+  createEmptyMilkNutritionSummary() {
+    return {
+      totalVolume: 0,
+      totalPowderWeight: 0,
+      protein: 0,
+      naturalProtein: 0,
+      specialProtein: 0,
+      calories: 0,
+      fat: 0,
+      carbs: 0,
+      fiber: 0,
+      zeroProteinCalories: 0
+    };
+  },
+
+  addMilkNutrition(target, source) {
+    Object.keys(target).forEach((key) => {
+      target[key] += Number(source[key]) || 0;
+    });
+  },
+
+  calculateBreastMilkComponentNutrition(component = {}, calculation_params = {}) {
+    const volume = Number.parseFloat(component.volume);
+    const volumeValue = Number.isFinite(volume) ? volume : 0;
+    const factor = volumeValue / 100;
+    const protein = (Number.parseFloat(calculation_params.natural_milk_protein) || 0) * factor;
+    const summary = this.createEmptyMilkNutritionSummary();
+
+    summary.totalVolume = volumeValue;
+    summary.protein = protein;
+    summary.naturalProtein = protein;
+    summary.calories = (Number.parseFloat(calculation_params.natural_milk_calories) || 0) * factor;
+    summary.fat = (Number.parseFloat(calculation_params.natural_milk_fat) || 0) * factor;
+    summary.carbs = (Number.parseFloat(calculation_params.natural_milk_carbs) || 0) * factor;
+    summary.fiber = (Number.parseFloat(calculation_params.natural_milk_fiber) || 0) * factor;
+
+    return summary;
+  },
+
+  calculateFormulaComponentNutrition(component = {}) {
+    if (component.kind !== 'formula_powder') {
+      return this.createEmptyMilkNutritionSummary();
+    }
+
+    const powderNutrition = calculatePowderNutrition(
+      {
+        proteinRole: component.proteinRole,
+        nutritionPer100g: component.nutritionSnapshot || {}
+      },
+      component.powderWeight
+    );
+
+    return {
+      ...powderNutrition,
+      totalVolume: Number.parseFloat(component.waterVolume) || 0
+    };
+  },
+
+  calculateFeedingMilkNutrition(feeding = {}, calculation_params = {}) {
+    const summary = this.createEmptyMilkNutritionSummary();
+    const components = this.getFormulaComponents(feeding, calculation_params);
+
+    components.forEach((component) => {
+      if (component.kind === 'breast_milk') {
+        this.addMilkNutrition(summary, this.calculateBreastMilkComponentNutrition(component, calculation_params));
+        return;
+      }
+
+      if (component.kind === 'formula_powder') {
+        this.addMilkNutrition(summary, this.calculateFormulaComponentNutrition(component));
+      }
+    });
+
+    return {
+      totalVolume: this.roundValue(summary.totalVolume, 2),
+      totalPowderWeight: this.roundValue(summary.totalPowderWeight, 2),
+      protein: this.roundValue(summary.protein, 2),
+      naturalProtein: this.roundValue(summary.naturalProtein, 2),
+      specialProtein: this.roundValue(summary.specialProtein, 2),
+      calories: this.roundValue(summary.calories, 2),
+      fat: this.roundValue(summary.fat, 2),
+      carbs: this.roundValue(summary.carbs, 2),
+      fiber: this.roundValue(summary.fiber, 2),
+      zeroProteinCalories: this.roundValue(summary.zeroProteinCalories, 2)
+    };
   },
 
   // 计算每餐建议奶量

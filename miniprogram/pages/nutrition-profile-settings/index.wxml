@@ -1,0 +1,216 @@
+<view class="container">
+  <view class="header">
+    <text class="title">配奶管理v2</text>
+    <text class="subtitle">维护母乳参数和配方粉档案</text>
+  </view>
+
+  <view class="tabs">
+    <view class="tab-item {{activeView === 'mother' ? 'active' : ''}}" bindtap="showMotherSettings">
+      <text class="tab-text">母乳</text>
+    </view>
+    <view class="tab-item {{activeView === 'powders' ? 'active' : ''}}" bindtap="showPowderList">
+      <text class="tab-text">配方粉</text>
+    </view>
+  </view>
+
+  <view class="tab-panel" wx:if="{{activeView === 'mother'}}">
+    <view class="form-group settings-card">
+      <view class="card-title-row">
+        <view>
+          <text class="card-title">母乳参数</text>
+          <text class="card-desc">设置母乳每 100ml 的营养参数，用于天然蛋白和热量计算</text>
+        </view>
+      </view>
+      <view class="form-row">
+        <text class="label">母乳蛋白质浓度 (g/100ml)</text>
+        <input type="digit" value="{{inputValues.natural_milk_protein}}" data-field="natural_milk_protein" bindinput="onMotherInput" />
+      </view>
+      <view class="form-row">
+        <text class="label">母乳脂肪 (g/100ml)</text>
+        <input type="digit" value="{{inputValues.natural_milk_fat}}" data-field="natural_milk_fat" bindinput="onMotherInput" />
+      </view>
+      <view class="form-row">
+        <text class="label">母乳碳水 (g/100ml)</text>
+        <input type="digit" value="{{inputValues.natural_milk_carbs}}" data-field="natural_milk_carbs" bindinput="onMotherInput" />
+      </view>
+      <view class="form-row">
+        <text class="label">母乳膳食纤维 (g/100ml)</text>
+        <input type="digit" value="{{inputValues.natural_milk_fiber}}" data-field="natural_milk_fiber" bindinput="onMotherInput" />
+      </view>
+      <view class="form-row">
+        <text class="label">母乳热量 (kcal/100ml)</text>
+        <input type="digit" value="{{inputValues.natural_milk_calories}}" data-field="natural_milk_calories" bindinput="onMotherInput" />
+      </view>
+    </view>
+  </view>
+
+  <view class="tab-panel" wx:if="{{activeView === 'powders'}}">
+    <view class="form-group settings-card">
+      <view class="card-title-row">
+        <view>
+          <text class="card-title">配方粉档案</text>
+          <text class="card-desc">全部档案直接展示，用标签区分普通配方粉、特殊配方粉和能量补充粉。</text>
+        </view>
+        <view class="powder-tools">
+          <button class="secondary-btn" bindtap="startAddPowder">+ 新增配方粉</button>
+        </view>
+      </view>
+    </view>
+
+    <block wx:for="{{visibleFormulaPowders}}" wx:key="id">
+      <view class="powder-card">
+        <view class="powder-header">
+          <view class="powder-info">
+            <view class="powder-title-block">
+              <text class="powder-name">{{item.name}}</text>
+              <text class="powder-tags">{{item.categoryLabel}} · {{item.proteinRoleLabel}}</text>
+            </view>
+          </view>
+          <view class="powder-action-cluster">
+            <view class="icon-btn" catchtap="startEditPowder" data-id="{{item.id}}">
+              <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+            </view>
+            <view class="icon-btn danger" catchtap="deletePowder" data-id="{{item.id}}">
+              <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+            </view>
+          </view>
+        </view>
+        <view class="powder-metrics">
+          <view class="metric-grid">
+            <view class="metric-item">
+              <text class="preview-label">蛋白</text>
+              <text class="preview-value">{{item.nutritionPer100g.protein}} g/100g</text>
+            </view>
+            <view class="metric-item">
+              <text class="preview-label">热量</text>
+              <text class="preview-value">{{item.nutritionPer100g.calories}} kcal/100g</text>
+            </view>
+            <view class="metric-item">
+              <text class="preview-label">脂肪</text>
+              <text class="preview-value">{{item.nutritionPer100g.fat}} g/100g</text>
+            </view>
+            <view class="metric-item">
+              <text class="preview-label">碳水</text>
+              <text class="preview-value">{{item.nutritionPer100g.carbs}} g/100g</text>
+            </view>
+            <view class="metric-item">
+              <text class="preview-label">纤维</text>
+              <text class="preview-value">{{item.nutritionPer100g.fiber}} g/100g</text>
+            </view>
+            <view class="metric-item">
+              <text class="preview-label">冲配比</text>
+              <text class="preview-value">{{item.mixRatio.powder}}g : {{item.mixRatio.water}}ml</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="button-group bottom-actions" wx:if="{{activeView === 'mother'}}">
+    <button class="save-all-btn" bindtap="onSaveSettings">保存设置</button>
+  </view>
+
+  <view class="powder-modal" wx:if="{{showPowderModal}}">
+    <view class="modal-mask" catchtap="cancelPowderDraft"></view>
+    <view class="modal-panel">
+      <view class="modal-header">
+        <view>
+          <text class="modal-title">{{powderDraft.id ? '编辑配方粉' : '新增配方粉'}}</text>
+          <text class="modal-desc">选择粉类后会自动匹配蛋白角色</text>
+        </view>
+      </view>
+
+      <form bindsubmit="savePowderDraft">
+        <scroll-view class="modal-body" scroll-y="true">
+          <view class="form-row">
+            <view class="field-label">
+              <text class="label-text">粉类</text>
+              <text class="required-star">*</text>
+            </view>
+            <picker mode="selector" range="{{powderTypeOptions}}" range-key="label" value="{{powderTypeIndex}}" bindchange="onPowderTypePickerChange">
+              <view class="picker-field">
+                <view>
+                  <text class="picker-value">{{powderTypeLabel}}</text>
+                  <text class="picker-desc">{{powderTypeDesc}}</text>
+                </view>
+                <text class="picker-arrow">›</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="form-row">
+            <view class="field-label">
+              <text class="label-text">名称</text>
+              <text class="required-star">*</text>
+            </view>
+            <input name="name" value="{{powderDraft.name}}" placeholder="例如 普奶A / 特奶 / 无蛋白能量粉" placeholder-class="input-placeholder" />
+          </view>
+
+          <view class="form-section-title">营养参数</view>
+          <view class="dual-form-row">
+            <view>
+              <view class="field-label">
+                <text class="label-text">蛋白 g/100g</text>
+                <text class="required-star">*</text>
+              </view>
+              <input type="digit" name="protein" value="{{powderDraft.nutritionPer100g.protein}}" placeholder="例如 10.6" placeholder-class="input-placeholder" />
+            </view>
+            <view>
+              <view class="field-label">
+                <text class="label-text">热量 kcal/100g</text>
+                <text class="required-star">*</text>
+              </view>
+              <input type="digit" name="calories" value="{{powderDraft.nutritionPer100g.calories}}" placeholder="例如 505" placeholder-class="input-placeholder" />
+            </view>
+          </view>
+          <view class="dual-form-row">
+            <view>
+              <view class="field-label">
+                <text class="label-text">脂肪 g/100g</text>
+                <text class="required-star">*</text>
+              </view>
+              <input type="digit" name="fat" value="{{powderDraft.nutritionPer100g.fat}}" placeholder="例如 26" placeholder-class="input-placeholder" />
+            </view>
+            <view>
+              <view class="field-label">
+                <text class="label-text">碳水 g/100g</text>
+                <text class="required-star">*</text>
+              </view>
+              <input type="digit" name="carbs" value="{{powderDraft.nutritionPer100g.carbs}}" placeholder="例如 55" placeholder-class="input-placeholder" />
+            </view>
+          </view>
+          <view class="form-row">
+            <view class="field-label">
+              <text class="label-text">膳食纤维 g/100g</text>
+            </view>
+            <input type="digit" name="fiber" value="{{powderDraft.nutritionPer100g.fiber}}" placeholder="例如 0" placeholder-class="input-placeholder" />
+          </view>
+
+          <view class="form-section-title">冲配比</view>
+          <view class="dual-form-row">
+            <view>
+              <view class="field-label">
+                <text class="label-text">冲配比粉量 g</text>
+                <text class="required-star">*</text>
+              </view>
+              <input type="digit" name="ratioPowder" value="{{powderDraft.mixRatio.powder}}" placeholder="例如 4.5" placeholder-class="input-placeholder" />
+            </view>
+            <view>
+              <view class="field-label">
+                <text class="label-text">冲配比水量 ml</text>
+                <text class="required-star">*</text>
+              </view>
+              <input type="digit" name="ratioWater" value="{{powderDraft.mixRatio.water}}" placeholder="例如 30" placeholder-class="input-placeholder" />
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="modal-footer">
+          <button class="secondary-btn cancel-btn" catchtap="cancelPowderDraft">取消</button>
+          <button class="confirm-btn" form-type="submit">{{powderDraft.id ? '保存修改' : '添加配方粉'}}</button>
+        </view>
+      </form>
+    </view>
+  </view>
+</view>
