@@ -338,7 +338,9 @@ test('getNutritionProfileSettings falls back to legacy settings before migration
   });
   const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
 
-  const settings = await MilkNutritionProfileModel.getNutritionProfileSettings('baby-1');
+  const settings = await MilkNutritionProfileModel.getNutritionProfileSettings('baby-1', {
+    includeLegacyFallback: true
+  });
 
   assert.equal(settings.natural_milk_protein, 1.1);
   assert.equal(settings.formula_milk_protein, 10.6);
@@ -346,6 +348,35 @@ test('getNutritionProfileSettings falls back to legacy settings before migration
   assert.equal(settings.formulaPowders[0].id, 'legacy_regular_formula');
   assert.equal(writes.profileAdd, null);
   assert.equal(writes.profileUpdate, null);
+});
+
+test('getNutritionProfileSettings can disable legacy fallback for isolated v2 pages', async () => {
+  const { db } = createDbMock({
+    profileData: [],
+    babyInfoData: [
+      {
+        _id: 'baby-doc-1',
+        babyUid: 'baby-1',
+        nutritionSettings: {
+          natural_milk_protein: '1.1'
+        }
+      }
+    ],
+    compatData: [
+      {
+        _id: 'compat-doc-1',
+        babyUid: 'baby-1',
+        formula_milk_protein: '10.6'
+      }
+    ]
+  });
+  const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
+
+  const settings = await MilkNutritionProfileModel.getNutritionProfileSettings('baby-1', {
+    includeLegacyFallback: false
+  });
+
+  assert.equal(settings, null);
 });
 
 test('NutritionModel.getNutritionSettings prefers milk_nutrition_profiles and returns compatible settings', async () => {

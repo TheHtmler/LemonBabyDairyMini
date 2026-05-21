@@ -165,7 +165,9 @@ class NutritionModel {
    */
   async getNutritionSettings(babyUid) {
     try {
-      const profileSettings = await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid);
+      const profileSettings = await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid, {
+        includeLegacyFallback: true
+      });
       if (profileSettings) {
         return this.normalizeSettings(profileSettings);
       }

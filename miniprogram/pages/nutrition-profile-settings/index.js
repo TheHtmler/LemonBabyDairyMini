@@ -4,16 +4,13 @@ const NutritionModel = require('../../models/nutrition');
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
 const {
   POWDER_CATEGORIES,
+  POWDER_CATEGORY_META,
   POWDER_STATUSES,
   PROTEIN_ROLES,
-  normalizeFormulaPowders
+  buildCategoryBadgeStyle,
+  normalizeFormulaPowders,
+  sortFormulaPowdersByCategory
 } = require('../../utils/formulaPowderUtils');
-
-const CATEGORY_LABELS = {
-  [POWDER_CATEGORIES.REGULAR_FORMULA]: '普通配方粉',
-  [POWDER_CATEGORIES.SPECIAL_FORMULA]: '特殊配方粉',
-  [POWDER_CATEGORIES.ENERGY_SUPPLEMENT]: '能量补充粉'
-};
 
 const ROLE_LABELS = {
   [PROTEIN_ROLES.NATURAL]: '天然蛋白',
@@ -23,17 +20,17 @@ const ROLE_LABELS = {
 const POWDER_TYPE_OPTIONS = [
   {
     value: POWDER_CATEGORIES.REGULAR_FORMULA,
-    label: '普通配方粉',
+    label: POWDER_CATEGORY_META[POWDER_CATEGORIES.REGULAR_FORMULA].label,
     desc: '默认按天然蛋白计算'
   },
   {
     value: POWDER_CATEGORIES.SPECIAL_FORMULA,
-    label: '特殊配方粉',
+    label: POWDER_CATEGORY_META[POWDER_CATEGORIES.SPECIAL_FORMULA].label,
     desc: '默认按特殊蛋白计算'
   },
   {
     value: POWDER_CATEGORIES.ENERGY_SUPPLEMENT,
-    label: '能量补充粉',
+    label: POWDER_CATEGORY_META[POWDER_CATEGORIES.ENERGY_SUPPLEMENT].label,
     desc: '无蛋白，计入热量'
   }
 ];
@@ -146,7 +143,9 @@ Page({
         return;
       }
 
-      const settings = await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid);
+      const settings = await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid, {
+        includeLegacyFallback: false
+      });
       this.applySettings({
         ...defaultSettings,
         ...(settings || {}),
@@ -174,16 +173,30 @@ Page({
     this.setData({
       settings,
       inputValues: clone(settings),
-      visibleFormulaPowders: settings.formulaPowders.filter((powder) => powder.status === POWDER_STATUSES.ACTIVE)
+      visibleFormulaPowders: sortFormulaPowdersByCategory(
+        settings.formulaPowders.filter((powder) => powder.status === POWDER_STATUSES.ACTIVE)
+      )
     });
   },
 
   enrichSettings(settings) {
-    const powders = normalizeFormulaPowders(settings.formulaPowders || []).map((powder) => ({
-      ...powder,
-      categoryLabel: CATEGORY_LABELS[powder.category] || '配方粉',
-      proteinRoleLabel: ROLE_LABELS[powder.proteinRole] || '天然蛋白'
-    }));
+    const powders = normalizeFormulaPowders(settings.formulaPowders || []).map((powder) => {
+      const categoryMeta = POWDER_CATEGORY_META[powder.category] || {
+        label: '配方粉',
+        shortLabel: '粉',
+        badgeClass: 'regular',
+        colors: {}
+      };
+
+      return {
+        ...powder,
+        categoryLabel: categoryMeta.label,
+        categoryShortLabel: categoryMeta.shortLabel,
+        categoryBadgeClass: categoryMeta.badgeClass,
+        categoryBadgeStyle: buildCategoryBadgeStyle(categoryMeta),
+        proteinRoleLabel: ROLE_LABELS[powder.proteinRole] || '天然蛋白'
+      };
+    });
     return {
       ...settings,
       formulaPowders: powders
@@ -192,7 +205,9 @@ Page({
 
   refreshVisibleFormulaPowders(powders = []) {
     this.setData({
-      visibleFormulaPowders: powders.filter((powder) => powder.status === POWDER_STATUSES.ACTIVE)
+      visibleFormulaPowders: sortFormulaPowdersByCategory(
+        powders.filter((powder) => powder.status === POWDER_STATUSES.ACTIVE)
+      )
     });
   },
 
@@ -349,8 +364,8 @@ Page({
     if (!powder) return;
 
     const modalRes = await wx.showModal({
-      title: '确认删除配方粉',
-      content: `删除「${powder.name}」后，该配方粉将不再出现在后续喂奶选择中。已保存的历史喂养记录不会被删除；如果旧记录没有营养快照，后续回算可能不再使用这份配置。`,
+      title: '删除这个配方粉？',
+      content: `删除「${powder.name}」后，以后记录喂奶时，就不能再选择它了。以前已经保存的喂奶记录还会保留。`,
       confirmText: '删除',
       confirmColor: '#E65A4F',
       cancelText: '取消'

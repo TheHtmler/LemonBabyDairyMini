@@ -1,8 +1,24 @@
+const MILK_CATEGORY_TAG_CONFIG = require('../config/milkCategoryTags');
+
 const POWDER_CATEGORIES = {
   REGULAR_FORMULA: 'regular_formula',
   SPECIAL_FORMULA: 'special_formula',
   ENERGY_SUPPLEMENT: 'energy_supplement'
 };
+
+const POWDER_CATEGORY_META = {
+  [POWDER_CATEGORIES.REGULAR_FORMULA]: MILK_CATEGORY_TAG_CONFIG[POWDER_CATEGORIES.REGULAR_FORMULA],
+  [POWDER_CATEGORIES.SPECIAL_FORMULA]: MILK_CATEGORY_TAG_CONFIG[POWDER_CATEGORIES.SPECIAL_FORMULA],
+  [POWDER_CATEGORIES.ENERGY_SUPPLEMENT]: MILK_CATEGORY_TAG_CONFIG[POWDER_CATEGORIES.ENERGY_SUPPLEMENT]
+};
+
+const POWDER_CATEGORY_ORDER = [
+  POWDER_CATEGORIES.REGULAR_FORMULA,
+  POWDER_CATEGORIES.SPECIAL_FORMULA,
+  POWDER_CATEGORIES.ENERGY_SUPPLEMENT
+];
+
+const BREAST_MILK_TAG_META = MILK_CATEGORY_TAG_CONFIG.breast_milk;
 
 const PROTEIN_ROLES = {
   NATURAL: 'natural',
@@ -18,6 +34,27 @@ const POWDER_STATUSES = {
 function toNumber(value, fallback = 0) {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
+}
+
+function buildCategoryBadgeStyle(meta = {}) {
+  const colors = meta.colors || {};
+  const background = colors.background || '#F5F5F5';
+  const text = colors.text || '#666666';
+  const border = colors.border || 'transparent';
+  return `background: ${background}; color: ${text}; border-color: ${border};`;
+}
+
+function sortFormulaPowdersByCategory(powders = []) {
+  const categoryOrder = POWDER_CATEGORY_ORDER.reduce((acc, category, index) => {
+    acc[category] = index;
+    return acc;
+  }, {});
+
+  return [...(powders || [])].sort((left, right) => {
+    const leftOrder = categoryOrder[left.category] ?? POWDER_CATEGORY_ORDER.length;
+    const rightOrder = categoryOrder[right.category] ?? POWDER_CATEGORY_ORDER.length;
+    return leftOrder - rightOrder;
+  });
 }
 
 function roundValue(value, precision = 2) {
@@ -404,8 +441,14 @@ function createFormulaComponentsFromLegacyFeeding(feeding = {}, calculationParam
 
 module.exports = {
   POWDER_CATEGORIES,
+  POWDER_CATEGORY_META,
+  POWDER_CATEGORY_ORDER,
+  BREAST_MILK_TAG_META,
+  MILK_CATEGORY_TAG_CONFIG,
   PROTEIN_ROLES,
   POWDER_STATUSES,
+  buildCategoryBadgeStyle,
+  sortFormulaPowdersByCategory,
   normalizeFormulaPowders,
   createLegacyFormulaPowders,
   normalizeMixingPlans,

@@ -32,6 +32,20 @@ Page({
         description: '新版配方粉档案，支持多种普奶、特奶和能量补充粉'
       },
       {
+        id: 18,
+        name: '喂奶记录v2',
+        icon: 'nutrition',
+        path: '/pages/milk-feeding-editor-v2/index',
+        description: '新版独立喂奶入口，支持母乳和多配方粉组件'
+      },
+      {
+        id: 19,
+        name: '数据记录v2',
+        icon: 'nutrition',
+        path: '/pages/data-records-v2/index',
+        description: '新版数据记录，查看 v2 喂奶数据'
+      },
+      {
         id: 9,
         name: '食物管理',
         icon: 'add',

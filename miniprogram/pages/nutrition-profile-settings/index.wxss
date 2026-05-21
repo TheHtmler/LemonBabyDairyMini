@@ -124,6 +124,13 @@ button::after {
   max-width: 100%;
 }
 
+.powder-name-row {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  margin-bottom: 8rpx;
+}
+
 .card-title-row,
 .powder-header {
   display: flex;
@@ -137,11 +144,33 @@ button::after {
   font-weight: bold;
   color: #333;
   display: block;
-  margin-bottom: 8rpx;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.card-title {
+  margin-bottom: 8rpx;
+}
+
+.powder-name {
+  min-width: 0;
+}
+
+.category-badge {
+  flex: 0 0 auto;
+  min-width: 34rpx;
+  height: 34rpx;
+  line-height: 34rpx;
+  margin-left: 10rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid transparent;
+  box-sizing: border-box;
+  font-size: 20rpx;
+  font-weight: 700;
+  text-align: center;
 }
 
 .card-desc {

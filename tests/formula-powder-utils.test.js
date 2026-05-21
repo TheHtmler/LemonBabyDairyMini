@@ -7,7 +7,11 @@ const {
   normalizeMixingPlans,
   calculatePowderNutrition,
   calculateMixingPlanPreview,
-  createFormulaComponentsFromLegacyFeeding
+  createFormulaComponentsFromLegacyFeeding,
+  POWDER_CATEGORY_META,
+  BREAST_MILK_TAG_META,
+  MILK_CATEGORY_TAG_CONFIG,
+  buildCategoryBadgeStyle
 } = require('../miniprogram/utils/formulaPowderUtils');
 
 test('createLegacyFormulaPowders converts legacy regular and special milk settings into powder profiles', () => {
@@ -82,6 +86,41 @@ test('normalizeFormulaPowders keeps energy supplement as zero-protein calorie po
   assert.equal(profiles[0].nutritionPer100g.protein, 0);
   assert.equal(profiles[0].nutritionPer100g.calories, 400);
   assert.deepEqual(profiles[0].mixRatio, { powder: 3, water: 20 });
+});
+
+test('POWDER_CATEGORY_META exposes reusable short labels for category badges', () => {
+  assert.deepEqual(
+    {
+      regular: POWDER_CATEGORY_META.regular_formula.shortLabel,
+      special: POWDER_CATEGORY_META.special_formula.shortLabel,
+      energy: POWDER_CATEGORY_META.energy_supplement.shortLabel
+    },
+    {
+      regular: '普',
+      special: '特',
+      energy: '能'
+    }
+  );
+  assert.equal(POWDER_CATEGORY_META.regular_formula.badgeClass, 'regular');
+  assert.equal(POWDER_CATEGORY_META.special_formula.badgeClass, 'special');
+  assert.equal(POWDER_CATEGORY_META.energy_supplement.badgeClass, 'energy');
+  assert.equal(BREAST_MILK_TAG_META.shortLabel, '母');
+  assert.deepEqual(
+    Object.keys(MILK_CATEGORY_TAG_CONFIG),
+    ['breast_milk', 'regular_formula', 'special_formula', 'energy_supplement']
+  );
+  assert.deepEqual(POWDER_CATEGORY_META.regular_formula.colors, MILK_CATEGORY_TAG_CONFIG.regular_formula.colors);
+  assert.equal(
+    buildCategoryBadgeStyle(POWDER_CATEGORY_META.special_formula),
+    'background: #EAF1FF; color: #4775C9; border-color: rgba(71, 117, 201, 0.24);'
+  );
+});
+
+test('milk category tag config uses a mini-program compatible js module', () => {
+  const source = require('node:fs').readFileSync('miniprogram/utils/formulaPowderUtils.js', 'utf8');
+
+  assert.match(source, /require\('\.\.\/config\/milkCategoryTags'\)/);
+  assert.doesNotMatch(source, /milkCategoryTags\.json/);
 });
 
 test('calculatePowderNutrition separates natural, special, and zero-protein calories', () => {

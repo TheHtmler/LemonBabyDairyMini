@@ -284,7 +284,7 @@
         <view class="card">
         <view class="card-title actions-only">
           <view class="card-actions">
-            <view class="copy-btn" bindtap="onCopyFeedingToDate">
+            <view class="copy-btn" wx:if="{{!isV2RecordsPage}}" bindtap="onCopyFeedingToDate">
               <text>复制数据</text>
             </view>
             <view class="add-btn" bindtap="navigateToMilkFeedingEditor">

@@ -1,0 +1,204 @@
+<view class="page v2-page">
+  <view class="section-card secondary-card info-card">
+    <view class="panel-header">
+      <view class="panel-title-wrap">
+        <text class="section-eyebrow">本次记录</text>
+        <text class="section-title">配奶录入</text>
+      </view>
+      <picker mode="time" value="{{startTime}}" bindchange="onTimeChange">
+        <view class="field-picker compact-picker">{{startTime}}</view>
+      </picker>
+    </view>
+    <view wx:if="{{recentDefaultsLoaded}}" class="recent-default-row">
+      <text class="recent-default-text">{{recentDefaultText}}</text>
+      <text class="recent-default-action" bindtap="clearRecentDefaults">清空</text>
+    </view>
+  </view>
+
+  <view class="goal-entry-card">
+    <view class="goal-entry-button">
+      <view class="goal-entry-copy">
+        <text class="goal-entry-title">查看剩余奶量</text>
+        <text class="goal-entry-desc">按 v2 今日已保存记录计算，保存后预计剩余 {{goalPreview.remainingAfter !== '' ? goalPreview.remainingAfter : '--'}} kcal</text>
+      </view>
+      <text class="goal-entry-arrow">></text>
+    </view>
+  </view>
+
+  <view class="section-card primary-card mix-card">
+    <view class="panel-header">
+      <view class="panel-title-wrap">
+        <text class="section-eyebrow">本次配奶</text>
+        <text class="section-title">这次喝什么</text>
+      </view>
+    </view>
+
+    <view class="add-milk-button" bindtap="addMilkEntry">
+      <text>+ 添加奶</text>
+    </view>
+
+    <view class="milk-entry-list-anchor">
+      <view wx:if="{{!milkEntries.length}}" class="empty-state">
+        <text>本次还没有添加奶。</text>
+      </view>
+
+      <view wx:for="{{milkEntries}}" wx:key="localId" class="milk-entry-card {{item.justAdded ? 'just-added' : ''}}">
+        <view class="milk-entry-header">
+          <view class="component-main">
+            <text wx:if="{{item.kind === 'breast_milk'}}" class="category-badge breast" style="{{breastMilkTag.badgeStyle}}">母</text>
+            <text wx:if="{{item.kind === 'breast_milk'}}" class="component-name">母乳</text>
+            <picker wx:if="{{item.kind === 'formula_powder'}}" mode="selector" range="{{formulaPowders}}" range-key="name" value="{{item.powderPickerIndex}}" data-index="{{index}}" bindchange="onMilkEntryPickerChange">
+              <view class="powder-picker-line">
+                <text wx:if="{{formulaPowders[item.powderPickerIndex]}}" class="category-badge {{formulaPowders[item.powderPickerIndex].categoryBadgeClass}}" style="{{formulaPowders[item.powderPickerIndex].categoryBadgeStyle}}">{{formulaPowders[item.powderPickerIndex].categoryShortLabel}}</text>
+                <text class="picker-text">{{formulaPowders[item.powderPickerIndex].name || item.powderSnapshot.name || '选择奶粉'}}</text>
+              </view>
+            </picker>
+          </view>
+          <text class="remove-link" data-index="{{index}}" bindtap="removeMilkEntry">删除</text>
+        </view>
+
+        <view wx:if="{{item.kind === 'breast_milk'}}" class="field-row single-input-row">
+          <view class="field-block">
+            <text class="field-label">体积</text>
+            <view class="field-input-shell primary-input-shell">
+              <input class="field-input" type="number" value="{{item.volume}}" data-index="{{index}}" bindinput="onBreastMilkEntryInput" />
+              <text class="field-unit">ml</text>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{item.kind === 'formula_powder'}}">
+          <view class="mode-row">
+            <view class="mode-segment">
+              <view class="mode-chip {{item.ratioMode === 'standard' ? 'active' : ''}}" data-index="{{index}}" data-mode="standard" bindtap="onMilkEntryRatioModeChange">标准配比</view>
+              <view class="mode-chip {{item.ratioMode === 'custom' ? 'active' : ''}}" data-index="{{index}}" data-mode="custom" bindtap="onMilkEntryRatioModeChange">自定义配比</view>
+            </view>
+          </view>
+          <view class="dual-field-group">
+            <view class="field-row dual-label-row">
+              <view class="dual-label-block"><text class="field-label">水量</text></view>
+              <view class="link-arrow-spacer"></view>
+              <view class="dual-label-block"><text class="field-label">粉重</text></view>
+            </view>
+            <view class="field-row dual-field-row dual-input-row">
+              <view class="field-input-shell primary-input-shell dual-input-shell">
+                <input class="field-input" type="number" value="{{item.waterVolume}}" data-index="{{index}}" data-field="waterVolume" bindinput="onMilkEntryInput" />
+                <text class="field-unit">ml</text>
+              </view>
+              <view class="link-arrow {{item.ratioMode === 'standard' ? '' : 'link-arrow-hidden'}}">
+                <text class="link-arrow-text">⇄</text>
+              </view>
+              <view class="field-input-shell primary-input-shell dual-input-shell">
+                <input class="field-input" type="digit" value="{{item.powderWeight}}" data-index="{{index}}" data-field="powderWeight" bindinput="onMilkEntryInput" />
+                <text class="field-unit">g</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{flyMilkAnimation.active}}" class="milk-fly-ghost" style="{{flyMilkAnimation.style}}">
+      <view class="milk-fly-content">
+        <text class="milk-fly-icon">{{flyMilkAnimation.badge}}</text>
+        <text class="milk-fly-text">{{flyMilkAnimation.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showAddMilkPanel}}" class="add-milk-dialog-mask" catchtap="cancelAddMilkPanel">
+    <view class="add-milk-dialog-panel" catchtap="noop">
+      <view class="add-milk-dialog-header">
+        <view class="panel-title-wrap">
+          <text class="section-eyebrow">添加奶</text>
+          <text class="section-title add-milk-dialog-title">选择要添加的奶</text>
+          <text class="add-milk-hint">选择后会直接加入本次配奶，再点一次可移除</text>
+        </view>
+        <text class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">关闭</text>
+      </view>
+      <view class="add-milk-options">
+        <view
+          wx:for="{{addMilkOptions}}"
+          wx:key="key"
+          class="add-milk-option {{item.selected ? 'selected' : ''}}"
+          data-key="{{item.key}}"
+          data-index="{{index}}"
+          bindtap="toggleAddMilkOption"
+        >
+          <view class="add-milk-option-source add-milk-option-source-{{index}}">
+            <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
+            <view class="add-milk-option-copy">
+              <text class="add-milk-option-title">{{item.label}}</text>
+              <text class="add-milk-option-subtitle">{{item.subLabel}}</text>
+            </view>
+          </view>
+          <text class="add-milk-check">{{item.selected ? '已选' : '选择'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card secondary-card">
+    <view class="panel-header compact-panel-header">
+      <view class="panel-title-wrap">
+        <text class="section-eyebrow">营养预览</text>
+      </view>
+    </view>
+    <view class="preview-grid preview-grid-compact">
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.totalVolume || 0}}</text>
+        <text class="preview-label">总奶量 ml</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.calories || 0}}</text>
+        <text class="preview-label">热量 kcal</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.naturalProtein || 0}}</text>
+        <text class="preview-label">天然蛋白 g</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.specialProtein || 0}}</text>
+        <text class="preview-label">特殊蛋白 g</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.zeroProteinCalories || 0}}</text>
+        <text class="preview-label">无蛋白热量 kcal</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.protein || 0}}</text>
+        <text class="preview-label">总蛋白 g</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.carbs || 0}}</text>
+        <text class="preview-label">碳水 g</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.fat || 0}}</text>
+        <text class="preview-label">脂肪 g</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.fiber || 0}}</text>
+        <text class="preview-label">膳食纤维 g</text>
+      </view>
+      <view class="preview-item compact-preview-item">
+        <text class="preview-value">{{nutritionPreview.totalPowderWeight || 0}}</text>
+        <text class="preview-label">奶粉 g</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card secondary-card notes-card">
+    <view class="panel-header compact-panel-header">
+      <view class="panel-title-wrap">
+        <text class="section-eyebrow">备注</text>
+      </view>
+    </view>
+    <textarea class="notes-input compact-notes-input" value="{{notes}}" placeholder="可选，记录这次喂奶说明" bindinput="onNotesInput" />
+  </view>
+
+  <view class="footer-bar">
+    <button class="footer-btn cancel" bindtap="onCancel">取消</button>
+    <button class="footer-btn confirm" bindtap="saveFeedingRecord">保存</button>
+  </view>
+</view>

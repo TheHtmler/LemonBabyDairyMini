@@ -27,6 +27,8 @@ const {
   buildDataRecordsSummaryPreview
 } = require('../../utils/dataRecordsSummaryPreview');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
+const FeedingRecordV2Model = require('../../models/feedingRecordV2');
+const { createDailyRecordFromV2 } = require('../../utils/dataRecordsV2Adapter');
 const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 // 通用工具
 const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
@@ -145,6 +147,21 @@ function formatTime(date = new Date()) {
 }
 
 function calculateMilkNutrition(feeding, nutritionSettings = {}) {
+  if (feeding?.isV2FeedingRecord && feeding.nutritionSummary) {
+    const summary = feeding.nutritionSummary;
+    const calories = roundCalories(Number(summary.calories) || 0);
+    return {
+      naturalProtein: roundNumber(Number(summary.naturalProtein) || 0, 2),
+      specialProtein: roundNumber(Number(summary.specialProtein) || 0, 2),
+      protein: roundNumber(Number(summary.protein) || 0, 2),
+      calories,
+      naturalCalories: calories,
+      specialCalories: 0,
+      fat: roundNumber(Number(summary.fat) || 0, 2),
+      carbs: roundNumber(Number(summary.carbs) || 0, 2)
+    };
+  }
+
   const naturalMilkVolume = parseFloat(feeding.naturalMilkVolume) || 0;
   const specialMilkVolume = feedingCalculator.getSpecialMilkVolume(feeding);
   const specialPowderWeight = feedingCalculator.getSpecialMilkPowder(feeding, nutritionSettings);
@@ -277,7 +294,31 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     group.fat += fat || 0;
   };
 
-  const milkTotals = aggregateMilkComponentTotals(feedings, nutritionSettings);
+  const v2Feedings = (feedings || []).filter(feeding => feeding?.isV2FeedingRecord && feeding.nutritionSummary);
+  v2Feedings.forEach(feeding => {
+    const nutrition = calculateMilkNutrition(feeding, nutritionSettings);
+    const milkOverview = feeding.milkOverviewSnapshot || {};
+    const normalOverview = milkOverview.normal || {};
+    const specialOverview = milkOverview.special || {};
+    const hasSnapshotOverview = !!feeding.milkOverviewSnapshot;
+    addMilkStats(overview.milk.normal, {
+      volume: hasSnapshotOverview ? Number(normalOverview.volume) || 0 : Number(feeding.naturalMilkVolume) || 0,
+      calories: hasSnapshotOverview ? Number(normalOverview.calories) || 0 : nutrition.calories || 0,
+      protein: nutrition.naturalProtein || 0,
+      carbs: hasSnapshotOverview ? Number(normalOverview.carbs) || 0 : nutrition.carbs || 0,
+      fat: hasSnapshotOverview ? Number(normalOverview.fat) || 0 : nutrition.fat || 0
+    });
+    addMilkStats(overview.milk.special, {
+      volume: hasSnapshotOverview ? Number(specialOverview.volume) || 0 : Number(feeding.specialMilkVolume) || 0,
+      calories: hasSnapshotOverview ? Number(specialOverview.calories) || 0 : 0,
+      protein: nutrition.specialProtein || 0,
+      carbs: hasSnapshotOverview ? Number(specialOverview.carbs) || 0 : 0,
+      fat: hasSnapshotOverview ? Number(specialOverview.fat) || 0 : 0
+    });
+  });
+
+  const legacyFeedings = (feedings || []).filter(feeding => !feeding?.isV2FeedingRecord);
+  const milkTotals = aggregateMilkComponentTotals(legacyFeedings, nutritionSettings);
 
   if (milkTotals.breastVolume > 0) {
     const nutrition = calculateMilkNutrition({
@@ -578,7 +619,19 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.fat += Number(nutrition.fat) || 0;
   });
 
-  const milkTotals = aggregateMilkComponentTotals(feedings, nutritionSettings);
+  const v2Feedings = (feedings || []).filter(feeding => feeding?.isV2FeedingRecord && feeding.nutritionSummary);
+  v2Feedings.forEach(feeding => {
+    const nutrition = calculateMilkNutrition(feeding, nutritionSettings);
+    summary.calories += nutrition.calories;
+    summary.protein += nutrition.protein;
+    summary.naturalProtein += nutrition.naturalProtein;
+    summary.specialProtein += nutrition.specialProtein;
+    summary.carbs += nutrition.carbs;
+    summary.fat += nutrition.fat;
+  });
+
+  const legacyFeedings = (feedings || []).filter(feeding => !feeding?.isV2FeedingRecord);
+  const milkTotals = aggregateMilkComponentTotals(legacyFeedings, nutritionSettings);
 
   if (milkTotals.breastVolume > 0) {
     const nutrition = calculateMilkNutrition({
@@ -881,8 +934,11 @@ function parseDateKey(dateStr) {
   return new Date(year, month - 1, day);
 }
 
-Page({
+function createDataRecordsPageConfig(options = {}) {
+  return {
+  recordSource: options.recordSource || 'legacy',
   data: {
+    isV2RecordsPage: options.recordSource === 'v2',
     selectedDate: '',
     formattedSelectedDate: '', // 格式化后的日期显示
     dateList: [],
@@ -1172,10 +1228,17 @@ Page({
     });
   },
 
+  getMilkFeedingEditorPath() {
+    return this.isV2RecordsSource()
+      ? '/pages/milk-feeding-editor-v2/index'
+      : '/pages/milk-feeding-editor/index';
+  },
+
   navigateToMilkFeedingEditor() {
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    const editorPath = this.getMilkFeedingEditorPath();
     wx.navigateTo({
-      url: `/pages/milk-feeding-editor/index?mode=create&source=records&date=${selectedDate}`
+      url: `${editorPath}?mode=create&source=records&date=${selectedDate}`
     });
   },
 
@@ -1183,8 +1246,9 @@ Page({
     const index = (e.detail && e.detail.index !== undefined) ? e.detail.index : e.currentTarget?.dataset?.index;
     if (index === undefined || index === null || index < 0) return;
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    const editorPath = this.getMilkFeedingEditorPath();
     wx.navigateTo({
-      url: `/pages/milk-feeding-editor/index?mode=edit&source=records&date=${selectedDate}&index=${encodeURIComponent(index)}`
+      url: `${editorPath}?mode=edit&source=records&date=${selectedDate}&index=${encodeURIComponent(index)}`
     });
   },
 
@@ -1984,8 +2048,10 @@ Page({
       }
 
       // 初始化完成后再加载数据
-      this.getBabyInfo();
-      await this.loadNutritionSettings();
+      if (!this.isV2RecordsSource()) {
+        this.getBabyInfo();
+        await this.loadNutritionSettings();
+      }
       this.fetchDailyRecords(formattedDate);
       this.loadMedications();
       this.loadFoodCatalog();
@@ -2001,7 +2067,9 @@ Page({
     if (!this.data.selectedDate) {
       return;
     }
-    await this.loadNutritionSettings();
+    if (!this.isV2RecordsSource()) {
+      await this.loadNutritionSettings();
+    }
     this.fetchDailyRecords(this.data.selectedDate);
     this.loadMedications();
     this.loadFoodCatalog();
@@ -2539,6 +2607,85 @@ Page({
     this.setData({ activeTab: tab });
   },
 
+  isV2RecordsSource() {
+    return this.recordSource === 'v2';
+  },
+
+  async loadV2FeedingResult(babyUid, dateStr) {
+    const records = await FeedingRecordV2Model.getRecordsByDate(babyUid, dateStr);
+    if (!records || records.length === 0) {
+      return { data: [] };
+    }
+
+    return {
+      data: [createDailyRecordFromV2(records, dateStr, babyUid)]
+    };
+  },
+
+  async loadLegacyDailyRecordResult(db, dateRangeQuery, dateStr, babyUid) {
+    let result = await db.collection('feeding_records').where(dateRangeQuery).get();
+    if (!result.data || result.data.length === 0) {
+      result = await db.collection('feeding_records').where({ date: dateStr, babyUid }).get();
+    }
+    return result;
+  },
+
+  async mergeV2FeedingWithLegacySecondaryData(feedingResult, legacyResult, dateStr, babyUid) {
+    const v2Records = feedingResult.data || [];
+    const legacyRecords = legacyResult?.data || [];
+    if (v2Records.length === 0 && legacyRecords.length === 0) {
+      return { data: [] };
+    }
+
+    const v2DailyRecord = v2Records.length > 0
+      ? await this.consolidateFeedingRecords(v2Records)
+      : {
+          _id: `v2_${dateStr || ''}`,
+          id: `v2_${dateStr || ''}`,
+          babyUid,
+          date: dateStr,
+          basicInfo: {},
+          feedings: [],
+          intakes: [],
+          summary: {}
+        };
+    const legacyDailyRecord = legacyRecords.length > 0
+      ? await this.consolidateFeedingRecords(legacyRecords)
+      : null;
+
+    return {
+      data: [
+        {
+          ...v2DailyRecord,
+          _id: legacyDailyRecord?._id || v2DailyRecord._id,
+          id: legacyDailyRecord?.id || legacyDailyRecord?._id || v2DailyRecord.id,
+          intakes: legacyDailyRecord?.intakes || [],
+          legacySecondaryRecordId: legacyDailyRecord?._id || ''
+        }
+      ]
+    };
+  },
+
+  async loadBasicInfoSnapshotForRecords(dateStr, babyUid) {
+    if (!this.isV2RecordsSource()) {
+      return this.loadHistoricalBasicInfoSnapshot(dateStr, babyUid);
+    }
+
+    const snapshot = await FeedingRecordV2Model.resolveBasicInfoSnapshot(babyUid, dateStr, {
+      includeFallbacks: false,
+      includeProfileInitial: true
+    });
+    return {
+      weight: snapshot.weight || '',
+      height: snapshot.height || '',
+      naturalProteinCoefficient: snapshot.naturalProteinCoefficient || '',
+      specialProteinCoefficient: snapshot.specialProteinCoefficient || '',
+      calorieCoefficient: snapshot.calorieCoefficient || '',
+      weightSource: snapshot.weight ? (snapshot.source === 'v2_growth_record' ? 'record' : 'history-feeding') : 'empty',
+      heightSource: snapshot.height ? (snapshot.source === 'v2_growth_record' ? 'record' : 'history-feeding') : 'empty'
+    };
+  },
+
   // 获取当天的详细记录
   async fetchDailyRecords(dateStr, options = {}) {
     const silent = options.silent;
@@ -2551,8 +2698,10 @@ Page({
     }
     
     try {
-      // 确保配奶设置已加载
-      if (!this.data.nutritionSettings) {
+      const useV2Records = this.isV2RecordsSource();
+
+      // 确保配奶设置已加载；v2 记录已带营养快照，不读取旧配奶设置回退。
+      if (!useV2Records && !this.data.nutritionSettings) {
         await this.loadNutritionSettings();
       }
       
@@ -2578,23 +2727,24 @@ Page({
         babyUid: babyUid
       };
       
-      // 并行查询喂养记录、药物记录、治疗记录和排便记录
-      const [feedingResult, medicationResult, treatmentResult, bowelResult] = await Promise.all([
-        db.collection('feeding_records').where(query).get(),
+      const legacyDailyRecordResultPromise = this.loadLegacyDailyRecordResult(db, query, dateStr, babyUid);
+      const feedingResult = useV2Records
+        ? await this.loadV2FeedingResult(babyUid, dateStr)
+        : await legacyDailyRecordResultPromise;
+      const [medicationResult, treatmentResult, bowelResult, legacyDailyRecordResult] = await Promise.all([
         MedicationRecordModel.findByDate(dateStr, babyUid),
         TreatmentRecordModel.findByDate(dateStr, babyUid),
         db.collection('bowel_records').where({
           babyUid: babyUid,
           recordTime: _.gte(startOfDay).and(_.lte(endOfDay))
-        }).orderBy('recordTime', 'desc').get()
+        }).orderBy('recordTime', 'desc').get(),
+        useV2Records ? legacyDailyRecordResultPromise : Promise.resolve(null)
       ]);
-      const historicalBasicInfoSnapshot = await this.loadHistoricalBasicInfoSnapshot(dateStr, babyUid);
+      const historicalBasicInfoSnapshot = await this.loadBasicInfoSnapshotForRecords(dateStr, babyUid);
       const treatmentRecordsToSet = formatTreatmentRecords((treatmentResult.success ? treatmentResult.data : []) || []);
-      let effectiveFeedingResult = feedingResult;
-      if (!feedingResult.data || feedingResult.data.length === 0) {
-        const legacyQuery = { date: dateStr, babyUid };
-        effectiveFeedingResult = await db.collection('feeding_records').where(legacyQuery).get();
-      }
+      const effectiveFeedingResult = useV2Records
+        ? await this.mergeV2FeedingWithLegacySecondaryData(feedingResult, legacyDailyRecordResult, dateStr, babyUid)
+        : feedingResult;
 
       if (effectiveFeedingResult.data && effectiveFeedingResult.data.length > 0) {
         const record = await this.consolidateFeedingRecords(effectiveFeedingResult.data);
@@ -2898,13 +3048,15 @@ Page({
         }
       }
 
-      const nutrition = calculateMilkNutrition({
-        naturalMilkVolume: record.naturalMilkVolume,
-        formulaPowderWeight: getFormulaMilkPowder(record, nutritionSettings),
-        specialMilkVolume: feedingCalculator.getSpecialMilkVolume(record),
-        specialMilkPowder: feedingCalculator.getSpecialMilkPowder(record, nutritionSettings),
-        naturalMilkType: record.naturalMilkType || 'breast'
-      }, nutritionSettings);
+      const nutrition = record?.isV2FeedingRecord && record.nutritionSummary
+        ? calculateMilkNutrition(record, nutritionSettings)
+        : calculateMilkNutrition({
+            naturalMilkVolume: record.naturalMilkVolume,
+            formulaPowderWeight: getFormulaMilkPowder(record, nutritionSettings),
+            specialMilkVolume: feedingCalculator.getSpecialMilkVolume(record),
+            specialMilkPowder: feedingCalculator.getSpecialMilkPowder(record, nutritionSettings),
+            naturalMilkType: record.naturalMilkType || 'breast'
+          }, nutritionSettings);
 
       return {
         ...record,
@@ -2983,6 +3135,10 @@ Page({
     let totalSpecialMilk = 0;
     
     records.forEach(record => {
+      if (record?.isV2FeedingRecord && record.totalMilkVolume !== undefined) {
+        totalNaturalMilk += parseFloat(record.totalMilkVolume || 0);
+        return;
+      }
       totalNaturalMilk += parseFloat(record.naturalMilkVolume || 0);
       totalSpecialMilk += parseFloat(record.specialMilkVolume || 0);
     });
@@ -3644,13 +3800,21 @@ Page({
   deleteFeeding(e) {
     const index = (e.detail && e.detail.index !== undefined) ? e.detail.index : e.currentTarget.dataset.index;
     const feeding = this.data.feedingRecords[index];
+    if (!feeding) {
+      wx.showToast({
+        title: '未找到喂奶记录',
+        icon: 'none'
+      });
+      return;
+    }
     const message = `确认删除 ${feeding.formattedStartTime} 的喂奶记录吗？`;
     
     this.setData({
       showDeleteConfirm: true,
       deleteConfirmMessage: message,
       deleteType: 'feeding',
-      deleteIndex: index
+      deleteIndex: index,
+      deleteRecordId: feeding._id || feeding.id || ''
     });
   },
 
@@ -3718,6 +3882,14 @@ Page({
 
     try {
       if (deleteType === 'feeding') {
+        if (this.isV2RecordsSource()) {
+          const feeding = (this.data.feedingRecords || [])[deleteIndex] || {};
+          const v2RecordId = deleteRecordId || feeding._id || feeding.id;
+          if (!v2RecordId) {
+            throw new Error('未找到要删除的v2喂奶记录');
+          }
+          await FeedingRecordV2Model.deleteRecord(v2RecordId);
+        } else {
         // 处理喂奶记录删除 — 与 daily-feeding 保持一致
         const recordId = this.data.recordId;
         if (!recordId) {
@@ -3733,6 +3905,7 @@ Page({
             updatedAt: db.serverDate()
           }
         });
+        }
 
       } else if (deleteType === 'medication') {
         // 删除用药记录 - 使用新的药物记录模型
@@ -5139,6 +5312,34 @@ Page({
     };
   },
 
+  buildV2PersistedBasicInfoForDate(updates = {}) {
+    const pickNumberLike = (key) => {
+      if (Object.prototype.hasOwnProperty.call(updates, key)) {
+        return updates[key];
+      }
+      const value = this.data[key];
+      if (value === '--' || value === null || value === undefined || value === '') {
+        return '';
+      }
+      return this.isNumberValue(value) ? Number(value) : value;
+    };
+
+    return {
+      weight: pickNumberLike('weight'),
+      height: pickNumberLike('height'),
+      naturalProteinCoefficient: Object.prototype.hasOwnProperty.call(updates, 'naturalProteinCoefficient')
+        ? updates.naturalProteinCoefficient
+        : (this.data.naturalProteinCoefficientInput || ''),
+      specialProteinCoefficient: Object.prototype.hasOwnProperty.call(updates, 'specialProteinCoefficient')
+        ? updates.specialProteinCoefficient
+        : (this.data.specialProteinCoefficientInput || ''),
+      calorieCoefficient: Object.prototype.hasOwnProperty.call(updates, 'calorieCoefficient')
+        ? updates.calorieCoefficient
+        : (this.data.calorieCoefficient || ''),
+      ...updates
+    };
+  },
+
   inferNaturalMilkType(feedings = this.data.feedings || []) {
     if (!Array.isArray(feedings) || feedings.length === 0) {
       return 'formula';
@@ -5359,7 +5560,7 @@ Page({
       wx.showToast({ title: `${editingLabel}已保存`, icon: 'success' });
     } catch (err) {
       console.error(`保存${editingLabel}失败`, err);
-      wx.showToast({ title: '保存失败', icon: 'none' });
+      wx.showToast({ title: err?.userMessage || '保存失败', icon: 'none' });
     }
   },
 
@@ -5384,7 +5585,7 @@ Page({
       wx.showToast({ title: '已保存', icon: 'success' });
     } catch (error) {
       console.error('保存蛋白系数失败:', error);
-      wx.showToast({ title: '保存失败', icon: 'none' });
+      wx.showToast({ title: error?.userMessage || '保存失败', icon: 'none' });
     }
   },
 
@@ -5400,6 +5601,15 @@ Page({
     if (!babyUid) return;
 
     const db = wx.cloud.database();
+    if (this.isV2RecordsSource()) {
+      const basicInfo = this.buildV2PersistedBasicInfoForDate(updates);
+      const result = await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, selectedDate, basicInfo);
+      if (result?.recordId && !this.data.growthRecordId) {
+        this.setData({ growthRecordId: result.recordId });
+      }
+      return;
+    }
+
     const payload = Object.keys(updates).reduce((acc, key) => {
       acc[`basicInfo.${key}`] = updates[key];
       return acc;
@@ -5518,4 +5728,15 @@ Page({
       }
     });
   }
-}); 
+  };
+}
+
+const runtimeGlobal = typeof globalThis !== 'undefined' ? globalThis : {};
+if (!runtimeGlobal.__DATA_RECORDS_SUPPRESS_AUTO_PAGE__) {
+  const dataRecordsPageConfig = createDataRecordsPageConfig();
+  Page(dataRecordsPageConfig);
+}
+
+module.exports = {
+  createDataRecordsPageConfig
+};

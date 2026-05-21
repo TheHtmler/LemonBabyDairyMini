@@ -4,7 +4,18 @@
     <text class="feeding-label" wx:if="{{showLabel}}">{{label}}</text>
   </view>
   <view class="feeding-detail">
-    <view class="milk-summary-row" wx:if="{{milkSummaryText}}">
+    <view class="milk-summary-row" wx:if="{{milkSummaryItems.length > 0}}">
+      <view class="milk-summary-chip-list">
+        <view class="milk-summary-chip" wx:for="{{milkSummaryItems}}" wx:key="index">
+          <text class="milk-summary-badge {{item.badgeClass}}" style="{{item.badgeStyle}}">{{item.badge}}</text>
+          <view class="milk-summary-chip-copy">
+            <text class="milk-summary-name">{{item.name}}</text>
+            <text class="milk-summary-amount">{{item.amountText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="milk-summary-row" wx:elif="{{milkSummaryText}}">
       <text class="milk-summary">{{milkSummaryText}}</text>
     </view>
     <view class="metric-row">

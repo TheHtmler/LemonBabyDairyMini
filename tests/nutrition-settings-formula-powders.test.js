@@ -110,6 +110,60 @@ function loadNutritionModel(db) {
   return model;
 }
 
+function loadNutritionProfileSettingsPage(db) {
+  const pagePath = require.resolve('../miniprogram/pages/nutrition-profile-settings/index.js');
+  const nutritionPath = require.resolve('../miniprogram/models/nutrition.js');
+  const profilePath = require.resolve('../miniprogram/models/nutritionProfile.js');
+  delete require.cache[pagePath];
+  delete require.cache[nutritionPath];
+  delete require.cache[profilePath];
+
+  const previousWx = global.wx;
+  const previousGetApp = global.getApp;
+  const previousPage = global.Page;
+  let pageConfig = null;
+
+  global.getApp = () => ({
+    globalData: {
+      babyUid: 'baby-1'
+    }
+  });
+  global.Page = (config) => {
+    pageConfig = config;
+  };
+  global.wx = {
+    cloud: {
+      database() {
+        return db;
+      }
+    },
+    getStorageSync() {
+      return '';
+    }
+  };
+
+  require(pagePath);
+
+  global.wx = previousWx;
+  global.getApp = previousGetApp;
+  global.Page = previousPage;
+
+  return pageConfig;
+}
+
+function createPageInstance(pageConfig) {
+  return {
+    ...pageConfig,
+    data: JSON.parse(JSON.stringify(pageConfig.data)),
+    setData(update) {
+      this.data = {
+        ...this.data,
+        ...update
+      };
+    }
+  };
+}
+
 test('createDefaultSettings includes formula powder profile and mixing plan fields', () => {
   const { db } = createDbMock();
   const NutritionModel = loadNutritionModel(db);
@@ -119,6 +173,50 @@ test('createDefaultSettings includes formula powder profile and mixing plan fiel
   assert.deepEqual(settings.formulaPowders, []);
   assert.deepEqual(settings.mixingPlans, []);
   assert.equal(settings.activeMixingPlanId, '');
+});
+
+test('nutrition profile settings orders visible formula powders by category', () => {
+  const { db } = createDbMock();
+  const pageConfig = loadNutritionProfileSettingsPage(db);
+  const page = createPageInstance(pageConfig);
+
+  page.applySettings({
+    formulaPowders: [
+      {
+        id: 'energy-1',
+        name: '能量粉',
+        category: 'energy_supplement',
+        proteinRole: 'none',
+        status: 'active'
+      },
+      {
+        id: 'special-1',
+        name: '特奶',
+        category: 'special_formula',
+        proteinRole: 'special',
+        status: 'active'
+      },
+      {
+        id: 'regular-1',
+        name: '普奶 A',
+        category: 'regular_formula',
+        proteinRole: 'natural',
+        status: 'active'
+      },
+      {
+        id: 'regular-2',
+        name: '普奶 B',
+        category: 'regular_formula',
+        proteinRole: 'natural',
+        status: 'active'
+      }
+    ]
+  });
+
+  assert.deepEqual(
+    page.data.visibleFormulaPowders.map((powder) => powder.id),
+    ['regular-1', 'regular-2', 'special-1', 'energy-1']
+  );
 });
 
 test('normalizeSettings preserves legacy fields and generates legacy formula powder profiles', () => {
@@ -260,8 +358,9 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
 
   assert.match(source, /activeView:\s*'mother'/);
   assert.match(source, /require\('\.\.\/\.\.\/models\/nutritionProfile'\)/);
-  assert.match(source, /getNutritionProfileSettings\(babyUid\)/);
+  assert.match(source, /getNutritionProfileSettings\(babyUid,\s*\{\s*includeLegacyFallback:\s*false/s);
   assert.match(source, /updateNutritionProfileSettings\(babyUid,\s*newSettings\)/);
+  assert.match(source, /POWDER_CATEGORY_META/);
   assert.doesNotMatch(source, /getNutritionSettings\(babyUid\)/);
   assert.doesNotMatch(source, /updateNutritionSettings\(babyUid,\s*newSettings\)/);
   assert.match(source, /showMotherSettings\(/);
@@ -284,9 +383,11 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
   assert.match(source, /cancelPowderDraft\(/);
   assert.match(source, /async\s+deletePowder\(/);
   assert.match(source, /wx\.showModal\(/);
-  assert.match(source, /title:\s*'确认删除配方粉'/);
-  assert.match(source, /该配方粉将不再出现在后续喂奶选择中/);
-  assert.match(source, /已保存的历史喂养记录不会被删除/);
+  assert.match(source, /title:\s*'删除这个配方粉？'/);
+  assert.match(source, /以后记录喂奶时，就不能再选择它了/);
+  assert.match(source, /以前已经保存的喂奶记录还会保留/);
+  assert.doesNotMatch(source, /营养快照/);
+  assert.doesNotMatch(source, /回算/);
   assert.match(source, /confirmText:\s*'删除'/);
   assert.match(source, /toastTitle:\s*'配方粉已删除'/);
   assert.match(source, /status:\s*POWDER_STATUSES\.ARCHIVED/);
@@ -295,7 +396,8 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
   assert.match(source, /updatedAt:\s*now/);
   assert.match(source, /deletedAt:\s*null/);
   assert.match(source, /deletedAt:\s*now/);
-  assert.match(source, /visibleFormulaPowders:\s*powders\.filter\(\(powder\)\s*=>\s*powder\.status\s*===\s*POWDER_STATUSES\.ACTIVE\)/);
+  assert.match(source, /sortFormulaPowdersByCategory/);
+  assert.match(source, /visibleFormulaPowders:\s*sortFormulaPowdersByCategory\(\s*powders\.filter\(\(powder\)\s*=>\s*powder\.status\s*===\s*POWDER_STATUSES\.ACTIVE\)/);
   assert.doesNotMatch(source, /enabled:\s*false/);
   assert.doesNotMatch(source, /enabled:\s*true/);
   assert.doesNotMatch(source, /settings\.formulaPowders\s*=\s*\(settings\.formulaPowders\s*\|\|\s*\)\.filter\(\(powder\)\s*=>\s*powder\.id\s*!==\s*id\)/);
@@ -340,6 +442,10 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
   assert.match(wxml, /field-label/);
   assert.match(wxml, /label-text/);
   assert.match(wxml, /required-star/);
+  assert.match(wxml, /<text class="label-text">分类<\/text>/);
+  assert.match(wxml, /选择分类后会自动匹配蛋白角色/);
+  assert.doesNotMatch(wxml, /<text class="label-text">粉类<\/text>/);
+  assert.doesNotMatch(wxml, /选择粉类后会自动匹配蛋白角色/);
   assert.match(wxml, /<text class="label-text">脂肪 g\/100g<\/text>\s*<text class="required-star">\*<\/text>/);
   assert.match(wxml, /<text class="label-text">碳水 g\/100g<\/text>\s*<text class="required-star">\*<\/text>/);
   assert.match(wxml, /placeholder-class="input-placeholder"/);
@@ -365,6 +471,10 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
   assert.match(wxml, /powder-card/);
   assert.match(wxml, /powder-info/);
   assert.match(wxml, /powder-title-block/);
+  assert.match(wxml, /powder-name-row/);
+  assert.match(wxml, /category-badge \{\{item\.categoryBadgeClass\}\}/);
+  assert.match(wxml, /style="\{\{item\.categoryBadgeStyle\}\}"/);
+  assert.match(wxml, /\{\{item\.categoryShortLabel\}\}/);
   assert.match(wxml, /powder-action-cluster/);
   assert.match(wxml, /icon-btn/);
   assert.match(wxml, /edit\.svg/);
@@ -399,6 +509,11 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
   assert.match(wxss, /\.powder-card\s*\{/);
   assert.match(wxss, /\.powder-info\s*\{[^}]*flex:\s*1/);
   assert.match(wxss, /\.powder-title-block\s*\{[^}]*min-width:\s*0/);
+  assert.match(wxss, /\.powder-name-row\s*\{/);
+  assert.match(wxss, /\.category-badge\s*\{/);
+  assert.doesNotMatch(wxss, /\.category-badge\.regular\s*\{/);
+  assert.doesNotMatch(wxss, /\.category-badge\.special\s*\{/);
+  assert.doesNotMatch(wxss, /\.category-badge\.energy\s*\{/);
   assert.match(wxss, /\.powder-action-cluster\s*\{[^}]*width:\s*128rpx/);
   assert.match(wxss, /\.icon-btn\s*\{/);
   assert.match(wxss, /\.icon-btn\s*\{[^}]*min-width:\s*0/);

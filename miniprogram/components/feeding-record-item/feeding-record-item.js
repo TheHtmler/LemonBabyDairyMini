@@ -58,6 +58,7 @@ Component({
   data: {
     timeText: '--:--',
     milkSummaryText: '',
+    milkSummaryItems: [],
     metricItems: []
   },
   observers: {
@@ -80,19 +81,26 @@ Component({
       const specialMilkPowder = normalizeNumber(record.specialMilkPowder);
       const nutrition = record.nutritionDisplay || {};
       const milkSegments = [];
+      const milkSummaryItems = Array.isArray(record.milkSummaryItems)
+        ? record.milkSummaryItems
+        : [];
 
-      const naturalMilkSummary = buildMilkSummarySegment(
-        naturalLabel,
-        naturalVolume,
-        record.naturalMilkType === 'formula' ? formulaPowderWeight : 0
-      );
-      if (naturalMilkSummary) {
-        milkSegments.push(naturalMilkSummary);
-      }
+      if (record.milkSummaryText) {
+        milkSegments.push(record.milkSummaryText);
+      } else {
+        const naturalMilkSummary = buildMilkSummarySegment(
+          naturalLabel,
+          naturalVolume,
+          record.naturalMilkType === 'formula' ? formulaPowderWeight : 0
+        );
+        if (naturalMilkSummary) {
+          milkSegments.push(naturalMilkSummary);
+        }
 
-      const specialMilkSummary = buildMilkSummarySegment('特奶', specialVolume, specialMilkPowder);
-      if (specialMilkSummary) {
-        milkSegments.push(specialMilkSummary);
+        const specialMilkSummary = buildMilkSummarySegment('特奶', specialVolume, specialMilkPowder);
+        if (specialMilkSummary) {
+          milkSegments.push(specialMilkSummary);
+        }
       }
 
       const metricItems = [
@@ -113,6 +121,7 @@ Component({
       this.setData({
         timeText,
         milkSummaryText: milkSegments.join(' · '),
+        milkSummaryItems,
         metricItems
       });
     }

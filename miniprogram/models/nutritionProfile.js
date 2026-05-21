@@ -162,11 +162,16 @@ class MilkNutritionProfileModel {
     return settings;
   }
 
-  async getNutritionProfileSettings(babyUid) {
+  async getNutritionProfileSettings(babyUid, options = {}) {
     try {
+      const includeLegacyFallback = options.includeLegacyFallback === true;
       const profile = await getFirstDocument(milkNutritionProfileCollection, babyUid);
       if (profile) {
         return this.profileDocumentToNutritionSettings(profile);
+      }
+
+      if (!includeLegacyFallback) {
+        return null;
       }
 
       const [babyRes, compatRes] = await Promise.all([
