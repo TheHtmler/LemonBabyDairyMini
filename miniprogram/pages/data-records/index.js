@@ -1247,8 +1247,11 @@ function createDataRecordsPageConfig(options = {}) {
     if (index === undefined || index === null || index < 0) return;
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
     const editorPath = this.getMilkFeedingEditorPath();
+    const targetRecord = (this.data.feedingRecords || [])[index] || {};
+    const targetRecordId = targetRecord._id || targetRecord.id || e.detail?.id || '';
+    const recordIdParam = targetRecordId ? `&recordId=${encodeURIComponent(targetRecordId)}` : '';
     wx.navigateTo({
-      url: `${editorPath}?mode=edit&source=records&date=${selectedDate}&index=${encodeURIComponent(index)}`
+      url: `${editorPath}?mode=edit&source=records&date=${selectedDate}&index=${encodeURIComponent(index)}${recordIdParam}`
     });
   },
 

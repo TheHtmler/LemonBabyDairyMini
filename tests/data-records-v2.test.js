@@ -169,6 +169,8 @@ test('data-records switches milk editor navigation to v2 when using v2 records',
   assert.match(dataRecordsJs, /getMilkFeedingEditorPath\(\)/);
   assert.match(dataRecordsJs, /\/pages\/milk-feeding-editor-v2\/index/);
   assert.match(dataRecordsJs, /\/pages\/milk-feeding-editor\/index/);
+  assert.match(dataRecordsJs, /feedingRecords\s*\|\|\s*\[\]\)\[index\]/);
+  assert.match(dataRecordsJs, /recordId=\$\{encodeURIComponent\(targetRecordId\)\}/);
 });
 
 test('data-records-v2 fetches v2 feeding while reusing v1 secondary tab records', async () => {

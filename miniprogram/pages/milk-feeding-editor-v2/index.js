@@ -16,9 +16,9 @@ const {
 
 const getNutritionProfileSettings = MilkNutritionProfileModel.getNutritionProfileSettings.bind(MilkNutritionProfileModel);
 const addFeedingRecordV2 = feedingRecordV2Model.addRecord.bind(feedingRecordV2Model);
+const updateFeedingRecordV2 = feedingRecordV2Model.updateRecord.bind(feedingRecordV2Model);
 const resolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot.bind(feedingRecordV2Model);
 const getV2RecordsByDate = feedingRecordV2Model.getRecordsByDate.bind(feedingRecordV2Model);
-const getRecentV2Record = feedingRecordV2Model.getRecentRecord.bind(feedingRecordV2Model);
 const wxApi = wx;
 
 function formatDateKey(date = new Date()) {
@@ -112,18 +112,6 @@ function enrichPowder(powder = {}) {
   };
 }
 
-function formatRecentDefaultText(record = {}) {
-  return record.startTime ? `已带入上次记录 ${record.startTime}` : '已带入上次记录';
-}
-
-function sortRecordsByTimeDesc(records = []) {
-  return [...records].sort((left, right) => {
-    const leftTime = `${left?.date || ''} ${left?.startTime || ''}`;
-    const rightTime = `${right?.date || ''} ${right?.startTime || ''}`;
-    return rightTime.localeCompare(leftTime);
-  });
-}
-
 function createFormulaEntry(powder = {}, overrides = {}) {
   return {
     localId: overrides.localId || `formula_${powder.id || 'unknown'}_${Date.now()}`,
@@ -162,6 +150,9 @@ function createPowderFromComponent(component = {}) {
 Page({
   data: {
     babyUid: '',
+    editorMode: 'create',
+    editingRecordId: '',
+    editingRecordIndex: -1,
     selectedDate: '',
     startTime: '',
     endTime: '',
@@ -204,10 +195,16 @@ Page({
   async onLoad(options = {}) {
     const selectedDate = options.date || formatDateKey();
     const babyUid = getBabyUid() || getApp().globalData.babyUid || '';
-    const startTime = options.startTime || formatTime();
+    const editorMode = options.mode === 'edit' ? 'edit' : 'create';
+    const editingRecordId = options.recordId || options.id || '';
+    const editingRecordIndex = Number.isInteger(Number(options.index)) ? Number(options.index) : -1;
+    const startTime = options.startTime || (editorMode === 'edit' ? '' : formatTime());
 
     this.setData({
       babyUid,
+      editorMode,
+      editingRecordId,
+      editingRecordIndex,
       selectedDate,
       startTime
     });
@@ -222,14 +219,13 @@ Page({
     }
 
     try {
-      const [settings, basicInfo, records, recentRecord] = await Promise.all([
+      const [settings, basicInfo, records] = await Promise.all([
         getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
         resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
           includeFallbacks: false,
           includeProfileInitial: true
         }),
-        getV2RecordsByDate(this.data.babyUid, this.data.selectedDate),
-        getRecentV2Record(this.data.babyUid, this.data.selectedDate)
+        getV2RecordsByDate(this.data.babyUid, this.data.selectedDate)
       ]);
       const formulaPowders = ((settings && settings.formulaPowders) || [])
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
@@ -245,7 +241,11 @@ Page({
         specialProteinCoefficientInput: toInputValue(basicInfo?.specialProteinCoefficient),
         calorieCoefficientInput: toInputValue(basicInfo?.calorieCoefficient)
       }, () => {
-        this.loadRecentDefaults(records || [], recentRecord);
+        const editingRecord = this.resolveEditingRecord(records || []);
+        if (editingRecord) {
+          this.applyEditingRecord(editingRecord);
+          return;
+        }
         this.refreshNutritionPreview();
       });
     } catch (error) {
@@ -662,30 +662,43 @@ Page({
     });
   },
 
-  applyRecordDefaults(record = {}) {
+  resolveEditingRecord(records = []) {
+    if (this.data.editorMode !== 'edit') {
+      return null;
+    }
+
+    if (this.data.editingRecordId) {
+      return (records || []).find((record) => (
+        record._id === this.data.editingRecordId || record.id === this.data.editingRecordId
+      )) || null;
+    }
+
+    const index = Number(this.data.editingRecordIndex);
+    if (Number.isInteger(index) && index >= 0) {
+      return (records || [])[index] || null;
+    }
+
+    return null;
+  },
+
+  applyEditingRecord(record = {}) {
     const components = Array.isArray(record.formulaComponents) ? record.formulaComponents : [];
     const milkEntries = components
       .filter((component) => component.kind === 'breast_milk' || component.kind === 'formula_powder')
       .map((component) => this.createEntryFromComponent(component));
+    const basicInfo = record.basicInfoSnapshot || {};
 
     this.setData({
+      editingRecordId: record._id || record.id || this.data.editingRecordId,
+      startTime: record.startTime || this.data.startTime,
+      endTime: record.endTime || '',
+      notes: record.notes || '',
+      weight: toInputValue(basicInfo.weight || this.data.weight),
+      height: toInputValue(basicInfo.height || this.data.height),
+      naturalProteinCoefficientInput: toInputValue(basicInfo.naturalProteinCoefficient || this.data.naturalProteinCoefficientInput),
+      specialProteinCoefficientInput: toInputValue(basicInfo.specialProteinCoefficient || this.data.specialProteinCoefficientInput),
+      calorieCoefficientInput: toInputValue(basicInfo.calorieCoefficient || this.data.calorieCoefficientInput),
       milkEntries: this.normalizeMilkEntries(milkEntries),
-      recentDefaultsLoaded: true,
-      recentDefaultText: formatRecentDefaultText(record)
-    });
-  },
-
-  loadRecentDefaults(records = [], fallbackRecord = null) {
-    const latestRecord = sortRecordsByTimeDesc(records).find((record) => (
-      Array.isArray(record.formulaComponents) && record.formulaComponents.length > 0
-    )) || fallbackRecord;
-    if (!latestRecord) return;
-    this.applyRecordDefaults(latestRecord);
-  },
-
-  clearRecentDefaults() {
-    this.setData({
-      milkEntries: [],
       recentDefaultsLoaded: false,
       recentDefaultText: ''
     }, () => {
@@ -810,7 +823,16 @@ Page({
 
     try {
       wxApi.showLoading({ title: '保存中' });
-      await addFeedingRecordV2(payload);
+      if (this.data.editorMode === 'edit') {
+        if (!this.data.editingRecordId) {
+          wxApi.hideLoading();
+          wxApi.showToast({ title: '未找到要编辑的记录', icon: 'none' });
+          return false;
+        }
+        await updateFeedingRecordV2(this.data.editingRecordId, payload);
+      } else {
+        await addFeedingRecordV2(payload);
+      }
       wxApi.hideLoading();
       wxApi.showToast({ title: '已保存', icon: 'success' });
       setTimeout(() => {

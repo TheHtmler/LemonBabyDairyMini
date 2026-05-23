@@ -52,6 +52,7 @@ function loadV2Page(options = {}) {
     toasts: [],
     loading: [],
     saved: null,
+    updated: null,
     navigationBack: 0
   };
   const previousPage = global.Page;
@@ -115,6 +116,7 @@ function loadV2Page(options = {}) {
   const utilsModule = require(utilsPath);
   const previousGetNutritionProfileSettings = profileModel.getNutritionProfileSettings;
   const previousAddRecord = feedingRecordV2Model.addRecord;
+  const previousUpdateRecord = feedingRecordV2Model.updateRecord;
   const previousResolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot;
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousGetRecentRecord = feedingRecordV2Model.getRecentRecord;
@@ -130,6 +132,10 @@ function loadV2Page(options = {}) {
   feedingRecordV2Model.addRecord = options.addRecord || (async (data) => {
     calls.saved = data;
     return { _id: 'v2-record-1' };
+  });
+  feedingRecordV2Model.updateRecord = options.updateRecord || (async (recordId, data) => {
+    calls.updated = { recordId, data };
+    return true;
   });
   feedingRecordV2Model.resolveBasicInfoSnapshot = options.resolveBasicInfoSnapshot || (async () => ({
     weight: 5.2,
@@ -152,6 +158,7 @@ function loadV2Page(options = {}) {
 
   profileModel.getNutritionProfileSettings = previousGetNutritionProfileSettings;
   feedingRecordV2Model.addRecord = previousAddRecord;
+  feedingRecordV2Model.updateRecord = previousUpdateRecord;
   feedingRecordV2Model.resolveBasicInfoSnapshot = previousResolveBasicInfoSnapshot;
   feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
   feedingRecordV2Model.getRecentRecord = previousGetRecentRecord;
@@ -183,13 +190,15 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
   assert.match(source, /playAddMilkAnimation/);
   assert.match(source, /clearAddMilkAnimation/);
   assert.match(source, /onMilkEntryInput/);
-  assert.match(source, /loadRecentDefaults/);
-  assert.match(source, /applyRecordDefaults/);
+  assert.doesNotMatch(source, /loadRecentDefaults/);
+  assert.doesNotMatch(source, /applyRecordDefaults/);
 
   assert.match(wxml, /本次记录/);
   assert.match(wxml, /配奶录入/);
   assert.match(wxml, /这次喝什么/);
   assert.match(wxml, /添加奶/);
+  assert.doesNotMatch(wxml, /recent-default-row/);
+  assert.doesNotMatch(wxml, /recentDefaultText/);
   assert.match(wxml, /showAddMilkPanel/);
   assert.match(wxml, /add-milk-dialog-mask/);
   assert.match(wxml, /add-milk-dialog-panel/);
@@ -745,7 +754,87 @@ test('saveFeedingRecord writes nutrition snapshots to feeding_records_v2 model',
   assert.equal(calls.saved.basicInfoSnapshot.calorieCoefficient, 100);
 });
 
-test('onLoad brings in the latest v2 record as editable defaults for the next entry', async () => {
+test('saveFeedingRecord updates the selected v2 record in edit mode', async () => {
+  const { pageConfig, calls } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    selectedDate: '2026-05-20',
+    startTime: '08:45',
+    editorMode: 'edit',
+    editingRecordId: 'v2-record-existing',
+    nutritionSettings: {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      natural_milk_fat: 4,
+      natural_milk_carbs: 6.8
+    },
+    milkEntries: [
+      {
+        localId: 'breast-1',
+        kind: 'breast_milk',
+        volume: '70'
+      }
+    ]
+  });
+
+  await page.saveFeedingRecord();
+
+  assert.equal(calls.saved, null);
+  assert.equal(calls.updated.recordId, 'v2-record-existing');
+  assert.equal(calls.updated.data.date, '2026-05-20');
+  assert.equal(calls.updated.data.startTime, '08:45');
+  assert.equal(calls.updated.data.formulaComponents.length, 1);
+  assert.equal(calls.updated.data.formulaComponents[0].kind, 'breast_milk');
+  assert.equal(calls.updated.data.nutritionSummary.totalVolume, 70);
+});
+
+test('onLoad in edit mode loads the selected v2 record instead of recent defaults', async () => {
+  const { pageConfig } = loadV2Page({
+    getRecordsByDate: async () => [
+      {
+        _id: 'v2-record-existing',
+        date: '2026-05-20',
+        startTime: '08:45',
+        endTime: '08:55',
+        notes: '编辑这条',
+        formulaComponents: [
+          { kind: 'breast_milk', volume: 70 }
+        ],
+        basicInfoSnapshot: {
+          weight: 5.4,
+          height: 59,
+          calorieCoefficient: 101
+        },
+        nutritionSummary: { calories: 47 },
+        status: 'active'
+      }
+    ],
+    getRecentRecord: async () => ({
+      _id: 'recent-record',
+      startTime: '07:00',
+      formulaComponents: [
+        { kind: 'breast_milk', volume: 30 }
+      ]
+    })
+  });
+  const page = createPageInstance(pageConfig);
+
+  await page.onLoad({ mode: 'edit', recordId: 'v2-record-existing', date: '2026-05-20' });
+
+  assert.equal(page.data.editorMode, 'edit');
+  assert.equal(page.data.editingRecordId, 'v2-record-existing');
+  assert.equal(page.data.startTime, '08:45');
+  assert.equal(page.data.endTime, '08:55');
+  assert.equal(page.data.notes, '编辑这条');
+  assert.equal(page.data.weight, '5.4');
+  assert.equal(page.data.height, '59');
+  assert.equal(page.data.calorieCoefficientInput, '101');
+  assert.equal(page.data.milkEntries.length, 1);
+  assert.equal(page.data.milkEntries[0].volume, '70');
+  assert.equal(page.data.recentDefaultsLoaded, false);
+});
+
+test('onLoad keeps create mode blank even when the selected date has v2 records', async () => {
   const { pageConfig } = loadV2Page({
     getNutritionProfileSettings: async () => ({
       natural_milk_protein: 1.1,
@@ -800,17 +889,13 @@ test('onLoad brings in the latest v2 record as editable defaults for the next en
 
   await page.onLoad({ date: '2026-05-20' });
 
-  assert.equal(page.data.recentDefaultsLoaded, true);
-  assert.match(page.data.recentDefaultText, /07:20/);
-  assert.equal(page.data.milkEntries.length, 2);
-  assert.equal(page.data.milkEntries[0].kind, 'breast_milk');
-  assert.equal(page.data.milkEntries[0].volume, '55');
-  assert.equal(page.data.milkEntries[1].powderId, 'special-a');
-  assert.equal(page.data.milkEntries[1].waterVolume, '40');
-  assert.equal(page.data.milkEntries[1].powderWeight, '6');
+  assert.equal(page.data.recentDefaultsLoaded, false);
+  assert.equal(page.data.recentDefaultText, '');
+  assert.equal(page.data.milkEntries.length, 0);
 });
 
-test('onLoad falls back to the latest previous v2 record when the selected date has no records', async () => {
+test('onLoad does not fetch the latest previous v2 record as create-mode defaults', async () => {
+  let recentRecordCalls = 0;
   const { pageConfig } = loadV2Page({
     getNutritionProfileSettings: async () => ({
       natural_milk_protein: 1.1,
@@ -828,36 +913,38 @@ test('onLoad falls back to the latest previous v2 record when the selected date 
       ]
     }),
     getRecordsByDate: async () => [],
-    getRecentRecord: async () => ({
-      date: '2026-05-19',
-      startTime: '22:10',
-      formulaComponents: [
-        {
-          kind: 'formula_powder',
-          powderId: 'regular-a',
-          powderName: '普奶 A',
-          category: 'regular_formula',
-          categoryShortLabel: '普',
-          categoryBadgeClass: 'regular',
-          proteinRole: 'natural',
-          waterVolume: 60,
-          powderWeight: 10,
-          ratioMode: 'standard',
-          mixRatioSnapshot: { powder: 5, water: 30 },
-          nutritionSnapshot: { protein: 10, calories: 500 }
-        }
-      ],
-      nutritionSummary: { calories: 50 },
-      status: 'active'
-    })
+    getRecentRecord: async () => {
+      recentRecordCalls += 1;
+      return {
+        date: '2026-05-19',
+        startTime: '22:10',
+        formulaComponents: [
+          {
+            kind: 'formula_powder',
+            powderId: 'regular-a',
+            powderName: '普奶 A',
+            category: 'regular_formula',
+            categoryShortLabel: '普',
+            categoryBadgeClass: 'regular',
+            proteinRole: 'natural',
+            waterVolume: 60,
+            powderWeight: 10,
+            ratioMode: 'standard',
+            mixRatioSnapshot: { powder: 5, water: 30 },
+            nutritionSnapshot: { protein: 10, calories: 500 }
+          }
+        ],
+        nutritionSummary: { calories: 50 },
+        status: 'active'
+      };
+    }
   });
   const page = createPageInstance(pageConfig);
 
   await page.onLoad({ date: '2026-05-20' });
 
-  assert.equal(page.data.recentDefaultsLoaded, true);
-  assert.match(page.data.recentDefaultText, /22:10/);
-  assert.equal(page.data.milkEntries.length, 1);
-  assert.equal(page.data.milkEntries[0].kind, 'formula_powder');
-  assert.equal(page.data.milkEntries[0].waterVolume, '60');
+  assert.equal(recentRecordCalls, 0);
+  assert.equal(page.data.recentDefaultsLoaded, false);
+  assert.equal(page.data.recentDefaultText, '');
+  assert.equal(page.data.milkEntries.length, 0);
 });

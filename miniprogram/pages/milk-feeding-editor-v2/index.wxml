@@ -9,10 +9,6 @@
         <view class="field-picker compact-picker">{{startTime}}</view>
       </picker>
     </view>
-    <view wx:if="{{recentDefaultsLoaded}}" class="recent-default-row">
-      <text class="recent-default-text">{{recentDefaultText}}</text>
-      <text class="recent-default-action" bindtap="clearRecentDefaults">清空</text>
-    </view>
   </view>
 
   <view class="goal-entry-card">
