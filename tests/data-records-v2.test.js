@@ -159,8 +159,61 @@ test('data-records-v2 keeps the v1 four-tab record shell and basic info editing 
   assert.match(wxml, /wx:if="\{\{activeTab === 'food'\}\}"/);
   assert.match(wxml, /wx:elif="\{\{activeTab === 'medication'\}\}"/);
   assert.match(wxml, /wx:elif="\{\{activeTab === 'treatment'\}\}"/);
+  assert.match(wxml, /overview-milk-component-grid/);
+  assert.match(wxml, /overview-milk-component-card/);
+  assert.match(wxml, /componentRows\.length === 1 \? 'single' : ''/);
+  assert.match(wxml, /componentRows/);
+  assert.match(wxml, /overview-milk-component-header/);
+  assert.match(wxml, /overview-milk-component-summary-row/);
+  assert.match(wxml, /overview-milk-component-amount-row/);
+  assert.match(wxml, /overview-milk-component-calories/);
+  assert.match(wxml, /component\.amountText/);
+  assert.match(wxml, /component\.primaryText/);
+  assert.doesNotMatch(wxml, /overview-milk-component-header-amount/);
+  assert.match(wxml, /overview-milk-component-metric-grid/);
+  assert.match(wxml, /overview-milk-component-metric-item/);
+  assert.match(wxml, /component\.proteinRoleText === '特殊' \? '特殊蛋白'/);
+  assert.match(wxml, /component\.proteinRoleText === '无蛋白热量' \? '无蛋白热量' : '天然蛋白'/);
+  assert.match(wxml, /<text class="overview-milk-component-metric-value protein">\{\{component\.proteinAmountText \|\| component\.proteinValueText \|\| component\.proteinBreakdownText \|\| component\.secondaryText\}\}<\/text>/);
+  assert.match(wxml, /<text class="overview-milk-component-metric-value">\{\{component\.carbsText \|\| component\.carbs \+ 'g'\}\}<\/text>/);
+  assert.match(wxml, /<text class="overview-milk-component-metric-value">\{\{component\.fatText \|\| component\.fat \+ 'g'\}\}<\/text>/);
+  assert.match(wxml, /component\.carbsText/);
+  assert.match(wxml, /component\.fatText/);
+  assert.doesNotMatch(wxml, /overview-milk-component-macro/);
+  assert.doesNotMatch(wxml, /component\.macroText/);
+  assert.match(wxml, /component\.proteinBreakdownText/);
+  assert.doesNotMatch(wxml, /overview-milk-component-metric-list/);
+  assert.doesNotMatch(wxml, /overview-milk-component-metric-row/);
+  assert.doesNotMatch(wxml, /overview-milk-component-protein-role/);
+  assert.doesNotMatch(wxml, /overview-milk-component-protein-amount/);
+  assert.doesNotMatch(wxml, /overview-milk-component-metric-label">热量/);
+  assert.match(wxml, /蛋白/);
+  assert.match(wxml, /碳水/);
+  assert.match(wxml, /脂肪/);
+  assert.doesNotMatch(wxml, /overview-milk-empty/);
+  assert.doesNotMatch(wxml, /item\.emptyText/);
   assert.match(wxml, /hero-badge-edit" wx:if="\{\{item\.field\}\}"/);
-  assert.match(wxml, /copy-btn" wx:if="\{\{!isV2RecordsPage\}\}" bindtap="onCopyFeedingToDate"/);
+  assert.match(wxml, /copy-btn" bindtap="onCopyFeedingToDate"/);
+  assert.doesNotMatch(wxml, /copy-btn" wx:if="\{\{!isV2RecordsPage\}\}" bindtap="onCopyFeedingToDate"/);
+
+  const wxss = fs.readFileSync('miniprogram/pages/data-records/index.wxss', 'utf8');
+  assert.match(wxss, /\.overview-milk-component-card\.single\{grid-column:1\/-1\}/);
+  assert.match(wxss, /\.overview-milk-component-header\{display:flex;align-items:flex-start;gap:8rpx/);
+  assert.match(wxss, /\.overview-milk-component-summary-row\{display:flex;align-items:flex-start;justify-content:space-between;[^}]*flex-wrap:wrap/);
+  assert.match(wxss, /\.overview-milk-component-amount-row\{[^}]*font-size:18rpx;[^}]*color:#777777/);
+  assert.match(wxss, /\.overview-milk-component-calories\{flex:0 0 auto;[^}]*color:#FF8C00/);
+  assert.doesNotMatch(wxss, /\.overview-milk-component-amount-row\{[^}]*text-overflow:ellipsis/);
+  assert.doesNotMatch(wxss, /\.overview-milk-component-calories\{[^}]*text-overflow:ellipsis/);
+  assert.doesNotMatch(wxss, /\.overview-milk-component-calories\{[^}]*max-width:/);
+  assert.doesNotMatch(wxss, /overview-milk-component-header-amount/);
+  assert.match(wxss, /\.overview-milk-component-copy\{display:flex;flex:1;flex-direction:column;justify-content:center;[^}]*min-height:34rpx/);
+  assert.match(wxss, /\.overview-milk-component-name\{display:-webkit-box;[^}]*white-space:normal;[^}]*-webkit-line-clamp:2/);
+  assert.match(wxss, /\.overview-milk-component-metric-grid\{display:flex;gap:8rpx/);
+  assert.match(wxss, /\.overview-milk-component-metric-item\{display:flex;flex:1;flex-direction:column/);
+  assert.match(wxss, /\.overview-milk-component-metric-value\{display:block;font-size:20rpx;font-weight:700;[^}]*white-space:normal/);
+  assert.doesNotMatch(wxss, /overview-milk-component-protein-role/);
+  assert.doesNotMatch(wxss, /overview-milk-component-protein-amount/);
+  assert.doesNotMatch(wxss, /overview-milk-component-nutrient/);
 });
 
 test('data-records switches milk editor navigation to v2 when using v2 records', () => {
@@ -171,6 +224,26 @@ test('data-records switches milk editor navigation to v2 when using v2 records',
   assert.match(dataRecordsJs, /\/pages\/milk-feeding-editor\/index/);
   assert.match(dataRecordsJs, /feedingRecords\s*\|\|\s*\[\]\)\[index\]/);
   assert.match(dataRecordsJs, /recordId=\$\{encodeURIComponent\(targetRecordId\)\}/);
+});
+
+test('data-records-v2 keeps the feeding overview empty like food and treatment when no feeding records exist', () => {
+  const { page, cleanup } = loadDataRecordsPageForDeletion();
+
+  try {
+    const instance = createPageInstance(page, {
+      feedings: [],
+      totalMilk: 0
+    });
+    const milkSection = page.buildSummaryPreviewData.call(instance).sourceSections[0];
+
+    assert.equal(milkSection.variant, 'components');
+    assert.equal(milkSection.meta, '0条记录');
+    assert.deepEqual(milkSection.componentRows, []);
+    assert.equal(Object.hasOwn(milkSection, 'emptyText'), false);
+    assert.equal(milkSection.summaryText, '总奶量 0ml · 热量 0kcal · 蛋白 0g');
+  } finally {
+    cleanup();
+  }
 });
 
 test('data-records-v2 fetches v2 feeding while reusing v1 secondary tab records', async () => {
@@ -332,6 +405,96 @@ test('data-records-v2 hard deletes the selected v2 feeding record on delete', as
     assert.equal(calls.toasts.at(-1).title, '删除成功');
   } finally {
     feedingRecordV2Model.deleteRecord = previousDeleteRecord;
+    cleanup();
+  }
+});
+
+test('data-records-v2 copies v2 feeding records into the target date', async () => {
+  const { page, feedingRecordV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
+  const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
+  const previousDeleteRecord = feedingRecordV2Model.deleteRecord;
+  const previousAddRecord = feedingRecordV2Model.addRecord;
+  const deletedIds = [];
+  const addedRecords = [];
+  feedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    if (date === '2026-05-22') {
+      return [{ _id: 'target-v2-1', id: 'target-v2-1', babyUid, date, startTime: '07:00' }];
+    }
+    return [];
+  };
+  feedingRecordV2Model.deleteRecord = async (recordId) => {
+    deletedIds.push(recordId);
+    return true;
+  };
+  feedingRecordV2Model.addRecord = async (record) => {
+    addedRecords.push(record);
+    return { _id: `copied-${addedRecords.length}` };
+  };
+  global.wx.showModal = ({ success }) => success({ confirm: true });
+
+  try {
+    const instance = createPageInstance(page, {
+      selectedDate: '2026-05-21',
+      feedingRecords: [
+        {
+          _id: 'source-v2-1',
+          id: 'source-v2-1',
+          _openid: 'owner-openid',
+          babyUid: 'baby-1',
+          date: '2026-05-21',
+          startTime: '08:30',
+          startDateTime: '2026-05-21 08:30',
+          endDateTime: '2026-05-21 08:50',
+          isV2FeedingRecord: true,
+          source: 'milk_feeding_v2',
+          schemaVersion: 1,
+          recordType: 'milk_feeding',
+          status: 'active',
+          createdAt: 'old-created',
+          updatedAt: 'old-updated',
+          formulaComponents: [
+            { kind: 'breast_milk', volume: 60 }
+          ],
+          nutritionSummary: {
+            totalVolume: 60,
+            calories: 40
+          },
+          milkSummaryText: '母乳 60ml',
+          formattedStartTime: '08:30'
+        }
+      ]
+    });
+    instance.forceRefreshData = async () => {
+      calls.refreshes += 1;
+    };
+
+    await page.applyFeedingCopyToDate.call(instance, '2026-05-22');
+
+    assert.deepEqual(deletedIds, ['target-v2-1']);
+    assert.equal(addedRecords.length, 1);
+    assert.equal(addedRecords[0]._id, undefined);
+    assert.equal(addedRecords[0].id, undefined);
+    assert.equal(addedRecords[0]._openid, undefined);
+    assert.equal(addedRecords[0].babyUid, 'baby-1');
+    assert.equal(addedRecords[0].date, '2026-05-22');
+    assert.equal(addedRecords[0].startTime, '08:30');
+    assert.ok(addedRecords[0].startDateTime instanceof Date);
+    assert.equal(addedRecords[0].startDateTime.getFullYear(), 2026);
+    assert.equal(addedRecords[0].startDateTime.getMonth(), 4);
+    assert.equal(addedRecords[0].startDateTime.getDate(), 22);
+    assert.equal(addedRecords[0].startDateTime.getHours(), 8);
+    assert.equal(addedRecords[0].startDateTime.getMinutes(), 30);
+    assert.equal(addedRecords[0].endDateTime, null);
+    assert.deepEqual(addedRecords[0].formulaComponents, [{ kind: 'breast_milk', volume: 60 }]);
+    assert.equal(addedRecords[0].createdAt, undefined);
+    assert.equal(addedRecords[0].updatedAt, undefined);
+    assert.equal(calls.legacyUpdates.length, 0);
+    assert.equal(calls.refreshes, 1);
+    assert.equal(calls.toasts.at(-1).title, '已复制到目标日期');
+  } finally {
+    feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
+    feedingRecordV2Model.deleteRecord = previousDeleteRecord;
+    feedingRecordV2Model.addRecord = previousAddRecord;
     cleanup();
   }
 });
@@ -515,6 +678,12 @@ test('data-records-v2 uses v2 component nutrition for daily overview and feeding
     assert.equal(instance.data.dailyCaloriesTotal, 147);
     assert.equal(instance.data.totalMilk, 200);
     assert.equal(instance.data.summaryPreview.topMetrics.find((item) => item.label === '总奶量').value, '200');
+    assert.equal(instance.data.summaryPreview.sourceSections[0].variant, 'components');
+    assert.equal(instance.data.summaryPreview.sourceSections[0].componentRows.length, 4);
+    assert.deepEqual(
+      instance.data.summaryPreview.sourceSections[0].componentRows.map((row) => row.name),
+      ['母乳', '普奶 A', '特奶', '能量粉']
+    );
     assert.deepEqual(instance.data.feedingRecords[0].nutritionDisplay, {
       calories: 147,
       carbs: 15.8,

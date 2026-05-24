@@ -2599,6 +2599,24 @@
 .overview-milk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx;margin-top:14rpx}
 .overview-milk-card{padding:16rpx;border-radius:18rpx;background:rgba(255,255,255,0.95)}
 .overview-milk-card-title{display:block;font-size:22rpx;font-weight:600;color:#FF8C00;margin-bottom:10rpx}
+.overview-milk-component-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10rpx;margin-top:12rpx}
+.overview-milk-component-card{display:flex;flex-direction:column;gap:10rpx;min-width:0;padding:12rpx;border-radius:16rpx;background:rgba(255,255,255,0.96)}
+.overview-milk-component-card.single{grid-column:1/-1}
+.overview-milk-component-header{display:flex;align-items:flex-start;gap:8rpx;min-width:0}
+.overview-milk-component-badge{display:flex;align-items:center;justify-content:center;flex:0 0 34rpx;width:34rpx;height:34rpx;border-radius:10rpx;font-size:19rpx;font-weight:700;background:#FFF4C9;color:#8A5B12;border:1rpx solid rgba(138,91,18,0.16)}
+.overview-milk-component-badge.regular{background:#EAF7D8;color:#5F8A1F;border-color:rgba(95,138,31,0.18)}
+.overview-milk-component-badge.special{background:#EAF1FF;color:#4775C9;border-color:rgba(71,117,201,0.18)}
+.overview-milk-component-badge.energy{background:#FFF0D8;color:#B76A1B;border-color:rgba(183,106,27,0.18)}
+.overview-milk-component-copy{display:flex;flex:1;flex-direction:column;justify-content:center;gap:2rpx;min-width:0;min-height:34rpx}
+.overview-milk-component-name{display:-webkit-box;font-size:21rpx;font-weight:600;color:#333333;line-height:1.22;white-space:normal;overflow:hidden;text-overflow:ellipsis;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-all}
+.overview-milk-component-summary-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:4rpx 8rpx;min-width:0}
+.overview-milk-component-amount-row{display:block;flex:1 1 130rpx;min-width:0;font-size:18rpx;font-weight:500;color:#777777;line-height:1.25;white-space:normal;overflow:visible;word-break:break-word}
+.overview-milk-component-calories{flex:0 0 auto;font-size:18rpx;font-weight:700;color:#FF8C00;line-height:1.25;text-align:right;white-space:normal;overflow:visible;word-break:keep-all}
+.overview-milk-component-metric-grid{display:flex;gap:8rpx;padding-top:2rpx}
+.overview-milk-component-metric-item{display:flex;flex:1;flex-direction:column;gap:4rpx;min-width:0}
+.overview-milk-component-metric-label{display:block;font-size:17rpx;color:#999999;line-height:1.1;white-space:nowrap}
+.overview-milk-component-metric-value{display:block;font-size:20rpx;font-weight:700;color:#333333;line-height:1.18;white-space:normal;word-break:break-all}
+.overview-milk-component-metric-value.protein{font-size:20rpx;color:#333333}
 .overview-stat-list{display:flex;flex-direction:column;gap:8rpx}
 .overview-stat-row{display:flex;justify-content:space-between;align-items:baseline;gap:16rpx}
 .overview-stat-label{font-size:20rpx;color:#666666}

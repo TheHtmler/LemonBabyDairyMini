@@ -114,7 +114,35 @@
               <text class="overview-section-label">{{item.label}}</text>
               <text class="overview-section-meta" wx:if="{{item.meta}}">{{item.meta}}</text>
             </view>
-            <view class="overview-milk-grid" wx:if="{{item.type === 'milk'}}">
+            <view class="overview-milk-component-grid" wx:if="{{item.type === 'milk' && item.variant === 'components'}}">
+              <view class="overview-milk-component-card {{item.componentRows.length === 1 ? 'single' : ''}}" wx:for="{{item.componentRows}}" wx:key="name" wx:for-item="component">
+                <view class="overview-milk-component-header">
+                  <text class="overview-milk-component-badge {{component.badgeClass}}" style="{{component.badgeStyle}}">{{component.badge}}</text>
+                  <view class="overview-milk-component-copy">
+                    <text class="overview-milk-component-name">{{component.name}}</text>
+                  </view>
+                </view>
+                <view class="overview-milk-component-summary-row">
+                  <text class="overview-milk-component-amount-row">{{component.amountText}}</text>
+                  <text class="overview-milk-component-calories">{{component.primaryText}}</text>
+                </view>
+                <view class="overview-milk-component-metric-grid">
+                  <view class="overview-milk-component-metric-item">
+                    <text class="overview-milk-component-metric-label">{{component.proteinLabelText || (component.proteinRoleText === '特殊' ? '特殊蛋白' : (component.proteinRoleText === '无蛋白热量' ? '无蛋白热量' : '天然蛋白'))}}</text>
+                    <text class="overview-milk-component-metric-value protein">{{component.proteinAmountText || component.proteinValueText || component.proteinBreakdownText || component.secondaryText}}</text>
+                  </view>
+                  <view class="overview-milk-component-metric-item">
+                    <text class="overview-milk-component-metric-label">碳水</text>
+                    <text class="overview-milk-component-metric-value">{{component.carbsText || component.carbs + 'g'}}</text>
+                  </view>
+                  <view class="overview-milk-component-metric-item">
+                    <text class="overview-milk-component-metric-label">脂肪</text>
+                    <text class="overview-milk-component-metric-value">{{component.fatText || component.fat + 'g'}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="overview-milk-grid" wx:elif="{{item.type === 'milk'}}">
               <view class="overview-milk-card" wx:for="{{item.columns}}" wx:key="label" wx:for-item="column">
                 <text class="overview-milk-card-title">{{column.label}}</text>
                 <view class="overview-stat-list">
@@ -284,7 +312,7 @@
         <view class="card">
         <view class="card-title actions-only">
           <view class="card-actions">
-            <view class="copy-btn" wx:if="{{!isV2RecordsPage}}" bindtap="onCopyFeedingToDate">
+            <view class="copy-btn" bindtap="onCopyFeedingToDate">
               <text>复制数据</text>
             </view>
             <view class="add-btn" bindtap="navigateToMilkFeedingEditor">

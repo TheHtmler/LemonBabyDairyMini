@@ -864,6 +864,46 @@ function cloneFeedingForDate(feeding = {}, selectedDate, babyUid) {
   };
 }
 
+function cloneV2FeedingForDate(feeding = {}, selectedDate, babyUid) {
+  const startTime = feeding.startTime || formatTimeFromDate(feeding.startDateTime) || '00:00';
+  const {
+    _id,
+    id,
+    _openid,
+    formattedStartTime,
+    displayTime,
+    milkSummaryItems,
+    milkSummaryText,
+    nutritionDisplay,
+    naturalMilkType,
+    naturalMilkVolume,
+    totalMilkVolume,
+    formulaPowderWeight,
+    specialMilkVolume,
+    specialMilkPowder,
+    energyPowderWeight,
+    isV2FeedingRecord,
+    source,
+    schemaVersion,
+    recordType,
+    status,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    ...rest
+  } = feeding;
+
+  return {
+    ...rest,
+    babyUid: babyUid || feeding.babyUid || '',
+    date: selectedDate,
+    startTime,
+    endTime: feeding.endTime || '',
+    startDateTime: buildDateTimeFromDateKey(selectedDate, startTime),
+    endDateTime: null
+  };
+}
+
 function cloneIntakeForDate(intake = {}, openid = '') {
   const now = new Date();
   const {
@@ -1112,7 +1152,7 @@ function createDataRecordsPageConfig(options = {}) {
       '>6岁: 25%-30%'
     ],
     activeTab: 'feeding',
-    summaryPreview: buildDataRecordsSummaryPreview({}),
+    summaryPreview: buildDataRecordsSummaryPreview({ isV2RecordsPage: options.recordSource === 'v2' }),
     activeMetricInfoLabel: '',
     activeMetricInfoTitle: '',
     activeMetricInfoLines: [],
@@ -2389,6 +2429,11 @@ function createDataRecordsPageConfig(options = {}) {
       return;
     }
 
+    if (this.isV2RecordsSource()) {
+      await this.applyV2FeedingCopyToDate(targetDateStr, babyUid);
+      return;
+    }
+
     const sourceFeedings = this.data.feedings || [];
     const targetRecord = await this.getFeedingRecordByDate(targetDateStr);
     const shouldContinue = await this.confirmOverwriteForDimension({
@@ -2417,6 +2462,49 @@ function createDataRecordsPageConfig(options = {}) {
       wx.showToast({ title: '已复制到目标日期', icon: 'success' });
     } catch (error) {
       console.error('复制喂奶记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '复制失败', icon: 'none' });
+    }
+  },
+
+  async applyV2FeedingCopyToDate(targetDateStr, babyUid) {
+    const seenSourceIds = new Set();
+    const sourceFeedings = [
+      ...(this.data.feedingRecords || []),
+      ...(this.data.feedings || [])
+    ]
+      .filter(record => record?.isV2FeedingRecord || Array.isArray(record?.formulaComponents))
+      .filter(record => {
+        const key = record._id || record.id || `${record.startTime || ''}:${JSON.stringify(record.formulaComponents || [])}`;
+        if (seenSourceIds.has(key)) return false;
+        seenSourceIds.add(key);
+        return true;
+      });
+    const targetRecords = await FeedingRecordV2Model.getRecordsByDate(babyUid, targetDateStr);
+    const shouldContinue = await this.confirmOverwriteForDimension({
+      targetDateStr,
+      dimensionLabel: '喂奶记录',
+      hasExisting: (targetRecords || []).length > 0
+    });
+    if (!shouldContinue) return;
+
+    const copiedFeedings = sourceFeedings.map(item => cloneV2FeedingForDate(item, targetDateStr, babyUid));
+
+    wx.showLoading({ title: '复制中...' });
+    try {
+      if (targetRecords && targetRecords.length > 0) {
+        await Promise.all(targetRecords.map(record => FeedingRecordV2Model.deleteRecord(record._id || record.id)));
+      }
+      if (copiedFeedings.length > 0) {
+        await Promise.all(copiedFeedings.map(record => FeedingRecordV2Model.addRecord(record)));
+      }
+      wx.hideLoading();
+      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+      if (typeof this.forceRefreshData === 'function') {
+        await this.forceRefreshData();
+      }
+    } catch (error) {
+      console.error('复制v2喂奶记录失败:', error);
       wx.hideLoading();
       wx.showToast({ title: '复制失败', icon: 'none' });
     }
@@ -5373,6 +5461,8 @@ function createDataRecordsPageConfig(options = {}) {
       macroRatios: overrides.macroRatios ?? this.data.macroRatios,
       fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines,
       intakeOverview: overrides.intakeOverview ?? this.data.intakeOverview,
+      feedings: overrides.feedings ?? this.data.feedings,
+      isV2RecordsPage: overrides.isV2RecordsPage ?? this.data.isV2RecordsPage,
       naturalMilkType: overrides.naturalMilkType ?? this.inferNaturalMilkType(overrides.feedings ?? this.data.feedings)
     };
     return buildDataRecordsSummaryPreview(snapshot);

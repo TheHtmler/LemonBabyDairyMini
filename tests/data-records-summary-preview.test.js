@@ -192,6 +192,117 @@ test('buildDataRecordsSummaryPreview falls back to placeholders for missing valu
   assert.equal(preview.coefficientRows[0].value, '--');
 });
 
+test('buildDataRecordsSummaryPreview builds compact v2 milk component rows', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    totalMilk: 200,
+    proteinSummaryDisplay: {
+      total: '2.92',
+      natural: '1.16',
+      special: '1.76'
+    },
+    intakeOverview: {
+      milk: {
+        normal: { volume: 110, calories: 77.2, protein: 1.16, carbs: 9.8, fat: 3.28 },
+        special: { volume: 90, calories: 70.2, protein: 1.76, carbs: 6.75, fat: 3.24 }
+      }
+    },
+    feedings: [
+      {
+        isV2FeedingRecord: true,
+        formulaComponents: [
+          {
+            kind: 'breast_milk',
+            volume: 60,
+            nutritionSnapshot: { protein: 1.1, calories: 67, fat: 3.8, carbs: 7 }
+          },
+          {
+            kind: 'formula_powder',
+            powderId: 'regular-a',
+            powderName: '普奶 A',
+            category: 'regular_formula',
+            categoryShortLabel: '普',
+            categoryBadgeClass: 'regular',
+            proteinRole: 'natural',
+            waterVolume: 30.4,
+            powderWeight: 5,
+            nutritionSnapshot: { protein: 10, calories: 500, fat: 20, carbs: 55 }
+          },
+          {
+            kind: 'formula_powder',
+            powderId: 'special-a',
+            powderName: '特奶',
+            category: 'special_formula',
+            categoryShortLabel: '特',
+            categoryBadgeClass: 'special',
+            proteinRole: 'special',
+            waterVolume: 90,
+            powderWeight: 13.5,
+            nutritionSnapshot: { protein: 13, calories: 520, fat: 24, carbs: 50 }
+          },
+          {
+            kind: 'formula_powder',
+            powderId: 'energy-a',
+            powderName: '能量粉',
+            category: 'energy_supplement',
+            categoryShortLabel: '能',
+            categoryBadgeClass: 'energy',
+            proteinRole: 'none',
+            waterVolume: 20,
+            powderWeight: 3,
+            nutritionSnapshot: { protein: 0, calories: 400, fat: 0, carbs: 95 }
+          }
+        ]
+      }
+    ]
+  });
+
+  const milkSection = preview.sourceSections[0];
+  assert.equal(milkSection.type, 'milk');
+  assert.equal(milkSection.variant, 'components');
+  assert.equal(milkSection.meta, '1条记录');
+  assert.equal(milkSection.summaryText, '总奶量 200ml · 热量 147.4kcal · 蛋白 2.92g');
+  assert.deepEqual(
+    milkSection.componentRows.map((row) => ({
+      badge: row.badge,
+      badgeClass: row.badgeClass,
+      name: row.name,
+      amountText: row.amountText,
+      primaryText: row.primaryText,
+      secondaryText: row.secondaryText,
+      proteinRoleText: row.proteinRoleText,
+      proteinValueText: row.proteinValueText,
+      proteinBreakdownText: row.proteinBreakdownText,
+      proteinLabelText: row.proteinLabelText,
+      proteinAmountText: row.proteinAmountText,
+      carbsText: row.carbsText,
+      fatText: row.fatText,
+      macroText: row.macroText
+    })),
+    [
+      { badge: '母', badgeClass: 'breast', name: '母乳', amountText: '60ml', primaryText: '40 kcal', secondaryText: '天然0.66g', proteinRoleText: '天然', proteinValueText: '0.66g', proteinBreakdownText: '天然0.66g', proteinLabelText: '天然蛋白', proteinAmountText: '0.66g', carbsText: '4.2g', fatText: '2.28g', macroText: '碳水 4.2g · 脂肪 2.28g' },
+      { badge: '普', badgeClass: 'regular', name: '普奶 A', amountText: '30ml / 粉5g', primaryText: '25 kcal', secondaryText: '天然0.5g', proteinRoleText: '天然', proteinValueText: '0.5g', proteinBreakdownText: '天然0.5g', proteinLabelText: '天然蛋白', proteinAmountText: '0.5g', carbsText: '2.75g', fatText: '1g', macroText: '碳水 2.75g · 脂肪 1g' },
+      { badge: '特', badgeClass: 'special', name: '特奶', amountText: '90ml / 粉13.5g', primaryText: '70 kcal', secondaryText: '特殊1.76g', proteinRoleText: '特殊', proteinValueText: '1.76g', proteinBreakdownText: '特殊1.76g', proteinLabelText: '特殊蛋白', proteinAmountText: '1.76g', carbsText: '6.75g', fatText: '3.24g', macroText: '碳水 6.75g · 脂肪 3.24g' },
+      { badge: '能', badgeClass: 'energy', name: '能量粉', amountText: '20ml / 粉3g', primaryText: '12 kcal', secondaryText: '无蛋白热量', proteinRoleText: '无蛋白热量', proteinValueText: '', proteinBreakdownText: '无蛋白热量', proteinLabelText: '无蛋白热量', proteinAmountText: '0g', carbsText: '2.85g', fatText: '0g', macroText: '碳水 2.85g · 脂肪 0g' }
+    ]
+  );
+});
+
+test('buildDataRecordsSummaryPreview keeps v2 milk overview empty like other empty intake sections', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    isV2RecordsPage: true,
+    totalMilk: 0,
+    feedings: []
+  });
+
+  const milkSection = preview.sourceSections[0];
+  assert.equal(milkSection.type, 'milk');
+  assert.equal(milkSection.variant, 'components');
+  assert.equal(milkSection.meta, '0条记录');
+  assert.deepEqual(milkSection.componentRows, []);
+  assert.equal(Object.hasOwn(milkSection, 'emptyText'), false);
+  assert.equal(milkSection.summaryText, '总奶量 0ml · 热量 0kcal · 蛋白 0g');
+});
+
 test('buildDataRecordsSummaryPreview shows food special protein under special protein coefficient module', () => {
   const preview = buildDataRecordsSummaryPreview({
     proteinSummaryDisplay: {
