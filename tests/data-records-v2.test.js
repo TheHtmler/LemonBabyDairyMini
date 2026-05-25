@@ -246,18 +246,50 @@ test('data-records-v2 keeps the feeding overview empty like food and treatment w
   }
 });
 
-test('data-records-v2 fetches v2 feeding while reusing v1 secondary tab records', async () => {
+test('data-records-v2 fetches v2 feeding while reading food from food_intake_records', async () => {
   const { page, feedingRecordV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousResolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot;
+  const FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord');
   const MedicationRecordModel = require('../miniprogram/models/medicationRecord');
   const TreatmentRecordModel = require('../miniprogram/models/treatmentRecord');
+  const previousFindFoodByDate = FoodIntakeRecordModel.findByDate;
   const previousFindMedicationByDate = MedicationRecordModel.findByDate;
   const previousFindTreatmentByDate = TreatmentRecordModel.findByDate;
   let resolveOptions = null;
+  let foodArgs = null;
   let medicationArgs = null;
   let treatmentArgs = null;
   feedingRecordV2Model.getRecordsByDate = async () => [];
+  FoodIntakeRecordModel.findByDate = async (babyUid, date) => {
+    foodArgs = { babyUid, date };
+    return [
+      {
+        _id: 'food-1',
+        babyUid,
+        date,
+        mealBatchId: 'meal-1',
+        time: '12:30',
+        foodId: 'food-catalog-1',
+        foodName: '米糊',
+        quantity: 10,
+        unit: 'g',
+        foodSnapshot: {
+          name: '米糊',
+          category: '辅食',
+          proteinSource: 'natural'
+        },
+        nutrition: {
+          calories: 20,
+          protein: 1,
+          naturalProtein: 1,
+          specialProtein: 0,
+          carbs: 4,
+          fat: 0
+        }
+      }
+    ];
+  };
   MedicationRecordModel.findByDate = async (date, babyUid) => {
     medicationArgs = { date, babyUid };
     return { success: true, data: [{ _id: 'med-1', medicineName: '左卡尼汀' }] };
@@ -279,31 +311,6 @@ test('data-records-v2 fetches v2 feeding while reusing v1 secondary tab records'
   };
 
   try {
-    calls.collectionData.feeding_records = [
-      {
-        _id: 'legacy-food-1',
-        date: '2026-05-21',
-        babyUid: 'baby-1',
-        feedings: [],
-        intakes: [
-          {
-            _id: 'food-1',
-            type: 'food',
-            foodId: 'food-catalog-1',
-            nameSnapshot: '米糊',
-            quantity: 10,
-            unit: 'g',
-            nutrition: {
-              calories: 20,
-              protein: 1,
-              carbs: 4,
-              fat: 0
-            }
-          }
-        ],
-        basicInfo: {}
-      }
-    ];
     const instance = createPageInstance(page, {
       selectedDate: '2026-05-21',
       nutritionSettings: {}
@@ -311,8 +318,9 @@ test('data-records-v2 fetches v2 feeding while reusing v1 secondary tab records'
 
     await page.fetchDailyRecords.call(instance, '2026-05-21', { silent: true });
 
-    assert.ok(calls.collections.includes('feeding_records'));
+    assert.equal(calls.collections.includes('feeding_records'), false);
     assert.ok(calls.collections.includes('bowel_records'));
+    assert.deepEqual(foodArgs, { babyUid: 'baby-1', date: '2026-05-21' });
     assert.deepEqual(medicationArgs, { date: '2026-05-21', babyUid: 'baby-1' });
     assert.deepEqual(treatmentArgs, { date: '2026-05-21', babyUid: 'baby-1' });
     assert.deepEqual(resolveOptions, { includeFallbacks: false, includeProfileInitial: true });
@@ -323,6 +331,7 @@ test('data-records-v2 fetches v2 feeding while reusing v1 secondary tab records'
   } finally {
     feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
     feedingRecordV2Model.resolveBasicInfoSnapshot = previousResolveBasicInfoSnapshot;
+    FoodIntakeRecordModel.findByDate = previousFindFoodByDate;
     MedicationRecordModel.findByDate = previousFindMedicationByDate;
     TreatmentRecordModel.findByDate = previousFindTreatmentByDate;
     cleanup();

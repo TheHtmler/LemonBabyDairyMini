@@ -294,7 +294,7 @@ Decision: `daily_summary_v2` is a cache, not the source of truth. If wrong, rebu
 - Create: `miniprogram/models/foodIntakeRecord.js`
 - Test: `tests/food-intake-record-v2.test.js`
 
-- [ ] **Step 1: Write failing model tests**
+- [x] **Step 1: Write failing model tests**
 
 Cover:
 - `createFoodIntake()` writes to `food_intake_records`, not `feeding_records`.
@@ -311,7 +311,7 @@ node --test tests/food-intake-record-v2.test.js
 
 Expected: FAIL because the model does not exist.
 
-- [ ] **Step 2: Implement `FoodIntakeRecordModel`**
+- [x] **Step 2: Implement `FoodIntakeRecordModel`**
 
 Export methods:
 
@@ -331,7 +331,7 @@ Implementation notes:
 - Keep `foodSnapshot` and `nutrition` on the record so later food catalog edits do not change history.
 - Do not read from `feeding_records`.
 
-- [ ] **Step 3: Run focused tests**
+- [x] **Step 3: Run focused tests**
 
 Run:
 
@@ -349,7 +349,7 @@ Expected: PASS.
 - Create: `miniprogram/utils/dailySummaryV2Utils.js`
 - Test: `tests/daily-summary-v2-utils.test.js`
 
-- [ ] **Step 1: Write failing pure utility tests**
+- [x] **Step 1: Write failing pure utility tests**
 
 Cover:
 - Milk totals use `feeding_records_v2.nutritionSummary`.
@@ -367,7 +367,7 @@ node --test tests/daily-summary-v2-utils.test.js
 
 Expected: FAIL because the utility does not exist.
 
-- [ ] **Step 2: Implement pure builder functions**
+- [x] **Step 2: Implement pure builder functions**
 
 Export:
 
@@ -387,7 +387,7 @@ Implementation notes:
 - Do not mutate input records.
 - Keep the output shape aligned with the `daily_summary_v2` contract in this plan.
 
-- [ ] **Step 3: Run focused tests**
+- [x] **Step 3: Run focused tests**
 
 Run:
 
@@ -406,7 +406,7 @@ Expected: PASS.
 - Create: `miniprogram/utils/dailyRecordV2Service.js`
 - Test: `tests/daily-record-v2-service.test.js`
 
-- [ ] **Step 1: Write failing service tests**
+- [x] **Step 1: Write failing service tests**
 
 Cover:
 - `getDailyRecordV2(babyUid, date)` loads milk, food, medication, treatment, bowel, growth, and summary data.
@@ -423,7 +423,7 @@ node --test tests/daily-record-v2-service.test.js
 
 Expected: FAIL because the service/model does not exist.
 
-- [ ] **Step 2: Implement `DailySummaryV2Model`**
+- [x] **Step 2: Implement `DailySummaryV2Model`**
 
 Export methods:
 
@@ -441,7 +441,7 @@ Implementation notes:
 - Upsert by finding an existing active summary first.
 - Store `isDirty` so writes can be cheap and rebuilds can happen on next read or via cloud function.
 
-- [ ] **Step 3: Implement `dailyRecordV2Service`**
+- [x] **Step 3: Implement `dailyRecordV2Service`**
 
 Export:
 
@@ -460,7 +460,7 @@ Implementation notes:
 - Query `bowel_records` directly until a model exists.
 - Use `FoodIntakeRecordModel.findByDate` for v2 food.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -475,18 +475,23 @@ Expected: PASS.
 ## Task 4: Move v2 Food Writes Off `feeding_records.intakes`
 
 **Files:**
-- Modify: `miniprogram/pages/meal-editor/index.js`
+- Create: `miniprogram/pages/meal-editor-v2/index.js`
+- Create: `miniprogram/pages/meal-editor-v2/index.wxml`
+- Create: `miniprogram/pages/meal-editor-v2/index.wxss`
+- Create: `miniprogram/pages/meal-editor-v2/index.json`
+- Modify: `miniprogram/app.json`
 - Modify: `miniprogram/pages/data-records/index.js`
 - Test: `tests/data-records-v2-food-intakes.test.js`
 
-- [ ] **Step 1: Write failing v2 food tests**
+- [x] **Step 1: Write failing v2 food tests**
 
 Cover:
-- Opening `meal-editor` with `recordSource=v2` writes new food intake documents to `food_intake_records`.
+- Opening standalone `meal-editor-v2` writes new food intake documents to `food_intake_records`.
 - Editing a v2 food intake updates `food_intake_records`.
 - Deleting a v2 food intake archives the food document.
 - `data-records-v2` loads food records from `food_intake_records`.
 - `data-records-v2` no longer creates a `feeding_records` day shell only to store food.
+- Legacy `meal-editor` remains isolated from v2 food models.
 
 Run:
 
@@ -496,21 +501,22 @@ node --test tests/data-records-v2-food-intakes.test.js
 
 Expected: FAIL because v2 food still depends on `feeding_records.intakes`.
 
-- [ ] **Step 2: Add `recordSource` routing to `meal-editor`**
+- [x] **Step 2: Add standalone `meal-editor-v2` page**
 
 Implementation notes:
-- Accept `recordSource=v2` in the URL.
-- In v2 mode, load existing meal batch from `food_intake_records`.
-- In legacy mode, keep the current `feeding_records.intakes` behavior unchanged.
+- Duplicate the full legacy meal editor page into `meal-editor-v2` for data and logic isolation.
+- Register `pages/meal-editor-v2/index` in `app.json`.
+- Keep legacy `meal-editor` on the current `feeding_records.intakes` behavior only.
 
-- [ ] **Step 3: Update `data-records` v2 food actions**
+- [x] **Step 3: Update `data-records` v2 food actions**
 
 Implementation notes:
 - In `isV2RecordsSource()`, use `FoodIntakeRecordModel` for add/edit/delete/copy food.
+- Navigate v2 food add/edit actions to `pages/meal-editor-v2/index`.
 - Keep existing legacy functions for v1 mode.
 - After each v2 write, call `DailySummaryV2Model.markDirty(babyUid, date)`.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 

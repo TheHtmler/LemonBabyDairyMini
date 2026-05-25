@@ -17,6 +17,8 @@ const TreatmentRecordModel = require('../../models/treatmentRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
 const InvitationModel = require('../../models/invitation');
+const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
+const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const {
   createEmptyTreatmentOverview,
   mergeTreatmentIntoMacroSummary,
@@ -507,6 +509,48 @@ function normalizeIntakes(intakes = []) {
       const timeB = (b.recordedAt || '').replace(':', '');
       return timeB.localeCompare(timeA);
     });
+}
+
+function foodIntakeRecordToLegacyIntake(record = {}) {
+  const nutrition = record.nutrition || {};
+  const foodSnapshot = record.foodSnapshot || {};
+  return {
+    _id: record._id || record.id || '',
+    type: 'food',
+    foodType: 'food',
+    category: foodSnapshot.category || record.category || '辅食',
+    foodId: record.foodId || '',
+    nameSnapshot: record.foodName || foodSnapshot.name || '食物',
+    unit: record.unit || 'g',
+    quantity: Number(record.quantity) || 0,
+    proteinSource: foodSnapshot.proteinSource || record.proteinSource || 'natural',
+    proteinQuality: record.proteinQuality || '',
+    nutrition: {
+      calories: roundCalories(Number(nutrition.calories) || 0),
+      protein: roundNumber(Number(nutrition.protein) || 0, 2),
+      carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
+      fat: roundNumber(Number(nutrition.fat) || 0, 2),
+      fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
+      sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
+    },
+    naturalProtein: roundNumber(Number(nutrition.naturalProtein) || 0, 2),
+    specialProtein: roundNumber(Number(nutrition.specialProtein) || 0, 2),
+    milkType: '',
+    notes: record.notes || '',
+    recordedAt: record.time || formatTimeFromDate(record.recordedAt),
+    mealBatchId: record.mealBatchId || '',
+    mealTime: record.time || formatTimeFromDate(record.recordedAt),
+    mealLabel: record.mealLabel || '',
+    mealNote: record.mealNote || '',
+    sortOrder: record.sortOrder || 0,
+    createdAt: record.createdAt || null,
+    updatedAt: record.updatedAt || null,
+    createdBy: record.createdBy || ''
+  };
+}
+
+function foodIntakeRecordsToLegacyIntakes(records = []) {
+  return normalizeIntakes((records || []).map(record => foodIntakeRecordToLegacyIntake(record)));
 }
 
 function groupFoodIntakesByMeal(intakes = []) {
@@ -1263,8 +1307,11 @@ function createDataRecordsPageConfig(options = {}) {
 
   navigateToMealEditor() {
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    const mealEditorPath = this.isV2RecordsSource()
+      ? '/pages/meal-editor-v2/index'
+      : '/pages/meal-editor/index';
     wx.navigateTo({
-      url: `/pages/meal-editor/index?date=${selectedDate}&from=records`
+      url: `${mealEditorPath}?date=${selectedDate}&from=records`
     });
   },
 
@@ -1341,8 +1388,11 @@ function createDataRecordsPageConfig(options = {}) {
     const mealBatchId = e.currentTarget.dataset.mealBatchId;
     const selectedDate = this.data.selectedDate || this.formatDate(new Date());
     if (!mealBatchId) return;
+    const mealEditorPath = this.isV2RecordsSource()
+      ? '/pages/meal-editor-v2/index'
+      : '/pages/meal-editor/index';
     wx.navigateTo({
-      url: `/pages/meal-editor/index?date=${selectedDate}&from=records&mealBatchId=${encodeURIComponent(mealBatchId)}`
+      url: `${mealEditorPath}?date=${selectedDate}&from=records&mealBatchId=${encodeURIComponent(mealBatchId)}`
     });
   },
 
@@ -1368,6 +1418,17 @@ function createDataRecordsPageConfig(options = {}) {
         if (!res.confirm) return;
         try {
           wx.showLoading({ title: '删除中...' });
+          if (this.isV2RecordsSource()) {
+            await Promise.all((this.data.intakes || [])
+              .filter(item => item.mealBatchId === mealBatchId && !!item._id)
+              .map(item => FoodIntakeRecordModel.deleteFoodIntake(item._id)));
+            await DailySummaryV2Model.markDirty(getBabyUid(), this.data.selectedDate);
+            wx.hideLoading();
+            wx.showToast({ title: '本顿已删除', icon: 'success' });
+            await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
+            return;
+          }
+
           const db = wx.cloud.database();
           const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
           const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
@@ -1860,6 +1921,15 @@ function createDataRecordsPageConfig(options = {}) {
         if (!res.confirm) return;
         try {
           wx.showLoading({ title: '删除中...' });
+          if (this.isV2RecordsSource()) {
+            await FoodIntakeRecordModel.deleteFoodIntake(target._id);
+            await DailySummaryV2Model.markDirty(getBabyUid(), this.data.selectedDate);
+            wx.hideLoading();
+            wx.showToast({ title: '已删除', icon: 'success' });
+            await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
+            return;
+          }
+
           const db = wx.cloud.database();
           const remainingIntakes = (this.data.intakes || []).filter(item => item._id !== target._id);
           const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
@@ -1973,6 +2043,22 @@ function createDataRecordsPageConfig(options = {}) {
     const isEdit = this.data.foodModalMode === 'edit' && this.data.editingFoodIntakeId;
     try {
       wx.showLoading({ title: '保存中...' });
+      if (this.isV2RecordsSource()) {
+        const payload = this.buildV2FoodIntakePayloadFromLegacyIntake(intake, babyUid, this.data.selectedDate);
+        if (isEdit) {
+          await FoodIntakeRecordModel.updateFoodIntake(this.data.editingFoodIntakeId, payload);
+        } else {
+          await FoodIntakeRecordModel.createFoodIntake(payload);
+        }
+        await DailySummaryV2Model.markDirty(babyUid, this.data.selectedDate);
+        wx.hideLoading();
+        wx.showToast({ title: isEdit ? '修改成功' : '添加成功', icon: 'success' });
+        this.loadRecentFoodOptions();
+        this.hideFoodIntakeModal();
+        await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
+        return;
+      }
+
       const db = wx.cloud.database();
       const [year, month, day] = this.data.selectedDate.split('-').map(Number);
       const recordDate = new Date(year, month - 1, day);
@@ -2518,6 +2604,41 @@ function createDataRecordsPageConfig(options = {}) {
     }
 
     const sourceFoodIntakes = normalizeIntakes(this.data.foodIntakes || []);
+
+    if (this.isV2RecordsSource()) {
+      const targetRecords = await FoodIntakeRecordModel.findByDate(babyUid, targetDateStr);
+      const shouldContinue = await this.confirmOverwriteForDimension({
+        targetDateStr,
+        dimensionLabel: '食物记录',
+        hasExisting: (targetRecords || []).length > 0
+      });
+      if (!shouldContinue) return;
+
+      wx.showLoading({ title: '复制中...' });
+      try {
+        if (targetRecords && targetRecords.length > 0) {
+          await Promise.all(targetRecords.map(record => FoodIntakeRecordModel.deleteFoodIntake(record._id || record.id)));
+        }
+        await Promise.all(sourceFoodIntakes.map((item) => {
+          const copied = cloneIntakeForDate(item, wx.getStorageSync('openid') || '');
+          return FoodIntakeRecordModel.createFoodIntake(
+            this.buildV2FoodIntakePayloadFromLegacyIntake(copied, babyUid, targetDateStr)
+          );
+        }));
+        await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
+        wx.hideLoading();
+        wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+        if (typeof this.forceRefreshData === 'function') {
+          await this.forceRefreshData();
+        }
+      } catch (error) {
+        console.error('复制v2食物记录失败:', error);
+        wx.hideLoading();
+        wx.showToast({ title: '复制失败', icon: 'none' });
+      }
+      return;
+    }
+
     const targetRecord = await this.getFeedingRecordByDate(targetDateStr);
     const targetIntakes = normalizeIntakes(targetRecord?.intakes || []);
     const targetNonFoodIntakes = targetIntakes.filter(item => item.type === 'milk');
@@ -2702,6 +2823,51 @@ function createDataRecordsPageConfig(options = {}) {
     return this.recordSource === 'v2';
   },
 
+  buildV2FoodIntakePayloadFromLegacyIntake(intake = {}, babyUid, dateStr) {
+    const nutrition = intake.nutrition || {};
+    const time = intake.recordedAt || intake.mealTime || formatTime(new Date());
+    const [year, month, day] = String(dateStr).split('-').map(Number);
+    const [hours, minutes] = String(time || '00:00').split(':').map(Number);
+    const catalogFood = (this.data.foodCatalog || []).find(food => food._id === intake.foodId) || {};
+
+    return {
+      babyUid,
+      date: dateStr,
+      mealBatchId: intake.mealBatchId || '',
+      recordedAt: new Date(
+        Number.isFinite(year) ? year : new Date().getFullYear(),
+        Number.isFinite(month) ? month - 1 : 0,
+        Number.isFinite(day) ? day : 1,
+        Number.isFinite(hours) ? hours : 0,
+        Number.isFinite(minutes) ? minutes : 0,
+        0
+      ),
+      time,
+      foodId: intake.foodId || '',
+      foodName: intake.nameSnapshot || catalogFood.name || '',
+      foodSnapshot: {
+        name: intake.nameSnapshot || catalogFood.name || '',
+        category: intake.category || catalogFood.category || '辅食',
+        proteinSource: intake.proteinSource || catalogFood.proteinSource || 'natural',
+        nutritionPer100g: catalogFood.nutritionPer100g || {}
+      },
+      quantity: intake.quantity,
+      unit: intake.unit || catalogFood.baseUnit || 'g',
+      nutrition: {
+        calories: nutrition.calories || 0,
+        protein: nutrition.protein || 0,
+        naturalProtein: intake.naturalProtein || nutrition.naturalProtein || 0,
+        specialProtein: intake.specialProtein || nutrition.specialProtein || 0,
+        fat: nutrition.fat || 0,
+        carbs: nutrition.carbs || 0,
+        fiber: nutrition.fiber || 0
+      },
+      notes: String(intake.notes || '').trim(),
+      mealLabel: intake.mealLabel || '',
+      mealNote: String(intake.mealNote || '').trim()
+    };
+  },
+
   async loadV2FeedingResult(babyUid, dateStr) {
     const records = await FeedingRecordV2Model.getRecordsByDate(babyUid, dateStr);
     if (!records || records.length === 0) {
@@ -2752,6 +2918,36 @@ function createDataRecordsPageConfig(options = {}) {
           id: legacyDailyRecord?.id || legacyDailyRecord?._id || v2DailyRecord.id,
           intakes: legacyDailyRecord?.intakes || [],
           legacySecondaryRecordId: legacyDailyRecord?._id || ''
+        }
+      ]
+    };
+  },
+
+  async mergeV2FeedingWithV2FoodIntakes(feedingResult, foodIntakeRecords, dateStr, babyUid) {
+    const v2Records = feedingResult.data || [];
+    const foodIntakes = foodIntakeRecordsToLegacyIntakes(foodIntakeRecords || []);
+    if (v2Records.length === 0 && foodIntakes.length === 0) {
+      return { data: [] };
+    }
+
+    const v2DailyRecord = v2Records.length > 0
+      ? await this.consolidateFeedingRecords(v2Records)
+      : {
+          _id: `v2_${dateStr || ''}`,
+          id: `v2_${dateStr || ''}`,
+          babyUid,
+          date: dateStr,
+          basicInfo: {},
+          feedings: [],
+          intakes: [],
+          summary: {}
+        };
+
+    return {
+      data: [
+        {
+          ...v2DailyRecord,
+          intakes: foodIntakes
         }
       ]
     };
@@ -2818,23 +3014,26 @@ function createDataRecordsPageConfig(options = {}) {
         babyUid: babyUid
       };
       
-      const legacyDailyRecordResultPromise = this.loadLegacyDailyRecordResult(db, query, dateStr, babyUid);
+      const legacyDailyRecordResultPromise = useV2Records
+        ? Promise.resolve(null)
+        : this.loadLegacyDailyRecordResult(db, query, dateStr, babyUid);
       const feedingResult = useV2Records
         ? await this.loadV2FeedingResult(babyUid, dateStr)
         : await legacyDailyRecordResultPromise;
-      const [medicationResult, treatmentResult, bowelResult, legacyDailyRecordResult] = await Promise.all([
+      const [medicationResult, treatmentResult, bowelResult, legacyDailyRecordResult, v2FoodIntakeRecords] = await Promise.all([
         MedicationRecordModel.findByDate(dateStr, babyUid),
         TreatmentRecordModel.findByDate(dateStr, babyUid),
         db.collection('bowel_records').where({
           babyUid: babyUid,
           recordTime: _.gte(startOfDay).and(_.lte(endOfDay))
         }).orderBy('recordTime', 'desc').get(),
-        useV2Records ? legacyDailyRecordResultPromise : Promise.resolve(null)
+        useV2Records ? Promise.resolve(null) : legacyDailyRecordResultPromise,
+        useV2Records ? FoodIntakeRecordModel.findByDate(babyUid, dateStr) : Promise.resolve([])
       ]);
       const historicalBasicInfoSnapshot = await this.loadBasicInfoSnapshotForRecords(dateStr, babyUid);
       const treatmentRecordsToSet = formatTreatmentRecords((treatmentResult.success ? treatmentResult.data : []) || []);
       const effectiveFeedingResult = useV2Records
-        ? await this.mergeV2FeedingWithLegacySecondaryData(feedingResult, legacyDailyRecordResult, dateStr, babyUid)
+        ? await this.mergeV2FeedingWithV2FoodIntakes(feedingResult, v2FoodIntakeRecords, dateStr, babyUid)
         : feedingResult;
 
       if (effectiveFeedingResult.data && effectiveFeedingResult.data.length > 0) {
