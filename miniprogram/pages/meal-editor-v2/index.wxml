@@ -21,6 +21,30 @@
         <view class="field-picker">{{mealDraft.mealTime}}</view>
       </picker>
     </view>
+    <view class="field-row completion-row">
+      <text class="field-label">吃完比例</text>
+      <view class="completion-controls">
+        <view
+          class="completion-chip {{completionPercent == item ? 'active' : ''}}"
+          wx:for="{{completionPercentOptions}}"
+          wx:key="*this"
+          data-percent="{{item}}"
+          bindtap="onCompletionPercentTap"
+        >
+          <text>{{item}}%</text>
+        </view>
+        <view class="completion-input-wrap">
+          <input
+            type="digit"
+            class="completion-input"
+            value="{{completionPercent}}"
+            placeholder="自定义"
+            bindinput="onCompletionPercentInput"
+          />
+          <text class="completion-suffix">%</text>
+        </view>
+      </view>
+    </view>
     <view class="label-group">
       <view
         class="label-chip {{mealDraft.mealLabel === item ? 'active' : ''}}"
@@ -34,27 +58,108 @@
     </view>
   </view>
 
+  <view class="section-card combination-card">
+    <view class="section-header combination-header">
+      <view class="section-title-wrap">
+        <text class="section-title">餐食组合</text>
+        <text class="section-meta left">常用搭配一键加入本顿</text>
+      </view>
+      <view class="combination-toggle" bindtap="toggleCombinationPanel">
+        {{combinationPanelVisible ? '收起' : '打开'}}
+      </view>
+    </view>
+    <view class="combination-actions">
+      <view class="combination-save-btn" bindtap="showSaveCombinationInput">保存当前为餐食组合</view>
+    </view>
+    <view class="combination-name-panel" wx:if="{{combinationNameInputVisible}}">
+      <input
+        class="combination-name-input"
+        type="text"
+        value="{{combinationDraftName}}"
+        placeholder="给这组搭配起个名字，例如：南瓜米粉午餐"
+        bindinput="onCombinationNameInput"
+      />
+      <view class="combination-name-actions">
+        <view class="combination-name-cancel" bindtap="hideSaveCombinationInput">取消</view>
+        <view class="combination-name-confirm" bindtap="saveCurrentMealAsCombination">保存组合</view>
+      </view>
+    </view>
+    <view class="combination-panel" wx:if="{{combinationPanelVisible}}">
+      <view class="empty-state compact" wx:if="{{combinationLoading}}">
+        <text>正在准备宝宝的常用组合...</text>
+      </view>
+      <view class="empty-state compact" wx:elif="{{mealCombinations.length === 0}}">
+        <text>还没有餐食组合，先保存一个常用组合，下次就能一键加入啦。</text>
+      </view>
+      <view
+        class="combination-item"
+        wx:for="{{mealCombinations}}"
+        wx:key="_id"
+        data-id="{{item._id}}"
+        bindtap="applyMealCombination"
+      >
+        <view class="combination-item-main">
+          <text class="combination-item-name">{{item.name}}</text>
+          <text class="combination-item-meta">{{item.items.length}} 种食物 · 已用 {{item.usageCount || 0}} 次</text>
+        </view>
+        <view class="combination-item-apply">加入</view>
+      </view>
+    </view>
+  </view>
+
   <view class="section-card items-card">
     <view class="section-header">
       <text class="section-title">本顿食物</text>
       <text class="section-meta">已添加 {{mealDraft.items.length}} 种</text>
     </view>
     <view class="meal-summary-grid" wx:if="{{mealDraft.items.length > 0}}">
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.calories || 0}}</text>
-        <text class="meal-summary-label">总热量 kcal</text>
+      <view class="meal-summary-panel">
+        <view class="meal-summary-title-row">
+          <text class="meal-summary-title">准备量</text>
+          <text class="meal-summary-hint">按计划食物计算</text>
+        </view>
+        <view class="meal-summary-metrics">
+          <view class="meal-summary-item">
+            <text class="meal-summary-value">{{plannedMealSummary.calories || mealSummary.calories || 0}}</text>
+            <text class="meal-summary-label">热量 kcal</text>
+          </view>
+          <view class="meal-summary-item">
+            <text class="meal-summary-value">{{plannedMealSummary.protein || mealSummary.protein || 0}}</text>
+            <text class="meal-summary-label">蛋白 g</text>
+          </view>
+          <view class="meal-summary-item">
+            <text class="meal-summary-value">{{plannedMealSummary.carbs || mealSummary.carbs || 0}}</text>
+            <text class="meal-summary-label">碳水 g</text>
+          </view>
+          <view class="meal-summary-item">
+            <text class="meal-summary-value">{{plannedMealSummary.fat || mealSummary.fat || 0}}</text>
+            <text class="meal-summary-label">脂肪 g</text>
+          </view>
+        </view>
       </view>
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.protein || 0}}</text>
-        <text class="meal-summary-label">总蛋白 g</text>
-      </view>
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.carbs || 0}}</text>
-        <text class="meal-summary-label">总碳水 g</text>
-      </view>
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.fat || 0}}</text>
-        <text class="meal-summary-label">总脂肪 g</text>
+      <view class="meal-summary-panel actual">
+        <view class="meal-summary-title-row">
+          <text class="meal-summary-title">实际计入</text>
+          <text class="meal-summary-hint">按吃完 {{completionPercent || 0}}% 计入</text>
+        </view>
+        <view class="meal-summary-metrics">
+          <view class="meal-summary-item actual">
+            <text class="meal-summary-value">{{actualMealSummary.calories || 0}}</text>
+            <text class="meal-summary-label">热量 kcal</text>
+          </view>
+          <view class="meal-summary-item actual">
+            <text class="meal-summary-value">{{actualMealSummary.protein || 0}}</text>
+            <text class="meal-summary-label">蛋白 g</text>
+          </view>
+          <view class="meal-summary-item actual">
+            <text class="meal-summary-value">{{actualMealSummary.carbs || 0}}</text>
+            <text class="meal-summary-label">碳水 g</text>
+          </view>
+          <view class="meal-summary-item actual">
+            <text class="meal-summary-value">{{actualMealSummary.fat || 0}}</text>
+            <text class="meal-summary-label">脂肪 g</text>
+          </view>
+        </view>
       </view>
     </view>
     <view class="empty-state" wx:if="{{mealDraft.items.length === 0}}">

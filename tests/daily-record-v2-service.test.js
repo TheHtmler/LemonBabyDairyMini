@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 function createDbMock(overrides = {}) {
   const calls = {
     collectionReads: [],
+    whereCalls: [],
     addCollection: '',
     addData: null,
     updateCollection: '',
@@ -12,12 +13,14 @@ function createDbMock(overrides = {}) {
   };
   const dataByCollection = {
     daily_summary_v2: overrides.dailySummaryData || [],
+    food_intake_records: overrides.foodIntakeData || [],
     growth_records_v2: overrides.growthRecordsV2Data || [],
     bowel_records: overrides.bowelRecords || [],
     feeding_records: overrides.legacyFeedingRecords || []
   };
 
   function queryFor(collectionName, whereInput = {}) {
+    calls.whereCalls.push({ collectionName, whereInput });
     return {
       _where: whereInput,
       _orderBy: null,
@@ -247,6 +250,143 @@ test('getDailyRecordV2 rebuilds and upserts summary when cache is missing or dir
     assert.equal(calls.updateDocId, 'summary-dirty');
     assert.equal(calls.updateData.isDirty, false);
     assert.equal(calls.collectionReads.includes('feeding_records'), false);
+  } finally {
+    restore();
+  }
+});
+
+test('dirty daily_summary_v2 rebuild uses actual food nutrition and ignores planned fields for food query', async () => {
+  const { db, calls } = createDbMock({
+    dailySummaryData: [{ _id: 'summary-dirty', babyUid: 'baby-1', date: '2026-05-25', status: 'active', isDirty: true }],
+    foodIntakeData: [
+      {
+        _id: 'food-half-1',
+        babyUid: 'baby-1',
+        date: '2026-05-25',
+        status: 'active',
+        recordedAt: new Date('2026-05-25T08:30:00.000Z'),
+        foodName: '米粉',
+        quantity: 10,
+        plannedQuantity: 20,
+        unit: 'g',
+        nutrition: {
+          calories: 50,
+          protein: 2,
+          naturalProtein: 1.5,
+          specialProtein: 0.5,
+          carbs: 7.25,
+          fat: 0.75,
+          fiber: 1.125
+        },
+        plannedNutrition: {
+          calories: 100,
+          protein: 4,
+          naturalProtein: 3,
+          specialProtein: 1,
+          carbs: 14.5,
+          fat: 1.5,
+          fiber: 2.25
+        },
+        completionPercent: 50,
+        mealCombinationSource: {
+          combinationId: 'combo-breakfast',
+          combinationName: '早餐组合'
+        }
+      },
+      {
+        _id: 'food-half-2',
+        babyUid: 'baby-1',
+        date: '2026-05-25',
+        status: 'active',
+        recordedAt: new Date('2026-05-25T08:35:00.000Z'),
+        foodName: '苹果泥',
+        quantity: 5.1175,
+        plannedQuantity: 10.235,
+        unit: 'g',
+        nutrition: {
+          calories: 10.235,
+          protein: 0.333,
+          naturalProtein: 0.123,
+          specialProtein: 0.21,
+          carbs: 1.234,
+          fat: 0.456,
+          fiber: 0.789
+        },
+        plannedNutrition: {
+          calories: 20.47,
+          protein: 0.666,
+          naturalProtein: 0.246,
+          specialProtein: 0.42,
+          carbs: 2.468,
+          fat: 0.912,
+          fiber: 1.578
+        },
+        completionPercent: 50,
+        mealCombinationSource: {
+          combinationId: 'combo-breakfast',
+          combinationName: '早餐组合'
+        }
+      },
+      {
+        _id: 'food-other-date',
+        babyUid: 'baby-1',
+        date: '2026-05-24',
+        status: 'active',
+        recordedAt: new Date('2026-05-24T08:30:00.000Z'),
+        foodName: '应被日期过滤',
+        nutrition: { calories: 999 },
+        plannedNutrition: { calories: 1998 },
+        completionPercent: 50
+      },
+      {
+        _id: 'food-archived',
+        babyUid: 'baby-1',
+        date: '2026-05-25',
+        status: 'archived',
+        recordedAt: new Date('2026-05-25T08:40:00.000Z'),
+        foodName: '应被状态过滤',
+        nutrition: { calories: 999 },
+        plannedNutrition: { calories: 1998 },
+        completionPercent: 50
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  models.FeedingRecordV2Model.getRecordsByDate = async () => [];
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const dailyRecord = await service.getDailyRecordV2('baby-1', '2026-05-25');
+
+    assert.deepEqual(dailyRecord.summary.food, {
+      calories: 60.24,
+      protein: 2.33,
+      naturalProtein: 1.62,
+      specialProtein: 0.71,
+      fat: 1.21,
+      carbs: 8.48,
+      fiber: 1.91
+    });
+    assert.deepEqual(dailyRecord.summary.macroSummary, {
+      calories: 60.24,
+      protein: 2.33,
+      naturalProtein: 1.62,
+      specialProtein: 0.71,
+      carbs: 8.48,
+      fat: 1.21
+    });
+    assert.equal(dailyRecord.summary.recordCounts.food, 2);
+    assert.deepEqual(
+      calls.whereCalls.find((call) => call.collectionName === 'food_intake_records')?.whereInput,
+      {
+        babyUid: 'baby-1',
+        date: '2026-05-25',
+        status: 'active'
+      }
+    );
+    assert.equal(calls.updateCollection, 'daily_summary_v2');
+    assert.deepEqual(calls.updateData.food, dailyRecord.summary.food);
   } finally {
     restore();
   }

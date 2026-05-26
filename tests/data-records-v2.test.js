@@ -216,6 +216,21 @@ test('data-records-v2 keeps the v1 four-tab record shell and basic info editing 
   assert.doesNotMatch(wxss, /overview-milk-component-nutrient/);
 });
 
+test('data-records legacy food list does not depend on planned v2 display fields', () => {
+  const wxml = fs.readFileSync('miniprogram/pages/data-records/index.wxml', 'utf8');
+
+  const legacyListStart = wxml.indexOf('wx:if="{{legacyFoodIntakes.length > 0}}"');
+  const legacyListEnd = wxml.indexOf('wx:if="{{foodMealGroups.length === 0 && legacyFoodIntakes.length === 0}}"');
+  assert.ok(legacyListStart > -1);
+  assert.ok(legacyListEnd > legacyListStart);
+
+  const legacyListMarkup = wxml.slice(legacyListStart, legacyListEnd);
+  assert.match(legacyListMarkup, /<food-record-item record="\{\{item\}\}" \/>/);
+  assert.doesNotMatch(legacyListMarkup, /plannedDisplayQuantity/);
+  assert.doesNotMatch(legacyListMarkup, /plannedActualText/);
+  assert.doesNotMatch(legacyListMarkup, /准备/);
+});
+
 test('data-records switches milk editor navigation to v2 when using v2 records', () => {
   const dataRecordsJs = fs.readFileSync('miniprogram/pages/data-records/index.js', 'utf8');
 

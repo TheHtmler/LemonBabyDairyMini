@@ -194,6 +194,52 @@ test('createFoodIntake writes a food intake document to food_intake_records only
   assert.equal(writes.addData.deletedAt, null);
 });
 
+test('createFoodIntake preserves meal combination planned fields', async () => {
+  const { db, writes } = createDbMock();
+  const model = loadFreshModel(db);
+
+  await model.createFoodIntake({
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    foodName: '组合午餐',
+    plannedQuantity: '45.5',
+    plannedNutrition: {
+      calories: '92.4',
+      protein: '2.2',
+      naturalProtein: '2.2',
+      specialProtein: '0',
+      fat: '0.8',
+      carbs: '18.6',
+      fiber: '1.4',
+      sodium: '12.5',
+      unsafeKey: 999
+    },
+    completionPercent: '75',
+    mealCombinationSource: {
+      combinationId: 'combo-1',
+      combinationName: '午餐组合',
+      unsafeKey: 'strip-me'
+    }
+  });
+
+  assert.equal(writes.addData.plannedQuantity, 45.5);
+  assert.deepEqual(writes.addData.plannedNutrition, {
+    calories: 92.4,
+    protein: 2.2,
+    naturalProtein: 2.2,
+    specialProtein: 0,
+    fat: 0.8,
+    carbs: 18.6,
+    fiber: 1.4,
+    sodium: 12.5
+  });
+  assert.equal(writes.addData.completionPercent, 75);
+  assert.deepEqual(writes.addData.mealCombinationSource, {
+    combinationId: 'combo-1',
+    combinationName: '午餐组合'
+  });
+});
+
 test('updateFoodIntake preserves createdAt and updates updatedAt', async () => {
   const { db, writes } = createDbMock();
   const model = loadFreshModel(db);
@@ -220,6 +266,55 @@ test('updateFoodIntake preserves createdAt and updates updatedAt', async () => {
     fat: 0,
     carbs: 0,
     fiber: 0
+  });
+});
+
+test('updateFoodIntake normalizes planned fields and strips unsafe keys', async () => {
+  const { db, writes } = createDbMock();
+  const model = loadFreshModel(db);
+
+  await model.updateFoodIntake('food-intake-1', {
+    _id: 'unsafe-id',
+    id: 'unsafe-public-id',
+    createdAt: 'should-not-overwrite',
+    plannedQuantity: '18.25',
+    plannedNutrition: {
+      calories: '40',
+      protein: '1.1',
+      naturalProtein: '1',
+      specialProtein: '0.1',
+      fat: '0.3',
+      carbs: '8.2',
+      fiber: '0.6',
+      sodium: '4.5',
+      extra: 'strip-me'
+    },
+    completionPercent: '60',
+    mealCombinationSource: {
+      combinationId: 'combo-2',
+      combinationName: '晚餐组合',
+      extra: 'strip-me'
+    }
+  });
+
+  assert.equal(writes.updateData._id, undefined);
+  assert.equal(writes.updateData.id, undefined);
+  assert.equal(writes.updateData.createdAt, undefined);
+  assert.equal(writes.updateData.plannedQuantity, 18.25);
+  assert.deepEqual(writes.updateData.plannedNutrition, {
+    calories: 40,
+    protein: 1.1,
+    naturalProtein: 1,
+    specialProtein: 0.1,
+    fat: 0.3,
+    carbs: 8.2,
+    fiber: 0.6,
+    sodium: 4.5
+  });
+  assert.equal(writes.updateData.completionPercent, 60);
+  assert.deepEqual(writes.updateData.mealCombinationSource, {
+    combinationId: 'combo-2',
+    combinationName: '晚餐组合'
   });
 });
 
@@ -272,4 +367,76 @@ test('findByDate returns active food intakes sorted by recordedAt', async () => 
   assert.deepEqual(records.map((record) => record._id), ['food-1', 'food-2']);
   assert.equal(records[0].quantity, 20);
   assert.deepEqual(writes.collectionReads, ['food_intake_records']);
+});
+
+test('findByDate returns normalized planned fields for display and edit', async () => {
+  const { db } = createDbMock({
+    foodIntakeData: [{
+      _id: 'food-1',
+      babyUid: 'baby-1',
+      date: '2026-05-25',
+      status: 'active',
+      recordedAt: new Date('2026-05-25T08:30:00.000Z'),
+      foodName: '米粉组合',
+      quantity: '20',
+      plannedQuantity: '25.5',
+      plannedNutrition: {
+        calories: '88.8',
+        protein: '2',
+        naturalProtein: '1.8',
+        specialProtein: '0.2',
+        fat: '0.5',
+        carbs: '17',
+        fiber: '1.2',
+        sodium: '6',
+        unsafeKey: 'strip-me'
+      },
+      completionPercent: '80',
+      mealCombinationSource: {
+        combinationId: 'combo-1',
+        combinationName: '早餐组合',
+        unsafeKey: 'strip-me'
+      }
+    }]
+  });
+  const model = loadFreshModel(db);
+
+  const records = await model.findByDate('baby-1', '2026-05-25');
+
+  assert.equal(records[0].plannedQuantity, 25.5);
+  assert.deepEqual(records[0].plannedNutrition, {
+    calories: 88.8,
+    protein: 2,
+    naturalProtein: 1.8,
+    specialProtein: 0.2,
+    fat: 0.5,
+    carbs: 17,
+    fiber: 1.2,
+    sodium: 6
+  });
+  assert.equal(records[0].completionPercent, 80);
+  assert.deepEqual(records[0].mealCombinationSource, {
+    combinationId: 'combo-1',
+    combinationName: '早餐组合'
+  });
+});
+
+test('findByDate keeps existing food intakes backward-compatible without planned quantity', async () => {
+  const { db } = createDbMock({
+    foodIntakeData: [{
+      _id: 'food-1',
+      babyUid: 'baby-1',
+      date: '2026-05-25',
+      status: 'active',
+      recordedAt: new Date('2026-05-25T08:30:00.000Z'),
+      foodName: '米粉',
+      quantity: '20'
+    }]
+  });
+  const model = loadFreshModel(db);
+
+  const records = await model.findByDate('baby-1', '2026-05-25');
+
+  assert.equal(records[0].completionPercent, 100);
+  assert.equal(Object.prototype.hasOwnProperty.call(records[0], 'plannedQuantity'), false);
 });

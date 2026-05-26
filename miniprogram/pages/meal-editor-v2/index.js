@@ -1,8 +1,17 @@
 const FoodModel = require('../../models/food');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
+const MealCombinationModel = require('../../models/mealCombination');
 const { getBabyUid } = require('../../utils/index');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
+const {
+  validateCompletionPercent,
+  createEmptyMealSummary: createUtilityEmptyMealSummary,
+  calculateMealSummary: calculateUtilityMealSummary,
+  calculateActualMealItems,
+  buildMealCombinationFromDraft,
+  buildMealItemsFromCombination
+} = require('../../utils/mealCombinationUtils');
 
 const app = getApp();
 const MAX_RECENT_FOODS = 10;
@@ -138,36 +147,11 @@ function isFutureDateKey(dateKey) {
 }
 
 function createEmptyMealSummary() {
-  return {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    fiber: 0,
-    sodium: 0
-  };
+  return createUtilityEmptyMealSummary();
 }
 
 function calculateMealSummary(items = []) {
-  const summary = (items || []).reduce((acc, item) => {
-    const nutrition = item?.nutrition || {};
-    acc.calories += Number(nutrition.calories) || 0;
-    acc.protein += Number(nutrition.protein) || 0;
-    acc.carbs += Number(nutrition.carbs) || 0;
-    acc.fat += Number(nutrition.fat) || 0;
-    acc.fiber += Number(nutrition.fiber) || 0;
-    acc.sodium += Number(nutrition.sodium) || 0;
-    return acc;
-  }, createEmptyMealSummary());
-
-  return {
-    calories: roundCalories(summary.calories),
-    protein: roundNumber(summary.protein, 2),
-    carbs: roundNumber(summary.carbs, 2),
-    fat: roundNumber(summary.fat, 2),
-    fiber: roundNumber(summary.fiber, 2),
-    sodium: roundNumber(summary.sodium, 2)
-  };
+  return calculateUtilityMealSummary(items);
 }
 
 function normalizeSearchText(value = '') {
@@ -209,13 +193,24 @@ Page({
       mealNote: '',
       items: []
     },
+    completionPercent: 100,
+    completionPercentOptions: [100, 75, 50],
     mealSummary: createEmptyMealSummary(),
+    plannedMealSummary: createEmptyMealSummary(),
+    actualMealSummary: createEmptyMealSummary(),
     foodCatalog: [],
     foodCategories: [],
     activeCategory: 'recent',
     recentFoodOptions: [],
     filteredFoodOptions: [],
     foodSearchQuery: '',
+    mealCombinations: [],
+    combinationPanelVisible: false,
+    combinationNameInputVisible: false,
+    combinationDraftName: '',
+    combinationLoading: false,
+    combinationApplying: false,
+    combinationSaving: false,
     drawerVisible: false,
     drawerStep: 'select',
     currentFoodDraft: {
@@ -247,9 +242,13 @@ Page({
         mealNote: '',
         items: []
       },
-      mealSummary: createEmptyMealSummary()
+      completionPercent: 100,
+      mealSummary: createEmptyMealSummary(),
+      plannedMealSummary: createEmptyMealSummary(),
+      actualMealSummary: createEmptyMealSummary()
     });
     await this.loadFoodCatalog();
+    await this.loadMealCombinations();
     if (editMealBatchId) {
       await this.loadExistingMeal(editMealBatchId);
     }
@@ -333,6 +332,189 @@ Page({
     }
   },
 
+  async loadMealCombinations(options = {}) {
+    const { showToast = true, throwOnError = false } = options;
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      this.setData({
+        mealCombinations: [],
+        combinationLoading: false
+      });
+      return [];
+    }
+
+    this.setData({ combinationLoading: true });
+    try {
+      const combinations = await MealCombinationModel.findByBaby(babyUid);
+      this.setData({
+        mealCombinations: combinations || [],
+        combinationLoading: false
+      });
+      return combinations || [];
+    } catch (error) {
+      this.setData({
+        mealCombinations: [],
+        combinationLoading: false
+      });
+      if (showToast) {
+        wx.showToast({ title: '餐食组合加载失败', icon: 'none' });
+      }
+      if (throwOnError) {
+        throw error;
+      }
+      return [];
+    }
+  },
+
+  toggleCombinationPanel() {
+    this.setData({
+      combinationPanelVisible: !this.data.combinationPanelVisible
+    });
+  },
+
+  async applyMealCombination(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    if (this.data.combinationApplying) return;
+
+    const combination = (this.data.mealCombinations || []).find(item => (item._id || item.id) === id);
+    if (!combination) {
+      wx.showToast({ title: '未找到餐食组合', icon: 'none' });
+      return;
+    }
+
+    const combinationItems = buildMealItemsFromCombination(combination, this.data.foodCatalog || []);
+    if (!combinationItems.length) {
+      wx.showToast({ title: '组合里还没有食物', icon: 'none' });
+      return;
+    }
+
+    this.setData({ combinationApplying: true });
+    const source = {
+      combinationId: combination._id || combination.id || '',
+      combinationName: combination.name || ''
+    };
+    const sourcedItems = combinationItems.map(item => ({
+      ...item,
+      mealCombinationSource: source
+    }));
+    const nextItems = [
+      ...(this.data.mealDraft.items || []),
+      ...sourcedItems
+    ];
+
+    this.setData({
+      'mealDraft.items': nextItems,
+      ...this.buildMealSummaryData(nextItems, this.data.completionPercent)
+    });
+
+    try {
+      await MealCombinationModel.incrementUsage(source.combinationId);
+      this.setData({
+        mealCombinations: (this.data.mealCombinations || []).map(item => {
+          if ((item._id || item.id) !== source.combinationId) return item;
+          return {
+            ...item,
+            usageCount: (Number(item.usageCount) || 0) + 1
+          };
+        })
+      });
+      wx.showToast({ title: '已加入餐食组合', icon: 'success' });
+    } catch (error) {
+      wx.showToast({ title: '已加入，使用次数稍后同步', icon: 'none' });
+    } finally {
+      this.setData({ combinationApplying: false });
+    }
+  },
+
+  showSaveCombinationInput() {
+    this.setData({
+      combinationNameInputVisible: true
+    });
+  },
+
+  hideSaveCombinationInput() {
+    this.setData({
+      combinationNameInputVisible: false,
+      combinationDraftName: ''
+    });
+  },
+
+  onCombinationNameInput(e) {
+    this.setData({
+      combinationDraftName: e.detail.value || ''
+    });
+  },
+
+  async saveCurrentMealAsCombination() {
+    if (this.data.combinationSaving) return;
+
+    const name = String(this.data.combinationDraftName || '').trim();
+    if (!name) {
+      wx.showToast({ title: '请输入组合名称', icon: 'none' });
+      return;
+    }
+
+    const currentItems = this.data.mealDraft.items || [];
+    if (!currentItems.length) {
+      wx.showToast({ title: '请先添加食物', icon: 'none' });
+      return;
+    }
+
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    const plannedItems = this.normalizePlannedMealItems(currentItems).map(item => ({
+      ...item,
+      quantity: item.plannedQuantity,
+      nutrition: { ...(item.plannedNutrition || item.nutrition || {}) }
+    }));
+    const payload = {
+      ...buildMealCombinationFromDraft({
+        ...this.data.mealDraft,
+        items: plannedItems
+      }, name),
+      babyUid,
+      name
+    };
+
+    try {
+      this.setData({
+        combinationLoading: true,
+        combinationSaving: true
+      });
+      await MealCombinationModel.createMealCombination(payload);
+      try {
+        await this.loadMealCombinations({ showToast: false, throwOnError: true });
+      } catch (refreshError) {
+        this.setData({
+          combinationLoading: false,
+          combinationSaving: false
+        });
+        wx.showToast({ title: '组合已保存，刷新列表失败', icon: 'none' });
+        return;
+      }
+      this.setData({
+        combinationDraftName: '',
+        combinationNameInputVisible: false,
+        combinationPanelVisible: true,
+        combinationLoading: false,
+        combinationSaving: false
+      });
+      wx.showToast({ title: '已保存餐食组合', icon: 'success' });
+    } catch (error) {
+      console.error('保存餐食组合失败:', error);
+      this.setData({
+        combinationLoading: false,
+        combinationSaving: false
+      });
+      wx.showToast({ title: '保存组合失败', icon: 'none' });
+    }
+  },
+
   filterFoodOptions(query = this.data.foodSearchQuery || '') {
     const normalized = normalizeSearchText(query);
     const activeCategory = this.data.activeCategory || 'recent';
@@ -379,6 +561,58 @@ Page({
 
   onMealNoteInput(e) {
     this.setData({ 'mealDraft.mealNote': e.detail.value || '' });
+  },
+
+  onCompletionPercentTap(e) {
+    const percent = Number(e.currentTarget.dataset.percent);
+    if (!Number.isFinite(percent)) return;
+    this.setData({ completionPercent: percent });
+    this.refreshMealSummaries(this.data.mealDraft.items, percent);
+  },
+
+  onCompletionPercentInput(e) {
+    const value = e.detail.value || '';
+    this.setData({ completionPercent: value });
+    this.refreshMealSummaries(this.data.mealDraft.items, value);
+  },
+
+  buildMealSummaryData(items = this.data.mealDraft.items || [], completionPercent = this.data.completionPercent) {
+    const plannedItems = this.normalizePlannedMealItems(items);
+    const plannedMealSummary = calculateMealSummary(plannedItems);
+    const completionResult = validateCompletionPercent(completionPercent);
+    const actualMealSummary = completionResult.valid
+      ? calculateMealSummary(calculateActualMealItems(plannedItems, completionResult.value))
+      : createEmptyMealSummary();
+    return {
+      mealSummary: plannedMealSummary,
+      plannedMealSummary,
+      actualMealSummary
+    };
+  },
+
+  refreshMealSummaries(items = this.data.mealDraft.items || [], completionPercent = this.data.completionPercent) {
+    this.setData(this.buildMealSummaryData(items, completionPercent));
+  },
+
+  normalizePlannedMealItems(items = []) {
+    return (items || []).map(item => {
+      const plannedNutrition = {
+        ...(item.plannedNutrition || item.nutrition || {})
+      };
+      if (plannedNutrition.naturalProtein === undefined) {
+        plannedNutrition.naturalProtein = item.naturalProtein || 0;
+      }
+      if (plannedNutrition.specialProtein === undefined) {
+        plannedNutrition.specialProtein = item.specialProtein || 0;
+      }
+
+      return {
+        ...item,
+        plannedQuantity: item.plannedQuantity !== undefined ? item.plannedQuantity : item.quantity,
+        plannedNutrition,
+        nutrition: plannedNutrition
+      };
+    });
   },
 
   onFoodSearchInput(e) {
@@ -550,8 +784,10 @@ Page({
       unit: food.baseUnit || 'g',
       quantity: numQuantity,
       nutrition: {
-        calories: roundCalories(Number(nutrition.calories) || 0),
+        calories: roundNumber(Number(nutrition.calories) || 0, 2),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
+        naturalProtein: roundNumber(naturalProtein, 2),
+        specialProtein: roundNumber(specialProtein, 2),
         carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
         fat: roundNumber(Number(nutrition.fat) || 0, 2),
         fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
@@ -580,7 +816,7 @@ Page({
 
     this.setData({
       'mealDraft.items': items,
-      mealSummary: calculateMealSummary(items),
+      ...this.buildMealSummaryData(items),
       drawerVisible: false
     }, () => {
       this.resetCurrentFoodDraft();
@@ -617,7 +853,7 @@ Page({
     const shouldResetDraft = this.data.editingItemId === id;
     this.setData({
       'mealDraft.items': nextItems,
-      mealSummary: calculateMealSummary(nextItems),
+      ...this.buildMealSummaryData(nextItems),
       ...(shouldResetDraft ? {
         editingItemId: '',
         currentFoodDraft: {
@@ -733,7 +969,7 @@ Page({
           mealNote: firstIntake.mealNote || '',
           items
         },
-        mealSummary: calculateMealSummary(items)
+        ...this.buildMealSummaryData(items)
       });
       wx.hideLoading();
     } catch (error) {
@@ -763,6 +999,19 @@ Page({
 
     const catalogMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
     const firstIntake = targetIntakes[0];
+    const hasPlannedFields = (intake = {}) => (
+      intake.plannedQuantity !== undefined &&
+      intake.plannedNutrition &&
+      Object.keys(intake.plannedNutrition).length > 0
+    );
+    const canRestoreCompletionPercent = targetIntakes.every(hasPlannedFields);
+    const restoredCompletionPercent = canRestoreCompletionPercent
+      ? (targetIntakes.reduce((restored, intake) => {
+          if (restored !== null) return restored;
+          const result = validateCompletionPercent(intake.completionPercent);
+          return result.valid ? result.value : null;
+        }, null) || 100)
+      : 100;
     const items = targetIntakes.map((intake, index) => {
       const foodSnapshot = intake.foodSnapshot || {};
       const catalogFood = catalogMap.get(intake.foodId);
@@ -775,6 +1024,13 @@ Page({
         nutritionPer100g: foodSnapshot.nutritionPer100g || {}
       };
       const nutrition = intake.nutrition || {};
+      const hasPlannedNutrition = intake.plannedNutrition && Object.keys(intake.plannedNutrition).length > 0;
+      const plannedQuantity = intake.plannedQuantity !== undefined
+        ? Number(intake.plannedQuantity) || 0
+        : Number(intake.quantity) || 0;
+      const plannedNutrition = hasPlannedNutrition
+        ? { ...intake.plannedNutrition }
+        : { ...nutrition };
 
       return {
         localId: intake._id || `meal_item_${index}`,
@@ -786,12 +1042,15 @@ Page({
         nameSnapshot: intake.foodName || fallbackFood.name,
         category: fallbackFood.category,
         unit: intake.unit || fallbackFood.baseUnit || 'g',
-        quantity: Number(intake.quantity) || 0,
-        nutrition,
+        quantity: plannedQuantity,
+        plannedQuantity,
+        nutrition: plannedNutrition,
+        plannedNutrition,
         proteinSource: fallbackFood.proteinSource || 'natural',
         proteinQuality: intake.proteinQuality || '',
-        naturalProtein: typeof nutrition.naturalProtein === 'number' ? nutrition.naturalProtein : 0,
-        specialProtein: typeof nutrition.specialProtein === 'number' ? nutrition.specialProtein : 0,
+        naturalProtein: typeof plannedNutrition.naturalProtein === 'number' ? plannedNutrition.naturalProtein : 0,
+        specialProtein: typeof plannedNutrition.specialProtein === 'number' ? plannedNutrition.specialProtein : 0,
+        ...(intake.mealCombinationSource ? { mealCombinationSource: intake.mealCombinationSource } : {}),
         milkType: '',
         notes: intake.notes || ''
       };
@@ -805,15 +1064,18 @@ Page({
         mealNote: firstIntake.mealNote || '',
         items
       },
-      mealSummary: calculateMealSummary(items)
+      completionPercent: restoredCompletionPercent,
+      ...this.buildMealSummaryData(items, restoredCompletionPercent)
     });
     wx.hideLoading();
   },
 
   buildMealIntakes(mealBatchId) {
     const { mealTime, mealLabel, mealNote, items } = this.data.mealDraft;
+    const completionPercent = Number(this.data.completionPercent);
+    const actualItems = calculateActualMealItems(this.normalizePlannedMealItems(items), completionPercent);
     const now = new Date();
-    return (items || []).map((item, index) => ({
+    return (actualItems || []).map((item, index) => ({
       _id: item.originalIntakeId || `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
       type: 'food',
       foodType: 'food',
@@ -822,11 +1084,15 @@ Page({
       nameSnapshot: item.nameSnapshot,
       unit: item.unit || 'g',
       quantity: item.quantity,
+      plannedQuantity: item.plannedQuantity,
       proteinSource: item.proteinSource || 'natural',
       proteinQuality: item.proteinQuality || '',
       nutrition: item.nutrition || {},
+      plannedNutrition: item.plannedNutrition || {},
       naturalProtein: item.naturalProtein || 0,
       specialProtein: item.specialProtein || 0,
+      completionPercent,
+      ...(item.mealCombinationSource ? { mealCombinationSource: item.mealCombinationSource } : {}),
       milkType: item.milkType || '',
       notes: String(item.notes || '').trim(),
       recordedAt: mealTime,
@@ -860,6 +1126,7 @@ Page({
         Number.isFinite(minutes) ? minutes : 0,
         0
       ),
+      source: 'meal_editor_v2',
       time,
       foodId: intake.foodId || food._id || '',
       foodName: intake.nameSnapshot || food.name || '',
@@ -870,16 +1137,21 @@ Page({
         nutritionPer100g: food.nutritionPer100g || {}
       },
       quantity: intake.quantity,
+      plannedQuantity: intake.plannedQuantity,
       unit: intake.unit || food.baseUnit || 'g',
       nutrition: {
         calories: nutrition.calories || 0,
         protein: nutrition.protein || 0,
-        naturalProtein: intake.naturalProtein || nutrition.naturalProtein || 0,
-        specialProtein: intake.specialProtein || nutrition.specialProtein || 0,
+        naturalProtein: nutrition.naturalProtein || 0,
+        specialProtein: nutrition.specialProtein || 0,
         fat: nutrition.fat || 0,
         carbs: nutrition.carbs || 0,
-        fiber: nutrition.fiber || 0
+        fiber: nutrition.fiber || 0,
+        sodium: nutrition.sodium || 0
       },
+      plannedNutrition: intake.plannedNutrition || {},
+      completionPercent: intake.completionPercent,
+      ...(intake.mealCombinationSource ? { mealCombinationSource: intake.mealCombinationSource } : {}),
       notes: String(intake.notes || '').trim(),
       mealLabel: intake.mealLabel || '',
       mealNote: String(intake.mealNote || '').trim()
@@ -952,6 +1224,15 @@ Page({
     if (!babyUid) {
       wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
       return;
+    }
+
+    const completionResult = validateCompletionPercent(this.data.completionPercent);
+    if (!completionResult.valid) {
+      wx.showToast({ title: completionResult.message, icon: 'none' });
+      return;
+    }
+    if (completionResult.value !== this.data.completionPercent) {
+      this.setData({ completionPercent: completionResult.value });
     }
 
     const mealBatchId = this.data.editMealBatchId || `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

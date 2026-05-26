@@ -209,7 +209,8 @@ function loadDataRecordsPage(db) {
     '../miniprogram/models/treatmentRecord.js'
   ].forEach(clearModule);
 
-  const { createDataRecordsPageConfig } = require('../miniprogram/pages/data-records/index.js');
+  const dataRecordsModule = require('../miniprogram/pages/data-records/index.js');
+  const { createDataRecordsPageConfig } = dataRecordsModule;
   const FeedingRecordV2Model = require('../miniprogram/models/feedingRecordV2.js');
   const FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord.js');
   const DailySummaryV2Model = require('../miniprogram/models/dailySummaryV2.js');
@@ -218,6 +219,7 @@ function loadDataRecordsPage(db) {
 
   return {
     page: createDataRecordsPageConfig({ recordSource: 'v2' }),
+    helpers: dataRecordsModule,
     wxCalls,
     models: {
       FeedingRecordV2Model,
@@ -426,6 +428,346 @@ test('data-records-v2 fetches food records from food_intake_records without read
   } finally {
     cleanup();
   }
+});
+
+test('data-records-v2 meal groups preserve planned fields and expose completion display helpers', () => {
+  const { db } = createDbMock();
+  const { helpers, cleanup } = loadDataRecordsPage(db);
+
+  try {
+    const intakes = helpers.foodIntakeRecordsToLegacyIntakes([
+      {
+        _id: 'food-intake-1',
+        mealBatchId: 'meal-1',
+        mealLabel: '午餐',
+        mealNote: '宝宝吃了一半',
+        time: '12:30',
+        foodId: 'food-1',
+        foodName: '米粉',
+        quantity: 10,
+        plannedQuantity: 20,
+        unit: 'g',
+        nutrition: {
+          calories: 36,
+          protein: 0.7,
+          naturalProtein: 0.7,
+          specialProtein: 0,
+          carbs: 8,
+          fat: 0.1
+        },
+        plannedNutrition: {
+          calories: 72,
+          protein: 1.4,
+          naturalProtein: 1.4,
+          specialProtein: 0,
+          carbs: 16,
+          fat: 0.2
+        },
+        completionPercent: 50,
+        mealCombinationSource: {
+          combinationId: 'combo-1',
+          combinationName: '午餐组合'
+        }
+      },
+      {
+        _id: 'food-intake-2',
+        mealBatchId: 'meal-1',
+        mealLabel: '午餐',
+        time: '12:31',
+        foodId: 'food-2',
+        foodName: '土豆泥',
+        quantity: 15,
+        plannedQuantity: 30,
+        unit: 'g',
+        nutrition: {
+          calories: 15,
+          protein: 0.3,
+          naturalProtein: 0.3,
+          specialProtein: 0,
+          carbs: 3,
+          fat: 0.05
+        },
+        plannedNutrition: {
+          calories: 30,
+          protein: 0.6,
+          naturalProtein: 0.6,
+          specialProtein: 0,
+          carbs: 6,
+          fat: 0.1
+        },
+        completionPercent: 50,
+        mealCombinationSource: {
+          combinationId: 'combo-1',
+          combinationName: '午餐组合'
+        }
+      },
+      {
+        _id: 'food-intake-old',
+        mealBatchId: 'meal-old',
+        mealLabel: '晚餐',
+        time: '18:00',
+        foodName: '旧记录米糊',
+        quantity: 8,
+        unit: 'g',
+        nutrition: {
+          calories: 20,
+          protein: 0.5,
+          naturalProtein: 0.5,
+          specialProtein: 0,
+          carbs: 4,
+          fat: 0.1
+        }
+      }
+    ]);
+
+    const lunch = helpers.groupFoodIntakesByMeal(intakes).find(group => group.mealBatchId === 'meal-1');
+    assert.ok(lunch);
+    assert.equal(lunch.completionPercent, 50);
+    assert.equal(lunch.completionPercentText, '吃完 50%');
+    assert.equal(lunch.hasCompletionDisplay, true);
+    assert.equal(lunch.hasPartialCompletion, true);
+    assert.equal(lunch.hasPlannedDifference, true);
+    assert.equal(lunch.mealCombinationSourceText, '来自餐食组合：午餐组合');
+    assert.equal(lunch.summary.calories, 51);
+
+    const firstItem = lunch.items.find(item => item._id === 'food-intake-1');
+    assert.equal(firstItem.quantity, 10);
+    assert.equal(firstItem.plannedQuantity, 20);
+    assert.deepEqual(firstItem.plannedNutrition, {
+      calories: 72,
+      protein: 1.4,
+      carbs: 16,
+      fat: 0.2,
+      fiber: 0,
+      sodium: 0,
+      naturalProtein: 1.4,
+      specialProtein: 0
+    });
+    assert.equal(firstItem.completionPercent, 50);
+    assert.equal(firstItem.hasCompletionDisplay, true);
+    assert.equal(firstItem.displayQuantity, '10g');
+    assert.equal(firstItem.plannedDisplayQuantity, '20g');
+    assert.equal(firstItem.hasPlannedDifference, true);
+    assert.equal(firstItem.plannedActualText, '准备 20g / 实际 10g');
+    assert.deepEqual(firstItem.mealCombinationSource, {
+      combinationId: 'combo-1',
+      combinationName: '午餐组合'
+    });
+
+    const oldGroup = helpers.groupFoodIntakesByMeal(intakes).find(group => group.mealBatchId === 'meal-old');
+    assert.equal(oldGroup.completionPercent, 100);
+    assert.equal(oldGroup.completionPercentText, '');
+    assert.equal(oldGroup.hasCompletionDisplay, false);
+    assert.equal(oldGroup.hasPartialCompletion, false);
+    assert.equal(oldGroup.hasPlannedDifference, false);
+    assert.equal(oldGroup.items[0].completionPercent, 100);
+    assert.equal(oldGroup.items[0].hasCompletionDisplay, false);
+    assert.equal(oldGroup.items[0].hasPlannedQuantity, false);
+    assert.equal(oldGroup.items[0].plannedDisplayQuantity, '');
+    assert.equal(oldGroup.items[0].hasPlannedDifference, false);
+    assert.equal(Object.prototype.hasOwnProperty.call(oldGroup.items[0], 'plannedQuantity'), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test('data-records-v2 invalid completion percent falls back without implying completion was recorded', () => {
+  const { db } = createDbMock();
+  const { helpers, cleanup } = loadDataRecordsPage(db);
+
+  try {
+    const intakes = helpers.foodIntakeRecordsToLegacyIntakes([
+      {
+        _id: 'food-invalid-high',
+        mealBatchId: 'meal-invalid',
+        mealLabel: '午餐',
+        time: '12:30',
+        foodName: '米粉',
+        quantity: 10,
+        unit: 'g',
+        nutrition: { calories: 20, protein: 1, carbs: 4, fat: 0.2 },
+        completionPercent: 120
+      },
+      {
+        _id: 'food-invalid-zero',
+        mealBatchId: 'meal-invalid',
+        mealLabel: '午餐',
+        time: '12:31',
+        foodName: '土豆泥',
+        quantity: 10,
+        unit: 'g',
+        nutrition: { calories: 15, protein: 0.5, carbs: 3, fat: 0.1 },
+        completionPercent: 0
+      }
+    ]);
+
+    const group = helpers.groupFoodIntakesByMeal(intakes)[0];
+    assert.equal(group.completionPercent, 100);
+    assert.equal(group.completionPercentText, '');
+    assert.equal(group.hasCompletionDisplay, false);
+    assert.equal(group.hasPartialCompletion, false);
+    assert.equal(group.hasPlannedDifference, false);
+    assert.deepEqual(group.items.map(item => item.completionPercent), [100, 100]);
+    assert.deepEqual(group.items.map(item => item.hasCompletionDisplay), [false, false]);
+    assert.deepEqual(group.items.map(item => item.hasPlannedDifference), [false, false]);
+  } finally {
+    cleanup();
+  }
+});
+
+test('data-records-v2 planned records without valid completion keep planned difference without completion display', () => {
+  const { db } = createDbMock();
+  const { helpers, cleanup } = loadDataRecordsPage(db);
+
+  try {
+    const intakes = helpers.foodIntakeRecordsToLegacyIntakes([
+      {
+        _id: 'food-planned-missing-percent',
+        mealBatchId: 'meal-planned-invalid',
+        mealLabel: '午餐',
+        time: '12:30',
+        foodName: '米粉',
+        quantity: 10,
+        plannedQuantity: 20,
+        unit: 'g',
+        nutrition: { calories: 20, protein: 1, carbs: 4, fat: 0.2 },
+        plannedNutrition: { calories: 40, protein: 2, carbs: 8, fat: 0.4 }
+      },
+      {
+        _id: 'food-planned-invalid-percent',
+        mealBatchId: 'meal-planned-invalid',
+        mealLabel: '午餐',
+        time: '12:31',
+        foodName: '土豆泥',
+        quantity: 5,
+        plannedQuantity: 10,
+        unit: 'g',
+        nutrition: { calories: 10, protein: 0.4, carbs: 2, fat: 0.1 },
+        plannedNutrition: { calories: 20, protein: 0.8, carbs: 4, fat: 0.2 },
+        completionPercent: 150
+      },
+      {
+        _id: 'food-planned-valid-full',
+        mealBatchId: 'meal-planned-valid-full',
+        mealLabel: '晚餐',
+        time: '18:00',
+        foodName: '苹果泥',
+        quantity: 12,
+        plannedQuantity: 12,
+        unit: 'g',
+        nutrition: { calories: 12, protein: 0.1, carbs: 3, fat: 0 },
+        plannedNutrition: { calories: 12, protein: 0.1, carbs: 3, fat: 0 },
+        completionPercent: 100
+      }
+    ]);
+
+    const groups = helpers.groupFoodIntakesByMeal(intakes);
+    const invalidGroup = groups.find(group => group.mealBatchId === 'meal-planned-invalid');
+    assert.equal(invalidGroup.completionPercent, 100);
+    assert.equal(invalidGroup.completionPercentText, '');
+    assert.equal(invalidGroup.hasCompletionDisplay, false);
+    assert.equal(invalidGroup.hasPartialCompletion, false);
+    assert.equal(invalidGroup.hasPlannedDifference, true);
+
+    const missingPercentItem = invalidGroup.items.find(item => item._id === 'food-planned-missing-percent');
+    assert.equal(missingPercentItem.completionPercent, 100);
+    assert.equal(missingPercentItem.hasCompletionDisplay, false);
+    assert.equal(missingPercentItem.plannedDisplayQuantity, '20g');
+    assert.equal(missingPercentItem.hasPlannedDifference, true);
+    assert.equal(missingPercentItem.plannedActualText, '准备 20g / 实际 10g');
+
+    const invalidPercentItem = invalidGroup.items.find(item => item._id === 'food-planned-invalid-percent');
+    assert.equal(invalidPercentItem.completionPercent, 100);
+    assert.equal(invalidPercentItem.hasCompletionDisplay, false);
+    assert.equal(invalidPercentItem.plannedDisplayQuantity, '10g');
+    assert.equal(invalidPercentItem.hasPlannedDifference, true);
+    assert.equal(invalidPercentItem.plannedActualText, '准备 10g / 实际 5g');
+
+    const validFullGroup = groups.find(group => group.mealBatchId === 'meal-planned-valid-full');
+    assert.equal(validFullGroup.completionPercent, 100);
+    assert.equal(validFullGroup.completionPercentText, '吃完 100%');
+    assert.equal(validFullGroup.hasCompletionDisplay, true);
+    assert.equal(validFullGroup.hasPartialCompletion, false);
+  } finally {
+    cleanup();
+  }
+});
+
+test('data-records-v2 inconsistent planned completion percents use first valid display value', () => {
+  const { db } = createDbMock();
+  const { helpers, cleanup } = loadDataRecordsPage(db);
+
+  try {
+    const intakes = helpers.foodIntakeRecordsToLegacyIntakes([
+      {
+        _id: 'food-first-valid',
+        mealBatchId: 'meal-mixed-percent',
+        mealLabel: '早餐',
+        time: '08:32',
+        foodName: '米粉',
+        quantity: 15,
+        plannedQuantity: 20,
+        unit: 'g',
+        nutrition: { calories: 30, protein: 1, carbs: 6, fat: 0.2 },
+        plannedNutrition: { calories: 40, protein: 1.4, carbs: 8, fat: 0.3 },
+        completionPercent: 75
+      },
+      {
+        _id: 'food-second-different',
+        mealBatchId: 'meal-mixed-percent',
+        mealLabel: '早餐',
+        time: '08:31',
+        foodName: '南瓜泥',
+        quantity: 10,
+        plannedQuantity: 20,
+        unit: 'g',
+        nutrition: { calories: 10, protein: 0.3, carbs: 2, fat: 0.1 },
+        plannedNutrition: { calories: 20, protein: 0.6, carbs: 4, fat: 0.2 },
+        completionPercent: 50
+      },
+      {
+        _id: 'food-invalid-ignored',
+        mealBatchId: 'meal-mixed-percent',
+        mealLabel: '早餐',
+        time: '08:30',
+        foodName: '苹果泥',
+        quantity: 5,
+        plannedQuantity: 5,
+        unit: 'g',
+        nutrition: { calories: 5, protein: 0.1, carbs: 1, fat: 0 },
+        plannedNutrition: { calories: 5, protein: 0.1, carbs: 1, fat: 0 },
+        completionPercent: 150
+      }
+    ]);
+
+    const group = helpers.groupFoodIntakesByMeal(intakes)[0];
+    assert.equal(group.completionPercent, 75);
+    assert.equal(group.completionPercentText, '吃完 75%');
+    assert.equal(group.hasCompletionDisplay, true);
+    assert.equal(group.hasPartialCompletion, true);
+    assert.equal(group.hasPlannedDifference, true);
+    assert.equal(group.items.find(item => item._id === 'food-first-valid').plannedActualText, '准备 20g / 实际 15g');
+    assert.equal(group.items.find(item => item._id === 'food-second-different').plannedActualText, '准备 20g / 实际 10g');
+    assert.equal(group.items.find(item => item._id === 'food-invalid-ignored').completionPercent, 100);
+  } finally {
+    cleanup();
+  }
+});
+
+test('data-records-v2 food meal WXML exposes planned-vs-actual and meal combination hints', () => {
+  const wxml = fs.readFileSync('miniprogram/pages/data-records/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pages/data-records/index.wxss', 'utf8');
+
+  assert.match(wxml, /吃完/);
+  assert.match(wxml, /hasCompletionDisplay/);
+  assert.doesNotMatch(wxml, /wx:if="\{\{item\.completionPercentText\}\}"/);
+  assert.match(wxml, /准备/);
+  assert.match(wxml, /实际/);
+  assert.match(wxml, /mealCombinationSourceText/);
+  assert.match(wxml, /plannedActualText/);
+  assert.match(wxss, /\.meal-group-completion/);
+  assert.match(wxss, /\.food-planned-actual/);
+  assert.match(wxss, /\.meal-combination-source/);
 });
 
 test('data-records-v2 deleting a food intake hard deletes food_intake_records and marks summary dirty', async () => {

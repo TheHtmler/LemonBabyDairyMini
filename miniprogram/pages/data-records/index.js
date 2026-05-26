@@ -463,6 +463,94 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
   return mergeTreatmentIntoOverview(overview, treatmentRecords);
 }
 
+function hasOwnField(source = {}, field) {
+  return Object.prototype.hasOwnProperty.call(source, field);
+}
+
+function normalizeFoodNutritionFields(nutrition = {}, options = {}) {
+  const normalizeMacro = (value) => options.roundMacros
+    ? roundNumber(Number(value) || 0, 2)
+    : Number(value) || 0;
+  const normalized = {
+    calories: roundCalories(Number(nutrition.calories) || 0),
+    protein: normalizeMacro(nutrition.protein),
+    carbs: normalizeMacro(nutrition.carbs),
+    fat: normalizeMacro(nutrition.fat),
+    fiber: normalizeMacro(nutrition.fiber),
+    sodium: normalizeMacro(nutrition.sodium)
+  };
+
+  if (options.includeProteinSplit) {
+    normalized.naturalProtein = roundNumber(Number(nutrition.naturalProtein) || 0, 2);
+    normalized.specialProtein = roundNumber(Number(nutrition.specialProtein) || 0, 2);
+  }
+
+  return normalized;
+}
+
+function isValidCompletionPercent(value) {
+  const percent = Number(value);
+  return Number.isFinite(percent) && percent > 0 && percent <= 100;
+}
+
+function normalizeCompletionPercent(value) {
+  const percent = Number(value);
+  if (!isValidCompletionPercent(percent)) return 100;
+  return roundNumber(percent, 2);
+}
+
+function formatFoodQuantity(quantity, unit = 'g') {
+  const amount = Number(quantity);
+  if (!Number.isFinite(amount)) return '';
+  return `${roundNumber(amount, 2)}${unit || 'g'}`;
+}
+
+function normalizeMealCombinationSource(source = {}) {
+  if (!source || typeof source !== 'object') return null;
+  const combinationName = (source.combinationName || '').toString().trim();
+  const combinationId = (source.combinationId || '').toString().trim();
+  if (!combinationName && !combinationId) return null;
+
+  return {
+    combinationId,
+    combinationName
+  };
+}
+
+function buildFoodIntakeDisplayFields(intake = {}) {
+  const unit = intake.unit || 'g';
+  const quantity = Number(intake.quantity) || 0;
+  const displayQuantity = formatFoodQuantity(quantity, unit);
+  const completionPercent = normalizeCompletionPercent(intake.completionPercent);
+  const hasValidCompletionPercent = intake.hasValidCompletionPercent === true
+    || (!hasOwnField(intake, 'hasValidCompletionPercent') && isValidCompletionPercent(intake.completionPercent));
+  const hasPartialCompletion = hasValidCompletionPercent && completionPercent !== 100;
+  const hasPlannedQuantity = hasOwnField(intake, 'plannedQuantity') && Number.isFinite(Number(intake.plannedQuantity));
+  const plannedQuantity = hasPlannedQuantity ? Number(intake.plannedQuantity) : null;
+  const plannedDisplayQuantity = hasPlannedQuantity ? formatFoodQuantity(plannedQuantity, unit) : '';
+  const hasQuantityDifference = hasPlannedQuantity && roundNumber(plannedQuantity, 2) !== roundNumber(quantity, 2);
+  const hasPlannedDifference = hasPlannedQuantity && (hasQuantityDifference || hasPartialCompletion);
+  const hasCompletionDisplay = hasValidCompletionPercent;
+  const source = normalizeMealCombinationSource(intake.mealCombinationSource);
+  const mealCombinationSourceText = source?.combinationName
+    ? `来自餐食组合：${source.combinationName}`
+    : '';
+
+  return {
+    displayQuantity,
+    hasPlannedQuantity,
+    plannedDisplayQuantity,
+    completionPercent,
+    hasValidCompletionPercent,
+    hasCompletionDisplay,
+    hasPartialCompletion,
+    hasPlannedDifference,
+    plannedActualText: hasPlannedDifference ? `准备 ${plannedDisplayQuantity} / 实际 ${displayQuantity}` : '',
+    mealCombinationSource: source || undefined,
+    mealCombinationSourceText
+  };
+}
+
 function normalizeIntakes(intakes = []) {
   if (!Array.isArray(intakes)) return [];
 
@@ -482,25 +570,48 @@ function normalizeIntakes(intakes = []) {
       if (!item.foodType && !item.milkType && item.type === 'milk' && !hasProtein) {
         resolvedType = 'food';
       }
-
-      return {
+      const hasPlannedQuantity = hasOwnField(item, 'plannedQuantity') && Number.isFinite(Number(item.plannedQuantity));
+      const hasPlannedNutrition = hasOwnField(item, 'plannedNutrition') && item.plannedNutrition;
+      const hasValidCompletionPercent = hasOwnField(item, 'hasValidCompletionPercent')
+        ? item.hasValidCompletionPercent === true
+        : isValidCompletionPercent(item.completionPercent);
+      const normalizedItem = {
         ...item,
         type: resolvedType === 'milk' ? 'milk' : 'food',
         foodType: resolvedType,
         category: normalizedCategory,
         recordedAt,
-        nutrition: {
-          calories: roundCalories(Number(nutrition.calories) || 0),
-          protein: Number(nutrition.protein) || 0,
-          carbs: Number(nutrition.carbs) || 0,
-          fat: Number(nutrition.fat) || 0,
-          fiber: Number(nutrition.fiber) || 0,
-          sodium: Number(nutrition.sodium) || 0
-        },
+        nutrition: normalizeFoodNutritionFields(nutrition),
         naturalProtein: typeof item.naturalProtein === 'number' ? item.naturalProtein : null,
         specialProtein: typeof item.specialProtein === 'number' ? item.specialProtein : null,
         proteinSource,
-        proteinQuality: item.proteinQuality || ''
+        proteinQuality: item.proteinQuality || '',
+        completionPercent: normalizeCompletionPercent(item.completionPercent),
+        hasValidCompletionPercent
+      };
+
+      if (hasPlannedQuantity) {
+        normalizedItem.plannedQuantity = Number(item.plannedQuantity);
+      } else {
+        delete normalizedItem.plannedQuantity;
+      }
+
+      if (hasPlannedNutrition) {
+        normalizedItem.plannedNutrition = normalizeFoodNutritionFields(item.plannedNutrition, { includeProteinSplit: true, roundMacros: true });
+      } else {
+        delete normalizedItem.plannedNutrition;
+      }
+
+      const source = normalizeMealCombinationSource(item.mealCombinationSource);
+      if (source) {
+        normalizedItem.mealCombinationSource = source;
+      } else {
+        delete normalizedItem.mealCombinationSource;
+      }
+
+      return {
+        ...normalizedItem,
+        ...buildFoodIntakeDisplayFields(normalizedItem)
       };
     })
     .filter(Boolean)
@@ -513,8 +624,9 @@ function normalizeIntakes(intakes = []) {
 
 function foodIntakeRecordToLegacyIntake(record = {}) {
   const nutrition = record.nutrition || {};
+  const plannedNutrition = record.plannedNutrition || {};
   const foodSnapshot = record.foodSnapshot || {};
-  return {
+  const intake = {
     _id: record._id || record.id || '',
     type: 'food',
     foodType: 'food',
@@ -525,14 +637,7 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     quantity: Number(record.quantity) || 0,
     proteinSource: foodSnapshot.proteinSource || record.proteinSource || 'natural',
     proteinQuality: record.proteinQuality || '',
-    nutrition: {
-      calories: roundCalories(Number(nutrition.calories) || 0),
-      protein: roundNumber(Number(nutrition.protein) || 0, 2),
-      carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
-      fat: roundNumber(Number(nutrition.fat) || 0, 2),
-      fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
-      sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
-    },
+    nutrition: normalizeFoodNutritionFields(nutrition, { roundMacros: true }),
     naturalProtein: roundNumber(Number(nutrition.naturalProtein) || 0, 2),
     specialProtein: roundNumber(Number(nutrition.specialProtein) || 0, 2),
     milkType: '',
@@ -546,6 +651,24 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     createdAt: record.createdAt || null,
     updatedAt: record.updatedAt || null,
     createdBy: record.createdBy || ''
+  };
+
+  if (hasOwnField(record, 'plannedQuantity') && Number.isFinite(Number(record.plannedQuantity))) {
+    intake.plannedQuantity = Number(record.plannedQuantity);
+  }
+  if (hasOwnField(record, 'plannedNutrition') && plannedNutrition) {
+    intake.plannedNutrition = normalizeFoodNutritionFields(plannedNutrition, { includeProteinSplit: true, roundMacros: true });
+  }
+  intake.completionPercent = normalizeCompletionPercent(record.completionPercent);
+  intake.hasValidCompletionPercent = isValidCompletionPercent(record.completionPercent);
+  const source = normalizeMealCombinationSource(record.mealCombinationSource);
+  if (source) {
+    intake.mealCombinationSource = source;
+  }
+
+  return {
+    ...intake,
+    ...buildFoodIntakeDisplayFields(intake)
   };
 }
 
@@ -581,44 +704,71 @@ function groupFoodIntakesByMeal(intakes = []) {
           carbs: 0,
           fat: 0
         },
+        completionCandidates: [],
+        mealCombinationSourceText: '',
         items: []
       });
     }
 
     const group = groups.get(groupKey);
     const nutrition = intake.nutrition || {};
-
-    group.items.push({
+    const enrichedIntake = {
       ...intake,
+      ...buildFoodIntakeDisplayFields(intake),
       originalIndex: index
-    });
+    };
+
+    group.items.push(enrichedIntake);
     group.itemCount += 1;
     group.summary.calories += Number(nutrition.calories) || 0;
     group.summary.protein += Number(nutrition.protein) || 0;
     group.summary.carbs += Number(nutrition.carbs) || 0;
     group.summary.fat += Number(nutrition.fat) || 0;
+    group.completionCandidates.push({
+      completionPercent: enrichedIntake.completionPercent,
+      hasValidCompletionPercent: enrichedIntake.hasValidCompletionPercent,
+      hasPlannedQuantity: enrichedIntake.hasPlannedQuantity
+    });
 
     if (!group.mealNote && intake.mealNote) {
       group.mealNote = intake.mealNote;
     }
+    if (!group.mealCombinationSourceText && enrichedIntake.mealCombinationSourceText) {
+      group.mealCombinationSourceText = enrichedIntake.mealCombinationSourceText;
+    }
   });
 
   return Array.from(groups.values())
-    .map(group => ({
-      ...group,
-      expanded: false,
-      summary: {
-        calories: roundCalories(group.summary.calories),
-        protein: roundNumber(group.summary.protein, 2),
-        carbs: roundNumber(group.summary.carbs, 2),
-        fat: roundNumber(group.summary.fat, 2)
-      },
-      items: group.items.sort((a, b) => {
+    .map(group => {
+      const items = group.items.sort((a, b) => {
         const timeA = String(a.recordedAt || '').replace(':', '');
         const timeB = String(b.recordedAt || '').replace(':', '');
         return timeB.localeCompare(timeA);
-      })
-    }))
+      });
+      const validCompletion = group.completionCandidates.find(candidate => candidate.hasValidCompletionPercent);
+      const completionPercent = validCompletion ? validCompletion.completionPercent : 100;
+      const hasPartialCompletion = !!validCompletion && completionPercent !== 100;
+      const hasCompletionDisplay = !!validCompletion;
+      const displayGroup = { ...group };
+      delete displayGroup.completionCandidates;
+
+      return {
+        ...displayGroup,
+        expanded: false,
+        completionPercent,
+        completionPercentText: hasCompletionDisplay ? `吃完 ${completionPercent}%` : '',
+        hasCompletionDisplay,
+        hasPartialCompletion,
+        hasPlannedDifference: hasPartialCompletion || items.some(item => item.hasPlannedDifference),
+        summary: {
+          calories: roundCalories(group.summary.calories),
+          protein: roundNumber(group.summary.protein, 2),
+          carbs: roundNumber(group.summary.carbs, 2),
+          fat: roundNumber(group.summary.fat, 2)
+        },
+        items
+      };
+    })
     .sort((a, b) => b.sortKey - a.sortKey);
 }
 
@@ -6030,5 +6180,7 @@ if (!runtimeGlobal.__DATA_RECORDS_SUPPRESS_AUTO_PAGE__) {
 }
 
 module.exports = {
-  createDataRecordsPageConfig
+  createDataRecordsPageConfig,
+  foodIntakeRecordsToLegacyIntakes,
+  groupFoodIntakesByMeal
 };

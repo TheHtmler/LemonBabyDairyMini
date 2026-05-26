@@ -13,6 +13,10 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function hasOwn(record = {}, key) {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
 function normalizeNutrition(nutrition = {}) {
   return {
     calories: toNumber(nutrition.calories),
@@ -23,6 +27,17 @@ function normalizeNutrition(nutrition = {}) {
     carbs: toNumber(nutrition.carbs),
     fiber: toNumber(nutrition.fiber)
   };
+}
+
+function normalizePlannedNutrition(nutrition = {}) {
+  const source = nutrition || {};
+  const normalized = normalizeNutrition(source);
+
+  if (hasOwn(source, 'sodium')) {
+    normalized.sodium = toNumber(source.sodium);
+  }
+
+  return normalized;
 }
 
 function normalizeNutritionPer100g(nutrition = {}) {
@@ -44,10 +59,19 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
   };
 }
 
+function normalizeMealCombinationSource(source = {}) {
+  const normalizedSource = source || {};
+
+  return {
+    combinationId: normalizedSource.combinationId || '',
+    combinationName: normalizedSource.combinationName || ''
+  };
+}
+
 function normalizeFoodIntakeRecord(record = {}) {
   const foodName = record.foodName || record.foodSnapshot?.name || '';
 
-  return {
+  const normalizedRecord = {
     ...record,
     schemaVersion: record.schemaVersion || 1,
     recordType: record.recordType || 'food_intake',
@@ -64,6 +88,7 @@ function normalizeFoodIntakeRecord(record = {}) {
     quantity: toNumber(record.quantity),
     unit: record.unit || 'g',
     nutrition: normalizeNutrition(record.nutrition),
+    completionPercent: toNumber(record.completionPercent, 100),
     notes: record.notes || '',
     legacySource: record.legacySource || {
       collection: '',
@@ -72,6 +97,18 @@ function normalizeFoodIntakeRecord(record = {}) {
     },
     deletedAt: record.deletedAt === undefined ? null : record.deletedAt
   };
+
+  if (hasOwn(record, 'plannedQuantity')) {
+    normalizedRecord.plannedQuantity = toNumber(record.plannedQuantity);
+  }
+  if (hasOwn(record, 'plannedNutrition')) {
+    normalizedRecord.plannedNutrition = normalizePlannedNutrition(record.plannedNutrition);
+  }
+  if (hasOwn(record, 'mealCombinationSource')) {
+    normalizedRecord.mealCombinationSource = normalizeMealCombinationSource(record.mealCombinationSource);
+  }
+
+  return normalizedRecord;
 }
 
 function normalizeFoodIntakeUpdate(data = {}) {
@@ -88,6 +125,18 @@ function normalizeFoodIntakeUpdate(data = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'foodSnapshot')) {
     updateData.foodSnapshot = normalizeFoodSnapshot(updateData.foodSnapshot, updateData.foodName);
+  }
+  if (Object.prototype.hasOwnProperty.call(updateData, 'plannedQuantity')) {
+    updateData.plannedQuantity = toNumber(updateData.plannedQuantity);
+  }
+  if (Object.prototype.hasOwnProperty.call(updateData, 'plannedNutrition')) {
+    updateData.plannedNutrition = normalizePlannedNutrition(updateData.plannedNutrition);
+  }
+  if (Object.prototype.hasOwnProperty.call(updateData, 'completionPercent')) {
+    updateData.completionPercent = toNumber(updateData.completionPercent, 100);
+  }
+  if (Object.prototype.hasOwnProperty.call(updateData, 'mealCombinationSource')) {
+    updateData.mealCombinationSource = normalizeMealCombinationSource(updateData.mealCombinationSource);
   }
 
   return updateData;

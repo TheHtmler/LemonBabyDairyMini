@@ -198,6 +198,7 @@
                   <view class="meal-group-main">
                     <text class="meal-group-title">{{item.mealLabel || '食物记录'}}</text>
                     <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
+                    <text class="meal-group-completion" wx:if="{{item.hasCompletionDisplay}}">吃完 {{item.completionPercent}}%</text>
                   </view>
                   <view class="meal-group-actions">
                     <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑</text>
@@ -223,6 +224,9 @@
                     <text class="meal-group-summary-value">{{item.summary.fat}} g</text>
                   </view>
                 </view>
+                <view class="meal-combination-source" wx:if="{{item.mealCombinationSourceText}}">
+                  <text>{{item.mealCombinationSourceText}}</text>
+                </view>
               </view>
               <view class="meal-group-note" wx:if="{{item.mealNote}}">
                 <text class="meal-group-note-label">备注</text>
@@ -232,6 +236,12 @@
                 <view class="food-record-item" wx:for="{{item.items}}" wx:key="_id" wx:for-item="foodItem">
                   <view class="record-content">
                     <food-record-item record="{{foodItem}}" />
+                    <view class="food-planned-actual" wx:if="{{foodItem.hasPlannedDifference}}" data-planned-actual="{{foodItem.plannedActualText}}">
+                      <text>准备 {{foodItem.plannedDisplayQuantity}} / 实际 {{foodItem.displayQuantity}}</text>
+                    </view>
+                    <view class="meal-combination-source item-source" wx:if="{{foodItem.mealCombinationSourceText}}">
+                      <text>{{foodItem.mealCombinationSourceText}}</text>
+                    </view>
                   </view>
                 </view>
               </view>
