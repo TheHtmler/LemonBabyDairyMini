@@ -168,6 +168,40 @@ test('food management exposes food catalog and meal combination tabs', () => {
   assert.doesNotMatch(wxml, /onCombinationItemNotesInput/);
 });
 
+test('food management top tabs follow nutrition settings segmented style', () => {
+  const wxss = fs.readFileSync('miniprogram/pages/food-management/index.wxss', 'utf8');
+  const tabsRule = wxss.match(/\.manage-tabs\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const tabRule = wxss.match(/\.manage-tab\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const activeRule = wxss.match(/\.manage-tab\.active\s*\{([\s\S]*?)\}/)?.[1] || '';
+
+  assert.match(tabsRule, /margin:\s*0 32rpx 24rpx/);
+  assert.match(tabsRule, /background:\s*#FFF3C2/);
+  assert.match(tabsRule, /padding:\s*6rpx/);
+  assert.match(tabsRule, /border-radius:\s*999rpx/);
+  assert.match(tabsRule, /box-shadow:\s*inset 0 0 0 1rpx rgba\(255,\s*184,\s*0,\s*0\.3\)/);
+  assert.doesNotMatch(tabsRule, /gap:/);
+  assert.match(tabRule, /flex:\s*1/);
+  assert.match(tabRule, /min-width:\s*0/);
+  assert.match(tabRule, /height:\s*64rpx/);
+  assert.match(tabRule, /border-radius:\s*999rpx/);
+  assert.match(activeRule, /background:\s*#FFB800/);
+  assert.match(activeRule, /color:\s*#2F2400/);
+});
+
+test('food management recipe action buttons share food action button styles', () => {
+  const wxss = fs.readFileSync('miniprogram/pages/food-management/index.wxss', 'utf8');
+  const actionRule = wxss.match(/\.action-btn\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const editRule = wxss.match(/\.action-btn\.edit\s*\{([\s\S]*?)\}/)?.[1] || '';
+
+  assert.match(actionRule, /height:\s*64rpx/);
+  assert.match(actionRule, /border-radius:\s*32rpx/);
+  assert.match(actionRule, /font-size:\s*26rpx/);
+  assert.match(editRule, /background:\s*#f0f5ff/);
+  assert.match(editRule, /color:\s*#3a7afe/);
+  assert.doesNotMatch(wxss, /\.food-actions\s+\.action-btn\s*\{/);
+  assert.doesNotMatch(wxss, /\.food-actions\s+\.action-btn\.edit\s*\{/);
+});
+
 test('food management loads meal combinations for the current baby', async () => {
   const { page, FoodModel, FoodCategoryModel, MealCombinationModel, cleanup } = loadFoodManagementPage();
   const findCalls = [];
@@ -283,4 +317,3 @@ test('food management can create a meal combination from catalog foods', async (
     cleanup();
   }
 });
-
