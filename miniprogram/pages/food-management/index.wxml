@@ -4,7 +4,12 @@
     <text class="page-subtitle">维护常用食物，记录时可快速选择</text>
   </view>
 
-  <view class="search-bar" wx:if="{{!loading && foods.length > 0}}">
+  <view class="manage-tabs">
+    <view class="manage-tab {{activeManageTab === 'food' ? 'active' : ''}}" data-tab="food" bindtap="switchManageTab">食物库</view>
+    <view class="manage-tab {{activeManageTab === 'combination' ? 'active' : ''}}" data-tab="combination" bindtap="switchManageTab">菜谱</view>
+  </view>
+
+  <view class="search-bar" wx:if="{{activeManageTab === 'food' && !loading && foods.length > 0}}">
     <view class="search-input-wrap">
       <text class="search-icon">搜索</text>
       <input
@@ -22,11 +27,11 @@
     </view>
   </view>
 
-  <view class="loading" wx:if="{{loading}}">
+  <view class="loading" wx:if="{{activeManageTab === 'food' && loading}}">
     加载中...
   </view>
 
-  <view class="food-layout" wx:if="{{!loading && groupedFoods.length > 0}}">
+  <view class="food-layout" wx:if="{{activeManageTab === 'food' && !loading && groupedFoods.length > 0}}">
     <scroll-view
       class="category-sidebar"
       scroll-y
@@ -130,13 +135,102 @@
     </scroll-view>
   </view>
 
-  <view class="empty" wx:if="{{!loading && groupedFoods.length === 0}}">
+  <view class="empty" wx:if="{{activeManageTab === 'food' && !loading && groupedFoods.length === 0}}">
     <text wx:if="{{searchQuery}}">没有匹配的食物，换个关键词试试</text>
     <text wx:else>还没有可用的食物，请点击下方按钮添加</text>
   </view>
 
-  <view class="add-btn" wx:if="{{babyUid}}" bindtap="showAddModal">
+  <view class="combination-panel" wx:if="{{activeManageTab === 'combination'}}">
+    <view class="combination-panel-header">
+      <view>
+        <text class="combination-panel-title">菜谱</text>
+        <text class="combination-panel-subtitle">维护常用搭配和默认份量</text>
+      </view>
+      <view class="combination-create-btn" bindtap="showCreateCombinationModal">新增菜谱</view>
+    </view>
+    <view class="loading" wx:if="{{combinationLoading}}">菜谱加载中...</view>
+    <view class="empty" wx:elif="{{!combinationLoading && mealCombinations.length === 0}}">
+      <text>还没有菜谱。可以从这里新增，也可以在本顿食物页点击“保存当前为菜谱”。</text>
+      <view class="empty-action" bindtap="showCreateCombinationModal">现在新增</view>
+    </view>
+    <scroll-view class="combination-list" scroll-y enhanced show-scrollbar="{{false}}" wx:else>
+      <view class="combination-card" wx:for="{{mealCombinations}}" wx:key="_id">
+        <view class="combination-card-header">
+          <view class="combination-main">
+            <text class="combination-name">{{item.name}}</text>
+            <text class="combination-meta">{{item.items.length}} 种食物 · 使用 {{item.usageCount || 0}} 次</text>
+          </view>
+          <view class="combination-actions">
+            <button class="action-btn edit" size="mini" data-id="{{item._id}}" bindtap="showCombinationEditModal" type="default">编辑</button>
+            <button class="action-btn delete" size="mini" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="onDeleteMealCombination" type="warn">删除</button>
+          </view>
+        </view>
+        <view class="combination-foods">
+          <text class="combination-food" wx:for="{{item.items}}" wx:for-item="foodItem" wx:key="foodId">
+            {{foodItem.foodName || foodItem.foodSnapshot.name}} {{foodItem.plannedQuantity}}{{foodItem.unit}}
+          </text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="add-btn" wx:if="{{babyUid && activeManageTab === 'food'}}" bindtap="showAddModal">
     <text class="add-icon">+</text>
+  </view>
+
+  <view class="modal" wx:if="{{showCombinationModal}}">
+    <view class="modal-mask" bindtap="hideCombinationModal"></view>
+    <view class="modal-content combination-modal-content">
+      <view class="modal-header">
+        <text class="modal-title">{{combinationEditingId ? '编辑菜谱' : '新增菜谱'}}</text>
+        <text class="modal-subtitle">选择食物并设置默认份量，下次记录时可直接带出</text>
+      </view>
+      <view class="modal-body">
+        <view class="form-section">
+          <view class="form-item">
+            <text class="form-label">菜谱名称</text>
+            <view class="form-control">
+              <input class="input" placeholder="如：南瓜米粉午餐" value="{{combinationForm.name}}" bindinput="onCombinationFormNameInput" />
+            </view>
+          </view>
+        </view>
+        <view class="form-section">
+          <view class="form-section-header">
+            <text class="form-section-title">默认食物份量</text>
+            <text class="form-section-subtitle">添加这份菜谱时会带出这些准备量</text>
+          </view>
+          <picker
+            class="combination-food-picker"
+            mode="selector"
+            range="{{combinationFoodPickerOptions}}"
+            range-key="name"
+            value="{{combinationFoodPickerIndex}}"
+            bindchange="onCombinationFoodPickerChange"
+          >
+            <view class="combination-food-add">
+              {{combinationFoodPickerOptions.length > 0 ? '添加食物到菜谱' : '暂无可添加食物'}}
+            </view>
+          </picker>
+          <view class="combination-form-item" wx:for="{{combinationForm.items}}" wx:key="foodId">
+            <view class="combination-form-header">
+              <text class="combination-form-name">{{item.foodName || item.foodSnapshot.name}}</text>
+              <view class="text-delete" data-index="{{index}}" bindtap="removeCombinationFormItem">移除</view>
+            </view>
+            <view class="form-item inline-compact">
+              <text class="form-label">份量</text>
+              <view class="form-control quantity-control">
+                <input class="input" type="digit" value="{{item.quantityInput}}" data-index="{{index}}" bindinput="onCombinationItemQuantityInput" />
+                <text class="quantity-unit">{{item.unit || 'g'}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn cancel" bindtap="hideCombinationModal">取消</button>
+        <button class="btn confirm" bindtap="saveMealCombinationEdit">保存菜谱</button>
+      </view>
+    </view>
   </view>
 
   <view class="modal" wx:if="{{showAddModal}}">

@@ -1,5 +1,6 @@
 const FoodModel = require('../../models/food');
 const FoodCategoryModel = require('../../models/foodCategory');
+const MealCombinationModel = require('../../models/mealCombination');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
 const DEFAULT_CATEGORY_SUGGESTIONS = [
   '主食及谷薯',
@@ -67,6 +68,7 @@ const app = getApp();
 Page({
   data: {
     loading: false,
+    activeManageTab: 'food',
     foods: [],
     groupedFoods: [],
     searchQuery: '',
@@ -99,6 +101,16 @@ Page({
     babyUid: '',
     editingFoodId: '',
     editingFoodName: '',
+    mealCombinations: [],
+    combinationLoading: false,
+    showCombinationModal: false,
+    combinationEditingId: '',
+    combinationForm: {
+      name: '',
+      items: []
+    },
+    combinationFoodPickerOptions: [],
+    combinationFoodPickerIndex: 0,
     foodPlaceholderImage: FOOD_PLACEHOLDER_IMAGE
   },
 
@@ -114,6 +126,7 @@ Page({
 
       await this.loadCustomCategories();
       await this.loadFoods();
+      await this.loadMealCombinations();
       if (this.shouldOpenAddModal) {
         this.shouldOpenAddModal = false;
         this.showAddModal();
@@ -125,6 +138,18 @@ Page({
 
   async onShow() {
     await this.loadCustomCategories();
+    if (this.data.activeManageTab === 'combination') {
+      await this.loadMealCombinations();
+    }
+  },
+
+  switchManageTab(e) {
+    const { tab } = e.currentTarget.dataset || {};
+    if (!['food', 'combination'].includes(tab)) return;
+    this.setData({ activeManageTab: tab });
+    if (tab === 'combination') {
+      this.loadMealCombinations();
+    }
   },
 
   async loadFoods() {
@@ -181,6 +206,7 @@ Page({
 
       this.setData({
         foods: mergedFoods,
+        combinationFoodPickerOptions: mergedFoods,
         categorySuggestions,
         categoryPickerIndex: this.getCategoryPickerIndex(
           this.data.formData?.category || '',
@@ -200,6 +226,35 @@ Page({
       });
     } finally {
       this.setData({ loading: false });
+    }
+  },
+
+  async loadMealCombinations() {
+    const babyUid = this.data.babyUid || getBabyUid();
+    if (!babyUid) {
+      this.setData({
+        mealCombinations: [],
+        combinationLoading: false
+      });
+      return [];
+    }
+
+    this.setData({ combinationLoading: true });
+    try {
+      const combinations = await MealCombinationModel.findByBaby(babyUid);
+      this.setData({
+        mealCombinations: combinations || [],
+        combinationLoading: false
+      });
+      return combinations || [];
+    } catch (error) {
+      console.error('加载菜谱失败:', error);
+      this.setData({
+        mealCombinations: [],
+        combinationLoading: false
+      });
+      wx.showToast({ title: '菜谱加载失败', icon: 'none' });
+      return [];
     }
   },
 
@@ -966,6 +1021,279 @@ Page({
       wx.hideLoading();
       handleError(error, { title: '保存失败' });
     }
+  },
+
+  buildCombinationFormItem(item = {}) {
+    return {
+      ...item,
+      foodName: item.foodName || item.nameSnapshot || item.foodSnapshot?.name || '',
+      plannedQuantity: this.parseNumber(item.plannedQuantity) || 0,
+      quantityInput: String(item.plannedQuantity !== undefined ? item.plannedQuantity : ''),
+      unit: item.unit || item.foodSnapshot?.baseUnit || 'g',
+      plannedNutrition: { ...(item.plannedNutrition || {}) },
+      foodSnapshot: item.foodSnapshot || {},
+      food: item.food || null
+    };
+  },
+
+  buildCombinationFoodSnapshot(food = {}) {
+    const snapshot = {
+      name: food.name || '',
+      category: food.category || food.categoryLevel1 || '',
+      proteinSource: food.proteinSource || '',
+      baseQuantity: Number(food.baseQuantity) || 100,
+      baseUnit: food.baseUnit || 'g',
+      nutritionPerUnit: { ...(food.nutritionPerUnit || {}) },
+      proteinQuality: food.proteinQuality || '',
+      milkType: food.milkType || ''
+    };
+    if (food.nutritionPer100g) {
+      snapshot.nutritionPer100g = { ...food.nutritionPer100g };
+    }
+    if (food.proteinSplit) {
+      snapshot.proteinSplit = { ...food.proteinSplit };
+    }
+    return snapshot;
+  },
+
+  buildCombinationFormItemFromFood(food = {}) {
+    return this.buildCombinationFormItem({
+      foodId: food._id || food.id || '',
+      foodName: food.name || '',
+      foodSnapshot: this.buildCombinationFoodSnapshot(food),
+      plannedQuantity: '',
+      unit: food.baseUnit || 'g',
+      plannedNutrition: {},
+      food
+    });
+  },
+
+  showCreateCombinationModal() {
+    this.setData({
+      showCombinationModal: true,
+      combinationEditingId: '',
+      combinationFoodPickerIndex: 0,
+      combinationForm: {
+        name: '',
+        items: []
+      }
+    });
+  },
+
+  showCombinationEditModal(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    const target = (this.data.mealCombinations || []).find(item => (item._id || item.id) === id);
+    if (!target) {
+      wx.showToast({ title: '未找到菜谱', icon: 'none' });
+      return;
+    }
+
+    this.setData({
+      showCombinationModal: true,
+      combinationEditingId: target._id || target.id || '',
+      combinationForm: {
+        name: target.name || '',
+        items: (target.items || []).map(item => this.buildCombinationFormItem(item))
+      }
+    });
+  },
+
+  hideCombinationModal() {
+    this.setData({
+      showCombinationModal: false,
+      combinationEditingId: '',
+      combinationForm: {
+        name: '',
+        items: []
+      }
+    });
+  },
+
+  onCombinationFormNameInput(e) {
+    this.setData({
+      'combinationForm.name': e.detail.value || ''
+    });
+  },
+
+  onCombinationItemQuantityInput(e) {
+    const { index } = e.currentTarget.dataset || {};
+    const itemIndex = Number(index);
+    if (!Number.isInteger(itemIndex) || itemIndex < 0) return;
+    const quantityInput = e.detail.value || '';
+    const items = [...(this.data.combinationForm.items || [])];
+    if (!items[itemIndex]) return;
+    items[itemIndex] = {
+      ...items[itemIndex],
+      quantityInput
+    };
+    this.setData({
+      'combinationForm.items': items
+    });
+  },
+
+  onCombinationFoodPickerChange(e) {
+    const pickerIndex = Number(e.detail.value);
+    if (!Number.isInteger(pickerIndex) || pickerIndex < 0) return;
+    const food = (this.data.combinationFoodPickerOptions || [])[pickerIndex];
+    if (!food) return;
+
+    const exists = (this.data.combinationForm.items || []).some(item => item.foodId === food._id);
+    if (exists) {
+      wx.showToast({ title: '这个食物已在菜谱里', icon: 'none' });
+      return;
+    }
+
+    this.setData({
+      combinationFoodPickerIndex: pickerIndex,
+      'combinationForm.items': [
+        ...(this.data.combinationForm.items || []),
+        this.buildCombinationFormItemFromFood(food)
+      ]
+    });
+  },
+
+  removeCombinationFormItem(e) {
+    const { index } = e.currentTarget.dataset || {};
+    const itemIndex = Number(index);
+    if (!Number.isInteger(itemIndex) || itemIndex < 0) return;
+    this.setData({
+      'combinationForm.items': (this.data.combinationForm.items || []).filter((_, currentIndex) => currentIndex !== itemIndex)
+    });
+  },
+
+  scaleCombinationNutrition(item = {}, quantity = 0) {
+    if (item.food) {
+      const nutrition = FoodModel.calculateNutrition(item.food, quantity);
+      return this.addProteinSplitToNutrition(item.food, nutrition);
+    }
+
+    const oldQuantity = Number(item.plannedQuantity) || 0;
+    const baseNutrition = item.plannedNutrition || {};
+    const factor = oldQuantity > 0 ? quantity / oldQuantity : 1;
+    return ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat', 'fiber', 'sodium']
+      .reduce((nutrition, field) => {
+        nutrition[field] = this.roundNumber((Number(baseNutrition[field]) || 0) * factor, 2);
+        return nutrition;
+      }, {});
+  },
+
+  addProteinSplitToNutrition(food = {}, nutrition = {}) {
+    const protein = Number(nutrition.protein) || 0;
+    const source = food.proteinSource || 'natural';
+    let naturalProtein = protein;
+    let specialProtein = 0;
+
+    if (source === 'special') {
+      naturalProtein = 0;
+      specialProtein = protein;
+    } else if (source === 'mixed' && food.proteinSplit) {
+      const naturalWeight = Number(food.proteinSplit.natural) || 0;
+      const specialWeight = Number(food.proteinSplit.special) || 0;
+      const total = naturalWeight + specialWeight || 1;
+      naturalProtein = protein * (naturalWeight / total);
+      specialProtein = protein * (specialWeight / total);
+    } else if (nutrition.naturalProtein !== undefined || nutrition.specialProtein !== undefined) {
+      naturalProtein = Number(nutrition.naturalProtein) || 0;
+      specialProtein = Number(nutrition.specialProtein) || 0;
+    }
+
+    return {
+      calories: this.roundNumber(Number(nutrition.calories) || 0, 2),
+      protein: this.roundNumber(protein, 2),
+      naturalProtein: this.roundNumber(naturalProtein, 2),
+      specialProtein: this.roundNumber(specialProtein, 2),
+      carbs: this.roundNumber(Number(nutrition.carbs) || 0, 2),
+      fat: this.roundNumber(Number(nutrition.fat) || 0, 2),
+      fiber: this.roundNumber(Number(nutrition.fiber) || 0, 2),
+      sodium: this.roundNumber(Number(nutrition.sodium) || 0, 2)
+    };
+  },
+
+  buildCombinationSavePayload() {
+    const name = String(this.data.combinationForm.name || '').trim();
+    if (!name) {
+      wx.showToast({ title: '请填写菜谱名称', icon: 'none' });
+      return null;
+    }
+    const items = (this.data.combinationForm.items || []).map((item, index) => {
+      const plannedQuantity = this.parseNumber(item.quantityInput);
+      if (plannedQuantity === null || plannedQuantity <= 0) {
+        return null;
+      }
+      return {
+        foodId: item.foodId || '',
+        foodName: item.foodName || item.foodSnapshot?.name || '',
+        foodSnapshot: item.foodSnapshot || {},
+        plannedQuantity,
+        plannedNutrition: this.scaleCombinationNutrition(item, plannedQuantity),
+        unit: item.unit || item.foodSnapshot?.baseUnit || 'g',
+        sortOrder: index
+      };
+    });
+
+    if (!items.length || items.some(item => !item)) {
+      wx.showToast({ title: '请填写每种食物的有效份量', icon: 'none' });
+      return null;
+    }
+
+    return {
+      name,
+      items
+    };
+  },
+
+  async saveMealCombinationEdit() {
+    const editingId = this.data.combinationEditingId;
+    const payload = this.buildCombinationSavePayload();
+    if (!payload) return;
+
+    try {
+      wx.showLoading({ title: '保存中...' });
+      if (editingId) {
+        await MealCombinationModel.updateMealCombination(editingId, payload);
+      } else {
+        const babyUid = this.data.babyUid || getBabyUid();
+        if (!babyUid) {
+          throw new Error('未找到宝宝信息，无法保存菜谱');
+        }
+        await MealCombinationModel.createMealCombination({
+          ...payload,
+          babyUid
+        });
+      }
+      wx.hideLoading();
+      wx.showToast({ title: editingId ? '菜谱已更新' : '菜谱已创建', icon: 'success' });
+      this.hideCombinationModal();
+      await this.loadMealCombinations();
+    } catch (error) {
+      wx.hideLoading();
+      handleError(error, { title: '保存菜谱失败' });
+    }
+  },
+
+  onDeleteMealCombination(e) {
+    const { id, name } = e.currentTarget.dataset || {};
+    if (!id) return;
+    wx.showModal({
+      title: '删除菜谱',
+      content: `确定要删除“${name || '该菜谱'}”吗？删除后不会影响已保存的本顿记录。`,
+      confirmText: '删除',
+      confirmColor: '#e54d42',
+      success: async res => {
+        if (!res.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          await MealCombinationModel.deleteMealCombination(id);
+          wx.hideLoading();
+          wx.showToast({ title: '菜谱已删除', icon: 'success' });
+          await this.loadMealCombinations();
+        } catch (error) {
+          wx.hideLoading();
+          handleError(error, { title: '删除菜谱失败' });
+        }
+      }
+    });
   },
 
   onSearchInput(e) {

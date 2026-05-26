@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
+function appConfigHasPage(appConfig, pagePath) {
+  if ((appConfig.pages || []).includes(pagePath)) return true;
+  return (appConfig.subPackages || appConfig.subpackages || []).some((pkg) => (
+    (pkg.pages || []).some((page) => `${pkg.root}/${page}` === pagePath)
+  ));
+}
+
 function loadProfilePage() {
   const pagePath = require.resolve('../miniprogram/pages/profile/index.js');
   delete require.cache[pagePath];
@@ -21,8 +28,8 @@ function loadProfilePage() {
 test('app.json registers milk feeding v2 beside legacy milk feeding editor', () => {
   const appConfig = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
 
-  assert.ok(appConfig.pages.includes('pages/milk-feeding-editor/index'));
-  assert.ok(appConfig.pages.includes('pages/milk-feeding-editor-v2/index'));
+  assert.ok(appConfigHasPage(appConfig, 'pages/milk-feeding-editor/index'));
+  assert.ok(appConfigHasPage(appConfig, 'pages/milk-feeding-editor-v2/index'));
 });
 
 test('profile menu exposes 喂奶记录v2 without replacing legacy milk feeding routes', () => {

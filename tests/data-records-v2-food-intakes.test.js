@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
+function appConfigHasPage(appConfig, pagePath) {
+  if ((appConfig.pages || []).includes(pagePath)) return true;
+  return (appConfig.subPackages || appConfig.subpackages || []).some((pkg) => (
+    (pkg.pages || []).some((page) => `${pkg.root}/${page}` === pagePath)
+  ));
+}
+
 function createPageInstance(page, overrides = {}) {
   return {
     ...page,
@@ -205,6 +212,7 @@ function loadDataRecordsPage(db) {
     '../miniprogram/models/feedingRecordV2.js',
     '../miniprogram/models/foodIntakeRecord.js',
     '../miniprogram/models/dailySummaryV2.js',
+    '../miniprogram/utils/dailyRecordV2Service.js',
     '../miniprogram/models/medicationRecord.js',
     '../miniprogram/models/treatmentRecord.js'
   ].forEach(clearModule);
@@ -214,6 +222,7 @@ function loadDataRecordsPage(db) {
   const FeedingRecordV2Model = require('../miniprogram/models/feedingRecordV2.js');
   const FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord.js');
   const DailySummaryV2Model = require('../miniprogram/models/dailySummaryV2.js');
+  const dailyRecordV2Service = require('../miniprogram/utils/dailyRecordV2Service.js');
   const MedicationRecordModel = require('../miniprogram/models/medicationRecord.js');
   const TreatmentRecordModel = require('../miniprogram/models/treatmentRecord.js');
 
@@ -228,6 +237,7 @@ function loadDataRecordsPage(db) {
       MedicationRecordModel,
       TreatmentRecordModel
     },
+    dailyRecordV2Service,
     cleanup() {
       global.wx = previous.wx;
       global.getApp = previous.getApp;
@@ -276,7 +286,7 @@ function buildMealItem() {
 test('app registers standalone meal-editor-v2 page with full page files', () => {
   const appJson = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
 
-  assert.ok(appJson.pages.includes('pages/meal-editor-v2/index'));
+  assert.ok(appConfigHasPage(appJson, 'pages/meal-editor-v2/index'));
   assert.ok(fs.existsSync('miniprogram/pages/meal-editor-v2/index.js'));
   assert.ok(fs.existsSync('miniprogram/pages/meal-editor-v2/index.wxml'));
   assert.ok(fs.existsSync('miniprogram/pages/meal-editor-v2/index.wxss'));
@@ -527,7 +537,7 @@ test('data-records-v2 meal groups preserve planned fields and expose completion 
     assert.equal(lunch.hasCompletionDisplay, true);
     assert.equal(lunch.hasPartialCompletion, true);
     assert.equal(lunch.hasPlannedDifference, true);
-    assert.equal(lunch.mealCombinationSourceText, '来自餐食组合：午餐组合');
+    assert.equal(lunch.mealCombinationSourceText, '来自菜谱：午餐组合');
     assert.equal(lunch.summary.calories, 51);
 
     const firstItem = lunch.items.find(item => item._id === 'food-intake-1');
@@ -566,6 +576,110 @@ test('data-records-v2 meal groups preserve planned fields and expose completion 
     assert.equal(oldGroup.items[0].plannedDisplayQuantity, '');
     assert.equal(oldGroup.items[0].hasPlannedDifference, false);
     assert.equal(Object.prototype.hasOwnProperty.call(oldGroup.items[0], 'plannedQuantity'), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test('data-records-v2 loads the whole day through dailyRecordV2Service', async () => {
+  const { db, calls } = createDbMock();
+  const { page, models, dailyRecordV2Service, cleanup } = loadDataRecordsPage(db);
+  let serviceArgs = null;
+
+  dailyRecordV2Service.getDailyRecordV2 = async (babyUid, date) => {
+    serviceArgs = { babyUid, date };
+    return {
+      babyUid,
+      date,
+      basicInfo: {
+        weight: 5.2,
+        height: 58,
+        naturalProteinCoefficient: '1.2',
+        specialProteinCoefficient: '0.8'
+      },
+      summary: {
+        macroSummary: {
+          calories: 123,
+          protein: 4.5,
+          naturalProtein: 2.2,
+          specialProtein: 2.3,
+          carbs: 18,
+          fat: 4
+        }
+      },
+      milkRecords: [
+        {
+          _id: 'milk-v2-1',
+          id: 'milk-v2-1',
+          babyUid,
+          date,
+          startTime: '08:30',
+          formulaComponents: [
+            { kind: 'breast_milk', volume: 60 }
+          ],
+          nutritionSummary: {
+            totalVolume: 60,
+            calories: 40,
+            protein: 0.66,
+            naturalProtein: 0.66,
+            specialProtein: 0,
+            carbs: 4,
+            fat: 2
+          }
+        }
+      ],
+      foodIntakeRecords: [
+        {
+          _id: 'food-intake-1',
+          babyUid,
+          date,
+          mealBatchId: 'meal-1',
+          time: '12:30',
+          foodName: '米粉',
+          quantity: 20,
+          unit: 'g',
+          foodSnapshot: {
+            name: '米粉',
+            category: 'grain',
+            proteinSource: 'natural'
+          },
+          nutrition: {
+            calories: 72,
+            protein: 1.4,
+            naturalProtein: 1.4,
+            specialProtein: 0,
+            carbs: 16,
+            fat: 0.2
+          }
+        }
+      ],
+      medicationRecords: [{ _id: 'med-1', medicineName: '左卡尼汀' }],
+      treatmentRecords: [],
+      bowelRecords: []
+    };
+  };
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    throw new Error('data-records-v2 should load through dailyRecordV2Service');
+  };
+  models.FoodIntakeRecordModel.findByDate = async () => {
+    throw new Error('data-records-v2 should load food through dailyRecordV2Service');
+  };
+
+  try {
+    const instance = createPageInstance(page, {
+      selectedDate: '2026-05-25',
+      nutritionSettings: {}
+    });
+
+    await page.fetchDailyRecords.call(instance, '2026-05-25', { silent: true });
+
+    assert.deepEqual(serviceArgs, { babyUid: 'baby-1', date: '2026-05-25' });
+    assert.equal(calls.collectionReads.includes('feeding_records'), false);
+    assert.equal(instance.data.feedings.length, 1);
+    assert.equal(instance.data.foodIntakes.length, 1);
+    assert.equal(instance.data.foodIntakes[0].nameSnapshot, '米粉');
+    assert.equal(instance.data.macroSummary.calories, 123);
+    assert.deepEqual(instance.data.medicationRecords, [{ _id: 'med-1', medicineName: '左卡尼汀' }]);
   } finally {
     cleanup();
   }

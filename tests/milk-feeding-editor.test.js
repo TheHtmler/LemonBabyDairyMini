@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
+function appConfigHasPage(appConfig, pagePath) {
+  if ((appConfig.pages || []).includes(pagePath)) return true;
+  return (appConfig.subPackages || appConfig.subpackages || []).some((pkg) => (
+    (pkg.pages || []).some((page) => `${pkg.root}/${page}` === pagePath)
+  ));
+}
+
 function loadMilkFeedingEditorPage(options = {}) {
   const pagePath = require.resolve('../miniprogram/pages/milk-feeding-editor/index.js');
   const nutritionPath = require.resolve('../miniprogram/models/nutrition.js');
@@ -123,10 +130,10 @@ function createPageInstance(page, overrides = {}) {
 }
 
 test('milk feeding editor page is registered with the expected files', () => {
-  const appJson = fs.readFileSync('miniprogram/app.json', 'utf8');
+  const appJson = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
   const pageJson = fs.readFileSync('miniprogram/pages/milk-feeding-editor/index.json', 'utf8');
 
-  assert.match(appJson, /"pages\/milk-feeding-editor\/index"/);
+  assert.ok(appConfigHasPage(appJson, 'pages/milk-feeding-editor/index'));
   assert.ok(fs.existsSync('miniprogram/pages/milk-feeding-editor/index.js'));
   assert.ok(fs.existsSync('miniprogram/pages/milk-feeding-editor/index.wxml'));
   assert.ok(fs.existsSync('miniprogram/pages/milk-feeding-editor/index.wxss'));

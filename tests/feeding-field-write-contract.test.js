@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
+function appConfigHasPage(appConfig, pagePath) {
+  if ((appConfig.pages || []).includes(pagePath)) return true;
+  return (appConfig.subPackages || appConfig.subpackages || []).some((pkg) => (
+    (pkg.pages || []).some((page) => `${pkg.root}/${page}` === pagePath)
+  ));
+}
+
 test('data-records feeding persistence writes specialMilkPowder instead of specialPowderWeight', () => {
   const source = fs.readFileSync('miniprogram/pages/data-records/index.js', 'utf8');
 
@@ -89,9 +96,9 @@ test('feeding page no longer back-calculates special milk volume from editable t
 test('daily-feeding exposes a separate milk feeding editor entry', () => {
   const js = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
   const wxml = fs.readFileSync('miniprogram/pages/daily-feeding/index.wxml', 'utf8');
-  const appJson = fs.readFileSync('miniprogram/app.json', 'utf8');
+  const appJson = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
 
-  assert.match(appJson, /"pages\/milk-feeding-editor\/index"/);
+  assert.ok(appConfigHasPage(appJson, 'pages/milk-feeding-editor/index'));
   assert.match(
     wxml,
     /quick-record-btn primary" bindtap="navigateToMilkFeedingEditor">\s*<text>添加喂奶<\/text>/

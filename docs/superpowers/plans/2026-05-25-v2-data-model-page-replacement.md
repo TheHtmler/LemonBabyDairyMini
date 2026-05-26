@@ -124,12 +124,11 @@
     intakeId: ''
   },
   createdAt: db.serverDate(),
-  updatedAt: db.serverDate(),
-  deletedAt: null
+  updatedAt: db.serverDate()
 }
 ```
 
-Decision: store one document per food item first. Meal grouping stays through `mealBatchId`. This keeps edit/delete simple and avoids another nested array that recreates the v1 problem.
+Decision: store one document per food item first. Meal grouping stays through `mealBatchId`. Food intake deletion is a hard delete by product decision; milk records can keep their existing deletion behavior separately. This keeps edit/delete simple and avoids another nested array that recreates the v1 problem.
 
 ### `daily_summary_v2`
 
@@ -221,7 +220,7 @@ Decision: `daily_summary_v2` is a cache, not the source of truth. If wrong, rebu
 
 - `miniprogram/models/foodIntakeRecord.js`
   - CRUD for `food_intake_records`.
-  - Normalize food snapshots and soft deletion.
+  - Normalize food snapshots and hard deletion.
   - Query by `babyUid + date + status`.
 - `miniprogram/models/dailySummaryV2.js`
   - Upsert and query `daily_summary_v2`.
@@ -300,7 +299,7 @@ Cover:
 - `createFoodIntake()` writes to `food_intake_records`, not `feeding_records`.
 - Created records include `schemaVersion`, `recordType`, `source`, `status`, `babyUid`, `date`, `mealBatchId`, food snapshot, nutrition snapshot, `createdAt`, and `updatedAt`.
 - `updateFoodIntake()` preserves `createdAt`.
-- `deleteFoodIntake()` soft deletes by setting `status: 'archived'` and `deletedAt`.
+- `deleteFoodIntake()` hard deletes the target document.
 - `findByDate()` returns only `status === 'active'`.
 
 Run:
@@ -536,7 +535,7 @@ Expected: PASS.
 - Test: `tests/data-records-v2.test.js`
 - Test: `tests/data-records-v2-food-intakes.test.js`
 
-- [ ] **Step 1: Write failing contract tests**
+- [x] **Step 1: Write failing contract tests**
 
 Cover:
 - `data-records-v2` does not call `loadLegacyDailyRecordResult` during normal v2 load.
@@ -553,21 +552,21 @@ node --test tests/data-records-v2.test.js tests/data-records-v2-food-intakes.tes
 
 Expected: FAIL for the legacy dependency assertions.
 
-- [ ] **Step 2: Replace v2 daily load path**
+- [x] **Step 2: Replace v2 daily load path**
 
 Implementation notes:
 - In v2 mode, call `dailyRecordV2Service.getDailyRecordV2`.
 - Keep the existing v1 consolidation path untouched.
 - Keep adapters that make v2 milk rows render in the current WXML.
 
-- [ ] **Step 3: Replace v2 copy/delete flows**
+- [x] **Step 3: Replace v2 copy/delete flows**
 
 Implementation notes:
 - Copy food from `food_intake_records`.
 - Copy milk from `feeding_records_v2`.
 - Rebuild or mark dirty `daily_summary_v2` for target date.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 

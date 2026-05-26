@@ -19,6 +19,7 @@ const FoodModel = require('../../models/food');
 const InvitationModel = require('../../models/invitation');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
+const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const {
   createEmptyTreatmentOverview,
   mergeTreatmentIntoMacroSummary,
@@ -533,7 +534,7 @@ function buildFoodIntakeDisplayFields(intake = {}) {
   const hasCompletionDisplay = hasValidCompletionPercent;
   const source = normalizeMealCombinationSource(intake.mealCombinationSource);
   const mealCombinationSourceText = source?.combinationName
-    ? `来自餐食组合：${source.combinationName}`
+    ? `来自菜谱：${source.combinationName}`
     : '';
 
   return {
@@ -2734,6 +2735,7 @@ function createDataRecordsPageConfig(options = {}) {
       if (copiedFeedings.length > 0) {
         await Promise.all(copiedFeedings.map(record => FeedingRecordV2Model.addRecord(record)));
       }
+      await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
       wx.hideLoading();
       wx.showToast({ title: '已复制到目标日期', icon: 'success' });
       if (typeof this.forceRefreshData === 'function') {
@@ -3103,6 +3105,123 @@ function createDataRecordsPageConfig(options = {}) {
     };
   },
 
+  buildDailyRecordFromV2ServiceResult(serviceResult = {}, dateStr, babyUid) {
+    const milkRecords = serviceResult.milkRecords || [];
+    const foodIntakes = foodIntakeRecordsToLegacyIntakes(serviceResult.foodIntakeRecords || []);
+    const dailyRecord = milkRecords.length > 0
+      ? createDailyRecordFromV2(milkRecords, dateStr, babyUid)
+      : {
+          _id: `v2_${dateStr || ''}`,
+          id: `v2_${dateStr || ''}`,
+          babyUid,
+          date: dateStr,
+          basicInfo: {},
+          feedings: [],
+          intakes: [],
+          summary: {}
+        };
+    const basicInfo = serviceResult.basicInfo || serviceResult.summary?.basicInfo || {};
+
+    return {
+      ...dailyRecord,
+      basicInfo: {
+        ...(dailyRecord.basicInfo || {}),
+        ...basicInfo
+      },
+      intakes: foodIntakes,
+      summary: serviceResult.summary?.macroSummary || dailyRecord.summary || {}
+    };
+  },
+
+  async applyV2DailyServiceResult(dateStr, babyUid, serviceResult = {}) {
+    const record = this.buildDailyRecordFromV2ServiceResult(serviceResult, dateStr, babyUid);
+    const feedings = record.feedings || [];
+    const intakes = normalizeIntakes(record.intakes || []);
+    const foodIntakes = intakes.filter(item => item.type !== 'milk');
+    const basicInfo = serviceResult.basicInfo || serviceResult.summary?.basicInfo || record.basicInfo || {};
+    const recordWeight = basicInfo.weight || '';
+    const recordHeight = basicInfo.height || '';
+    const treatmentRecordsToSet = formatTreatmentRecords(serviceResult.treatmentRecords || []);
+    const medicationRecordsToSet = serviceResult.medicationRecords || [];
+    const bowelRecordsToSet = serviceResult.bowelRecords || [];
+    const calculatedSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
+    const macroSummary = serviceResult.summary?.macroSummary || calculatedSummary;
+    const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
+    const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
+    const calorieMetrics = this.computeCalorieMetrics({
+      totalCalories: macroSummary.calories,
+      weight: recordWeight,
+      dateStr
+    });
+    const totalMilk = (intakeOverview?.milk?.normal?.volume || 0) + (intakeOverview?.milk?.special?.volume || 0);
+    const hasRecord = feedings.length > 0
+      || intakes.length > 0
+      || medicationRecordsToSet.length > 0
+      || treatmentRecordsToSet.length > 0
+      || bowelRecordsToSet.length > 0;
+
+    this.setData({
+      recordId: record._id,
+      feedings,
+      feedingRecords: feedings,
+      intakes,
+      foodIntakes,
+      foodMealGroups: groupFoodIntakesByMeal(foodIntakes),
+      legacyFoodIntakes: getLegacyFoodIntakes(foodIntakes),
+      macroSummary,
+      macroRatios: this.computeMacroRatios(macroSummary),
+      fatRatioRangeText: this.getFatRatioRangeText(dateStr),
+      medicationRecords: medicationRecordsToSet,
+      treatmentRecords: treatmentRecordsToSet,
+      bowelRecords: bowelRecordsToSet,
+      weight: recordWeight || '--',
+      height: recordHeight || '--',
+      weightSource: recordWeight ? 'record' : 'empty',
+      heightSource: recordHeight ? 'record' : 'empty',
+      naturalProteinCoefficientInput: basicInfo.naturalProteinCoefficient || '',
+      specialProteinCoefficientInput: basicInfo.specialProteinCoefficient || '',
+      intakeOverview,
+      proteinSummaryDisplay,
+      totalNaturalMilk: Math.round(intakeOverview?.milk?.normal?.volume || 0),
+      totalSpecialMilk: Math.round(intakeOverview?.milk?.special?.volume || 0),
+      totalMilk: Math.round(totalMilk),
+      totalBreastMilkKcal: Math.round(intakeOverview?.milk?.normal?.calories || 0),
+      totalSpecialMilkKcal: Math.round(intakeOverview?.milk?.special?.calories || 0),
+      totalFormulaPowderWeight: feedings.reduce((sum, feeding) => (
+        sum
+        + (Number(feeding.formulaPowderWeight) || 0)
+        + (Number(feeding.specialMilkPowder) || 0)
+        + (Number(feeding.energyPowderWeight) || 0)
+      ), 0),
+      naturalProteinCoefficient: '',
+      specialProteinCoefficient: '',
+      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+      caloriePerKg: calorieMetrics.caloriePerKg,
+      goalKcalRange: calorieMetrics.goalKcalRange,
+      calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+      summaryPreview: this.buildSummaryPreviewData({
+        formattedSelectedDate: this.formatDisplayDate(dateStr),
+        feedings,
+        intakeOverview,
+        proteinSummaryDisplay,
+        weight: recordWeight || '--',
+        height: recordHeight || '--',
+        totalMilk,
+        dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+        caloriePerKg: calorieMetrics.caloriePerKg,
+        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+        macroRatios: this.computeMacroRatios(macroSummary),
+        naturalProteinCoefficient: basicInfo.naturalProteinCoefficient || '',
+        specialProteinCoefficient: basicInfo.specialProteinCoefficient || ''
+      }),
+      hasRecord,
+      isDataLoading: false
+    });
+
+    this.processMedicationData(medicationRecordsToSet);
+    this.processBowelData(bowelRecordsToSet);
+  },
+
   async loadBasicInfoSnapshotForRecords(dateStr, babyUid) {
     if (!this.isV2RecordsSource()) {
       return this.loadHistoricalBasicInfoSnapshot(dateStr, babyUid);
@@ -3156,6 +3275,15 @@ function createDataRecordsPageConfig(options = {}) {
 
       if (!babyUid) {
         console.error('未找到宝宝UID，跳过数据查询');
+        return;
+      }
+
+      if (useV2Records) {
+        const serviceResult = await DailyRecordV2Service.getDailyRecordV2(babyUid, dateStr);
+        await this.applyV2DailyServiceResult(dateStr, babyUid, serviceResult);
+        if (!silent) {
+          wx.hideLoading();
+        }
         return;
       }
 
@@ -4329,6 +4457,7 @@ function createDataRecordsPageConfig(options = {}) {
             throw new Error('未找到要删除的v2喂奶记录');
           }
           await FeedingRecordV2Model.deleteRecord(v2RecordId);
+          await DailySummaryV2Model.markDirty(getBabyUid(), this.data.selectedDate);
         } else {
         // 处理喂奶记录删除 — 与 daily-feeding 保持一致
         const recordId = this.data.recordId;

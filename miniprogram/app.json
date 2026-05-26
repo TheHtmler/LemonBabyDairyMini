@@ -1,34 +1,99 @@
 {
   "pages": [
     "pages/role-selection/index",
-    "pages/invite-join/index",
     "pages/daily-feeding/index",
     "pages/data-records/index",
-    "pages/data-records-v2/index",
-    "pages/report-workbench-preview/index",
-    "pages/meal-editor/index",
-    "pages/meal-editor-v2/index",
-    "pages/milk-feeding-editor/index",
-    "pages/milk-feeding-editor-v2/index",
-    "pages/growth-records/index",
-    "pages/data-analysis/index",
     "pages/analysis-report/index",
     "pages/profile/index",
-    "pages/onboarding/index",
-    "pages/share-data/index",
-    "pages/baby-info/index",
-    "pages/nutrition-settings/index",
-    "pages/nutrition-profile-settings/index",
-    "pages/food-management/index",
-    "pages/medications/index",
-    "pages/feedback/index",
-    "pages/feedback-list/index",
-    "pages/emergency-support/index",
-    "pages/treatment-record/index",
-    "pages/emergency-card/index",
-    "pages/about/index",
-    "pages/add-report/index",
-    "pages/report-detail/index"
+    "pages/meal-editor-v2/index",
+    "pages/growth-records/index",
+    "pages/food-management/index"
+  ],
+  "subPackages": [
+    {
+      "root": "pages/invite-join",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/data-records-v2",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/report-workbench-preview",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/meal-editor",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/milk-feeding-editor",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/milk-feeding-editor-v2",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/data-analysis",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/onboarding",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/share-data",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/baby-info",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/nutrition-settings",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/nutrition-profile-settings",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/medications",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/feedback",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/feedback-list",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/emergency-support",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/treatment-record",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/emergency-card",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/about",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/add-report",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/report-detail",
+      "pages": ["index"]
+    }
   ],
   "window": {
     "backgroundColor": "#FFF5D6",

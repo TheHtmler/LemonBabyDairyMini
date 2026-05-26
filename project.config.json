@@ -74,7 +74,12 @@
   "compileType": "miniprogram",
   "srcMiniprogramRoot": "miniprogram/",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "miniprogram/pages/trend-report"
+      }
+    ],
     "include": []
   },
   "editorSetting": {

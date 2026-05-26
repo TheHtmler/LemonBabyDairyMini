@@ -321,24 +321,182 @@ test('onLoad loads meal combinations by babyUid without legacy fallback collecti
   }
 });
 
-test('meal combination panel can open and WXML includes friendly empty state', () => {
+test('food drawer exposes food and meal combination tabs with friendly combination empty state', () => {
   const { page, cleanup } = loadMealEditorPage();
 
   try {
     const instance = createPageInstance(page);
-    assert.equal(instance.data.combinationPanelVisible, false);
+    assert.equal(instance.data.drawerActiveTab, 'food');
 
-    page.toggleCombinationPanel.call(instance);
-    assert.equal(instance.data.combinationPanelVisible, true);
+    page.openFoodDrawer.call(instance);
+    assert.equal(instance.data.drawerVisible, true);
+    assert.equal(instance.data.drawerActiveTab, 'food');
+
+    page.onDrawerTabTap.call(instance, {
+      currentTarget: { dataset: { tab: 'combination' } }
+    });
+    assert.equal(instance.data.drawerActiveTab, 'combination');
 
     const wxml = fs.readFileSync(pageWxmlPath, 'utf8');
-    assert.match(wxml, /餐食组合/);
-    assert.match(wxml, /还没有餐食组合|暂无餐食组合|先保存一个常用组合/);
-    assert.match(wxml, /保存当前为餐食组合/);
+    assert.match(wxml, /drawer-tab[\s\S]*食物/);
+    assert.match(wxml, /drawer-tab[\s\S]*菜谱/);
+    assert.match(wxml, /drawer-combination-panel/);
+    assert.match(wxml, /还没有菜谱|暂无菜谱|常用菜谱/);
     assert.match(wxml, /bindinput="onCombinationNameInput"/);
+    assert.doesNotMatch(wxml, /section-card combination-card/);
+    assert.doesNotMatch(wxml, /onPendingNotesInput/);
+    assert.doesNotMatch(wxml, /onDraftNotesInput/);
+    assert.doesNotMatch(wxml, /meal-item-note/);
   } finally {
     cleanup();
   }
+});
+
+test('food drawer lets users select multiple foods before entering quantities', () => {
+  const { page, cleanup } = loadMealEditorPage();
+  const rice = buildCatalogFood({ _id: 'food-rice', name: '米粉' });
+  const pumpkin = buildCatalogFood({ _id: 'food-pumpkin', name: '南瓜泥' });
+
+  try {
+    const instance = createPageInstance(page, {
+      drawerVisible: true,
+      drawerStep: 'select',
+      drawerActiveTab: 'food',
+      foodCatalog: [rice, pumpkin],
+      filteredFoodOptions: [rice, pumpkin],
+      pendingMealItems: []
+    });
+
+    page.onFoodOptionTap.call(instance, {
+      currentTarget: { dataset: { id: 'food-rice' } }
+    });
+    page.onFoodOptionTap.call(instance, {
+      currentTarget: { dataset: { id: 'food-pumpkin' } }
+    });
+
+    assert.equal(instance.data.drawerStep, 'select');
+    assert.equal(instance.data.pendingMealItems.length, 2);
+    assert.deepEqual(instance.data.pendingMealItems.map(item => item.foodId), ['food-rice', 'food-pumpkin']);
+    assert.equal(instance.data.filteredFoodOptions.find(item => item._id === 'food-rice').isPendingSelected, true);
+
+    page.goToBatchQuantityStep.call(instance);
+
+    assert.equal(instance.data.drawerStep, 'batchQuantity');
+  } finally {
+    cleanup();
+  }
+});
+
+test('batch quantity step adds selected foods to the meal in one action', () => {
+  const { page, cleanup } = loadMealEditorPage();
+  const rice = buildCatalogFood({
+    _id: 'food-rice',
+    name: '米粉',
+    nutritionPerUnit: {
+      calories: 360,
+      protein: 7,
+      carbs: 80,
+      fat: 1,
+      fiber: 2,
+      sodium: 5
+    }
+  });
+  const pumpkin = buildCatalogFood({
+    _id: 'food-pumpkin',
+    name: '南瓜泥',
+    nutritionPerUnit: {
+      calories: 80,
+      protein: 2,
+      carbs: 12,
+      fat: 0.5,
+      fiber: 3,
+      sodium: 4
+    }
+  });
+
+  try {
+    const instance = createPageInstance(page, {
+      drawerVisible: true,
+      drawerStep: 'batchQuantity',
+      pendingMealItems: [
+        page.buildPendingMealItemFromFood.call({ data: { pendingMealItems: [] } }, rice),
+        page.buildPendingMealItemFromFood.call({ data: { pendingMealItems: [] } }, pumpkin)
+      ],
+      mealDraft: {
+        mealTime: '12:30',
+        mealLabel: '午餐',
+        mealNote: '',
+        items: []
+      }
+    });
+
+    page.onPendingQuantityInput.call(instance, {
+      currentTarget: { dataset: { id: 'food-rice' } },
+      detail: { value: '20' }
+    });
+    page.onPendingQuantityInput.call(instance, {
+      currentTarget: { dataset: { id: 'food-pumpkin' } },
+      detail: { value: '30' }
+    });
+    page.addPendingItemsToMeal.call(instance);
+
+    assert.equal(instance.data.mealDraft.items.length, 2);
+    assert.equal(instance.data.mealDraft.items[0].quantity, 20);
+    assert.equal(instance.data.mealDraft.items[0].nutrition.calories, 72);
+    assert.equal(instance.data.mealDraft.items[1].quantity, 30);
+    assert.equal(instance.data.drawerVisible, false);
+    assert.equal(instance.data.pendingMealItems.length, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test('applying a combination from the add drawer stages items for quantity editing first', async () => {
+  const { page, MealCombinationModel, cleanup } = loadMealEditorPage();
+  MealCombinationModel.incrementUsage = async () => true;
+
+  try {
+    const instance = createPageInstance(page, {
+      drawerVisible: true,
+      drawerStep: 'select',
+      drawerActiveTab: 'combination',
+      foodCatalog: [buildCatalogFood()],
+      mealCombinations: [buildCombination()],
+      pendingMealItems: [],
+      mealDraft: {
+        mealTime: '12:30',
+        mealLabel: '午餐',
+        mealNote: '',
+        items: []
+      }
+    });
+
+    await page.applyMealCombination.call(instance, {
+      currentTarget: { dataset: { id: 'combo-1' } }
+    });
+
+    assert.equal(instance.data.mealDraft.items.length, 0);
+    assert.equal(instance.data.pendingMealItems.length, 1);
+    assert.equal(instance.data.drawerStep, 'batchQuantity');
+    assert.equal(instance.data.pendingMealItems[0].quantity, '10');
+    assert.deepEqual(instance.data.pendingMealItems[0].mealCombinationSource, {
+      combinationId: 'combo-1',
+      combinationName: '午餐小组合'
+    });
+  } finally {
+    cleanup();
+  }
+});
+
+test('save current meal as combination action lives with current meal items instead of add drawer', () => {
+  const wxml = fs.readFileSync(pageWxmlPath, 'utf8');
+  const itemsCardIndex = wxml.indexOf('section-card items-card');
+  const saveActionIndex = wxml.indexOf('保存当前为菜谱');
+  const drawerIndex = wxml.indexOf('food-drawer');
+
+  assert.ok(itemsCardIndex > -1);
+  assert.ok(saveActionIndex > itemsCardIndex);
+  assert.ok(saveActionIndex < drawerIndex);
 });
 
 test('applying a combination prefers current catalog food and appends sourced planned items', async () => {
@@ -385,7 +543,7 @@ test('applying a combination prefers current catalog food and appends sourced pl
     assert.equal(instance.data.plannedMealSummary.calories, 30);
     assert.equal(instance.data.actualMealSummary.calories, 15);
     assert.deepEqual(incrementCalls, ['combo-1']);
-    assert.equal(wxCalls.toasts.at(-1).title, '已加入餐食组合');
+    assert.equal(wxCalls.toasts.at(-1).title, '已加入菜谱');
   } finally {
     cleanup();
   }
@@ -541,7 +699,7 @@ test('empty combination name shows toast and does not create or show modal', asy
 
     assert.equal(createCalled, false);
     assert.equal(wxCalls.showModal, 0);
-    assert.equal(wxCalls.toasts.at(-1).title, '请输入组合名称');
+    assert.equal(wxCalls.toasts.at(-1).title, '请输入菜谱名称');
   } finally {
     cleanup();
   }
@@ -589,7 +747,7 @@ test('saving current meal creates combination from planned items and refreshes l
     assert.equal(instance.data.combinationDraftName, '');
     assert.equal(instance.data.combinationNameInputVisible, false);
     assert.equal(wxCalls.showModal, 0);
-    assert.equal(wxCalls.toasts.at(-1).title, '已保存餐食组合');
+    assert.equal(wxCalls.toasts.at(-1).title, '已保存菜谱');
   } finally {
     cleanup();
   }
@@ -654,9 +812,9 @@ test('saving current meal does not show success when refresh after create fails'
 
     await page.saveCurrentMealAsCombination.call(instance);
 
-    assert.equal(wxCalls.toasts.some(toast => toast.title === '已保存餐食组合'), false);
+    assert.equal(wxCalls.toasts.some(toast => toast.title === '已保存菜谱'), false);
     assert.equal(wxCalls.toasts.at(-1).icon, 'none');
-    assert.match(wxCalls.toasts.at(-1).title, /刷新|保存组合失败/);
+    assert.match(wxCalls.toasts.at(-1).title, /刷新|保存菜谱失败/);
     assert.equal(instance.data.combinationNameInputVisible, true);
     assert.equal(instance.data.combinationDraftName, '刷新失败午餐');
     assert.equal(instance.data.combinationLoading, false);

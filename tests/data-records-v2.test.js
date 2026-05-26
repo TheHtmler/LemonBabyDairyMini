@@ -2,11 +2,22 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
+function appConfigHasPage(appConfig, pagePath) {
+  if ((appConfig.pages || []).includes(pagePath)) return true;
+  return (appConfig.subPackages || appConfig.subpackages || []).some((pkg) => (
+    (pkg.pages || []).some((page) => `${pkg.root}/${page}` === pagePath)
+  ));
+}
+
 function loadDataRecordsPageForDeletion() {
   const pagePath = require.resolve('../miniprogram/pages/data-records/index.js');
   const modelPath = require.resolve('../miniprogram/models/feedingRecordV2.js');
+  const servicePath = require.resolve('../miniprogram/utils/dailyRecordV2Service.js');
+  const dailySummaryPath = require.resolve('../miniprogram/models/dailySummaryV2.js');
   delete require.cache[pagePath];
   delete require.cache[modelPath];
+  delete require.cache[servicePath];
+  delete require.cache[dailySummaryPath];
 
   const calls = {
     toasts: [],
@@ -71,6 +82,10 @@ function loadDataRecordsPageForDeletion() {
                     return {};
                   }
                 };
+              },
+              add: async ({ data }) => {
+                calls.legacyUpdates.push({ collection: name, data });
+                return { _id: `${name}-new-id` };
               }
             };
           }
@@ -90,11 +105,15 @@ function loadDataRecordsPageForDeletion() {
 
   const { createDataRecordsPageConfig } = require(pagePath);
   const feedingRecordV2Model = require(modelPath);
+  const dailyRecordV2Service = require(servicePath);
+  const dailySummaryV2Model = require(dailySummaryPath);
   calls.collections = [];
 
   return {
     page: createDataRecordsPageConfig({ recordSource: 'v2' }),
     feedingRecordV2Model,
+    dailyRecordV2Service,
+    dailySummaryV2Model,
     calls,
     cleanup() {
       global.wx = previousWx;
@@ -128,7 +147,7 @@ test('profile exposes a separate data records v2 entry and route', () => {
   const appJson = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
   const profileJs = fs.readFileSync('miniprogram/pages/profile/index.js', 'utf8');
 
-  assert.ok(appJson.pages.includes('pages/data-records-v2/index'));
+  assert.ok(appConfigHasPage(appJson, 'pages/data-records-v2/index'));
   assert.match(profileJs, /name:\s*'数据记录v2'/);
   assert.match(profileJs, /path:\s*'\/pages\/data-records-v2\/index'/);
   assert.match(profileJs, /新版数据记录/);
@@ -262,6 +281,76 @@ test('data-records-v2 keeps the feeding overview empty like food and treatment w
 });
 
 test('data-records-v2 fetches v2 feeding while reading food from food_intake_records', async () => {
+  const { page, dailyRecordV2Service, calls, cleanup } = loadDataRecordsPageForDeletion();
+  const previousGetDailyRecordV2 = dailyRecordV2Service.getDailyRecordV2;
+  let serviceArgs = null;
+  dailyRecordV2Service.getDailyRecordV2 = async (babyUid, date) => {
+    serviceArgs = { babyUid, date };
+    return {
+      babyUid,
+      date,
+      basicInfo: {
+        weight: '',
+        height: '',
+        naturalProteinCoefficient: '',
+        specialProteinCoefficient: '',
+        calorieCoefficient: '',
+        source: 'empty'
+      },
+      summary: {},
+      milkRecords: [],
+      foodIntakeRecords: [
+        {
+          _id: 'food-1',
+          babyUid,
+          date,
+          mealBatchId: 'meal-1',
+          time: '12:30',
+          foodId: 'food-catalog-1',
+          foodName: '米糊',
+          quantity: 10,
+          unit: 'g',
+          foodSnapshot: {
+            name: '米糊',
+            category: '辅食',
+            proteinSource: 'natural'
+          },
+          nutrition: {
+            calories: 20,
+            protein: 1,
+            naturalProtein: 1,
+            specialProtein: 0,
+            carbs: 4,
+            fat: 0
+          }
+        }
+      ],
+      medicationRecords: [{ _id: 'med-1', medicineName: '左卡尼汀' }],
+      treatmentRecords: [],
+      bowelRecords: []
+    };
+  };
+  try {
+    const instance = createPageInstance(page, {
+      selectedDate: '2026-05-21',
+      nutritionSettings: {}
+    });
+
+    await page.fetchDailyRecords.call(instance, '2026-05-21', { silent: true });
+
+    assert.deepEqual(serviceArgs, { babyUid: 'baby-1', date: '2026-05-21' });
+    assert.equal(calls.collections.includes('feeding_records'), false);
+    assert.equal(instance.data.foodIntakes.length, 1);
+    assert.equal(instance.data.foodIntakes[0].nameSnapshot, '米糊');
+    assert.deepEqual(instance.data.medicationRecords, [{ _id: 'med-1', medicineName: '左卡尼汀' }]);
+    assert.deepEqual(instance.data.treatmentRecords, []);
+  } finally {
+    dailyRecordV2Service.getDailyRecordV2 = previousGetDailyRecordV2;
+    cleanup();
+  }
+});
+
+test('data-records-v2 service read does not use legacy feeding records', async () => {
   const { page, feedingRecordV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousResolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot;
@@ -271,7 +360,6 @@ test('data-records-v2 fetches v2 feeding while reading food from food_intake_rec
   const previousFindFoodByDate = FoodIntakeRecordModel.findByDate;
   const previousFindMedicationByDate = MedicationRecordModel.findByDate;
   const previousFindTreatmentByDate = TreatmentRecordModel.findByDate;
-  let resolveOptions = null;
   let foodArgs = null;
   let medicationArgs = null;
   let treatmentArgs = null;
@@ -313,17 +401,14 @@ test('data-records-v2 fetches v2 feeding while reading food from food_intake_rec
     treatmentArgs = { date, babyUid };
     return { success: true, data: [] };
   };
-  feedingRecordV2Model.resolveBasicInfoSnapshot = async (babyUid, date, options) => {
-    resolveOptions = options;
-    return {
-      weight: '',
-      height: '',
-      naturalProteinCoefficient: '',
-      specialProteinCoefficient: '',
-      calorieCoefficient: '',
-      source: 'empty'
-    };
-  };
+  feedingRecordV2Model.resolveBasicInfoSnapshot = async () => ({
+    weight: '',
+    height: '',
+    naturalProteinCoefficient: '',
+    specialProteinCoefficient: '',
+    calorieCoefficient: '',
+    source: 'empty'
+  });
 
   try {
     const instance = createPageInstance(page, {
@@ -334,11 +419,9 @@ test('data-records-v2 fetches v2 feeding while reading food from food_intake_rec
     await page.fetchDailyRecords.call(instance, '2026-05-21', { silent: true });
 
     assert.equal(calls.collections.includes('feeding_records'), false);
-    assert.ok(calls.collections.includes('bowel_records'));
     assert.deepEqual(foodArgs, { babyUid: 'baby-1', date: '2026-05-21' });
     assert.deepEqual(medicationArgs, { date: '2026-05-21', babyUid: 'baby-1' });
     assert.deepEqual(treatmentArgs, { date: '2026-05-21', babyUid: 'baby-1' });
-    assert.deepEqual(resolveOptions, { includeFallbacks: false, includeProfileInitial: true });
     assert.equal(instance.data.foodIntakes.length, 1);
     assert.equal(instance.data.foodIntakes[0].nameSnapshot, '米糊');
     assert.deepEqual(instance.data.medicationRecords, [{ _id: 'med-1', medicineName: '左卡尼汀' }]);
@@ -394,11 +477,17 @@ test('data-records-v2 saves edited basic info to isolated v2 growth records', as
 });
 
 test('data-records-v2 hard deletes the selected v2 feeding record on delete', async () => {
-  const { page, feedingRecordV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
+  const { page, feedingRecordV2Model, dailySummaryV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
   const previousDeleteRecord = feedingRecordV2Model.deleteRecord;
+  const previousMarkDirty = dailySummaryV2Model.markDirty;
   let deletedId = '';
+  const dirtyDays = [];
   feedingRecordV2Model.deleteRecord = async (recordId) => {
     deletedId = recordId;
+    return true;
+  };
+  dailySummaryV2Model.markDirty = async (babyUid, date) => {
+    dirtyDays.push({ babyUid, date });
     return true;
   };
 
@@ -424,22 +513,26 @@ test('data-records-v2 hard deletes the selected v2 feeding record on delete', as
     await page.confirmDelete.call(instance);
 
     assert.equal(deletedId, 'v2-1');
+    assert.deepEqual(dirtyDays, [{ babyUid: 'baby-1', date: '2026-05-21' }]);
     assert.equal(calls.legacyUpdates.length, 0);
     assert.equal(calls.refreshes, 1);
     assert.equal(calls.toasts.at(-1).title, '删除成功');
   } finally {
     feedingRecordV2Model.deleteRecord = previousDeleteRecord;
+    dailySummaryV2Model.markDirty = previousMarkDirty;
     cleanup();
   }
 });
 
 test('data-records-v2 copies v2 feeding records into the target date', async () => {
-  const { page, feedingRecordV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
+  const { page, feedingRecordV2Model, dailySummaryV2Model, calls, cleanup } = loadDataRecordsPageForDeletion();
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousDeleteRecord = feedingRecordV2Model.deleteRecord;
   const previousAddRecord = feedingRecordV2Model.addRecord;
+  const previousMarkDirty = dailySummaryV2Model.markDirty;
   const deletedIds = [];
   const addedRecords = [];
+  const dirtyDays = [];
   feedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
     if (date === '2026-05-22') {
       return [{ _id: 'target-v2-1', id: 'target-v2-1', babyUid, date, startTime: '07:00' }];
@@ -453,6 +546,10 @@ test('data-records-v2 copies v2 feeding records into the target date', async () 
   feedingRecordV2Model.addRecord = async (record) => {
     addedRecords.push(record);
     return { _id: `copied-${addedRecords.length}` };
+  };
+  dailySummaryV2Model.markDirty = async (babyUid, date) => {
+    dirtyDays.push({ babyUid, date });
+    return true;
   };
   global.wx.showModal = ({ success }) => success({ confirm: true });
 
@@ -512,6 +609,7 @@ test('data-records-v2 copies v2 feeding records into the target date', async () 
     assert.deepEqual(addedRecords[0].formulaComponents, [{ kind: 'breast_milk', volume: 60 }]);
     assert.equal(addedRecords[0].createdAt, undefined);
     assert.equal(addedRecords[0].updatedAt, undefined);
+    assert.deepEqual(dirtyDays, [{ babyUid: 'baby-1', date: '2026-05-22' }]);
     assert.equal(calls.legacyUpdates.length, 0);
     assert.equal(calls.refreshes, 1);
     assert.equal(calls.toasts.at(-1).title, '已复制到目标日期');
@@ -519,6 +617,7 @@ test('data-records-v2 copies v2 feeding records into the target date', async () 
     feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
     feedingRecordV2Model.deleteRecord = previousDeleteRecord;
     feedingRecordV2Model.addRecord = previousAddRecord;
+    dailySummaryV2Model.markDirty = previousMarkDirty;
     cleanup();
   }
 });

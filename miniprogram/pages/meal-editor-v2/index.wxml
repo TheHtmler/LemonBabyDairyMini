@@ -58,108 +58,35 @@
     </view>
   </view>
 
-  <view class="section-card combination-card">
-    <view class="section-header combination-header">
+  <view class="section-card items-card">
+    <view class="section-header items-header">
       <view class="section-title-wrap">
-        <text class="section-title">餐食组合</text>
-        <text class="section-meta left">常用搭配一键加入本顿</text>
+        <text class="section-title">本顿食物</text>
+        <text class="section-meta left">已添加 {{mealDraft.items.length}} 种</text>
       </view>
-      <view class="combination-toggle" bindtap="toggleCombinationPanel">
-        {{combinationPanelVisible ? '收起' : '打开'}}
-      </view>
-    </view>
-    <view class="combination-actions">
-      <view class="combination-save-btn" bindtap="showSaveCombinationInput">保存当前为餐食组合</view>
+      <view class="combination-save-btn compact" bindtap="showSaveCombinationInput">保存当前为菜谱</view>
     </view>
     <view class="combination-name-panel" wx:if="{{combinationNameInputVisible}}">
       <input
         class="combination-name-input"
         type="text"
         value="{{combinationDraftName}}"
-        placeholder="给这组搭配起个名字，例如：南瓜米粉午餐"
+        placeholder="给这份菜谱起个名字，例如：南瓜米粉午餐"
         bindinput="onCombinationNameInput"
       />
       <view class="combination-name-actions">
         <view class="combination-name-cancel" bindtap="hideSaveCombinationInput">取消</view>
-        <view class="combination-name-confirm" bindtap="saveCurrentMealAsCombination">保存组合</view>
+        <view class="combination-name-confirm" bindtap="saveCurrentMealAsCombination">保存菜谱</view>
       </view>
     </view>
-    <view class="combination-panel" wx:if="{{combinationPanelVisible}}">
-      <view class="empty-state compact" wx:if="{{combinationLoading}}">
-        <text>正在准备宝宝的常用组合...</text>
+    <view class="meal-summary-compact" wx:if="{{mealDraft.items.length > 0}}">
+      <view class="meal-summary-compact-head">
+        <text class="meal-summary-compact-title">准备 / 实际计入</text>
+        <text class="meal-summary-compact-percent">吃完 {{completionPercent || 0}}%</text>
       </view>
-      <view class="empty-state compact" wx:elif="{{mealCombinations.length === 0}}">
-        <text>还没有餐食组合，先保存一个常用组合，下次就能一键加入啦。</text>
-      </view>
-      <view
-        class="combination-item"
-        wx:for="{{mealCombinations}}"
-        wx:key="_id"
-        data-id="{{item._id}}"
-        bindtap="applyMealCombination"
-      >
-        <view class="combination-item-main">
-          <text class="combination-item-name">{{item.name}}</text>
-          <text class="combination-item-meta">{{item.items.length}} 种食物 · 已用 {{item.usageCount || 0}} 次</text>
-        </view>
-        <view class="combination-item-apply">加入</view>
-      </view>
-    </view>
-  </view>
-
-  <view class="section-card items-card">
-    <view class="section-header">
-      <text class="section-title">本顿食物</text>
-      <text class="section-meta">已添加 {{mealDraft.items.length}} 种</text>
-    </view>
-    <view class="meal-summary-grid" wx:if="{{mealDraft.items.length > 0}}">
-      <view class="meal-summary-panel">
-        <view class="meal-summary-title-row">
-          <text class="meal-summary-title">准备量</text>
-          <text class="meal-summary-hint">按计划食物计算</text>
-        </view>
-        <view class="meal-summary-metrics">
-          <view class="meal-summary-item">
-            <text class="meal-summary-value">{{plannedMealSummary.calories || mealSummary.calories || 0}}</text>
-            <text class="meal-summary-label">热量 kcal</text>
-          </view>
-          <view class="meal-summary-item">
-            <text class="meal-summary-value">{{plannedMealSummary.protein || mealSummary.protein || 0}}</text>
-            <text class="meal-summary-label">蛋白 g</text>
-          </view>
-          <view class="meal-summary-item">
-            <text class="meal-summary-value">{{plannedMealSummary.carbs || mealSummary.carbs || 0}}</text>
-            <text class="meal-summary-label">碳水 g</text>
-          </view>
-          <view class="meal-summary-item">
-            <text class="meal-summary-value">{{plannedMealSummary.fat || mealSummary.fat || 0}}</text>
-            <text class="meal-summary-label">脂肪 g</text>
-          </view>
-        </view>
-      </view>
-      <view class="meal-summary-panel actual">
-        <view class="meal-summary-title-row">
-          <text class="meal-summary-title">实际计入</text>
-          <text class="meal-summary-hint">按吃完 {{completionPercent || 0}}% 计入</text>
-        </view>
-        <view class="meal-summary-metrics">
-          <view class="meal-summary-item actual">
-            <text class="meal-summary-value">{{actualMealSummary.calories || 0}}</text>
-            <text class="meal-summary-label">热量 kcal</text>
-          </view>
-          <view class="meal-summary-item actual">
-            <text class="meal-summary-value">{{actualMealSummary.protein || 0}}</text>
-            <text class="meal-summary-label">蛋白 g</text>
-          </view>
-          <view class="meal-summary-item actual">
-            <text class="meal-summary-value">{{actualMealSummary.carbs || 0}}</text>
-            <text class="meal-summary-label">碳水 g</text>
-          </view>
-          <view class="meal-summary-item actual">
-            <text class="meal-summary-value">{{actualMealSummary.fat || 0}}</text>
-            <text class="meal-summary-label">脂肪 g</text>
-          </view>
-        </view>
+      <view class="meal-summary-compact-row">
+        <text>热量 {{plannedMealSummary.calories || mealSummary.calories || 0}} → {{actualMealSummary.calories || 0}} kcal</text>
+        <text>蛋白 {{plannedMealSummary.protein || mealSummary.protein || 0}} → {{actualMealSummary.protein || 0}} g</text>
       </view>
     </view>
     <view class="empty-state" wx:if="{{mealDraft.items.length === 0}}">
@@ -170,7 +97,6 @@
         <text class="meal-item-name">{{item.nameSnapshot}}</text>
         <text class="meal-item-meta">{{item.quantity}}{{item.unit}} · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.protein || 0}} g</text>
         <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g · 纤维 {{item.nutrition.fiber || 0}} g</text>
-        <text class="meal-item-note" wx:if="{{item.notes}}">备注: {{item.notes}}</text>
       </view>
       <view class="meal-item-actions">
         <view class="text-btn" data-id="{{item.localId}}" bindtap="editMealItem">编辑</view>
@@ -207,69 +133,161 @@
     <view class="drawer-handle"></view>
     <view class="drawer-header">
       <view class="drawer-header-main">
-        <text class="drawer-title">{{drawerStep === 'select' ? '选择食物' : (editingItemId ? '编辑食物' : '添加食物')}}</text>
-        <text class="drawer-subtitle">{{drawerStep === 'select' ? '支持名称、分类、别名模糊搜索' : '确认份量后加入这顿饭'}}</text>
+        <text class="drawer-title">{{drawerStep === 'select' ? '添加食物' : (drawerStep === 'batchQuantity' ? '设置份量' : (editingItemId ? '编辑食物' : '添加食物'))}}</text>
+        <text class="drawer-subtitle">{{drawerStep === 'select' ? '先连续选择，再统一填写份量' : (drawerStep === 'batchQuantity' ? '确认每种食物的准备量' : '确认份量后加入这顿饭')}}</text>
       </view>
       <view class="drawer-close" bindtap="closeFoodDrawer">关闭</view>
     </view>
 
     <view class="drawer-body select-body" wx:if="{{drawerStep === 'select'}}">
-      <view class="search-input">
-        <input
-          type="text"
-          value="{{foodSearchQuery}}"
-          placeholder="搜索食物名称、分类或别名"
-          bindinput="onFoodSearchInput"
-        />
+      <view class="drawer-tabs">
+        <view class="drawer-tab {{drawerActiveTab === 'food' ? 'active' : ''}}" data-tab="food" bindtap="onDrawerTabTap">食物</view>
+        <view class="drawer-tab {{drawerActiveTab === 'combination' ? 'active' : ''}}" data-tab="combination" bindtap="onDrawerTabTap">菜谱</view>
       </view>
-      <view class="drawer-utility-row">
-        <view class="drawer-utility-btn" bindtap="navigateToFoodManagement">去添加食物</view>
+      <view class="drawer-food-panel" wx:if="{{drawerActiveTab === 'food'}}">
+        <view class="search-input">
+          <input
+            type="text"
+            value="{{foodSearchQuery}}"
+            placeholder="搜索食物名称、分类或别名"
+            bindinput="onFoodSearchInput"
+          />
+        </view>
+        <view class="drawer-utility-row">
+          <view class="drawer-utility-btn" bindtap="navigateToFoodManagement">去添加食物</view>
+        </view>
+        <view class="food-select-layout">
+          <scroll-view class="category-sidebar" scroll-y="true" show-scrollbar="false">
+            <view
+              class="category-nav-item {{activeCategory === item.value ? 'active' : ''}}"
+              wx:for="{{foodCategories}}"
+              wx:key="value"
+              data-category="{{item.value}}"
+              bindtap="onCategoryTap"
+            >
+              <text class="category-nav-label">{{item.label}}</text>
+            </view>
+          </scroll-view>
+          <scroll-view class="food-list-panel" scroll-y="true" show-scrollbar="false">
+            <view class="food-list-header">
+              <text class="food-list-title">{{activeCategory === 'recent' ? '最近使用' : activeCategory}}</text>
+              <text class="food-list-count">{{filteredFoodOptions.length}} 种</text>
+            </view>
+            <view
+              class="food-option {{item.isPendingSelected ? 'selected' : ''}}"
+              wx:for="{{filteredFoodOptions}}"
+              wx:key="_id"
+              data-id="{{item._id}}"
+              bindtap="onFoodOptionTap"
+            >
+              <image
+                class="food-option-image"
+                src="{{item.displayImage}}"
+                mode="aspectFill"
+                data-url="{{item.displayImage}}"
+                catchtap="previewFoodOptionImage"
+              />
+              <view class="food-option-main">
+                <text class="food-option-name">{{item.name}}</text>
+                <view class="food-option-meta-row">
+                  <text class="food-option-energy">{{item.nutritionPerUnit.calories || 0}}</text>
+                  <text class="food-option-meta">kcal / {{item.baseQuantity || 100}}{{item.baseUnit || 'g'}}</text>
+                </view>
+                <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>
+              </view>
+              <view class="food-option-add {{item.isPendingSelected ? 'selected' : ''}}" data-id="{{item._id}}" catchtap="onFoodOptionTap">
+                {{item.isPendingSelected ? '已选' : '+'}}
+              </view>
+            </view>
+            <view class="empty-state compact" wx:if="{{filteredFoodOptions.length === 0}}">
+              <text>未找到匹配的食物</text>
+            </view>
+          </scroll-view>
+        </view>
       </view>
-      <view class="food-select-layout">
-        <scroll-view class="category-sidebar" scroll-y="true" show-scrollbar="false">
+      <view class="drawer-combination-panel" wx:elif="{{drawerActiveTab === 'combination'}}">
+        <view class="empty-state compact" wx:if="{{combinationLoading}}">
+          <text>正在准备宝宝的菜谱...</text>
+        </view>
+        <view class="empty-state compact" wx:elif="{{mealCombinations.length === 0}}">
+          <text>还没有菜谱，先保存一份常用菜谱，下次就能一键加入啦。</text>
+        </view>
+        <scroll-view class="drawer-combination-list" scroll-y="true" show-scrollbar="false" wx:else>
           <view
-            class="category-nav-item {{activeCategory === item.value ? 'active' : ''}}"
-            wx:for="{{foodCategories}}"
-            wx:key="value"
-            data-category="{{item.value}}"
-            bindtap="onCategoryTap"
-          >
-            <text class="category-nav-label">{{item.label}}</text>
-          </view>
-        </scroll-view>
-        <scroll-view class="food-list-panel" scroll-y="true" show-scrollbar="false">
-          <view class="food-list-header">
-            <text class="food-list-title">{{activeCategory === 'recent' ? '最近使用' : activeCategory}}</text>
-            <text class="food-list-count">{{filteredFoodOptions.length}} 种</text>
-          </view>
-          <view
-            class="food-option"
-            wx:for="{{filteredFoodOptions}}"
+            class="combination-item"
+            wx:for="{{mealCombinations}}"
             wx:key="_id"
             data-id="{{item._id}}"
-            bindtap="onFoodOptionTap"
+            bindtap="applyMealCombination"
           >
-            <image
-              class="food-option-image"
-              src="{{item.displayImage}}"
-              mode="aspectFill"
-              data-url="{{item.displayImage}}"
-              catchtap="previewFoodOptionImage"
-            />
-            <view class="food-option-main">
-              <text class="food-option-name">{{item.name}}</text>
-              <view class="food-option-meta-row">
-                <text class="food-option-energy">{{item.nutritionPerUnit.calories || 0}}</text>
-                <text class="food-option-meta">kcal / {{item.baseQuantity || 100}}{{item.baseUnit || 'g'}}</text>
-              </view>
-              <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>
+            <view class="combination-item-main">
+              <text class="combination-item-name">{{item.name}}</text>
+              <text class="combination-item-meta">{{item.items.length}} 种食物 · 已用 {{item.usageCount || 0}} 次</text>
             </view>
-            <view class="food-option-add" data-id="{{item._id}}" catchtap="onFoodOptionTap">+</view>
-          </view>
-          <view class="empty-state compact" wx:if="{{filteredFoodOptions.length === 0}}">
-            <text>未找到匹配的食物</text>
+            <view class="combination-item-apply">加入</view>
           </view>
         </scroll-view>
+      </view>
+      <view class="pending-select-bar" wx:if="{{pendingMealItems.length > 0}}">
+        <view class="pending-select-main">
+          <text class="pending-select-title">已选 {{pendingMealItems.length}} 种</text>
+          <text class="pending-select-names">
+            <block wx:for="{{pendingMealItems}}" wx:key="pendingId">{{index > 0 ? '、' : ''}}{{item.nameSnapshot}}</block>
+          </text>
+        </view>
+        <view class="pending-select-next" bindtap="goToBatchQuantityStep">下一步</view>
+      </view>
+    </view>
+
+    <view class="drawer-body batch-body" wx:if="{{drawerStep === 'batchQuantity'}}">
+      <view class="batch-hint-card">
+        <text class="batch-hint-title">统一设置准备量</text>
+        <text class="batch-hint-text">这里填写的是计划准备量，保存本顿时再按吃完比例计入实际营养。</text>
+      </view>
+      <scroll-view class="batch-item-list" scroll-y="true" show-scrollbar="false">
+        <view class="batch-item" wx:for="{{pendingMealItems}}" wx:key="pendingId">
+          <view class="batch-item-header">
+            <view class="batch-item-title-wrap">
+              <text class="batch-item-title">{{item.nameSnapshot}}</text>
+              <text class="batch-item-source" wx:if="{{item.mealCombinationSource}}">来自 {{item.mealCombinationSource.combinationName}}</text>
+            </view>
+            <view class="text-btn danger" data-id="{{item.pendingId}}" bindtap="removePendingMealItem">移除</view>
+          </view>
+          <view class="field-row quantity-row">
+            <text class="field-label">份量</text>
+            <input
+              type="digit"
+              class="quantity-input"
+              value="{{item.quantity}}"
+              placeholder="请输入份量"
+              data-id="{{item.pendingId}}"
+              bindinput="onPendingQuantityInput"
+            />
+            <text class="unit-text">{{item.unit || 'g'}}</text>
+          </view>
+          <view class="preview-grid compact" wx:if="{{item.nutritionPreview}}">
+            <view class="preview-item">
+              <text class="preview-value">{{item.nutritionPreview.calories || 0}}</text>
+              <text class="preview-label">kcal</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{item.nutritionPreview.protein || 0}}</text>
+              <text class="preview-label">蛋白</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{item.nutritionPreview.carbs || 0}}</text>
+              <text class="preview-label">碳水</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{item.nutritionPreview.fat || 0}}</text>
+              <text class="preview-label">脂肪</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="batch-actions">
+        <button class="batch-btn secondary" bindtap="backToBatchSelect">上一步：继续选择</button>
+        <button class="batch-btn confirm" bindtap="addPendingItemsToMeal">加入本顿</button>
       </view>
     </view>
 
@@ -291,15 +309,6 @@
           bindinput="onDraftQuantityInput"
         />
         <text class="unit-text">{{currentFoodDraft.unit || 'g'}}</text>
-      </view>
-      <view class="field-block">
-        <text class="field-label block">备注</text>
-        <textarea
-          class="notes-input compact"
-          value="{{currentFoodDraft.notes}}"
-          placeholder="可选，记录这项食物的特殊说明"
-          bindinput="onDraftNotesInput"
-        />
       </view>
       <view class="preview-grid" wx:if="{{currentFoodDraft.nutritionPreview}}">
         <view class="preview-item">

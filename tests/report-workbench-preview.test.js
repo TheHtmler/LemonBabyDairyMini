@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
+function appConfigHasPage(appConfig, pagePath) {
+  if ((appConfig.pages || []).includes(pagePath)) return true;
+  return (appConfig.subPackages || appConfig.subpackages || []).some((pkg) => (
+    (pkg.pages || []).some((page) => `${pkg.root}/${page}` === pagePath)
+  ));
+}
+
 function loadProfilePage() {
   const pagePath = require.resolve('../miniprogram/pages/profile/index.js');
   delete require.cache[pagePath];
@@ -29,8 +36,8 @@ test('app.json registers report workbench preview page without replacing analysi
   );
 
   assert.ok(appConfig.pages.includes('pages/analysis-report/index'));
-  assert.ok(appConfig.pages.includes('pages/report-workbench-preview/index'));
-  assert.ok(!appConfig.pages.includes('pages/summary-preview/index'));
+  assert.ok(appConfigHasPage(appConfig, 'pages/report-workbench-preview/index'));
+  assert.ok(!appConfigHasPage(appConfig, 'pages/summary-preview/index'));
 });
 
 test('profile menu exposes report workbench preview entry', () => {

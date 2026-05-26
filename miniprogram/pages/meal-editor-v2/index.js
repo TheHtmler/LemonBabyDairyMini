@@ -212,7 +212,9 @@ Page({
     combinationApplying: false,
     combinationSaving: false,
     drawerVisible: false,
+    drawerActiveTab: 'food',
     drawerStep: 'select',
+    pendingMealItems: [],
     currentFoodDraft: {
       foodId: '',
       food: null,
@@ -357,7 +359,7 @@ Page({
         combinationLoading: false
       });
       if (showToast) {
-        wx.showToast({ title: '餐食组合加载失败', icon: 'none' });
+        wx.showToast({ title: '菜谱加载失败', icon: 'none' });
       }
       if (throwOnError) {
         throw error;
@@ -372,6 +374,12 @@ Page({
     });
   },
 
+  onDrawerTabTap(e) {
+    const { tab } = e.currentTarget.dataset || {};
+    if (!['food', 'combination'].includes(tab)) return;
+    this.setData({ drawerActiveTab: tab });
+  },
+
   async applyMealCombination(e) {
     const { id } = e.currentTarget.dataset || {};
     if (!id) return;
@@ -379,13 +387,13 @@ Page({
 
     const combination = (this.data.mealCombinations || []).find(item => (item._id || item.id) === id);
     if (!combination) {
-      wx.showToast({ title: '未找到餐食组合', icon: 'none' });
+      wx.showToast({ title: '未找到菜谱', icon: 'none' });
       return;
     }
 
     const combinationItems = buildMealItemsFromCombination(combination, this.data.foodCatalog || []);
     if (!combinationItems.length) {
-      wx.showToast({ title: '组合里还没有食物', icon: 'none' });
+      wx.showToast({ title: '菜谱里还没有食物', icon: 'none' });
       return;
     }
 
@@ -398,6 +406,39 @@ Page({
       ...item,
       mealCombinationSource: source
     }));
+
+    if (this.data.drawerVisible && this.data.drawerStep === 'select') {
+      const pendingFromCombination = sourcedItems.map((item, index) => (
+        this.buildPendingMealItemFromMealItem(item, source, index)
+      ));
+      this.setData({
+        pendingMealItems: [
+          ...(this.data.pendingMealItems || []),
+          ...pendingFromCombination
+        ],
+        drawerStep: 'batchQuantity'
+      });
+
+      try {
+        await MealCombinationModel.incrementUsage(source.combinationId);
+        this.setData({
+          mealCombinations: (this.data.mealCombinations || []).map(item => {
+            if ((item._id || item.id) !== source.combinationId) return item;
+            return {
+              ...item,
+              usageCount: (Number(item.usageCount) || 0) + 1
+            };
+          })
+        });
+        wx.showToast({ title: '已加入待设置', icon: 'success' });
+      } catch (error) {
+        wx.showToast({ title: '已加入待设置，次数稍后同步', icon: 'none' });
+      } finally {
+        this.setData({ combinationApplying: false });
+      }
+      return;
+    }
+
     const nextItems = [
       ...(this.data.mealDraft.items || []),
       ...sourcedItems
@@ -405,6 +446,8 @@ Page({
 
     this.setData({
       'mealDraft.items': nextItems,
+      drawerVisible: false,
+      drawerActiveTab: 'food',
       ...this.buildMealSummaryData(nextItems, this.data.completionPercent)
     });
 
@@ -419,7 +462,7 @@ Page({
           };
         })
       });
-      wx.showToast({ title: '已加入餐食组合', icon: 'success' });
+      wx.showToast({ title: '已加入菜谱', icon: 'success' });
     } catch (error) {
       wx.showToast({ title: '已加入，使用次数稍后同步', icon: 'none' });
     } finally {
@@ -451,7 +494,7 @@ Page({
 
     const name = String(this.data.combinationDraftName || '').trim();
     if (!name) {
-      wx.showToast({ title: '请输入组合名称', icon: 'none' });
+      wx.showToast({ title: '请输入菜谱名称', icon: 'none' });
       return;
     }
 
@@ -494,7 +537,7 @@ Page({
           combinationLoading: false,
           combinationSaving: false
         });
-        wx.showToast({ title: '组合已保存，刷新列表失败', icon: 'none' });
+        wx.showToast({ title: '菜谱已保存，刷新列表失败', icon: 'none' });
         return;
       }
       this.setData({
@@ -504,14 +547,14 @@ Page({
         combinationLoading: false,
         combinationSaving: false
       });
-      wx.showToast({ title: '已保存餐食组合', icon: 'success' });
+      wx.showToast({ title: '已保存菜谱', icon: 'success' });
     } catch (error) {
-      console.error('保存餐食组合失败:', error);
+      console.error('保存菜谱失败:', error);
       this.setData({
         combinationLoading: false,
         combinationSaving: false
       });
-      wx.showToast({ title: '保存组合失败', icon: 'none' });
+      wx.showToast({ title: '保存菜谱失败', icon: 'none' });
     }
   },
 
@@ -542,7 +585,15 @@ Page({
         })
       : baseList;
 
-    this.setData({ filteredFoodOptions: filtered });
+    this.setData({ filteredFoodOptions: this.decorateFoodOptions(filtered) });
+  },
+
+  decorateFoodOptions(options = []) {
+    const selectedIds = new Set((this.data.pendingMealItems || []).map(item => item.foodId).filter(Boolean));
+    return (options || []).map(food => ({
+      ...food,
+      isPendingSelected: selectedIds.has(food._id || food.id)
+    }));
   },
 
   onMealTimeChange(e) {
@@ -633,7 +684,9 @@ Page({
       },
       editingItemId: '',
       drawerStep: 'select',
-      foodSearchQuery: ''
+      drawerActiveTab: 'food',
+      foodSearchQuery: '',
+      pendingMealItems: []
     }, () => {
       this.filterFoodOptions('');
     });
@@ -642,7 +695,9 @@ Page({
   openFoodDrawer() {
     this.setData({
       drawerVisible: true,
-      drawerStep: this.data.currentFoodDraft.food ? 'edit' : 'select'
+      drawerStep: this.data.currentFoodDraft.food ? 'edit' : 'select',
+      drawerActiveTab: this.data.currentFoodDraft.food ? this.data.drawerActiveTab : 'food',
+      pendingMealItems: this.data.currentFoodDraft.food ? this.data.pendingMealItems : []
     }, () => {
       this.filterFoodOptions(this.data.foodSearchQuery || '');
     });
@@ -675,17 +730,114 @@ Page({
     const food = (this.data.foodCatalog || []).find(item => item._id === id);
     if (!food) return;
 
+    const existingIndex = (this.data.pendingMealItems || []).findIndex(item => item.foodId === food._id);
+    const pendingMealItems = [...(this.data.pendingMealItems || [])];
+    if (existingIndex >= 0) {
+      pendingMealItems.splice(existingIndex, 1);
+    } else {
+      pendingMealItems.push(this.buildPendingMealItemFromFood(food));
+    }
+
     this.setData({
-      drawerStep: 'edit',
-      currentFoodDraft: {
-        foodId: food._id,
-        food,
-        quantity: '',
-        unit: food.baseUnit || 'g',
-        nutritionPreview: null,
-        notes: ''
-      }
+      pendingMealItems,
+      drawerStep: 'select'
+    }, () => {
+      this.filterFoodOptions(this.data.foodSearchQuery || '');
     });
+  },
+
+  buildPendingMealItemFromFood(food = {}) {
+    return {
+      pendingId: food._id || food.id || `pending_food_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      foodId: food._id || food.id || '',
+      food,
+      foodSnapshot: null,
+      nameSnapshot: food.name || '',
+      category: (food.category || '').toString().trim() || '辅食',
+      unit: food.baseUnit || 'g',
+      quantity: '',
+      plannedQuantity: null,
+      plannedNutrition: null,
+      nutritionPreview: null,
+      mealCombinationSource: null
+    };
+  },
+
+  buildPendingMealItemFromMealItem(item = {}, source = {}, index = 0) {
+    const pendingId = `${source.combinationId || 'combo'}_${item.foodId || index}_${index}`;
+    return {
+      pendingId,
+      foodId: item.foodId || '',
+      food: item.food || null,
+      foodSnapshot: item.foodSnapshot || null,
+      nameSnapshot: item.nameSnapshot || item.foodName || item.foodSnapshot?.name || '',
+      category: item.category || item.foodSnapshot?.category || '辅食',
+      unit: item.unit || item.food?.baseUnit || item.foodSnapshot?.baseUnit || 'g',
+      quantity: item.quantity !== undefined ? String(item.quantity) : '',
+      plannedQuantity: item.plannedQuantity !== undefined ? Number(item.plannedQuantity) : Number(item.quantity) || null,
+      plannedNutrition: item.plannedNutrition || item.nutrition || null,
+      nutritionPreview: item.nutrition || item.plannedNutrition || null,
+      mealCombinationSource: source
+    };
+  },
+
+  goToBatchQuantityStep() {
+    if (!(this.data.pendingMealItems || []).length) {
+      wx.showToast({ title: '请先选择食物', icon: 'none' });
+      return;
+    }
+    this.setData({ drawerStep: 'batchQuantity' });
+  },
+
+  backToBatchSelect() {
+    this.setData({ drawerStep: 'select' }, () => {
+      this.filterFoodOptions(this.data.foodSearchQuery || '');
+    });
+  },
+
+  onPendingQuantityInput(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    const quantity = e.detail.value || '';
+    const pendingMealItems = (this.data.pendingMealItems || []).map(item => {
+      if (item.pendingId !== id && item.foodId !== id) return item;
+      const updated = { ...item, quantity };
+      return {
+        ...updated,
+        nutritionPreview: this.calculatePendingNutritionPreview(updated)
+      };
+    });
+    this.setData({ pendingMealItems });
+  },
+
+  removePendingMealItem(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    this.setData({
+      pendingMealItems: (this.data.pendingMealItems || []).filter(item => item.pendingId !== id && item.foodId !== id)
+    }, () => {
+      this.filterFoodOptions(this.data.foodSearchQuery || '');
+    });
+  },
+
+  calculatePendingNutritionPreview(item = {}) {
+    const quantity = parseFloat(item.quantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      return null;
+    }
+
+    if (item.food) {
+      return FoodModel.calculateNutrition(item.food, quantity);
+    }
+
+    const baseNutrition = item.plannedNutrition || item.nutritionPreview || {};
+    const plannedQuantity = Number(item.plannedQuantity);
+    const factor = plannedQuantity > 0 ? quantity / plannedQuantity : 1;
+    const fields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat', 'fiber', 'sodium'];
+    return fields.reduce((nutrition, field) => {
+      nutrition[field] = roundNumber((Number(baseNutrition[field]) || 0) * factor, 2);
+      return nutrition;
+    }, {});
   },
 
   previewFoodOptionImage(e) {
@@ -703,7 +855,8 @@ Page({
 
   backToFoodSelect() {
     this.setData({
-      drawerStep: 'select'
+      drawerStep: 'select',
+      drawerActiveTab: 'food'
     });
   },
 
@@ -713,12 +866,6 @@ Page({
       'currentFoodDraft.quantity': quantity
     }, () => {
       this.updateCurrentFoodDraftPreview();
-    });
-  },
-
-  onDraftNotesInput(e) {
-    this.setData({
-      'currentFoodDraft.notes': e.detail.value || ''
     });
   },
 
@@ -738,20 +885,7 @@ Page({
     });
   },
 
-  buildMealItemFromDraft(showToast = true) {
-    const { foodId, food, quantity, nutritionPreview, notes } = this.data.currentFoodDraft;
-    if (!foodId || !food) {
-      if (showToast) wx.showToast({ title: '请选择食物', icon: 'none' });
-      return null;
-    }
-
-    const numQuantity = parseFloat(quantity);
-    if (isNaN(numQuantity) || numQuantity <= 0) {
-      if (showToast) wx.showToast({ title: '请输入有效的份量', icon: 'none' });
-      return null;
-    }
-
-    const nutrition = nutritionPreview || FoodModel.calculateNutrition(food, numQuantity);
+  buildProteinAwareNutrition(food = {}, nutrition = {}) {
     const protein = Number(nutrition.protein) || 0;
     const proteinSource = food.proteinSource || 'natural';
     let naturalProtein = protein;
@@ -766,7 +900,41 @@ Page({
       const total = naturalRatio + specialRatio || 1;
       naturalProtein = protein * (naturalRatio / total);
       specialProtein = protein * (specialRatio / total);
+    } else if (nutrition.naturalProtein !== undefined || nutrition.specialProtein !== undefined) {
+      naturalProtein = Number(nutrition.naturalProtein) || 0;
+      specialProtein = Number(nutrition.specialProtein) || 0;
     }
+
+    return {
+      calories: roundNumber(Number(nutrition.calories) || 0, 2),
+      protein: roundNumber(protein, 2),
+      naturalProtein: roundNumber(naturalProtein, 2),
+      specialProtein: roundNumber(specialProtein, 2),
+      carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
+      fat: roundNumber(Number(nutrition.fat) || 0, 2),
+      fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
+      sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
+    };
+  },
+
+  buildMealItemFromDraft(showToast = true) {
+    const { foodId, food, quantity, nutritionPreview, notes } = this.data.currentFoodDraft;
+    if (!foodId || !food) {
+      if (showToast) wx.showToast({ title: '请选择食物', icon: 'none' });
+      return null;
+    }
+
+    const numQuantity = parseFloat(quantity);
+    if (isNaN(numQuantity) || numQuantity <= 0) {
+      if (showToast) wx.showToast({ title: '请输入有效的份量', icon: 'none' });
+      return null;
+    }
+
+    const nutrition = this.buildProteinAwareNutrition(
+      food,
+      nutritionPreview || FoodModel.calculateNutrition(food, numQuantity)
+    );
+    const proteinSource = food.proteinSource || 'natural';
 
     const originalItem = this.data.editingItemId
       ? (this.data.mealDraft.items || []).find(item => item.localId === this.data.editingItemId)
@@ -783,23 +951,75 @@ Page({
       category: (food.category || '').toString().trim() || '辅食',
       unit: food.baseUnit || 'g',
       quantity: numQuantity,
-      nutrition: {
-        calories: roundNumber(Number(nutrition.calories) || 0, 2),
-        protein: roundNumber(Number(nutrition.protein) || 0, 2),
-        naturalProtein: roundNumber(naturalProtein, 2),
-        specialProtein: roundNumber(specialProtein, 2),
-        carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
-        fat: roundNumber(Number(nutrition.fat) || 0, 2),
-        fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
-        sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
-      },
+      nutrition,
       proteinSource,
       proteinQuality: food.proteinQuality || '',
-      naturalProtein: roundNumber(naturalProtein, 2),
-      specialProtein: roundNumber(specialProtein, 2),
+      naturalProtein: nutrition.naturalProtein,
+      specialProtein: nutrition.specialProtein,
       milkType: food.milkType || '',
       notes: String(notes || '').trim()
     };
+  },
+
+  buildMealItemFromPendingItem(item = {}, index = 0) {
+    const quantity = parseFloat(item.quantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      return null;
+    }
+
+    const nutritionSource = item.nutritionPreview || this.calculatePendingNutritionPreview(item) || {};
+    const food = item.food || item.foodSnapshot || {};
+    const nutrition = this.buildProteinAwareNutrition(food, nutritionSource);
+    const proteinSource = food.proteinSource || item.proteinSource || '';
+
+    return {
+      localId: `meal_item_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
+      originalIntakeId: '',
+      createdAt: null,
+      createdBy: '',
+      foodId: item.foodId || food._id || food.id || '',
+      food: item.food || null,
+      foodSnapshot: item.foodSnapshot || null,
+      nameSnapshot: item.nameSnapshot || food.name || '',
+      category: item.category || food.category || '辅食',
+      unit: item.unit || food.baseUnit || 'g',
+      quantity,
+      plannedQuantity: quantity,
+      plannedNutrition: { ...nutrition },
+      nutrition,
+      proteinSource,
+      proteinQuality: food.proteinQuality || '',
+      naturalProtein: nutrition.naturalProtein,
+      specialProtein: nutrition.specialProtein,
+      milkType: food.milkType || '',
+      mealCombinationSource: item.mealCombinationSource || null,
+      notes: ''
+    };
+  },
+
+  addPendingItemsToMeal() {
+    const nextItems = (this.data.pendingMealItems || [])
+      .map((item, index) => this.buildMealItemFromPendingItem(item, index))
+      .filter(Boolean);
+
+    if (!nextItems.length || nextItems.length !== (this.data.pendingMealItems || []).length) {
+      wx.showToast({ title: '请为每种食物填写有效份量', icon: 'none' });
+      return;
+    }
+
+    const items = [
+      ...(this.data.mealDraft.items || []),
+      ...nextItems
+    ];
+    this.setData({
+      'mealDraft.items': items,
+      ...this.buildMealSummaryData(items),
+      drawerVisible: false,
+      pendingMealItems: []
+    }, () => {
+      this.resetCurrentFoodDraft();
+    });
+    wx.showToast({ title: `已加入 ${nextItems.length} 种食物`, icon: 'success' });
   },
 
   addOrUpdateMealItem() {

@@ -82,6 +82,10 @@
   margin-bottom: 0;
 }
 
+.items-header {
+  align-items: center;
+}
+
 .note-card {
   background: rgba(255, 251, 238, 0.92);
 }
@@ -156,6 +160,13 @@
   font-size: 25rpx;
   font-weight: 700;
   box-shadow: 0 8rpx 16rpx rgba(255, 184, 0, 0.18);
+}
+
+.combination-save-btn.compact {
+  flex-shrink: 0;
+  padding: 12rpx 18rpx;
+  font-size: 23rpx;
+  box-shadow: none;
 }
 
 .combination-name-panel {
@@ -405,73 +416,42 @@
   padding: 24rpx;
 }
 
-.meal-summary-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  margin-bottom: 20rpx;
-}
-
-.meal-summary-panel {
-  padding: 18rpx;
-  border-radius: 20rpx;
-  background: #FFFBEF;
-  border: 2rpx solid rgba(255, 184, 0, 0.12);
-}
-
-.meal-summary-panel.actual {
-  background: #FFF7E3;
-  border-color: rgba(255, 184, 0, 0.2);
-}
-
-.meal-summary-title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16rpx;
-  margin-bottom: 14rpx;
-}
-
-.meal-summary-title {
-  font-size: 27rpx;
-  color: #5F3900;
-  font-weight: 700;
-}
-
-.meal-summary-hint {
-  font-size: 22rpx;
-  color: #9F8D6B;
-}
-
-.meal-summary-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14rpx;
-}
-
-.meal-summary-item {
-  padding: 18rpx 16rpx;
+.meal-summary-compact {
+  padding: 16rpx 18rpx;
+  margin-bottom: 18rpx;
   border-radius: 18rpx;
   background: #FFF7E3;
   border: 2rpx solid rgba(255, 184, 0, 0.14);
 }
 
-.meal-summary-item.actual {
-  background: #ffffff;
+.meal-summary-compact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
 }
 
-.meal-summary-value {
-  display: block;
-  font-size: 32rpx;
-  line-height: 1.1;
-  color: #8A4B00;
+.meal-summary-compact-title {
+  font-size: 25rpx;
+  color: #5F3900;
   font-weight: 700;
 }
 
-.meal-summary-label {
-  display: block;
-  margin-top: 8rpx;
+.meal-summary-compact-percent {
+  flex-shrink: 0;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
   font-size: 22rpx;
+  color: #8A7C60;
+}
+
+.meal-summary-compact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx 20rpx;
+  font-size: 23rpx;
   color: #8A7C60;
 }
 
@@ -512,12 +492,6 @@
 .meal-item-detail {
   font-size: 22rpx;
   color: #A08E73;
-  line-height: 1.5;
-}
-
-.meal-item-note {
-  font-size: 22rpx;
-  color: #8A7C60;
   line-height: 1.5;
 }
 
@@ -658,11 +632,57 @@
   min-height: 240rpx;
 }
 
+.drawer-tabs {
+  display: flex;
+  gap: 12rpx;
+  padding: 8rpx;
+  margin-bottom: 16rpx;
+  border-radius: 999rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+}
+
+.drawer-tab {
+  flex: 1;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999rpx;
+  color: #8A7C60;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.drawer-tab.active {
+  background: #FFB800;
+  color: #ffffff;
+  box-shadow: 0 6rpx 14rpx rgba(255, 184, 0, 0.18);
+}
+
 .select-body {
   display: flex;
   flex-direction: column;
   min-height: 0;
   height: 52vh;
+}
+
+.drawer-food-panel,
+.drawer-combination-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-combination-list {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.drawer-combination-panel .combination-item {
+  margin-bottom: 14rpx;
 }
 
 .notes-input.compact {
@@ -780,6 +800,14 @@
   border-top: 1rpx solid rgba(255, 184, 0, 0.12);
 }
 
+.food-option.selected {
+  margin: 8rpx 0;
+  padding: 18rpx 16rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 184, 0, 0.12);
+  border-top-color: transparent;
+}
+
 .food-option:first-child {
   border-top: none;
   padding-top: 0;
@@ -846,6 +874,171 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.food-option-add.selected {
+  width: auto;
+  min-width: 76rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  background: #FFB800;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.pending-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  padding: 16rpx;
+  border-radius: 20rpx;
+  background: #FFF4CD;
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.pending-select-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-select-title {
+  display: block;
+  font-size: 26rpx;
+  color: #333333;
+  font-weight: 700;
+}
+
+.pending-select-names {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #8A7C60;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-select-next {
+  flex-shrink: 0;
+  padding: 16rpx 24rpx;
+  border-radius: 999rpx;
+  background: #FFB800;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.batch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  height: 56vh;
+}
+
+.batch-hint-card {
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+}
+
+.batch-hint-title {
+  display: block;
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 700;
+}
+
+.batch-hint-text {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  color: #8A7C60;
+  line-height: 1.5;
+}
+
+.batch-item-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.batch-item {
+  margin-bottom: 18rpx;
+  padding: 20rpx;
+  border-radius: 22rpx;
+  background: #ffffff;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+}
+
+.batch-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.batch-item-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.batch-item-title {
+  display: block;
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 700;
+}
+
+.batch-item-source {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #8A7C60;
+}
+
+.preview-grid.compact {
+  margin-top: 14rpx;
+  gap: 10rpx;
+}
+
+.preview-grid.compact .preview-item {
+  padding: 14rpx 8rpx;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 14rpx;
+}
+
+.batch-btn {
+  flex: 1;
+  height: 82rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border-radius: 18rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  border: none;
+  box-sizing: border-box;
+}
+
+.batch-btn::after {
+  border: none;
+}
+
+.batch-btn.secondary {
+  background: #FFF4CD;
+  color: #8A4B00;
+}
+
+.batch-btn.confirm {
+  background: #FFB800;
+  color: #ffffff;
 }
 
 .edit-body {
