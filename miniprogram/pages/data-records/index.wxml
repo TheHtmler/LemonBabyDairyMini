@@ -198,6 +198,7 @@
                   <view class="meal-group-main">
                     <text class="meal-group-title">{{item.mealLabel || '食物记录'}}</text>
                     <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
+                    <text class="meal-group-meta inline" wx:if="{{item.sourceSummaryText}}">{{item.sourceSummaryText}}</text>
                     <text class="meal-group-completion" wx:if="{{item.hasCompletionDisplay}}">吃完 {{item.completionPercent}}%</text>
                   </view>
                   <view class="meal-group-actions">
@@ -224,23 +225,44 @@
                     <text class="meal-group-summary-value">{{item.summary.fat}} g</text>
                   </view>
                 </view>
-                <view class="meal-combination-source" wx:if="{{item.mealCombinationSourceText}}">
-                  <text>{{item.mealCombinationSourceText}}</text>
-                </view>
               </view>
               <view class="meal-group-note" wx:if="{{item.mealNote}}">
                 <text class="meal-group-note-label">备注</text>
                 <text class="meal-group-note-text">{{item.mealNote}}</text>
               </view>
               <view class="meal-group-items" wx:if="{{item.expanded}}">
-                <view class="food-record-item" wx:for="{{item.items}}" wx:key="_id" wx:for-item="foodItem">
-                  <view class="record-content">
-                    <food-record-item record="{{foodItem}}" />
-                    <view class="food-planned-actual" wx:if="{{foodItem.hasPlannedDifference}}" data-planned-actual="{{foodItem.plannedActualText}}">
-                      <text>准备 {{foodItem.plannedDisplayQuantity}} / 实际 {{foodItem.displayQuantity}}</text>
+                <view class="meal-recipe-group" wx:for="{{item.recipeGroups}}" wx:for-item="recipeGroup" wx:key="id">
+                  <view class="meal-recipe-group-header" data-meal-id="{{item.id}}" data-recipe-id="{{recipeGroup.id}}" bindtap="toggleMealRecipeGroup">
+                    <view class="meal-recipe-group-copy">
+                      <text class="meal-recipe-group-badge">食谱</text>
+                      <text class="meal-recipe-group-title">{{recipeGroup.title}}</text>
+                      <text class="meal-recipe-group-meta">{{recipeGroup.itemCount}}种食物</text>
                     </view>
-                    <view class="meal-combination-source item-source" wx:if="{{foodItem.mealCombinationSourceText}}">
-                      <text>{{foodItem.mealCombinationSourceText}}</text>
+                    <view class="meal-recipe-group-summary">
+                      <text>{{recipeGroup.summary.calories}} kcal</text>
+                      <text>蛋白 {{recipeGroup.summary.protein}}g</text>
+                      <text>{{recipeGroup.expanded ? '收起' : '展开'}}</text>
+                    </view>
+                  </view>
+                  <view class="meal-recipe-group-items" wx:if="{{recipeGroup.expanded}}">
+                    <view class="food-record-item" wx:for="{{recipeGroup.items}}" wx:key="_id" wx:for-item="foodItem">
+                      <view class="record-content">
+                        <food-record-item record="{{foodItem}}" />
+                        <view class="food-planned-actual" wx:if="{{foodItem.hasPlannedDifference}}" data-planned-actual="{{foodItem.plannedActualText}}">
+                          <text>准备 {{foodItem.plannedDisplayQuantity}} / 实际 {{foodItem.displayQuantity}}</text>
+                        </view>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+                <view class="manual-meal-items" wx:if="{{item.manualItems.length > 0}}">
+                  <text class="manual-meal-items-title">单独添加</text>
+                  <view class="food-record-item" wx:for="{{item.manualItems}}" wx:key="_id" wx:for-item="foodItem">
+                    <view class="record-content">
+                      <food-record-item record="{{foodItem}}" />
+                      <view class="food-planned-actual" wx:if="{{foodItem.hasPlannedDifference}}" data-planned-actual="{{foodItem.plannedActualText}}">
+                        <text>准备 {{foodItem.plannedDisplayQuantity}} / 实际 {{foodItem.displayQuantity}}</text>
+                      </view>
                     </view>
                   </view>
                 </view>

@@ -49,6 +49,34 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function buildDisplayMealSummary(summary = {}) {
+  return {
+    calories: roundCalories(summary.calories),
+    protein: roundNumber(Number(summary.protein) || 0, 2),
+    carbs: roundNumber(Number(summary.carbs) || 0, 2),
+    fat: roundNumber(Number(summary.fat) || 0, 2)
+  };
+}
+
+function buildDisplayNutrition(nutrition = {}) {
+  return buildDisplayMealSummary(nutrition);
+}
+
+function withDisplayNutrition(item = {}) {
+  return {
+    ...item,
+    displayNutrition: buildDisplayNutrition(item.nutrition || item.plannedNutrition || {})
+  };
+}
+
+function createSourceGroupId(combinationId = '') {
+  return `${combinationId || 'combo'}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createMealDisplaySummary(items = []) {
+  return buildDisplayMealSummary(calculateMealSummary(items || []));
+}
+
 function getDateTimestamp(value) {
   if (!value) return 0;
   const date = value instanceof Date ? value : new Date(value);
@@ -198,6 +226,9 @@ Page({
     mealSummary: createEmptyMealSummary(),
     plannedMealSummary: createEmptyMealSummary(),
     actualMealSummary: createEmptyMealSummary(),
+    displayPlannedMealSummary: buildDisplayMealSummary(createEmptyMealSummary()),
+    displayActualMealSummary: buildDisplayMealSummary(createEmptyMealSummary()),
+    mealDisplayGroups: [],
     foodCatalog: [],
     foodCategories: [],
     activeCategory: 'recent',
@@ -247,7 +278,10 @@ Page({
       completionPercent: 100,
       mealSummary: createEmptyMealSummary(),
       plannedMealSummary: createEmptyMealSummary(),
-      actualMealSummary: createEmptyMealSummary()
+      actualMealSummary: createEmptyMealSummary(),
+      displayPlannedMealSummary: buildDisplayMealSummary(createEmptyMealSummary()),
+      displayActualMealSummary: buildDisplayMealSummary(createEmptyMealSummary()),
+      mealDisplayGroups: []
     });
     await this.loadFoodCatalog();
     await this.loadMealCombinations();
@@ -400,12 +434,14 @@ Page({
     this.setData({ combinationApplying: true });
     const source = {
       combinationId: combination._id || combination.id || '',
-      combinationName: combination.name || ''
+      combinationName: combination.name || '',
+      sourceGroupId: createSourceGroupId(combination._id || combination.id || '')
     };
     const sourcedItems = combinationItems.map(item => ({
       ...item,
+      sourceType: 'meal_combination',
       mealCombinationSource: source
-    }));
+    })).map(item => withDisplayNutrition(item));
 
     if (this.data.drawerVisible && this.data.drawerStep === 'select') {
       const pendingFromCombination = sourcedItems.map((item, index) => (
@@ -471,6 +507,9 @@ Page({
   },
 
   showSaveCombinationInput() {
+    if ((this.data.mealDraft.items || []).length === 0) {
+      return;
+    }
     this.setData({
       combinationNameInputVisible: true
     });
@@ -637,8 +676,70 @@ Page({
     return {
       mealSummary: plannedMealSummary,
       plannedMealSummary,
-      actualMealSummary
+      actualMealSummary,
+      displayPlannedMealSummary: buildDisplayMealSummary(plannedMealSummary),
+      displayActualMealSummary: buildDisplayMealSummary(actualMealSummary),
+      mealDisplayGroups: this.buildMealDisplayGroups(items)
     };
+  },
+
+  buildMealDisplayGroups(items = this.data.mealDraft.items || []) {
+    const expandedMap = new Map((this.data.mealDisplayGroups || []).map(group => [group.id, group.expanded]));
+    const recipeGroups = new Map();
+    const manualItems = [];
+
+    (items || []).forEach(item => {
+      const source = item.mealCombinationSource || {};
+      const isRecipeItem = item.sourceType === 'meal_combination' || !!source.combinationId;
+      if (!isRecipeItem) {
+        manualItems.push(item);
+        return;
+      }
+
+      const sourceGroupId = source.sourceGroupId || source.combinationId || 'meal_combination';
+      const groupId = `recipe:${sourceGroupId}`;
+      if (!recipeGroups.has(groupId)) {
+        recipeGroups.set(groupId, {
+          id: groupId,
+          type: 'meal_combination',
+          title: source.combinationName || '食谱',
+          itemCount: 0,
+          items: [],
+          summary: createMealDisplaySummary([]),
+          expanded: expandedMap.has(groupId) ? expandedMap.get(groupId) : false
+        });
+      }
+
+      const group = recipeGroups.get(groupId);
+      group.items.push(item);
+      group.itemCount += 1;
+      group.summary = createMealDisplaySummary(group.items);
+    });
+
+    const groups = Array.from(recipeGroups.values());
+    if (manualItems.length > 0) {
+      groups.push({
+        id: 'manual_food',
+        type: 'manual_food',
+        title: '单独添加',
+        itemCount: manualItems.length,
+        items: manualItems,
+        summary: createMealDisplaySummary(manualItems),
+        expanded: true
+      });
+    }
+
+    return groups;
+  },
+
+  toggleMealDisplayGroup(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    this.setData({
+      mealDisplayGroups: (this.data.mealDisplayGroups || []).map(group => (
+        group.id === id ? { ...group, expanded: !group.expanded } : group
+      ))
+    });
   },
 
   refreshMealSummaries(items = this.data.mealDraft.items || [], completionPercent = this.data.completionPercent) {
@@ -709,6 +810,12 @@ Page({
     });
   },
 
+  navigateToCombinationManagement() {
+    wx.navigateTo({
+      url: '/pages/food-management/index?tab=combination&from=meal-editor'
+    });
+  },
+
   closeFoodDrawer() {
     this.setData({
       drawerVisible: false
@@ -759,6 +866,7 @@ Page({
       plannedQuantity: null,
       plannedNutrition: null,
       nutritionPreview: null,
+      sourceType: 'manual_food',
       mealCombinationSource: null
     };
   },
@@ -777,6 +885,7 @@ Page({
       plannedQuantity: item.plannedQuantity !== undefined ? Number(item.plannedQuantity) : Number(item.quantity) || null,
       plannedNutrition: item.plannedNutrition || item.nutrition || null,
       nutritionPreview: item.nutrition || item.plannedNutrition || null,
+      sourceType: item.sourceType || (source?.combinationId ? 'meal_combination' : 'manual_food'),
       mealCombinationSource: source
     };
   },
@@ -940,7 +1049,7 @@ Page({
       ? (this.data.mealDraft.items || []).find(item => item.localId === this.data.editingItemId)
       : null;
 
-    return {
+    return withDisplayNutrition({
       localId: this.data.editingItemId || `meal_item_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       originalIntakeId: originalItem?.originalIntakeId || '',
       createdAt: originalItem?.createdAt || null,
@@ -957,8 +1066,10 @@ Page({
       naturalProtein: nutrition.naturalProtein,
       specialProtein: nutrition.specialProtein,
       milkType: food.milkType || '',
+      sourceType: originalItem?.sourceType || (originalItem?.mealCombinationSource ? 'meal_combination' : 'manual_food'),
+      ...(originalItem?.mealCombinationSource ? { mealCombinationSource: originalItem.mealCombinationSource } : {}),
       notes: String(notes || '').trim()
-    };
+    });
   },
 
   buildMealItemFromPendingItem(item = {}, index = 0) {
@@ -972,7 +1083,7 @@ Page({
     const nutrition = this.buildProteinAwareNutrition(food, nutritionSource);
     const proteinSource = food.proteinSource || item.proteinSource || '';
 
-    return {
+    return withDisplayNutrition({
       localId: `meal_item_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
       originalIntakeId: '',
       createdAt: null,
@@ -992,9 +1103,10 @@ Page({
       naturalProtein: nutrition.naturalProtein,
       specialProtein: nutrition.specialProtein,
       milkType: food.milkType || '',
+      sourceType: item.sourceType || (item.mealCombinationSource ? 'meal_combination' : 'manual_food'),
       mealCombinationSource: item.mealCombinationSource || null,
       notes: ''
-    };
+    });
   },
 
   addPendingItemsToMeal() {
@@ -1252,7 +1364,7 @@ Page({
         ? { ...intake.plannedNutrition }
         : { ...nutrition };
 
-      return {
+      return withDisplayNutrition({
         localId: intake._id || `meal_item_${index}`,
         originalIntakeId: intake._id || '',
         createdAt: intake.createdAt || null,
@@ -1270,10 +1382,11 @@ Page({
         proteinQuality: intake.proteinQuality || '',
         naturalProtein: typeof plannedNutrition.naturalProtein === 'number' ? plannedNutrition.naturalProtein : 0,
         specialProtein: typeof plannedNutrition.specialProtein === 'number' ? plannedNutrition.specialProtein : 0,
+        sourceType: intake.sourceType || (intake.mealCombinationSource ? 'meal_combination' : 'manual_food'),
         ...(intake.mealCombinationSource ? { mealCombinationSource: intake.mealCombinationSource } : {}),
         milkType: '',
         notes: intake.notes || ''
-      };
+      });
     });
 
     this.setData({
@@ -1312,6 +1425,7 @@ Page({
       naturalProtein: item.naturalProtein || 0,
       specialProtein: item.specialProtein || 0,
       completionPercent,
+      sourceType: item.sourceType || (item.mealCombinationSource ? 'meal_combination' : 'manual_food'),
       ...(item.mealCombinationSource ? { mealCombinationSource: item.mealCombinationSource } : {}),
       milkType: item.milkType || '',
       notes: String(item.notes || '').trim(),
@@ -1371,6 +1485,7 @@ Page({
       },
       plannedNutrition: intake.plannedNutrition || {},
       completionPercent: intake.completionPercent,
+      sourceType: intake.sourceType || (intake.mealCombinationSource ? 'meal_combination' : 'manual_food'),
       ...(intake.mealCombinationSource ? { mealCombinationSource: intake.mealCombinationSource } : {}),
       notes: String(intake.notes || '').trim(),
       mealLabel: intake.mealLabel || '',

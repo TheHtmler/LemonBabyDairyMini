@@ -1,6 +1,11 @@
 // 食物分类数据模型，支持云端存储自定义分类
 const db = wx.cloud.database();
 const _ = db.command;
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid
+} = require('../utils/auditFields');
 
 class FoodCategoryModel {
   constructor() {
@@ -74,6 +79,7 @@ class FoodCategoryModel {
   }
 
   async _upsertCategory({ display, key, babyUid, createdBy }) {
+    const operatorOpenid = resolveOperatorOpenid(createdBy);
     const existingRes = await this.collection
       .where({
         babyUid: _.eq(babyUid),
@@ -89,7 +95,10 @@ class FoodCategoryModel {
         data: {
           name: display,
           normalizedName: key,
-          updatedAt: db.serverDate()
+          ...buildUpdateAuditFields({
+            timestamp: db.serverDate(),
+            operatorOpenid
+          })
         }
       });
       return {
@@ -103,9 +112,12 @@ class FoodCategoryModel {
       name: display,
       normalizedName: key,
       babyUid,
-      createdBy,
-      createdAt: db.serverDate(),
-      updatedAt: db.serverDate()
+      ...buildCreateAuditFields({
+        timestamp: db.serverDate(),
+        operatorOpenid,
+        recordType: 'food_category',
+        schemaVersion: 1
+      })
     };
 
     const res = await this.collection.add({

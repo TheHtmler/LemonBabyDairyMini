@@ -1,5 +1,12 @@
 const db = wx.cloud.database();
 const foodIntakeCollection = db.collection('food_intake_records');
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid,
+  stripProtectedAuditFields
+} = require('../utils/auditFields');
+const { recordHardDelete } = require('./auditLog');
 
 function serverDate() {
   return db.serverDate();
@@ -64,7 +71,8 @@ function normalizeMealCombinationSource(source = {}) {
 
   return {
     combinationId: normalizedSource.combinationId || '',
-    combinationName: normalizedSource.combinationName || ''
+    combinationName: normalizedSource.combinationName || '',
+    ...(normalizedSource.sourceGroupId ? { sourceGroupId: normalizedSource.sourceGroupId } : {})
   };
 }
 
@@ -112,10 +120,7 @@ function normalizeFoodIntakeRecord(record = {}) {
 }
 
 function normalizeFoodIntakeUpdate(data = {}) {
-  const updateData = { ...data };
-  delete updateData._id;
-  delete updateData.id;
-  delete updateData.createdAt;
+  const updateData = stripProtectedAuditFields(data);
 
   if (Object.prototype.hasOwnProperty.call(updateData, 'quantity')) {
     updateData.quantity = toNumber(updateData.quantity);
@@ -144,30 +149,45 @@ function normalizeFoodIntakeUpdate(data = {}) {
 
 async function createFoodIntake(data = {}) {
   const timestamp = serverDate();
-  const normalized = normalizeFoodIntakeRecord(data);
+  const operatorOpenid = resolveOperatorOpenid(data);
+  const normalized = normalizeFoodIntakeRecord(stripProtectedAuditFields(data));
   const res = await foodIntakeCollection.add({
     data: {
       ...normalized,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      deletedAt: null
+      ...buildCreateAuditFields({
+        timestamp,
+        operatorOpenid,
+        recordType: 'food_intake',
+        schemaVersion: normalized.schemaVersion
+      })
     }
   });
   return res;
 }
 
 async function updateFoodIntake(recordId, data = {}) {
+  const operatorOpenid = resolveOperatorOpenid(data);
   await foodIntakeCollection.doc(recordId).update({
     data: {
       ...normalizeFoodIntakeUpdate(data),
-      updatedAt: serverDate()
+      ...buildUpdateAuditFields({
+        timestamp: serverDate(),
+        operatorOpenid
+      })
     }
   });
   return true;
 }
 
-async function deleteFoodIntake(recordId) {
+async function deleteFoodIntake(recordId, options = {}) {
   await foodIntakeCollection.doc(recordId).remove();
+  await recordHardDelete({
+    db,
+    collectionName: 'food_intake_records',
+    recordId,
+    babyUid: options.babyUid || '',
+    operatorOpenid: resolveOperatorOpenid(options)
+  });
   return true;
 }
 

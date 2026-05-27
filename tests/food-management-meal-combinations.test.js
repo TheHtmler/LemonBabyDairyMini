@@ -165,7 +165,30 @@ test('food management exposes food catalog and meal combination tabs', () => {
   assert.match(wxml, /activeManageTab/);
   assert.match(wxml, /showCombinationEditModal/);
   assert.match(wxml, /showCreateCombinationModal/);
+  assert.doesNotMatch(wxml, /empty-action/);
+  assert.doesNotMatch(wxml, /现在新增/);
   assert.doesNotMatch(wxml, /onCombinationItemNotesInput/);
+});
+
+test('food management can open directly on the meal combination tab', async () => {
+  const { page, FoodModel, FoodCategoryModel, MealCombinationModel, cleanup } = loadFoodManagementPage();
+  FoodCategoryModel.getCategories = async () => [];
+  FoodModel.getAvailableFoods = async () => [];
+  FoodModel.resolveFoodImageUrls = async foods => foods;
+  MealCombinationModel.findByBaby = async () => [];
+
+  try {
+    const instance = createPageInstance(page);
+    await page.onLoad.call(instance, {
+      tab: 'combination',
+      from: 'meal-editor'
+    });
+
+    assert.equal(instance.data.activeManageTab, 'combination');
+    assert.equal(instance.data.showAddModal, false);
+  } finally {
+    cleanup();
+  }
 });
 
 test('food management top tabs follow nutrition settings segmented style', () => {
@@ -186,6 +209,52 @@ test('food management top tabs follow nutrition settings segmented style', () =>
   assert.match(tabRule, /border-radius:\s*999rpx/);
   assert.match(activeRule, /background:\s*#FFB800/);
   assert.match(activeRule, /color:\s*#2F2400/);
+});
+
+test('food management recipe cards use warm visual hierarchy', () => {
+  const wxml = fs.readFileSync('miniprogram/pages/food-management/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pages/food-management/index.wxss', 'utf8');
+  const cardRule = wxss.match(/\.combination-card\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const badgeRule = wxss.match(/\.combination-badge\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const summaryRule = wxss.match(/\.combination-summary\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const recipeActionRule = wxss.match(/\.combination-actions\s+\.recipe-action\s*\{([\s\S]*?)\}/)?.[1] || '';
+  const foodChipRule = wxss.match(/\.combination-food\s*\{([\s\S]*?)\}/)?.[1] || '';
+
+  assert.match(wxml, /combination-card-top/);
+  assert.match(wxml, /combination-badge/);
+  assert.match(wxml, /combination-summary/);
+  assert.match(wxml, /combination-nutrition/);
+  assert.match(wxml, /nutritionSummary.calories/);
+  assert.match(wxml, /nutritionSummary.protein/);
+  assert.match(wxml, /nutritionSummary.carbs/);
+  assert.match(wxml, /nutritionSummary.fat/);
+  assert.match(wxml, /recipe-action/);
+  assert.match(wxml, /combination-food-name/);
+  assert.match(wxml, /combination-food-quantity/);
+  assert.match(wxml, /保存常用搭配和每种食物的默认份量/);
+  assert.match(wxml, /combination-food-search/);
+  assert.match(wxml, /combination-food-option/);
+  assert.match(wxml, /switchCombinationFoodCategory/);
+  assert.match(wxml, /combinationModalStep === 'select'/);
+  assert.match(wxml, /pendingCombinationItems/);
+  assert.match(wxml, /goToCombinationQuantityStep/);
+  assert.match(wxml, /backToCombinationFoodSelect/);
+  assert.doesNotMatch(wxml, /combination-food-picker/);
+  assert.doesNotMatch(wxml, /下次记录可直接带出默认份量/);
+  assert.doesNotMatch(wxml, /combination-stat/);
+  assert.match(wxml, /默认搭配/);
+  assert.match(cardRule, /linear-gradient\(180deg,\s*#fffdf4 0%,\s*#ffffff 58%\)/);
+  assert.match(cardRule, /border:\s*1rpx solid rgba\(255,\s*184,\s*0,\s*0\.18\)/);
+  assert.match(badgeRule, /background:\s*rgba\(255,\s*184,\s*0,\s*0\.16\)/);
+  assert.match(summaryRule, /background:\s*transparent/);
+  assert.doesNotMatch(summaryRule, /border-radius:\s*999rpx/);
+  assert.match(wxss, /\.combination-nutrition\s*\{/);
+  assert.match(wxss, /\.combination-nutrition-item\s*\{/);
+  assert.match(recipeActionRule, /height:\s*48rpx/);
+  assert.match(recipeActionRule, /font-size:\s*22rpx/);
+  assert.match(foodChipRule, /display:\s*inline-flex/);
+  assert.match(foodChipRule, /align-items:\s*center/);
+  assert.match(foodChipRule, /min-height:\s*46rpx/);
 });
 
 test('food management recipe action buttons share food action button styles', () => {
@@ -220,6 +289,12 @@ test('food management loads meal combinations for the current baby', async () =>
     assert.deepEqual(findCalls, ['baby-1']);
     assert.equal(instance.data.mealCombinations.length, 1);
     assert.equal(instance.data.mealCombinations[0].name, '午餐组合');
+    assert.deepEqual(instance.data.mealCombinations[0].nutritionSummary, {
+      calories: 72,
+      protein: 1.4,
+      carbs: 16,
+      fat: 0.2
+    });
   } finally {
     cleanup();
   }
@@ -260,7 +335,7 @@ test('food management can edit meal combination name and item quantities', async
   }
 });
 
-test('food management can create a meal combination from catalog foods', async () => {
+test('food management can create a meal combination from visual catalog food cards', async () => {
   const { page, MealCombinationModel, cleanup } = loadFoodManagementPage();
   const creates = [];
   MealCombinationModel.createMealCombination = async (payload) => {
@@ -298,7 +373,16 @@ test('food management can create a meal combination from catalog foods', async (
 
     page.showCreateCombinationModal.call(instance);
     page.onCombinationFormNameInput.call(instance, { detail: { value: '早餐组合' } });
-    page.onCombinationFoodPickerChange.call(instance, { detail: { value: 0 } });
+    page.onCombinationFoodOptionTap.call(instance, {
+      currentTarget: { dataset: { id: 'food-rice' } }
+    });
+    assert.equal(instance.data.pendingCombinationItems.length, 1);
+    assert.equal(instance.data.combinationForm.items.length, 0);
+
+    page.goToCombinationQuantityStep.call(instance);
+    assert.equal(instance.data.combinationModalStep, 'quantity');
+    assert.equal(instance.data.combinationForm.items.length, 1);
+
     page.onCombinationItemQuantityInput.call(instance, {
       currentTarget: { dataset: { index: 0 } },
       detail: { value: '25' }
@@ -313,6 +397,108 @@ test('food management can create a meal combination from catalog foods', async (
     assert.equal(creates[0].items[0].plannedNutrition.calories, 90);
     assert.equal(creates[0].items[0].notes, undefined);
     assert.equal(instance.data.showCombinationModal, false);
+  } finally {
+    cleanup();
+  }
+});
+
+test('food management prevents duplicate meal combination names for current baby', async () => {
+  const { page, MealCombinationModel, calls, cleanup } = loadFoodManagementPage();
+  let createCalled = false;
+  MealCombinationModel.createMealCombination = async () => {
+    createCalled = true;
+    return { _id: 'should-not-create' };
+  };
+
+  try {
+    const instance = createPageInstance(page, {
+      babyUid: 'baby-1',
+      mealCombinations: [
+        buildCombination({ _id: 'combo-existing', name: '早餐组合' })
+      ],
+      combinationForm: {
+        name: ' 早餐组合 ',
+        items: [
+          {
+            foodId: 'food-rice',
+            foodName: '米粉',
+            foodSnapshot: {
+              name: '米粉',
+              baseUnit: 'g',
+              baseQuantity: 100,
+              nutritionPerUnit: { calories: 360, protein: 7, carbs: 80, fat: 1 }
+            },
+            quantityInput: '20',
+            plannedQuantity: 20,
+            unit: 'g',
+            food: {
+              _id: 'food-rice',
+              name: '米粉',
+              baseUnit: 'g',
+              baseQuantity: 100,
+              nutritionPerUnit: { calories: 360, protein: 7, carbs: 80, fat: 1 }
+            }
+          }
+        ]
+      }
+    });
+
+    await page.saveMealCombinationEdit.call(instance);
+
+    assert.equal(createCalled, false);
+    assert.equal(calls.toasts.at(-1).title, '同名菜谱已存在');
+  } finally {
+    cleanup();
+  }
+});
+
+test('food management filters visual meal combination food choices', () => {
+  const { page, cleanup } = loadFoodManagementPage();
+
+  try {
+    const instance = createPageInstance(page, {
+      combinationFoodPickerOptions: [
+        {
+          _id: 'food-rice',
+          name: '米粉',
+          category: '主食',
+          baseUnit: 'g',
+          baseQuantity: 100,
+          nutritionPerUnit: { calories: 360 }
+        },
+        {
+          _id: 'food-pumpkin',
+          name: '南瓜泥',
+          category: '蔬菜',
+          baseUnit: 'g',
+          baseQuantity: 100,
+          nutritionPerUnit: { calories: 22 }
+        }
+      ],
+      pendingCombinationItems: [{ foodId: 'food-rice' }],
+      combinationForm: {
+        name: '',
+        items: []
+      }
+    });
+
+    page.updateCombinationFoodSelector.call(instance, {
+      category: '蔬菜',
+      searchQuery: '南瓜'
+    });
+
+    assert.deepEqual(instance.data.combinationFoodCategories, ['全部', '主食', '蔬菜']);
+    assert.equal(instance.data.filteredCombinationFoodOptions.length, 1);
+    assert.equal(instance.data.filteredCombinationFoodOptions[0].name, '南瓜泥');
+    assert.equal(instance.data.filteredCombinationFoodOptions[0].isInCombination, false);
+
+    page.updateCombinationFoodSelector.call(instance, {
+      category: '全部',
+      searchQuery: '米'
+    });
+
+    assert.equal(instance.data.filteredCombinationFoodOptions.length, 1);
+    assert.equal(instance.data.filteredCombinationFoodOptions[0].isInCombination, true);
   } finally {
     cleanup();
   }

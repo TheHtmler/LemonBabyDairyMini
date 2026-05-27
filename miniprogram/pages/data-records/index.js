@@ -510,11 +510,13 @@ function normalizeMealCombinationSource(source = {}) {
   if (!source || typeof source !== 'object') return null;
   const combinationName = (source.combinationName || '').toString().trim();
   const combinationId = (source.combinationId || '').toString().trim();
+  const sourceGroupId = (source.sourceGroupId || '').toString().trim();
   if (!combinationName && !combinationId) return null;
 
   return {
     combinationId,
-    combinationName
+    combinationName,
+    ...(sourceGroupId ? { sourceGroupId } : {})
   };
 }
 
@@ -587,6 +589,7 @@ function normalizeIntakes(intakes = []) {
         specialProtein: typeof item.specialProtein === 'number' ? item.specialProtein : null,
         proteinSource,
         proteinQuality: item.proteinQuality || '',
+        sourceType: item.sourceType || (item.mealCombinationSource ? 'meal_combination' : 'manual_food'),
         completionPercent: normalizeCompletionPercent(item.completionPercent),
         hasValidCompletionPercent
       };
@@ -648,6 +651,7 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     mealTime: record.time || formatTimeFromDate(record.recordedAt),
     mealLabel: record.mealLabel || '',
     mealNote: record.mealNote || '',
+    sourceType: record.sourceType || (record.mealCombinationSource ? 'meal_combination' : 'manual_food'),
     sortOrder: record.sortOrder || 0,
     createdAt: record.createdAt || null,
     updatedAt: record.updatedAt || null,
@@ -675,6 +679,69 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
 
 function foodIntakeRecordsToLegacyIntakes(records = []) {
   return normalizeIntakes((records || []).map(record => foodIntakeRecordToLegacyIntake(record)));
+}
+
+function buildMealSourceDisplayGroups(items = []) {
+  const recipeMap = new Map();
+  const manualItems = [];
+
+  (items || []).forEach((item, index) => {
+    const source = item.mealCombinationSource || {};
+    const isRecipeItem = item.sourceType === 'meal_combination' || !!source.combinationId;
+    if (!isRecipeItem) {
+      manualItems.push(item);
+      return;
+    }
+
+    const sourceGroupId = source.sourceGroupId || source.combinationId || `recipe_${index}`;
+    const groupId = `recipe:${sourceGroupId}`;
+    if (!recipeMap.has(groupId)) {
+      recipeMap.set(groupId, {
+        id: groupId,
+        title: source.combinationName || '食谱',
+        sourceText: source.combinationName ? `来自菜谱：${source.combinationName}` : '来自菜谱',
+        itemCount: 0,
+        items: [],
+        summary: {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        },
+        expanded: false
+      });
+    }
+
+    const group = recipeMap.get(groupId);
+    const nutrition = item.nutrition || {};
+    group.items.push(item);
+    group.itemCount += 1;
+    group.summary.calories += Number(nutrition.calories) || 0;
+    group.summary.protein += Number(nutrition.protein) || 0;
+    group.summary.carbs += Number(nutrition.carbs) || 0;
+    group.summary.fat += Number(nutrition.fat) || 0;
+  });
+
+  const recipeGroups = Array.from(recipeMap.values()).map(group => ({
+    ...group,
+    summary: {
+      calories: roundCalories(group.summary.calories),
+      protein: roundNumber(group.summary.protein, 2),
+      carbs: roundNumber(group.summary.carbs, 2),
+      fat: roundNumber(group.summary.fat, 2)
+    }
+  }));
+  const sourceSummaryParts = [];
+  if (recipeGroups.length > 0) sourceSummaryParts.push(`${recipeGroups.length} 个菜谱`);
+  if (manualItems.length > 0) sourceSummaryParts.push(`${manualItems.length} 个单独食物`);
+
+  return {
+    recipeGroups,
+    manualItems,
+    recipeGroupCount: recipeGroups.length,
+    manualItemCount: manualItems.length,
+    sourceSummaryText: sourceSummaryParts.length ? `含 ${sourceSummaryParts.join(' · ')}` : ''
+  };
 }
 
 function groupFoodIntakesByMeal(intakes = []) {
@@ -752,9 +819,11 @@ function groupFoodIntakesByMeal(intakes = []) {
       const hasCompletionDisplay = !!validCompletion;
       const displayGroup = { ...group };
       delete displayGroup.completionCandidates;
+      const sourceDisplayGroups = buildMealSourceDisplayGroups(items);
 
       return {
         ...displayGroup,
+        ...sourceDisplayGroups,
         expanded: false,
         completionPercent,
         completionPercentText: hasCompletionDisplay ? `吃完 ${completionPercent}%` : '',
@@ -2122,6 +2191,25 @@ function createDataRecordsPageConfig(options = {}) {
     const nextGroups = (this.data.foodMealGroups || []).map(group => (
       group.id === id ? { ...group, expanded: !group.expanded } : group
     ));
+
+    this.setData({ foodMealGroups: nextGroups });
+  },
+
+  toggleMealRecipeGroup(e) {
+    const { mealId, recipeId } = e.currentTarget.dataset || {};
+    if (!mealId || !recipeId) return;
+
+    const nextGroups = (this.data.foodMealGroups || []).map(group => {
+      if (group.id !== mealId) return group;
+      return {
+        ...group,
+        recipeGroups: (group.recipeGroups || []).map(recipeGroup => (
+          recipeGroup.id === recipeId
+            ? { ...recipeGroup, expanded: !recipeGroup.expanded }
+            : recipeGroup
+        ))
+      };
+    });
 
     this.setData({ foodMealGroups: nextGroups });
   },

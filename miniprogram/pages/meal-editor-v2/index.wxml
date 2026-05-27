@@ -22,7 +22,7 @@
       </picker>
     </view>
     <view class="field-row completion-row">
-      <text class="field-label">吃完比例</text>
+      <text class="field-label">吃了多少</text>
       <view class="completion-controls">
         <view
           class="completion-chip {{completionPercent == item ? 'active' : ''}}"
@@ -64,7 +64,7 @@
         <text class="section-title">本顿食物</text>
         <text class="section-meta left">已添加 {{mealDraft.items.length}} 种</text>
       </view>
-      <view class="combination-save-btn compact" bindtap="showSaveCombinationInput">保存当前为菜谱</view>
+      <view class="combination-save-btn compact {{mealDraft.items.length === 0 ? 'disabled' : ''}}" bindtap="showSaveCombinationInput">保存当前为菜谱</view>
     </view>
     <view class="combination-name-panel" wx:if="{{combinationNameInputVisible}}">
       <input
@@ -81,26 +81,96 @@
     </view>
     <view class="meal-summary-compact" wx:if="{{mealDraft.items.length > 0}}">
       <view class="meal-summary-compact-head">
-        <text class="meal-summary-compact-title">准备 / 实际计入</text>
-        <text class="meal-summary-compact-percent">吃完 {{completionPercent || 0}}%</text>
+        <text class="meal-summary-compact-title">准备 / 实际摄入</text>
+        <text class="meal-summary-compact-percent">吃了 {{completionPercent || 0}}%</text>
       </view>
-      <view class="meal-summary-compact-row">
-        <text>热量 {{plannedMealSummary.calories || mealSummary.calories || 0}} → {{actualMealSummary.calories || 0}} kcal</text>
-        <text>蛋白 {{plannedMealSummary.protein || mealSummary.protein || 0}} → {{actualMealSummary.protein || 0}} g</text>
+      <view class="meal-summary-macro-grid">
+        <view class="meal-summary-macro">
+          <text class="meal-summary-macro-label">热量 kcal</text>
+          <view class="meal-summary-macro-amounts">
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">准备</text>
+              <text class="meal-summary-macro-value">{{displayPlannedMealSummary.calories || 0}}</text>
+            </view>
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">实际</text>
+              <text class="meal-summary-macro-value">{{displayActualMealSummary.calories || 0}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="meal-summary-macro">
+          <text class="meal-summary-macro-label">蛋白 g</text>
+          <view class="meal-summary-macro-amounts">
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">准备</text>
+              <text class="meal-summary-macro-value">{{displayPlannedMealSummary.protein || 0}}</text>
+            </view>
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">实际</text>
+              <text class="meal-summary-macro-value">{{displayActualMealSummary.protein || 0}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="meal-summary-macro">
+          <text class="meal-summary-macro-label">碳水 g</text>
+          <view class="meal-summary-macro-amounts">
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">准备</text>
+              <text class="meal-summary-macro-value">{{displayPlannedMealSummary.carbs || 0}}</text>
+            </view>
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">实际</text>
+              <text class="meal-summary-macro-value">{{displayActualMealSummary.carbs || 0}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="meal-summary-macro">
+          <text class="meal-summary-macro-label">脂肪 g</text>
+          <view class="meal-summary-macro-amounts">
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">准备</text>
+              <text class="meal-summary-macro-value">{{displayPlannedMealSummary.fat || 0}}</text>
+            </view>
+            <view class="meal-summary-macro-amount">
+              <text class="meal-summary-macro-amount-label">实际</text>
+              <text class="meal-summary-macro-value">{{displayActualMealSummary.fat || 0}}</text>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
     <view class="empty-state" wx:if="{{mealDraft.items.length === 0}}">
       <text>先点底部“添加食物”，把这顿饭的食物逐个加进来。</text>
     </view>
-    <view class="meal-item" wx:for="{{mealDraft.items}}" wx:key="localId">
-      <view class="meal-item-main">
-        <text class="meal-item-name">{{item.nameSnapshot}}</text>
-        <text class="meal-item-meta">{{item.quantity}}{{item.unit}} · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.protein || 0}} g</text>
-        <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g · 纤维 {{item.nutrition.fiber || 0}} g</text>
+    <view class="meal-display-group {{group.type === 'meal_combination' ? 'meal-combination-group' : 'manual-food-group'}}" wx:for="{{mealDisplayGroups}}" wx:for-item="group" wx:key="id">
+      <view class="meal-display-group-header" data-id="{{group.id}}" bindtap="toggleMealDisplayGroup">
+        <view class="meal-display-group-copy">
+          <text class="meal-display-group-kicker">{{group.type === 'meal_combination' ? '食谱' : '单独添加'}}</text>
+          <text class="meal-display-group-title">{{group.title}}</text>
+          <text class="meal-display-group-meta">{{group.itemCount}}种食物</text>
+        </view>
+        <view class="meal-display-group-summary">
+          <text>{{group.summary.calories || 0}} kcal</text>
+          <text>蛋白 {{group.summary.protein || 0}}g</text>
+          <text>{{group.expanded ? '收起' : '展开'}}</text>
+        </view>
       </view>
-      <view class="meal-item-actions">
-        <view class="text-btn" data-id="{{item.localId}}" bindtap="editMealItem">编辑</view>
-        <view class="text-btn danger" data-id="{{item.localId}}" bindtap="removeMealItem">删除</view>
+      <view class="meal-display-group-items" wx:if="{{group.expanded}}">
+        <view class="meal-item" wx:for="{{group.items}}" wx:for-item="foodItem" wx:key="localId">
+          <view class="meal-item-main">
+            <text class="meal-item-name">{{foodItem.nameSnapshot}} · {{foodItem.quantity}}{{foodItem.unit}}</text>
+            <view class="meal-item-nutrition-row">
+              <text>热量 {{foodItem.displayNutrition.calories || 0}} kcal</text>
+              <text>蛋白 {{foodItem.displayNutrition.protein || 0}} g</text>
+              <text>碳水 {{foodItem.displayNutrition.carbs || 0}} g</text>
+              <text>脂肪 {{foodItem.displayNutrition.fat || 0}} g</text>
+            </view>
+          </view>
+          <view class="meal-item-actions">
+            <view class="text-btn" data-id="{{foodItem.localId}}" bindtap="editMealItem">编辑</view>
+            <view class="text-btn danger" data-id="{{foodItem.localId}}" bindtap="removeMealItem">删除</view>
+          </view>
+        </view>
       </view>
     </view>
   </view>
@@ -206,6 +276,9 @@
         </view>
       </view>
       <view class="drawer-combination-panel" wx:elif="{{drawerActiveTab === 'combination'}}">
+        <view class="drawer-utility-row">
+          <view class="drawer-utility-btn" bindtap="navigateToCombinationManagement">去添加菜谱</view>
+        </view>
         <view class="empty-state compact" wx:if="{{combinationLoading}}">
           <text>正在准备宝宝的菜谱...</text>
         </view>
@@ -242,7 +315,7 @@
     <view class="drawer-body batch-body" wx:if="{{drawerStep === 'batchQuantity'}}">
       <view class="batch-hint-card">
         <text class="batch-hint-title">统一设置准备量</text>
-        <text class="batch-hint-text">这里填写的是计划准备量，保存本顿时再按吃完比例计入实际营养。</text>
+        <text class="batch-hint-text">这里填写的是计划准备量，保存本顿时再按吃了多少计入实际营养。</text>
       </view>
       <scroll-view class="batch-item-list" scroll-y="true" show-scrollbar="false">
         <view class="batch-item" wx:for="{{pendingMealItems}}" wx:key="pendingId">

@@ -2,6 +2,13 @@
  * 药物记录数据模型
  * 管理 medication_records 集合的 CRUD 操作
  */
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid,
+  stripProtectedAuditFields
+} = require('../utils/auditFields');
+const { recordHardDelete } = require('./auditLog');
 
 class MedicationRecordModel {
   constructor() {
@@ -32,22 +39,30 @@ class MedicationRecordModel {
   async addRecord(data) {
     const app = getApp();
     const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    const timestamp = this.db.serverDate();
+    const operatorOpenid = resolveOperatorOpenid(data)
+      || resolveOperatorOpenid(app.globalData.openid || wx.getStorageSync('openid') || '');
+    const cleanedData = stripProtectedAuditFields(data);
     
     const record = {
       babyUid: babyUid,
-      date: data.date ? this.getDateStart(new Date(data.date.replace(/-/g, '/'))) : this.getDateStart(new Date()),
-      medicationId: data.medicationId,
-      medicationName: data.medicationName,
-      dosage: data.dosage,
-      unit: data.unit,
-      frequency: data.frequency,
-      actualTime: data.actualTime,
-      actualDateTime: data.actualDateTime,
-      createdAt: this.db.serverDate(),
-      updatedAt: this.db.serverDate()
+      date: cleanedData.date ? this.getDateStart(new Date(cleanedData.date.replace(/-/g, '/'))) : this.getDateStart(new Date()),
+      medicationId: cleanedData.medicationId,
+      medicationName: cleanedData.medicationName,
+      dosage: cleanedData.dosage,
+      unit: cleanedData.unit,
+      frequency: cleanedData.frequency,
+      actualTime: cleanedData.actualTime,
+      actualDateTime: cleanedData.actualDateTime,
+      ...buildCreateAuditFields({
+        timestamp,
+        operatorOpenid,
+        recordType: 'medication_record',
+        schemaVersion: 1
+      })
     };
-    if (data.notes && String(data.notes).trim()) {
-      record.notes = String(data.notes).trim();
+    if (cleanedData.notes && String(cleanedData.notes).trim()) {
+      record.notes = String(cleanedData.notes).trim();
     }
 
     return await this.collection.add({ data: record });
@@ -122,9 +137,13 @@ class MedicationRecordModel {
    * @returns {Promise}
    */
   async updateRecord(id, data) {
+    const operatorOpenid = resolveOperatorOpenid(data);
     const updateData = {
-      ...data,
-      updatedAt: this.db.serverDate()
+      ...stripProtectedAuditFields(data),
+      ...buildUpdateAuditFields({
+        timestamp: this.db.serverDate(),
+        operatorOpenid
+      })
     };
 
     return await this.collection.doc(id).update({
@@ -152,8 +171,16 @@ class MedicationRecordModel {
    * @param {string} id 记录ID
    * @returns {Promise}
    */
-  async deleteRecord(id) {
-    return await this.collection.doc(id).remove();
+  async deleteRecord(id, options = {}) {
+    const result = await this.collection.doc(id).remove();
+    await recordHardDelete({
+      db: this.db,
+      collectionName: 'medication_records',
+      recordId: id,
+      babyUid: options.babyUid || '',
+      operatorOpenid: resolveOperatorOpenid(options)
+    });
+    return result;
   }
 
   /**

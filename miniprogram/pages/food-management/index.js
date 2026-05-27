@@ -65,6 +65,10 @@ const createEmptyFormData = (category = '', unit = '') => ({
 
 const app = getApp();
 
+function getOperatorOpenid() {
+  return app.globalData.openid || wx.getStorageSync('openid') || '';
+}
+
 Page({
   data: {
     loading: false,
@@ -104,24 +108,32 @@ Page({
     mealCombinations: [],
     combinationLoading: false,
     showCombinationModal: false,
+    combinationModalStep: 'select',
     combinationEditingId: '',
     combinationForm: {
       name: '',
       items: []
     },
+    pendingCombinationItems: [],
     combinationFoodPickerOptions: [],
     combinationFoodPickerIndex: 0,
+    combinationFoodSearchQuery: '',
+    combinationFoodCategory: '全部',
+    combinationFoodCategories: ['全部'],
+    filteredCombinationFoodOptions: [],
     foodPlaceholderImage: FOOD_PLACEHOLDER_IMAGE
   },
 
   async onLoad(options = {}) {
     try {
       this.shouldOpenAddModal = options.openAdd === '1';
+      const initialTab = ['food', 'combination'].includes(options.tab) ? options.tab : 'food';
       await waitForAppInitialization();
       const babyUid = getBabyUid();
 
       this.setData({
-        babyUid: babyUid || ''
+        babyUid: babyUid || '',
+        activeManageTab: initialTab
       });
 
       await this.loadCustomCategories();
@@ -203,10 +215,21 @@ Page({
       );
       const categorySuggestions = this.mergeCategorySuggestions(existingCategories);
       const unitSuggestions = this.mergeUnitSuggestions(existingUnits);
+      const combinationFoodCategories = this.buildCombinationFoodCategories(mergedFoods);
+      const combinationFoodCategory = combinationFoodCategories.includes(this.data.combinationFoodCategory)
+        ? this.data.combinationFoodCategory
+        : '全部';
 
       this.setData({
         foods: mergedFoods,
         combinationFoodPickerOptions: mergedFoods,
+        combinationFoodCategories,
+        combinationFoodCategory,
+        filteredCombinationFoodOptions: this.getFilteredCombinationFoodOptions(mergedFoods, {
+          category: combinationFoodCategory,
+          searchQuery: this.data.combinationFoodSearchQuery,
+          selectedItems: this.data.pendingCombinationItems || this.data.combinationForm?.items || []
+        }),
         categorySuggestions,
         categoryPickerIndex: this.getCategoryPickerIndex(
           this.data.formData?.category || '',
@@ -242,11 +265,15 @@ Page({
     this.setData({ combinationLoading: true });
     try {
       const combinations = await MealCombinationModel.findByBaby(babyUid);
+      const combinationsWithNutrition = (combinations || []).map(combination => ({
+        ...combination,
+        nutritionSummary: this.buildCombinationNutritionSummary(combination)
+      }));
       this.setData({
-        mealCombinations: combinations || [],
+        mealCombinations: combinationsWithNutrition,
         combinationLoading: false
       });
-      return combinations || [];
+      return combinationsWithNutrition;
     } catch (error) {
       console.error('加载菜谱失败:', error);
       this.setData({
@@ -353,6 +380,59 @@ Page({
     }
 
     return foods.filter(food => this.matchesFoodSearch(food, normalized));
+  },
+
+  buildCombinationFoodCategories(foods = []) {
+    const categories = Array.from(
+      new Set(
+        (foods || [])
+          .map(food => this.normalizeCategoryValue(food.category || food.categoryLevel1 || ''))
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+    return ['全部', ...categories];
+  },
+
+  getFilteredCombinationFoodOptions(foods = this.data.combinationFoodPickerOptions || [], options = {}) {
+    const category = options.category !== undefined ? options.category : this.data.combinationFoodCategory;
+    const searchQuery = options.searchQuery !== undefined ? options.searchQuery : this.data.combinationFoodSearchQuery;
+    const selectedItems = options.selectedItems || this.data.pendingCombinationItems || this.data.combinationForm?.items || [];
+    const selectedIds = new Set((selectedItems || []).map(item => item.foodId).filter(Boolean));
+    const normalizedCategory = category && category !== '全部' ? this.normalizeCategoryValue(category) : '全部';
+    const normalizedQuery = normalizeSearchText(searchQuery || '');
+
+    return (foods || [])
+      .filter(food => {
+        const foodCategory = this.normalizeCategoryValue(food.category || food.categoryLevel1 || '');
+        const categoryMatched = normalizedCategory === '全部' || foodCategory === normalizedCategory;
+        const searchMatched = !normalizedQuery || this.matchesFoodSearch(food, normalizedQuery);
+        return categoryMatched && searchMatched;
+      })
+      .map(food => ({
+        ...food,
+        isInCombination: selectedIds.has(food._id || food.id || '')
+      }));
+  },
+
+  updateCombinationFoodSelector(options = {}) {
+    const foods = this.data.combinationFoodPickerOptions || [];
+    const categories = this.buildCombinationFoodCategories(foods);
+    const requestedCategory =
+      options.category !== undefined ? options.category : (this.data.combinationFoodCategory || '全部');
+    const category = categories.includes(requestedCategory) ? requestedCategory : '全部';
+    const searchQuery =
+      options.searchQuery !== undefined ? options.searchQuery : (this.data.combinationFoodSearchQuery || '');
+
+    this.setData({
+      combinationFoodCategories: categories,
+      combinationFoodCategory: category,
+      combinationFoodSearchQuery: searchQuery,
+      filteredCombinationFoodOptions: this.getFilteredCombinationFoodOptions(foods, {
+        category,
+        searchQuery,
+        selectedItems: this.data.pendingCombinationItems || this.data.combinationForm?.items || []
+      })
+    });
   },
 
   getNextActiveCategory(groupedFoods = [], preferredCategory = '') {
@@ -465,6 +545,28 @@ Page({
     return Math.round(value * factor) / factor;
   },
 
+  buildCombinationNutritionSummary(combination = {}) {
+    const summary = (combination.items || []).reduce((result, item) => {
+      const nutrition = item.plannedNutrition || {};
+      result.calories += Number(nutrition.calories) || 0;
+      result.protein += Number(nutrition.protein) || 0;
+      result.carbs += Number(nutrition.carbs) || 0;
+      result.fat += Number(nutrition.fat) || 0;
+      return result;
+    }, {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    });
+    return {
+      calories: Math.round(summary.calories),
+      protein: this.roundNumber(summary.protein, 2),
+      carbs: this.roundNumber(summary.carbs, 2),
+      fat: this.roundNumber(summary.fat, 2)
+    };
+  },
+
   getProteinTypeOption(index) {
     const option = this.data.proteinTypeOptions?.[index];
     return option || null;
@@ -538,7 +640,7 @@ Page({
       isLiquid: baseUnit.toLowerCase() === 'ml',
       babyUid,
       isSystem: false,
-      createdBy: app.globalData.openid || wx.getStorageSync('openid') || '',
+      createdBy: getOperatorOpenid(),
       nutritionSource: 'manual'
     };
   },
@@ -886,7 +988,7 @@ Page({
       wx.showLoading({ title: '添加中...', mask: true });
       await FoodCategoryModel.addCategory(normalizedValue, {
         babyUid,
-        createdBy: app.globalData.openid || wx.getStorageSync('openid') || ''
+        createdBy: getOperatorOpenid()
       });
       wx.hideLoading();
     } catch (error) {
@@ -991,18 +1093,25 @@ Page({
       const newFood = this.prepareFoodPayload(babyUid);
 
       const editingId = this.data.editingFoodId;
+      const operatorOpenid = getOperatorOpenid();
 
       if (editingId) {
         const { createdBy, babyUid: payloadBabyUid, ...updatePayload } = newFood;
-        await FoodModel.updateFood(editingId, updatePayload, babyUid);
+        await FoodModel.updateFood(editingId, {
+          ...updatePayload,
+          operatorOpenid
+        }, babyUid);
       } else {
-        await FoodModel.createFood(newFood);
+        await FoodModel.createFood({
+          ...newFood,
+          operatorOpenid
+        });
       }
 
       try {
         await FoodCategoryModel.addCategory(newFood.category, {
           babyUid,
-          createdBy: app.globalData.openid || wx.getStorageSync('openid') || ''
+          createdBy: operatorOpenid
         });
         await this.loadCustomCategories();
       } catch (categoryError) {
@@ -1071,12 +1180,18 @@ Page({
   showCreateCombinationModal() {
     this.setData({
       showCombinationModal: true,
+      combinationModalStep: 'select',
       combinationEditingId: '',
       combinationFoodPickerIndex: 0,
+      combinationFoodSearchQuery: '',
+      combinationFoodCategory: '全部',
+      pendingCombinationItems: [],
       combinationForm: {
         name: '',
         items: []
       }
+    }, () => {
+      this.updateCombinationFoodSelector();
     });
   },
 
@@ -1088,25 +1203,38 @@ Page({
       wx.showToast({ title: '未找到菜谱', icon: 'none' });
       return;
     }
+    const existingItems = (target.items || []).map(item => this.buildCombinationFormItem(item));
 
     this.setData({
       showCombinationModal: true,
+      combinationModalStep: 'quantity',
       combinationEditingId: target._id || target.id || '',
+      combinationFoodSearchQuery: '',
+      combinationFoodCategory: '全部',
+      pendingCombinationItems: existingItems,
       combinationForm: {
         name: target.name || '',
-        items: (target.items || []).map(item => this.buildCombinationFormItem(item))
+        items: existingItems
       }
+    }, () => {
+      this.updateCombinationFoodSelector();
     });
   },
 
   hideCombinationModal() {
     this.setData({
       showCombinationModal: false,
+      combinationModalStep: 'select',
       combinationEditingId: '',
+      combinationFoodSearchQuery: '',
+      combinationFoodCategory: '全部',
+      pendingCombinationItems: [],
       combinationForm: {
         name: '',
         items: []
       }
+    }, () => {
+      this.updateCombinationFoodSelector();
     });
   },
 
@@ -1128,7 +1256,8 @@ Page({
       quantityInput
     };
     this.setData({
-      'combinationForm.items': items
+      'combinationForm.items': items,
+      pendingCombinationItems: items
     });
   },
 
@@ -1146,10 +1275,66 @@ Page({
 
     this.setData({
       combinationFoodPickerIndex: pickerIndex,
-      'combinationForm.items': [
-        ...(this.data.combinationForm.items || []),
+      pendingCombinationItems: [
+        ...(this.data.pendingCombinationItems || []),
         this.buildCombinationFormItemFromFood(food)
       ]
+    }, () => {
+      this.updateCombinationFoodSelector();
+    });
+  },
+
+  onCombinationFoodSearchInput(e) {
+    this.updateCombinationFoodSelector({
+      searchQuery: e.detail.value || ''
+    });
+  },
+
+  switchCombinationFoodCategory(e) {
+    const { category } = e.currentTarget.dataset || {};
+    if (!category) return;
+    this.updateCombinationFoodSelector({ category });
+  },
+
+  onCombinationFoodOptionTap(e) {
+    const { id } = e.currentTarget.dataset || {};
+    if (!id) return;
+    const food = (this.data.combinationFoodPickerOptions || []).find(item => (item._id || item.id) === id);
+    if (!food) return;
+
+    const pendingItems = [...(this.data.pendingCombinationItems || [])];
+    const existingIndex = pendingItems.findIndex(item => item.foodId === id);
+    const nextItems = existingIndex >= 0
+      ? pendingItems.filter((_, index) => index !== existingIndex)
+      : [...pendingItems, this.buildCombinationFormItemFromFood(food)];
+
+    this.setData({
+      pendingCombinationItems: nextItems
+    }, () => {
+      this.updateCombinationFoodSelector();
+    });
+  },
+
+  goToCombinationQuantityStep() {
+    const pendingItems = this.data.pendingCombinationItems || [];
+    if (!pendingItems.length) {
+      wx.showToast({ title: '请先选择食物', icon: 'none' });
+      return;
+    }
+    this.setData({
+      combinationModalStep: 'quantity',
+      'combinationForm.items': pendingItems
+    }, () => {
+      this.updateCombinationFoodSelector();
+    });
+  },
+
+  backToCombinationFoodSelect() {
+    this.setData({
+      combinationModalStep: 'select',
+      pendingCombinationItems: this.data.combinationForm.items || []
+    }, () => {
+      this.updateCombinationFoodSelector();
     });
   },
 
@@ -1157,8 +1342,12 @@ Page({
     const { index } = e.currentTarget.dataset || {};
     const itemIndex = Number(index);
     if (!Number.isInteger(itemIndex) || itemIndex < 0) return;
+    const nextItems = (this.data.combinationForm.items || []).filter((_, currentIndex) => currentIndex !== itemIndex);
     this.setData({
-      'combinationForm.items': (this.data.combinationForm.items || []).filter((_, currentIndex) => currentIndex !== itemIndex)
+      'combinationForm.items': nextItems,
+      pendingCombinationItems: nextItems
+    }, () => {
+      this.updateCombinationFoodSelector();
     });
   },
 
@@ -1243,15 +1432,33 @@ Page({
     };
   },
 
+  hasDuplicateMealCombinationName(name = '', editingId = '') {
+    const normalizedName = String(name || '').trim();
+    if (!normalizedName) return false;
+    return (this.data.mealCombinations || []).some(item => {
+      const currentId = item._id || item.id || '';
+      if (editingId && currentId === editingId) return false;
+      return String(item.name || '').trim() === normalizedName;
+    });
+  },
+
   async saveMealCombinationEdit() {
     const editingId = this.data.combinationEditingId;
     const payload = this.buildCombinationSavePayload();
     if (!payload) return;
+    if (this.hasDuplicateMealCombinationName(payload.name, editingId)) {
+      wx.showToast({ title: '同名菜谱已存在', icon: 'none' });
+      return;
+    }
 
     try {
       wx.showLoading({ title: '保存中...' });
+      const operatorOpenid = getOperatorOpenid();
       if (editingId) {
-        await MealCombinationModel.updateMealCombination(editingId, payload);
+        await MealCombinationModel.updateMealCombination(editingId, {
+          ...payload,
+          operatorOpenid
+        });
       } else {
         const babyUid = this.data.babyUid || getBabyUid();
         if (!babyUid) {
@@ -1259,7 +1466,8 @@ Page({
         }
         await MealCombinationModel.createMealCombination({
           ...payload,
-          babyUid
+          babyUid,
+          operatorOpenid
         });
       }
       wx.hideLoading();
@@ -1284,7 +1492,10 @@ Page({
         if (!res.confirm) return;
         try {
           wx.showLoading({ title: '删除中...' });
-          await MealCombinationModel.deleteMealCombination(id);
+          await MealCombinationModel.deleteMealCombination(id, {
+            babyUid: this.data.babyUid || getBabyUid(),
+            operatorOpenid: getOperatorOpenid()
+          });
           wx.hideLoading();
           wx.showToast({ title: '菜谱已删除', icon: 'success' });
           await this.loadMealCombinations();
@@ -1338,7 +1549,9 @@ Page({
         try {
           wx.showLoading({ title: '删除中...' });
           const babyUid = this.data.babyUid || getBabyUid();
-          await FoodModel.deleteFood(id, babyUid);
+          await FoodModel.deleteFood(id, babyUid, {
+            operatorOpenid: getOperatorOpenid()
+          });
           wx.hideLoading();
           wx.showToast({ title: '已删除', icon: 'success' });
           await this.loadFoods();

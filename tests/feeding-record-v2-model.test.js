@@ -5,6 +5,7 @@ function createDbMock(overrides = {}) {
   const writes = {
     addCollection: '',
     addData: null,
+    adds: [],
     updateCollection: '',
     updateDocId: '',
     updateData: null,
@@ -105,6 +106,7 @@ function createDbMock(overrides = {}) {
         async add({ data }) {
           writes.addCollection = name;
           writes.addData = data;
+          writes.adds.push({ collectionName: name, data });
           if ((overrides.failCollections || []).includes(name)) {
             const error = new Error(`collection ${name} does not exist`);
             error.errCode = -502005;
@@ -148,6 +150,7 @@ test('addRecord writes an active milk feeding document to feeding_records_v2 onl
 
   const result = await model.addRecord({
     babyUid: 'baby-1',
+    operatorOpenid: 'openid-creator',
     date: '2026-05-20',
     startTime: '08:30',
     formulaComponents: [],
@@ -166,6 +169,9 @@ test('addRecord writes an active milk feeding document to feeding_records_v2 onl
   assert.equal(writes.addData.createdAt, '__server_date__');
   assert.equal(writes.addData.updatedAt, '__server_date__');
   assert.equal(writes.addData.deletedAt, null);
+  assert.equal(writes.addData.createdBy, 'openid-creator');
+  assert.equal(writes.addData.updatedBy, 'openid-creator');
+  assert.equal(writes.addData.deletedBy, '');
 });
 
 test('updateRecord preserves original createdAt and updates updatedAt', async () => {
@@ -174,25 +180,44 @@ test('updateRecord preserves original createdAt and updates updatedAt', async ()
 
   await model.updateRecord('record-1', {
     startTime: '09:00',
-    createdAt: 'should-not-overwrite'
+    createdAt: 'should-not-overwrite',
+    createdBy: 'should-not-overwrite',
+    operatorOpenid: 'openid-editor'
   });
 
   assert.equal(writes.updateCollection, 'feeding_records_v2');
   assert.equal(writes.updateDocId, 'record-1');
   assert.equal(writes.updateData.startTime, '09:00');
   assert.equal(writes.updateData.createdAt, undefined);
+  assert.equal(writes.updateData.createdBy, undefined);
+  assert.equal(writes.updateData.operatorOpenid, undefined);
   assert.equal(writes.updateData.updatedAt, '__server_date__');
+  assert.equal(writes.updateData.updatedBy, 'openid-editor');
 });
 
-test('deleteRecord hard deletes a v2 feeding record', async () => {
+test('deleteRecord hard deletes a v2 feeding record and writes an audit log', async () => {
   const { db, writes } = createDbMock();
   const model = loadFreshModel(db);
 
-  await model.deleteRecord('record-1');
+  await model.deleteRecord('record-1', {
+    babyUid: 'baby-1',
+    operatorOpenid: 'openid-deleter'
+  });
 
   assert.equal(writes.removeCollection, 'feeding_records_v2');
   assert.equal(writes.removeDocId, 'record-1');
   assert.equal(writes.updateCollection, '');
+  assert.deepEqual(writes.adds.find(item => item.collectionName === 'audit_logs')?.data, {
+    schemaVersion: 1,
+    recordType: 'audit_log',
+    action: 'delete',
+    collection: 'feeding_records_v2',
+    recordId: 'record-1',
+    babyUid: 'baby-1',
+    operatorOpenid: 'openid-deleter',
+    status: 'active',
+    createdAt: '__server_date__'
+  });
   assert.equal(writes.touchedLegacyFeedingRecordsForWrite, false);
 });
 
@@ -201,6 +226,7 @@ test('upsertGrowthRecordForDate creates a v2 growth record without touching lega
   const model = loadFreshModel(db);
 
   await model.upsertGrowthRecordForDate('baby-1', '2026-05-21', {
+    operatorOpenid: 'openid-creator',
     weight: 5.2,
     height: 58
   });
@@ -216,6 +242,10 @@ test('upsertGrowthRecordForDate creates a v2 growth record without touching lega
   assert.equal(writes.addData.status, 'active');
   assert.equal(writes.addData.source, 'data_records_v2');
   assert.equal(writes.addData.schemaVersion, 1);
+  assert.equal(writes.addData.createdBy, 'openid-creator');
+  assert.equal(writes.addData.updatedBy, 'openid-creator');
+  assert.equal(writes.addData.deletedAt, null);
+  assert.equal(writes.addData.deletedBy, '');
   assert.equal(writes.touchedLegacyFeedingRecordsForWrite, false);
 });
 

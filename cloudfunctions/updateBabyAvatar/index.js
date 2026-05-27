@@ -41,7 +41,8 @@ exports.main = async (event = {}, context) => {
       data: {
         avatarUrl,
         avatarFileId,
-        updatedAt: db.serverDate()
+        updatedAt: db.serverDate(),
+        updatedBy: OPENID
       }
     });
   } else {
@@ -50,8 +51,15 @@ exports.main = async (event = {}, context) => {
         babyUid,
         avatarUrl,
         avatarFileId,
+        schemaVersion: 1,
+        recordType: 'baby_info',
+        status: 'active',
         createdAt: db.serverDate(),
-        updatedAt: db.serverDate()
+        updatedAt: db.serverDate(),
+        deletedAt: null,
+        createdBy: OPENID,
+        updatedBy: OPENID,
+        deletedBy: ''
       }
     });
   }

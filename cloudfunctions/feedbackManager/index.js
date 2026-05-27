@@ -12,6 +12,27 @@ function isDeveloperOpenid(openid = '') {
   return DEVELOPER_OPENIDS.includes((openid || '').trim());
 }
 
+async function recordHardDelete({ collectionName = '', recordId = '', babyUid = '', operatorOpenid = '' } = {}) {
+  if (!collectionName || !recordId) return;
+  try {
+    await db.collection('audit_logs').add({
+      data: {
+        schemaVersion: 1,
+        recordType: 'audit_log',
+        action: 'delete',
+        collection: collectionName,
+        recordId,
+        babyUid,
+        operatorOpenid,
+        status: 'active',
+        createdAt: db.serverDate()
+      }
+    });
+  } catch (error) {
+    console.warn('写入删除审计日志失败:', error);
+  }
+}
+
 async function resolveBabyName(babyUid = '', babyName = '') {
   const trimmedName = (babyName || '').trim();
   if (trimmedName) {
@@ -88,8 +109,15 @@ async function submitFeedback(event = {}, openid = '') {
         envVersion: miniProgramInfo.envVersion || '',
         version: miniProgramInfo.version || ''
       },
+      schemaVersion: 1,
+      recordType: 'feedback_message',
       status: 'new',
       createdAt: db.serverDate(),
+      updatedAt: db.serverDate(),
+      deletedAt: null,
+      createdBy: openid,
+      updatedBy: openid,
+      deletedBy: '',
       clientCreatedAt: new Date().toISOString()
     }
   });
@@ -138,7 +166,8 @@ async function updateFeedbackStatus(event = {}, openid = '') {
   await db.collection('feedback_messages').doc(id).update({
     data: {
       status,
-      updatedAt: db.serverDate()
+      updatedAt: db.serverDate(),
+      updatedBy: openid
     }
   });
 
@@ -156,7 +185,21 @@ async function deleteFeedback(event = {}, openid = '') {
     return { ok: false, message: '缺少反馈记录标识' };
   }
 
+  let babyUid = '';
+  try {
+    const existing = await db.collection('feedback_messages').doc(id).get();
+    babyUid = existing?.data?.babyUid || '';
+  } catch (error) {
+    console.warn('读取反馈删除审计上下文失败:', error);
+  }
+
   await db.collection('feedback_messages').doc(id).remove();
+  await recordHardDelete({
+    collectionName: 'feedback_messages',
+    recordId: id,
+    babyUid,
+    operatorOpenid: openid
+  });
 
   return { ok: true };
 }

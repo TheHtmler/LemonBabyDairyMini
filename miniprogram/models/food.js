@@ -1,6 +1,13 @@
 // 食物数据模型，支持自定义食物库与营养计算
 const db = wx.cloud.database();
 const _ = db.command;
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid,
+  stripProtectedAuditFields
+} = require('../utils/auditFields');
+const { recordHardDelete } = require('./auditLog');
 
 class FoodModel {
   constructor() {
@@ -163,19 +170,26 @@ class FoodModel {
     }
 
     try {
-      const sharedBabyUids = Array.isArray(foodData.sharedBabyUids) ? [...foodData.sharedBabyUids] : [];
-      if (foodData.babyUid && !sharedBabyUids.includes(foodData.babyUid)) {
-        sharedBabyUids.push(foodData.babyUid);
+      const operatorOpenid = resolveOperatorOpenid(foodData);
+      const cleanedFoodData = stripProtectedAuditFields(foodData);
+      const timestamp = db.serverDate();
+      const sharedBabyUids = Array.isArray(cleanedFoodData.sharedBabyUids) ? [...cleanedFoodData.sharedBabyUids] : [];
+      if (cleanedFoodData.babyUid && !sharedBabyUids.includes(cleanedFoodData.babyUid)) {
+        sharedBabyUids.push(cleanedFoodData.babyUid);
       }
 
       const payload = {
-        ...foodData,
+        ...cleanedFoodData,
         sharedBabyUids,
-        image: foodData.image ? String(foodData.image).trim() : '',
-        baseQuantity: Number(foodData.baseQuantity) || 100,
-        nutritionPerUnit: this._normalizeNutrition(foodData.nutritionPerUnit),
-        createdAt: db.serverDate(),
-        updatedAt: db.serverDate()
+        image: cleanedFoodData.image ? String(cleanedFoodData.image).trim() : '',
+        baseQuantity: Number(cleanedFoodData.baseQuantity) || 100,
+        nutritionPerUnit: this._normalizeNutrition(cleanedFoodData.nutritionPerUnit),
+        ...buildCreateAuditFields({
+          timestamp,
+          operatorOpenid,
+          recordType: 'food_catalog',
+          schemaVersion: 1
+        })
       };
 
       const res = await this.collection.add({
@@ -194,7 +208,7 @@ class FoodModel {
    * @param {string} foodId
    * @param {string} babyUid
    */
-  async deleteFood(foodId, babyUid) {
+  async deleteFood(foodId, babyUid, options = {}) {
     if (!foodId) {
       throw new Error('缺少食物ID');
     }
@@ -214,6 +228,13 @@ class FoodModel {
       if (removed === 0) {
         throw new Error('未找到可删除的自定义食物');
       }
+      await recordHardDelete({
+        db,
+        collectionName: 'food_catalog',
+        recordId: foodId,
+        babyUid,
+        operatorOpenid: resolveOperatorOpenid(options)
+      });
       return true;
     } catch (error) {
       console.error('删除食物失败:', error);
@@ -239,12 +260,17 @@ class FoodModel {
     }
 
     try {
+      const operatorOpenid = resolveOperatorOpenid(foodData);
+      const cleanedFoodData = stripProtectedAuditFields(foodData);
       const payload = {
-        ...foodData,
-        image: foodData.image ? String(foodData.image).trim() : '',
-        baseQuantity: Number(foodData.baseQuantity) || 100,
-        nutritionPerUnit: this._normalizeNutrition(foodData.nutritionPerUnit),
-        updatedAt: db.serverDate()
+        ...cleanedFoodData,
+        image: cleanedFoodData.image ? String(cleanedFoodData.image).trim() : '',
+        baseQuantity: Number(cleanedFoodData.baseQuantity) || 100,
+        nutritionPerUnit: this._normalizeNutrition(cleanedFoodData.nutritionPerUnit),
+        ...buildUpdateAuditFields({
+          timestamp: db.serverDate(),
+          operatorOpenid
+        })
       };
       delete payload.sharedBabyUids;
 

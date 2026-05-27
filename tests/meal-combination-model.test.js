@@ -5,6 +5,7 @@ function createDbMock(overrides = {}) {
   const writes = {
     addCollection: '',
     addData: null,
+    adds: [],
     updateCollection: '',
     updateDocId: '',
     updateData: null,
@@ -120,6 +121,7 @@ function createDbMock(overrides = {}) {
         async add({ data }) {
           writes.addCollection = name;
           writes.addData = data;
+          writes.adds.push({ collectionName: name, data });
           markWrite(name);
           return { _id: 'combo-1' };
         }
@@ -156,6 +158,7 @@ test('createMealCombination writes a normalized combination to meal_combinations
 
   const result = await model.createMealCombination({
     babyUid: 'baby-1',
+    operatorOpenid: 'openid-creator',
     name: '上午米粉组合',
     items: [
       {
@@ -253,6 +256,10 @@ test('createMealCombination writes a normalized combination to meal_combinations
   assert.equal(writes.addData.lastUsedAt, null);
   assert.equal(writes.addData.createdAt, '__server_date__');
   assert.equal(writes.addData.updatedAt, '__server_date__');
+  assert.equal(writes.addData.deletedAt, null);
+  assert.equal(writes.addData.createdBy, 'openid-creator');
+  assert.equal(writes.addData.updatedBy, 'openid-creator');
+  assert.equal(writes.addData.deletedBy, '');
 });
 
 test('findByBaby returns active combinations sorted newest first', async () => {
@@ -351,6 +358,8 @@ test('updateMealCombination strips unsafe fields and rewrites normalized items',
     _id: 'unsafe-id',
     id: 'unsafe-legacy-id',
     createdAt: 'should-not-overwrite',
+    createdBy: 'should-not-overwrite',
+    operatorOpenid: 'openid-editor',
     name: '更新后的组合',
     items: [
       {
@@ -392,8 +401,11 @@ test('updateMealCombination strips unsafe fields and rewrites normalized items',
   assert.equal(writes.updateData._id, undefined);
   assert.equal(writes.updateData.id, undefined);
   assert.equal(writes.updateData.createdAt, undefined);
+  assert.equal(writes.updateData.createdBy, undefined);
+  assert.equal(writes.updateData.operatorOpenid, undefined);
   assert.equal(writes.updateData.name, '更新后的组合');
   assert.equal(writes.updateData.updatedAt, '__server_date__');
+  assert.equal(writes.updateData.updatedBy, 'openid-editor');
   assert.deepEqual(writes.updateData.items, [
     {
       foodId: 'food-avocado',
@@ -433,19 +445,67 @@ test('updateMealCombination strips unsafe fields and rewrites normalized items',
   ]);
 });
 
-test('deleteMealCombination soft deletes the combination', async () => {
+test('deleteMealCombination hard deletes the combination and writes an audit log', async () => {
   const { db, writes } = createDbMock();
   const model = loadFreshModel(db);
 
-  await model.deleteMealCombination('combo-1');
+  await model.deleteMealCombination('combo-1', {
+    babyUid: 'baby-1',
+    operatorOpenid: 'openid-deleter'
+  });
 
-  assert.equal(writes.updateCollection, 'meal_combinations');
-  assert.equal(writes.updateDocId, 'combo-1');
-  assert.equal(writes.updateData.status, 'deleted');
-  assert.equal(writes.updateData.updatedAt, '__server_date__');
-  assert.equal(writes.removeCollection, '');
+  assert.equal(writes.removeCollection, 'meal_combinations');
+  assert.equal(writes.removeDocId, 'combo-1');
+  assert.equal(writes.updateCollection, '');
+  assert.deepEqual(writes.adds.find(item => item.collectionName === 'audit_logs')?.data, {
+    schemaVersion: 1,
+    recordType: 'audit_log',
+    action: 'delete',
+    collection: 'meal_combinations',
+    recordId: 'combo-1',
+    babyUid: 'baby-1',
+    operatorOpenid: 'openid-deleter',
+    status: 'active',
+    createdAt: '__server_date__'
+  });
   assert.equal(writes.touchedFoodIntakeRecordsForWrite, false);
   assert.equal(writes.touchedLegacyFeedingRecordsForWrite, false);
+});
+
+test('createMealCombination rejects duplicate active names for the same baby', async () => {
+  const { db, writes } = createDbMock({
+    mealCombinationData: [
+      {
+        _id: 'combo-existing',
+        babyUid: 'baby-1',
+        status: 'active',
+        name: '早餐组合'
+      },
+      {
+        _id: 'combo-other-baby',
+        babyUid: 'baby-2',
+        status: 'active',
+        name: '早餐组合'
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await assert.rejects(
+    () => model.createMealCombination({
+      babyUid: 'baby-1',
+      name: ' 早餐组合 ',
+      items: []
+    }),
+    /同名菜谱已存在/
+  );
+
+  assert.equal(writes.addCollection, '');
+  assert.deepEqual(writes.collectionQueries[0].where, {
+    babyUid: 'baby-1',
+    status: 'active',
+    name: '早餐组合'
+  });
 });
 
 test('incrementUsage increments usageCount and sets lastUsedAt', async () => {

@@ -1,6 +1,13 @@
 const {
   normalizeFeedingRecordV2
 } = require('../utils/feedingRecordV2Utils');
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid,
+  stripProtectedAuditFields
+} = require('../utils/auditFields');
+const { recordHardDelete } = require('./auditLog');
 
 const db = wx.cloud.database();
 const feedingRecordV2Collection = db.collection('feeding_records_v2');
@@ -153,29 +160,31 @@ function latestByDate(records = [], date) {
 class FeedingRecordV2Model {
   async addRecord(data = {}) {
     const timestamp = serverDate();
+    const operatorOpenid = resolveOperatorOpenid(data);
     const res = await feedingRecordV2Collection.add({
       data: {
-        ...data,
-        schemaVersion: 1,
-        recordType: 'milk_feeding',
+        ...stripProtectedAuditFields(data),
         source: 'milk_feeding_v2',
-        status: 'active',
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        deletedAt: null
+        ...buildCreateAuditFields({
+          timestamp,
+          operatorOpenid,
+          recordType: 'milk_feeding',
+          schemaVersion: 1
+        })
       }
     });
     return res;
   }
 
   async updateRecord(recordId, data = {}) {
+    const operatorOpenid = resolveOperatorOpenid(data);
     const updateData = {
-      ...data,
-      updatedAt: serverDate()
+      ...stripProtectedAuditFields(data),
+      ...buildUpdateAuditFields({
+        timestamp: serverDate(),
+        operatorOpenid
+      })
     };
-    delete updateData._id;
-    delete updateData.id;
-    delete updateData.createdAt;
 
     await feedingRecordV2Collection.doc(recordId).update({
       data: updateData
@@ -183,14 +192,22 @@ class FeedingRecordV2Model {
     return true;
   }
 
-  async deleteRecord(recordId) {
+  async deleteRecord(recordId, options = {}) {
     await feedingRecordV2Collection.doc(recordId).remove();
+    await recordHardDelete({
+      db,
+      collectionName: 'feeding_records_v2',
+      recordId,
+      babyUid: options.babyUid || '',
+      operatorOpenid: resolveOperatorOpenid(options)
+    });
     return true;
   }
 
   async upsertGrowthRecordForDate(babyUid, date, growthData = {}) {
     const existing = await queryActiveGrowthRecord(babyUid, date);
     const timestamp = serverDate();
+    const operatorOpenid = resolveOperatorOpenid(growthData);
     const payload = {
       weight: growthData.weight || '',
       height: growthData.height || growthData.length || '',
@@ -204,7 +221,10 @@ class FeedingRecordV2Model {
         await growthRecordsV2Collection.doc(existing._id).update({
           data: {
             ...payload,
-            updatedAt: timestamp
+            ...buildUpdateAuditFields({
+              timestamp,
+              operatorOpenid
+            })
           }
         });
       } catch (error) {
@@ -224,12 +244,13 @@ class FeedingRecordV2Model {
           date,
           ...payload,
           schemaVersion: 1,
-          recordType: 'growth_record',
           source: 'data_records_v2',
-          status: 'active',
-          createdAt: timestamp,
-          updatedAt: timestamp,
-          deletedAt: null
+          ...buildCreateAuditFields({
+            timestamp,
+            operatorOpenid,
+            recordType: 'growth_record',
+            schemaVersion: 1
+          })
         }
       });
     } catch (error) {

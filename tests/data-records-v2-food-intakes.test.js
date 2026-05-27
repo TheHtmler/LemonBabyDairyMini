@@ -344,9 +344,66 @@ test('standalone meal-editor-v2 writes food_intake_records instead of feeding_re
     assert.equal(created[0].date, '2026-05-25');
     assert.equal(created[0].time, '12:30');
     assert.equal(created[0].foodName, '米粉');
+    assert.equal(created[0].sourceType, 'manual_food');
     assert.equal(created[0].nutrition.naturalProtein, 1.4);
     assert.deepEqual(dirtyDays, [{ babyUid: 'baby-1', date: '2026-05-25' }]);
     assert.equal(calls.legacyUpdates.some((write) => write.collection === 'feeding_records'), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test('standalone meal-editor-v2 preserves recipe source grouping fields when saving', async () => {
+  const { db } = createDbMock();
+  const { page, FoodIntakeRecordModel, DailySummaryV2Model, cleanup } = loadMealEditorPage(
+    db,
+    '../miniprogram/pages/meal-editor-v2/index.js'
+  );
+  const created = [];
+  FoodIntakeRecordModel.createFoodIntake = async (record) => {
+    created.push(record);
+    return { _id: `food-intake-${created.length}` };
+  };
+  DailySummaryV2Model.markDirty = async () => true;
+
+  try {
+    const recipeItem = {
+      ...buildMealItem(),
+      localId: 'combo-food-1',
+      sourceType: 'meal_combination',
+      mealCombinationSource: {
+        combinationId: 'combo-1',
+        combinationName: '午餐组合',
+        sourceGroupId: 'combo-1_group-1'
+      }
+    };
+    const manualItem = {
+      ...buildMealItem(),
+      localId: 'manual-food-1',
+      foodId: 'food-2',
+      nameSnapshot: '苹果泥'
+    };
+    const instance = createPageInstance(page, {
+      selectedDate: '2026-05-25',
+      mealDraft: {
+        mealTime: '12:30',
+        mealLabel: '午餐',
+        mealNote: '',
+        items: [recipeItem, manualItem]
+      }
+    });
+
+    await page.saveMeal.call(instance);
+
+    assert.equal(created.length, 2);
+    assert.equal(created[0].sourceType, 'meal_combination');
+    assert.deepEqual(created[0].mealCombinationSource, {
+      combinationId: 'combo-1',
+      combinationName: '午餐组合',
+      sourceGroupId: 'combo-1_group-1'
+    });
+    assert.equal(created[1].sourceType, 'manual_food');
+    assert.equal(created[1].mealCombinationSource, undefined);
   } finally {
     cleanup();
   }
@@ -576,6 +633,73 @@ test('data-records-v2 meal groups preserve planned fields and expose completion 
     assert.equal(oldGroup.items[0].plannedDisplayQuantity, '');
     assert.equal(oldGroup.items[0].hasPlannedDifference, false);
     assert.equal(Object.prototype.hasOwnProperty.call(oldGroup.items[0], 'plannedQuantity'), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test('data-records-v2 meal groups separate recipe groups from manually added foods', () => {
+  const { db } = createDbMock();
+  const { helpers, cleanup } = loadDataRecordsPage(db);
+
+  try {
+    const intakes = helpers.foodIntakeRecordsToLegacyIntakes([
+      {
+        _id: 'combo-food-1',
+        mealBatchId: 'meal-1',
+        mealLabel: '午餐',
+        time: '12:30',
+        foodName: '米粉',
+        quantity: 20,
+        unit: 'g',
+        sourceType: 'meal_combination',
+        nutrition: { calories: 72, protein: 1.4, carbs: 16, fat: 0.2 },
+        mealCombinationSource: {
+          combinationId: 'combo-1',
+          combinationName: '午餐组合',
+          sourceGroupId: 'combo-1_group-1'
+        }
+      },
+      {
+        _id: 'combo-food-2',
+        mealBatchId: 'meal-1',
+        mealLabel: '午餐',
+        time: '12:31',
+        foodName: '南瓜泥',
+        quantity: 30,
+        unit: 'g',
+        sourceType: 'meal_combination',
+        nutrition: { calories: 24, protein: 0.6, carbs: 3.6, fat: 0.15 },
+        mealCombinationSource: {
+          combinationId: 'combo-1',
+          combinationName: '午餐组合',
+          sourceGroupId: 'combo-1_group-1'
+        }
+      },
+      {
+        _id: 'manual-food-1',
+        mealBatchId: 'meal-1',
+        mealLabel: '午餐',
+        time: '12:32',
+        foodName: '苹果泥',
+        quantity: 10,
+        unit: 'g',
+        sourceType: 'manual_food',
+        nutrition: { calories: 5, protein: 0.1, carbs: 1.4, fat: 0.02 }
+      }
+    ]);
+
+    const [group] = helpers.groupFoodIntakesByMeal(intakes);
+
+    assert.equal(group.recipeGroupCount, 1);
+    assert.equal(group.manualItemCount, 1);
+    assert.equal(group.sourceSummaryText, '含 1 个菜谱 · 1 个单独食物');
+    assert.equal(group.recipeGroups.length, 1);
+    assert.equal(group.recipeGroups[0].title, '午餐组合');
+    assert.equal(group.recipeGroups[0].items.length, 2);
+    assert.equal(group.recipeGroups[0].summary.calories, 96);
+    assert.equal(group.manualItems.length, 1);
+    assert.equal(group.manualItems[0].nameSnapshot, '苹果泥');
   } finally {
     cleanup();
   }
@@ -877,11 +1001,16 @@ test('data-records-v2 food meal WXML exposes planned-vs-actual and meal combinat
   assert.doesNotMatch(wxml, /wx:if="\{\{item\.completionPercentText\}\}"/);
   assert.match(wxml, /准备/);
   assert.match(wxml, /实际/);
-  assert.match(wxml, /mealCombinationSourceText/);
   assert.match(wxml, /plannedActualText/);
+  assert.match(wxml, /recipeGroups/);
+  assert.match(wxml, /manualItems/);
+  assert.match(wxml, /meal-recipe-group/);
+  assert.match(wxml, /toggleMealRecipeGroup/);
+  assert.match(wxml, /sourceSummaryText/);
   assert.match(wxss, /\.meal-group-completion/);
   assert.match(wxss, /\.food-planned-actual/);
   assert.match(wxss, /\.meal-combination-source/);
+  assert.match(wxss, /\.meal-recipe-group/);
 });
 
 test('data-records-v2 deleting a food intake hard deletes food_intake_records and marks summary dirty', async () => {

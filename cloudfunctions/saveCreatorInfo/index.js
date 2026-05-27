@@ -93,7 +93,8 @@ exports.main = async (event, context) => {
         data: {
           phone: phone,
           name: name || existingCreator.data[0].name,
-          updatedAt: db.serverDate()
+          updatedAt: db.serverDate(),
+          updatedBy: openid
         }
       })
     } else {
@@ -104,8 +105,15 @@ exports.main = async (event, context) => {
           _openid: openid,
           phone: phone,
           name: name || '',
+          schemaVersion: 1,
+          recordType: 'baby_creator',
+          status: 'active',
           createdAt: db.serverDate(),
-          updatedAt: db.serverDate()
+          updatedAt: db.serverDate(),
+          deletedAt: null,
+          createdBy: openid,
+          updatedBy: openid,
+          deletedBy: ''
         }
       });
       console.log(`添加结果:`, addResult);

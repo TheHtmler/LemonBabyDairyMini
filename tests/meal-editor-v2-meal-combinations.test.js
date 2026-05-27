@@ -95,7 +95,8 @@ function installWx(db) {
     toasts: [],
     loading: [],
     hideLoading: 0,
-    showModal: 0
+    showModal: 0,
+    navigateTo: []
   };
 
   global.getApp = () => ({
@@ -130,6 +131,9 @@ function installWx(db) {
     showModal() {
       calls.showModal += 1;
       throw new Error('meal-editor-v2 must use custom in-page input instead of wx.showModal');
+    },
+    navigateTo(payload) {
+      calls.navigateTo.push(payload);
     },
     navigateBack() {}
   };
@@ -342,11 +346,27 @@ test('food drawer exposes food and meal combination tabs with friendly combinati
     assert.match(wxml, /drawer-tab[\s\S]*菜谱/);
     assert.match(wxml, /drawer-combination-panel/);
     assert.match(wxml, /还没有菜谱|暂无菜谱|常用菜谱/);
+    assert.match(wxml, /去添加菜谱/);
+    assert.match(wxml, /navigateToCombinationManagement/);
     assert.match(wxml, /bindinput="onCombinationNameInput"/);
     assert.doesNotMatch(wxml, /section-card combination-card/);
     assert.doesNotMatch(wxml, /onPendingNotesInput/);
     assert.doesNotMatch(wxml, /onDraftNotesInput/);
     assert.doesNotMatch(wxml, /meal-item-note/);
+  } finally {
+    cleanup();
+  }
+});
+
+test('combination management entry opens food management on the recipe tab', () => {
+  const { page, wxCalls, cleanup } = loadMealEditorPage();
+
+  try {
+    const instance = createPageInstance(page);
+    page.navigateToCombinationManagement.call(instance);
+
+    assert.equal(wxCalls.navigateTo.length, 1);
+    assert.equal(wxCalls.navigateTo[0].url, '/pages/food-management/index?tab=combination&from=meal-editor');
   } finally {
     cleanup();
   }
@@ -393,7 +413,7 @@ test('batch quantity step adds selected foods to the meal in one action', () => 
     _id: 'food-rice',
     name: '米粉',
     nutritionPerUnit: {
-      calories: 360,
+      calories: 363.5,
       protein: 7,
       carbs: 80,
       fat: 1,
@@ -442,13 +462,51 @@ test('batch quantity step adds selected foods to the meal in one action', () => 
 
     assert.equal(instance.data.mealDraft.items.length, 2);
     assert.equal(instance.data.mealDraft.items[0].quantity, 20);
-    assert.equal(instance.data.mealDraft.items[0].nutrition.calories, 72);
+    assert.equal(instance.data.mealDraft.items[0].nutrition.calories, 72.7);
+    assert.deepEqual(instance.data.mealDraft.items[0].displayNutrition, {
+      calories: 73,
+      protein: 1.4,
+      carbs: 16,
+      fat: 0.2
+    });
+    assert.equal(instance.data.displayPlannedMealSummary.calories, 97);
+    assert.equal(instance.data.displayPlannedMealSummary.carbs, 19.6);
+    assert.equal(instance.data.displayPlannedMealSummary.fat, 0.35);
+    assert.equal(instance.data.displayActualMealSummary.calories, 97);
     assert.equal(instance.data.mealDraft.items[1].quantity, 30);
     assert.equal(instance.data.drawerVisible, false);
     assert.equal(instance.data.pendingMealItems.length, 0);
   } finally {
     cleanup();
   }
+});
+
+test('meal summary separates prepared and actual values while food item keeps compact nutrition', () => {
+  const wxml = fs.readFileSync(pageWxmlPath, 'utf8');
+
+  assert.match(wxml, /meal-summary-macro-grid/);
+  assert.match(wxml, /meal-summary-macro-amounts/);
+  assert.match(wxml, /meal-summary-macro-amount-label">准备/);
+  assert.match(wxml, /meal-summary-macro-amount-label">实际/);
+  assert.match(wxml, /displayPlannedMealSummary\.calories/);
+  assert.match(wxml, /displayActualMealSummary\.calories/);
+  assert.match(wxml, /displayPlannedMealSummary\.protein/);
+  assert.match(wxml, /displayActualMealSummary\.protein/);
+  assert.match(wxml, /displayPlannedMealSummary\.carbs/);
+  assert.match(wxml, /displayActualMealSummary\.carbs/);
+  assert.match(wxml, /displayPlannedMealSummary\.fat/);
+  assert.match(wxml, /displayActualMealSummary\.fat/);
+  assert.match(wxml, /热量/);
+  assert.match(wxml, /蛋白/);
+  assert.match(wxml, /碳水/);
+  assert.match(wxml, /脂肪/);
+  assert.match(wxml, /\{\{foodItem\.nameSnapshot\}\} · \{\{foodItem\.quantity\}\}\{\{foodItem\.unit\}\}/);
+  assert.match(wxml, /meal-item-nutrition-row/);
+  assert.match(wxml, /displayNutrition\.calories/);
+  assert.match(wxml, /displayNutrition\.protein/);
+  assert.match(wxml, /displayNutrition\.carbs/);
+  assert.match(wxml, /displayNutrition\.fat/);
+  assert.doesNotMatch(wxml, /→/);
 });
 
 test('applying a combination from the add drawer stages items for quantity editing first', async () => {
@@ -479,10 +537,9 @@ test('applying a combination from the add drawer stages items for quantity editi
     assert.equal(instance.data.pendingMealItems.length, 1);
     assert.equal(instance.data.drawerStep, 'batchQuantity');
     assert.equal(instance.data.pendingMealItems[0].quantity, '10');
-    assert.deepEqual(instance.data.pendingMealItems[0].mealCombinationSource, {
-      combinationId: 'combo-1',
-      combinationName: '午餐小组合'
-    });
+    assert.equal(instance.data.pendingMealItems[0].mealCombinationSource.combinationId, 'combo-1');
+    assert.equal(instance.data.pendingMealItems[0].mealCombinationSource.combinationName, '午餐小组合');
+    assert.match(instance.data.pendingMealItems[0].mealCombinationSource.sourceGroupId, /^combo-1_/);
   } finally {
     cleanup();
   }
@@ -497,6 +554,38 @@ test('save current meal as combination action lives with current meal items inst
   assert.ok(itemsCardIndex > -1);
   assert.ok(saveActionIndex > itemsCardIndex);
   assert.ok(saveActionIndex < drawerIndex);
+  assert.match(wxml, /combination-save-btn compact \{\{mealDraft\.items\.length === 0 \? 'disabled' : ''\}\}/);
+});
+
+test('save current meal as combination is unavailable before adding foods', () => {
+  const { page, wxCalls, cleanup } = loadMealEditorPage();
+
+  try {
+    const instance = createPageInstance(page, {
+      combinationNameInputVisible: false,
+      mealDraft: {
+        mealTime: '12:30',
+        mealLabel: '午餐',
+        mealNote: '',
+        items: []
+      }
+    });
+
+    page.showSaveCombinationInput.call(instance);
+
+    assert.equal(instance.data.combinationNameInputVisible, false);
+    assert.equal(wxCalls.toasts.length, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test('meal completion copy uses easy to understand wording', () => {
+  const wxml = fs.readFileSync(pageWxmlPath, 'utf8');
+
+  assert.match(wxml, /吃了多少/);
+  assert.match(wxml, /按吃了多少计入实际营养/);
+  assert.doesNotMatch(wxml, /吃完比例/);
 });
 
 test('applying a combination prefers current catalog food and appends sourced planned items', async () => {
@@ -533,10 +622,14 @@ test('applying a combination prefers current catalog food and appends sourced pl
     assert.equal(appliedItem.nameSnapshot, '新鲜米粉');
     assert.deepEqual(appliedItem.food, catalogFood);
     assert.equal(appliedItem.plannedNutrition.calories, 10);
-    assert.deepEqual(appliedItem.mealCombinationSource, {
-      combinationId: 'combo-1',
-      combinationName: '午餐小组合'
-    });
+    assert.equal(appliedItem.sourceType, 'meal_combination');
+    assert.equal(appliedItem.mealCombinationSource.combinationId, 'combo-1');
+    assert.equal(appliedItem.mealCombinationSource.combinationName, '午餐小组合');
+    assert.match(appliedItem.mealCombinationSource.sourceGroupId, /^combo-1_/);
+    assert.equal(instance.data.mealDisplayGroups.length, 2);
+    assert.equal(instance.data.mealDisplayGroups[0].type, 'meal_combination');
+    assert.equal(instance.data.mealDisplayGroups[0].title, '午餐小组合');
+    assert.equal(instance.data.mealDisplayGroups[1].type, 'manual_food');
     assert.notEqual(appliedItem.localId, combination.items[0].localId);
     assert.deepEqual(combination, originalCombination);
     assert.equal(instance.data.completionPercent, 50);
@@ -547,6 +640,19 @@ test('applying a combination prefers current catalog food and appends sourced pl
   } finally {
     cleanup();
   }
+});
+
+test('meal editor renders grouped recipe and manual food sections', () => {
+  const wxml = fs.readFileSync(pageWxmlPath, 'utf8');
+
+  assert.match(wxml, /meal-display-group/);
+  assert.match(wxml, /meal-combination-group/);
+  assert.match(wxml, /manual-food-group/);
+  assert.match(wxml, /toggleMealDisplayGroup/);
+  assert.match(wxml, /group\.expanded/);
+  assert.match(wxml, /group\.items/);
+  assert.match(wxml, /食谱/);
+  assert.match(wxml, /单独添加/);
 });
 
 test('applying a combination falls back to foodSnapshot when catalog food is missing', async () => {

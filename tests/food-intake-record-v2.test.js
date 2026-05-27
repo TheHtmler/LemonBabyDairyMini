@@ -5,6 +5,7 @@ function createDbMock(overrides = {}) {
   const writes = {
     addCollection: '',
     addData: null,
+    adds: [],
     updateCollection: '',
     updateDocId: '',
     updateData: null,
@@ -88,6 +89,7 @@ function createDbMock(overrides = {}) {
         async add({ data }) {
           writes.addCollection = name;
           writes.addData = data;
+          writes.adds.push({ collectionName: name, data });
           if (name === 'feeding_records') {
             writes.touchedLegacyFeedingRecordsForWrite = true;
           }
@@ -127,6 +129,7 @@ test('createFoodIntake writes a food intake document to food_intake_records only
 
   const result = await model.createFoodIntake({
     babyUid: 'baby-1',
+    operatorOpenid: 'openid-creator',
     date: '2026-05-25',
     mealBatchId: 'meal-1',
     recordedAt,
@@ -192,6 +195,9 @@ test('createFoodIntake writes a food intake document to food_intake_records only
   assert.equal(writes.addData.createdAt, '__server_date__');
   assert.equal(writes.addData.updatedAt, '__server_date__');
   assert.equal(writes.addData.deletedAt, null);
+  assert.equal(writes.addData.createdBy, 'openid-creator');
+  assert.equal(writes.addData.updatedBy, 'openid-creator');
+  assert.equal(writes.addData.deletedBy, '');
 });
 
 test('createFoodIntake preserves meal combination planned fields', async () => {
@@ -247,6 +253,8 @@ test('updateFoodIntake preserves createdAt and updates updatedAt', async () => {
   await model.updateFoodIntake('food-intake-1', {
     quantity: '25',
     createdAt: 'should-not-overwrite',
+    createdBy: 'should-not-overwrite',
+    operatorOpenid: 'openid-editor',
     nutrition: {
       calories: 90,
       protein: 1.75
@@ -257,7 +265,10 @@ test('updateFoodIntake preserves createdAt and updates updatedAt', async () => {
   assert.equal(writes.updateDocId, 'food-intake-1');
   assert.equal(writes.updateData.quantity, 25);
   assert.equal(writes.updateData.createdAt, undefined);
+  assert.equal(writes.updateData.createdBy, undefined);
+  assert.equal(writes.updateData.operatorOpenid, undefined);
   assert.equal(writes.updateData.updatedAt, '__server_date__');
+  assert.equal(writes.updateData.updatedBy, 'openid-editor');
   assert.deepEqual(writes.updateData.nutrition, {
     calories: 90,
     protein: 1.75,
@@ -318,16 +329,30 @@ test('updateFoodIntake normalizes planned fields and strips unsafe keys', async 
   });
 });
 
-test('deleteFoodIntake hard deletes a food intake document', async () => {
+test('deleteFoodIntake hard deletes a food intake document and writes an audit log', async () => {
   const { db, writes } = createDbMock();
   const model = loadFreshModel(db);
 
-  await model.deleteFoodIntake('food-intake-1');
+  await model.deleteFoodIntake('food-intake-1', {
+    babyUid: 'baby-1',
+    operatorOpenid: 'openid-deleter'
+  });
 
   assert.equal(writes.removeCollection, 'food_intake_records');
   assert.equal(writes.removeDocId, 'food-intake-1');
   assert.equal(writes.updateCollection, '');
   assert.equal(writes.updateData, null);
+  assert.deepEqual(writes.adds.find(item => item.collectionName === 'audit_logs')?.data, {
+    schemaVersion: 1,
+    recordType: 'audit_log',
+    action: 'delete',
+    collection: 'food_intake_records',
+    recordId: 'food-intake-1',
+    babyUid: 'baby-1',
+    operatorOpenid: 'openid-deleter',
+    status: 'active',
+    createdAt: '__server_date__'
+  });
   assert.equal(writes.touchedLegacyFeedingRecordsForWrite, false);
 });
 

@@ -1,5 +1,12 @@
 const db = wx.cloud.database();
 const mealCombinationCollection = db.collection('meal_combinations');
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid,
+  stripProtectedAuditFields
+} = require('../utils/auditFields');
+const { recordHardDelete } = require('./auditLog');
 
 function serverDate() {
   return db.serverDate();
@@ -82,9 +89,14 @@ function normalizeCombinationItem(item = {}, index = 0) {
   };
 }
 
+function normalizeCombinationName(name = '') {
+  return String(name || '').trim();
+}
+
 function normalizeMealCombination(record = {}) {
   return {
     ...record,
+    name: normalizeCombinationName(record.name),
     schemaVersion: record.schemaVersion || 1,
     recordType: record.recordType || 'meal_combination',
     status: record.status || 'active',
@@ -97,10 +109,11 @@ function normalizeMealCombination(record = {}) {
 }
 
 function normalizeMealCombinationUpdate(data = {}) {
-  const updateData = { ...data };
-  delete updateData._id;
-  delete updateData.id;
-  delete updateData.createdAt;
+  const updateData = stripProtectedAuditFields(data);
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'name')) {
+    updateData.name = normalizeCombinationName(updateData.name);
+  }
 
   if (Object.prototype.hasOwnProperty.call(updateData, 'items')) {
     updateData.items = Array.isArray(updateData.items)
@@ -111,37 +124,67 @@ function normalizeMealCombinationUpdate(data = {}) {
   return updateData;
 }
 
+async function assertUniqueActiveName(babyUid, name) {
+  const normalizedName = normalizeCombinationName(name);
+  if (!babyUid || !normalizedName) return;
+
+  const res = await mealCombinationCollection
+    .where({
+      babyUid,
+      status: 'active',
+      name: normalizedName
+    })
+    .limit(1)
+    .get();
+
+  if ((res.data || []).length > 0) {
+    throw new Error('同名菜谱已存在');
+  }
+}
+
 async function createMealCombination(data = {}) {
   const timestamp = serverDate();
-  const normalized = normalizeMealCombination(data);
+  const operatorOpenid = resolveOperatorOpenid(data);
+  const normalized = normalizeMealCombination(stripProtectedAuditFields(data));
+  await assertUniqueActiveName(normalized.babyUid, normalized.name);
   const res = await mealCombinationCollection.add({
     data: {
       ...normalized,
       usageCount: toNumber(normalized.usageCount),
       lastUsedAt: normalized.lastUsedAt === undefined ? null : normalized.lastUsedAt,
-      createdAt: timestamp,
-      updatedAt: timestamp
+      ...buildCreateAuditFields({
+        timestamp,
+        operatorOpenid,
+        recordType: 'meal_combination',
+        schemaVersion: normalized.schemaVersion
+      })
     }
   });
   return res;
 }
 
 async function updateMealCombination(recordId, data = {}) {
+  const operatorOpenid = resolveOperatorOpenid(data);
   await mealCombinationCollection.doc(recordId).update({
     data: {
       ...normalizeMealCombinationUpdate(data),
-      updatedAt: serverDate()
+      ...buildUpdateAuditFields({
+        timestamp: serverDate(),
+        operatorOpenid
+      })
     }
   });
   return true;
 }
 
-async function deleteMealCombination(recordId) {
-  await mealCombinationCollection.doc(recordId).update({
-    data: {
-      status: 'deleted',
-      updatedAt: serverDate()
-    }
+async function deleteMealCombination(recordId, options = {}) {
+  await mealCombinationCollection.doc(recordId).remove();
+  await recordHardDelete({
+    db,
+    collectionName: 'meal_combinations',
+    recordId,
+    babyUid: options.babyUid || '',
+    operatorOpenid: resolveOperatorOpenid(options)
   });
   return true;
 }

@@ -4,6 +4,12 @@ const {
   shouldCountInNutrition,
   getDefaultTreatmentGroupName
 } = require('../utils/treatmentUtils');
+const {
+  buildCreateAuditFields,
+  buildUpdateAuditFields,
+  resolveOperatorOpenid
+} = require('../utils/auditFields');
+const { recordHardDelete } = require('./auditLog');
 
 class TreatmentRecordModel {
   constructor() {
@@ -98,12 +104,19 @@ class TreatmentRecordModel {
       if (!babyUid) {
         throw new Error('未找到宝宝信息');
       }
+      const timestamp = this.db.serverDate();
+      const operatorOpenid = resolveOperatorOpenid(data)
+        || resolveOperatorOpenid(app.globalData.openid || wx.getStorageSync('openid') || '');
       const record = this.buildRecordPayload(data, babyUid);
       const result = await this.collection.add({
         data: {
           ...record,
-          createdAt: this.db.serverDate(),
-          updatedAt: this.db.serverDate()
+          ...buildCreateAuditFields({
+            timestamp,
+            operatorOpenid,
+            recordType: record.recordType,
+            schemaVersion: 1
+          })
         }
       });
       return { success: true, data: result };
@@ -117,11 +130,16 @@ class TreatmentRecordModel {
     try {
       const app = getApp();
       const babyUid = data.babyUid || app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      const operatorOpenid = resolveOperatorOpenid(data)
+        || resolveOperatorOpenid(app.globalData.openid || wx.getStorageSync('openid') || '');
       const record = this.buildRecordPayload(data, babyUid);
       const result = await this.collection.doc(id).update({
         data: {
           ...record,
-          updatedAt: this.db.serverDate()
+          ...buildUpdateAuditFields({
+            timestamp: this.db.serverDate(),
+            operatorOpenid
+          })
         }
       });
       return { success: true, data: result };
@@ -131,9 +149,16 @@ class TreatmentRecordModel {
     }
   }
 
-  async delete(id) {
+  async delete(id, options = {}) {
     try {
       const result = await this.collection.doc(id).remove();
+      await recordHardDelete({
+        db: this.db,
+        collectionName: 'treatment_records',
+        recordId: id,
+        babyUid: options.babyUid || '',
+        operatorOpenid: resolveOperatorOpenid(options)
+      });
       return { success: true, data: result };
     } catch (error) {
       console.error('删除治疗记录失败:', error);
