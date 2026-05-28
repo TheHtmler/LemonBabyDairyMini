@@ -2,18 +2,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-test('data-records feeding persistence writes specialMilkPowder instead of specialPowderWeight', () => {
-  const source = fs.readFileSync('miniprogram/pages/data-records/index.js', 'utf8');
-
-  assert.doesNotMatch(source, /specialPowderWeight:\s*parseFloat\(this\.data\.newFeeding\.specialPowderWeight\)/);
-  assert.doesNotMatch(source, /specialPowderWeight:\s*parseFloat\(editingFeeding\.specialPowderWeight\)/);
-  assert.match(source, /specialMilkPowder:\s*parseFloat\(this\.data\.newFeeding\.(specialMilkPowder|specialPowderWeight)\)/);
-  assert.match(
-    source,
-    /specialMilkPowder:\s*(parseFloat\(editingFeeding\.(specialMilkPowder|specialPowderWeight)\)|feedingCalculator\.getSpecialMilkPowder\(editingFeeding,\s*this\.data\.nutritionSettings \|\| \{\}\))/
-  );
-});
-
 test('daily-feeding feeding persistence stores numeric milk fields instead of stringified values', () => {
   const source = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
 
@@ -40,32 +28,25 @@ test('daily-feeding feeding persistence stores numeric milk fields instead of st
 
 test('feeding page temp state uses specialMilkPowder instead of specialPowderWeight', () => {
   const dailyFeedingSource = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
-  const dataRecordsSource = fs.readFileSync('miniprogram/pages/data-records/index.js', 'utf8');
   const modalSource = fs.readFileSync('miniprogram/components/feeding-modal/feeding-modal.wxml', 'utf8');
   const quickFeedingStart = dailyFeedingSource.indexOf('quickFeedingData: {');
   const newFeedingStart = dailyFeedingSource.indexOf('newFeeding: {');
-  const dataRecordsNewFeedingStart = dataRecordsSource.indexOf('newFeeding: {');
   const quickFeedingBlock = dailyFeedingSource.slice(quickFeedingStart, quickFeedingStart + 400);
   const newFeedingBlock = dailyFeedingSource.slice(newFeedingStart, newFeedingStart + 300);
-  const dataRecordsNewFeedingBlock = dataRecordsSource.slice(dataRecordsNewFeedingStart, dataRecordsNewFeedingStart + 300);
 
   assert.match(quickFeedingBlock, /specialMilkPowder:\s*'0'/);
   assert.doesNotMatch(quickFeedingBlock, /specialPowderWeight:/);
   assert.match(newFeedingBlock, /specialMilkPowder:\s*0/);
   assert.doesNotMatch(newFeedingBlock, /specialPowderWeight:/);
-  assert.match(dataRecordsNewFeedingBlock, /specialMilkPowder:\s*0/);
-  assert.doesNotMatch(dataRecordsNewFeedingBlock, /specialPowderWeight:/);
   assert.doesNotMatch(modalSource, /specialPowderWeight \|\| feedingData\.specialMilkPowder/);
   assert.match(modalSource, /粉重 \{\{feedingData\.specialMilkPowder \|\| 0\}\} g/);
 });
 
 test('feeding saves derive totalVolume from milk volumes instead of requiring raw totalVolume input', () => {
   const dailyFeedingSource = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
-  const dataRecordsSource = fs.readFileSync('miniprogram/pages/data-records/index.js', 'utf8');
 
   assert.doesNotMatch(dailyFeedingSource, /if \(!naturalMilkVolume \|\| !totalVolume \|\| !startTime\)/);
   assert.doesNotMatch(dailyFeedingSource, /if \(!naturalMilkVolume \|\| !totalVolume\)/);
-  assert.doesNotMatch(dataRecordsSource, /if \(!naturalMilkVolume \|\| !totalVolume\)/);
 
   assert.match(dailyFeedingSource, /const totalVolumeNum = feedingCalculator\.getTotalVolume\(this\.data\.quickFeedingData\);/);
   assert.match(dailyFeedingSource, /totalVolume:\s*feedingCalculator\.getTotalVolume\(this\.data\.newFeeding\)/);
@@ -74,9 +55,6 @@ test('feeding saves derive totalVolume from milk volumes instead of requiring ra
     dailyFeedingSource,
     /totalVolume:\s*Math\.round\(feedingCalculator\.getTotalVolume\((this\.data\.)?editingFeeding\)\)/
   );
-
-  assert.match(dataRecordsSource, /totalVolume:\s*feedingCalculator\.getTotalVolume\(this\.data\.newFeeding\)/);
-  assert.match(dataRecordsSource, /totalVolume:\s*feedingCalculator\.getTotalVolume\(editingFeeding\)/);
 });
 
 test('feeding page no longer back-calculates special milk volume from editable totalVolume field', () => {
@@ -91,7 +69,7 @@ test('daily-feeding exposes a separate milk feeding editor entry', () => {
   const wxml = fs.readFileSync('miniprogram/pages/daily-feeding/index.wxml', 'utf8');
   const appJson = fs.readFileSync('miniprogram/app.json', 'utf8');
 
-  assert.match(appJson, /"pages\/milk-feeding-editor\/index"/);
+  assert.match(appJson, /"milk-feeding-editor-v2\/index"/);
   assert.match(
     wxml,
     /quick-record-btn primary" bindtap="navigateToMilkFeedingEditor">\s*<text>添加喂奶<\/text>/
@@ -100,6 +78,6 @@ test('daily-feeding exposes a separate milk feeding editor entry', () => {
   assert.match(js, /navigateToMilkFeedingEditor\(\)\s*\{/);
   assert.match(
     js,
-    /navigateToMilkFeedingEditor\(\)\s*\{[\s\S]*?wx\.navigateTo\(\{\s*url:\s*[`'"]\/pages\/milk-feeding-editor\/index/
+    /navigateToMilkFeedingEditor\(\)\s*\{[\s\S]*?wx\.navigateTo\(\{\s*url:\s*[`'"]\/pkg-milk\/milk-feeding-editor-v2\/index/
   );
 });

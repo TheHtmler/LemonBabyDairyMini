@@ -4,7 +4,7 @@ const fs = require('node:fs');
 
 test('ec-canvas supports dashed right-axis lines and diamond markers', () => {
   const source = fs.readFileSync(
-    require.resolve('../miniprogram/components/ec-canvas/ec-canvas.js'),
+    require.resolve('../miniprogram/pkg-records/components/ec-canvas/ec-canvas.js'),
     'utf8'
   );
 
@@ -16,7 +16,7 @@ test('ec-canvas supports dashed right-axis lines and diamond markers', () => {
 
 test('ec-canvas supports explicit x-axis label interval', () => {
   const source = fs.readFileSync(
-    require.resolve('../miniprogram/components/ec-canvas/ec-canvas.js'),
+    require.resolve('../miniprogram/pkg-records/components/ec-canvas/ec-canvas.js'),
     'utf8'
   );
 
@@ -25,11 +25,11 @@ test('ec-canvas supports explicit x-axis label interval', () => {
 
 test('ec-canvas supports draggable crosshair guide line', () => {
   const source = fs.readFileSync(
-    require.resolve('../miniprogram/components/ec-canvas/ec-canvas.js'),
+    require.resolve('../miniprogram/pkg-records/components/ec-canvas/ec-canvas.js'),
     'utf8'
   );
   const wxml = fs.readFileSync(
-    require.resolve('../miniprogram/components/ec-canvas/ec-canvas.wxml'),
+    require.resolve('../miniprogram/pkg-records/components/ec-canvas/ec-canvas.wxml'),
     'utf8'
   );
 

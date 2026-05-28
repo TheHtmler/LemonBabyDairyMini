@@ -12,6 +12,26 @@ function formatAmount(value) {
   return normalized.toFixed(2).replace(/\.?0+$/, '');
 }
 
+function formatCalories(value) {
+  return Math.round(normalizeNumber(value));
+}
+
+function normalizeMilkSummaryItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item = {}) => ({
+      badge: item.badge || '',
+      badgeClass: item.badgeClass || '',
+      badgeStyle: item.badgeStyle || '',
+      name: item.name || '',
+      amountText: item.amountText || ''
+    }))
+    .filter((item) => item.name || item.amountText);
+}
+
 function buildMilkSummarySegment(label, volume, powder) {
   const parts = [];
   const normalizedVolume = normalizeNumber(volume);
@@ -58,6 +78,7 @@ Component({
   data: {
     timeText: '--:--',
     milkSummaryText: '',
+    milkSummaryItems: [],
     metricItems: []
   },
   observers: {
@@ -79,6 +100,7 @@ Component({
         : 0;
       const specialMilkPowder = normalizeNumber(record.specialMilkPowder);
       const nutrition = record.nutritionDisplay || {};
+      const milkSummaryItems = normalizeMilkSummaryItems(record.milkSummaryItems);
       const milkSegments = [];
 
       const naturalMilkSummary = buildMilkSummarySegment(
@@ -96,7 +118,7 @@ Component({
       }
 
       const metricItems = [
-        { text: `热量 ${nutrition.calories || 0} kcal` },
+        { text: `热量 ${formatCalories(nutrition.calories)} kcal` },
         { text: `碳水 ${nutrition.carbs || 0} g` },
         { text: `脂肪 ${nutrition.fat || 0} g` }
       ];
@@ -112,7 +134,8 @@ Component({
 
       this.setData({
         timeText,
-        milkSummaryText: milkSegments.join(' · '),
+        milkSummaryItems,
+        milkSummaryText: milkSummaryItems.length ? '' : milkSegments.join(' · '),
         metricItems
       });
     }

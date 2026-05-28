@@ -55,11 +55,11 @@ test('analysis-report page reads and deletes reports through report repository',
 
 test('report-detail page exposes same-type trend entry', () => {
   const wxml = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/report-detail/index.wxml'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/report-detail/index.wxml'),
     'utf8'
   );
   const js = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/report-detail/index.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/report-detail/index.js'),
     'utf8'
   );
 
@@ -71,7 +71,7 @@ test('report-detail page exposes same-type trend entry', () => {
 
 test('report-detail page loads and deletes reports through report repository', () => {
   const js = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/report-detail/index.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/report-detail/index.js'),
     'utf8'
   );
 

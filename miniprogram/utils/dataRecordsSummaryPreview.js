@@ -1,3 +1,8 @@
+const {
+POWDER_CATEGORY_META,
+buildCategoryBadgeStyle
+} = require('./formulaPowderUtils');
+
 function normalizeValue(value, fallback = '0') {
 if (value === undefined || value === null || value === '') {
 return fallback;
@@ -44,6 +49,180 @@ return parts.map(({ label, value }) => `${label} ${formatTwoDecimals(value)}g`).
 function buildStatValue(value, unit) {
 return `${normalizeValue(value)} ${unit}`;
 }
+function roundDisplayNumber(value, precision = 2) {
+const num = Number(value || 0);
+const rounded = Number(num.toFixed(precision));
+return normalizeValue(rounded);
+}
+function roundDisplayInteger(value) {
+const num = Number(value || 0);
+return normalizeValue(Math.round(num));
+}
+function formatAmount(value) {
+const num = Number(value || 0);
+if (!num) return '';
+return roundDisplayNumber(num);
+}
+function formatVolume(value) {
+const num = Number(value || 0);
+if (!num) return '';
+return roundDisplayInteger(num);
+}
+function buildAmountText(parts = []) {
+return parts.filter(Boolean).join(' / ');
+}
+function getComponentKey(component = {}) {
+if (component.kind === 'breast_milk') return 'breast_milk';
+return [
+component.kind || '',
+component.powderId || '',
+component.powderName || '',
+component.category || ''
+].join(':');
+}
+function getComponentBase(component = {}) {
+if (component.kind === 'breast_milk') {
+return {
+badge: '母',
+badgeClass: 'breast',
+badgeStyle: '',
+name: '母乳',
+proteinRole: 'natural'
+};
+}
+const categoryMeta = POWDER_CATEGORY_META[component.category] || {};
+return {
+badge: component.categoryShortLabel || categoryMeta.shortLabel || '奶',
+badgeClass: component.categoryBadgeClass || categoryMeta.badgeClass || '',
+badgeStyle: component.categoryBadgeStyle || (categoryMeta.shortLabel ? buildCategoryBadgeStyle(categoryMeta) : ''),
+name: component.powderName || '配方粉',
+proteinRole: component.proteinRole || 'natural'
+};
+}
+function calculateComponentStats(component = {}) {
+const nutrition = component.nutritionSnapshot || {};
+const isBreast = component.kind === 'breast_milk';
+const factor = isBreast
+? Number(component.volume || 0) / 100
+: Number(component.powderWeight || 0) / 100;
+return {
+volume: isBreast ? Number(component.volume || 0) : Number(component.waterVolume || 0),
+powderWeight: isBreast ? 0 : Number(component.powderWeight || 0),
+calories: Number(nutrition.calories || 0) * factor,
+protein: Number(nutrition.protein || 0) * factor,
+carbs: Number(nutrition.carbs || 0) * factor,
+fat: Number(nutrition.fat || 0) * factor
+};
+}
+function buildProteinBreakdownText(row = {}) {
+const parts = [];
+if (row.naturalProtein > 0) {
+parts.push(`天然${roundDisplayNumber(row.naturalProtein)}g`);
+}
+if (row.specialProtein > 0) {
+parts.push(`特殊${roundDisplayNumber(row.specialProtein)}g`);
+}
+if (parts.length) return parts.join('/');
+if (row.hasZeroProtein) return '无蛋白热量';
+const fallbackLabel = row.proteinRole === 'special' ? '特殊' : '天然';
+return `${fallbackLabel}${roundDisplayNumber(row.protein)}g`;
+}
+function buildProteinMetricText(row = {}) {
+if (row.naturalProtein > 0 && row.specialProtein <= 0) {
+return {
+label: '天然蛋白',
+value: `${roundDisplayNumber(row.naturalProtein)}g`
+};
+}
+if (row.specialProtein > 0 && row.naturalProtein <= 0) {
+return {
+label: '特殊蛋白',
+value: `${roundDisplayNumber(row.specialProtein)}g`
+};
+}
+if (row.protein > 0) {
+return {
+label: '蛋白',
+value: `${roundDisplayNumber(row.protein)}g`
+};
+}
+return {
+label: row.hasZeroProtein ? '无蛋白热量' : '蛋白',
+value: '0g'
+};
+}
+function buildMilkComponentRows(feedings = []) {
+const rowMap = new Map();
+(feedings || [])
+.filter((feeding) => feeding?.isV2FeedingRecord && Array.isArray(feeding.formulaComponents))
+.flatMap((feeding) => feeding.formulaComponents)
+.forEach((component = {}) => {
+if (component.kind !== 'breast_milk' && component.kind !== 'formula_powder') return;
+const key = getComponentKey(component);
+const stats = calculateComponentStats(component);
+const base = getComponentBase(component);
+const current = rowMap.get(key) || {
+...base,
+volume: 0,
+powderWeight: 0,
+calories: 0,
+protein: 0,
+naturalProtein: 0,
+specialProtein: 0,
+carbs: 0,
+fat: 0,
+hasZeroProtein: false
+};
+current.volume += stats.volume;
+current.powderWeight += stats.powderWeight;
+current.calories += stats.calories;
+current.protein += stats.protein;
+if (component.proteinRole === 'special') {
+current.specialProtein += stats.protein;
+} else if (component.proteinRole === 'none') {
+current.hasZeroProtein = true;
+} else {
+current.naturalProtein += stats.protein;
+}
+current.carbs += stats.carbs;
+current.fat += stats.fat;
+rowMap.set(key, current);
+});
+return Array.from(rowMap.values()).map((row) => {
+const isZeroProtein = row.proteinRole === 'none';
+const isSpecial = row.proteinRole === 'special';
+const proteinRoleText = isZeroProtein ? '无蛋白热量' : (isSpecial ? '特殊' : '天然');
+const proteinValueText = isZeroProtein ? '' : `${roundDisplayNumber(row.protein)}g`;
+const proteinBreakdownText = buildProteinBreakdownText(row);
+const proteinMetricText = buildProteinMetricText(row);
+return {
+badge: row.badge,
+badgeClass: row.badgeClass,
+badgeStyle: row.badgeStyle,
+name: row.name,
+amountText: buildAmountText([
+row.volume > 0 ? `${formatVolume(row.volume)}ml` : '',
+row.powderWeight > 0 ? `粉${formatAmount(row.powderWeight)}g` : ''
+]),
+primaryText: `${roundDisplayInteger(row.calories)} kcal`,
+secondaryText: proteinBreakdownText,
+proteinRoleText,
+proteinValueText,
+proteinBreakdownText,
+proteinLabelText: proteinMetricText.label,
+proteinAmountText: proteinMetricText.value,
+carbsText: `${roundDisplayNumber(row.carbs)}g`,
+fatText: `${roundDisplayNumber(row.fat)}g`,
+macroText: `碳水 ${roundDisplayNumber(row.carbs)}g · 脂肪 ${roundDisplayNumber(row.fat)}g`,
+calories: Number(row.calories.toFixed(2)),
+protein: Number(row.protein.toFixed(2)),
+naturalProtein: Number(row.naturalProtein.toFixed(2)),
+specialProtein: Number(row.specialProtein.toFixed(2)),
+carbs: Number(row.carbs.toFixed(2)),
+fat: Number(row.fat.toFixed(2))
+};
+});
+}
 function buildCoefficientValue(value) {
 return value !== undefined && value !== null && value !== ''
 ? `${value} g/kg/d`
@@ -80,6 +259,12 @@ const foodFat = toNumber(foodOverview.fat);
 const treatmentFat = toNumber(treatmentOverview.fat);
 const normalMilkLabel = input.naturalMilkType === 'breast' ? '母' : '普';
 const normalMilkColumnLabel = input.naturalMilkType === 'breast' ? '母乳' : '普奶';
+const feedingRecordCount = Array.isArray(input.feedings) ? input.feedings.length : 0;
+const milkComponentRows = buildMilkComponentRows(input.feedings || []);
+const hasMilkComponentRows = milkComponentRows.length > 0;
+const useComponentMilkSection = input.isV2RecordsPage || hasMilkComponentRows;
+const componentCalories = milkComponentRows.reduce((total, row) => total + (row.calories || 0), 0);
+const componentProtein = milkComponentRows.reduce((total, row) => total + (row.protein || 0), 0);
 const naturalProteinTotal = toNumber(input.proteinSummaryDisplay?.natural);
 const specialProteinTotal = toNumber(input.proteinSummaryDisplay?.special);
 const naturalMilkProtein = Math.min(naturalProteinTotal, toNumber(normalMilk.protein));
@@ -157,7 +342,14 @@ sourceSections: [
 {
 label: '喂奶',
 type: 'milk',
-summaryText: `${normalMilkColumnLabel} ${normalizeValue(normalMilk.volume || 0)}ml ${normalizeValue(normalMilk.calories || 0)}kcal ${formatTwoDecimals(normalMilk.protein || 0)}g蛋白 · 特奶 ${normalizeValue(specialMilk.volume || 0)}ml ${normalizeValue(specialMilk.calories || 0)}kcal ${formatTwoDecimals(specialMilk.protein || 0)}g蛋白`,
+...(useComponentMilkSection ? {
+variant: 'components',
+componentRows: milkComponentRows,
+meta: `${feedingRecordCount}条记录`
+} : {}),
+summaryText: useComponentMilkSection
+? `总奶量 ${normalizeValue(input.totalMilk || totalMilkVolume)}ml · 热量 ${roundDisplayNumber(componentCalories)}kcal · 蛋白 ${roundDisplayNumber(componentProtein)}g`
+: `${normalMilkColumnLabel} ${normalizeValue(normalMilk.volume || 0)}ml ${normalizeValue(normalMilk.calories || 0)}kcal ${formatTwoDecimals(normalMilk.protein || 0)}g蛋白 · 特奶 ${normalizeValue(specialMilk.volume || 0)}ml ${normalizeValue(specialMilk.calories || 0)}kcal ${formatTwoDecimals(specialMilk.protein || 0)}g蛋白`,
 columns: [
 {
 label: normalMilkColumnLabel,

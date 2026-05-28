@@ -4,11 +4,11 @@ const fs = require('node:fs');
 
 test('data-analysis page uses grouped dashboard layout', () => {
   const wxml = fs.readFileSync(
-    require.resolve('../miniprogram/pages/data-analysis/index.wxml'),
+    require.resolve('../miniprogram/pkg-report/data-analysis/index.wxml'),
     'utf8'
   );
   const wxss = fs.readFileSync(
-    require.resolve('../miniprogram/pages/data-analysis/index.wxss'),
+    require.resolve('../miniprogram/pkg-report/data-analysis/index.wxss'),
     'utf8'
   );
 

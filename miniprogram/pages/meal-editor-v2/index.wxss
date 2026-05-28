@@ -1,0 +1,9 @@
+.redirect-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a6d1f;
+  background: #fff8dc;
+  font-size: 28rpx;
+}

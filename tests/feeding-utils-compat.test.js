@@ -137,3 +137,119 @@ test('validateFeedingData accepts special-only feeding and uses derived total vo
     }
   );
 });
+
+test('calculateFeedingMilkNutrition summarizes legacy breast and special milk feeding', () => {
+  const summary = calculator.calculateFeedingMilkNutrition(
+    {
+      naturalMilkType: 'breast',
+      naturalMilkVolume: 40,
+      specialMilkVolume: 50,
+      specialMilkPowder: 5
+    },
+    {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      special_milk_protein: 10,
+      special_milk_calories: 500,
+      special_milk_ratio: {
+        powder: 10,
+        water: 100
+      }
+    }
+  );
+
+  assert.equal(summary.totalVolume, 90);
+  assert.equal(summary.totalPowderWeight, 5);
+  assert.equal(summary.naturalProtein, 0.44);
+  assert.equal(summary.specialProtein, 0.5);
+  assert.equal(summary.protein, 0.94);
+  assert.equal(summary.calories, 51.8);
+});
+
+test('calculateFeedingMilkNutrition summarizes legacy formula and special milk feeding', () => {
+  const summary = calculator.calculateFeedingMilkNutrition(
+    {
+      naturalMilkType: 'formula',
+      naturalMilkVolume: 60,
+      formulaPowderWeight: 9,
+      specialMilkVolume: 40,
+      specialMilkPowder: 6
+    },
+    {
+      formula_milk_protein: 10,
+      formula_milk_calories: 500,
+      formula_milk_ratio: {
+        powder: 4.5,
+        water: 30
+      },
+      special_milk_protein: 12,
+      special_milk_calories: 400,
+      special_milk_ratio: {
+        powder: 13.5,
+        water: 90
+      }
+    }
+  );
+
+  assert.equal(summary.totalVolume, 100);
+  assert.equal(summary.totalPowderWeight, 15);
+  assert.equal(summary.naturalProtein, 0.9);
+  assert.equal(summary.specialProtein, 0.72);
+  assert.equal(summary.protein, 1.62);
+  assert.equal(summary.calories, 69);
+});
+
+test('calculateFeedingMilkNutrition summarizes new formulaComponents including zero-protein energy powder', () => {
+  const summary = calculator.calculateFeedingMilkNutrition({
+    formulaComponents: [
+      {
+        kind: 'breast_milk',
+        volume: 40
+      },
+      {
+        kind: 'formula_powder',
+        powderName: '普奶A',
+        proteinRole: 'natural',
+        waterVolume: 30,
+        powderWeight: 5,
+        nutritionSnapshot: {
+          protein: 10,
+          calories: 500
+        }
+      },
+      {
+        kind: 'formula_powder',
+        powderName: '特奶',
+        proteinRole: 'special',
+        waterVolume: 50,
+        powderWeight: 5,
+        nutritionSnapshot: {
+          protein: 12,
+          calories: 400
+        }
+      },
+      {
+        kind: 'formula_powder',
+        powderName: '无蛋白能量粉',
+        proteinRole: 'none',
+        waterVolume: 20,
+        powderWeight: 3,
+        nutritionSnapshot: {
+          protein: 0,
+          calories: 300
+        }
+      }
+    ]
+  }, {
+    natural_milk_protein: 1.1,
+    natural_milk_calories: 67
+  });
+
+  assert.equal(summary.totalVolume, 140);
+  assert.equal(summary.totalPowderWeight, 13);
+  assert.equal(summary.naturalProtein, 0.94);
+  assert.equal(summary.specialProtein, 0.6);
+  assert.equal(summary.protein, 1.54);
+  assert.equal(summary.zeroProteinCalories, 9);
+  assert.equal(summary.calories, 80.8);
+});

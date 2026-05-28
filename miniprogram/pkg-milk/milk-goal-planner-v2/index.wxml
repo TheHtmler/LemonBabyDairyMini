@@ -1,0 +1,175 @@
+<view class="planner-page">
+  <view class="planner-hero">
+    <view class="lemon-orbit">
+      <view class="lemon-dot dot-a"></view>
+      <view class="lemon-dot dot-b"></view>
+      <view class="lemon-dot dot-c"></view>
+    </view>
+    <view class="hero-copy">
+      <text class="hero-eyebrow">推荐这一顿</text>
+      <text class="hero-title">{{planSummary.totalVolume || '--'}} ml</text>
+      <text class="hero-desc">先看推荐奶量，不合适再换下面的小伙伴。天然蛋白、特殊蛋白和能量补充会按缺口自动平分。</text>
+    </view>
+  </view>
+
+  <view class="section-card mode-card">
+    <view class="mode-switch">
+      <view class="mode-tab {{calculationMode === 'protein' ? 'active' : ''}}" data-mode="protein" bindtap="switchCalculationMode">按蛋白系数计算</view>
+      <view class="mode-tab {{calculationMode === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="switchCalculationMode">按热量计算</view>
+    </view>
+
+    <view wx:if="{{calculationMode === 'protein'}}" class="coefficient-grid">
+      <view class="coefficient-field">
+        <text class="field-label">天然蛋白系数</text>
+        <view class="field-input-shell">
+          <input class="field-input" type="digit" value="{{naturalProteinCoefficientInput}}" data-field="naturalProteinCoefficientInput" bindinput="onCoefficientInput" />
+          <text class="field-unit">g/kg</text>
+        </view>
+      </view>
+      <view class="coefficient-field">
+        <text class="field-label">特殊蛋白系数</text>
+        <view class="field-input-shell">
+          <input class="field-input" type="digit" value="{{specialProteinCoefficientInput}}" data-field="specialProteinCoefficientInput" bindinput="onCoefficientInput" />
+          <text class="field-unit">g/kg</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{calculationMode === 'calorie'}}" class="coefficient-grid single">
+      <view class="coefficient-field">
+        <text class="field-label">热量系数</text>
+        <view class="field-input-shell">
+          <input class="field-input" type="digit" value="{{calorieCoefficientInput}}" data-field="calorieCoefficientInput" bindinput="onCoefficientInput" />
+          <text class="field-unit">kcal/kg</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card recommend-card">
+    <view class="section-header">
+      <view>
+        <text class="section-kicker">PLAN</text>
+        <text class="section-title">推荐方案</text>
+      </view>
+      <text class="section-tip" bindtap="toggleDetailPanel">查看计算依据</text>
+    </view>
+
+    <view class="summary-bubble">
+      <view class="summary-pill primary">
+        <text class="summary-value">{{planSummary.totalVolume}}</text>
+        <text class="summary-label">ml 总水/奶量</text>
+      </view>
+      <view class="summary-pill">
+        <text class="summary-value">{{planSummary.totalPowderWeight}}</text>
+        <text class="summary-label">g 奶粉</text>
+      </view>
+      <view class="summary-pill">
+        <text class="summary-value">{{planSummary.calories}}</text>
+        <text class="summary-label">kcal 热量</text>
+      </view>
+    </view>
+
+    <view wx:if="{{showDetailPanel}}" class="detail-panel">
+      <view wx:for="{{goalCards}}" wx:key="key" class="goal-card {{item.accentClass}} {{item.done ? 'done' : ''}}">
+        <text class="goal-label">{{item.title}}</text>
+        <text class="goal-value">{{item.remainingText}}</text>
+        <text class="goal-sub">已 {{item.consumedText}} / 目标 {{item.targetText}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{!planItems.length}}" class="recommend-empty">
+      <text>还没有可计算的推荐值。</text>
+      <text>请选择有营养档案和标准配比的奶粉。</text>
+    </view>
+
+    <view wx:for="{{planItems}}" wx:key="key" class="plan-item {{item.manual ? 'manual' : ''}}">
+      <view class="plan-item-head">
+        <view class="plan-name-row">
+          <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
+          <text class="plan-name">{{item.name}}</text>
+        </view>
+        <view class="manual-chip" wx:if="{{item.manual}}" data-key="{{item.key}}" bindtap="resetManualItem">手动 · 恢复</view>
+        <view class="auto-chip" wx:else>自动推荐</view>
+      </view>
+
+      <view class="plan-fields" wx:if="{{item.kind === 'breast_milk'}}">
+        <view class="plan-field">
+          <text class="field-label">体积</text>
+          <view class="field-input-shell">
+            <input class="field-input" type="digit" value="{{item.volume}}" data-key="{{item.key}}" data-field="volume" bindinput="onPlanInput" />
+            <text class="field-unit">ml</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="plan-fields dual" wx:if="{{item.kind === 'formula_powder'}}">
+        <view class="plan-field">
+          <text class="field-label">水量</text>
+          <view class="field-input-shell">
+            <input class="field-input" type="digit" value="{{item.waterVolume}}" data-key="{{item.key}}" data-field="waterVolume" bindinput="onPlanInput" />
+            <text class="field-unit">ml</text>
+          </view>
+        </view>
+        <view class="link-mark">⇄</view>
+        <view class="plan-field">
+          <text class="field-label">粉重</text>
+          <view class="field-input-shell">
+            <input class="field-input" type="digit" value="{{item.powderWeight}}" data-key="{{item.key}}" data-field="powderWeight" bindinput="onPlanInput" />
+            <text class="field-unit">g</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="nutrition-line">
+        <text>{{item.nutritionText}}</text>
+        <text wx:if="{{item.role === 'natural'}}">天然蛋白 {{item.naturalProtein}}g</text>
+        <text wx:if="{{item.role === 'special'}}">特殊蛋白 {{item.specialProtein}}g</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card chooser-card">
+    <view class="section-header">
+      <view>
+        <text class="section-kicker">ADJUST</text>
+        <text class="section-title">换奶粉小伙伴</text>
+      </view>
+      <text class="section-tip">可多选</text>
+    </view>
+
+    <view wx:for="{{optionGroups}}" wx:key="key" class="source-group {{item.accentClass}}">
+      <view class="source-group-head">
+        <text class="source-title">{{item.title}}</text>
+        <text class="source-remain">缺口 {{item.remainingText}}</text>
+      </view>
+      <view wx:if="{{!item.options.length}}" class="source-empty">{{item.emptyText}}</view>
+      <view wx:else class="source-options">
+        <view
+          wx:for="{{item.options}}"
+          wx:for-item="option"
+          wx:key="key"
+          class="source-option-card {{option.selected ? 'selected' : ''}}"
+        >
+          <view class="source-chip {{option.selected ? 'selected' : ''}}" data-key="{{option.key}}" bindtap="toggleSource">
+            <text class="category-badge {{option.categoryBadgeClass}}" style="{{option.categoryBadgeStyle}}">{{option.categoryShortLabel}}</text>
+            <text class="source-name">{{option.name}}</text>
+            <text class="source-check">{{option.selected ? '已选' : '+'}}</text>
+          </view>
+          <view wx:if="{{option.selected && option.allocationPercent > 0}}" class="allocation-row">
+            <text class="allocation-label">分配占比</text>
+            <view class="allocation-input-shell">
+              <input class="allocation-input" type="digit" value="{{option.allocationPercent}}" data-key="{{option.key}}" bindinput="onAllocationInput" />
+              <text class="field-unit">%</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer-bar">
+    <button class="footer-btn ghost" bindtap="cancelPlanner">取消</button>
+    <button class="footer-btn primary" bindtap="applyPlanToEditor">应用到本次喂奶</button>
+  </view>
+</view>

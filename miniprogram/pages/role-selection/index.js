@@ -236,7 +236,7 @@ Page({
       if (role === 'creator') {
         // 创建者跳转到宝宝信息页面
         wx.redirectTo({
-          url: '/pages/baby-info/index?firstLogin=true&role=creator',
+          url: '/pkg-misc/baby-info/index?firstLogin=true&role=creator',
         });
       } else {
         // 参与者逻辑

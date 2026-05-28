@@ -255,7 +255,7 @@ Page({
       ? `&type=${this.data.selectedFilterType}`
       : '';
     wx.navigateTo({
-      url: `/pages/add-report/index?mode=add${typeQuery}`
+      url: `/pkg-report/add-report/index?mode=add${typeQuery}`
     });
   },
 
@@ -264,7 +264,7 @@ Page({
     if (!reportId) return;
 
     wx.navigateTo({
-      url: `/pages/add-report/index?reportId=${reportId}&mode=edit`
+      url: `/pkg-report/add-report/index?reportId=${reportId}&mode=edit`
     });
   },
 

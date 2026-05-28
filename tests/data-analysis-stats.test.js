@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 function loadDataAnalysisPage() {
-  const pagePath = require.resolve('../miniprogram/pages/data-analysis/index.js');
+  const pagePath = require.resolve('../miniprogram/pkg-report/data-analysis/index.js');
   const nutritionPath = require.resolve('../miniprogram/models/nutrition.js');
   delete require.cache[pagePath];
   delete require.cache[nutritionPath];

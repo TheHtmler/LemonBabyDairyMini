@@ -111,42 +111,10 @@ function loadDailyFeedingPage(options = {}) {
     require.resolve('../miniprogram/models/treatmentRecord.js'),
     require.resolve('../miniprogram/models/food.js'),
     require.resolve('../miniprogram/models/invitation.js'),
+    require.resolve('../miniprogram/models/feedingRecordV2.js'),
+    require.resolve('../miniprogram/models/dailySummaryV2.js'),
     require.resolve('../miniprogram/utils/feedingRecordStore.js'),
-    require.resolve('../miniprogram/utils/index.js')
-  ];
-  modulePaths.forEach((modulePath) => {
-    delete require.cache[modulePath];
-  });
-
-  const previousPage = global.Page;
-  const previousWx = global.wx;
-  const previousGetApp = global.getApp;
-  let pageConfig = null;
-
-  global.wx = options.wx || createDefaultWx(options.databaseFactory);
-  global.getApp = () => options.getAppReturn || { globalData: {} };
-  global.Page = (config) => {
-    pageConfig = config;
-  };
-
-  require(pagePath);
-
-  global.Page = previousPage;
-  global.wx = previousWx;
-  global.getApp = previousGetApp;
-  return pageConfig;
-}
-
-function loadDataRecordsPage(options = {}) {
-  const pagePath = require.resolve('../miniprogram/pages/data-records/index.js');
-  const modulePaths = [
-    pagePath,
-    require.resolve('../miniprogram/models/nutrition.js'),
-    require.resolve('../miniprogram/models/medicationRecord.js'),
-    require.resolve('../miniprogram/models/treatmentRecord.js'),
-    require.resolve('../miniprogram/models/food.js'),
-    require.resolve('../miniprogram/models/invitation.js'),
-    require.resolve('../miniprogram/utils/feedingRecordStore.js'),
+    require.resolve('../miniprogram/utils/dataRecordsV2Adapter.js'),
     require.resolve('../miniprogram/utils/index.js')
   ];
   modulePaths.forEach((modulePath) => {
@@ -349,7 +317,7 @@ test('daily-feeding routes add and edit actions to milk feeding editor with cont
   global.wx = wx;
   try {
     page.navigateToMilkFeedingEditor.call(instance);
-    assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
+    assert.match(navigatedUrl, /^\/pkg-milk\/milk-feeding-editor-v2\/index\?/);
     assert.match(navigatedUrl, /mode=create/);
     assert.match(navigatedUrl, /source=daily/);
 
@@ -362,221 +330,200 @@ test('daily-feeding routes add and edit actions to milk feeding editor with cont
     global.wx = previousWx;
   }
 
-  assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
+  assert.match(navigatedUrl, /^\/pkg-milk\/milk-feeding-editor-v2\/index\?/);
   assert.match(navigatedUrl, /mode=edit/);
   assert.match(navigatedUrl, /source=daily/);
   assert.match(navigatedUrl, /index=0/);
 });
 
-test('data-records edit modal keeps stored special powder weight for custom special milk records', () => {
-  const page = loadDataRecordsPage();
+test('daily-feeding builds today feeding display from v2 milk components', () => {
+  const page = loadDailyFeedingPage();
   const instance = createPageInstance(page, {
-    nutritionSettings: {
-      special_milk_ratio: {
-        powder: 10,
-        water: 100
-      }
-    },
-    feedingRecords: [
-      {
-        startTime: '10:00',
-        naturalMilkType: 'breast',
-        naturalMilkVolume: 0,
-        specialMilkVolume: 100,
-        specialMilkPowder: 5
-      }
-    ]
+    calculation_params: {}
   });
 
-  instance.updateFeedingDisplay = () => {};
-
-  page.openEditFeedingModal.call(instance, {
-    detail: {
-      index: 0
+  const feedings = page.buildFeedingsDisplay.call(instance, [
+    {
+      _id: 'v2-mixed',
+      isV2FeedingRecord: true,
+      formulaComponents: [
+        {
+          kind: 'breast_milk',
+          volume: 60,
+          nutritionSnapshot: { protein: 1.1, calories: 67, fat: 3.8, carbs: 7 }
+        },
+        {
+          kind: 'formula_powder',
+          powderName: '普奶 A',
+          category: 'regular_formula',
+          proteinRole: 'natural',
+          waterVolume: 30,
+          powderWeight: 5,
+          nutritionSnapshot: { protein: 10, calories: 500, fat: 20, carbs: 55 }
+        },
+        {
+          kind: 'formula_powder',
+          powderName: '特奶',
+          category: 'special_formula',
+          proteinRole: 'special',
+          waterVolume: 90,
+          powderWeight: 13.5,
+          nutritionSnapshot: { protein: 13, calories: 520, fat: 24, carbs: 50 }
+        }
+      ],
+      milkSummaryItems: [
+        { badge: '母', name: '母乳', amountText: '60ml' },
+        { badge: '普', name: '普奶 A', amountText: '30ml · 粉 5g' },
+        { badge: '特', name: '特奶', amountText: '90ml · 粉 13.5g' }
+      ],
+      nutritionSummary: {
+        calories: 147.6,
+        protein: 2.92,
+        naturalProtein: 1.16,
+        specialProtein: 1.76,
+        carbs: 15.8,
+        fat: 5.52
+      }
     }
-  });
+  ]);
 
-  assert.equal(instance.data.editingFeeding.specialMilkPowder, 5);
+  assert.deepEqual(feedings[0].milkSummaryItems.map((item) => item.badge), ['母', '普', '特']);
+  assert.equal(feedings[0].nutritionDisplay.calories, 148);
+  assert.equal(feedings[0].nutritionDisplay.naturalProtein, 1.16);
+  assert.equal(feedings[0].nutritionDisplay.specialProtein, 1.76);
 });
 
-test('data-records summary uses explicit powder weights when records were custom mixed', () => {
-  const page = loadDataRecordsPage();
-  const instance = createPageInstance(page, {
-    nutritionSettings: {
-      formula_milk_ratio: {
-        powder: 10,
-        water: 100
-      },
-      formula_milk_protein: 20,
-      formula_milk_calories: 100,
-      special_milk_ratio: {
-        powder: 10,
-        water: 100
-      },
-      special_milk_protein: 20,
-      special_milk_calories: 100
-    },
-    treatmentRecords: []
-  });
-
-  instance.computeProteinSummaryDisplay = () => ({});
-  instance.calculateTotalMilk = () => {};
-
-  page.processFeedingData.call(instance, [
-    {
-      startTime: '10:00',
-      naturalMilkType: 'formula',
-      naturalMilkVolume: 40,
-      formulaPowderWeight: 5,
-      specialMilkVolume: 0,
-      specialMilkPowder: 0
-    },
-    {
-      startTime: '11:00',
-      naturalMilkType: 'breast',
-      naturalMilkVolume: 0,
-      specialMilkVolume: 100,
-      specialMilkPowder: 5
-    }
-  ], []);
-
-  assert.equal(instance.data.intakeOverview.milk.normal.protein, 1);
-  assert.equal(instance.data.intakeOverview.milk.special.protein, 1);
-  assert.equal(instance.data.intakeOverview.milk.normal.calories, 5);
-  assert.equal(instance.data.intakeOverview.milk.special.calories, 5);
-});
-
-test('data-records saveEditedFeeding persists formulaPowderWeight for custom formula records', async () => {
-  let updatedFeedings = null;
-  const dbRecord = {
-    _id: 'record-1',
-    feedings: [
-      {
-        startTime: '10:00',
-        naturalMilkType: 'formula',
-        naturalMilkVolume: 40,
-        formulaPowderWeight: 5,
-        specialMilkVolume: 0,
-        specialMilkPowder: 0
-      }
-    ]
+test('daily-feeding loadTodayData reads milk from v2 while keeping legacy food intakes', async () => {
+  const legacyFoodIntake = {
+    _id: 'food-1',
+    type: 'solid',
+    name: '苹果泥',
+    quantity: 20,
+    nutrition: { calories: 20, protein: 0.2, carbs: 5, fat: 0.1 }
   };
   const wx = createDefaultWx(() => ({
     command: {
-      gte: (value) => ({
-        and: (nextValue) => ({ $gte: value, $and: nextValue })
-      }),
-      lte: (value) => ({ $lte: value })
+      gte: (value) => ({ $gte: value, and: (other) => ({ $gte: value, $and: other }) }),
+      lt: (value) => ({ $lt: value }),
+      lte: (value) => ({ $lte: value }),
+      eq: (value) => ({ $eq: value }),
+      in: (value) => ({ $in: value }),
+      or: (value) => ({ $or: value }),
+      push: (value) => value
     },
     serverDate() {
       return '__server_date__';
     },
-    collection() {
+    collection(name) {
       return {
         where() {
           return {
-            get: async () => ({ data: [dbRecord] })
+            get: async () => {
+              if (name === 'feeding_records') {
+                return {
+                  data: [
+                    {
+                      _id: 'legacy-day',
+                      babyUid: 'baby-1',
+                      date: new Date(),
+                      basicInfo: { weight: '5.2' },
+                      feedings: [
+                        {
+                          startTime: '07:00',
+                          naturalMilkVolume: 30,
+                          naturalMilkType: 'breast'
+                        }
+                      ],
+                      intakes: [legacyFoodIntake]
+                    }
+                  ]
+                };
+              }
+              return { data: [] };
+            },
+            orderBy() {
+              return this;
+            },
+            limit() {
+              return this;
+            }
           };
         },
         doc() {
           return {
-            update: async ({ data }) => {
-              updatedFeedings = data.feedings;
-              return {};
-            }
+            update: async () => ({})
           };
-        }
+        },
+        add: async () => ({ _id: 'record-id' })
       };
     }
   }));
-  const page = loadDataRecordsPage({ wx });
-  const instance = createPageInstance(page, {
-    selectedDate: '2026-04-19',
-    editingFeedingIndex: 0,
-    feedingRecords: [
-      {
-        startTime: '10:00',
-        formattedStartTime: '10:00',
-        naturalMilkType: 'formula',
-        naturalMilkVolume: 40,
-        formulaPowderWeight: 5,
-        specialMilkVolume: 0,
-        specialMilkPowder: 0
-      }
-    ],
-    editingFeeding: {
-      formattedStartTime: '10:00',
-      naturalMilkType: 'formula',
-      naturalMilkVolume: 40,
-      formulaPowderWeight: 5,
-      specialMilkVolume: 0,
-      specialMilkPowder: 0,
-      notes: ''
-    }
+  const page = loadDailyFeedingPage({
+    wx,
+    getAppReturn: { globalData: { babyUid: 'baby-1' } }
   });
+  const feedingRecordV2Model = require('../miniprogram/models/feedingRecordV2.js');
+  const medicationModel = require('../miniprogram/models/medicationRecord.js');
+  const treatmentModel = require('../miniprogram/models/treatmentRecord.js');
+  const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
+  const previousGetTodayRecords = medicationModel.getTodayRecords;
+  const previousFindByDate = treatmentModel.findByDate;
 
-  instance.ensureFeedingSettings = () => true;
-  instance.forceRefreshData = async () => {};
-  instance.hideEditFeedingModal = () => {};
+  feedingRecordV2Model.getRecordsByDate = async () => [
+    {
+      _id: 'v2-milk',
+      babyUid: 'baby-1',
+      date: '2026-05-28',
+      startTime: '08:30',
+      formulaComponents: [
+        {
+          kind: 'formula_powder',
+          powderName: '特奶',
+          category: 'special_formula',
+          proteinRole: 'special',
+          waterVolume: 90,
+          powderWeight: 13.5,
+          nutritionSnapshot: { protein: 13, calories: 520, fat: 24, carbs: 50 }
+        }
+      ],
+      nutritionSummary: {
+        calories: 70.2,
+        protein: 1.76,
+        naturalProtein: 0,
+        specialProtein: 1.76,
+        carbs: 6.75,
+        fat: 3.24
+      }
+    }
+  ];
+  medicationModel.getTodayRecords = async () => ({ data: [] });
+  treatmentModel.findByDate = async () => ({ success: true, data: [] });
+
+  const instance = createPageInstance(page, {
+    calculation_params: null
+  });
+  instance.loadMedications = async () => {};
+  instance.loadTodayBowelRecords = async () => [];
 
   const previousWx = global.wx;
   const previousGetApp = global.getApp;
   global.wx = wx;
-  global.getApp = () => ({
-    globalData: {
-      babyUid: 'baby-1'
-    }
-  });
+  global.getApp = () => ({ globalData: { babyUid: 'baby-1' } });
   try {
-    await page.saveEditedFeeding.call(instance);
+    await page.loadTodayData.call(instance, true);
   } finally {
     global.wx = previousWx;
     global.getApp = previousGetApp;
+    feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
+    medicationModel.getTodayRecords = previousGetTodayRecords;
+    treatmentModel.findByDate = previousFindByDate;
   }
 
-  assert.equal(updatedFeedings[0].formulaPowderWeight, 5);
-});
-
-test('data-records routes add and edit actions to milk feeding editor with selected date context', () => {
-  let navigatedUrl = '';
-  const wx = createDefaultWx();
-  wx.navigateTo = ({ url }) => {
-    navigatedUrl = url;
-  };
-  const page = loadDataRecordsPage({ wx });
-  const instance = createPageInstance(page, {
-    selectedDate: '2026-04-19',
-    feedingRecords: [
-      {
-        startTime: '10:00',
-        naturalMilkVolume: 40
-      }
-    ]
-  });
-
-  const previousWx = global.wx;
-  global.wx = wx;
-  try {
-    page.navigateToMilkFeedingEditor.call(instance);
-    assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
-    assert.match(navigatedUrl, /mode=create/);
-    assert.match(navigatedUrl, /source=records/);
-    assert.match(navigatedUrl, /date=2026-04-19/);
-
-    page.navigateToMilkFeedingEditorForEdit.call(instance, {
-      detail: {
-        index: 0
-      }
-    });
-  } finally {
-    global.wx = previousWx;
-  }
-
-  assert.match(navigatedUrl, /^\/pages\/milk-feeding-editor\/index\?/);
-  assert.match(navigatedUrl, /mode=edit/);
-  assert.match(navigatedUrl, /source=records/);
-  assert.match(navigatedUrl, /date=2026-04-19/);
-  assert.match(navigatedUrl, /index=0/);
+  assert.equal(instance.data.feedings.length, 1);
+  assert.equal(instance.data.feedings[0]._id, 'v2-milk');
+  assert.equal(instance.data.feedingsDisplay[0].milkSummaryItems[0].badge, '特');
+  assert.equal(instance.data.foodIntakes.length, 1);
+  assert.equal(instance.data.macroSummary.calories, 90);
 });
 
 test('report workbench nutrition windows use explicit powder weights for custom formula records', () => {

@@ -1,4 +1,11 @@
 // 配奶设置模型
+const {
+  normalizeFormulaPowders,
+  createLegacyFormulaPowders,
+  normalizeMixingPlans
+} = require('../utils/formulaPowderUtils');
+const MilkNutritionProfileModel = require('./nutritionProfile');
+
 const db = wx.cloud.database();
 const nutritionCollection = db.collection('nutrition_settings');
 const babyInfoCollection = db.collection('baby_info');
@@ -15,6 +22,10 @@ class NutritionModel {
         water: ratio.water ?? ratio[waterKey] ?? ''
       };
     };
+    const explicitPowders = normalizeFormulaPowders(settings.formulaPowders || []);
+    const legacyPowders = createLegacyFormulaPowders(settings);
+    const formulaPowders = explicitPowders.length > 0 ? explicitPowders : legacyPowders;
+    const mixingPlans = normalizeMixingPlans(settings.mixingPlans || [], formulaPowders);
     const normalized = {
       natural_milk_protein: settings.natural_milk_protein ?? '',
       natural_milk_calories: settings.natural_milk_calories ?? '',
@@ -32,7 +43,10 @@ class NutritionModel {
       special_milk_fat: settings.special_milk_fat ?? '',
       special_milk_carbs: settings.special_milk_carbs ?? '',
       special_milk_fiber: settings.special_milk_fiber ?? '',
-      special_milk_ratio: ratioFallback(settings.special_milk_ratio || settings, 'special_milk_ratio_powder', 'special_milk_ratio_water')
+      special_milk_ratio: ratioFallback(settings.special_milk_ratio || settings, 'special_milk_ratio_powder', 'special_milk_ratio_water'),
+      formulaPowders,
+      mixingPlans,
+      activeMixingPlanId: settings.activeMixingPlanId ?? ''
     };
     return normalized;
   }
@@ -40,6 +54,11 @@ class NutritionModel {
   hasSettingsData(settings) {
     if (!settings) return false;
     const normalized = this.normalizeSettings(settings);
+    if ((normalized.formulaPowders && normalized.formulaPowders.length > 0) ||
+        (normalized.mixingPlans && normalized.mixingPlans.length > 0) ||
+        normalized.activeMixingPlanId) {
+      return true;
+    }
     const scalarKeys = [
       'natural_milk_protein',
       'natural_milk_calories',
@@ -93,6 +112,14 @@ class NutritionModel {
       powder: pick(currentRatio.powder, fallbackRatio.powder),
       water: pick(currentRatio.water, fallbackRatio.water)
     };
+    const primaryPowders = primary.formulaPowders || [];
+    const fallbackPowders = fallback.formulaPowders || [];
+    merged.formulaPowders = fallbackPowders.length > 0 ? fallbackPowders : primaryPowders;
+    const powderSource = merged.formulaPowders || [];
+    const primaryPlans = primary.mixingPlans || [];
+    const fallbackPlans = fallback.mixingPlans || [];
+    merged.mixingPlans = fallbackPlans.length > 0 ? fallbackPlans : normalizeMixingPlans(primaryPlans, powderSource);
+    merged.activeMixingPlanId = pick(primary.activeMixingPlanId, fallback.activeMixingPlanId);
     return merged;
   }
 
@@ -124,7 +151,10 @@ class NutritionModel {
       special_milk_ratio: {
         powder: '',                    // 特奶粉量 g
         water: ''                        // 特奶水量 ml
-      }
+      },
+      formulaPowders: [],
+      mixingPlans: [],
+      activeMixingPlanId: ''
     };
   }
 
@@ -135,6 +165,13 @@ class NutritionModel {
    */
   async getNutritionSettings(babyUid) {
     try {
+      const profileSettings = await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid, {
+        includeLegacyFallback: true
+      });
+      if (profileSettings) {
+        return this.normalizeSettings(profileSettings);
+      }
+
       // 1) 读取两个集合
       const [babyRes, compatRes] = await Promise.all([
         this.collection.where({ babyUid }).get(),
@@ -196,7 +233,6 @@ class NutritionModel {
   async updateNutritionSettings(babyUid, settings) {
     try {
       const normalizedSettings = this.normalizeSettings(settings);
-      console.log(normalizedSettings, '---normalizedSettings---')
       const res = await this.collection.where({
         babyUid: babyUid
       }).get();

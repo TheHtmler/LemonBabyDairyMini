@@ -1,0 +1,907 @@
+<view class="container">
+  <!-- 日期选择器 -->
+  <view class="date-selector">
+    <view class="date-scroll-container">
+      <scroll-view scroll-x="true" scroll-into-view="{{currentDateId}}" scroll-with-animation="true" class="date-list" enhanced="true" show-scrollbar="false" enable-flex="{{false}}" bounces="{{true}}" fast-deceleration="{{true}}">
+        <view class="date-items-container">
+          <view id="date-{{index}}" class="date-item {{selectedDateIndex === index ? 'selected' : ''}} {{index === 0 ? 'today' : ''}}" wx:for="{{dateList}}" wx:key="date" data-date="{{item.date}}" data-index="{{index}}" bindtap="onDateItemClick">
+            <text class="weekday">{{item.weekday}}</text>
+            <text class="day">{{item.day}}</text>
+            <text class="month">{{item.month}}月</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="date-more-indicator" bindtap="showCalendar">
+        <view class="date-more-text">
+          <text>更</text>
+          <text>多</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <fat-ratio-popup
+    visible="{{showFatRatioPopup}}"
+    lines="{{fatRatioPopupLines}}"
+    bind:close="hideFatRatioPopup"
+  />
+  <view class="metric-info-overlay" wx:if="{{activeMetricInfoLabel}}" bindtap="hideMetricInfo"></view>
+  <!-- 记录内容区域 -->
+  <view class="records-wrapper" style="opacity: {{isDataLoading ? 0.5 : 1}};">
+    <block>
+      <view class="summary-card summary-card-main">
+        <view class="summary-header">
+          <view>
+            <text class="summary-title">当日汇总数据</text>
+            <text class="summary-date">{{summaryPreview.displayDate}}</text>
+          </view>
+          <view class="hero-badges">
+            <view class="hero-badge" wx:for="{{summaryPreview.heroBadges}}" wx:key="label">
+              <view class="hero-badge-head">
+                <text class="hero-badge-label">{{item.label}}</text>
+                <view class="hero-badge-edit" wx:if="{{item.field}}" bindtap="openBasicInfoEditor" data-field="{{item.field}}" data-label="{{item.label}}" data-unit="{{item.unit}}">
+                  <image class="hero-badge-edit-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+              <text class="hero-badge-value">{{item.value}}{{item.unit}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="metric-grid">
+          <view class="metric-item {{activeMetricInfoLabel === item.label ? 'metric-item-active' : ''}}" wx:for="{{summaryPreview.topMetrics}}" wx:key="label">
+            <view class="metric-label-row">
+              <text class="metric-label">{{item.label}}</text>
+              <view class="metric-info-anchor" wx:if="{{item.infoLines}}">
+                <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+                <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                  <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                  <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+                </view>
+              </view>
+            </view>
+            <view class="metric-value-row">
+              <text class="metric-value">{{item.value}}</text>
+              <text class="metric-unit">{{item.unit}}</text>
+            </view>
+            <text class="metric-detail" wx:if="{{item.detail}}">{{item.detail}}</text>
+          </view>
+        </view>
+
+        <view class="nutrition-strip">
+          <view class="nutrition-pill" wx:for="{{summaryPreview.nutritionStrip}}" wx:key="label">
+            <view class="nutrition-pill-copy">
+              <view class="nutrition-pill-label-row">
+                <text class="nutrition-pill-label">{{item.label}}系数</text>
+              </view>
+              <view class="nutrition-pill-metric">
+                <view class="nutrition-pill-detail-row" wx:if="{{item.detail}}">
+                  <text class="nutrition-pill-detail">{{item.detailValue || item.detail}}</text>
+                  <text class="nutrition-pill-detail-unit" wx:if="{{item.detailUnit}}">{{item.detailUnit}}</text>
+                </view>
+                <view class="nutrition-pill-source-row" wx:if="{{item.source || item.premiumRatio > 0}}">
+                  <text class="nutrition-pill-source nutrition-pill-source-block" wx:if="{{item.source}}">{{item.source}}</text>
+                  <text class="nutrition-pill-source-accent" wx:if="{{item.premiumRatio > 0}}">优质蛋白 {{item.premiumValue}}g · {{item.premiumRatio}}%</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="ratio-inline-list macro-strip">
+          <view class="ratio-inline-item {{activeMetricInfoLabel === item.label ? 'ratio-inline-item-active' : ''}}" wx:for="{{summaryPreview.macroRows}}" wx:key="label">
+            <view class="ratio-inline-label-row">
+              <text class="ratio-inline-label">{{item.label}}</text>
+              <view class="metric-info-anchor" wx:if="{{item.infoLines && item.infoLines.length}}">
+                <text class="metric-info-icon" catchtap="toggleMetricInfo" data-label="{{item.label}}" data-title="{{item.infoTitle}}" data-lines="{{item.infoLines}}">i</text>
+                <view class="metric-info-bubble" wx:if="{{activeMetricInfoLabel === item.label}}" catchtap="stopBubble">
+                  <text class="metric-info-bubble-title">{{activeMetricInfoTitle}}</text>
+                  <text class="metric-info-bubble-line" wx:for="{{activeMetricInfoLines}}" wx:key="*this">{{item}}</text>
+                </view>
+              </view>
+            </view>
+            <text class="ratio-inline-value">{{item.value}}</text>
+          </view>
+        </view>
+
+        <view class="overview-card">
+          <view class="overview-head">
+            <view>
+              <text class="overview-title">摄入概览</text>
+            </view>
+          </view>
+          <view class="overview-section" wx:for="{{summaryPreview.sourceSections}}" wx:key="label">
+            <view class="overview-section-head">
+              <text class="overview-section-label">{{item.label}}</text>
+              <text class="overview-section-meta" wx:if="{{item.meta}}">{{item.meta}}</text>
+            </view>
+            <view class="overview-milk-component-grid" wx:if="{{item.type === 'milk' && item.variant === 'components'}}">
+              <view class="overview-milk-component-card {{item.componentRows.length === 1 ? 'single' : ''}}" wx:for="{{item.componentRows}}" wx:key="name" wx:for-item="component">
+                <view class="overview-milk-component-header">
+                  <text class="overview-milk-component-badge {{component.badgeClass}}" style="{{component.badgeStyle}}">{{component.badge}}</text>
+                  <view class="overview-milk-component-copy">
+                    <text class="overview-milk-component-name">{{component.name}}</text>
+                  </view>
+                </view>
+                <view class="overview-milk-component-summary-row">
+                  <text class="overview-milk-component-amount-row">{{component.amountText}}</text>
+                  <text class="overview-milk-component-calories">{{component.primaryText}}</text>
+                </view>
+                <view class="overview-milk-component-metric-grid">
+                  <view class="overview-milk-component-metric-item">
+                    <text class="overview-milk-component-metric-label">{{component.proteinLabelText || (component.proteinRoleText === '特殊' ? '特殊蛋白' : (component.proteinRoleText === '无蛋白热量' ? '无蛋白热量' : '天然蛋白'))}}</text>
+                    <text class="overview-milk-component-metric-value protein">{{component.proteinAmountText || component.proteinValueText || component.proteinBreakdownText || component.secondaryText}}</text>
+                  </view>
+                  <view class="overview-milk-component-metric-item">
+                    <text class="overview-milk-component-metric-label">碳水</text>
+                    <text class="overview-milk-component-metric-value">{{component.carbsText || component.carbs + 'g'}}</text>
+                  </view>
+                  <view class="overview-milk-component-metric-item">
+                    <text class="overview-milk-component-metric-label">脂肪</text>
+                    <text class="overview-milk-component-metric-value">{{component.fatText || component.fat + 'g'}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="overview-milk-grid" wx:elif="{{item.type === 'milk'}}">
+              <view class="overview-milk-card" wx:for="{{item.columns}}" wx:key="label" wx:for-item="column">
+                <text class="overview-milk-card-title">{{column.label}}</text>
+                <view class="overview-stat-list">
+                  <view class="overview-stat-row" wx:for="{{column.stats}}" wx:key="label" wx:for-item="stat">
+                    <text class="overview-stat-label">{{stat.label}}</text>
+                    <text class="overview-stat-value">{{stat.value}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="overview-stat-compact-grid" wx:else>
+              <view class="overview-stat-compact-item" wx:for="{{item.stats}}" wx:key="label" wx:for-item="stat">
+                <text class="overview-stat-compact-label">{{stat.label}}</text>
+                <text class="overview-stat-compact-value">{{stat.value}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <!-- 记录选项卡 -->
+      <view class="tabs">
+        <view class="tab {{activeTab === 'feeding' ? 'active' : ''}}" data-tab="feeding" bindtap="switchTab">
+          <text>喂奶记录</text>
+        </view>
+        <view class="tab {{activeTab === 'food' ? 'active' : ''}}" data-tab="food" bindtap="switchTab">
+          <text>食物记录</text>
+        </view>
+        <view class="tab {{activeTab === 'medication' ? 'active' : ''}}" data-tab="medication" bindtap="switchTab">
+          <text>用药记录</text>
+        </view>
+        <view class="tab {{activeTab === 'treatment' ? 'active' : ''}}" data-tab="treatment" bindtap="switchTab">
+          <text>治疗记录</text>
+        </view>
+      </view>
+
+      <block wx:if="{{activeTab === 'food'}}">
+        <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="onCopyFoodToDate">
+              <text>复制数据</text>
+            </view>
+            <view class="add-btn" bindtap="navigateToMealEditor">
+              <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+              <text>补充食物</text>
+            </view>
+          </view>
+        </view>
+          <view class="meal-group-list" wx:if="{{foodMealGroups.length > 0}}">
+            <view class="meal-group-card" wx:for="{{foodMealGroups}}" wx:key="id">
+              <view class="meal-group-header" bindtap="toggleFoodMealGroup" data-id="{{item.id}}">
+                <view class="meal-group-top">
+                  <view class="meal-group-main">
+                    <text class="meal-group-title">{{item.mealLabel || '食物记录'}}</text>
+                    <text class="meal-group-meta inline">{{item.mealTime || '--:--'}} · {{item.itemCount}}种食物</text>
+                    <text class="meal-group-meta inline" wx:if="{{item.sourceSummaryText}}">{{item.sourceSummaryText}}</text>
+                    <text class="meal-group-completion" wx:if="{{item.hasCompletionDisplay}}">吃完 {{item.completionPercent}}%</text>
+                  </view>
+                  <view class="meal-group-actions">
+                    <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑</text>
+                    <text class="meal-group-delete" catchtap="deleteMealGroup" data-meal-batch-id="{{item.mealBatchId}}" data-meal-label="{{item.mealLabel}}" data-item-count="{{item.itemCount}}">删除</text>
+                    <text class="meal-group-toggle">{{item.expanded ? '收起' : '展开'}}</text>
+                  </view>
+                </view>
+                <view class="meal-group-summary-grid">
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">热量：</text>
+                    <text class="meal-group-summary-value">{{item.summary.calories}} kcal</text>
+                  </view>
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">蛋白：</text>
+                    <text class="meal-group-summary-value">{{item.summary.protein}} g</text>
+                  </view>
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">碳水：</text>
+                    <text class="meal-group-summary-value">{{item.summary.carbs}} g</text>
+                  </view>
+                  <view class="meal-group-summary-item">
+                    <text class="meal-group-summary-label">脂肪：</text>
+                    <text class="meal-group-summary-value">{{item.summary.fat}} g</text>
+                  </view>
+                </view>
+              </view>
+              <view class="meal-group-note" wx:if="{{item.mealNote}}">
+                <text class="meal-group-note-label">备注</text>
+                <text class="meal-group-note-text">{{item.mealNote}}</text>
+              </view>
+              <view class="meal-group-items" wx:if="{{item.expanded}}">
+                <view class="meal-recipe-group" wx:for="{{item.recipeGroups}}" wx:for-item="recipeGroup" wx:key="id">
+                  <view class="meal-recipe-group-header" data-meal-id="{{item.id}}" data-recipe-id="{{recipeGroup.id}}" bindtap="toggleMealRecipeGroup">
+                    <view class="meal-recipe-group-copy">
+                      <text class="meal-recipe-group-badge">食谱</text>
+                      <text class="meal-recipe-group-title">{{recipeGroup.title}}</text>
+                      <text class="meal-recipe-group-meta">{{recipeGroup.itemCount}}种食物</text>
+                    </view>
+                    <view class="meal-recipe-group-summary">
+                      <text>{{recipeGroup.summary.calories}} kcal</text>
+                      <text>蛋白 {{recipeGroup.summary.protein}}g</text>
+                      <text>{{recipeGroup.expanded ? '收起' : '展开'}}</text>
+                    </view>
+                  </view>
+                  <view class="meal-recipe-group-items" wx:if="{{recipeGroup.expanded}}">
+                    <view class="food-record-item" wx:for="{{recipeGroup.items}}" wx:key="_id" wx:for-item="foodItem">
+                      <view class="record-content">
+                        <food-record-item record="{{foodItem}}" />
+                        <view class="food-planned-actual" wx:if="{{foodItem.hasPlannedDifference}}" data-planned-actual="{{foodItem.plannedActualText}}">
+                          <text>准备 {{foodItem.plannedDisplayQuantity}} / 实际 {{foodItem.displayQuantity}}</text>
+                        </view>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+                <view class="manual-meal-items" wx:if="{{item.manualItems.length > 0}}">
+                  <text class="manual-meal-items-title">单独添加</text>
+                  <view class="food-record-item" wx:for="{{item.manualItems}}" wx:key="_id" wx:for-item="foodItem">
+                    <view class="record-content">
+                      <food-record-item record="{{foodItem}}" />
+                      <view class="food-planned-actual" wx:if="{{foodItem.hasPlannedDifference}}" data-planned-actual="{{foodItem.plannedActualText}}">
+                        <text>准备 {{foodItem.plannedDisplayQuantity}} / 实际 {{foodItem.displayQuantity}}</text>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="intake-list" wx:if="{{legacyFoodIntakes.length > 0}}">
+            <view class="food-record-item" wx:for="{{legacyFoodIntakes}}" wx:key="_id">
+              <view class="record-content">
+                <food-record-item record="{{item}}" />
+              </view>
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{item.originalIndex}}" data-id="{{item._id}}">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteFoodIntake" data-index="{{item.originalIndex}}" data-id="{{item._id}}">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{foodMealGroups.length === 0 && legacyFoodIntakes.length === 0}}">
+            <view class="empty-text">暂无食物记录</view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'medication'}}">
+        <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="onCopyMedicationToDate">
+              <text>复制数据</text>
+            </view>
+            <view class="add-btn" bindtap="showAddMedicationModal">
+              <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+              <text>补充记录</text>
+            </view>
+          </view>
+        </view>
+          <view class="medication-group-records">
+            <view class="medication-record-item" wx:for="{{medicationRecords}}" wx:key="_id" wx:for-item="record">
+              <view class="record-content">
+                <medication-record-item record="{{record}}" />
+              </view>
+              <!-- 操作按钮 -->
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openEditMedicationModal" data-record-id="{{record._id}}">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteMedication" data-record-id="{{record._id}}">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{medicationRecords.length === 0}}">
+            <view class="empty-text">暂无用药记录</view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'treatment'}}">
+        <view class="card">
+          <treatment-record-list
+            title="治疗记录"
+            action-text="补充记录"
+            records="{{treatmentRecords}}"
+            empty-text="暂无治疗记录"
+            bind:add="navigateToTreatmentRecord"
+            bind:edit="openEditTreatmentRecord"
+            bind:delete="deleteTreatmentRecord"
+          />
+        </view>
+      </block>
+
+      <block wx:else>
+        <!-- 喂奶记录列表 -->
+        <view class="card">
+        <view class="card-title actions-only">
+          <view class="card-actions">
+            <view class="copy-btn" bindtap="onCopyFeedingToDate">
+              <text>复制数据</text>
+            </view>
+            <view class="add-btn" bindtap="navigateToMilkFeedingEditor">
+              <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+              <text>补充记录</text>
+            </view>
+          </view>
+        </view>
+          <view wx:if="{{feedingRecords.length > 0}}">
+            <feeding-record-card
+              wx:for="{{feedingRecords}}"
+              wx:key="index"
+              record="{{item}}"
+              index="{{index}}"
+              showLabel="{{false}}"
+              bind:edit="navigateToMilkFeedingEditorForEdit"
+              bind:delete="deleteFeeding"
+            />
+          </view>
+          <view class="empty-data" wx:else>
+            <view class="empty-text">暂无喂奶记录</view>
+          </view>
+        </view>
+      </block>
+      <!-- 排便记录卡片 -->
+      <view class="card" wx:if="{{bowelRecords.length > 0}}">
+        <view class="card-title">
+          <text>排便记录</text>
+          <view class="add-btn" bindtap="showAddBowelModal">
+            <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+            <text>补充记录</text>
+          </view>
+        </view>
+        <view>
+          <!-- 按类型分组显示 -->
+          <view class="bowel-group" wx:for="{{groupedBowelRecords}}" wx:key="type" wx:for-item="group">
+            <view class="bowel-group-header">
+              <text class="bowel-group-name">{{group.typeText}}</text>
+              <text class="bowel-group-count">{{group.count}}次</text>
+            </view>
+            <!-- 该类型的所有记录 -->
+            <view class="bowel-group-records">
+              <view class="bowel-record-item" wx:for="{{group.records}}" wx:key="_id" wx:for-item="record">
+                <view class="record-content">
+                  <view class="bowel-time-type">
+                    <text class="bowel-time">{{record.timeString}}</text>
+                  </view>
+                  <!-- 大便详细信息 -->
+                  <view class="bowel-details" wx:if="{{record.type === 'stool' || record.type === 'mixed'}}">
+                    <text class="bowel-detail" wx:if="{{record.consistencyText}}">
+                      {{record.consistencyText}}
+                    </text>
+                    <text class="bowel-detail" wx:if="{{record.colorText}}">
+                      {{record.colorText}}
+                    </text>
+                    <text class="bowel-detail" wx:if="{{record.amountText}}">
+                      {{record.amountText}}
+                    </text>
+                  </view>
+                  <!-- 备注 -->
+                  <view class="bowel-notes" wx:if="{{record.notes}}">
+                    <text class="notes-text">{{record.notes}}</text>
+                  </view>
+                </view>
+                <!-- 操作按钮 -->
+                <view class="action-buttons">
+                  <view class="action-btn edit-btn" bindtap="openEditBowelModal" data-record-id="{{record._id}}">
+                    <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                  </view>
+                  <view class="action-btn delete-btn" bindtap="deleteBowelRecord" data-record-id="{{record._id}}">
+                    <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+  <!-- 日历选择器 -->
+  <view class="calendar-picker" wx:if="{{showCalendarPicker}}" bindtap="hideCalendar">
+    <view class="calendar-content" catchtap="preventBubble">
+      <view class="calendar-header">
+        <view bindtap="prevMonth">〈</view>
+        <view class="month-title">{{calendarYear}}年{{calendarMonth}}月</view>
+        <view bindtap="nextMonth">〉</view>
+      </view>
+      <view class="calendar-mode-tip" wx:if="{{copyCalendarContext}}">
+        选择要应用 {{copyCalendarContext.label}} 的目标日期
+      </view>
+      <view class="weekday-header">
+        <view class="weekday-item" wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this">
+          {{item}}
+        </view>
+      </view>
+      <view class="calendar-grid">
+        <view class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate && !copyCalendarContext ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}} {{copyCalendarContext && isFutureCalendarDay(item.date) ? 'disabled-future' : ''}}" wx:for="{{calendarDays}}" wx:key="date" bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}" data-date="{{item.date}}">
+          {{item.day}}
+        </view>
+      </view>
+      <view class="calendar-footer" wx:if="{{!isSelectedToday}}">
+        <view class="today-btn" bindtap="goToToday">返回今天</view>
+      </view>
+    </view>
+  </view>
+  <view class="basic-info-modal" wx:if="{{showBasicInfoModal}}" bindtap="closeBasicInfoModal">
+    <view class="basic-info-modal-content" catchtap="preventBubble">
+      <view class="basic-info-modal-header">
+        <text class="basic-info-modal-title">编辑{{editingLabel}}</text>
+      </view>
+      <view class="basic-info-modal-body">
+        <view class="basic-info-input-shell">
+          <input
+            class="basic-info-input"
+            type="digit"
+            value="{{editBasicInfoValue}}"
+            placeholder="请输入{{editingLabel}}"
+            bindinput="onBasicInfoModalInput"
+            focus
+          />
+          <text class="basic-info-input-unit">{{editingUnit}}</text>
+        </view>
+      </view>
+      <view class="basic-info-modal-footer">
+        <view class="basic-info-modal-btn secondary" bindtap="closeBasicInfoModal">取消</view>
+        <view class="basic-info-modal-btn primary" bindtap="confirmBasicInfoEdit">确认</view>
+      </view>
+    </view>
+  </view>
+  <!-- 补充喂奶记录弹窗 -->
+  <feeding-modal
+    visible="{{showAddFeedingModal}}"
+    title="补充喂奶记录"
+    feedingData="{{newFeedingDisplay}}"
+    showGoalHint="{{false}}"
+    confirmText="保存"
+    bind:close="hideAddFeedingModal"
+    bind:confirm="saveNewFeeding"
+    bind:timechange="handleNewFeedingModalTimeChange"
+    bind:inputchange="handleNewFeedingModalInputChange"
+    bind:adjust="handleNewFeedingModalAdjust"
+    bind:typechange="handleNewFeedingModalTypeChange"
+  />
+  <!-- 食物摄入弹窗 -->
+  <view class="modal feeding-modal" wx:if="{{showFoodIntakeModal}}" bindtap="hideFoodIntakeModal" catchtouchmove="preventBubble">
+    <view class="modal-content food-modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>{{foodModalMode === 'edit' ? '编辑食物记录' : '添加食物记录'}}</text>
+      </view>
+      <view class="modal-body">
+        <view class="input-group">
+          <text class="label">食物</text>
+          <view class="food-selection-card">
+            <view class="food-list-header">
+              <view class="food-header-title">请选择食物</view>
+              <view class="food-add-btn" bindtap="openFoodManage">
+                <text class="food-add-icon">＋</text>
+                <text>添加食物</text>
+              </view>
+            </view>
+            <view class="food-search-input">
+              <text class="search-icon">🔍</text>
+              <input type="text" value="{{foodSearchQuery}}" placeholder="搜索食物名称或类别" confirm-type="search" bindinput="onFoodSearchInput" />
+            </view>
+            <scroll-view class="food-option-list" scroll-y="true">
+              <view class="food-option {{newFoodIntake.foodId === item._id ? 'selected' : ''}}"
+                    wx:for="{{filteredFoodOptions}}" wx:key="_id"
+                    data-id="{{item._id}}" bindtap="onFoodSelect">
+                <view class="food-option-main">
+                  <text class="food-option-name">{{item.name}}</text>
+                  <text class="food-option-tag">{{item.category || '未分类'}}</text>
+                </view>
+                <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>
+              </view>
+              <view class="food-option-empty" wx:if="{{filteredFoodOptions.length === 0}}">
+                <text>未找到匹配的食物，请调整搜索条件</text>
+              </view>
+            </scroll-view>
+          </view>
+        </view>
+        <view class="input-group">
+          <text class="label">份量 ({{newFoodIntake.unit || 'g'}})</text>
+          <input type="digit" value="{{newFoodIntake.quantity}}" bindinput="onFoodQuantityInput" placeholder="请输入重量" />
+        </view>
+        <view class="input-group">
+          <text class="label">记录时间</text>
+          <picker mode="time" value="{{newFoodIntake.recordTime}}" bindchange="onFoodRecordTimeChange">
+            <view class="picker-value">{{newFoodIntake.recordTime || '选择时间'}}</view>
+          </picker>
+        </view>
+        <view class="input-group">
+          <text class="label">备注</text>
+          <textarea value="{{newFoodIntake.notes}}" bindinput="onFoodNotesInput" placeholder="可选，记录特殊说明" class="notes-textarea" />
+        </view>
+        <view class="nutrition-preview" wx:if="{{newFoodIntake.nutritionPreview}}">
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.calories}} kcal</text>
+            <text>热量</text>
+          </view>
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.protein}} g</text>
+            <text>蛋白质</text>
+          </view>
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.carbs}} g</text>
+            <text>碳水</text>
+          </view>
+          <view class="nutrition-item">
+            <text>{{newFoodIntake.nutritionPreview.fat}} g</text>
+            <text>脂肪</text>
+          </view>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideFoodIntakeModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveFoodIntake">保存</button>
+      </view>
+    </view>
+  </view>
+  <!-- 食物摄入实验弹窗 -->
+  <food-intake-modal
+    visible="{{showFoodIntakeExperimentModal}}"
+    step="{{foodExperimentStep}}"
+    searchQuery="{{foodExperimentSearchQuery}}"
+    categories="{{foodExperimentCategories}}"
+    activeCategory="{{foodExperimentCategory}}"
+    options="{{filteredFoodExperimentOptions}}"
+    selectedFoodId="{{foodExperiment.foodId}}"
+    foodExperiment="{{foodExperiment}}"
+    confirmDisabled="{{!foodExperiment.foodId}}"
+    formCancelText="{{foodModalMode === 'edit' ? '取消' : '上一步'}}"
+    bind:close="hideFoodIntakeExperimentModal"
+    bind:openmanage="openFoodManage"
+    bind:searchinput="onFoodExperimentSearchInput"
+    bind:categorytap="onFoodExperimentCategorySelect"
+    bind:optiontap="onFoodExperimentFoodSelect"
+    bind:confirmselect="confirmFoodExperimentSelection"
+    bind:backtoselect="backToFoodExperimentSelection"
+    bind:quantityinput="onFoodExperimentQuantityInput"
+    bind:notesinput="onFoodExperimentNotesInput"
+    bind:timechange="onFoodExperimentRecordTimeChange"
+    bind:formcancel="handleFoodExperimentFormCancel"
+    bind:formsave="saveFoodIntakeExperiment"
+  />
+  <medication-modal
+    visible="{{showAddMedicationModal}}"
+    title="补充用药记录"
+    medications="{{medications}}"
+    selectedMedicationIndex="{{selectedMedicationIndex}}"
+    selectedMedicationName="{{newMedication.name}}"
+    showMedicationPicker="{{true}}"
+    dosage="{{newMedication.dosage}}"
+    unit="{{newMedication.unit}}"
+    time="{{newMedication.time}}"
+    frequency="{{newMedication.frequency}}"
+    notes="{{newMedication.notes}}"
+    confirmText="保存"
+    bind:close="hideAddMedicationModal"
+    bind:medicationchange="onMedicationSelect"
+    bind:dosagechange="onNewMedicationInput"
+    bind:timechange="onNewMedicationTimeChange"
+    bind:noteschange="onNewMedicationInput"
+    bind:confirm="saveNewMedication"
+    bind:manage="goToMedicationManage"
+  />
+  <!-- 删除确认弹窗 -->
+  <view class="confirm-modal" wx:if="{{showDeleteConfirm}}" bindtap="hideDeleteConfirm">
+    <view class="confirm-modal-content" catchtap="preventBubble">
+      <view class="confirm-modal-title">确认删除</view>
+      <view class="confirm-modal-message">{{deleteConfirmMessage}}</view>
+      <view class="confirm-modal-footer">
+        <view class="confirm-modal-btn cancel" bindtap="hideDeleteConfirm">取消</view>
+        <view class="confirm-modal-btn confirm" bindtap="confirmDelete">删除</view>
+      </view>
+    </view>
+  </view>
+  <!-- 编辑喂奶记录弹窗 -->
+  <feeding-modal
+    visible="{{showEditFeedingModal}}"
+    title="编辑喂奶记录"
+    feedingData="{{editingFeedingDisplay}}"
+    showGoalHint="{{false}}"
+    confirmText="保存"
+    bind:close="hideEditFeedingModal"
+    bind:confirm="saveEditedFeeding"
+    bind:timechange="handleEditFeedingModalTimeChange"
+    bind:inputchange="handleEditFeedingModalInputChange"
+    bind:adjust="handleEditFeedingModalAdjust"
+    bind:typechange="handleEditFeedingModalTypeChange"
+  />
+  <medication-modal
+    visible="{{showEditMedicationModal}}"
+    title="编辑用药记录"
+    selectedMedicationName="{{editingMedication.medicationName}}"
+    showMedicationPicker="{{false}}"
+    dosage="{{editingMedication.dosage}}"
+    unit="{{editingMedication.unit}}"
+    time="{{editingMedication.actualTime}}"
+    frequency="{{editingMedication.frequency}}"
+    notes="{{editingMedication.notes}}"
+    confirmText="保存"
+    bind:close="hideEditMedicationModal"
+    bind:dosagechange="onEditMedicationInput"
+    bind:timechange="onEditMedicationTimeChange"
+    bind:noteschange="onEditMedicationInput"
+    bind:confirm="saveEditedMedication"
+    bind:manage="goToMedicationManage"
+  />
+  <!-- 补充排便记录弹窗 -->
+  <view class="modal" wx:if="{{showAddBowelModal}}" bindtap="hideAddBowelModal" catchtouchmove="preventBubble">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>补充排便记录</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <!-- 时间选择 -->
+        <view class="form-item">
+          <text class="label">时间</text>
+          <picker mode="time" value="{{newBowelRecord.time}}" bindchange="onNewBowelTimeChange">
+            <view class="time-picker">{{newBowelRecord.time}}</view>
+          </picker>
+        </view>
+        <!-- 类型选择 -->
+        <view class="form-item">
+          <text class="label">类型</text>
+          <view class="bowel-type-options">
+            <view class="bowel-type-btn {{newBowelRecord.type === 'stool' ? 'active' : ''}}" data-type="stool" bindtap="onBowelTypeSelect">
+              <text class="type-icon">💩</text>
+              <text class="type-text">大便</text>
+            </view>
+            <view class="bowel-type-btn {{newBowelRecord.type === 'urine' ? 'active' : ''}}" data-type="urine" bindtap="onBowelTypeSelect">
+              <text class="type-icon">💧</text>
+              <text class="type-text">小便</text>
+            </view>
+            <view class="bowel-type-btn {{newBowelRecord.type === 'mixed' ? 'active' : ''}}" data-type="mixed" bindtap="onBowelTypeSelect">
+              <text class="type-icon">🚽</text>
+              <text class="type-text">混合</text>
+            </view>
+          </view>
+        </view>
+        <!-- 大便详细信息 -->
+        <view wx:if="{{newBowelRecord.type === 'stool' || newBowelRecord.type === 'mixed'}}">
+          <!-- 性状 -->
+          <view class="form-item">
+            <text class="label">性状</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.consistency === 'liquid' ? 'active' : ''}}" data-field="consistency" data-value="liquid" bindtap="onBowelOptionSelect">
+                水样
+              </view>
+              <view class="option-btn {{newBowelRecord.consistency === 'loose' ? 'active' : ''}}" data-field="consistency" data-value="loose" bindtap="onBowelOptionSelect">
+                稀便
+              </view>
+              <view class="option-btn {{newBowelRecord.consistency === 'soft' ? 'active' : ''}}" data-field="consistency" data-value="soft" bindtap="onBowelOptionSelect">
+                糊状
+              </view>
+              <view class="option-btn {{newBowelRecord.consistency === 'normal' ? 'active' : ''}}" data-field="consistency" data-value="normal" bindtap="onBowelOptionSelect">
+                正常
+              </view>
+              <view class="option-btn {{newBowelRecord.consistency === 'hard' ? 'active' : ''}}" data-field="consistency" data-value="hard" bindtap="onBowelOptionSelect">
+                干硬
+              </view>
+            </view>
+          </view>
+          <!-- 颜色 -->
+          <view class="form-item">
+            <text class="label">颜色</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.color === 'yellow' ? 'active' : ''}}" data-field="color" data-value="yellow" bindtap="onBowelOptionSelect">
+                黄色
+              </view>
+              <view class="option-btn {{newBowelRecord.color === 'green' ? 'active' : ''}}" data-field="color" data-value="green" bindtap="onBowelOptionSelect">
+                绿色
+              </view>
+              <view class="option-btn {{newBowelRecord.color === 'brown' ? 'active' : ''}}" data-field="color" data-value="brown" bindtap="onBowelOptionSelect">
+                褐色
+              </view>
+              <view class="option-btn {{newBowelRecord.color === 'white' ? 'active' : ''}}" data-field="color" data-value="white" bindtap="onBowelOptionSelect">
+                白色
+              </view>
+              <view class="option-btn {{newBowelRecord.color === 'red' ? 'active' : ''}}" data-field="color" data-value="red" bindtap="onBowelOptionSelect">
+                红色
+              </view>
+              <view class="option-btn {{newBowelRecord.color === 'black' ? 'active' : ''}}" data-field="color" data-value="black" bindtap="onBowelOptionSelect">
+                黑色
+              </view>
+            </view>
+          </view>
+          <!-- 气味 -->
+          <view class="form-item">
+            <text class="label">气味</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.smell === 'normal' ? 'active' : ''}}" data-field="smell" data-value="normal" bindtap="onBowelOptionSelect">
+                正常
+              </view>
+              <view class="option-btn {{newBowelRecord.smell === 'sour' ? 'active' : ''}}" data-field="smell" data-value="sour" bindtap="onBowelOptionSelect">
+                酸臭
+              </view>
+              <view class="option-btn {{newBowelRecord.smell === 'fishy' ? 'active' : ''}}" data-field="smell" data-value="fishy" bindtap="onBowelOptionSelect">
+                腥臭
+              </view>
+              <view class="option-btn {{newBowelRecord.smell === 'odorless' ? 'active' : ''}}" data-field="smell" data-value="odorless" bindtap="onBowelOptionSelect">
+                无味
+              </view>
+            </view>
+          </view>
+          <!-- 分量 -->
+          <view class="form-item">
+            <text class="label">分量</text>
+            <view class="option-grid">
+              <view class="option-btn {{newBowelRecord.amount === 'small' ? 'active' : ''}}" data-field="amount" data-value="small" bindtap="onBowelOptionSelect">
+                少量
+              </view>
+              <view class="option-btn {{newBowelRecord.amount === 'medium' ? 'active' : ''}}" data-field="amount" data-value="medium" bindtap="onBowelOptionSelect">
+                适量
+              </view>
+              <view class="option-btn {{newBowelRecord.amount === 'large' ? 'active' : ''}}" data-field="amount" data-value="large" bindtap="onBowelOptionSelect">
+                大量
+              </view>
+            </view>
+          </view>
+        </view>
+        <!-- 备注 -->
+        <view class="form-item">
+          <text class="label">备注</text>
+          <textarea value="{{newBowelRecord.notes}}" data-field="notes" bindinput="onNewBowelInput" placeholder="可选，记录其他信息" class="notes-textarea" />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideAddBowelModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveNewBowelRecord">保存</button>
+      </view>
+    </view>
+  </view>
+  <!-- 编辑排便记录弹窗 -->
+  <view class="modal" wx:if="{{showEditBowelModal}}" bindtap="hideEditBowelModal" catchtouchmove="preventBubble">
+    <view class="modal-content" catchtap="preventBubble">
+      <view class="modal-header">
+        <text>编辑排便记录</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <!-- 时间选择 -->
+        <view class="form-item">
+          <text class="label">时间</text>
+          <picker mode="time" value="{{editingBowelRecord.timeString}}" bindchange="onEditBowelTimeChange">
+            <view class="time-picker">{{editingBowelRecord.timeString}}</view>
+          </picker>
+        </view>
+        <!-- 类型选择 -->
+        <view class="form-item">
+          <text class="label">类型</text>
+          <view class="bowel-type-options">
+            <view class="bowel-type-btn {{editingBowelRecord.type === 'stool' ? 'active' : ''}}" data-type="stool" bindtap="onEditBowelTypeSelect">
+              <text class="type-icon">💩</text>
+              <text class="type-text">大便</text>
+            </view>
+            <view class="bowel-type-btn {{editingBowelRecord.type === 'urine' ? 'active' : ''}}" data-type="urine" bindtap="onEditBowelTypeSelect">
+              <text class="type-icon">💧</text>
+              <text class="type-text">小便</text>
+            </view>
+            <view class="bowel-type-btn {{editingBowelRecord.type === 'mixed' ? 'active' : ''}}" data-type="mixed" bindtap="onEditBowelTypeSelect">
+              <text class="type-icon">🚽</text>
+              <text class="type-text">混合</text>
+            </view>
+          </view>
+        </view>
+        <!-- 大便详细信息 -->
+        <view wx:if="{{editingBowelRecord.type === 'stool' || editingBowelRecord.type === 'mixed'}}">
+          <!-- 性状 -->
+          <view class="form-item">
+            <text class="label">性状</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.consistency === 'liquid' ? 'active' : ''}}" data-field="consistency" data-value="liquid" bindtap="onEditBowelOptionSelect">
+                水样
+              </view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'loose' ? 'active' : ''}}" data-field="consistency" data-value="loose" bindtap="onEditBowelOptionSelect">
+                稀便
+              </view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'soft' ? 'active' : ''}}" data-field="consistency" data-value="soft" bindtap="onEditBowelOptionSelect">
+                糊状
+              </view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'normal' ? 'active' : ''}}" data-field="consistency" data-value="normal" bindtap="onEditBowelOptionSelect">
+                正常
+              </view>
+              <view class="option-btn {{editingBowelRecord.consistency === 'hard' ? 'active' : ''}}" data-field="consistency" data-value="hard" bindtap="onEditBowelOptionSelect">
+                干硬
+              </view>
+            </view>
+          </view>
+          <!-- 颜色 -->
+          <view class="form-item">
+            <text class="label">颜色</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.color === 'yellow' ? 'active' : ''}}" data-field="color" data-value="yellow" bindtap="onEditBowelOptionSelect">
+                黄色
+              </view>
+              <view class="option-btn {{editingBowelRecord.color === 'green' ? 'active' : ''}}" data-field="color" data-value="green" bindtap="onEditBowelOptionSelect">
+                绿色
+              </view>
+              <view class="option-btn {{editingBowelRecord.color === 'brown' ? 'active' : ''}}" data-field="color" data-value="brown" bindtap="onEditBowelOptionSelect">
+                褐色
+              </view>
+              <view class="option-btn {{editingBowelRecord.color === 'white' ? 'active' : ''}}" data-field="color" data-value="white" bindtap="onEditBowelOptionSelect">
+                白色
+              </view>
+              <view class="option-btn {{editingBowelRecord.color === 'red' ? 'active' : ''}}" data-field="color" data-value="red" bindtap="onEditBowelOptionSelect">
+                红色
+              </view>
+              <view class="option-btn {{editingBowelRecord.color === 'black' ? 'active' : ''}}" data-field="color" data-value="black" bindtap="onEditBowelOptionSelect">
+                黑色
+              </view>
+            </view>
+          </view>
+          <!-- 气味 -->
+          <view class="form-item">
+            <text class="label">气味</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.smell === 'normal' ? 'active' : ''}}" data-field="smell" data-value="normal" bindtap="onEditBowelOptionSelect">
+                正常
+              </view>
+              <view class="option-btn {{editingBowelRecord.smell === 'sour' ? 'active' : ''}}" data-field="smell" data-value="sour" bindtap="onEditBowelOptionSelect">
+                酸臭
+              </view>
+              <view class="option-btn {{editingBowelRecord.smell === 'fishy' ? 'active' : ''}}" data-field="smell" data-value="fishy" bindtap="onEditBowelOptionSelect">
+                腥臭
+              </view>
+              <view class="option-btn {{editingBowelRecord.smell === 'odorless' ? 'active' : ''}}" data-field="smell" data-value="odorless" bindtap="onEditBowelOptionSelect">
+                无味
+              </view>
+            </view>
+          </view>
+          <!-- 分量 -->
+          <view class="form-item">
+            <text class="label">分量</text>
+            <view class="option-grid">
+              <view class="option-btn {{editingBowelRecord.amount === 'small' ? 'active' : ''}}" data-field="amount" data-value="small" bindtap="onEditBowelOptionSelect">
+                少量
+              </view>
+              <view class="option-btn {{editingBowelRecord.amount === 'medium' ? 'active' : ''}}" data-field="amount" data-value="medium" bindtap="onEditBowelOptionSelect">
+                适量
+              </view>
+              <view class="option-btn {{editingBowelRecord.amount === 'large' ? 'active' : ''}}" data-field="amount" data-value="large" bindtap="onEditBowelOptionSelect">
+                大量
+              </view>
+            </view>
+          </view>
+        </view>
+        <!-- 备注 -->
+        <view class="form-item">
+          <text class="label">备注</text>
+          <textarea value="{{editingBowelRecord.notes}}" data-field="notes" bindinput="onEditBowelInput" placeholder="可选，记录其他信息" class="notes-textarea" />
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel" bindtap="hideEditBowelModal">取消</button>
+        <button class="modal-btn confirm" bindtap="saveEditedBowelRecord">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

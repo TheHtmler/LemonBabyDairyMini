@@ -232,11 +232,48 @@ test('buildDataRecordsSummaryPreview shows food special protein under special pr
   assert.equal(preview.nutritionStrip[1].detail, '0.3 g/kg/d');
 });
 
-test('data records does not rank feeding records by persisted summary calories', () => {
-  const source = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/data-records/index.js'),
-    'utf8'
-  );
+test('buildDataRecordsSummaryPreview derives v2 milk badges from component categories', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    isV2RecordsPage: true,
+    feedings: [
+      {
+        isV2FeedingRecord: true,
+        formulaComponents: [
+          {
+            kind: 'formula_powder',
+            powderName: '普奶 A',
+            category: 'regular_formula',
+            proteinRole: 'natural',
+            waterVolume: 30,
+            powderWeight: 5,
+            nutritionSnapshot: { protein: 10, calories: 500, fat: 20, carbs: 55 }
+          },
+          {
+            kind: 'formula_powder',
+            powderName: '特奶',
+            category: 'special_formula',
+            proteinRole: 'special',
+            waterVolume: 90,
+            powderWeight: 13.5,
+            nutritionSnapshot: { protein: 13, calories: 520, fat: 24, carbs: 50 }
+          },
+          {
+            kind: 'formula_powder',
+            powderName: '能量粉',
+            category: 'energy_supplement',
+            proteinRole: 'none',
+            waterVolume: 20,
+            powderWeight: 3,
+            nutritionSnapshot: { protein: 0, calories: 400, fat: 0, carbs: 95 }
+          }
+        ]
+      }
+    ]
+  });
 
-  assert.doesNotMatch(source, /summaryCalories/);
+  assert.deepEqual(
+    preview.sourceSections[0].componentRows.map((row) => row.badge),
+    ['普', '特', '能']
+  );
 });
+

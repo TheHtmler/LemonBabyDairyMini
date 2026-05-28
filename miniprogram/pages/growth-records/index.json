@@ -1,6 +1,0 @@
-{
-  "navigationBarTitleText": "成长记录",
-  "usingComponents": {
-    "ec-canvas": "/components/ec-canvas/ec-canvas"
-  }
-}

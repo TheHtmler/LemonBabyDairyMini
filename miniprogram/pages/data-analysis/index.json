@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "数据分析",
-  "enablePullDownRefresh": true,
-  "usingComponents": {
-    "ec-canvas": "../../components/ec-canvas/ec-canvas"
-  }
-}

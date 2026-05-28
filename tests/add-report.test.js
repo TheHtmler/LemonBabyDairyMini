@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 function loadAddReportPage() {
-  const pagePath = require.resolve('../miniprogram/pages/add-report/index.js');
+  const pagePath = require.resolve('../miniprogram/pkg-report/add-report/index.js');
   delete require.cache[pagePath];
 
   let pageConfig = null;
@@ -42,7 +42,7 @@ test('add-report honors incoming report type when opening add mode from a catego
 
 test('add-report page saves and loads through report repository instead of direct baby_reports access', () => {
   const js = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/add-report/index.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.js'),
     'utf8'
   );
 
@@ -55,15 +55,15 @@ test('add-report page saves and loads through report repository instead of direc
 
 test('add-report page uses compact grouped layout for indicator entry', () => {
   const wxml = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/add-report/index.wxml'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxml'),
     'utf8'
   );
   const wxss = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/add-report/index.wxss'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxss'),
     'utf8'
   );
   const js = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pages/add-report/index.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.js'),
     'utf8'
   );
 

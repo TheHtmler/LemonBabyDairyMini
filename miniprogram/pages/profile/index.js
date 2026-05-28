@@ -16,47 +16,41 @@ Page({
         id: 1,
         name: '宝宝信息',
         icon: 'baby',
-        path: '/pages/baby-info/index?from=profile'
+        path: '/pkg-misc/baby-info/index?from=profile'
       },
       {
         id: 2,
         name: '配奶管理',
         icon: 'setting',
-        path: '/pages/nutrition-settings/index'
+        path: '/pkg-milk/nutrition-profile-settings/index',
+        description: '维护母乳参数、奶粉档案和能量补充粉'
       },
       {
         id: 9,
         name: '食物管理',
         icon: 'add',
-        path: '/pages/food-management/index',
+        path: '/pkg-milk/food-management/index',
         description: '维护常用食物，记录摄入更快捷'
       },
       {
         id: 3,
         name: '药物管理',
         icon: 'medicine',
-        path: '/pages/medications/index'
+        path: '/pkg-misc/medications/index'
       },
       {
         id: 4,
         name: '数据分析',
         icon: 'nutrition',
-        path: '/pages/data-analysis/index',
+        path: '/pkg-report/data-analysis/index',
         description: '查看周、月维度的数据趋势'
       },
       {
         id: 10,
         name: '成长记录',
         icon: 'growth',
-        path: '/pages/growth-records/index',
+        path: '/pkg-records/growth-records/index',
         description: '身高体重曲线与成长里程碑'
-      },
-      {
-        id: 16,
-        name: '报告工作台预览',
-        icon: 'nutrition',
-        path: '/pages/report-workbench-preview/index',
-        description: '独立预览报告对比、趋势和营养暴露摘要的新工作台'
       },
       {
         id: 5,
@@ -70,14 +64,14 @@ Page({
         id: 12,
         name: '意见反馈',
         icon: 'info',
-        path: '/pages/feedback/index',
+        path: '/pkg-misc/feedback/index',
         description: '告诉我们问题、建议或想增加的功能'
       },
       {
         id: 13,
         name: '反馈列表',
         icon: 'info',
-        path: '/pages/feedback-list/index',
+        path: '/pkg-misc/feedback-list/index',
         description: '查看用户提交的反馈并标记处理状态',
         showForDeveloper: true
       },
@@ -85,7 +79,7 @@ Page({
         id: 14,
         name: '应急支持',
         icon: 'info',
-        path: '/pages/emergency-support/index',
+        path: '/pkg-misc/emergency-support/index',
         description: '查看急救卡与补液热量计算'
       },
       {
@@ -99,13 +93,13 @@ Page({
         id: 6,
         name: '数据标识说明',
         icon: 'info',
-        path: '/pages/about/index?section=auth'
+        path: '/pkg-misc/about/index?section=auth'
       },
       {
         id: 7,
         name: '关于我们',
         icon: 'info',
-        path: '/pages/about/index'
+        path: '/pkg-misc/about/index'
       },
       {
         id: 8,
@@ -551,7 +545,7 @@ Page({
 
     // 跳转到分享页面
     wx.navigateTo({
-      url: '/pages/share-data/index'
+      url: '/pkg-misc/share-data/index'
     });
   },
 

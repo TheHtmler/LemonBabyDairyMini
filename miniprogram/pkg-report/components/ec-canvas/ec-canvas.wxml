@@ -1,0 +1,14 @@
+<view class="chart-container">
+  <canvas id="{{canvasId}}" type="2d" class="ec-canvas" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd"></canvas>
+  <view wx:if="{{ crosshairVisible }}" class="crosshair-line" style="left: {{ crosshairX }}px; top: {{ crosshairTop }}px; height: {{ crosshairHeight }}px;">
+    <view class="crosshair-handle"></view>
+  </view>
+  <view wx:if="{{ tooltipVisible }}" class="tooltip" style="left: {{ tooltipX }}px; top: {{ tooltipY }}px;">
+    <view class="tooltip-date">{{ tooltipData.date }}</view>
+    <view wx:for="{{ tooltipData.values }}" wx:key="index" class="tooltip-item">
+      <view class="tooltip-dot" style="background-color: {{ item.color }};"></view>
+      <text class="tooltip-label">{{ item.name }}:</text>
+      <text class="tooltip-value">{{ item.value }}</text>
+    </view>
+  </view>
+</view>

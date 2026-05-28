@@ -50,6 +50,32 @@ test('feeding-record-item composes a single milk summary line with powder detail
   assert.equal(instance.data.milkSummaryText, '普奶 40ml（粉 5g） · 特奶 90ml（粉 13.5g）');
 });
 
+test('feeding-record-item uses v2 milk summary badges and rounds displayed calories', () => {
+  const component = loadFeedingRecordItem();
+  const instance = createComponentInstance(component);
+
+  instance.updateDisplay({
+    formattedStartTime: '09:30',
+    milkSummaryItems: [
+      { badge: '母', name: '母乳', amountText: '60ml' },
+      { badge: '普', name: '普奶 A', amountText: '30ml · 粉 5g' },
+      { badge: '特', name: '特奶', amountText: '90ml · 粉 13.5g' },
+      { badge: '能', name: '能量粉', amountText: '粉 3g' }
+    ],
+    nutritionDisplay: {
+      calories: 147.6,
+      carbs: 15.8,
+      fat: 5.52,
+      naturalProtein: 1.16,
+      specialProtein: 1.76
+    }
+  });
+
+  assert.deepEqual(instance.data.milkSummaryItems.map((item) => item.badge), ['母', '普', '特', '能']);
+  assert.equal(instance.data.milkSummaryText, '');
+  assert.equal(instance.data.metricItems[0].text, '热量 148 kcal');
+});
+
 test('feeding-record-item hides zero-value milk entries in the summary line', () => {
   const component = loadFeedingRecordItem();
   const instance = createComponentInstance(component);
@@ -76,8 +102,11 @@ test('feeding-record-item keeps the milk summary on a single line with ellipsis'
   const wxss = fs.readFileSync('miniprogram/components/feeding-record-item/feeding-record-item.wxss', 'utf8');
 
   assert.match(wxml, /wx:if="\{\{showHeader\}\}"/);
+  assert.match(wxml, /milk-summary-chip/);
   assert.match(wxml, /class="milk-summary-row"/);
   assert.match(wxss, /\.milk-summary-row\s*\{[^}]*min-width:\s*0/);
+  assert.match(wxss, /\.milk-summary-chip\s*\{/);
+  assert.match(wxss, /\.milk-summary-badge\s*\{/);
   assert.match(wxss, /\.milk-summary\s*\{[^}]*font-size:\s*26rpx/);
   assert.match(wxss, /\.milk-summary\s*\{[^}]*white-space:\s*nowrap/);
   assert.match(wxss, /\.milk-summary\s*\{[^}]*overflow:\s*hidden/);

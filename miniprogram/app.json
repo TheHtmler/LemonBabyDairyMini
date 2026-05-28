@@ -3,28 +3,52 @@
     "pages/role-selection/index",
     "pages/invite-join/index",
     "pages/daily-feeding/index",
-    "pages/data-records/index",
-    "pages/report-workbench-preview/index",
-    "pages/meal-editor/index",
-    "pages/milk-feeding-editor/index",
-    "pages/growth-records/index",
-    "pages/data-analysis/index",
+    "pages/data-records-v2/index",
     "pages/analysis-report/index",
     "pages/profile/index",
-    "pages/onboarding/index",
-    "pages/share-data/index",
-    "pages/baby-info/index",
-    "pages/nutrition-settings/index",
-    "pages/food-management/index",
-    "pages/medications/index",
-    "pages/feedback/index",
-    "pages/feedback-list/index",
-    "pages/emergency-support/index",
-    "pages/treatment-record/index",
-    "pages/emergency-card/index",
-    "pages/about/index",
-    "pages/add-report/index",
-    "pages/report-detail/index"
+    "pages/meal-editor-v2/index",
+    "pages/onboarding/index"
+  ],
+  "subPackages": [
+    {
+      "root": "pkg-records",
+      "pages": [
+        "meal-editor/index",
+        "growth-records/index",
+        "treatment-record/index"
+      ]
+    },
+    {
+      "root": "pkg-milk",
+      "pages": [
+        "milk-feeding-editor-v2/index",
+        "milk-goal-planner-v2/index",
+        "nutrition-profile-settings/index",
+        "nutrition-settings/index",
+        "food-management/index"
+      ]
+    },
+    {
+      "root": "pkg-report",
+      "pages": [
+        "data-analysis/index",
+        "add-report/index",
+        "report-detail/index"
+      ]
+    },
+    {
+      "root": "pkg-misc",
+      "pages": [
+        "baby-info/index",
+        "medications/index",
+        "feedback/index",
+        "feedback-list/index",
+        "share-data/index",
+        "emergency-support/index",
+        "emergency-card/index",
+        "about/index"
+      ]
+    }
   ],
   "window": {
     "backgroundColor": "#FFF5D6",
@@ -47,7 +71,7 @@
         "text": "今日记录"
       },
       {
-        "pagePath": "pages/data-records/index",
+        "pagePath": "pages/data-records-v2/index",
         "text": "数据记录"
       },
       {

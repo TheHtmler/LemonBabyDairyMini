@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 function loadFoodManagementPage() {
-  const pagePath = require.resolve('../miniprogram/pages/food-management/index.js');
+  const pagePath = require.resolve('../miniprogram/pkg-milk/food-management/index.js');
   [
     pagePath,
     require.resolve('../miniprogram/models/food.js'),
@@ -80,7 +80,7 @@ function createPageInstance(page, data = {}) {
 
 test('food management shows protein source in required section before fat and carbs', () => {
   const wxml = fs.readFileSync(
-    require.resolve('../miniprogram/pages/food-management/index.wxml'),
+    require.resolve('../miniprogram/pkg-milk/food-management/index.wxml'),
     'utf8'
   );
   const requiredSection = wxml.slice(
