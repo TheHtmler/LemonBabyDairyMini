@@ -100,8 +100,28 @@ function calculateSpecialMilkPowder(specialMilkVolume, nutritionSettings = {}) {
   return Math.round((specialMilkVolume * ratioPowder / ratioWater) * 10) / 10;
 }
 
+function createEmptyV2MilkGroup() {
+  return { volume: 0, calories: 0, protein: 0, carbs: 0, fat: 0 };
+}
+
+function addV2MilkGroup(target, source = {}) {
+  target.volume += Number(source.volume) || 0;
+  target.calories += Number(source.calories) || 0;
+  target.protein += Number(source.protein) || 0;
+  target.carbs += Number(source.carbs) || 0;
+  target.fat += Number(source.fat) || 0;
+}
+
 function aggregateMilkComponentTotals(feedings = [], nutritionSettings = {}) {
   return (feedings || []).reduce((totals, feeding) => {
+    // v2 喂奶记录自带营养快照，单独按快照累加，不进旧体积重算桶（避免用旧配奶参数错算）
+    if (feeding && feeding.isV2FeedingRecord) {
+      const overview = feeding.milkOverviewSnapshot || {};
+      addV2MilkGroup(totals.v2.normal, overview.normal);
+      addV2MilkGroup(totals.v2.special, overview.special);
+      return totals;
+    }
+
     const naturalVolume = parseFloat(feeding.naturalMilkVolume) || 0;
     const naturalType = (feeding.naturalMilkType || 'breast') === 'formula' ? 'formula' : 'breast';
 
@@ -126,7 +146,11 @@ function aggregateMilkComponentTotals(feedings = [], nutritionSettings = {}) {
     formulaVolume: 0,
     formulaPowderWeight: 0,
     specialVolume: 0,
-    specialPowderWeight: 0
+    specialPowderWeight: 0,
+    v2: {
+      normal: createEmptyV2MilkGroup(),
+      special: createEmptyV2MilkGroup()
+    }
   });
 }
 
@@ -324,6 +348,10 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     });
   }
 
+  // v2 喂奶记录直接用自带营养快照累加（普奶/特奶分组）
+  addMilkStats(overview.milk.normal, milkTotals.v2.normal);
+  addMilkStats(overview.milk.special, milkTotals.v2.special);
+
   (intakes || []).forEach((intake) => {
     const nutrition = intake.nutrition || {};
     if (intake.type === 'milk') {
@@ -427,6 +455,17 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
       specialMilkPowder: milkTotals.specialPowderWeight
     });
   }
+
+  // v2 喂奶记录直接用自带营养快照累加，不再用旧配奶参数重算
+  const v2Normal = milkTotals.v2.normal;
+  const v2Special = milkTotals.v2.special;
+  summary.calories += (Number(v2Normal.calories) || 0) + (Number(v2Special.calories) || 0);
+  summary.naturalProtein += Number(v2Normal.protein) || 0;
+  summary.specialProtein += Number(v2Special.protein) || 0;
+  summary.premiumProtein += Number(v2Normal.protein) || 0;
+  summary.protein += (Number(v2Normal.protein) || 0) + (Number(v2Special.protein) || 0);
+  summary.carbs += (Number(v2Normal.carbs) || 0) + (Number(v2Special.carbs) || 0);
+  summary.fat += (Number(v2Normal.fat) || 0) + (Number(v2Special.fat) || 0);
 
   summary.calories = roundCalories(summary.calories);
   summary.protein = roundNumber(summary.protein, 2);

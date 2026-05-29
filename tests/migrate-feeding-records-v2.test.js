@@ -174,6 +174,52 @@ test('buildMigratedFeedingRecord preserves explicit powder weights and uses defa
   assert.equal(migrated.basicInfoSnapshot.weight, 5.2);
 });
 
+test('buildMigratedFeedingRecord warns and records dropped special milk when the profile lacks a special powder', () => {
+  const fn = loadFunctionWithMockCloud();
+  const migrated = fn._internal.buildMigratedFeedingRecord({
+    legacyRecord: {
+      _id: 'legacy-day-missing-special',
+      babyUid: 'baby-1',
+      date: '2026-05-01'
+    },
+    feeding: {
+      startTime: '08:00',
+      naturalMilkType: 'breast',
+      naturalMilkVolume: 59,
+      specialMilkVolume: 61,
+      specialMilkPowder: 9.15
+    },
+    feedingIndex: 0,
+    profile: {
+      breastMilk: {
+        nutritionPer100ml: { protein: 1.1, calories: 67 }
+      },
+      // 只有普奶，没有特奶档案
+      formulaPowders: [
+        {
+          id: 'regular',
+          name: '普奶',
+          category: 'regular_formula',
+          proteinRole: 'natural',
+          mixRatio: { powder: 8, water: 100 },
+          nutritionPer100g: { protein: 10, calories: 500 }
+        }
+      ]
+    },
+    migrationVersion: 'milk-v2-test',
+    migratedAt: '__server_date__'
+  });
+
+  // 母乳仍保留，但特奶组件因缺档案不能静默丢弃：必须有 warning + droppedComponents 记录
+  assert.equal(migrated.formulaComponents.length, 1);
+  assert.equal(migrated.formulaComponents[0].kind, 'breast_milk');
+  assert.equal(migrated.migrationDroppedComponents.length, 1);
+  assert.equal(migrated.migrationDroppedComponents[0].category, 'special_formula');
+  assert.equal(migrated.migrationDroppedComponents[0].waterVolume, 61);
+  assert.equal(migrated.migrationDroppedComponents[0].reason, 'missing_powder_profile');
+  assert.equal(migrated.migrationWarnings.some((text) => /特奶/.test(text)), true);
+});
+
 test('buildMigratedFeedingRecord optionally selects historical powder profiles by date range', () => {
   const fn = loadFunctionWithMockCloud();
   const migrated = fn._internal.buildMigratedFeedingRecord({

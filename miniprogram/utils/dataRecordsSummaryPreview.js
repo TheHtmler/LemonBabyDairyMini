@@ -147,7 +147,7 @@ value: `${roundDisplayNumber(row.protein)}g`
 };
 }
 return {
-label: row.hasZeroProtein ? '无蛋白热量' : '蛋白',
+label: '蛋白',
 value: '0g'
 };
 }

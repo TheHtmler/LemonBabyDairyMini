@@ -143,6 +143,64 @@ test('buildReportWorkbenchView compares same-type reports and summarizes nutriti
   assert.match(view.doctorSummary[1], /3\/3 天/);
 });
 
+test('buildReportWorkbenchView uses v2 feeding nutrition snapshot for the milk window instead of recomputing', () => {
+  const reports = [
+    {
+      _id: 'urine-current',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-16T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '120', status: 'high' }
+      }
+    },
+    {
+      _id: 'urine-previous',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-12T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '100', status: 'high' }
+      }
+    }
+  ];
+
+  const feedingRecords = [
+    {
+      _id: 'v2-day',
+      date: '2026-11-14',
+      basicInfo: { weight: 5 },
+      intakes: [],
+      feedings: [
+        {
+          isV2FeedingRecord: true,
+          // naturalMilkVolume 故意为 0：若仍走旧重算，奶蛋白会算成 0；走 v2 快照则用下面的数值
+          naturalMilkVolume: 0,
+          specialMilkVolume: 0,
+          nutritionDisplay: { calories: 80, naturalProtein: 5, specialProtein: 2, carbs: 0, fat: 0 },
+          milkOverviewSnapshot: {
+            normal: { volume: 60, calories: 40, protein: 5, carbs: 0, fat: 0 },
+            special: { volume: 60, calories: 40, protein: 2, carbs: 0, fat: 0 },
+            totalVolume: 120,
+            totalCalories: 80
+          }
+        }
+      ]
+    }
+  ];
+
+  const view = buildReportWorkbenchView({
+    selectedReportId: 'urine-current',
+    reports,
+    feedingRecords,
+    nutritionSettings: {},
+    fallbackWeight: 5
+  });
+
+  // 天然蛋白系数 = 5/5 = 1；特奶蛋白系数 = 2/5 = 0.4；热卡系数 = 80/5 = 16（数值去尾零）
+  assert.equal(view.nutritionWindows[0].metrics[0].value, '1');
+  assert.equal(view.nutritionWindows[0].metrics[1].value, '0.4');
+  assert.equal(view.nutritionWindows[0].metrics[2].value, '16');
+});
+
 test('buildReportWorkbenchView exposes all blood-ms indicators including amino acid markers', () => {
   const reports = [
     {

@@ -42,6 +42,22 @@ function hasBasicInfoValue(value) {
   return value !== '' && value !== null && value !== undefined;
 }
 
+const GROWTH_COEFFICIENT_FIELDS = [
+  'naturalProteinCoefficient',
+  'specialProteinCoefficient',
+  'calorieCoefficient'
+];
+
+// 仅写入有值的系数，避免部分更新（例如只改体重）把已有系数清空。
+function buildGrowthCoefficientFields(growthData = {}) {
+  return GROWTH_COEFFICIENT_FIELDS.reduce((fields, key) => {
+    if (hasBasicInfoValue(growthData[key])) {
+      fields[key] = growthData[key];
+    }
+    return fields;
+  }, {});
+}
+
 function mergeMissingBasicInfo(primary = {}, fallback = {}) {
   const merged = { ...primary };
   ['weight', 'height', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient'].forEach((key) => {
@@ -230,7 +246,8 @@ class FeedingRecordV2Model {
       height: growthData.height || growthData.length || '',
       headCircumference: growthData.headCircumference || '',
       notes: growthData.notes || '',
-      changes: growthData.changes || ''
+      changes: growthData.changes || '',
+      ...buildGrowthCoefficientFields(growthData)
     };
 
     if (existing?._id) {

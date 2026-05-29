@@ -287,7 +287,38 @@ function createDailyRecordFromV2(records = [], date, babyUid) {
   };
 }
 
+function isActiveMilkFeedingV2Record(record = {}) {
+  const status = record.status || 'active';
+  return status === 'active' && record.recordType !== 'daily_basic_info';
+}
+
+// 把一批 feeding_records_v2 记录按日期聚合成「旧结构」的每日喂奶记录，
+// 供奶统计页面复用：每条 feeding 自带 V2 营养快照（nutritionDisplay/milkOverviewSnapshot）。
+function groupV2FeedingRecordsByDate(records = [], babyUid = '') {
+  const byDate = new Map();
+  (Array.isArray(records) ? records : []).forEach((record = {}) => {
+    if (!isActiveMilkFeedingV2Record(record)) {
+      return;
+    }
+    const dateKey = record.date || '';
+    if (!dateKey) {
+      return;
+    }
+    if (!byDate.has(dateKey)) {
+      byDate.set(dateKey, []);
+    }
+    byDate.get(dateKey).push(record);
+  });
+
+  const result = new Map();
+  byDate.forEach((dayRecords, dateKey) => {
+    result.set(dateKey, createDailyRecordFromV2(dayRecords, dateKey, babyUid || dayRecords[0]?.babyUid || ''));
+  });
+  return result;
+}
+
 module.exports = {
   createDailyRecordFromV2,
-  createFeedingDisplayFromV2
+  createFeedingDisplayFromV2,
+  groupV2FeedingRecordsByDate
 };

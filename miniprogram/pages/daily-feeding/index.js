@@ -2114,12 +2114,8 @@ Page({
 
       if (sameDayRecords.length > 0) {
         const record = this.mergeSameDayFeedingRecords(sameDayRecords);
-        if (!v2DailyRecord) {
-          feedingsToSet = this.sortFeedingsByTimeDesc(record.feedings || []).map(item => ({
-            ...item,
-            naturalMilkType: item.naturalMilkType || 'breast'
-          }));
-        }
+        // 奶记录统一以 v2 为准（见下方 v2DailyRecord 分支），不再回退展示旧 feeding_records 的奶。
+        // 旧 feeding_records 仅用于读取食物 intakes 与基础信息。
         recordId = record._id;
         intakesToSet = this.normalizeIntakes(record.intakes || []);
         foodIntakesToSet = intakesToSet.filter(item => item.type !== 'milk');

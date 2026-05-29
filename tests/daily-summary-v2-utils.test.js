@@ -107,6 +107,8 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
     protein: 2.35,
     naturalProtein: 1.11,
     specialProtein: 1.23,
+    carbs: 0,
+    fat: 0,
     zeroProteinCalories: 12.35
   });
   assert.deepEqual(summary.food, {
@@ -155,6 +157,74 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
   assert.equal(summary.isDirty, false);
 });
 
+test('mergeFoodNutrition splits natural/special protein for legacy top-level intakes and proteinSource fallback', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    foodIntakeRecords: [
+      // 旧 feeding_records.intakes 结构：naturalProtein/specialProtein 在顶层
+      {
+        nutrition: { calories: 100, protein: 3, carbs: 10, fat: 2 },
+        naturalProtein: 3,
+        specialProtein: 0,
+        proteinSource: 'natural'
+      },
+      // 顶层与 nutrition 都缺拆分，按 proteinSource=special 兜底
+      {
+        nutrition: { calories: 40, protein: 2, carbs: 4, fat: 1 },
+        proteinSource: 'special'
+      },
+      // v2 food_intake_records 结构：naturalProtein 在 nutrition 内
+      {
+        nutrition: { calories: 50, protein: 1, naturalProtein: 1, specialProtein: 0, carbs: 5, fat: 1 }
+      }
+    ]
+  });
+
+  // 旧结构食物的天然/特殊蛋白必须正确拆分，而不是被算成 0
+  assert.equal(summary.food.protein, 6);
+  assert.equal(summary.food.naturalProtein, 4);
+  assert.equal(summary.food.specialProtein, 2);
+  assert.equal(summary.macroSummary.naturalProtein, 4);
+  assert.equal(summary.macroSummary.specialProtein, 2);
+});
+
+test('macroSummary includes milk carbs and fat from v2 nutritionSummary', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    milkRecords: [
+      {
+        _id: 'milk-1',
+        nutritionSummary: {
+          totalVolume: 120,
+          calories: 80,
+          protein: 2,
+          naturalProtein: 1.2,
+          specialProtein: 0.8,
+          carbs: 8,
+          fat: 4
+        }
+      }
+    ]
+  });
+
+  // 奶的碳水/脂肪必须计入汇总，否则碳水/脂肪偏低、蛋白占比偏高
+  assert.equal(summary.milk.carbs, 8);
+  assert.equal(summary.milk.fat, 4);
+  assert.equal(summary.macroSummary.carbs, 8);
+  assert.equal(summary.macroSummary.fat, 4);
+  assert.equal(summary.macroSummary.protein, 2);
+});
+
 test('basicInfo prefers growth_records_v2 over milk record snapshots', () => {
   const {
     buildDailySummaryV2
@@ -197,6 +267,47 @@ test('basicInfo prefers growth_records_v2 over milk record snapshots', () => {
     calorieCoefficient: '95'
   });
   assert.equal(summary.sourceUpdatedAt.growth, '2026-05-25T06:00:00.000Z');
+});
+
+test('basicInfo recovers missing coefficients from milk snapshot when growth record only has body measurements', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    growthRecords: [
+      {
+        _id: 'growth-1',
+        status: 'active',
+        weight: '6.2',
+        height: '61'
+        // 旧版/运行时成长记录只存身高体重，没有蛋白系数
+      }
+    ],
+    milkRecords: [
+      {
+        _id: 'milk-1',
+        basicInfoSnapshot: {
+          weight: '5.9',
+          height: '60',
+          naturalProteinCoefficient: '1.2',
+          specialProteinCoefficient: '0.8',
+          calorieCoefficient: '95'
+        }
+      }
+    ]
+  });
+
+  // 身高体重以成长记录为准，缺失的蛋白系数回退到喂奶快照，避免“系数没有”。
+  assert.deepEqual(summary.basicInfo, {
+    weight: '6.2',
+    height: '61',
+    naturalProteinCoefficient: '1.2',
+    specialProteinCoefficient: '0.8',
+    calorieCoefficient: '95'
+  });
 });
 
 test('missing data returns a zeroed daily summary shape', () => {

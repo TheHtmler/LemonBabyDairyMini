@@ -94,6 +94,12 @@ function getTimeValue(value) {
   return 0;
 }
 
+function countActivePowders(doc = {}) {
+  return (Array.isArray(doc.formulaPowders) ? doc.formulaPowders : [])
+    .filter((powder) => powder && powder.status !== POWDER_STATUSES.ARCHIVED)
+    .length;
+}
+
 function sortDocumentsByFreshness(documents = []) {
   return [...documents].sort((left, right) => {
     const rightUpdatedAt = getTimeValue(right?.updatedAt);
@@ -101,14 +107,25 @@ function sortDocumentsByFreshness(documents = []) {
     if (rightUpdatedAt !== leftUpdatedAt) {
       return rightUpdatedAt - leftUpdatedAt;
     }
-    return getTimeValue(right?.createdAt) - getTimeValue(left?.createdAt);
+    const rightCreatedAt = getTimeValue(right?.createdAt);
+    const leftCreatedAt = getTimeValue(left?.createdAt);
+    if (rightCreatedAt !== leftCreatedAt) {
+      return rightCreatedAt - leftCreatedAt;
+    }
+    // 时间戳相同时，优先保留有效奶粉更多的那份，避免选到空/残缺副本
+    return countActivePowders(right) - countActivePowders(left);
   });
 }
 
-async function getFirstDocument(collection, babyUid, debugName = 'collection') {
+// 以 babyUid 取出该宝宝的所有配奶档案，按新鲜度排序（最新在前）。
+async function getDocumentsByFreshness(collection, babyUid) {
   const res = await collection.where({ babyUid }).get();
-  const documents = res.data || [];
-  const selected = sortDocumentsByFreshness(documents)[0];
+  return sortDocumentsByFreshness(res.data || []);
+}
+
+async function getFirstDocument(collection, babyUid, debugName = 'collection') {
+  const documents = await getDocumentsByFreshness(collection, babyUid);
+  const selected = documents[0];
   console.info(`[NutritionProfile] ${debugName} query`, {
     babyUid,
     count: documents.length,
@@ -118,36 +135,6 @@ async function getFirstDocument(collection, babyUid, debugName = 'collection') {
     selectedPowderCount: Array.isArray(selected?.formulaPowders) ? selected.formulaPowders.length : undefined
   });
   return selected;
-}
-
-function stripProfileRuntimeFields(value) {
-  if (Array.isArray(value)) {
-    return value.map(stripProfileRuntimeFields);
-  }
-  if (!value || typeof value !== 'object') {
-    return value;
-  }
-
-  return Object.keys(value)
-    .filter((key) => !['_id', '_openid', 'createdAt', 'updatedAt', 'deletedAt'].includes(key))
-    .sort()
-    .reduce((acc, key) => {
-      acc[key] = stripProfileRuntimeFields(value[key]);
-      return acc;
-    }, {});
-}
-
-function getComparableProfile(profile = {}) {
-  return stripProfileRuntimeFields({
-    babyUid: profile.babyUid,
-    schemaVersion: profile.schemaVersion,
-    breastMilk: profile.breastMilk || {},
-    formulaPowders: profile.formulaPowders || []
-  });
-}
-
-function hasMeaningfulProfileChange(existingProfile, nextProfileData) {
-  return JSON.stringify(getComparableProfile(existingProfile)) !== JSON.stringify(getComparableProfile(nextProfileData));
 }
 
 function applyPowderToLegacyFields(settings, prefix, powder) {
@@ -279,45 +266,11 @@ class MilkNutritionProfileModel {
         powderCount: data.formulaPowders.length,
         powderIds: data.formulaPowders.map((powder) => powder.id)
       });
-      const profile = await getFirstDocument(milkNutritionProfileCollection, babyUid, 'milk_nutrition_profiles');
 
-      if (profile) {
-        const updateRes = await milkNutritionProfileCollection.doc(profile._id).update({
-          data
-        });
-        console.info('[NutritionProfile] update existing profile result', {
-          babyUid,
-          profileId: profile._id,
-          result: updateRes
-        });
-        if (updateRes?.stats && updateRes.stats.updated === 0) {
-          if (!hasMeaningfulProfileChange(profile, data)) {
-            console.warn('[NutritionProfile] update affected 0 documents but profile content is unchanged', {
-              babyUid,
-              profileId: profile._id
-            });
-          } else {
-            console.warn('[NutritionProfile] update affected 0 documents, adding writable replacement profile', {
-              babyUid,
-              blockedProfileId: profile._id
-            });
-            const addRes = await milkNutritionProfileCollection.add({
-              data: {
-                ...data,
-                createdAt: db.serverDate()
-              }
-            });
-            console.info('[NutritionProfile] add replacement profile result', {
-              babyUid,
-              blockedProfileId: profile._id,
-              result: addRes
-            });
-            if (!addRes?._id) {
-              throw new Error(`milk_nutrition_profiles replacement add did not return _id after blocked update: ${profile._id}`);
-            }
-          }
-        }
-      } else {
+      // 配奶档案以 babyUid 为准：所有绑定该宝宝的监护人（创建者/参与者）读写同一份文档。
+      const documents = await getDocumentsByFreshness(milkNutritionProfileCollection, babyUid);
+
+      if (documents.length === 0) {
         const addRes = await milkNutritionProfileCollection.add({
           data: {
             ...data,
@@ -330,6 +283,38 @@ class MilkNutritionProfileModel {
         });
         if (!addRes?._id) {
           throw new Error('milk_nutrition_profiles add did not return _id');
+        }
+        return true;
+      }
+
+      // 始终写入唯一的权威文档（最新那份），无论它由创建者还是参与者建立。
+      const canonical = documents[0];
+      const updateRes = await milkNutritionProfileCollection.doc(canonical._id).update({
+        data
+      });
+      console.info('[NutritionProfile] update canonical profile result', {
+        babyUid,
+        profileId: canonical._id,
+        duplicateCount: documents.length - 1,
+        result: updateRes
+      });
+
+      // 合并去重：删除该 babyUid 下的其它历史/分裂副本，确保只剩一份共享档案，
+      // 避免不同监护人各读各的副本导致“看不到对方最新配奶”。
+      const duplicates = documents.slice(1);
+      for (const duplicate of duplicates) {
+        try {
+          await milkNutritionProfileCollection.doc(duplicate._id).remove();
+          console.info('[NutritionProfile] removed duplicate profile', {
+            babyUid,
+            removedId: duplicate._id
+          });
+        } catch (removeError) {
+          console.warn('[NutritionProfile] 清理重复配奶档案失败（已忽略）', {
+            babyUid,
+            duplicateId: duplicate._id,
+            error: removeError && (removeError.message || removeError.errMsg || String(removeError))
+          });
         }
       }
 

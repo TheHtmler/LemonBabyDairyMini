@@ -140,6 +140,49 @@ test('data-analysis derives special milk from legacy totalVolume when computing 
   assert.equal(instance.data.chartData.totalCalories[0], 34);
 });
 
+test('data-analysis uses v2 feeding nutrition snapshot instead of recomputing from legacy settings', () => {
+  const page = loadDataAnalysisPage();
+  // 旧配奶参数刻意与 v2 快照不同：若仍用旧参数重算，热量不会等于 v2 快照值
+  const instance = createPageInstance(page, {
+    nutritionSettings: {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      special_milk_protein: 13.1,
+      special_milk_calories: 480,
+      special_milk_ratio: { powder: 13.5, water: 90 }
+    }
+  });
+  const date = new Date('2026-03-20T00:00:00+08:00');
+
+  withMutedConsole(() => instance.processAnalysisData([
+    {
+      date,
+      basicInfo: { weight: 5 },
+      feedings: [
+        {
+          isV2FeedingRecord: true,
+          naturalMilkType: 'breast',
+          naturalMilkVolume: 59,
+          specialMilkVolume: 61,
+          nutritionDisplay: {
+            calories: 100,
+            naturalProtein: 0.65,
+            specialProtein: 7.99,
+            carbs: 5,
+            fat: 3
+          }
+        }
+      ]
+    }
+  ], date, date));
+
+  assert.equal(instance.data.statistics.avgMilkVolume, 120);
+  assert.equal(instance.data.statistics.avgNaturalMilk, 59);
+  assert.equal(instance.data.statistics.avgSpecialMilk, 61);
+  // 热量取 v2 快照（100），不是旧参数重算值
+  assert.equal(instance.data.chartData.totalCalories[0], 100);
+});
+
 test('data-analysis merges multiple feeding_records from the same day before aggregation', () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
@@ -792,7 +835,7 @@ test('data-analysis fetchFeedingRecords includes legacy string date records', as
               return { __lte: value };
             }
           },
-          collection() {
+          collection(name) {
             let queryDate = null;
             let skipValue = 0;
             let limitValue = 20;
@@ -813,6 +856,10 @@ test('data-analysis fetchFeedingRecords includes legacy string date records', as
                 return this;
               },
               get() {
+                // 奶统计 v2 数据源是独立集合，本用例只校验旧 feeding_records 的日期兼容合并
+                if (name === 'feeding_records_v2') {
+                  return Promise.resolve({ data: [] });
+                }
                 const source = typeof queryDate?.__gte === 'string'
                   ? stringRecords
                   : dateRecords;

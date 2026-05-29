@@ -391,7 +391,8 @@
 正式迁移前必须确认：
 
 - dry-run 的 `errors` 为空。
-- `warnings` 已人工看过，尤其是 `missing_milk_nutrition_profile`、`empty_formula_components`、`multiple_rules_matched`。
+- `warnings` 已人工看过，尤其是 `missing_milk_nutrition_profile`、`empty_formula_components`、`multiple_rules_matched`，以及“缺少普奶/特奶档案，未迁移……组件”这类告警。
+- 出现“缺少普奶/特奶档案，未迁移……组件”告警时，说明该宝宝配奶档案缺对应品类奶粉（被归档或未生成）。必须先在 `milk_nutrition_profiles` 补齐对应奶粉再迁移，否则这部分奶量不会被迁移（迁移文档会带 `migrationDroppedComponents` 记录丢失量）。
 - 新旧汇总页不会同时把同一条旧喂奶和迁移后的 v2 喂奶重复计入。
 - 历史换奶用户如果没有提供时间段规则，历史营养值只能标记为按当前档案估算。
 - 迁移期间如果用户继续在旧入口新增喂奶记录，需要迁移后再跑一次相同 `migrationVersion` 的增量迁移。

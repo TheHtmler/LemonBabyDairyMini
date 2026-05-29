@@ -7,6 +7,27 @@ const {
   buildReportDetailPreview,
   buildReportTrendPreview
 } = require('../../utils/reportWorkbench');
+const {
+  groupV2FeedingRecordsByDate
+} = require('../../utils/dataRecordsV2Adapter');
+
+function formatDateKey(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeFeedingDateKey(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const match = value.match(/\d{4}-\d{2}-\d{2}/);
+    if (match) return match[0];
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return formatDateKey(date);
+}
 
 const PREVIEW_MODES = {
   ARCHIVE: 'archive',
@@ -121,17 +142,29 @@ Page({
 
       const { babyUid } = this.data.babyInfo;
       const db = wx.cloud.database();
-      const [reports, feedingRes, nutritionSettings] = await Promise.all([
+      const [reports, feedingRes, v2MilkRecords, nutritionSettings] = await Promise.all([
         ReportRepository.listReportsByBaby(babyUid, { limit: 100 }),
         db.collection('feeding_records')
           .where({ babyUid })
           .orderBy('date', 'desc')
           .limit(365)
           .get(),
+        this.loadV2MilkRecords(babyUid),
         NutritionModel.getNutritionSettings(babyUid).catch(() => ({}))
       ]);
 
-      const feedingRecords = (feedingRes.data || []).filter((record) => !!record.date);
+      const legacyRecords = (feedingRes.data || []).filter((record) => !!record.date);
+      // 奶统计切到 v2：奶来自 feeding_records_v2，旧 feeding_records 仅保留食物/基础信息。
+      // 同一天若有 v2 奶记录则以 v2 为准（剥离旧奶 feedings），避免与旧数据双计。
+      const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
+      const feedingRecords = legacyRecords.map((record) => (
+        v2MilkByDate.has(normalizeFeedingDateKey(record.date))
+          ? { ...record, feedings: [] }
+          : record
+      ));
+      v2MilkByDate.forEach((dailyRecord) => {
+        feedingRecords.push(dailyRecord);
+      });
       const focus = readFocusRequest();
 
       this.setData({
@@ -152,6 +185,46 @@ Page({
         icon: 'none'
       });
       this.setData({ loading: false });
+    }
+  },
+
+  // 读取近一年的 v2 喂奶记录作为奶统计数据源。失败返回空数组，自动降级回旧数据，避免页面崩溃。
+  async loadV2MilkRecords(babyUid) {
+    if (!babyUid) {
+      return [];
+    }
+    try {
+      const db = wx.cloud.database();
+      const _ = db.command;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 365);
+      const startKey = formatDateKey(cutoff);
+      const MAX_LIMIT = 20;
+      let all = [];
+      let skip = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await db.collection('feeding_records_v2')
+          .where({
+            babyUid,
+            status: 'active',
+            date: _.gte(startKey)
+          })
+          .orderBy('date', 'desc')
+          .skip(skip)
+          .limit(MAX_LIMIT)
+          .get();
+        const batch = res.data || [];
+        all = all.concat(batch);
+        skip += batch.length;
+        if (batch.length < MAX_LIMIT) {
+          hasMore = false;
+        }
+      }
+      return all;
+    } catch (error) {
+      console.warn('加载 v2 喂奶记录失败，报告营养窗口降级为旧数据:', error);
+      return [];
     }
   },
 

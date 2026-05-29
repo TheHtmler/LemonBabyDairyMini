@@ -249,6 +249,58 @@ test('upsertGrowthRecordForDate creates a v2 growth record without touching lega
   assert.equal(writes.touchedLegacyFeedingRecordsForWrite, false);
 });
 
+test('upsertGrowthRecordForDate persists protein and calorie coefficients on add', async () => {
+  const { db, writes } = createDbMock();
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-05-22', {
+    operatorOpenid: 'openid-creator',
+    weight: 5.3,
+    height: 59,
+    naturalProteinCoefficient: 1.2,
+    specialProteinCoefficient: 0.9,
+    calorieCoefficient: 100
+  });
+
+  assert.equal(writes.addCollection, 'growth_records_v2');
+  assert.equal(writes.addData.weight, 5.3);
+  assert.equal(writes.addData.height, 59);
+  assert.equal(writes.addData.naturalProteinCoefficient, 1.2);
+  assert.equal(writes.addData.specialProteinCoefficient, 0.9);
+  assert.equal(writes.addData.calorieCoefficient, 100);
+});
+
+test('upsertGrowthRecordForDate updates coefficients without wiping existing ones on partial weight update', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-1',
+        babyUid: 'baby-1',
+        date: '2026-05-22',
+        status: 'active',
+        weight: 5.1,
+        height: 58,
+        naturalProteinCoefficient: 1.2
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  // 只更新体重，且未携带系数：不应把系数键写成空覆盖。
+  await model.upsertGrowthRecordForDate('baby-1', '2026-05-22', {
+    operatorOpenid: 'openid-editor',
+    weight: 5.4,
+    height: 58
+  });
+
+  assert.equal(writes.updateCollection, 'growth_records_v2');
+  assert.equal(writes.updateDocId, 'growth-1');
+  assert.equal(writes.updateData.weight, 5.4);
+  assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'naturalProteinCoefficient'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'specialProteinCoefficient'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'calorieCoefficient'), false);
+});
+
 test('getRecordsByDate ignores v2 daily basic info documents in the feeding list', async () => {
   const { db } = createDbMock({
     v2Data: [

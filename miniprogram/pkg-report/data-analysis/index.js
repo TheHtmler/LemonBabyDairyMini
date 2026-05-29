@@ -7,6 +7,9 @@ const {
 const {
   summarizeTreatmentRecords
 } = require('../../utils/treatmentUtils');
+const {
+  groupV2FeedingRecordsByDate
+} = require('../../utils/dataRecordsV2Adapter');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -770,6 +773,21 @@ Page({
       let allData = Array.from(mergedMap.values());
       
       console.log('分页查询完成，总共:', allData.length, '条');
+
+      // 奶统计切换到 v2：从 feeding_records_v2 读奶，旧 feeding_records 仅保留食物/基础信息。
+      // 同一天若有 v2 奶记录则以 v2 为准（剥离旧奶 feedings），避免与旧数据双计。
+      const v2MilkRecords = await this.loadV2MilkRecordsForRange(babyUid, startKey, endKey);
+      const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
+      if (v2MilkByDate.size > 0) {
+        allData = allData.map(record => (
+          v2MilkByDate.has(normalizeDateKey(record.date))
+            ? { ...record, feedings: [] }
+            : record
+        ));
+        v2MilkByDate.forEach(dailyRecord => {
+          allData.push(dailyRecord);
+        });
+      }
       
       // 在前端排序，兼容 Date 和 YYYY-MM-DD 字符串两种日期形态
       if (allData.length > 0) {
@@ -815,6 +833,43 @@ Page({
         title: '数据加载失败',
         icon: 'none'
       });
+      return [];
+    }
+  },
+
+  // 读取区间内的 v2 喂奶记录（奶统计数据源）。失败时返回空数组，奶统计自动降级回旧数据，避免崩溃。
+  async loadV2MilkRecordsForRange(babyUid, startKey, endKey) {
+    if (!babyUid || !startKey || !endKey) {
+      return [];
+    }
+    try {
+      const db = wx.cloud.database();
+      const _ = db.command;
+      const MAX_LIMIT = 20;
+      let all = [];
+      let skip = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await db.collection('feeding_records_v2')
+          .where({
+            babyUid,
+            status: 'active',
+            date: _.gte(startKey).and(_.lte(endKey))
+          })
+          .orderBy('date', 'asc')
+          .skip(skip)
+          .limit(MAX_LIMIT)
+          .get();
+        const batch = res.data || [];
+        all = all.concat(batch);
+        skip += batch.length;
+        if (batch.length < MAX_LIMIT) {
+          hasMore = false;
+        }
+      }
+      return all;
+    } catch (error) {
+      console.warn('加载 v2 喂奶记录失败，奶统计降级为旧数据:', error);
       return [];
     }
   },
@@ -1402,6 +1457,22 @@ Page({
     let totalSpecialVolume = 0;
 
     (record.feedings || []).forEach(feeding => {
+      // v2 喂奶记录自带营养快照，直接累加，不用旧配奶参数重算（避免档案缺失/变更导致营养错算）
+      if (feeding && feeding.isV2FeedingRecord) {
+        const nutrition = feeding.nutritionDisplay || {};
+        const naturalProtein = Number(nutrition.naturalProtein) || 0;
+        const specialProtein = Number(nutrition.specialProtein) || 0;
+        const calories = Number(nutrition.calories) || 0;
+        summary.calories += calories;
+        summary.milkCalories += calories;
+        summary.naturalProtein += naturalProtein;
+        summary.premiumProtein += naturalProtein;
+        summary.specialProtein += specialProtein;
+        summary.carbs += Number(nutrition.carbs) || 0;
+        summary.fat += Number(nutrition.fat) || 0;
+        return;
+      }
+
       const { naturalMilkVolume: naturalVolume, specialMilkVolume: specialVolume } = getFeedingVolumes(feeding);
       const naturalTypeRaw = feeding.naturalMilkType || 'breast';
       const naturalType = naturalTypeRaw === 'breast' ? 'breast' : 'formula';

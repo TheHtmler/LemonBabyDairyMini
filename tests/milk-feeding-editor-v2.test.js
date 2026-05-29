@@ -340,7 +340,7 @@ test('onLoad reads active formula powders and basic info for v2 only', async () 
   assert.equal(page.data.calorieCoefficientInput, '100');
   assert.deepEqual(page.data.milkEntries, []);
   assert.deepEqual(profileOptions, { includeLegacyFallback: false });
-  assert.deepEqual(basicInfoOptions, { includeFallbacks: false, includeProfileInitial: true });
+  assert.deepEqual(basicInfoOptions, { includeFallbacks: false, includeProfileInitial: true, carryForwardMissing: true });
 });
 
 test('onLoad sets the navigation title from create or edit mode', async () => {

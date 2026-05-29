@@ -230,7 +230,9 @@ Page({
         getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
         resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
           includeFallbacks: false,
-          includeProfileInitial: true
+          includeProfileInitial: true,
+          // 当天成长记录可能只有身高体重、缺蛋白系数，补齐历史系数，避免存下缺系数的喂奶快照。
+          carryForwardMissing: true
         }),
         getV2RecordsByDate(this.data.babyUid, this.data.selectedDate)
       ]);

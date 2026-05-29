@@ -313,6 +313,7 @@ function buildMigratedFeedingRecord({
 } = {}) {
   const date = formatDateKey(legacyRecord.date || feeding.date || '');
   const warnings = [];
+  const droppedComponents = [];
   const migrationPowderRules = {};
   const formulaComponents = [];
   const naturalMilkVolume = toNumber(feeding.naturalMilkVolume);
@@ -336,7 +337,17 @@ function buildMigratedFeedingRecord({
       naturalMilkVolume,
       toNumber(feeding.formulaPowderWeight)
     );
-    if (component) formulaComponents.push(component);
+    if (component) {
+      formulaComponents.push(component);
+    } else {
+      // 没有可用的普奶档案：绝不静默丢弃，记录丢失量并告警，便于修档案后排查。
+      droppedComponents.push({
+        category: POWDER_CATEGORIES.REGULAR_FORMULA,
+        waterVolume: roundValue(naturalMilkVolume),
+        reason: 'missing_powder_profile'
+      });
+      warnings.push(`缺少普奶档案，未迁移普奶组件（约 ${roundValue(naturalMilkVolume)}ml）：${date}`);
+    }
   }
 
   const specialMilkVolume = getSpecialMilkVolume(feeding);
@@ -354,7 +365,17 @@ function buildMigratedFeedingRecord({
       specialMilkVolume,
       toNumber(feeding.specialMilkPowder || feeding.specialPowderWeight)
     );
-    if (component) formulaComponents.push(component);
+    if (component) {
+      formulaComponents.push(component);
+    } else {
+      // 没有可用的特奶档案：绝不静默丢弃，记录丢失量并告警。
+      droppedComponents.push({
+        category: POWDER_CATEGORIES.SPECIAL_FORMULA,
+        waterVolume: roundValue(specialMilkVolume),
+        reason: 'missing_powder_profile'
+      });
+      warnings.push(`缺少特奶档案，未迁移特奶组件（约 ${roundValue(specialMilkVolume)}ml）：${date}`);
+    }
   }
 
   const matchedRule = Object.values(migrationPowderRules).some((rule) => rule?.matched === true);
@@ -384,6 +405,7 @@ function buildMigratedFeedingRecord({
     nutritionAccuracy,
     migrationPowderRules,
     migrationWarnings: warnings,
+    migrationDroppedComponents: droppedComponents,
     createdAt: migratedAt,
     updatedAt: migratedAt,
     deletedAt: null

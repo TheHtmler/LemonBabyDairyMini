@@ -33,6 +33,8 @@ function createEmptyMilkSummary() {
     protein: 0,
     naturalProtein: 0,
     specialProtein: 0,
+    carbs: 0,
+    fat: 0,
     zeroProteinCalories: 0
   };
 }
@@ -120,6 +122,8 @@ function roundMilkSummary(summary = {}) {
     protein: roundValue(summary.protein),
     naturalProtein: roundValue(summary.naturalProtein),
     specialProtein: roundValue(summary.specialProtein),
+    carbs: roundValue(summary.carbs),
+    fat: roundValue(summary.fat),
     zeroProteinCalories: roundValue(summary.zeroProteinCalories)
   };
 }
@@ -166,19 +170,50 @@ function mergeMilkNutrition(records = []) {
     summary.protein += toNumber(nutrition.protein);
     summary.naturalProtein += toNumber(nutrition.naturalProtein);
     summary.specialProtein += toNumber(nutrition.specialProtein);
+    summary.carbs += toNumber(nutrition.carbs);
+    summary.fat += toNumber(nutrition.fat);
     summary.zeroProteinCalories += toNumber(nutrition.zeroProteinCalories);
   });
   return roundMilkSummary(summary);
+}
+
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+// 兼容两种食物结构：
+// - v2 food_intake_records：naturalProtein/specialProtein 在 nutrition 里
+// - 旧 feeding_records.intakes：naturalProtein/specialProtein 在顶层，nutrition 里没有
+// 都缺失时按 proteinSource 兜底（与页面/报告/分析口径一致），否则天然/特殊蛋白拆分会被算成 0。
+function resolveFoodProteinSplit(record = {}) {
+  const nutrition = record.nutrition || {};
+  const protein = toNumber(nutrition.protein);
+  const proteinSource = record.proteinSource
+    || (record.milkType === 'special_formula' ? 'special' : '');
+
+  const natural = isFiniteNumber(nutrition.naturalProtein)
+    ? nutrition.naturalProtein
+    : (isFiniteNumber(record.naturalProtein)
+      ? record.naturalProtein
+      : (proteinSource === 'special' ? 0 : protein));
+  const special = isFiniteNumber(nutrition.specialProtein)
+    ? nutrition.specialProtein
+    : (isFiniteNumber(record.specialProtein)
+      ? record.specialProtein
+      : (proteinSource === 'special' ? protein : 0));
+
+  return { natural, special };
 }
 
 function mergeFoodNutrition(records = []) {
   const summary = createEmptyFoodSummary();
   (Array.isArray(records) ? records : []).forEach((record = {}) => {
     const nutrition = record.nutrition || {};
+    const { natural, special } = resolveFoodProteinSplit(record);
     summary.calories += toNumber(nutrition.calories);
     summary.protein += toNumber(nutrition.protein);
-    summary.naturalProtein += toNumber(nutrition.naturalProtein);
-    summary.specialProtein += toNumber(nutrition.specialProtein);
+    summary.naturalProtein += toNumber(natural);
+    summary.specialProtein += toNumber(special);
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);
     summary.fiber += toNumber(nutrition.fiber);
@@ -255,29 +290,47 @@ function getLatestSourceUpdatedAt(records = []) {
     .sort((left, right) => getTimestampValue(right) - getTimestampValue(left))[0] || null;
 }
 
+function hasBasicInfoValue(value) {
+  return value !== '' && value !== null && value !== undefined;
+}
+
+function normalizeBasicInfoFields(source = {}) {
+  return {
+    weight: source.weight || '',
+    height: source.height || source.length || '',
+    naturalProteinCoefficient: source.naturalProteinCoefficient || '',
+    specialProteinCoefficient: source.specialProteinCoefficient || '',
+    calorieCoefficient: source.calorieCoefficient || ''
+  };
+}
+
+// 用 fallback 仅补齐 primary 中缺失的字段，已有值不被覆盖。
+function fillMissingBasicInfo(primary = {}, fallback = {}) {
+  const merged = { ...primary };
+  ['weight', 'height', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient']
+    .forEach((key) => {
+      if (!hasBasicInfoValue(merged[key]) && hasBasicInfoValue(fallback[key])) {
+        merged[key] = fallback[key];
+      }
+    });
+  return merged;
+}
+
 function buildBasicInfo(growthRecords = [], milkRecords = []) {
+  const milkSnapshot = (Array.isArray(milkRecords) ? milkRecords : [])
+    .find((record = {}) => record.basicInfoSnapshot)?.basicInfoSnapshot;
+
   const activeGrowthRecord = (Array.isArray(growthRecords) ? growthRecords : [])
     .find((record = {}) => (record.status || 'active') === 'active');
   if (activeGrowthRecord) {
-    return {
-      weight: activeGrowthRecord.weight || '',
-      height: activeGrowthRecord.height || activeGrowthRecord.length || '',
-      naturalProteinCoefficient: activeGrowthRecord.naturalProteinCoefficient || '',
-      specialProteinCoefficient: activeGrowthRecord.specialProteinCoefficient || '',
-      calorieCoefficient: activeGrowthRecord.calorieCoefficient || ''
-    };
+    const growthInfo = normalizeBasicInfoFields(activeGrowthRecord);
+    // 成长记录历史上只存身高体重、不存系数；缺系数时回退到喂奶快照，
+    // 避免“身高体重有、蛋白系数没有”，也能恢复旧版写入丢失系数的成长记录。
+    return milkSnapshot ? fillMissingBasicInfo(growthInfo, milkSnapshot) : growthInfo;
   }
 
-  const milkSnapshot = (Array.isArray(milkRecords) ? milkRecords : [])
-    .find((record = {}) => record.basicInfoSnapshot)?.basicInfoSnapshot;
   if (milkSnapshot) {
-    return {
-      weight: milkSnapshot.weight || '',
-      height: milkSnapshot.height || milkSnapshot.length || '',
-      naturalProteinCoefficient: milkSnapshot.naturalProteinCoefficient || '',
-      specialProteinCoefficient: milkSnapshot.specialProteinCoefficient || '',
-      calorieCoefficient: milkSnapshot.calorieCoefficient || ''
-    };
+    return normalizeBasicInfoFields(milkSnapshot);
   }
 
   return createEmptyBasicInfo();
@@ -311,8 +364,8 @@ function buildMacroSummary(milk, food, treatment) {
     protein: toNumber(milk.protein) + toNumber(food.protein) + toNumber(treatment.protein),
     naturalProtein: toNumber(milk.naturalProtein) + toNumber(food.naturalProtein),
     specialProtein: toNumber(milk.specialProtein) + toNumber(food.specialProtein),
-    carbs: toNumber(food.carbs) + toNumber(treatment.carbs),
-    fat: toNumber(food.fat) + toNumber(treatment.fat)
+    carbs: toNumber(milk.carbs) + toNumber(food.carbs) + toNumber(treatment.carbs),
+    fat: toNumber(milk.fat) + toNumber(food.fat) + toNumber(treatment.fat)
   });
 }
 

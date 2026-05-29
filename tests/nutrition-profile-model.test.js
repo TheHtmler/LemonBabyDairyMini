@@ -4,7 +4,9 @@ const assert = require('node:assert/strict');
 function createDbMock(overrides = {}) {
   const writes = {
     profileUpdate: null,
+    profileUpdateId: '',
     profileAdd: null,
+    profileRemovedIds: [],
     babyInfoUpdate: null,
     compatUpdate: null,
     compatAdd: null
@@ -46,11 +48,16 @@ function createDbMock(overrides = {}) {
           where() {
             return queryResult(profileData);
           },
-          doc() {
+          doc(id) {
             return {
               update: async ({ data }) => {
                 writes.profileUpdate = data;
+                writes.profileUpdateId = id;
                 return overrides.profileUpdateResult || {};
+              },
+              remove: async () => {
+                writes.profileRemovedIds.push(id);
+                return {};
               }
             };
           },
@@ -323,7 +330,7 @@ test('updateNutritionProfileSettings upserts milk_nutrition_profiles without wri
   assert.equal(writes.compatUpdate, null);
 });
 
-test('updateNutritionProfileSettings adds replacement profile when existing profile cannot be updated', async () => {
+test('updateNutritionProfileSettings writes the single canonical profile in place without creating a replacement', async () => {
   const { db, writes } = createDbMock({
     profileUpdateResult: {
       stats: {
@@ -360,12 +367,61 @@ test('updateNutritionProfileSettings adds replacement profile when existing prof
   });
 
   assert.equal(success, true);
+  assert.equal(writes.profileUpdateId, 'profile-doc-1');
   assert.equal(writes.profileUpdate.formulaPowders.length, 1);
-  assert.equal(writes.profileAdd.formulaPowders.length, 1);
-  assert.equal(writes.profileAdd.formulaPowders[0].id, 'regular-a');
+  // 不再因为写入受阻而新建副本，始终以 babyUid 的单一权威文档为准
+  assert.equal(writes.profileAdd, null);
+  assert.deepEqual(writes.profileRemovedIds, []);
   assert.equal(writes.babyInfoUpdate, null);
   assert.equal(writes.compatAdd, null);
   assert.equal(writes.compatUpdate, null);
+});
+
+test('updateNutritionProfileSettings consolidates duplicate baby profiles into one shared document', async () => {
+  const { db, writes } = createDbMock({
+    profileData: [
+      {
+        _id: 'profile-old',
+        babyUid: 'baby-1',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+        formulaPowders: []
+      },
+      {
+        _id: 'profile-new',
+        babyUid: 'baby-1',
+        updatedAt: '2026-05-10T00:00:00.000Z',
+        formulaPowders: [
+          { id: 'regular-a', category: 'regular_formula', status: 'active' }
+        ]
+      },
+      {
+        _id: 'profile-mid',
+        babyUid: 'baby-1',
+        updatedAt: '2026-05-05T00:00:00.000Z',
+        formulaPowders: []
+      }
+    ]
+  });
+  const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
+
+  const success = await MilkNutritionProfileModel.updateNutritionProfileSettings('baby-1', {
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶A',
+        category: 'regular_formula',
+        proteinRole: 'natural',
+        nutritionPer100g: { protein: '10' },
+        mixRatio: { powder: '5', water: '30' }
+      }
+    ]
+  });
+
+  assert.equal(success, true);
+  // 写入最新的权威文档，并删除其它重复副本
+  assert.equal(writes.profileUpdateId, 'profile-new');
+  assert.equal(writes.profileAdd, null);
+  assert.deepEqual(writes.profileRemovedIds.sort(), ['profile-mid', 'profile-old']);
 });
 
 test('updateNutritionProfileSettings treats zero updated count as success when profile content is unchanged', async () => {

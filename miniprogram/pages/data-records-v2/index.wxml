@@ -128,7 +128,7 @@
                 </view>
                 <view class="overview-milk-component-metric-grid">
                   <view class="overview-milk-component-metric-item">
-                    <text class="overview-milk-component-metric-label">{{component.proteinLabelText || (component.proteinRoleText === '特殊' ? '特殊蛋白' : (component.proteinRoleText === '无蛋白热量' ? '无蛋白热量' : '天然蛋白'))}}</text>
+                    <text class="overview-milk-component-metric-label">{{component.proteinLabelText || (component.proteinRoleText === '特殊' ? '特殊蛋白' : (component.proteinRoleText === '无蛋白热量' ? '蛋白' : '天然蛋白'))}}</text>
                     <text class="overview-milk-component-metric-value protein">{{component.proteinAmountText || component.proteinValueText || component.proteinBreakdownText || component.secondaryText}}</text>
                   </view>
                   <view class="overview-milk-component-metric-item">
