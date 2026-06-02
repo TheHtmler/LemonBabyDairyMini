@@ -4,6 +4,7 @@ const {
   shouldCountInNutrition,
   getDefaultTreatmentGroupName
 } = require('../utils/treatmentUtils');
+const DailySummaryV2Model = require('./dailySummaryV2');
 
 class TreatmentRecordModel {
   constructor() {
@@ -91,6 +92,21 @@ class TreatmentRecordModel {
     };
   }
 
+  // 治疗也是当日热量来源，增删改后必须让 daily_summary_v2 缓存失效，
+  // 否则数据记录页/首页的当日汇总会沿用旧缓存（尤其删除/改小不会被增量刷新检测到）。
+  async markSummaryDirty(babyUid, dateKey) {
+    if (!babyUid || !dateKey) return;
+    try {
+      await DailySummaryV2Model.markDirty(babyUid, dateKey);
+    } catch (error) {
+      console.error('标记当日汇总失效失败:', error);
+    }
+  }
+
+  resolveRecordDateKey(record = {}) {
+    return record.dateKey || (record.date ? this.getDateKey(record.date) : '');
+  }
+
   async create(data) {
     try {
       const app = getApp();
@@ -106,6 +122,7 @@ class TreatmentRecordModel {
           updatedAt: this.db.serverDate()
         }
       });
+      await this.markSummaryDirty(babyUid, record.dateKey);
       return { success: true, data: result };
     } catch (error) {
       console.error('创建治疗记录失败:', error);
@@ -117,6 +134,9 @@ class TreatmentRecordModel {
     try {
       const app = getApp();
       const babyUid = data.babyUid || app.globalData.babyUid || wx.getStorageSync('baby_uid');
+      // 先读旧记录，编辑若改了日期，旧日期的汇总也要一起失效。
+      const previous = await this.getById(id);
+      const previousRecord = previous && previous.success ? (previous.data || {}) : {};
       const record = this.buildRecordPayload(data, babyUid);
       const result = await this.collection.doc(id).update({
         data: {
@@ -124,6 +144,12 @@ class TreatmentRecordModel {
           updatedAt: this.db.serverDate()
         }
       });
+      const previousBabyUid = previousRecord.babyUid || babyUid;
+      const previousDateKey = this.resolveRecordDateKey(previousRecord);
+      await this.markSummaryDirty(babyUid, record.dateKey);
+      if (previousDateKey && (previousDateKey !== record.dateKey || previousBabyUid !== babyUid)) {
+        await this.markSummaryDirty(previousBabyUid, previousDateKey);
+      }
       return { success: true, data: result };
     } catch (error) {
       console.error('更新治疗记录失败:', error);
@@ -133,7 +159,11 @@ class TreatmentRecordModel {
 
   async delete(id) {
     try {
+      // 删除前读出记录归属的宝宝与日期，删除后据此让对应当日汇总失效。
+      const existing = await this.getById(id);
+      const existingRecord = existing && existing.success ? (existing.data || {}) : {};
       const result = await this.collection.doc(id).remove();
+      await this.markSummaryDirty(existingRecord.babyUid, this.resolveRecordDateKey(existingRecord));
       return { success: true, data: result };
     } catch (error) {
       console.error('删除治疗记录失败:', error);

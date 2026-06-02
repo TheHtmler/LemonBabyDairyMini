@@ -819,7 +819,8 @@
 }
 
 .record-content {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .time-info {
@@ -909,8 +910,7 @@
 /* 用药记录单项样式 */
 .medication-record-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 24rpx;
   background: #FFF9E6;
   border-radius: 16rpx;
@@ -1992,7 +1992,7 @@
 .action-buttons {
   display: flex;
   align-items: center;
-  flex-direction: column;
+  flex-direction: row;
   gap: 10rpx;
   margin-left: 16rpx;
 }
@@ -2332,6 +2332,7 @@
 
 .food-record-item {
   display: flex;
+  align-items: flex-start;
   background: #FFF9E6;
   border-radius: 16rpx;
   padding: 24rpx;

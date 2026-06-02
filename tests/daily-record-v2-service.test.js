@@ -287,15 +287,19 @@ test('getDailyRecordV2 carries the latest body measurements into today growth_re
 
     assert.equal(dailyRecord.basicInfo.weight, '5.7');
     assert.equal(dailyRecord.basicInfo.height, '61');
+    // 系数属于设定，不应被自动顺延进当天成长记录/汇总。
+    assert.equal(dailyRecord.basicInfo.naturalProteinCoefficient, '');
     const growthWrite = calls.adds.find((item) => item.collectionName === 'growth_records_v2');
     assert.ok(growthWrite);
     assert.equal(growthWrite.data.babyUid, 'baby-1');
     assert.equal(growthWrite.data.date, '2026-05-25');
     assert.equal(growthWrite.data.weight, '5.7');
     assert.equal(growthWrite.data.height, '61');
+    assert.ok(!growthWrite.data.naturalProteinCoefficient, 'coefficients must not be carried forward into growth records');
     const summaryWrite = calls.adds.find((item) => item.collectionName === 'daily_summary_v2');
     assert.ok(summaryWrite);
     assert.equal(summaryWrite.data.basicInfo.height, '61');
+    assert.equal(summaryWrite.data.basicInfo.naturalProteinCoefficient, '');
   } finally {
     restore();
   }
@@ -619,6 +623,67 @@ test('getDailyRecordV2 refreshes clean cache when legacy food changes the daily 
     assert.equal(calls.updateCollection, 'daily_summary_v2');
     assert.equal(calls.updateDocId, 'summary-milk-only');
     assert.deepEqual(calls.updateData.macroSummary, dailyRecord.summary.macroSummary);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange rebuildMissing 补齐缺失天的汇总', async () => {
+  const { db } = createDbMock({
+    dailySummaryData: [
+      { _id: 'summary-24', babyUid: 'baby-1', date: '2026-05-24', status: 'active', isDirty: false }
+      // 2026-05-25 缺失，应按原始记录重建
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  models.FeedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    if (date === '2026-05-25') {
+      return [{
+        _id: 'milk-25',
+        date: '2026-05-25',
+        startTime: '08:00',
+        nutritionSummary: {
+          calories: 70, protein: 1.5, naturalProtein: 1.5, specialProtein: 0, carbs: 6, fat: 3, totalVolume: 90
+        }
+      }];
+    }
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-05-24', '2026-05-25', {
+      rebuildMissing: true
+    });
+    const byDate = Object.fromEntries(summaries.map((summary) => [summary.date, summary]));
+    assert.deepEqual(Object.keys(byDate).sort(), ['2026-05-24', '2026-05-25']);
+    assert.equal(byDate['2026-05-24']._id, 'summary-24'); // 已有且 fresh 的天保持原样
+    assert.equal(byDate['2026-05-25'].macroSummary.calories, 70); // 缺失天按原始记录重建
+    assert.equal(byDate['2026-05-25'].recordCounts.milk, 1);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange rebuildMissing 跳过 skipDates（如今天另行处理）', async () => {
+  const { db } = createDbMock({ dailySummaryData: [] });
+  const { service, models, restore } = loadFreshService(db);
+  const rebuiltDates = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    rebuiltDates.push(date);
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    await service.getDailySummariesForRange('baby-1', '2026-05-24', '2026-05-25', {
+      rebuildMissing: true,
+      skipDates: ['2026-05-25']
+    });
+    assert.equal(rebuiltDates.includes('2026-05-25'), false);
+    assert.equal(rebuiltDates.includes('2026-05-24'), true);
   } finally {
     restore();
   }

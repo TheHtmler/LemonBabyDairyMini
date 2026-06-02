@@ -38,7 +38,7 @@
         <text>本次还没有添加奶。</text>
       </view>
 
-      <view wx:for="{{milkEntries}}" wx:key="localId" class="milk-entry-card {{item.justAdded ? 'just-added' : ''}}">
+      <view wx:for="{{milkEntries}}" wx:key="localId" class="milk-entry-card milk-entry-card--{{item.kind === 'breast_milk' ? 'breast' : formulaPowders[item.powderPickerIndex].categoryBadgeClass}} {{item.justAdded ? 'just-added' : ''}}">
         <view class="milk-entry-header">
           <view class="component-main">
             <text wx:if="{{item.kind === 'breast_milk'}}" class="category-badge breast" style="{{breastMilkTag.badgeStyle}}">母</text>
@@ -57,7 +57,7 @@
           <view class="field-block">
             <text class="field-label">体积</text>
             <view class="field-input-shell primary-input-shell">
-              <input class="field-input" type="number" value="{{item.volume}}" data-index="{{index}}" bindinput="onBreastMilkEntryInput" />
+              <input class="field-input" type="number" value="{{item.volume}}" disabled="{{showAddMilkPanel}}" data-index="{{index}}" bindinput="onBreastMilkEntryInput" />
               <text class="field-unit">ml</text>
             </view>
           </view>
@@ -78,14 +78,14 @@
             </view>
             <view class="field-row dual-field-row dual-input-row">
               <view class="field-input-shell primary-input-shell dual-input-shell">
-                <input class="field-input" type="number" value="{{item.waterVolume}}" data-index="{{index}}" data-field="waterVolume" bindinput="onMilkEntryInput" />
+                <input class="field-input" type="number" value="{{item.waterVolume}}" disabled="{{showAddMilkPanel}}" data-index="{{index}}" data-field="waterVolume" bindinput="onMilkEntryInput" />
                 <text class="field-unit">ml</text>
               </view>
               <view class="link-arrow {{item.ratioMode === 'standard' ? '' : 'link-arrow-hidden'}}">
                 <text class="link-arrow-text">⇄</text>
               </view>
               <view class="field-input-shell primary-input-shell dual-input-shell">
-                <input class="field-input" type="digit" value="{{item.powderWeight}}" data-index="{{index}}" data-field="powderWeight" bindinput="onMilkEntryInput" />
+                <input class="field-input" type="digit" value="{{item.powderWeight}}" disabled="{{showAddMilkPanel}}" data-index="{{index}}" data-field="powderWeight" bindinput="onMilkEntryInput" />
                 <text class="field-unit">g</text>
               </view>
             </view>
@@ -182,7 +182,7 @@
         <text class="section-eyebrow">备注</text>
       </view>
     </view>
-    <textarea class="notes-input compact-notes-input" value="{{notes}}" placeholder="可选，记录这次喂奶说明" bindinput="onNotesInput" />
+    <textarea class="notes-input compact-notes-input" value="{{notes}}" disabled="{{showAddMilkPanel}}" placeholder="可选，记录这次喂奶说明" bindinput="onNotesInput" />
   </view>
 
   <view class="footer-bar">

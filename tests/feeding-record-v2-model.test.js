@@ -9,6 +9,7 @@ function createDbMock(overrides = {}) {
     updateCollection: '',
     updateDocId: '',
     updateData: null,
+    updates: [],
     removeCollection: '',
     removeDocId: '',
     collectionReads: [],
@@ -18,7 +19,8 @@ function createDbMock(overrides = {}) {
     growth_records_v2: overrides.growthRecordsV2Data || [],
     feeding_records_v2: overrides.v2Data || [],
     feeding_records: overrides.legacyData || [],
-    baby_info: overrides.babyInfoData || []
+    baby_info: overrides.babyInfoData || [],
+    daily_summary_v2: overrides.dailySummaryV2Data || []
   };
 
   function queryFor(collectionName, whereInput = {}) {
@@ -84,10 +86,17 @@ function createDbMock(overrides = {}) {
         },
         doc(id) {
           return {
+            async get() {
+              writes.collectionReads.push(name);
+              const record = (dataByCollection[name] || [])
+                .find((item) => (item._id || item.id) === id) || null;
+              return { data: record };
+            },
             async update({ data }) {
               writes.updateCollection = name;
               writes.updateDocId = id;
               writes.updateData = data;
+              writes.updates.push({ collectionName: name, docId: id, data });
               if (name === 'feeding_records') {
                 writes.touchedLegacyFeedingRecordsForWrite = true;
               }
@@ -126,7 +135,11 @@ function createDbMock(overrides = {}) {
 
 function loadFreshModel(db) {
   const modelPath = require.resolve('../miniprogram/models/feedingRecordV2.js');
+  // 同时清掉 dailySummaryV2 缓存：它在加载时绑定 wx.cloud.database()，
+  // 必须让它和本次 feeding 模型用同一个 mock db，失效写入才会落到同一份 mock 集合。
+  const summaryModelPath = require.resolve('../miniprogram/models/dailySummaryV2.js');
   delete require.cache[modelPath];
+  delete require.cache[summaryModelPath];
 
   const previousWx = global.wx;
   global.wx = {
@@ -346,6 +359,34 @@ test('getRecordsByDate returns only active v2 records for the date in reverse ch
   const records = await model.getRecordsByDate('baby-1', '2026-05-20');
 
   assert.deepEqual(records.map((record) => record.id), ['active-2', 'active-1']);
+});
+
+test('getRecentDayMealCount counts feeding meals on the most recent prior day', async () => {
+  const { db } = createDbMock({
+    v2Data: [
+      { _id: 'm1', babyUid: 'baby-1', date: '2026-05-19', status: 'active', recordType: 'milk_feeding', startTime: '07:00' },
+      { _id: 'm2', babyUid: 'baby-1', date: '2026-05-19', status: 'active', recordType: 'milk_feeding', startTime: '11:00' },
+      { _id: 'a', babyUid: 'baby-1', date: '2026-05-20', status: 'active', recordType: 'milk_feeding', startTime: '08:00' },
+      { _id: 'b', babyUid: 'baby-1', date: '2026-05-20', status: 'active', recordType: 'milk_feeding', startTime: '12:00' },
+      { _id: 'c', babyUid: 'baby-1', date: '2026-05-20', status: 'active', recordType: 'milk_feeding', startTime: '16:00' },
+      { _id: 'daily', babyUid: 'baby-1', date: '2026-05-20', status: 'active', recordType: 'daily_basic_info', startTime: '00:00' }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  // 目标日 2026-05-21 当天无记录，应取最近一天 2026-05-20 的喂奶顿数（排除 daily_basic_info）。
+  const count = await model.getRecentDayMealCount('baby-1', '2026-05-21');
+
+  assert.equal(count, 3);
+});
+
+test('getRecentDayMealCount returns 0 when there is no prior feeding history', async () => {
+  const { db } = createDbMock({ v2Data: [] });
+  const model = loadFreshModel(db);
+
+  const count = await model.getRecentDayMealCount('baby-1', '2026-05-21');
+
+  assert.equal(count, 0);
 });
 
 test('resolveBasicInfoSnapshot prefers same-day v2 snapshot', async () => {
@@ -610,4 +651,82 @@ test('resolveBasicInfoSnapshot can disable legacy and baby_info fallbacks for is
   assert.equal(snapshot.weight, '');
   assert.equal(snapshot.height, '');
   assert.equal(snapshot.source, 'empty');
+});
+
+test('addRecord 自动让当天 daily_summary_v2 失效（写必脏，收口在模型层）', async () => {
+  const { db, writes } = createDbMock({
+    dailySummaryV2Data: [
+      { _id: 'sum-531', babyUid: 'baby-1', date: '2026-05-31', status: 'active', isDirty: false }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.addRecord({
+    babyUid: 'baby-1',
+    date: '2026-05-31',
+    startTime: '08:00',
+    formulaComponents: [],
+    nutritionSummary: { calories: 0 }
+  });
+
+  assert.equal(writes.updateCollection, 'daily_summary_v2');
+  assert.equal(writes.updateDocId, 'sum-531');
+  assert.equal(writes.updateData.isDirty, true);
+});
+
+test('deleteRecord 按被删记录的真实归属日失效，无需调用方传日期', async () => {
+  const { db, writes } = createDbMock({
+    v2Data: [
+      {
+        _id: 'feed-1',
+        babyUid: 'baby-1',
+        date: '2026-05-31',
+        status: 'active',
+        recordType: 'milk_feeding',
+        startTime: '08:00',
+        formulaComponents: []
+      }
+    ],
+    dailySummaryV2Data: [
+      { _id: 'sum-531', babyUid: 'baby-1', date: '2026-05-31', status: 'active', isDirty: false }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.deleteRecord('feed-1', { babyUid: 'baby-1' });
+
+  assert.equal(writes.removeCollection, 'feeding_records_v2');
+  assert.equal(writes.updateCollection, 'daily_summary_v2');
+  assert.equal(writes.updateDocId, 'sum-531');
+  assert.equal(writes.updateData.isDirty, true);
+});
+
+test('updateRecord 改归属日时旧日期与新日期都失效', async () => {
+  const { db, writes } = createDbMock({
+    v2Data: [
+      {
+        _id: 'feed-1',
+        babyUid: 'baby-1',
+        date: '2026-05-30',
+        status: 'active',
+        recordType: 'milk_feeding',
+        startTime: '08:00',
+        formulaComponents: []
+      }
+    ],
+    dailySummaryV2Data: [
+      { _id: 'sum-530', babyUid: 'baby-1', date: '2026-05-30', status: 'active', isDirty: false },
+      { _id: 'sum-531', babyUid: 'baby-1', date: '2026-05-31', status: 'active', isDirty: false }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.updateRecord('feed-1', { babyUid: 'baby-1', date: '2026-05-31', startTime: '09:00' });
+
+  // 旧日 5/30 与新日 5/31 应分别被标脏。
+  const dirtiedSummaryDocIds = writes.updates
+    .filter((item) => item.collectionName === 'daily_summary_v2' && item.data.isDirty === true)
+    .map((item) => item.docId);
+  assert.ok(dirtiedSummaryDocIds.includes('sum-530'), '旧归属日 5/30 应被标脏');
+  assert.ok(dirtiedSummaryDocIds.includes('sum-531'), '新归属日 5/31 应被标脏');
 });

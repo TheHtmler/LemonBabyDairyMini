@@ -1,7 +1,7 @@
 <view class="medication-record">
   <view class="medication-header">
-    <text class="medication-time">{{record.actualTime}}</text>
     <text class="medication-name">{{record.medicationName}}</text>
+    <text class="medication-time">{{record.actualTime}}</text>
   </view>
   <view class="medication-dose">
     <text class="medication-volume">{{record.dosage}}{{record.unit}}</text>

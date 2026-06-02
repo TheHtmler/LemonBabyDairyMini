@@ -8,6 +8,7 @@ const {
   stripProtectedAuditFields
 } = require('../utils/auditFields');
 const { recordHardDelete } = require('./auditLog');
+const DailySummaryV2Model = require('./dailySummaryV2');
 
 const db = wx.cloud.database();
 const feedingRecordV2Collection = db.collection('feeding_records_v2');
@@ -190,6 +191,41 @@ function latestByDate(records = [], date) {
     })[0];
 }
 
+// 把任意日期值（'YYYY-MM-DD' / ISO 字符串 / Date）归一成 'YYYY-MM-DD' 键。
+function resolveDateKey(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const matched = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (matched) return `${matched[1]}-${matched[2]}-${matched[3]}`;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// 喂奶/体重也是当日营养来源，增删改后必须让 daily_summary_v2 缓存失效。
+// 失效收口在模型写入层，调用方（页面/编辑器）无需再各自记得 markDirty，
+// 后续新增功能只要复用本模型写入，就自动保持缓存一致，不会再“忘记刷新”。
+async function markSummaryDirtySafe(babyUid, dateValue) {
+  const dateKey = resolveDateKey(dateValue);
+  if (!babyUid || !dateKey) return;
+  try {
+    await DailySummaryV2Model.markDirty(babyUid, dateKey);
+  } catch (error) {
+    console.error('标记当日汇总失效失败:', error);
+  }
+}
+
+async function getFeedingRecordById(recordId) {
+  if (!recordId) return null;
+  try {
+    const res = await feedingRecordV2Collection.doc(recordId).get();
+    return res?.data || null;
+  } catch (error) {
+    return null;
+  }
+}
+
 class FeedingRecordV2Model {
   async addRecord(data = {}) {
     const timestamp = serverDate();
@@ -206,10 +242,13 @@ class FeedingRecordV2Model {
         })
       }
     });
+    await markSummaryDirtySafe(data.babyUid, data.date);
     return res;
   }
 
   async updateRecord(recordId, data = {}) {
+    // 先读旧记录：若编辑改了归属日期，旧日期的汇总也要一起失效。
+    const previous = await getFeedingRecordById(recordId);
     const operatorOpenid = resolveOperatorOpenid(data);
     const updateData = {
       ...stripProtectedAuditFields(data),
@@ -222,10 +261,18 @@ class FeedingRecordV2Model {
     await feedingRecordV2Collection.doc(recordId).update({
       data: updateData
     });
+
+    const previousBabyUid = previous?.babyUid || data.babyUid;
+    await markSummaryDirtySafe(previousBabyUid, previous?.date);
+    if (data.date) {
+      await markSummaryDirtySafe(data.babyUid || previousBabyUid, data.date);
+    }
     return true;
   }
 
   async deleteRecord(recordId, options = {}) {
+    // 删除前读出记录归属的宝宝与日期，删除后据此让对应当日汇总失效。
+    const previous = await getFeedingRecordById(recordId);
     await feedingRecordV2Collection.doc(recordId).remove();
     await recordHardDelete({
       db,
@@ -234,6 +281,7 @@ class FeedingRecordV2Model {
       babyUid: options.babyUid || '',
       operatorOpenid: resolveOperatorOpenid(options)
     });
+    await markSummaryDirtySafe(previous?.babyUid || options.babyUid, previous?.date);
     return true;
   }
 
@@ -267,6 +315,7 @@ class FeedingRecordV2Model {
         }
         throw error;
       }
+      await markSummaryDirtySafe(babyUid, date);
       return { recordId: existing._id };
     }
 
@@ -293,6 +342,7 @@ class FeedingRecordV2Model {
       }
       throw error;
     }
+    await markSummaryDirtySafe(babyUid, date);
     return { recordId: res._id };
   }
 
@@ -313,6 +363,15 @@ class FeedingRecordV2Model {
       .get();
     const record = res.data && res.data[0];
     return record ? normalizeFeedingRecordV2(record) : null;
+  }
+
+  // 最近一天（严格早于指定日期）有喂奶记录那天的喂奶顿数，
+  // 用作“分顿建议”的默认计划顿数；没有历史则返回 0。
+  async getRecentDayMealCount(babyUid, date) {
+    const recent = await this.getRecentRecord(babyUid, date);
+    if (!recent || !recent.date) return 0;
+    const records = await this.getRecordsByDate(babyUid, recent.date);
+    return Array.isArray(records) ? records.length : 0;
   }
 
   async resolveBasicInfoSnapshot(babyUid, date, options = {}) {

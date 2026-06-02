@@ -43,6 +43,7 @@
 
 .treatment-card {
   display: flex;
+  align-items: flex-start;
   gap: 16rpx;
   padding: 24rpx;
   border-radius: 16rpx;
@@ -61,22 +62,20 @@
 
 .treatment-card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 2rpx;
-}
-
-.treatment-time {
-  flex-shrink: 0;
-  font-size: 26rpx;
-  color: #999999;
+  align-items: baseline;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
 }
 
 .treatment-type {
   font-size: 30rpx;
   color: #333333;
   font-weight: 600;
+}
+
+.treatment-time {
+  font-size: 26rpx;
+  color: #999999;
 }
 
 .treatment-count-row {
@@ -134,7 +133,7 @@
 
 .treatment-card-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 10rpx;
   flex-shrink: 0;
   margin-left: 16rpx;

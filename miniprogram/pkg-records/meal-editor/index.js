@@ -1,4 +1,5 @@
 const FoodModel = require('../../models/food');
+const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const { getBabyUid } = require('../../utils/index');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
 
@@ -830,6 +831,14 @@ Page({
           updatedAt: db.serverDate()
         }
       });
+
+      // 食物（天然蛋白来源之一）直接写库，需让当天 daily_summary_v2 失效，
+      // 否则首页趋势/数据记录页的当日汇总会沿用旧缓存。
+      try {
+        await DailySummaryV2Model.markDirty(babyUid, this.data.selectedDate);
+      } catch (markError) {
+        console.error('标记当日汇总失效失败:', markError);
+      }
 
       wx.hideLoading();
       wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });

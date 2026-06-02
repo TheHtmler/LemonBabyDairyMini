@@ -3,10 +3,45 @@
  * 管理 medication_records 集合的 CRUD 操作
  */
 
+const DailySummaryV2Model = require('./dailySummaryV2');
+
 class MedicationRecordModel {
   constructor() {
     this.db = wx.cloud.database();
     this.collection = this.db.collection('medication_records');
+  }
+
+  // 把日期值（'YYYY-MM-DD' / Date / ISO）归一成 'YYYY-MM-DD' 键。
+  getDateKey(dateInput) {
+    if (!dateInput) return '';
+    if (typeof dateInput === 'string') {
+      const matched = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (matched) return `${matched[1]}-${matched[2]}-${matched[3]}`;
+    }
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (Number.isNaN(date.getTime())) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  // 用药也是当日汇总的一部分（takenMedicationIds 等），增删改后让 daily_summary_v2 失效。
+  // 失效收口在模型写入层，调用方无需各自记得 markDirty。
+  async markSummaryDirty(babyUid, dateInput) {
+    const dateKey = this.getDateKey(dateInput);
+    if (!babyUid || !dateKey) return;
+    try {
+      await DailySummaryV2Model.markDirty(babyUid, dateKey);
+    } catch (error) {
+      console.error('标记当日汇总失效失败:', error);
+    }
+  }
+
+  async getById(id) {
+    try {
+      const res = await this.collection.doc(id).get();
+      return res?.data || null;
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
@@ -50,7 +85,9 @@ class MedicationRecordModel {
       record.notes = String(data.notes).trim();
     }
 
-    return await this.collection.add({ data: record });
+    const result = await this.collection.add({ data: record });
+    await this.markSummaryDirty(babyUid, data.date || new Date());
+    return result;
   }
 
   /**
@@ -122,14 +159,23 @@ class MedicationRecordModel {
    * @returns {Promise}
    */
   async updateRecord(id, data) {
+    // 先读旧记录，编辑若改了日期，旧日期的汇总也要一起失效。
+    const previous = await this.getById(id);
     const updateData = {
       ...data,
       updatedAt: this.db.serverDate()
     };
 
-    return await this.collection.doc(id).update({
+    const result = await this.collection.doc(id).update({
       data: updateData
     });
+
+    const previousBabyUid = previous?.babyUid;
+    await this.markSummaryDirty(previousBabyUid, previous?.date);
+    if (data.date) {
+      await this.markSummaryDirty(previousBabyUid, data.date);
+    }
+    return result;
   }
 
   /**
@@ -153,7 +199,11 @@ class MedicationRecordModel {
    * @returns {Promise}
    */
   async deleteRecord(id) {
-    return await this.collection.doc(id).remove();
+    // 删除前读出记录归属的宝宝与日期，删除后据此让对应当日汇总失效。
+    const previous = await this.getById(id);
+    const result = await this.collection.doc(id).remove();
+    await this.markSummaryDirty(previous?.babyUid, previous?.date);
+    return result;
   }
 
   /**

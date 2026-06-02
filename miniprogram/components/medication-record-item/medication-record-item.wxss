@@ -5,22 +5,20 @@
 
 .medication-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8rpx;
-}
-
-.medication-time {
-  font-size: 26rpx;
-  color: #999999;
+  align-items: baseline;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
 }
 
 .medication-name {
   font-size: 30rpx;
   color: #333333;
   font-weight: 600;
-  text-align: right;
-  flex: 1;
+}
+
+.medication-time {
+  font-size: 26rpx;
+  color: #999999;
 }
 
 .medication-dose {

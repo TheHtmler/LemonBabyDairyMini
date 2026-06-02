@@ -254,6 +254,29 @@
 
 .milk-entry-card {
   background: rgba(255, 253, 247, 0.92);
+  border-left-width: 6rpx;
+  border-left-style: solid;
+  border-left-color: rgba(214, 173, 92, 0.32);
+}
+
+.milk-entry-card--breast {
+  background: linear-gradient(135deg, #fff7da 0%, #fffdf7 70%);
+  border-left-color: #e0a52f;
+}
+
+.milk-entry-card--regular {
+  background: linear-gradient(135deg, #eff8e0 0%, #fcfef8 70%);
+  border-left-color: #5f8a1f;
+}
+
+.milk-entry-card--special {
+  background: linear-gradient(135deg, #ebf2ff 0%, #f8fbff 70%);
+  border-left-color: #4775c9;
+}
+
+.milk-entry-card--energy {
+  background: linear-gradient(135deg, #fff3e2 0%, #fffcf6 70%);
+  border-left-color: #b76a1b;
 }
 
 .milk-entry-card.just-added {
@@ -633,12 +656,10 @@
   0% {
     opacity: 0.72;
     transform: translate3d(0, -10rpx, 0);
-    background: rgba(255, 240, 178, 0.96);
   }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
-    background: rgba(255, 253, 247, 0.92);
   }
 }
 

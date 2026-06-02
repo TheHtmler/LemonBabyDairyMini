@@ -10,8 +10,8 @@
     <view class="treatment-card" wx:for="{{records}}" wx:key="_id" wx:for-item="record">
       <view class="treatment-card-main">
         <view class="treatment-card-header">
-          <text class="treatment-time">{{record.displayTime || '--:--'}}</text>
           <text class="treatment-type">{{record.typeLabel}}</text>
+          <text class="treatment-time">{{record.displayTime || '--:--'}}</text>
         </view>
 
         <view class="treatment-count-row">

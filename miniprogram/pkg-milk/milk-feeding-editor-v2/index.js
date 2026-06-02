@@ -23,6 +23,12 @@ const resolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot.b
 const getV2RecordsByDate = feedingRecordV2Model.getRecordsByDate.bind(feedingRecordV2Model);
 const wxApi = wx;
 
+function dismissKeyboard() {
+  if (typeof wxApi.hideKeyboard === 'function') {
+    wxApi.hideKeyboard();
+  }
+}
+
 function formatDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -316,43 +322,6 @@ Page({
     });
   },
 
-  applyGoalPlannerEntries(entries = []) {
-    const powders = this.data.formulaPowders || [];
-    const nextEntries = (entries || [])
-      .map((entry) => {
-        if (entry.kind === 'breast_milk') {
-          return createBreastEntry({
-            volume: entry.volume,
-            justAdded: true
-          });
-        }
-
-        if (entry.kind === 'formula_powder') {
-          const powder = powders.find((item) => item.id === entry.powderId);
-          if (!powder) return null;
-          const powderPickerIndex = Math.max(0, powders.findIndex((item) => item.id === powder.id));
-          return createFormulaEntry(powder, {
-            waterVolume: entry.waterVolume,
-            powderWeight: entry.powderWeight,
-            ratioMode: entry.ratioMode || 'standard',
-            powderPickerIndex,
-            justAdded: true
-          });
-        }
-
-        return null;
-      })
-      .filter(Boolean);
-
-    this.setData({
-      milkEntries: this.normalizeMilkEntries(nextEntries),
-      showAddMilkPanel: false,
-      addMilkOptions: []
-    }, () => {
-      this.refreshNutritionPreview();
-    });
-  },
-
   isAddMilkOptionSelected(option = {}, entries = this.data.milkEntries || []) {
     if (option.kind === 'breast_milk') {
       return (entries || []).some((entry) => entry.kind === 'breast_milk');
@@ -414,10 +383,11 @@ Page({
   },
 
   openAddMilkPanel() {
+    dismissKeyboard();
     this.setData({
       showAddMilkPanel: true,
       addMilkOptions: this.buildAddMilkOptions()
-    });
+    }, dismissKeyboard);
   },
 
   buildFlyMilkStyle(flight = {}, moving = false) {
@@ -502,6 +472,7 @@ Page({
           item.key === key ? { ...item, selected: false } : item
         ))
       }, () => {
+        dismissKeyboard();
         this.refreshNutritionPreview();
       });
       return;
@@ -519,6 +490,7 @@ Page({
         item.key === key ? { ...item, selected: true } : item
       ))
     }, () => {
+      dismissKeyboard();
       this.playAddMilkAnimation(option, optionIndex, touch);
       this.refreshNutritionPreview();
     });

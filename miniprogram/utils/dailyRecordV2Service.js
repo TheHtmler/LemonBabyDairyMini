@@ -268,18 +268,11 @@ async function ensureGrowthRecordForDate(babyUid, date, eventRecords = {}) {
     return eventRecords;
   }
 
+  // 只顺延体重/身高这类“真实测量值”，绝不顺延蛋白/热量系数：
+  // 系数属于设定，不应被自动写进当天成长记录，否则会出现“今天没记录却带出昨天系数”。
   const nextBasicInfo = {
     weight: hasValue(snapshot.weight) ? snapshot.weight : currentBasicInfo.weight,
-    height: hasValue(snapshot.height) ? snapshot.height : currentBasicInfo.height,
-    naturalProteinCoefficient: hasValue(snapshot.naturalProteinCoefficient)
-      ? snapshot.naturalProteinCoefficient
-      : currentBasicInfo.naturalProteinCoefficient,
-    specialProteinCoefficient: hasValue(snapshot.specialProteinCoefficient)
-      ? snapshot.specialProteinCoefficient
-      : currentBasicInfo.specialProteinCoefficient,
-    calorieCoefficient: hasValue(snapshot.calorieCoefficient)
-      ? snapshot.calorieCoefficient
-      : currentBasicInfo.calorieCoefficient
+    height: hasValue(snapshot.height) ? snapshot.height : currentBasicInfo.height
   };
 
   await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, date, nextBasicInfo);
@@ -350,16 +343,66 @@ async function getDailyRecordV2(babyUid, date) {
   return buildServiceResult(babyUid, date, eventRecords, savedSummary);
 }
 
+function enumerateDateKeys(startDate, endDate) {
+  const result = [];
+  const [sy, sm, sd] = String(startDate).split('-').map(Number);
+  const [ey, em, ed] = String(endDate).split('-').map(Number);
+  if ([sy, sm, sd, ey, em, ed].some((value) => !Number.isFinite(value))) {
+    return result;
+  }
+  const cursor = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  while (cursor <= end) {
+    const month = String(cursor.getMonth() + 1).padStart(2, '0');
+    const day = String(cursor.getDate()).padStart(2, '0');
+    result.push(`${cursor.getFullYear()}-${month}-${day}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return result;
+}
+
+// 取范围内每日汇总。
+// 默认只读已存在的 daily_summary_v2 缓存（懒生成）。
+// rebuildMissing=true 时，对范围内“缺失或过期(isDirty)”的天按原始记录重建并补齐，
+// 让趋势与「数据记录」页同源（会顺延体重、为缺数据的天写入空汇总）。
+// skipDates 用于排除“调用方另行实时处理”的日期（如首页的今天），避免与 getDailyRecordV2 并发重建产生重复文档。
 async function getDailySummariesForRange(babyUid, startDate, endDate, options = {}) {
   const summaries = await DailySummaryV2Model.getRange(babyUid, startDate, endDate);
-  if (options.rebuildMissing === true) {
+  if (options.rebuildMissing !== true) {
     return summaries;
   }
-  return summaries;
+
+  const skip = new Set(options.skipDates || []);
+  const freshDates = new Set(
+    summaries.filter((summary) => summary.isDirty !== true).map((summary) => summary.date)
+  );
+  const targetDates = enumerateDateKeys(startDate, endDate)
+    .filter((date) => !skip.has(date) && !freshDates.has(date));
+  if (targetDates.length === 0) {
+    return summaries;
+  }
+
+  const targetSet = new Set(targetDates);
+  const kept = summaries.filter((summary) => !targetSet.has(summary.date));
+  const rebuilt = [];
+  for (const date of targetDates) {
+    try {
+      const { summary } = await rebuildDailySummaryForDate(babyUid, date);
+      if (summary) {
+        rebuilt.push(summary);
+      }
+    } catch (error) {
+      // 单天重建失败不应阻断整体趋势加载
+      console.error('重建当日汇总失败:', date, error);
+    }
+  }
+
+  return kept.concat(rebuilt);
 }
 
 module.exports = {
   getDailyRecordV2,
   rebuildDailySummaryForDate,
-  getDailySummariesForRange
+  getDailySummariesForRange,
+  loadLegacyFoodIntakes
 };

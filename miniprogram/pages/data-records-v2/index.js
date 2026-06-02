@@ -2934,6 +2934,8 @@ function createDataRecordsPageConfig(options = {}) {
           )
         );
       }
+      // 直接写库的复制路径也要让目标日汇总失效（这里绕过了模型层的自动失效）。
+      await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
       wx.hideLoading();
       wx.showToast({ title: '已复制到目标日期', icon: 'success' });
     } catch (error) {
@@ -3224,17 +3226,17 @@ function createDataRecordsPageConfig(options = {}) {
       dateStr
     });
     const totalMilk = (intakeOverview?.milk?.normal?.volume || 0) + (intakeOverview?.milk?.special?.volume || 0);
-    // 蛋白系数按当天实际摄入计算（蛋白量/体重），与数据分析口径一致；
-    // 新加喂奶当天成长记录尚未存系数，不能依赖 basicInfo 存储值，否则会显示 --。
+    // 蛋白系数 = 当天真实摄入蛋白量 / 体重，纯实时计算；
+    // 没有真实摄入就显示“--”，不回退任何已存的目标系数（目标系数属于设定，不与记录混算）。
     const coefficientWeight = Number(recordWeight) || 0;
     const naturalProteinIntakeNum = Number(proteinSummaryDisplay?.natural) || 0;
     const specialProteinIntakeNum = Number(proteinSummaryDisplay?.special) || 0;
     const naturalCoefficientDisplay = coefficientWeight > 0 && naturalProteinIntakeNum > 0
       ? roundNumber(naturalProteinIntakeNum / coefficientWeight, 2)
-      : (basicInfo.naturalProteinCoefficient || '');
+      : '';
     const specialCoefficientDisplay = coefficientWeight > 0 && specialProteinIntakeNum > 0
       ? roundNumber(specialProteinIntakeNum / coefficientWeight, 2)
-      : (basicInfo.specialProteinCoefficient || '');
+      : '';
     const hasRecord = feedings.length > 0
       || intakes.length > 0
       || medicationRecordsToSet.length > 0
@@ -3647,7 +3649,10 @@ function createDataRecordsPageConfig(options = {}) {
           dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
           caloriePerKg: calorieMetrics.caloriePerKg,
           calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
-          macroRatios: this.computeMacroRatios(this.data.macroSummary)
+          macroRatios: this.computeMacroRatios(this.data.macroSummary),
+          // 没有喂奶就没有真实摄入，系数必须显式清空，不能回退到上一日期残留值。
+          naturalProteinCoefficient: '',
+          specialProteinCoefficient: ''
         })
       });
       return;
@@ -5998,6 +6003,16 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   buildSummaryPreviewData(overrides = {}) {
+    const resolvedWeight = overrides.weight ?? this.data.weight;
+    const resolvedProteinSummary = overrides.proteinSummaryDisplay ?? this.data.proteinSummaryDisplay;
+    // 汇总系数只反映“当天真实摄入 / 体重”的实时计算结果：没摄入就显示空。
+    // 调用方显式传了系数（哪怕空串）就直接用；没传时按实际摄入现算，
+    // 绝不回退到 this.data 里上一个日期残留的系数，否则切日期会把前一天系数串过来。
+    const actualCoefficient = (intake) => {
+      const weightNum = Number(resolvedWeight) || 0;
+      const intakeNum = Number(intake) || 0;
+      return weightNum > 0 && intakeNum > 0 ? roundNumber(intakeNum / weightNum, 2) : '';
+    };
     const snapshot = {
       formattedSelectedDate: overrides.formattedSelectedDate ?? this.data.formattedSelectedDate,
       weight: overrides.weight ?? this.data.weight,
@@ -6006,16 +6021,12 @@ function createDataRecordsPageConfig(options = {}) {
       dailyCaloriesTotal: overrides.dailyCaloriesTotal ?? this.data.dailyCaloriesTotal,
       caloriePerKg: overrides.caloriePerKg ?? this.data.caloriePerKg,
       proteinSummaryDisplay: overrides.proteinSummaryDisplay ?? this.data.proteinSummaryDisplay,
-      naturalProteinCoefficient: pickFirstFilled(
-        overrides.naturalProteinCoefficient,
-        this.data.naturalProteinCoefficient,
-        this.data.naturalProteinCoefficientInput
-      ),
-      specialProteinCoefficient: pickFirstFilled(
-        overrides.specialProteinCoefficient,
-        this.data.specialProteinCoefficient,
-        this.data.specialProteinCoefficientInput
-      ),
+      naturalProteinCoefficient: Object.prototype.hasOwnProperty.call(overrides, 'naturalProteinCoefficient')
+        ? overrides.naturalProteinCoefficient
+        : actualCoefficient(resolvedProteinSummary?.natural),
+      specialProteinCoefficient: Object.prototype.hasOwnProperty.call(overrides, 'specialProteinCoefficient')
+        ? overrides.specialProteinCoefficient
+        : actualCoefficient(resolvedProteinSummary?.special),
       calorieGoalPerKgRange: overrides.calorieGoalPerKgRange ?? this.data.calorieGoalPerKgRange,
       macroRatios: overrides.macroRatios ?? this.data.macroRatios,
       fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines,
@@ -6275,6 +6286,8 @@ function createDataRecordsPageConfig(options = {}) {
     await db.collection('feeding_records').doc(recordId).update({
       data: payload
     });
+    // 直接写库的 legacy 分支也要让当天汇总失效（v2 分支由模型层自动失效）。
+    await DailySummaryV2Model.markDirty(babyUid, selectedDate);
   },
 
   isNumberValue(value) {
