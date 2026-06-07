@@ -364,6 +364,64 @@ test('onLoad sets the navigation title from create or edit mode', async () => {
   assert.deepEqual(editContext.calls.titles[0], { title: '编辑喂奶' });
 });
 
+test('add milk dialog exposes a guide entry at the top-right under the close button', () => {
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxss', 'utf8');
+
+  // 右上角“关闭”下一行的“去配奶粉”入口
+  assert.match(wxml, /class="add-milk-dialog-manage"\s+bindtap="goToManagePowders"/);
+  assert.match(wxml, /去配奶粉/);
+  assert.match(wxss, /\.add-milk-dialog-corner\b/);
+  assert.match(wxss, /\.add-milk-dialog-manage\b/);
+  // 不再使用此前“+ 添加奶”下方的常驻入口与弹窗底部入口
+  assert.doesNotMatch(wxml, /manage-powder-entry/);
+  assert.doesNotMatch(wxml, /class="add-milk-manage"/);
+});
+
+test('goToManagePowders opens nutrition profile settings on the powders view', () => {
+  const { pageConfig, calls } = loadV2Page();
+  const page = createPageInstance(pageConfig);
+
+  page.goToManagePowders();
+
+  assert.equal(calls.navigatedUrl, '/pkg-milk/nutrition-profile-settings/index?view=powders');
+  assert.equal(page._pendingPowderRefresh, true);
+});
+
+test('onShow refreshes formula powders without wiping the current milk entries', async () => {
+  const { pageConfig } = loadV2Page({
+    getNutritionProfileSettings: async () => ({
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      formulaPowders: [
+        {
+          id: 'special-a',
+          name: '特奶 A',
+          status: 'active',
+          category: 'special_formula',
+          proteinRole: 'special',
+          nutritionPer100g: { protein: 12, calories: 400 },
+          mixRatio: { powder: 6, water: 40 }
+        }
+      ]
+    })
+  });
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    formulaPowders: [],
+    milkEntries: [{ localId: 'breast-1', kind: 'breast_milk', volume: '60' }]
+  });
+  page._pendingPowderRefresh = true;
+
+  await page.onShow();
+
+  assert.equal(page._pendingPowderRefresh, false);
+  assert.equal(page.data.formulaPowders.length, 1);
+  assert.equal(page.data.formulaPowders[0].id, 'special-a');
+  assert.equal(page.data.milkEntries.length, 1);
+  assert.equal(page.data.milkEntries[0].volume, '60');
+});
+
 test('navigateToGoalPlanner opens the standalone planner with date and edit context', () => {
   const { pageConfig, calls } = loadV2Page();
   const page = createPageInstance(pageConfig, {

@@ -53,12 +53,6 @@ page {
   color: #fff;
   font-weight: 500;
 }
-.notice-close {
-  flex: 0 0 auto;
-  font-size: 34rpx;
-  color: #fff;
-  padding: 0 4rpx;
-}
 @keyframes notice-scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -226,8 +220,8 @@ page {
 }
 .ring {
   flex: 0 0 auto;
-  width: 200rpx;
-  height: 200rpx;
+  width: 176rpx;
+  height: 176rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -241,8 +235,10 @@ page {
   100% { transform: scale(1); opacity: 1; }
 }
 .ring-hole {
-  width: 150rpx;
-  height: 150rpx;
+  width: 132rpx;
+  height: 132rpx;
+  box-sizing: border-box;
+  padding-top: 14rpx;
   background: #fff;
   border-radius: 50%;
   display: flex;
@@ -251,20 +247,42 @@ page {
   justify-content: center;
 }
 .ring-big {
-  font-size: 44rpx;
+  font-size: 38rpx;
   font-weight: 800;
   color: #F59E0B;
   line-height: 1;
 }
 .ring-unit {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #B0B0B0;
-  margin-top: 6rpx;
+  margin-top: 0;
 }
 .ring-lbl {
   font-size: 22rpx;
   color: #8A8A8A;
   margin-top: 4rpx;
+}
+/* 热量系数：移进圆环中心（去掉环下吊牌） */
+.ring-perkg {
+  font-size: 18rpx;
+  color: #FF9F45;
+  font-weight: 700;
+  margin-top: 2rpx;
+}
+.ring-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+.ring-cap {
+  font-size: 20rpx;
+  color: #B07A00;
+  background: #FFF4D6;
+  padding: 5rpx 16rpx;
+  border-radius: 999rpx;
+  font-weight: 600;
 }
 .macro-list {
   flex: 1;
@@ -325,8 +343,9 @@ page {
 }
 .ms-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 12rpx;
   line-height: 1.15;
 }
 .ms-v {
@@ -347,7 +366,7 @@ page {
   font-size: 20rpx;
   color: #B0B0B0;
   font-weight: 600;
-  margin-top: 2rpx;
+  margin-top: 0;
 }
 
 /* 喂养进度 */
@@ -587,7 +606,171 @@ page {
   box-shadow: none;
 }
 /* 按压反馈 */
-.med-press { background: #FFFCF2; }
+.med-press { background: #FFFCF2; transform: scale(0.99); transition: transform 0.1s ease; }
+.med-hint {
+  display: block;
+  font-size: 21rpx;
+  color: #B7AE96;
+  margin: -4rpx 0 8rpx;
+}
+
+/* 打卡撤销条 */
+.med-undo {
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: -160rpx;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  background: rgba(38, 38, 38, 0.94);
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transition: bottom 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+}
+.med-undo.show {
+  bottom: 48rpx;
+  opacity: 1;
+}
+.med-undo-icon {
+  width: 44rpx;
+  height: 44rpx;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #4CC38A;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.med-undo-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.med-undo-title {
+  font-size: 26rpx;
+  color: #fff;
+  font-weight: 600;
+}
+.med-undo-sub {
+  font-size: 21rpx;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2rpx;
+}
+.med-undo-btn {
+  flex: 0 0 auto;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #FFD45E;
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 212, 94, 0.16);
+}
+
+/* 行右侧操作区：打卡 + 查看 */
+.med-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.med-cta.done-edit {
+  color: #9A9A9A;
+  background: #F2F2F2;
+  box-shadow: none;
+}
+.med-view {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #6E8BBF;
+  background: #EEF3FB;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+}
+
+/* 用药打卡面板（底部弹层） */
+.mp-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0);
+  visibility: hidden;
+  transition: background 0.28s ease, visibility 0s linear 0.28s;
+}
+.mp-mask.show {
+  background: rgba(0, 0, 0, 0.42);
+  visibility: visible;
+  transition: background 0.28s ease;
+}
+.mp-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #FFFDF6;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 16rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 -10rpx 40rpx rgba(0, 0, 0, 0.12);
+}
+.mp-sheet.show { transform: translateY(0); }
+.mp-grip {
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: #E7E0CC;
+  margin: 4rpx auto 18rpx;
+}
+.mp-head { margin-bottom: 18rpx; }
+.mp-title { font-size: 32rpx; font-weight: 800; color: #3A3326; }
+.mp-meta { display: block; font-size: 23rpx; color: #9A9079; margin-top: 6rpx; }
+.mp-section { display: block; font-size: 24rpx; font-weight: 700; color: #6E6550; margin: 8rpx 0 12rpx; }
+.mp-empty { font-size: 24rpx; color: #B7AE96; padding: 16rpx 0; }
+.mp-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #F3EEDD;
+}
+.mp-entry-time {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #3A3326;
+}
+.mp-entry-ops {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.mp-entry-edit {
+  font-size: 24rpx;
+  color: #FFB800;
+  background: #FFF4D6;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+}
+.mp-entry-del {
+  font-size: 24rpx;
+  color: #E8654F;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #FCEBE7;
+}
+.mp-close {
+  margin-top: 22rpx;
+  text-align: center;
+  font-size: 27rpx;
+  color: #9A9079;
+  padding: 20rpx 0 4rpx;
+}
 .med-empty .empty-hint {
   display: flex;
   align-items: center;
@@ -763,6 +946,19 @@ page {
   font-size: 20rpx;
   font-weight: 500;
   color: #B0B0B0;
+}
+.tf-c {
+  display: block;
+  font-size: 19rpx;
+  font-weight: 700;
+  color: #FF9F45;
+  margin-top: 3rpx;
+  min-height: 24rpx;
+}
+.tf-cu {
+  font-size: 17rpx;
+  font-weight: 500;
+  color: #C9A06A;
 }
 .tf-l {
   display: block;

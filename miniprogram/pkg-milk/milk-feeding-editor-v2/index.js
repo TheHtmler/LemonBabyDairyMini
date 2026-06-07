@@ -225,6 +225,14 @@ Page({
     await this.loadPageData();
   },
 
+  async onShow() {
+    // 从配奶设置页返回时，只刷新奶粉档案，避免清空本次已录入的奶。
+    if (this._pendingPowderRefresh) {
+      this._pendingPowderRefresh = false;
+      await this.reloadFormulaPowders();
+    }
+  },
+
   async loadPageData() {
     if (!this.data.babyUid) {
       wxApi.showToast({ title: '缺少宝宝信息', icon: 'none' });
@@ -320,6 +328,43 @@ Page({
     wxApi.navigateTo({
       url: `/pkg-milk/milk-goal-planner-v2/index?date=${encodeURIComponent(selectedDate)}${recordIdParam}`
     });
+  },
+
+  // 选奶弹窗内的引导入口：新手没配过奶粉时只有“母乳”，这里跳到配奶设置页的奶粉管理去添加奶粉。
+  goToManagePowders() {
+    this._pendingPowderRefresh = true;
+    wxApi.navigateTo({
+      url: '/pkg-milk/nutrition-profile-settings/index?view=powders',
+      fail: (err) => {
+        this._pendingPowderRefresh = false;
+        console.error('打开配奶设置页失败：', err);
+      }
+    });
+  },
+
+  // 仅刷新奶粉档案与依赖它的视图，不动 milkEntries（本次已录入的奶）。
+  async reloadFormulaPowders() {
+    if (!this.data.babyUid) return;
+    try {
+      const settings = await getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false });
+      const formulaPowders = sortFormulaPowdersByCategory(
+        ((settings && settings.formulaPowders) || [])
+          .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
+          .map(enrichPowder)
+      );
+      this.setData({
+        nutritionSettings: settings || this.data.nutritionSettings,
+        formulaPowders,
+        milkEntries: this.normalizeMilkEntries(this.data.milkEntries || [])
+      }, () => {
+        if (this.data.showAddMilkPanel) {
+          this.setData({ addMilkOptions: this.buildAddMilkOptions() });
+        }
+        this.refreshNutritionPreview();
+      });
+    } catch (error) {
+      console.error('刷新奶粉档案失败：', error);
+    }
   },
 
   isAddMilkOptionSelected(option = {}, entries = this.data.milkEntries || []) {

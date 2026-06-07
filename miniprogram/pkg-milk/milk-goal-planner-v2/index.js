@@ -311,6 +311,44 @@ Page({
     await this.loadPageData();
   },
 
+  onShow() {
+    // 从配奶设置页配置完奶粉返回时，只刷新奶粉档案，保留本次已选来源/已填系数。
+    if (this._pendingPowderRefresh) {
+      this._pendingPowderRefresh = false;
+      this.reloadFormulaPowders();
+    }
+  },
+
+  // 选奶弹窗内的引导入口：新用户没配过奶粉时分组无可选项，这里跳到配奶设置页去添加奶粉。
+  goToManagePowders() {
+    this._pendingPowderRefresh = true;
+    wxApi.navigateTo({
+      url: '/pkg-milk/nutrition-profile-settings/index?view=powders',
+      fail: (err) => {
+        this._pendingPowderRefresh = false;
+        console.error('打开配奶设置页失败：', err);
+      }
+    });
+  },
+
+  // 仅刷新奶粉档案与依赖它的来源分组，不重置已选来源（selectedKeys）。
+  async reloadFormulaPowders() {
+    if (!this.data.babyUid) return;
+    try {
+      const settings = await getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false });
+      const formulaPowders = this.enrichPlannerPowders(((settings && settings.formulaPowders) || [])
+        .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED));
+      this.setData({
+        nutritionSettings: settings || this.data.nutritionSettings,
+        formulaPowders
+      }, () => {
+        this.rebuild();
+      });
+    } catch (error) {
+      console.error('刷新奶粉档案失败：', error);
+    }
+  },
+
   async loadPageData() {
     if (!this.data.babyUid) {
       wxApi.showToast({ title: '缺少宝宝信息', icon: 'none' });

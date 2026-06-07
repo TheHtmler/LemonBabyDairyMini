@@ -110,7 +110,10 @@
           <text class="section-title add-milk-dialog-title">选择要添加的奶</text>
           <text class="add-milk-hint">选择后会直接加入本次配奶，再点一次可移除</text>
         </view>
-        <text class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">关闭</text>
+        <view class="add-milk-dialog-corner">
+          <view class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">×</view>
+          <view class="add-milk-dialog-manage" bindtap="goToManagePowders">去配奶粉</view>
+        </view>
       </view>
       <view class="add-milk-options">
         <view

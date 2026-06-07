@@ -6,8 +6,9 @@
  * 组装成看板视图数据：营养达成 / 喂养进度 / 配奶建议 / 用药打卡 / 时间轴 / 周趋势。
  */
 
-// 每日计划喂奶顿数（项目规则：一日 7-8 顿）
-const DEFAULT_PLANNED_MEALS = 8;
+// 每日计划喂奶顿数：新用户（无历史记录）默认 6 顿；
+// 有历史时仍以「最近记录日的顿数」为准（见 buildFeedingProgress）。
+const DEFAULT_PLANNED_MEALS = 6;
 // 默认天然蛋白摄入系数 g/kg/d（项目规则）
 const DEFAULT_NATURAL_PROTEIN_COEFFICIENT = 1.2;
 
@@ -311,12 +312,12 @@ function milkRecordVolumes(record = {}) {
  * 构建今日喂养进度
  * @param {Object} params
  * @param {Array}  params.milkRecords 今日 v2 喂奶记录（规范化后，含 startTime / nutritionSummary）
- * @param {number} params.plannedMeals 计划顿数（0/缺省回退到默认 8）
+ * @param {number} params.plannedMeals 计划顿数（0/缺省回退到默认 6）
  */
 function buildFeedingProgress({ milkRecords = [], plannedMeals = 0 } = {}) {
   const records = milkRecords || [];
-  // 顿数参考过往记录：用最近记录日的顿数；无历史(0)才回退默认 8。
-  // 不再对 8 取 max（否则每天 6-7 顿也会被顶成 8，与配奶规划口径不一致）。
+  // 顿数参考过往记录：用最近记录日的顿数；无历史(0)才回退默认 6（新用户）。
+  // 不再取 max（否则每天 6-7 顿也会被顶高，与配奶规划口径不一致）。
   const parsedPlanned = parseInt(plannedMeals, 10) || 0;
   const planned = parsedPlanned > 0 ? parsedPlanned : DEFAULT_PLANNED_MEALS;
   const count = records.length;
@@ -358,15 +359,11 @@ function buildFeedingProgress({ milkRecords = [], plannedMeals = 0 } = {}) {
   };
 }
 
-/**
- * 最近一顿的真实配比参考（与配奶计算页一致：采用“最近用过的奶来源”而非写死母乳/特奶）。
- * 直接读这条喂奶记录的 formulaComponents，用真实来源名 + 体积展示，
- * 母乳取 volume、奶粉取 waterVolume（冲调后体积），并按 母乳→普奶→特奶 排序。
- */
-function buildRecentMealHint(record) {
+// 从单条喂奶记录拆出真实来源配比（母乳取 volume、奶粉取冲调后 waterVolume），
+// 按 母乳→普奶→特奶 排序，用真实来源名展示。
+function extractMealParts(record) {
   const components = record && Array.isArray(record.formulaComponents) ? record.formulaComponents : [];
   const parts = [];
-
   components.forEach((component = {}) => {
     if (component.kind === 'breast_milk') {
       const volume = round(toNumber(component.volume, 0), 0);
@@ -380,20 +377,51 @@ function buildRecentMealHint(record) {
       }
     }
   });
+  parts.sort((a, b) => a.order - b.order);
+  return parts.map((p) => ({ name: p.name, volume: p.volume }));
+}
 
-  if (!parts.length) {
-    return { hasPlan: false, parts: [], text: '', total: 0, time: '' };
+/**
+ * 「下一顿参考」：按今天已喂顿数对应到上次（最近历史日）同序号那一顿的真实配比。
+ * 例：上次一天 4 顿，今天已喂 2 顿 → 下一顿是第 3 顿 → 取上次那天第 3 顿展示。
+ * @param {Array}  referenceMeals 上次那天的全部喂奶记录
+ * @param {string} refDate        上次那天的日期（YYYY-MM-DD）
+ * @param {number} fedCount       今天已喂顿数
+ */
+function buildNextMealReference({ referenceMeals = [], refDate = '', fedCount = 0 } = {}) {
+  const meals = (referenceMeals || [])
+    .filter((record) => record)
+    .slice()
+    .sort((a, b) => (
+      timeToMinutes(resolveTimeLabel(a.startTime, a.startDateTime))
+      - timeToMinutes(resolveTimeLabel(b.startTime, b.startDateTime))
+    ));
+
+  if (!meals.length) {
+    return { hasPlan: false, parts: [], text: '', total: 0, seq: 0, refDate: '', exceeded: false };
   }
 
-  parts.sort((a, b) => a.order - b.order);
-  const total = parts.reduce((sum, p) => sum + p.volume, 0);
+  const fed = Math.max(0, parseInt(fedCount, 10) || 0);
+  // 下一顿序号 = 已喂 + 1（0-based 索引即 fed）；超出上次顿数则落到末顿。
+  const exceeded = fed >= meals.length;
+  const idx = Math.min(fed, meals.length - 1);
+  const meal = meals[idx];
+  const seq = idx + 1;
+  const parts = extractMealParts(meal);
 
+  if (!parts.length) {
+    return { hasPlan: false, parts: [], text: '', total: 0, seq, refDate, exceeded };
+  }
+
+  const total = parts.reduce((sum, p) => sum + p.volume, 0);
   return {
     hasPlan: true,
-    parts: parts.map((p) => ({ name: p.name, volume: p.volume })),
+    parts,
     text: parts.map((p) => `${p.name}${p.volume}ml`).join(' + '),
     total: round(total, 0),
-    time: record.startTime || ''
+    seq,
+    refDate,
+    exceeded
   };
 }
 
@@ -461,8 +489,11 @@ function readMetric(summary, metric) {
  * @param {string} params.todayKey  今日日期键
  * @param {number} params.days      天数，默认 7
  * @param {string} params.metric    weight|naturalProtein|specialProtein|totalProtein|calorie|calPerKg
+ * @param {boolean} params.includeToday 是否把今天计入窗口。
+ *        true  → 窗口 [今天-(days-1) … 今天]（最后一根是今天）；
+ *        false → 窗口 [今天-days … 今天-1]（只看已完成的天，最后一根是昨天）。
  */
-function buildWeeklyTrend({ summaries = [], todayKey = '', days = 7, metric = 'weight' } = {}) {
+function buildWeeklyTrend({ summaries = [], todayKey = '', days = 7, metric = 'weight', includeToday = true } = {}) {
   const precision = metricDisplayPrecision(metric);
   const today = parseDateKey(todayKey) || new Date();
   const byDate = {};
@@ -474,15 +505,18 @@ function buildWeeklyTrend({ summaries = [], todayKey = '', days = 7, metric = 'w
 
   const points = [];
   for (let i = days - 1; i >= 0; i -= 1) {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    // 不含今天时整体往前挪一天：i=0 对应昨天(T-1)，i=days-1 对应 T-days。
+    const offset = includeToday ? i : i + 1;
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
     const key = formatDateKey(d);
     const value = readMetric(byDate[key], metric);
     points.push({
       date: key,
       label: `${d.getMonth() + 1}/${d.getDate()}`,
-      isToday: i === 0,
+      isToday: includeToday && i === 0,
       value: value === null ? null : round(value, precision),
-      hasValue: value !== null
+      hasValue: value !== null,
+      weight: readMetric(byDate[key], 'weight') // 当天体重，用于「系数=量/当天体重」逐日口径
     });
   }
 
@@ -519,6 +553,20 @@ function buildWeeklyTrend({ summaries = [], todayKey = '', days = 7, metric = 'w
     hasData: values.length > 0,
     filledDays: values.length
   };
+}
+
+/**
+ * 近 N 天「平均系数」= Σ(各天值) / Σ(各天体重)，只统计「既有该项值、又有体重」的天。
+ * 等价于 平均值/平均体重，按天总量加权，符合「总摄入 / 总体重」的直觉。
+ * @param {Array}  points    buildWeeklyTrend 的 points（含 hasValue/value/weight）
+ * @param {number} precision 小数位
+ */
+function weightedAverageCoefficient(points = [], precision = 2) {
+  const valid = (points || []).filter((p) => p && p.hasValue && Number(p.weight) > 0);
+  if (!valid.length) return null;
+  const sumValue = valid.reduce((s, p) => s + p.value, 0);
+  const sumWeight = valid.reduce((s, p) => s + p.weight, 0);
+  return sumWeight > 0 ? round(sumValue / sumWeight, precision) : null;
 }
 
 function pushEvent(list, event) {
@@ -637,8 +685,9 @@ module.exports = {
   buildNutritionGoals,
   buildNutritionSummary,
   buildFeedingProgress,
-  buildRecentMealHint,
+  buildNextMealReference,
   buildWeeklyTrend,
+  weightedAverageCoefficient,
   metricDisplayPrecision,
   buildTimeline,
   milkRecordVolumes

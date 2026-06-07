@@ -135,22 +135,61 @@ Page({
   },
 
   async loadReportData() {
-    if (!this.data.babyInfo) return;
+    if (!this.data.babyInfo) {
+      // 没有宝宝信息也要清掉 loading，避免永远停在“正在整理报告档案”转圈
+      this.setData({ loading: false });
+      return;
+    }
 
     try {
       this.setData({ loading: true });
 
       const { babyUid } = this.data.babyInfo;
-      const db = wx.cloud.database();
-      const [reports, feedingRes, v2MilkRecords, nutritionSettings] = await Promise.all([
+      // 报告档案只依赖报告集合，先快速拉取并立即渲染；
+      // 喂养数据（量大、需分页，仅趋势视图的营养对照需要）放到后台加载，绝不阻塞档案渲染与 loading 收尾。
+      const [reports, nutritionSettings] = await Promise.all([
         ReportRepository.listReportsByBaby(babyUid, { limit: 100 }),
+        NutritionModel.getNutritionSettings(babyUid).catch(() => ({}))
+      ]);
+
+      const focus = readFocusRequest();
+
+      this.setData({
+        reportsCache: reports,
+        nutritionSettings: nutritionSettings || {}
+      });
+
+      this.refreshAnalysisState({
+        filterType: focus?.reportType || this.data.selectedFilterType || 'all',
+        selectedReportId: focus?.reportId || this.data.selectedReportId || '',
+        previewMode: focus?.previewMode || this.data.previewMode || PREVIEW_MODES.ARCHIVE
+      });
+
+      // 后台补齐喂养营养对照数据（趋势视图用），失败/超时都不影响档案展示
+      this.loadFeedingWindow(babyUid);
+    } catch (error) {
+      console.error('加载报告数据失败:', error);
+      wx.showToast({
+        title: '加载失败',
+        icon: 'none'
+      });
+      this.setData({ loading: false });
+    }
+  },
+
+  // 后台加载喂养窗口数据（旧 feeding_records + v2 喂奶），仅供趋势视图营养对照使用。
+  // 与档案渲染解耦，避免分页拉取慢/卡住时让整页一直停在 loading。
+  async loadFeedingWindow(babyUid) {
+    if (!babyUid) return;
+    try {
+      const db = wx.cloud.database();
+      const [feedingRes, v2MilkRecords] = await Promise.all([
         db.collection('feeding_records')
           .where({ babyUid })
           .orderBy('date', 'desc')
           .limit(365)
           .get(),
-        this.loadV2MilkRecords(babyUid),
-        NutritionModel.getNutritionSettings(babyUid).catch(() => ({}))
+        this.loadV2MilkRecords(babyUid)
       ]);
 
       const legacyRecords = (feedingRes.data || []).filter((record) => !!record.date);
@@ -165,26 +204,19 @@ Page({
       v2MilkByDate.forEach((dailyRecord) => {
         feedingRecords.push(dailyRecord);
       });
-      const focus = readFocusRequest();
 
-      this.setData({
-        reportsCache: reports,
-        feedingRecordsCache: feedingRecords,
-        nutritionSettings: nutritionSettings || {}
-      });
+      this.setData({ feedingRecordsCache: feedingRecords });
 
-      this.refreshAnalysisState({
-        filterType: focus?.reportType || this.data.selectedFilterType || 'all',
-        selectedReportId: focus?.reportId || this.data.selectedReportId || '',
-        previewMode: focus?.previewMode || this.data.previewMode || PREVIEW_MODES.ARCHIVE
-      });
+      // 趋势视图依赖喂养营养对照，数据到位后刷新当前视图一次
+      if (this.data.previewMode === PREVIEW_MODES.TREND) {
+        this.refreshAnalysisState({
+          filterType: this.data.selectedFilterType,
+          selectedReportId: this.data.selectedReportId,
+          previewMode: PREVIEW_MODES.TREND
+        });
+      }
     } catch (error) {
-      console.error('加载报告数据失败:', error);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'none'
-      });
-      this.setData({ loading: false });
+      console.warn('加载喂养窗口数据失败（趋势营养对照降级）:', error);
     }
   },
 
@@ -200,10 +232,13 @@ Page({
       cutoff.setDate(cutoff.getDate() - 365);
       const startKey = formatDateKey(cutoff);
       const MAX_LIMIT = 20;
+      // 安全上限：最多翻 200 页（≈4000 条），防止异常情况下分页死循环把页面卡在 loading
+      const MAX_PAGES = 200;
       let all = [];
       let skip = 0;
       let hasMore = true;
-      while (hasMore) {
+      let pages = 0;
+      while (hasMore && pages < MAX_PAGES) {
         const res = await db.collection('feeding_records_v2')
           .where({
             babyUid,
@@ -217,6 +252,7 @@ Page({
         const batch = res.data || [];
         all = all.concat(batch);
         skip += batch.length;
+        pages += 1;
         if (batch.length < MAX_LIMIT) {
           hasMore = false;
         }

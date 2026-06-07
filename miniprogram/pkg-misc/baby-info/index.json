@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "宝宝信息"
+  "navigationBarTitleText": "宝宝信息",
+  "usingComponents": {
+    "avatar-cropper": "/components/avatar-cropper/avatar-cropper"
+  }
 }

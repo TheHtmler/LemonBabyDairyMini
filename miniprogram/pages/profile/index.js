@@ -742,8 +742,13 @@ Page({
       babyUid: null,
       userRole: '',
       creatorPhone: '',
-      cloudEnvId: cloudEnvId
+      cloudEnvId: cloudEnvId,
+      isInitialized: false,
+      initError: null
     };
+    // 作废已缓存的初始化 Promise，确保角色选择页重新走一次完整初始化，
+    // 否则会拿到注销前「已登录」的旧结果而错误跳回首页。
+    app.initReady = null;
   },
 
   // 复制邀请码

@@ -577,7 +577,212 @@ async function repairExistingMigratedDates(event = {}) {
   };
 }
 
+// 只读诊断：盘清已迁移数据现状，决定如何对齐到新默认版本号。
+async function inspectMigration(event = {}) {
+  const babyUid = event.babyUid || '';
+  const targetDefaultVersion = event.toVersion || 'milk-v2';
+  const $ = db.command.aggregate;
+  const baseMatch = babyUid ? { babyUid } : {};
+
+  const versionAgg = await db.collection(FEEDING_RECORDS_V2_COLLECTION)
+    .aggregate()
+    .match({ ...baseMatch, source: 'legacy_migration' })
+    .group({ _id: '$migrationVersion', count: $.sum(1) })
+    .end();
+  const versionCounts = (versionAgg.list || [])
+    .map((item) => ({ migrationVersion: item._id, count: item.count }))
+    .sort((a, b) => (b.count || 0) - (a.count || 0));
+
+  const dupAgg = await db.collection(FEEDING_RECORDS_V2_COLLECTION)
+    .aggregate()
+    .match({ ...baseMatch, source: 'legacy_migration' })
+    .group({
+      _id: {
+        babyUid: '$babyUid',
+        legacyRecordId: '$legacyRecordId',
+        legacyFeedingIndex: '$legacyFeedingIndex'
+      },
+      count: $.sum(1)
+    })
+    .match({ count: db.command.gt(1) })
+    .end();
+  const duplicateGroups = (dupAgg.list || []).length;
+  const duplicateSamples = (dupAgg.list || []).slice(0, 10);
+
+  const nonMigrationRes = await db.collection(FEEDING_RECORDS_V2_COLLECTION)
+    .where({ ...baseMatch, source: db.command.neq('legacy_migration') })
+    .count();
+  const totalRes = await db.collection(FEEDING_RECORDS_V2_COLLECTION)
+    .where(baseMatch)
+    .count();
+  const migrationTotal = versionCounts.reduce((sum, item) => sum + (item.count || 0), 0);
+
+  return {
+    mode: 'inspect',
+    babyUid,
+    targetDefaultVersion,
+    totalV2: totalRes.total,
+    migrationTotal,
+    nonMigrationTotal: nonMigrationRes.total,
+    versionCounts,
+    duplicateGroups,
+    duplicateSamples
+  };
+}
+
+// 边改/删边收敛的批处理：execute 始终取匹配集前 pageSize 条（skip 0），dry-run 用 offset 翻页统计。
+async function runMutationBatches({ where, dryRun, pageSize, maxBatches, offsetStart, mutate }) {
+  let offset = Number(offsetStart) >= 0 ? Number(offsetStart) : 0;
+  let processedBatches = 0;
+  let hasMore = false;
+  let matched = 0;
+  let mutated = 0;
+  const errors = [];
+
+  while (true) {
+    if (maxBatches > 0 && processedBatches >= maxBatches) {
+      hasMore = true;
+      break;
+    }
+    const res = await db.collection(FEEDING_RECORDS_V2_COLLECTION)
+      .where(where)
+      .skip(dryRun ? offset : 0)
+      .limit(pageSize)
+      .get();
+    const batch = res.data || [];
+    if (batch.length === 0) break;
+    processedBatches++;
+    matched += batch.length;
+
+    if (!dryRun) {
+      const before = mutated;
+      for (const record of batch) {
+        try {
+          await mutate(record);
+          mutated++;
+        } catch (error) {
+          errors.push({ recordId: record._id, message: error.message || String(error) });
+        }
+      }
+      if (mutated === before) {
+        // 整批都没改成功：避免 skip 0 模式下死循环
+        break;
+      }
+    } else {
+      offset += pageSize;
+    }
+
+    if (batch.length < pageSize) break;
+  }
+
+  return {
+    processedBatches,
+    hasMore,
+    matched,
+    mutated,
+    errors,
+    nextOffset: dryRun ? offset : 0
+  };
+}
+
+// 把旧版本号的迁移记录统一改成目标版本号（默认 milk-v2），让后续增量用固定默认值即可幂等。
+async function realignMigrationVersion(event = {}) {
+  const dryRun = event.dryRun !== false;
+  const babyUid = event.babyUid || '';
+  const toVersion = event.toVersion || 'milk-v2';
+  const fromVersions = Array.isArray(event.fromVersions) ? event.fromVersions.filter(Boolean) : [];
+  const pageSize = Number(event.pageSize) > 0 ? Number(event.pageSize) : 50;
+  const maxBatches = Number(event.maxBatches) > 0 ? Number(event.maxBatches) : 1;
+  const updatedAt = db.serverDate();
+
+  const where = { source: 'legacy_migration' };
+  if (babyUid) where.babyUid = babyUid;
+  where.migrationVersion = fromVersions.length > 0
+    ? db.command.in(fromVersions)
+    : db.command.neq(toVersion);
+
+  const result = await runMutationBatches({
+    where,
+    dryRun,
+    pageSize,
+    maxBatches,
+    offsetStart: event.offset,
+    mutate: (record) => db.collection(FEEDING_RECORDS_V2_COLLECTION).doc(record._id).update({
+      data: {
+        migrationVersion: toVersion,
+        versionRealignedFrom: record.migrationVersion,
+        versionRealignedAt: updatedAt,
+        updatedAt
+      }
+    })
+  });
+
+  return {
+    mode: 'realignVersion',
+    dryRun,
+    babyUid,
+    toVersion,
+    fromVersions: fromVersions.length > 0 ? fromVersions : 'ALL_NON_TARGET',
+    pageSize,
+    maxBatches,
+    processedBatches: result.processedBatches,
+    hasMore: result.hasMore,
+    matched: result.matched,
+    updated: result.mutated,
+    nextOffset: result.nextOffset,
+    errors: result.errors
+  };
+}
+
+// 删除迁移记录（仅 source:'legacy_migration'），用于「清空后用新版本号重迁」路线。绝不动用户新建记录。
+async function cleanupMigratedRecords(event = {}) {
+  const dryRun = event.dryRun !== false;
+  const babyUid = event.babyUid || '';
+  const versions = Array.isArray(event.migrationVersions) ? event.migrationVersions.filter(Boolean) : [];
+  const pageSize = Number(event.pageSize) > 0 ? Number(event.pageSize) : 50;
+  const maxBatches = Number(event.maxBatches) > 0 ? Number(event.maxBatches) : 1;
+
+  const where = { source: 'legacy_migration' };
+  if (babyUid) where.babyUid = babyUid;
+  if (versions.length > 0) {
+    where.migrationVersion = db.command.in(versions);
+  }
+
+  const result = await runMutationBatches({
+    where,
+    dryRun,
+    pageSize,
+    maxBatches,
+    offsetStart: event.offset,
+    mutate: (record) => db.collection(FEEDING_RECORDS_V2_COLLECTION).doc(record._id).remove()
+  });
+
+  return {
+    mode: 'cleanupMigrated',
+    dryRun,
+    babyUid,
+    migrationVersions: versions.length > 0 ? versions : 'ALL_LEGACY_MIGRATION',
+    pageSize,
+    maxBatches,
+    processedBatches: result.processedBatches,
+    hasMore: result.hasMore,
+    matched: result.matched,
+    removed: result.mutated,
+    nextOffset: result.nextOffset,
+    errors: result.errors
+  };
+}
+
 exports.main = async (event = {}) => {
+  if (event.inspect === true) {
+    return inspectMigration(event);
+  }
+  if (event.realignVersion === true) {
+    return realignMigrationVersion(event);
+  }
+  if (event.cleanupMigrated === true) {
+    return cleanupMigratedRecords(event);
+  }
   if (event.repairExistingDates === true) {
     return repairExistingMigratedDates(event);
   }

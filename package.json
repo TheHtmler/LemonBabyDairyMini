@@ -1,5 +1,12 @@
 {
+  "scripts": {
+    "migrate:milk-v2": "node scripts/run-milk-v2-migration.js",
+    "migrate:milk-v2:execute": "node scripts/run-milk-v2-migration.js --execute"
+  },
   "dependencies": {
     "wx-server-sdk": "^3.0.1"
+  },
+  "devDependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
   }
 }

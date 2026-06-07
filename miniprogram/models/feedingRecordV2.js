@@ -374,6 +374,15 @@ class FeedingRecordV2Model {
     return Array.isArray(records) ? records.length : 0;
   }
 
+  // 最近一天（严格早于指定日期）有喂奶记录那天的「全部喂奶记录」，
+  // 用作首页“下一顿参考”：按今天已喂顿数对应到上次同序号那一顿。
+  async getRecentDayRecords(babyUid, date) {
+    const recent = await this.getRecentRecord(babyUid, date);
+    if (!recent || !recent.date) return { date: '', records: [] };
+    const records = await this.getRecordsByDate(babyUid, recent.date);
+    return { date: recent.date, records: Array.isArray(records) ? records : [] };
+  }
+
   async resolveBasicInfoSnapshot(babyUid, date, options = {}) {
     const includeFallbacks = options.includeFallbacks === true;
     const includeProfileInitial = options.includeProfileInitial === true;

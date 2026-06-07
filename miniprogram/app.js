@@ -135,6 +135,9 @@ App({
         isInitialized: false,
         initError: null
       };
+      // 作废已缓存的初始化 Promise，否则注销后角色选择页 waitForInitialization
+      // 会拿到旧的「已登录」结果而错误跳回首页。
+      this.initReady = null;
       
       // 重置用户的角色选择状态
       wx.removeStorageSync('has_selected_role');

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>柠檬宝宝 · 首页重设计原型</title>
+<title>柠檬宝宝 · 首页改造前后对比</title>
 <style>
   :root{
     --lemon:#FFB800;
@@ -25,6 +25,8 @@
     --purple-bg:#F0EBFF;
     --orange:#FF9F45;
     --orange-bg:#FFF0E0;
+    --red:#F26C6C;
+    --red-bg:#FDECEC;
     --shadow:0 8px 24px rgba(255,184,0,.16);
     --shadow-sm:0 4px 12px rgba(255,184,0,.12);
   }
@@ -41,77 +43,48 @@
     align-items:center;
     gap:18px;
   }
-  .deck-title{
-    text-align:center;max-width:760px;padding:0 20px;
-  }
+  .deck-title{text-align:center;max-width:820px;padding:0 20px;}
   .deck-title h1{font-size:26px;letter-spacing:.5px;color:#5b4500;}
   .deck-title p{margin-top:8px;color:#8a7a45;font-size:14px;line-height:1.6;}
-  .stage{
-    display:flex;flex-wrap:wrap;gap:34px;justify-content:center;align-items:flex-start;
-  }
+  .stage{display:flex;flex-wrap:wrap;gap:30px;justify-content:center;align-items:flex-start;}
   .phone-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
-  .phone-tag{
-    font-size:13px;font-weight:600;color:#7a6320;background:#FFEFB8;
-    padding:6px 16px;border-radius:999px;border:1px solid #F2D680;
-  }
+  .phone-tag{font-size:13px;font-weight:600;color:#7a6320;background:#FFEFB8;padding:6px 16px;border-radius:999px;border:1px solid #F2D680;}
+  .phone-tag.before{color:#9b3b3b;background:#FBE2E2;border-color:#EEB9B9;}
+  .phone-tag.after{color:#1f7a52;background:#DFF5EA;border-color:#A9E0C8;}
+  .phone-sub{font-size:12px;color:#9a8a55;margin-top:-6px;}
   /* phone frame */
   .phone{
     width:390px;background:#000;border-radius:54px;padding:12px;
     box-shadow:0 30px 60px rgba(120,90,0,.28), 0 0 0 2px rgba(0,0,0,.05);
     position:relative;
   }
-  .screen{
-    width:100%;background:var(--lemon-bg);border-radius:44px;overflow:hidden;
-    position:relative;display:flex;flex-direction:column;
-  }
-  .notch{
-    position:absolute;top:0;left:50%;transform:translateX(-50%);
-    width:130px;height:30px;background:#000;border-radius:0 0 18px 18px;z-index:50;
-  }
+  .screen{width:100%;background:var(--lemon-bg);border-radius:44px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130px;height:30px;background:#000;border-radius:0 0 18px 18px;z-index:50;}
   /* nav bar */
-  .navbar{
-    background:linear-gradient(135deg,#FFC93C,#FFB800);
-    padding:52px 20px 16px;color:#fff;position:relative;flex-shrink:0;
-  }
+  .navbar{background:linear-gradient(135deg,#FFC93C,#FFB800);padding:52px 20px 16px;color:#fff;position:relative;flex-shrink:0;}
   .navbar .greet{font-size:13px;opacity:.92;}
   .navbar .title-row{display:flex;align-items:center;justify-content:space-between;margin-top:2px;}
   .navbar h2{font-size:20px;font-weight:700;letter-spacing:.5px;}
-  .navbar .date-pill{
-    background:rgba(255,255,255,.25);padding:5px 12px;border-radius:999px;font-size:12px;backdrop-filter:blur(4px);
-  }
+  .navbar .date-pill{background:rgba(255,255,255,.25);padding:5px 12px;border-radius:999px;font-size:12px;backdrop-filter:blur(4px);}
   /* scroll body */
-  .body{
-    flex:1;padding:16px 16px 16px;display:flex;flex-direction:column;gap:14px;
-  }
+  .body{flex:1;padding:16px 16px 16px;display:flex;flex-direction:column;gap:14px;max-height:760px;overflow-y:auto;}
   .body::-webkit-scrollbar{display:none;}
 
-  .card{
-    background:var(--card);border-radius:22px;padding:16px;box-shadow:var(--shadow-sm);
-    border:1px solid rgba(255,184,0,.14);
-  }
+  .card{background:var(--card);border-radius:22px;padding:16px;box-shadow:var(--shadow-sm);border:1px solid rgba(255,184,0,.14);position:relative;}
   .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .card-head h3{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
   .card-head h3::before{content:"";width:8px;height:18px;border-radius:4px;background:var(--lemon);display:inline-block;}
   .card-head .more{font-size:12px;color:var(--ink-faint);}
 
   /* baby card */
-  .baby{
-    background:linear-gradient(135deg,#FFFDF5,#FFF4CC);
-    display:flex;align-items:center;gap:14px;border:1px solid #FBE6A6;
-  }
-  .baby .avatar{
-    width:58px;height:58px;border-radius:20px;background:linear-gradient(135deg,#FFE27A,#FFB800);
-    display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;
-    box-shadow:0 6px 14px rgba(255,184,0,.4);
-  }
+  .baby{background:linear-gradient(135deg,#FFFDF5,#FFF4CC);display:flex;align-items:center;gap:14px;border:1px solid #FBE6A6;}
+  .baby .avatar{width:58px;height:58px;border-radius:20px;background:linear-gradient(135deg,#FFE27A,#FFB800);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;box-shadow:0 6px 14px rgba(255,184,0,.4);}
   .baby .info{flex:1;}
   .baby .name-row{display:flex;align-items:center;gap:8px;}
   .baby .name{font-size:18px;font-weight:700;}
   .baby .gtag{font-size:11px;background:#FFE9ED;color:#FF6F8B;padding:2px 8px;border-radius:8px;}
   .baby .sub{font-size:12px;color:var(--ink-soft);margin-top:4px;}
-  .baby .days{
-    text-align:center;background:#fff;border-radius:14px;padding:8px 12px;border:1px solid #FBE6A6;
-  }
+  .baby .days{text-align:center;background:#fff;border-radius:14px;padding:8px 12px;border:1px solid #FBE6A6;}
   .baby .days .n{font-size:22px;font-weight:800;color:var(--lemon-deep);line-height:1;}
   .baby .days .l{font-size:10px;color:var(--ink-faint);margin-top:3px;}
 
@@ -119,64 +92,42 @@
   .hero{background:linear-gradient(160deg,#FFFFFF,#FFFBEF);}
   .ring-row{display:flex;align-items:center;gap:16px;}
   .ring{position:relative;width:120px;height:120px;flex-shrink:0;}
-  .ring .center{
-    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  }
+  .ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .ring .center .big{font-size:26px;font-weight:800;color:var(--lemon-deep);line-height:1;}
   .ring .center .unit{font-size:11px;color:var(--ink-faint);margin-top:3px;}
   .ring .center .lbl{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .macro-list{flex:1;display:flex;flex-direction:column;gap:11px;}
-  .macro{}
-  .macro .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:5px;}
-  .macro .top .k{color:var(--ink-soft);font-weight:600;}
-  .macro .top .v{font-weight:700;color:var(--ink);}
-  .macro .top .v small{color:var(--ink-faint);font-weight:500;font-size:11px;}
-  .bar{height:8px;border-radius:999px;background:#F0F0F0;overflow:hidden;}
-  .bar i{display:block;height:100%;border-radius:999px;}
-  .bar i.nat{background:linear-gradient(90deg,#FFD45E,#FFB800);}
-  .bar i.spe{background:linear-gradient(90deg,#8FD3FF,#5B9DF9);}
-  .bar i.cal{background:linear-gradient(90deg,#FFB27A,#FF9F45);}
   .pct{font-size:11px;color:var(--green);font-weight:700;}
   .pct.over{color:#FF7043;}
 
   /* feeding progress */
   .feed-prog{background:linear-gradient(135deg,#FFFDF5,#FFF8E2);}
   .feed-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-  .feed-top .meals{display:flex;align-items:baseline;gap:4px;}
+  .feed-top .meals{display:flex;flex-direction:column;}
   .feed-top .meals .n{font-size:24px;font-weight:800;color:var(--lemon-deep);}
   .feed-top .meals .t{font-size:13px;color:var(--ink-soft);}
-  .dots{display:flex;gap:6px;}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;max-width:170px;justify-content:flex-end;}
   .dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;}
   .dot.done{background:var(--lemon);color:#fff;}
   .dot.todo{background:#FFF0BF;color:#D9A400;border:1px dashed #E9C24D;}
-  .next-suggest{
-    background:#fff;border:1px solid #FBE6A6;border-radius:14px;padding:11px 13px;
-    display:flex;align-items:center;justify-content:space-between;
-  }
+  .next-suggest{background:#fff;border:1px solid #FBE6A6;border-radius:14px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .next-suggest .l{font-size:12px;color:var(--ink-soft);}
   .next-suggest .l b{color:var(--ink);font-size:13px;}
   .next-suggest .vals{display:flex;gap:10px;margin-top:5px;}
   .chip{font-size:11px;padding:3px 9px;border-radius:8px;font-weight:600;}
   .chip.breast{background:#FFF3D6;color:#C98A00;}
-  .chip.special{background:#E8F1FE;color:#4178C9;}
-  .calc-btn{
-    background:linear-gradient(135deg,#FFC93C,#FFB800);color:#fff;font-size:12px;font-weight:700;
-    padding:9px 14px;border-radius:12px;white-space:nowrap;box-shadow:0 4px 10px rgba(255,184,0,.4);
-  }
+  .calc-btn{background:linear-gradient(135deg,#FFC93C,#FFB800);color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:12px;white-space:nowrap;box-shadow:0 4px 10px rgba(255,184,0,.4);}
 
   /* quick actions grid */
   .qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-  .qa{
-    display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:14px;
-    background:#FFFDF7;border:1px solid #F3E7C0;
-  }
+  .qgrid.five{grid-template-columns:repeat(5,1fr);}
+  .qa{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:14px;background:#FFFDF7;border:1px solid #F3E7C0;position:relative;}
   .qa .ic{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;}
   .qa .nm{font-size:11px;font-weight:600;color:var(--ink);}
   .ic.milk{background:var(--lemon-bg2);}
   .ic.food{background:var(--green-bg);}
   .ic.med{background:var(--blue-bg);}
   .ic.treat{background:var(--purple-bg);}
-  .ic.bowel{background:var(--orange-bg);}
   .ic.weight{background:var(--pink-bg);}
   .ic.height{background:#E3F6F5;}
   .ic.report{background:var(--orange-bg);}
@@ -184,9 +135,7 @@
   /* med todo */
   .med-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #F5F0E0;}
   .med-item:last-child{border-bottom:none;}
-  .med-check{
-    width:24px;height:24px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;
-  }
+  .med-check{width:24px;height:24px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
   .med-check.done{background:var(--green);color:#fff;}
   .med-check.todo{background:#fff;border:2px solid #E6D9B0;}
   .med-main{flex:1;}
@@ -194,7 +143,6 @@
   .med-main .nm.done{color:var(--ink-faint);text-decoration:line-through;}
   .med-main .dose{font-size:11px;color:var(--ink-faint);margin-top:2px;}
   .med-time{font-size:12px;color:var(--ink-soft);font-weight:600;}
-  .med-time.pending{color:var(--lemon-deep);background:#FFF0BF;padding:3px 9px;border-radius:8px;}
   .med-head-badge{font-size:11px;background:var(--green-bg);color:var(--green);padding:3px 10px;border-radius:999px;font-weight:700;}
 
   /* timeline */
@@ -220,7 +168,6 @@
   .trend-foot .it{text-align:center;flex:1;}
   .trend-foot .it .n{font-size:15px;font-weight:800;color:var(--ink);}
   .trend-foot .it .l{color:var(--ink-faint);margin-top:2px;}
-  .trend-foot .it .n.up{color:var(--green);}
 
   /* more entries */
   .more-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
@@ -229,30 +176,22 @@
   .me .nm{font-size:11px;color:var(--ink-soft);}
 
   /* tabbar */
-  .tabbar{
-    height:72px;background:#fff;flex-shrink:0;
-    border-top:1px solid #F0E6C8;display:flex;align-items:flex-start;padding-top:9px;z-index:40;
-    border-radius:0 0 44px 44px;
-  }
+  .tabbar{height:72px;background:#fff;flex-shrink:0;border-top:1px solid #F0E6C8;display:flex;align-items:flex-start;padding-top:9px;z-index:40;border-radius:0 0 44px 44px;}
   .tabbar .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--ink-faint);}
   .tabbar .tb .i{font-size:20px;}
   .tabbar .tb.on{color:var(--lemon-deep);font-weight:700;}
 
-  .anno{
-    max-width:300px;font-size:13px;color:#6b5a2a;line-height:1.7;background:#FFFBEC;
-    border:1px dashed #E9CF84;border-radius:16px;padding:16px 18px;
-  }
+  .anno{max-width:300px;font-size:13px;color:#6b5a2a;line-height:1.7;background:#FFFBEC;border:1px dashed #E9CF84;border-radius:16px;padding:16px 18px;}
   .anno h4{font-size:14px;color:#5b4500;margin-bottom:8px;}
+  .anno h4.mt{margin-top:16px;}
   .anno li{margin:6px 0 6px 2px;list-style:none;padding-left:18px;position:relative;}
   .anno li::before{content:"›";position:absolute;left:2px;color:var(--lemon-deep);font-weight:800;}
+  .anno li.cut::before{content:"✕";color:var(--red);}
+  .anno li.add::before{content:"+";color:var(--green);font-weight:800;}
   .tag-new{display:inline-block;font-size:10px;background:#E7F7EF;color:#2E9E6B;padding:1px 7px;border-radius:6px;margin-left:6px;vertical-align:middle;}
 
-  /* ===== v2 迭代：公告跑马灯 / 性别色 / 身高 / 辅食 / 用药打卡 / 6指标趋势 ===== */
-  .notice{
-    display:flex;align-items:center;gap:8px;overflow:hidden;
-    background:linear-gradient(90deg,rgba(255,184,0,.95),rgba(255,205,64,.95));
-    border-radius:12px;padding:7px 10px;box-shadow:0 4px 12px rgba(255,184,0,.16);
-  }
+  /* notice marquee */
+  .notice{display:flex;align-items:center;gap:8px;overflow:hidden;background:linear-gradient(90deg,rgba(255,184,0,.95),rgba(255,205,64,.95));border-radius:12px;padding:7px 10px;box-shadow:0 4px 12px rgba(255,184,0,.16);}
   .notice .nfix{flex:0 0 auto;font-size:11px;font-weight:700;color:#fff;padding-right:9px;border-right:1px solid rgba(255,255,255,.5);}
   .notice .nmq{flex:1;min-width:0;overflow:hidden;}
   .notice .ntrack{display:inline-flex;white-space:nowrap;animation:nscroll 14s linear infinite;}
@@ -285,7 +224,6 @@
   .trend-tabs.scroll::-webkit-scrollbar{display:none;}
   .trend-tabs.scroll .ttab{white-space:nowrap;flex:0 0 auto;}
 
-  /* 今日营养摄入：实际值 */
   .macro-stat{display:flex;align-items:center;justify-content:space-between;padding:3px 0;}
   .macro-stat .ms-k{font-size:12px;color:var(--ink-soft);font-weight:600;}
   .macro-stat .ms-right{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;}
@@ -295,87 +233,107 @@
   .macro-stat .ms-v.spe{color:#5B9DF9;}
   .macro-stat .ms-v.tot{color:#2E9E6B;}
   .macro-stat .ms-c{font-size:11px;color:var(--ink-faint);font-weight:600;margin-top:1px;}
-  /* 时间轴分类 tab */
   .tl-tabs{display:flex;gap:6px;margin-bottom:10px;}
   .tl-tabs .ttab{font-size:11px;padding:4px 11px;border-radius:999px;background:#F5F0E0;color:var(--ink-soft);}
   .tl-tabs .ttab.on{background:var(--lemon);color:#fff;font-weight:600;}
+
+  /* ====== 改造前：重复入口红色标记 ====== */
+  .dup{position:relative;}
+  .dup::after{
+    content:"重复";position:absolute;top:-7px;right:-6px;z-index:5;
+    font-size:9px;font-weight:700;color:#fff;background:var(--red);
+    padding:1px 6px;border-radius:7px;box-shadow:0 2px 6px rgba(242,108,108,.45);
+  }
+  .dup-card::before{
+    content:"与其他 Tab 重复";position:absolute;top:10px;right:14px;
+    font-size:10px;font-weight:700;color:var(--red);background:var(--red-bg);
+    padding:2px 9px;border-radius:8px;border:1px solid #F2C7C7;
+  }
+  .scroll-hint{font-size:11px;color:#b08; text-align:center;color:#C0392B;background:#FDECEC;border:1px dashed #E9B0B0;border-radius:10px;padding:6px;font-weight:600;}
+
+  /* ====== 改造后：焦点卡（宝宝 + 今日照护，统一柠檬暖色） ====== */
+  .focus-card{background:linear-gradient(135deg,#FFFDF5,#FFF1C6);border:1px solid #FBE6A6;}
+  .focus-top{display:flex;align-items:center;gap:13px;}
+  .focus-top .avatar{width:54px;height:54px;border-radius:18px;background:linear-gradient(135deg,#FFE27A,#FFB800);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;box-shadow:0 6px 14px rgba(255,184,0,.4);animation:breathe 3.2s ease-in-out infinite;}
+  .focus-top .info{flex:1;min-width:0;}
+  .focus-top .name-row{display:flex;align-items:center;gap:8px;}
+  .focus-top .name{font-size:18px;font-weight:700;}
+  .focus-top .sub{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}
+  /* 小号照护完成度环（amber，挂右上角，与大热量环区分开） */
+  .care-ring{position:relative;width:66px;height:66px;flex-shrink:0;}
+  .care-ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .care-ring .center .pctn{font-size:18px;font-weight:800;color:var(--lemon-deep);line-height:1;}
+  .care-ring .center .lbl{font-size:8px;color:var(--ink-faint);margin-top:1px;}
+  /* 三段照护 chips：一行紧凑，贴柠檬主题 */
+  .care-chips{display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid rgba(251,214,123,.55);}
+  .cchip{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:600;color:var(--ink);background:#fff;border:1px solid #FBE6A6;border-radius:999px;padding:6px 8px;}
+  .cchip b{color:var(--lemon-deep);font-weight:800;}
+  .cchip.done{background:#FFF7E0;}
+  .cchip.done b{color:var(--green);}
+
+  .mini-links{display:flex;gap:10px;}
+  .mini-link{flex:1;background:#FFFDF7;border:1px solid #F3E7C0;border-radius:14px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;}
+  .mini-link .ml-l{display:flex;align-items:center;gap:9px;}
+  .mini-link .ml-ic{width:32px;height:32px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--green-bg);}
+  .mini-link .ml-ic.t{background:var(--blue-bg);}
+  .mini-link .ml-nm{font-size:12px;font-weight:600;}
+  .mini-link .ml-sub{font-size:10px;color:var(--ink-faint);margin-top:1px;}
+  .mini-link .ml-go{font-size:13px;color:var(--ink-faint);}
 </style>
 </head>
 <body>
   <div class="deck-title">
-    <h1>🍋 柠檬宝宝 · 首页重新设计</h1>
-    <p>首页从「数据记录的翻版」改为 <b>今日仪表盘 + 快捷入口 + 趋势 + 用药提醒</b>。明细列表交还给「数据记录」页，两页职责不再重复。</p>
+    <h1>🍋 柠檬宝宝 · 首页改造前 / 后对比</h1>
+    <p>诊断：首页之所以「乱」，主因是 <b>信息架构 + 视觉层级</b>（8 张平铺卡片 + 多处重复入口），不是配色/样式问题。<br/>方案：首页只回答「今天还要做什么 / 今天做得怎么样」，分析交给「报告分析」，启动器交给「我的」；保留<b>今日照护完成度环</b>做一眼概览，并把<b>快捷记录前置</b>到热量环下方。</p>
   </div>
 
   <div class="stage">
-    <!-- PHONE -->
+
+    <!-- ============ 改造前 ============ -->
     <div class="phone-wrap">
-      <div class="phone-tag">新首页（今日概览）</div>
+      <div class="phone-tag before">改造前 · 现状</div>
+      <div class="phone-sub">8 张卡片平铺，多处重复入口</div>
       <div class="phone">
         <div class="screen">
           <div class="notch"></div>
-          <!-- navbar -->
           <div class="navbar">
-            <div class="greet">早上好，今天也要好好喝奶呀 ☀️</div>
-            <div class="title-row">
-              <h2>柠檬宝宝</h2>
-              <div class="date-pill">6月2日 周二</div>
-            </div>
+            <div class="greet">早上好，今天也要好好记录哦 ☀️</div>
+            <div class="title-row"><h2>柠檬宝宝</h2><div class="date-pill">6月3日 周三</div></div>
           </div>
-
           <div class="body">
-            <!-- 公告（单行跑马灯，恢复旧版） -->
             <div class="notice">
               <span class="nfix">公告</span>
-              <span class="nmq"><span class="ntrack"><span class="ncopy">看板已升级：聚焦今日营养达成、喂养进度与用药打卡，明细请到「数据记录」查看。</span><span class="ncopy">看板已升级：聚焦今日营养达成、喂养进度与用药打卡，明细请到「数据记录」查看。</span></span></span>
+              <span class="nmq"><span class="ntrack"><span class="ncopy">看板已升级：聚焦今日营养达成、喂养进度与用药打卡。</span><span class="ncopy">看板已升级：聚焦今日营养达成、喂养进度与用药打卡。</span></span></span>
               <span class="nclose">×</span>
             </div>
 
-            <!-- baby card（问候语并入卡片内部） -->
+            <!-- 1 baby -->
             <div class="card baby">
               <div class="avatar">🍋</div>
               <div class="info">
                 <div class="greet">早上好，今天也要好好记录哦</div>
-                <div class="name-row">
-                  <span class="name">柠檬</span>
-                  <span class="gtag female">女孩</span>
-                </div>
+                <div class="name-row"><span class="name">柠檬</span><span class="gtag female">女孩</span></div>
                 <div class="sub">2025-01-11 出生 · 4个月22天</div>
               </div>
-              <div class="days">
-                <div class="n">142</div>
-                <div class="l">已出生(天)</div>
-              </div>
+              <div class="days"><div class="n">142</div><div class="l">已出生(天)</div></div>
             </div>
 
-            <!-- nutrition goal hero -->
+            <!-- 2 nutrition -->
             <div class="card hero">
               <div class="card-head">
                 <h3>今日营养摄入</h3>
                 <div class="metric-chips">
-                  <span class="mchip">体重 4.35kg ✎</span>
-                  <span class="mchip h">身高 62cm ✎</span>
+                  <span class="mchip dup">体重 4.35kg ✎</span>
+                  <span class="mchip h dup">身高 62cm ✎</span>
                 </div>
               </div>
               <div class="ring-row">
                 <div class="ring">
                   <svg width="120" height="120" viewBox="0 0 120 120">
                     <circle cx="60" cy="60" r="50" fill="none" stroke="#F0F0F0" stroke-width="11"/>
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="url(#g1)" stroke-width="11"
-                            stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="0"
-                            transform="rotate(-90 60 60)"/>
-                    <defs>
-                      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stop-color="#FFE27A"/>
-                        <stop offset="1" stop-color="#FFB800"/>
-                      </linearGradient>
-                    </defs>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#FFB800" stroke-width="11" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
                   </svg>
-                  <div class="center">
-                    <div class="big">657</div>
-                    <div class="unit">kcal · 151/kg</div>
-                    <div class="lbl">总热量</div>
-                  </div>
+                  <div class="center"><div class="big">657</div><div class="unit">kcal</div><div class="lbl">总热量</div></div>
                 </div>
                 <div class="macro-list">
                   <div class="macro-stat"><span class="ms-k">天然蛋白</span><span class="ms-right"><span class="ms-v nat">5.2<small>g</small></span><span class="ms-c">1.20 g/kg</span></span></div>
@@ -385,32 +343,20 @@
               </div>
             </div>
 
-            <!-- feeding progress -->
+            <!-- 3 feeding -->
             <div class="card feed-prog">
               <div class="card-head"><h3>今日喂养进度</h3><span class="more">查看明细 ›</span></div>
               <div class="feed-top">
-                <div class="meals">
-                  <div style="display:flex;align-items:baseline;gap:4px;"><span class="n">6</span><span class="t">/ 8 顿奶 · 已喂 712ml</span></div>
-                  <span class="feed-food">🥣 今日辅食 1 次</span>
-                </div>
-                <div class="dots">
-                  <span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span>
-                  <span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span>
-                  <span class="dot todo">7</span><span class="dot todo">8</span>
-                </div>
+                <div class="meals"><div style="display:flex;align-items:baseline;gap:4px;"><span class="n">6</span><span class="t">/ 8 顿 · 712ml</span></div><span class="feed-food">🥣 今日辅食 1 次</span></div>
+                <div class="dots"><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot todo">7</span><span class="dot todo">8</span></div>
               </div>
               <div class="next-suggest">
-                <div class="l">
-                  <b>每顿参考 · 母乳59ml + 纽迪希亚特护61ml</b>
-                  <div class="vals">
-                    <span class="chip breast">最近一顿 120ml · 11:05</span>
-                  </div>
-                </div>
-                <div class="calc-btn">算补奶 ›</div>
+                <div class="l"><b>下一顿（第7顿）参考</b><div class="vals"><span class="chip breast">母乳59 + 特奶61 · 120ml</span></div></div>
+                <div class="calc-btn dup">算补奶 ›</div>
               </div>
             </div>
 
-            <!-- quick actions -->
+            <!-- 4 quick -->
             <div class="card">
               <div class="card-head"><h3>快捷记录</h3></div>
               <div class="qgrid">
@@ -418,13 +364,13 @@
                 <div class="qa"><div class="ic food">🥣</div><div class="nm">加食物</div></div>
                 <div class="qa"><div class="ic med">💊</div><div class="nm">喂药</div></div>
                 <div class="qa"><div class="ic treat">🩺</div><div class="nm">治疗</div></div>
-                <div class="qa"><div class="ic weight">⚖️</div><div class="nm">量体重</div></div>
-                <div class="qa"><div class="ic height">📏</div><div class="nm">量身高</div></div>
-                <div class="qa"><div class="ic report">📊</div><div class="nm">检测报告</div></div>
+                <div class="qa dup"><div class="ic weight">⚖️</div><div class="nm">量体重</div></div>
+                <div class="qa dup"><div class="ic height">📏</div><div class="nm">量身高</div></div>
+                <div class="qa dup"><div class="ic report">📊</div><div class="nm">检测报告</div></div>
               </div>
             </div>
 
-            <!-- med todo -->
+            <!-- 5 med -->
             <div class="card">
               <div class="card-head"><h3>今日用药打卡</h3><span class="med-head-badge">1/3 已完成</span></div>
               <div class="med-item">
@@ -434,11 +380,7 @@
               </div>
               <div class="med-item">
                 <div class="med-check partial"></div>
-                <div class="med-main">
-                  <div class="nm">左卡尼丁 <span style="font-size:11px;color:#4CC38A;font-weight:700;">1/2</span></div>
-                  <div class="dose">1.5ml · 每日2次</div>
-                  <div class="med-pips"><span class="med-pip on"></span><span class="med-pip"></span></div>
-                </div>
+                <div class="med-main"><div class="nm">左卡尼丁 <span style="font-size:11px;color:#4CC38A;font-weight:700;">1/2</span></div><div class="dose">1.5ml · 每日2次</div><div class="med-pips"><span class="med-pip on"></span><span class="med-pip"></span></div></div>
                 <div class="med-right"><span class="med-time">08:12</span><span class="med-cta again">再记一次</span></div>
               </div>
               <div class="med-item">
@@ -448,77 +390,47 @@
               </div>
             </div>
 
-            <!-- timeline -->
-            <div class="card">
+            <!-- 6 timeline -->
+            <div class="card dup-card">
               <div class="card-head"><h3>今日时间轴</h3><span class="more">全部 ›</span></div>
-              <div class="tl-tabs">
-                <span class="ttab on">全部</span><span class="ttab">喂奶</span><span class="ttab">辅食</span><span class="ttab">用药</span><span class="ttab">治疗</span>
-              </div>
-              <div class="tl-item">
-                <div class="tl-time">11:05</div>
-                <div class="tl-line"><div class="tl-node"></div></div>
-                <div class="tl-body"><div class="t">第6顿 · 120ml（母乳59+特奶61）</div><div class="d">用时 18 分钟</div></div>
-              </div>
-              <div class="tl-item">
-                <div class="tl-time">09:30</div>
-                <div class="tl-line"><div class="tl-node food"></div></div>
-                <div class="tl-body"><div class="t">辅食 · 米粉 30g</div><div class="d">热量 110kcal · 蛋白 1.8g</div></div>
-              </div>
-              <div class="tl-item">
-                <div class="tl-time">08:12</div>
-                <div class="tl-line"><div class="tl-node med"></div></div>
-                <div class="tl-body"><div class="t">用药 · 左卡尼丁 1.5ml</div><div class="d">已记录</div></div>
-              </div>
-              <div class="tl-item">
-                <div class="tl-time">08:00</div>
-                <div class="tl-line"><div class="tl-node"></div></div>
-                <div class="tl-body"><div class="t">第5顿 · 110ml</div><div class="d">用时 15 分钟</div></div>
-              </div>
+              <div class="tl-tabs"><span class="ttab on">全部</span><span class="ttab">喂奶</span><span class="ttab">辅食</span><span class="ttab">用药</span><span class="ttab">治疗</span></div>
+              <div class="tl-item"><div class="tl-time">11:05</div><div class="tl-line"><div class="tl-node"></div></div><div class="tl-body"><div class="t">喂奶 · 120ml</div><div class="d">热量 80kcal</div></div></div>
+              <div class="tl-item"><div class="tl-time">09:30</div><div class="tl-line"><div class="tl-node food"></div></div><div class="tl-body"><div class="t">辅食 · 米粉 30g</div></div></div>
+              <div class="tl-item"><div class="tl-time">08:12</div><div class="tl-line"><div class="tl-node med"></div></div><div class="tl-body"><div class="t">用药 · 左卡尼丁 1.5ml</div></div></div>
             </div>
 
-            <!-- trends -->
-            <div class="card">
-              <div class="card-head">
-                <h3>近7天趋势</h3>
-              </div>
-              <div class="trend-tabs scroll" style="margin-bottom:10px;">
-                <span class="ttab on">热量</span><span class="ttab">蛋白</span><span class="ttab">体重</span><span class="ttab">天然蛋白</span><span class="ttab">特殊蛋白</span>
-              </div>
+            <!-- 7 trend -->
+            <div class="card dup-card">
+              <div class="card-head"><h3>近7天趋势</h3></div>
+              <div class="trend-tabs scroll"><span class="ttab on">热量</span><span class="ttab">蛋白</span><span class="ttab">体重</span><span class="ttab">天然蛋白</span><span class="ttab">特殊蛋白</span></div>
               <div class="spark">
-                <svg width="100%" height="92" viewBox="0 0 320 92" preserveAspectRatio="none">
-                  <polyline points="6,70 56,64 106,60 156,52 206,48 256,40 314,34"
-                            fill="none" stroke="#FFB800" stroke-width="3" stroke-linecap="round"/>
-                  <polygon points="6,70 56,64 106,60 156,52 206,48 256,40 314,34 314,92 6,92" fill="rgba(255,184,0,.12)"/>
-                  <circle cx="314" cy="34" r="5" fill="#FFB800" stroke="#fff" stroke-width="2"/>
+                <svg width="100%" height="80" viewBox="0 0 320 80" preserveAspectRatio="none">
+                  <polyline points="6,60 56,54 106,50 156,44 206,40 256,34 314,28" fill="none" stroke="#FFB800" stroke-width="3" stroke-linecap="round"/>
+                  <polygon points="6,60 56,54 106,50 156,44 206,40 256,34 314,28 314,80 6,80" fill="rgba(255,184,0,.12)"/>
                 </svg>
-                <div class="spark-legend"><span>5/27</span><span>5/29</span><span>5/31</span><span>今天</span></div>
-              </div>
-              <div class="trend-foot">
-                <div class="it"><div class="n">512<span style="font-size:11px">kcal</span></div><div class="l">当前热量</div></div>
-                <div class="it"><div class="n">118<span style="font-size:11px">kcal/kg</span></div><div class="l">热量系数</div></div>
-                <div class="it"><div class="n">486<span style="font-size:11px">kcal</span></div><div class="l">7天均值</div></div>
+                <div class="spark-legend"><span>5/28</span><span>5/31</span><span>今天</span></div>
               </div>
             </div>
 
-            <!-- more -->
-            <div class="card">
+            <!-- 8 more -->
+            <div class="card dup-card">
               <div class="card-head"><h3>更多</h3></div>
               <div class="more-grid">
                 <div class="me"><div class="ic">📈</div><div class="nm">成长曲线</div></div>
-                <div class="me"><div class="ic">🧪</div><div class="nm">检测报告</div></div>
-                <div class="me"><div class="ic">🥛</div><div class="nm">配奶规划</div></div>
-                <div class="me"><div class="ic">⚙️</div><div class="nm">营养设置</div></div>
+                <div class="me dup"><div class="ic">🧪</div><div class="nm">检测报告</div></div>
+                <div class="me dup"><div class="ic">🥛</div><div class="nm">配奶规划</div></div>
+                <div class="me dup"><div class="ic">⚙️</div><div class="nm">营养设置</div></div>
+                <div class="me dup"><div class="ic">🍽️</div><div class="nm">食物库</div></div>
+                <div class="me dup"><div class="ic">💊</div><div class="nm">用药管理</div></div>
                 <div class="me"><div class="ic">🆘</div><div class="nm">紧急卡片</div></div>
-                <div class="me"><div class="ic">🍽️</div><div class="nm">食物库</div></div>
-                <div class="me"><div class="ic">👶</div><div class="nm">宝宝信息</div></div>
-                <div class="me"><div class="ic">🔗</div><div class="nm">数据共享</div></div>
+                <div class="me dup"><div class="ic">🔗</div><div class="nm">数据共享</div></div>
               </div>
             </div>
-          </div>
 
-          <!-- tabbar -->
+            <div class="scroll-hint">↑ 一屏滚很久，没有「主次」，多处红标功能在别的 Tab 已有</div>
+          </div>
           <div class="tabbar">
-            <div class="tb on"><div class="i">🏠</div>首页</div>
+            <div class="tb on"><div class="i">🏠</div>今日记录</div>
             <div class="tb"><div class="i">📋</div>数据记录</div>
             <div class="tb"><div class="i">📊</div>报告分析</div>
             <div class="tb"><div class="i">👤</div>我的</div>
@@ -527,15 +439,146 @@
       </div>
     </div>
 
-    <!-- annotation -->
+    <!-- ============ 改造后 ============ -->
+    <div class="phone-wrap">
+      <div class="phone-tag after">改造后 · 聚焦今日</div>
+      <div class="phone-sub">完成度环 + 记录前置，5 张卡片</div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="navbar">
+            <div class="greet">早上好，今天也要好好记录哦 ☀️</div>
+            <div class="title-row"><h2>柠檬宝宝</h2><div class="date-pill">6月3日 周三</div></div>
+          </div>
+          <div class="body">
+
+            <!-- ① 焦点卡：宝宝信息 + 今日照护完成度（统一柠檬暖色，小环 + 一行 chips） -->
+            <div class="card focus-card">
+              <div class="focus-top">
+                <div class="avatar">🍋</div>
+                <div class="info">
+                  <div class="name-row"><span class="name">柠檬</span><span class="gtag female">女孩</span></div>
+                  <div class="sub">已出生 142 天 · 4个月22天</div>
+                </div>
+                <div class="care-ring">
+                  <svg width="66" height="66" viewBox="0 0 66 66">
+                    <circle cx="33" cy="33" r="27" fill="none" stroke="#F6E9C2" stroke-width="7"/>
+                    <circle cx="33" cy="33" r="27" fill="none" stroke="url(#cg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="34" transform="rotate(-90 33 33)"/>
+                    <defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE27A"/><stop offset="1" stop-color="#FFB800"/></linearGradient></defs>
+                  </svg>
+                  <div class="center"><div class="pctn">80%</div><div class="lbl">照护</div></div>
+                </div>
+              </div>
+              <div class="care-chips">
+                <span class="cchip">🍼 喂奶 <b>6/8</b></span>
+                <span class="cchip">💊 用药 <b>2/3</b></span>
+                <span class="cchip done">⚖️ 体重 <b>✓</b></span>
+              </div>
+            </div>
+
+            <!-- ② 今日营养摄入（体重/身高编辑只保留这里一处入口） -->
+            <div class="card hero">
+              <div class="card-head">
+                <h3>今日营养摄入</h3>
+                <div class="metric-chips"><span class="mchip">体重 4.35kg ✎</span><span class="mchip h">身高 62cm ✎</span></div>
+              </div>
+              <div class="ring-row">
+                <div class="ring">
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#F0F0F0" stroke-width="11"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#FFB800" stroke-width="11" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                  </svg>
+                  <div class="center"><div class="big">657</div><div class="unit">kcal</div><div class="lbl">总热量</div></div>
+                </div>
+                <div class="macro-list">
+                  <div class="macro-stat"><span class="ms-k">天然蛋白</span><span class="ms-right"><span class="ms-v nat">5.2<small>g</small></span><span class="ms-c">1.20 g/kg</span></span></div>
+                  <div class="macro-stat"><span class="ms-k">特殊蛋白</span><span class="ms-right"><span class="ms-v spe">9.6<small>g</small></span><span class="ms-c">2.21 g/kg</span></span></div>
+                  <div class="macro-stat"><span class="ms-k">总蛋白</span><span class="ms-right"><span class="ms-v tot">14.8<small>g</small></span><span class="ms-c">3.41 g/kg</span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ③ 快捷记录（提到热量环卡片下方，记录入口前置） -->
+            <div class="card">
+              <div class="card-head"><h3>快捷记录</h3></div>
+              <div class="qgrid five">
+                <div class="qa"><div class="ic milk">🍼</div><div class="nm">记一顿奶</div></div>
+                <div class="qa"><div class="ic food">🥣</div><div class="nm">加食物</div></div>
+                <div class="qa"><div class="ic med">💊</div><div class="nm">喂药</div></div>
+                <div class="qa"><div class="ic treat">🩺</div><div class="nm">治疗</div></div>
+                <div class="qa"><div class="ic weight">⚖️</div><div class="nm">量体重</div></div>
+              </div>
+            </div>
+
+            <!-- ④ 今日喂养进度 + 下一顿 -->
+            <div class="card feed-prog">
+              <div class="card-head"><h3>今日喂养进度</h3><span class="more">查看明细 ›</span></div>
+              <div class="feed-top">
+                <div class="meals"><div style="display:flex;align-items:baseline;gap:4px;"><span class="n">6</span><span class="t">/ 8 顿 · 712ml</span></div><span class="feed-food">🥣 今日辅食 1 次</span></div>
+                <div class="dots"><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot done">✓</span><span class="dot todo">7</span><span class="dot todo">8</span></div>
+              </div>
+              <div class="next-suggest">
+                <div class="l"><b>下一顿（第7顿）参考</b><div class="vals"><span class="chip breast">母乳59 + 特奶61 · 120ml</span></div></div>
+                <div class="calc-btn">算补奶 ›</div>
+              </div>
+            </div>
+
+            <!-- ⑤ 今日用药打卡 -->
+            <div class="card">
+              <div class="card-head"><h3>今日用药打卡</h3><span class="med-head-badge">1/3 已完成</span></div>
+              <div class="med-item">
+                <div class="med-check done">✓</div>
+                <div class="med-main"><div class="nm done">精氨酸</div><div class="dose">1.2ml · 每日1次</div></div>
+                <div class="med-right"><span class="med-time">08:10</span></div>
+              </div>
+              <div class="med-item">
+                <div class="med-check partial"></div>
+                <div class="med-main"><div class="nm">左卡尼丁 <span style="font-size:11px;color:#4CC38A;font-weight:700;">1/2</span></div><div class="dose">1.5ml · 每日2次</div><div class="med-pips"><span class="med-pip on"></span><span class="med-pip"></span></div></div>
+                <div class="med-right"><span class="med-time">08:12</span><span class="med-cta again">再记一次</span></div>
+              </div>
+              <div class="med-item">
+                <div class="med-check todo"></div>
+                <div class="med-main"><div class="nm">AD 滴剂 <span class="tag-new">今日轮到</span></div><div class="dose">隔日与 D3 交替</div></div>
+                <div class="med-right"><span class="med-cta">打卡</span></div>
+              </div>
+            </div>
+
+            <!-- 轻量入口：把"看趋势/看明细"指回对应 Tab，而不是在首页重做 -->
+            <div class="mini-links">
+              <div class="mini-link"><div class="ml-l"><div class="ml-ic">📊</div><div><div class="ml-nm">近7天趋势</div><div class="ml-sub">去报告分析</div></div></div><span class="ml-go">›</span></div>
+              <div class="mini-link"><div class="ml-l"><div class="ml-ic t">📋</div><div><div class="ml-nm">今日时间轴</div><div class="ml-sub">去数据记录</div></div></div><span class="ml-go">›</span></div>
+            </div>
+
+          </div>
+          <div class="tabbar">
+            <div class="tb on"><div class="i">🏠</div>今日记录</div>
+            <div class="tb"><div class="i">📋</div>数据记录</div>
+            <div class="tb"><div class="i">📊</div>报告分析</div>
+            <div class="tb"><div class="i">👤</div>我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 说明 ============ -->
     <div class="anno">
-      <h4>为什么这样改？</h4>
-      <li><b>消除重复</b>：旧首页几乎是「数据记录」的今日版（同样的汇总卡 + 同样的喂奶/食物/用药/治疗列表 + 同样的弹窗）。</li>
-      <li><b>首页 = 看板</b>：只放「今天要看一眼的东西」和「最快下手的入口」。</li>
-      <li><b>有用的数据</b>：营养达成环 + 进度条（对比目标，不只是数字）、喂养进度与下一顿建议、近7天体重/蛋白趋势、连续记录天数。</li>
-      <li><b>用药打卡</b><span class="tag-new">新</span>：按规律自动列出今日该吃的药（精氨酸/左卡×2/AD·D3交替/B12隔日），可勾选，独一份。</li>
-      <li><b>分类入口</b>：6 个快捷记录大按钮 + 更多功能宫格，一步直达。</li>
-      <li><b>数据记录页</b>保持不变：负责任意日期的逐条明细查看 / 补录 / 复制。</li>
+      <h4>① 减法：删 / 移走的</h4>
+      <li class="cut"><b>「更多」整张卡删除</b>：营养设置 / 食物库 / 用药管理 / 数据共享 在「我的」Tab 已逐字重复。</li>
+      <li class="cut"><b>「近7天趋势」移走</b>：归「报告分析」Tab，首页只留一个入口。</li>
+      <li class="cut"><b>「今日时间轴」移走</b>：归「数据记录」Tab，首页只留一个入口。</li>
+      <li class="cut"><b>快捷记录 7 → 5</b>：去掉「检测报告」(本就是 Tab)、「量身高」(并入营养卡 ✎)。</li>
+
+      <h4 class="mt">② 加法 / 调整 <span class="tag-new">提升使用率</span></h4>
+      <li class="add"><b>今日照护完成度环</b>：喂奶 / 用药 / 体重 合成一个一眼概览，家长有「想点满」的动力。</li>
+      <li class="add"><b>快捷记录前置</b>：从第 4 张卡提到「热量环」正下方（第 3 位），一进首页就好记，不用滚到底。</li>
+      <li class="cut"><b>连续记录天数（streak）已砍</b>：漏记≠没护理，价值低且易带挫败感。</li>
+      <li class="cut"><b>"妈妈/爸爸"协作已砍</b>：现有角色只有 创建者/参与者，无父母角色；如需可后续用真实昵称做"最近由 XX 记录"。</li>
+
+      <h4 class="mt">③ 结果</h4>
+      <li>首页从 8 卡片 → 焦点卡 + 4 张卡，竖向长度约缩短 1/3。</li>
+      <li>记录入口前置，首页"能记一笔"的主任务更突出。</li>
+      <li>四个 Tab 职责清晰：今日(做) / 数据记录(查) / 报告分析(看趋势) / 我的(设置)。</li>
+      <li>风险低：减法部分改动很小；完成度环可纯函数实现并补单测（已有 home-dashboard.test.js 位）。</li>
     </div>
   </div>
 </body>

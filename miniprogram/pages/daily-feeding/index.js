@@ -21,44 +21,50 @@ const app = getApp();
 const TREND_DAYS = 7;
 
 // 近7天趋势可切换的指标（数据均来自 daily_summary_v2）
-// 按重要性排序：热量 > 蛋白 > 体重 > 天然/特殊蛋白；
-// 热量与热量系数、蛋白与蛋白系数「合并」——柱状画“量”，脚注同屏给出对应“系数”。
+// 蛋白拆成 总/天然/特殊 三个独立单柱 tab，保证每天数值都标得清楚；
+// 有系数副指标的（热量/三种蛋白）柱状画“量”，脚注同屏给出对应“系数”。
 const TREND_METRICS = [
-  { key: 'calorie', label: '热量', unit: 'kcal', currentLabel: '当前热量', secondary: { label: '热量系数', unit: 'kcal/kg', precision: 0 } },
-  { key: 'totalProtein', label: '蛋白', unit: 'g', currentLabel: '当前总蛋白', secondary: { label: '蛋白系数', unit: 'g/kg', precision: 1 } },
-  { key: 'weight', label: '体重', unit: 'kg', currentLabel: '当前体重' },
-  { key: 'naturalProtein', label: '天然蛋白', unit: 'g', currentLabel: '当前天然蛋白' },
-  { key: 'specialProtein', label: '特殊蛋白', unit: 'g', currentLabel: '当前特殊蛋白' }
+  { key: 'calorie', label: '热量', unit: 'kcal', secondary: { unit: 'kcal/kg', precision: 0 } },
+  { key: 'totalProtein', label: '总蛋白', unit: 'g', secondary: { unit: 'g/kg', precision: 2 } },
+  { key: 'naturalProtein', label: '天然蛋白', unit: 'g', secondary: { unit: 'g/kg', precision: 2 } },
+  { key: 'specialProtein', label: '特殊蛋白', unit: 'g', secondary: { unit: 'g/kg', precision: 2 } },
+  { key: 'weight', label: '体重', unit: 'kg' }
 ];
 
 function trendMetricMeta(key) {
   return TREND_METRICS.find((m) => m.key === key) || TREND_METRICS[0];
 }
 
-// 趋势脚注三块：有系数副指标的（热量/蛋白）展示「当前值 / 系数 / 7天均值」，
-// 其余展示「当前值 / 7天均值 / 区间最高」。系数 = 当前值 / 今日体重。
-function buildTrendStats(metricKey, weeklyTrend = {}, weight = 0) {
+// 趋势脚注三块：统一展示「最低 / 平均 / 最高」（针对窗口 T-1~T-7 内有记录的天）。
+// 热量/三种蛋白额外在「平均」格下方给出「平均系数」——口径③：近7天 Σ值 / Σ体重
+// （= 平均值/平均体重，按天总量加权，即「总摄入 / 总体重」）。
+function buildTrendStats(metricKey, weeklyTrend = {}) {
   const meta = trendMetricMeta(metricKey);
-  const current = weeklyTrend.current;
-  const avg = weeklyTrend.avg;
-  const max = weeklyTrend.hasData ? weeklyTrend.max : null;
+  const hasData = !!weeklyTrend.hasData;
+  const avg = hasData ? weeklyTrend.avg : null;
+  const min = hasData ? weeklyTrend.min : null;
+  const max = hasData ? weeklyTrend.max : null;
   const fmt = (v) => (v === null || v === undefined ? '--' : v);
 
-  if (meta.secondary) {
-    const w = Number(weight) || 0;
-    const coef = (w > 0 && current !== null && current !== undefined)
-      ? dashboard.round(current / w, meta.secondary.precision)
-      : null;
-    return [
-      { n: fmt(current), u: meta.unit, l: meta.currentLabel },
-      { n: fmt(coef), u: meta.secondary.unit, l: meta.secondary.label },
-      { n: fmt(avg), u: meta.unit, l: '7天均值' }
-    ];
-  }
+  const secondary = !!meta.secondary;
+  const avgCoef = secondary
+    ? dashboard.weightedAverageCoefficient(weeklyTrend.points, meta.secondary.precision)
+    : null;
+
+  // coefRow 让三格都占住「系数行」高度，避免只有「平均」格变高导致标签错位。
+  const mkItem = (value, label, coef) => {
+    const it = { n: fmt(value), u: meta.unit, l: label };
+    if (secondary) {
+      it.coefRow = true;
+      it.c = coef === undefined ? '' : fmt(coef);
+      it.cu = meta.secondary.unit;
+    }
+    return it;
+  };
   return [
-    { n: fmt(current), u: meta.unit, l: meta.currentLabel },
-    { n: fmt(avg), u: meta.unit, l: '7天均值' },
-    { n: fmt(max), u: meta.unit, l: '区间最高' }
+    mkItem(min, '最低'),
+    mkItem(avg, '平均', avgCoef),
+    mkItem(max, '最高')
   ];
 }
 
@@ -71,6 +77,15 @@ const TIMELINE_TABS = [
   { key: 'treatment', label: '治疗' }
 ];
 const TIMELINE_DISPLAY_LIMIT = 12;
+
+// 把 "HH:MM" 拼到「今天」得到一个 Date（用于打卡记录的 actualDateTime）
+function timeStrToToday(timeStr) {
+  const now = new Date();
+  const [h, m] = String(timeStr || '').split(':').map(Number);
+  const d = new Date(now);
+  if (Number.isFinite(h)) d.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
+  return d;
+}
 
 function filterTimeline(events, category) {
   const list = (events || []).filter((e) => (category === 'all' ? true : e.type === category));
@@ -119,6 +134,8 @@ Page({
     app: null,
     todayDate: '',
     greetingText: buildGreeting(),
+    // 仅创建者可见的入口（如「数据共享」）
+    isCreator: false,
 
     // 宝宝信息
     babyName: '',
@@ -142,7 +159,9 @@ Page({
 
     // 喂养
     feedingProgress: { count: 0, plannedMeals: dashboard.DEFAULT_PLANNED_MEALS, totalVolume: 0, remaining: dashboard.DEFAULT_PLANNED_MEALS, lastMealTime: '', dots: [] },
-    feedingPlanHint: { hasPlan: false, parts: [], text: '', total: 0, time: '' },
+    feedingPlanHint: { hasPlan: false, parts: [], text: '', total: 0, seq: 0, refDate: '', exceeded: false },
+    medUndo: { visible: false, name: '', time: '', recordId: '', localId: '' },
+    medPanel: { visible: false, medicationId: '', name: '', meta: '', doseCount: 0, doseTotal: 0, entries: [] },
     foodCount: 0,
 
     // 用药
@@ -185,12 +204,27 @@ Page({
   },
 
   async onShow() {
-    this.setData({ app, greetingText: buildGreeting() });
+    const userRole = (app.globalData && app.globalData.userRole) || wx.getStorageSync('user_role');
+    this.setData({ app, greetingText: buildGreeting(), isCreator: userRole === 'creator' });
+    // 新用户引导：宝宝信息保存后选择“去设置”，会先切到首页并打上标记，
+    // 由此处压入配奶设置页（栈为 [首页, 配奶设置页]），保证从配奶设置页返回时回到首页。
+    if (this.maybeOpenNutritionSetup()) return;
     // 每次进入/返回首页都重播入场动画（CSS 动画需先卸下再挂上才会重新执行）
     this.replayEntrance();
     if (this._ready) {
       await this.loadDashboard({ silent: true });
     }
+  },
+
+  // 消费“引导去配奶设置”标记：命中则压入配奶设置页并返回 true（本次 onShow 不再继续首页逻辑）
+  maybeOpenNutritionSetup() {
+    if (!app.globalData.pendingNutritionSetup) return false;
+    app.globalData.pendingNutritionSetup = false;
+    wx.navigateTo({
+      url: '/pkg-milk/nutrition-profile-settings/index?fromSetup=true',
+      fail: (err) => console.error('打开配奶设置页失败:', err)
+    });
+    return true;
   },
 
   // 重播卡片入场动画：先移除 anim-on，下一帧再加回去触发重排
@@ -202,8 +236,8 @@ Page({
     }, 30);
   },
 
-  onHide() {},
-  onUnload() {},
+  onHide() { this.hideMedUndo(); this.closeMedPanel(); },
+  onUnload() { this.hideMedUndo(); this.closeMedPanel(); },
 
   async onPullDownRefresh() {
     try {
@@ -299,11 +333,12 @@ Page({
       }
 
       const today = todayKey();
-      const startKey = shiftDateKey(today, -(TREND_DAYS - 1));
+      // 趋势窗口不含今天（T-1~T-7），故往前多取一天到 T-7。
+      const startKey = shiftDateKey(today, -TREND_DAYS);
 
-      const [daily, rangeSummaries, meds, plannedMeals, recentRecord] = await Promise.all([
+      const [daily, rangeSummaries, meds, plannedMeals, recentDay] = await Promise.all([
         DailyRecordV2Service.getDailyRecordV2(babyUid, today),
-        // 趋势补齐近 7 天缺失/过期的汇总，与「数据记录」页同源；
+        // 趋势补齐 T-7~T-1 缺失/过期的汇总，与「数据记录」页同源；
         // 今天交给上面的 getDailyRecordV2 处理，这里跳过以免并发重复重建。
         DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, today, {
           rebuildMissing: true,
@@ -311,12 +346,12 @@ Page({
         }),
         MedicationModel.getMedications(),
         FeedingRecordV2Model.getRecentDayMealCount(babyUid, today),
-        // 最近一顿配比参考：取严格早于今天的最近一条喂奶记录（今天有喂奶则用今天最后一顿）
-        FeedingRecordV2Model.getRecentRecord(babyUid, today).catch(() => null)
+        // 下一顿参考：取上次（最近历史日）那天的全部喂奶记录，按今日已喂顿数对应同序号那一顿
+        FeedingRecordV2Model.getRecentDayRecords(babyUid, today).catch(() => ({ date: '', records: [] }))
       ]);
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
-      this.applyDashboard({ daily, meds, plannedMeals, recentRecord, today });
+      this.applyDashboard({ daily, meds, plannedMeals, recentDay, today });
 
       if (!silent) wx.hideLoading();
     } catch (error) {
@@ -325,7 +360,7 @@ Page({
     }
   },
 
-  applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentRecord = null, today }) {
+  applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, today }) {
     const summary = daily.summary || {};
     const basicInfo = daily.basicInfo || summary.basicInfo || {};
     const macroSummary = summary.macroSummary || {};
@@ -352,15 +387,19 @@ Page({
     const nutrition = dashboard.buildNutritionSummary({ macroSummary, weight });
     const feedingProgress = dashboard.buildFeedingProgress({ milkRecords, plannedMeals });
 
-    // 每顿配比参考：优先用今天最后一顿，没有则回退到最近一条历史喂奶记录（与配奶计算页同源，按真实来源展示）
-    const latestTodayMeal = (milkRecords || [])
-      .filter((record) => record && record.startTime)
-      .sort((a, b) => String(b.startTime).localeCompare(String(a.startTime)))[0] || null;
-    const feedingPlanHint = dashboard.buildRecentMealHint(latestTodayMeal || recentRecord);
+    // 下一顿参考：按今日已喂顿数对应到上次那天的同序号那一顿（如今天已喂2顿→参考上次第3顿）
+    const feedingPlanHint = dashboard.buildNextMealReference({
+      referenceMeals: (recentDay && recentDay.records) || [],
+      refDate: (recentDay && recentDay.date) || '',
+      fedCount: feedingProgress.count
+    });
 
+    // 保存当日用药记录与上下文，供打卡的「乐观本地更新」复用，避免每次打卡都整页刷新
+    this._medTodayRecords = (daily.medicationRecords || []).slice();
+    this._medToday = today;
     const medicationChecklist = dashboard.buildMedicationChecklist({
       meds,
-      todayRecords: daily.medicationRecords || [],
+      todayRecords: this._medTodayRecords,
       history: this.buildMedicationHistory(today),
       todayKey: today
     });
@@ -375,13 +414,7 @@ Page({
     this.timelineAll = timelineAll;
     const timeline = filterTimeline(timelineAll, this.data.timelineCategory);
 
-    const weeklyTrend = dashboard.buildWeeklyTrend({
-      summaries: this.rangeSummaries,
-      todayKey: today,
-      days: TREND_DAYS,
-      metric: this.data.trendMetric
-    });
-    const trendStats = buildTrendStats(this.data.trendMetric, weeklyTrend, weight);
+    const trend = this.computeTrend(this.data.trendMetric, today);
 
     this.setData({
       weight,
@@ -394,9 +427,24 @@ Page({
       medicationChecklist,
       timeline,
       hasTimeline: timelineAll.length > 0,
-      weeklyTrend,
-      trendStats
+      weeklyTrend: trend.weeklyTrend,
+      trendStats: trend.trendStats
     });
+  },
+
+  // 按当前指标计算趋势（单柱，每天标值），统一不含今天（T-1~T-7）。
+  computeTrend(metric, todayVal) {
+    const weeklyTrend = dashboard.buildWeeklyTrend({
+      summaries: this.rangeSummaries,
+      todayKey: todayVal,
+      days: TREND_DAYS,
+      metric,
+      includeToday: false
+    });
+    return {
+      weeklyTrend,
+      trendStats: buildTrendStats(metric, weeklyTrend)
+    };
   },
 
   // 从范围汇总里取每日已服药 id（供隔日药推算）
@@ -421,16 +469,11 @@ Page({
   switchTrendMetric(e) {
     const metric = e.currentTarget.dataset.metric;
     if (!metric || metric === this.data.trendMetric) return;
-    const weeklyTrend = dashboard.buildWeeklyTrend({
-      summaries: this.rangeSummaries,
-      todayKey: todayKey(),
-      days: TREND_DAYS,
-      metric
-    });
+    const trend = this.computeTrend(metric, todayKey());
     this.setData({
       trendMetric: metric,
-      weeklyTrend,
-      trendStats: buildTrendStats(metric, weeklyTrend, this.data.weight)
+      weeklyTrend: trend.weeklyTrend,
+      trendStats: trend.trendStats
     });
   },
 
@@ -547,7 +590,51 @@ Page({
     }
   },
 
-  // === 用药打卡（清单一键打卡） ===
+  // 用当前本地的当日用药记录重建打卡清单（不发网络请求，用于乐观更新/回滚）
+  rebuildMedChecklist() {
+    const meds = this.data.medicationsList || [];
+    const today = this._medToday || todayKey();
+    const medicationChecklist = dashboard.buildMedicationChecklist({
+      meds,
+      todayRecords: this._medTodayRecords || [],
+      history: this.buildMedicationHistory(today),
+      todayKey: today
+    });
+    this.setData({ medicationChecklist });
+  },
+
+  // 在时间轴里本地插入/移除一条用药事件（带 localId 便于回滚），避免整页刷新
+  addLocalMedTimeline(localId, name, actualTime, dosage, unit) {
+    const [h, m] = String(actualTime || '').split(':').map(Number);
+    const sortValue = (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+    const event = {
+      type: 'med',
+      time: actualTime || '',
+      title: `用药 · ${name || ''}`,
+      desc: dosage ? `${dosage}${unit || ''}` : '',
+      sortValue,
+      _localId: localId
+    };
+    const all = (this.timelineAll || []).slice();
+    all.push(event);
+    all.sort((a, b) => b.sortValue - a.sortValue);
+    this.timelineAll = all;
+    this.setData({
+      timeline: filterTimeline(all, this.data.timelineCategory),
+      hasTimeline: all.length > 0
+    });
+  },
+
+  removeLocalMedTimeline(localId) {
+    const all = (this.timelineAll || []).filter((ev) => ev._localId !== localId);
+    this.timelineAll = all;
+    this.setData({
+      timeline: filterTimeline(all, this.data.timelineCategory),
+      hasTimeline: all.length > 0
+    });
+  },
+
+  // === 用药打卡（清单一键打卡：乐观更新 + 触感 + 可撤销，不整页刷新） ===
   async quickTakeMedication(e) {
     const medicationId = e.currentTarget.dataset.id;
     const item = (this.data.medicationChecklist.todayItems || []).find((it) => it.medicationId === medicationId);
@@ -565,27 +652,185 @@ Page({
       return;
     }
 
+    // 触感反馈 + 即时打勾（乐观更新，无 loading、无整页刷新）
+    wx.vibrateShort && wx.vibrateShort({ type: 'light' });
+    const now = new Date();
+    const actualTime = utils.formatTime(now);
+    const localId = `med_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const optimistic = { medicationId, actualTime, _localId: localId };
+    this._medTodayRecords = [...(this._medTodayRecords || []), optimistic];
+    this.rebuildMedChecklist();
+    this.addLocalMedTimeline(localId, medInfo.name, actualTime, medInfo.dosage, medInfo.unit);
+
     try {
-      wx.showLoading({ title: '打卡中...' });
-      const now = new Date();
-      await MedicationRecordModel.addRecord({
+      const res = await MedicationRecordModel.addRecord({
         medicationId,
         medicationName: medInfo.name,
         dosage: medInfo.dosage,
         unit: medInfo.unit,
         frequency: medInfo.frequency,
-        actualTime: utils.formatTime(now),
+        actualTime,
         actualDateTime: now
       });
+      const recordId = (res && (res._id || (res.result && res.result._id))) || '';
+      optimistic._id = recordId;
       await DailySummaryV2Model.markDirty(babyUid, todayKey());
+      this.showMedUndo({ name: medInfo.name, time: actualTime, recordId, localId });
+    } catch (error) {
+      console.error('用药打卡失败:', error);
+      // 回滚乐观更新
+      this._medTodayRecords = (this._medTodayRecords || []).filter((r) => r._localId !== localId);
+      this.rebuildMedChecklist();
+      this.removeLocalMedTimeline(localId);
+      wx.showToast({ title: '打卡失败，请重试', icon: 'none' });
+    }
+  },
+
+  showMedUndo({ name, time, recordId, localId }) {
+    if (this._medUndoTimer) {
+      clearTimeout(this._medUndoTimer);
+      this._medUndoTimer = null;
+    }
+    this.setData({ medUndo: { visible: true, name, time, recordId, localId } });
+    this._medUndoTimer = setTimeout(() => {
+      this.hideMedUndo();
+    }, 5000);
+  },
+
+  hideMedUndo() {
+    if (this._medUndoTimer) {
+      clearTimeout(this._medUndoTimer);
+      this._medUndoTimer = null;
+    }
+    if (this.data.medUndo && this.data.medUndo.visible) {
+      this.setData({ 'medUndo.visible': false });
+    }
+  },
+
+  async undoMedCheckin() {
+    const { recordId, localId, name } = this.data.medUndo || {};
+    this.hideMedUndo();
+    if (!recordId) return;
+
+    // 先本地撤销，反馈即时
+    this._medTodayRecords = (this._medTodayRecords || []).filter((r) => (r._id || r._localId) !== recordId && r._localId !== localId);
+    this.rebuildMedChecklist();
+    this.removeLocalMedTimeline(localId);
+    wx.vibrateShort && wx.vibrateShort({ type: 'light' });
+
+    try {
+      await MedicationRecordModel.deleteRecord(recordId);
+      const babyUid = getBabyUid();
+      if (babyUid) await DailySummaryV2Model.markDirty(babyUid, todayKey());
+      wx.showToast({ title: `已撤销 ${name || ''}`, icon: 'none' });
+    } catch (error) {
+      console.error('撤销打卡失败:', error);
+      wx.showToast({ title: '撤销失败，请刷新', icon: 'none' });
+      // 撤销失败：拉回真实数据，避免本地与云端不一致
+      this.loadDashboard({ silent: true });
+    }
+  },
+
+  // 收集某药今日已打卡记录（仅含已落库、带 _id 的，可改时间/删除）
+  collectMedEntries(medicationId) {
+    return (this._medTodayRecords || [])
+      .filter((r) => r && r.medicationId === medicationId && r._id)
+      .map((r) => ({ recordId: r._id, time: r.actualTime || '' }))
+      .sort((a, b) => String(a.time).localeCompare(String(b.time)));
+  },
+
+  // 点药品行：打开「打卡面板」——看今日每一次、单独改时间/删除、或选时间补记
+  openMedPanel(e) {
+    const medicationId = e.currentTarget.dataset.id;
+    const item = (this.data.medicationChecklist.todayItems || [])
+      .concat(this.data.medicationChecklist.items || [])
+      .find((it) => it.medicationId === medicationId);
+    const medInfo = (this.data.medicationsList || []).find((med) => (med._id || med.id) === medicationId);
+    if (!medInfo) return;
+
+    this.hideMedUndo();
+    const entries = this.collectMedEntries(medicationId);
+    this.setData({
+      medPanel: {
+        visible: true,
+        medicationId,
+        name: medInfo.name || '',
+        meta: `${medInfo.dosage || ''}${medInfo.unit || ''} · ${medInfo.frequency || ''}`,
+        doseCount: item ? item.doseCount : entries.length,
+        doseTotal: item ? item.doseTotal : entries.length,
+        entries
+      }
+    });
+  },
+
+  closeMedPanel() {
+    this.setData({ 'medPanel.visible': false });
+  },
+
+  // 面板数据已变时，从最新本地记录重新推导（供增删改后刷新面板）
+  refreshMedPanel() {
+    const mp = this.data.medPanel;
+    if (!mp || !mp.visible) return;
+    const item = (this.data.medicationChecklist.todayItems || [])
+      .concat(this.data.medicationChecklist.items || [])
+      .find((it) => it.medicationId === mp.medicationId);
+    const entries = this.collectMedEntries(mp.medicationId);
+    this.setData({
+      'medPanel.entries': entries,
+      'medPanel.doseCount': item ? item.doseCount : entries.length,
+      'medPanel.doseTotal': item ? item.doseTotal : entries.length
+    });
+  },
+
+  // 面板内：修改某一次打卡的时间
+  async onMedPanelEntryTimeChange(e) {
+    const recordId = e.currentTarget.dataset.recordId;
+    const newTime = e.detail.value;
+    if (!recordId) return;
+    const babyUid = getBabyUid();
+    try {
+      wx.showLoading({ title: '更新中...', mask: true });
+      await MedicationRecordModel.updateRecord(recordId, {
+        actualTime: newTime,
+        actualDateTime: timeStrToToday(newTime)
+      });
+      if (babyUid) await DailySummaryV2Model.markDirty(babyUid, todayKey());
       await this.loadDashboard({ silent: true });
+      this.refreshMedPanel();
       wx.hideLoading();
-      wx.showToast({ title: `${medInfo.name} 已打卡`, icon: 'success' });
     } catch (error) {
       wx.hideLoading();
-      console.error('用药打卡失败:', error);
-      wx.showToast({ title: '打卡失败', icon: 'none' });
+      console.error('修改打卡时间失败:', error);
+      wx.showToast({ title: '更新失败', icon: 'none' });
     }
+  },
+
+  // 面板内：删除某一次打卡
+  deleteMedPanelEntry(e) {
+    const recordId = e.currentTarget.dataset.recordId;
+    if (!recordId) return;
+    wx.showModal({
+      title: '删除这次打卡？',
+      content: '删除后该次记录将移除',
+      confirmText: '删除',
+      confirmColor: '#F44336',
+      success: async (res) => {
+        if (!res.confirm) return;
+        const babyUid = getBabyUid();
+        try {
+          wx.showLoading({ title: '删除中...', mask: true });
+          await MedicationRecordModel.deleteRecord(recordId);
+          if (babyUid) await DailySummaryV2Model.markDirty(babyUid, todayKey());
+          await this.loadDashboard({ silent: true });
+          this.refreshMedPanel();
+          wx.hideLoading();
+        } catch (error) {
+          wx.hideLoading();
+          console.error('删除打卡失败:', error);
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        }
+      }
+    });
   },
 
   // === 记录用药弹窗（自定义剂量/时间） ===
@@ -739,11 +984,6 @@ Page({
 
   goToReport() {
     wx.switchTab({ url: '/pages/analysis-report/index' });
-  },
-
-  // === 公告 / 杂项 ===
-  closeReleaseNotice() {
-    this.setData({ releaseNoticeVisible: false });
   },
 
   stopBubble() {}

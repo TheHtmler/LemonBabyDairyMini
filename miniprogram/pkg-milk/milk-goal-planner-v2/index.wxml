@@ -211,6 +211,12 @@
         </view>
       </view>
 
+      <!-- 常驻入口：没配过奶粉/没有需要的奶粉时，去配奶设置页添加 -->
+      <view class="source-popup-tip">
+        <text class="source-popup-tip-text">没有需要的奶粉？</text>
+        <text class="source-popup-tip-link" bindtap="goToManagePowders">去配奶粉</text>
+      </view>
+
       <scroll-view scroll-y class="source-popup-body">
         <view class="source-group" wx:for="{{sourceGroups}}" wx:key="key">
           <view class="source-group-row" data-group="{{item.key}}" bindtap="toggleSourceGroup">
@@ -218,7 +224,7 @@
               <text class="source-group-label">{{item.label}}</text>
               <text class="source-group-selected">{{item.selectedText}}</text>
             </view>
-            <text class="source-switch" wx:if="{{item.hasOptions}}">换一种 ></text>
+            <text class="source-switch" wx:if="{{item.hasOptions}}">换一种</text>
             <text class="source-switch muted" wx:else>暂无可选</text>
           </view>
 

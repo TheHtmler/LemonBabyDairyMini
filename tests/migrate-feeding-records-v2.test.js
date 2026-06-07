@@ -71,6 +71,22 @@ test('migrateFeedingRecordsV2 cloud function copies legacy milk feedings into fe
   assert.doesNotMatch(source, /collection\(LEGACY_FEEDING_RECORDS_COLLECTION\)\.doc\([^)]*\)\.remove/);
 });
 
+test('migrateFeedingRecordsV2 exposes inspect/realign/cleanup maintenance modes that only touch v2 collection', () => {
+  const source = fs.readFileSync(indexPath, 'utf8');
+
+  assert.match(source, /event\.inspect === true/);
+  assert.match(source, /event\.realignVersion === true/);
+  assert.match(source, /event\.cleanupMigrated === true/);
+  assert.match(source, /async function inspectMigration/);
+  assert.match(source, /async function realignMigrationVersion/);
+  assert.match(source, /async function cleanupMigratedRecords/);
+  assert.match(source, /versionRealignedFrom/);
+
+  assert.match(source, /source:\s*'legacy_migration'/);
+  assert.doesNotMatch(source, /collection\(LEGACY_FEEDING_RECORDS_COLLECTION\)\.where\([^)]*\)\.update/);
+  assert.doesNotMatch(source, /collection\(LEGACY_FEEDING_RECORDS_COLLECTION\)\.doc\([^)]*\)\.remove/);
+});
+
 test('buildMigratedFeedingRecord normalizes legacy Date values into YYYY-MM-DD date keys', () => {
   const fn = loadFunctionWithMockCloud();
   const migrated = fn._internal.buildMigratedFeedingRecord({

@@ -2,6 +2,131 @@
 
 本文档用于把线上旧配奶/喂奶数据复制到 v2 集合。迁移采用“复制新集合，不改旧集合”的方式，旧页面和旧数据仍可回退使用。
 
+> 端到端的上线操作流程（含旧版本号处理、上线前后顺序、回滚）见 [`milk-v2-launch-playbook.md`](./milk-v2-launch-playbook.md)。本文件侧重各云函数参数与细节。
+
+## 推荐：本地编排脚本（自动 nextOffset）
+
+为避免在云开发控制台手工改 `offset`、以及单次云函数超时，项目提供本地编排脚本，会自动循环调用云函数直到 `hasMore: false`。
+
+### 准备
+
+1. 安装依赖：`npm install`
+2. 复制 `scripts/milk-v2-migration.env.example` 为 `scripts/milk-v2-migration.local.env`，填入 `TCB_SECRET_ID` / `TCB_SECRET_KEY`（腾讯云 CAM 密钥，需有云函数调用权限）
+3. 确认三个迁移云函数已部署到目标环境
+
+### 用法
+
+```bash
+# 预览（默认 dry-run，不写库）
+node scripts/run-milk-v2-migration.js \
+  --env-file=scripts/milk-v2-migration.local.env \
+  --baby-uid=<测试宝宝>
+
+# 正式迁移（三步骤：配奶档案 → 喂奶 v2 → 成长回填）
+node scripts/run-milk-v2-migration.js \
+  --env-file=scripts/milk-v2-migration.local.env \
+  --execute \
+  --baby-uid=<测试宝宝>
+
+# 全量（省略 --baby-uid）
+npm run migrate:milk-v2 -- --env-file=scripts/milk-v2-migration.local.env --execute
+
+# 只跑喂奶迁移
+node scripts/run-milk-v2-migration.js --env-file=... --execute --step=feeding
+
+# 修复已迁移记录的 date 字段类型
+node scripts/run-milk-v2-migration.js --env-file=... --execute --step=repair-dates
+```
+
+常用参数：`--page-size`、`--start-date`、`--end-date`、`--powder-rules-file`、`--include-baby-info-initial`、`--continue-on-errors`。完整列表：`node scripts/run-milk-v2-migration.js --help`
+
+脚本默认 `maxBatches: 1`（每批一次云函数调用），`--delay-ms` 默认 300ms，降低连续调用限流风险。
+
+> **关于 `--migration-version`（喂奶迁移幂等键）**：默认固定为 `milk-v2`，不随日期变化。喂奶迁移按 `babyUid + legacyRecordId + legacyFeedingIndex + migrationVersion` 判重，**同一版本号重跑安全、不会重复**；增量补迁也务必沿用同一版本号。只有在确实想「整段历史按新口径重迁一份」时才换新版本号，且需先按旧版本号清理旧迁移数据，否则喂奶记录会翻倍、汇总双计。
+
+> node 脚本需要腾讯云 `TCB_SECRET_ID` / `TCB_SECRET_KEY`，且该云开发环境要能在腾讯云 CloudBase 控制台访问。微信小程序云开发环境如果拿不到密钥，请改用下方「开发者工具控制台编排」。
+
+## 替代：微信开发者工具控制台编排（无需密钥）
+
+适用于微信小程序云开发环境，不需要任何腾讯云密钥，鉴权直接复用开发者工具登录态。逻辑与 node 脚本一致（自动循环 `nextOffset` 至 `hasMore: false`）。
+
+脚本文件：`scripts/milk-v2-migration-wx-console.js`
+
+步骤：
+
+1. 用微信开发者工具打开项目，确认已选中云开发环境、三个迁移云函数已部署。
+2. 打开「调试器 / Console」面板。
+3. 把 `scripts/milk-v2-migration-wx-console.js` 全部内容复制粘贴进 Console 回车（仅定义函数，不写库）。
+4. dry-run 预览（默认不写库）：
+
+```js
+runMilkV2Migration({ babyUid: '替换为测试宝宝babyUid' })
+```
+
+5. 确认无误后正式迁移（必须显式 `execute: true`）：
+
+```js
+runMilkV2Migration({ babyUid: '替换为测试宝宝babyUid', execute: true })
+```
+
+6. 全量：去掉 `babyUid`。
+
+`migrationVersion` 默认固定为 `milk-v2`，增量补迁直接重跑即可幂等，无需也不要每次改版本号。
+
+可选 options：`step`（`'all'|'profiles'|'feeding'|'growth'|'repair-dates'`）、`pageSize`、`maxBatches`、`delayMs`、`startDate`、`endDate`、`includeBabyInfoInitial`、`powderVersionRules`、`continueOnErrors`。例如只跑喂奶：
+
+```js
+runMilkV2Migration({ step: 'feeding', execute: true })
+```
+
+## 之前已经迁移过怎么办（版本号对齐）
+
+喂奶迁移的幂等键含 `migrationVersion`。如果你**之前用过别的版本号**迁过（例如云函数默认 `milk-v2-migration`、或旧脚本按日期生成的 `milk-v2-YYYYMMDD`、或手工传的某个值），而现在默认改成了固定的 `milk-v2`，**直接用新默认重跑会因版本号不一致把历史再插一遍、导致翻倍**。
+
+处理流程（均在微信开发者工具 Console，先粘贴 `scripts/milk-v2-migration-wx-console.js`）：
+
+### 第一步：诊断现状（只读，安全）
+
+```js
+inspectMilkV2Migration()
+```
+
+返回里重点看：
+
+- `versionCounts`：各 `migrationVersion` 的条数。看看历史用的是哪个版本号。
+- `duplicateGroups`：同一 `legacyRecordId + legacyFeedingIndex` 出现多次的组数。`0` 表示没翻倍。
+- `nonMigrationTotal`：用户在 v2 入口新建的真实记录数（这些不会被对齐/清理动到）。
+
+### 第二步：按诊断结果二选一
+
+**情况 A：单一旧版本号、`duplicateGroups = 0`（最常见）→ 对齐版本号**
+
+把旧版本号记录统一改成 `milk-v2`，之后用默认值增量即可幂等。先 dry-run 预览：
+
+```js
+realignMilkV2Version()                 // 预览：把所有非 milk-v2 的迁移记录改成 milk-v2
+realignMilkV2Version({ execute: true }) // 正式执行
+```
+
+只想改某些版本号：`realignMilkV2Version({ execute: true, fromVersions: ['milk-v2-migration'] })`。
+对齐会给每条加 `versionRealignedFrom` 便于追溯。
+
+**情况 B：有翻倍（`duplicateGroups > 0`）或多版本号混乱 → 清空重迁**
+
+只删 `source: 'legacy_migration'` 的迁移记录（不动用户新建记录），再用 `milk-v2` 全量重迁：
+
+```js
+cleanupMilkV2Version()                  // 预览：将删除的迁移记录数
+cleanupMilkV2Version({ execute: true }) // 正式删除
+runMilkV2Migration({ step: 'feeding', execute: true }) // 用默认 milk-v2 重迁
+```
+
+### 第三步：重建汇总
+
+对齐或重迁后，喂奶事实源变了，需让相关日期的 `daily_summary_v2` 失效并重建（见下方「上线后清洗」/`daily-summary-v2-food-cleanup` 规则），否则趋势/汇总仍是旧快照。
+
+> 这些维护操作只读写 `feeding_records_v2`，绝不修改旧 `feeding_records`；`realignVersion` / `cleanupMigrated` 默认 dry-run，必须显式 `execute: true` 才写库。node 脚本环境同样可用（在云函数 event 里传 `inspect` / `realignVersion` / `cleanupMigrated`）。
+
 ## 迁移对象
 
 需要部署并执行三个云函数：

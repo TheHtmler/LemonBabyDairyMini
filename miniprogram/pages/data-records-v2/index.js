@@ -6300,7 +6300,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   navigateToNutritionSettings() {
     wx.navigateTo({
-      url: '/pkg-milk/nutrition-settings/index'
+      url: '/pkg-milk/nutrition-profile-settings/index'
     });
   },
 

@@ -10,8 +10,9 @@ const {
   buildNutritionGoals,
   buildNutritionSummary,
   buildFeedingProgress,
-  buildRecentMealHint,
+  buildNextMealReference,
   buildWeeklyTrend,
+  weightedAverageCoefficient,
   metricDisplayPrecision,
   buildTimeline,
   milkRecordVolumes
@@ -189,53 +190,66 @@ test('buildFeedingProgress：顿数/总量/进度点/最近时间', () => {
   assert.equal(progress.reached, false);
 });
 
-test('buildFeedingProgress：plannedMeals 为 0 时回退默认 8', () => {
+test('buildFeedingProgress：plannedMeals 为 0 时回退默认顿数（新用户）', () => {
   const progress = buildFeedingProgress({ milkRecords: [], plannedMeals: 0 });
   assert.equal(progress.plannedMeals, DEFAULT_PLANNED_MEALS);
+  assert.equal(DEFAULT_PLANNED_MEALS, 6);
 });
 
-test('buildFeedingProgress：参考过往记录，6 顿不再被顶到 8', () => {
+test('buildFeedingProgress：参考过往记录，按最近记录日顿数不再被顶高', () => {
   const milkRecords = [
     { startTime: '08:00', nutritionSummary: { totalVolume: 110 } },
     { startTime: '11:00', nutritionSummary: { totalVolume: 120 } }
   ];
-  const progress = buildFeedingProgress({ milkRecords, plannedMeals: 6 });
-  assert.equal(progress.plannedMeals, 6); // 不再 max(6,8)
-  assert.equal(progress.remaining, 4);
-  assert.equal(progress.dots.length, 6);
+  const progress = buildFeedingProgress({ milkRecords, plannedMeals: 7 });
+  assert.equal(progress.plannedMeals, 7); // 不再取 max
+  assert.equal(progress.remaining, 5);
+  assert.equal(progress.dots.length, 7);
 });
 
-test('buildRecentMealHint：用最近一顿真实配比展示（母乳+特奶，按来源名）', () => {
-  const hint = buildRecentMealHint({
-    startTime: '11:05',
-    formulaComponents: [
+test('buildNextMealReference：今日已喂2顿→对应上次第3顿配比', () => {
+  const referenceMeals = [
+    { startTime: '07:00', formulaComponents: [{ kind: 'breast_milk', volume: 50 }] },
+    { startTime: '10:00', formulaComponents: [{ kind: 'breast_milk', volume: 55 }] },
+    { startTime: '13:00', formulaComponents: [
       { kind: 'breast_milk', volume: 59 },
       { kind: 'formula_powder', powderName: '纽迪希亚特护', waterVolume: 61, proteinRole: 'special' }
-    ]
-  });
+    ] },
+    { startTime: '16:00', formulaComponents: [{ kind: 'breast_milk', volume: 60 }] }
+  ];
+  const hint = buildNextMealReference({ referenceMeals, refDate: '2026-05-30', fedCount: 2 });
   assert.equal(hint.hasPlan, true);
+  assert.equal(hint.seq, 3);
   assert.equal(hint.text, '母乳59ml + 纽迪希亚特护61ml');
   assert.equal(hint.total, 120);
-  assert.equal(hint.time, '11:05');
-  assert.equal(hint.parts.length, 2);
+  assert.equal(hint.exceeded, false);
+  assert.equal(hint.refDate, '2026-05-30');
 });
 
-test('buildRecentMealHint：奶粉无名称时按蛋白角色回退普奶/特奶，并按母乳→普奶→特奶排序', () => {
-  const hint = buildRecentMealHint({
-    startTime: '08:00',
-    formulaComponents: [
-      { kind: 'formula_powder', waterVolume: 40, proteinRole: 'special' },
-      { kind: 'breast_milk', volume: 50 },
-      { kind: 'formula_powder', waterVolume: 30, proteinRole: 'natural' }
-    ]
-  });
-  assert.equal(hint.text, '母乳50ml + 普奶30ml + 特奶40ml');
-  assert.equal(hint.total, 120);
+test('buildNextMealReference：乱序记录先按时间排序再取第N顿', () => {
+  const referenceMeals = [
+    { startTime: '13:00', formulaComponents: [{ kind: 'breast_milk', volume: 59 }] },
+    { startTime: '07:00', formulaComponents: [{ kind: 'breast_milk', volume: 50 }] }
+  ];
+  // 今天还没喂（0顿）→ 下一顿是第1顿 → 取最早的 07:00 那顿
+  const hint = buildNextMealReference({ referenceMeals, fedCount: 0 });
+  assert.equal(hint.seq, 1);
+  assert.equal(hint.text, '母乳50ml');
 });
 
-test('buildRecentMealHint：无记录或无有效体积则无参考', () => {
-  assert.equal(buildRecentMealHint(null).hasPlan, false);
-  assert.equal(buildRecentMealHint({ formulaComponents: [{ kind: 'breast_milk', volume: 0 }] }).hasPlan, false);
+test('buildNextMealReference：今日已喂数超出上次顿数→落到末顿并标记 exceeded', () => {
+  const referenceMeals = [
+    { startTime: '07:00', formulaComponents: [{ kind: 'breast_milk', volume: 50 }] },
+    { startTime: '10:00', formulaComponents: [{ kind: 'breast_milk', volume: 60 }] }
+  ];
+  const hint = buildNextMealReference({ referenceMeals, fedCount: 5 });
+  assert.equal(hint.exceeded, true);
+  assert.equal(hint.seq, 2);
+  assert.equal(hint.text, '母乳60ml');
+});
+
+test('buildNextMealReference：无历史记录则无参考', () => {
+  assert.equal(buildNextMealReference({ referenceMeals: [], fedCount: 0 }).hasPlan, false);
 });
 
 test('buildWeeklyTrend：补齐缺失天并归一化高度', () => {
@@ -256,6 +270,70 @@ test('buildWeeklyTrend：补齐缺失天并归一化高度', () => {
   assert.equal(trend.avg, round2((4.2 + 4.3 + 4.35) / 3)); // 7天均值(仅有值的天)
   assert.equal(trend.points[0].heightPct, 0); // 缺失天
   assert.equal(trend.points[6].heightPct, 100); // 最大值
+});
+
+test('buildWeeklyTrend：includeToday=false 时窗口为 T-1~T-7，且当前取昨天（排除今天）', () => {
+  const summaries = [
+    { date: '2026-05-31', basicInfo: { weight: 4.2 } },
+    { date: '2026-06-01', basicInfo: { weight: 4.3 } }, // T-1（昨天）
+    { date: '2026-06-02', basicInfo: { weight: 9.9 } }  // 今天，应被排除
+  ];
+  const trend = buildWeeklyTrend({ summaries, todayKey: '2026-06-02', days: 7, metric: 'weight', includeToday: false });
+  assert.equal(trend.points.length, 7);
+  assert.equal(trend.points[0].date, '2026-05-26'); // 第一根 T-7
+  assert.equal(trend.points[6].date, '2026-06-01'); // 最后一根 T-1（昨天）
+  assert.equal(trend.points[6].isToday, false); // 没有“今天”这根
+  assert.equal(trend.points.some((p) => p.date === '2026-06-02'), false); // 今天不在窗口
+  assert.equal(trend.current, 4.3); // 当前=昨天，今天的 9.9 不取
+  assert.equal(trend.filledDays, 2);
+});
+
+test('buildWeeklyTrend：totalProtein = 天然 + 特殊，单柱逐日，最近值取最近有数据天', () => {
+  const summaries = [
+    { date: '2026-06-01', macroSummary: { naturalProtein: 5.0, specialProtein: 10.0 }, recordCounts: { milk: 7, food: 0 } }, // T-1（昨天）
+    { date: '2026-05-31', macroSummary: { naturalProtein: 4.6, specialProtein: 9.2 }, recordCounts: { milk: 7, food: 0 } }
+  ];
+  const trend = buildWeeklyTrend({
+    summaries,
+    todayKey: '2026-06-02',
+    days: 7,
+    metric: 'totalProtein',
+    includeToday: false
+  });
+  assert.equal(trend.points.length, 7);
+  assert.equal(trend.points[6].date, '2026-06-01'); // 最后一根=昨天
+  assert.equal(trend.points[6].value, 15.0); // 5.0 + 10.0
+  assert.equal(trend.current, 15.0); // 最近总蛋白
+});
+
+test('buildWeeklyTrend：每个 point 带当天体重（供「平均系数」逐日口径计算）', () => {
+  const summaries = [
+    { date: '2026-06-01', basicInfo: { weight: 4.3 }, macroSummary: { naturalProtein: 5.0, specialProtein: 10.0 }, recordCounts: { milk: 7, food: 0 } },
+    { date: '2026-05-31', basicInfo: { weight: 4.2 }, macroSummary: { naturalProtein: 4.6, specialProtein: 9.2 }, recordCounts: { milk: 7, food: 0 } }
+  ];
+  const trend = buildWeeklyTrend({ summaries, todayKey: '2026-06-02', days: 7, metric: 'totalProtein', includeToday: false });
+  const p601 = trend.points.find((p) => p.date === '2026-06-01');
+  const p531 = trend.points.find((p) => p.date === '2026-05-31');
+  assert.equal(p601.weight, 4.3); // 当天体重，用于 平均系数=Σ值/Σ体重
+  assert.equal(p531.weight, 4.2);
+  // 无记录的天体重为 null
+  assert.equal(trend.points.find((p) => p.date === '2026-05-30').weight, null);
+});
+
+test('weightedAverageCoefficient：平均系数 = Σ值/Σ体重，仅统计有值且有体重的天', () => {
+  const points = [
+    { hasValue: true, value: 5.0, weight: 4.3 },
+    { hasValue: true, value: 4.6, weight: 4.2 },
+    { hasValue: false, value: null, weight: 4.1 }, // 无值，不计
+    { hasValue: true, value: 5.2, weight: 0 }      // 无体重，不计
+  ];
+  // (5.0 + 4.6) / (4.3 + 4.2) = 9.6 / 8.5
+  assert.equal(weightedAverageCoefficient(points, 2), round2(9.6 / 8.5));
+  // 等价于 平均值/平均体重
+  assert.equal(weightedAverageCoefficient(points, 2), round2((9.6 / 2) / (8.5 / 2)));
+  // 无有效天 -> null
+  assert.equal(weightedAverageCoefficient([], 2), null);
+  assert.equal(weightedAverageCoefficient([{ hasValue: true, value: 5, weight: 0 }], 2), null);
 });
 
 test('buildWeeklyTrend：天然蛋白为0但当天有喂奶记录时算有效数据点', () => {

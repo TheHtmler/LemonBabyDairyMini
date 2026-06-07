@@ -9,11 +9,12 @@
     <view class="form-group">
       <view class="form-title">基本信息</view>
       
-      <!-- 头像展示（在此页面关闭上传） -->
+      <!-- 头像展示（点击可更换，与「我的」页一致；仅信息所有者可改） -->
       <view class="avatar-section">
         <view class="item-label">宝宝头像</view>
-        <view class="avatar-wrapper">
+        <view class="avatar-wrapper" bindtap="onAvatarClick">
           <image class="avatar" src="{{babyInfo.avatarUrl || defaultAvatarUrl}}" mode="aspectFill"></image>
+          <view class="avatar-edit-icon" wx:if="{{isOwner}}">换头像</view>
         </view>
       </view>
       
@@ -169,3 +170,12 @@
     </button>
   </view>
 </view>
+
+<avatar-cropper
+  visible="{{showAvatarCropper}}"
+  imageSrc="{{avatarCropSrc}}"
+  cropSize="{{300}}"
+  uploading="{{uploadingAvatar}}"
+  bind:close="hideAvatarCropper"
+  bind:confirm="onAvatarCropped"
+/>

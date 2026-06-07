@@ -130,7 +130,11 @@ Page({
     const isFromSetup = options.fromSetup === 'true';
     const defaultSettings = NutritionModel.createDefaultSettings();
 
-    this.setData({ isFromSetup });
+    this.setData({
+      isFromSetup,
+      // 支持外部带 view=powders 直达奶粉管理（如喂奶页“去配奶粉”引导入口）。
+      activeView: options.view === 'powders' ? 'powders' : 'mother'
+    });
     this.applySettings(defaultSettings);
 
     try {

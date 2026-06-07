@@ -234,16 +234,17 @@
   border: 2rpx solid #FFB800;
 }
 
-.avatar-upload-icon {
+.avatar-upload-icon,
+.avatar-edit-icon {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(255, 184, 0, 0.8);
+  background-color: rgba(255, 184, 0, 0.85);
   color: #fff;
-  font-size: 24rpx;
+  font-size: 22rpx;
   text-align: center;
-  padding: 4rpx 0;
+  padding: 6rpx 0;
 }
 
 /* 备用头像选择按钮样式 */

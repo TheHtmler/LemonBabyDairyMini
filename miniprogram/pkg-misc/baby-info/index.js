@@ -28,7 +28,11 @@ Page({
     defaultAvatarUrl: '/images/LemonLogo.png', // 默认头像路径
     showInviteCode: false, // 是否显示邀请码信息
     showAvatarCropper: false,
-    avatarCropSrc: ''
+    avatarCropSrc: '',
+    uploadingAvatar: false,
+    // 新用户首次填写、尚未生成 babyUid 时，先把裁剪后的本地头像暂存这里，
+    // 等点「保存」生成 babyUid 后再随表单一起上传落库。
+    pendingAvatarPath: ''
   },
 
   onLoad(options) {
@@ -460,6 +464,23 @@ Page({
       const babyUid = this.data.babyInfo.babyUid || this.generateBabyUid();
       console.log('使用宝宝ID:', babyUid);
 
+      // 头像处理：新用户在 onAvatarCropped 时把本地头像暂存到 pendingAvatarPath，
+      // 此刻才有了 babyUid，随表单一起上传落库；上传失败则回退默认头像，不阻塞保存。
+      let avatarUrl = this.data.babyInfo.avatarUrl || this.data.defaultAvatarUrl;
+      let avatarFileId = this.data.babyInfo.avatarFileId || '';
+      if (this.data.pendingAvatarPath) {
+        try {
+          const uploaded = await this.uploadAvatarFile(this.data.pendingAvatarPath, babyUid);
+          avatarUrl = uploaded.avatarUrl;
+          avatarFileId = uploaded.avatarFileId;
+          this.writeAvatarCache(babyUid, avatarUrl, avatarFileId);
+        } catch (avatarErr) {
+          console.warn('保存时上传头像失败，回退默认头像:', avatarErr);
+          avatarUrl = this.data.defaultAvatarUrl;
+          avatarFileId = '';
+        }
+      }
+
       // 创建默认的配奶设置和药物管理配置
       const nutritionSettings = this.data.babyInfo.nutritionSettings || this.createDefaultNutritionSettings();
       const medicationSettings = this.data.babyInfo.medicationSettings || this.createDefaultMedicationSettings();
@@ -473,8 +494,8 @@ Page({
         condition: this.data.babyInfo.condition,
         notes: this.data.babyInfo.notes,
         updatedAt: db.serverDate(),
-        avatarUrl: this.data.babyInfo.avatarUrl || this.data.defaultAvatarUrl, // 保存头像URL
-        avatarFileId: this.data.babyInfo.avatarFileId || '',
+        avatarUrl: avatarUrl, // 保存头像URL
+        avatarFileId: avatarFileId,
         babyUid: babyUid, // 添加宝宝唯一ID
         nutritionSettings: nutritionSettings, // 添加默认配奶设置
         medicationSettings: medicationSettings, // 添加默认药物管理配置
@@ -545,6 +566,14 @@ Page({
       // 保存全局宝宝信息
       await this.app.cacheBabyInfo(babyInfo);
 
+      // 头像已随保存上传落库：同步到本页数据并清掉待上传标记
+      this.setData({
+        'babyInfo.babyUid': babyUid,
+        'babyInfo.avatarUrl': avatarUrl,
+        'babyInfo.avatarFileId': avatarFileId,
+        pendingAvatarPath: ''
+      });
+
       wx.hideLoading();
       
       // 显示成功提示，然后询问是否前往设置营养参数
@@ -562,14 +591,17 @@ Page({
               cancelText: '稍后设置',
               success: (res) => {
                 if (res.confirm) {
-                  wx.navigateTo({
-                    url: `/pkg-milk/nutrition-profile-settings/index?fromSetup=true`,
-                    success: () => {
-                      console.log('成功跳转到配奶设置页面');
-                    },
+                  // 标记“需要在首页之上打开配奶设置页”，随后切到首页（会关闭宝宝信息页）。
+                  // 由首页 onShow 消费该标记后再 navigateTo 配奶设置页，
+                  // 这样页面栈是 [首页, 配奶设置页]，从配奶设置页点左上角返回会回到首页，
+                  // 而不是已经保存过的宝宝信息填写页。
+                  // （switchTab 后紧跟 navigateTo 在微信里时序不稳定，故改由首页触发跳转。）
+                  this.app.globalData.pendingNutritionSetup = true;
+                  wx.switchTab({
+                    url: '/pages/daily-feeding/index',
                     fail: (err) => {
-                      console.error('跳转到配奶设置页面失败:', err);
-                      // 跳转失败时，直接进入首页
+                      console.error('跳转首页失败:', err);
+                      this.app.globalData.pendingNutritionSetup = false;
                       this.navigateToMainPage();
                     }
                   });
@@ -721,15 +753,48 @@ Page({
     }
   },
 
-  // 处理选择头像
-  onChooseAvatar(e) {
-    const { avatarUrl } = e.detail;
-    
-    // 显示加载中提示
-    wx.showLoading({
-      title: '正在处理...',
+  // 点击头像更换（与「我的」页一致：从相册/相机选图 → 裁剪 → 上传）
+  onAvatarClick() {
+    if (!this.data.isOwner) {
+      wx.showToast({ title: '仅信息所有者可更换头像', icon: 'none' });
+      return;
+    }
+    if (this.data.uploadingAvatar) return;
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const path = (res.tempFilePaths && res.tempFilePaths[0]) || '';
+        if (!path) return;
+        wx.showLoading({ title: '准备图片...' });
+        const ext = (path.split('.').pop() || '').toLowerCase();
+        const needConvert = ['webp', 'heic', 'heif'].includes(ext);
+        const startCropper = (p) => {
+          this.setData({
+            showAvatarCropper: true,
+            avatarCropSrc: p
+          });
+          wx.hideLoading();
+        };
+        if (needConvert) {
+          wx.compressImage({
+            src: path,
+            quality: 80,
+            success: (r) => startCropper(r.tempFilePath || path),
+            fail: () => startCropper(path)
+          });
+        } else {
+          startCropper(path);
+        }
+      }
     });
-    wx.hideLoading();
+  },
+
+  // 兼容旧入口：微信原生 open-type="chooseAvatar" 按钮回调
+  onChooseAvatar(e) {
+    const { avatarUrl } = e.detail || {};
+    if (!avatarUrl) return;
     this.setData({
       showAvatarCropper: true,
       avatarCropSrc: avatarUrl
@@ -745,18 +810,73 @@ Page({
 
   onAvatarCropped(e) {
     const tempFilePath = e.detail.tempFilePath;
-    this.hideAvatarCropper();
-    wx.showLoading({
-      title: '正在处理...'
+    const finish = (path) => {
+      const babyUid =
+        this.data.babyInfo.babyUid ||
+        this.app.globalData.babyUid ||
+        wx.getStorageSync('baby_uid');
+      if (babyUid) {
+        // 已落库的宝宝：即时上传 + 同步（与「我的」页一致）
+        this.setData({ uploadingAvatar: true });
+        wx.showLoading({ title: '正在处理...' });
+        this.uploadAvatarToCloud(path, { closeAfter: true });
+      } else {
+        // 新用户尚未保存（无 babyUid）：先本地预览，待点「保存」生成 babyUid 后再上传落库
+        this.setData({
+          'babyInfo.avatarUrl': path,
+          pendingAvatarPath: path
+        });
+        this.hideAvatarCropper();
+        wx.showToast({ title: '头像已选择，保存后生效', icon: 'none' });
+      }
+    };
+    const ext = (tempFilePath.split('.').pop() || '').toLowerCase();
+    const needConvert = ['heic', 'heif', 'webp'].includes(ext);
+    // 尝试压缩/转码为兼容格式，避免 HEIC/WebP 黑屏
+    wx.compressImage({
+      src: tempFilePath,
+      quality: 80,
+      success: (res) => finish(res.tempFilePath || tempFilePath),
+      fail: () => finish(tempFilePath)
     });
-    this.uploadAvatarToCloud(tempFilePath);
   },
-  
-  // 上传头像到云存储
-  async uploadAvatarToCloud(tempFilePath) {
+
+  // 把本地头像文件上传到云存储并取可访问 URL；不写库、不校验权限，
+  // 供「即时上传」和「保存时随表单上传」两条路径复用。
+  async uploadAvatarFile(localPath, babyUid) {
+    const cloudEnvId = this.app.globalData.cloudEnvId;
+    const extMatch = (localPath || '').match(/\.[a-zA-Z0-9]+$/);
+    const ext = extMatch ? extMatch[0] : '.jpg';
+    const cloudPath = `baby_avatars/${babyUid}_${Date.now()}${ext}`;
+    const result = await wx.cloud.uploadFile({
+      cloudPath,
+      filePath: localPath,
+      config: { env: cloudEnvId }
+    });
+    if (!result.fileID) {
+      throw new Error('上传失败');
+    }
+    const { fileList } = await wx.cloud.getTempFileURL({
+      fileList: [{ fileID: result.fileID, maxAge: 604800 }],
+      config: { env: cloudEnvId }
+    });
+    return { avatarUrl: fileList[0].tempFileURL, avatarFileId: result.fileID };
+  },
+
+  // 写头像缓存键（让首页/我的页能立即拿到新头像）
+  writeAvatarCache(babyUid, avatarUrl, avatarFileId) {
+    const cacheKey = this.getAvatarCacheKey(babyUid);
+    wx.removeStorageSync(cacheKey);
+    wx.setStorageSync(cacheKey, {
+      fileId: avatarFileId,
+      url: avatarUrl,
+      expiresAt: Date.now() + 6 * 24 * 60 * 60 * 1000
+    });
+  },
+
+  // 即时上传头像并落库（仅用于已存在 babyUid 的宝宝）
+  async uploadAvatarToCloud(tempFilePath, options = {}) {
     try {
-      // 获取云环境ID
-      const cloudEnvId = this.app.globalData.cloudEnvId;
       const babyUid =
         this.data.babyInfo.babyUid ||
         this.app.globalData.babyUid ||
@@ -767,76 +887,56 @@ Page({
           title: '未找到宝宝信息，无法上传头像',
           icon: 'none'
         });
+        this.setData({ uploadingAvatar: false });
+        if (options.closeAfter) this.hideAvatarCropper();
         return;
       }
-      
-      // 将临时文件上传到云存储
-      const extMatch = (tempFilePath || '').match(/\.[a-zA-Z0-9]+$/);
-      const ext = extMatch ? extMatch[0] : '.jpg';
-      const cloudPath = `baby_avatars/${babyUid}_${Date.now()}${ext}`;
-      const result = await wx.cloud.uploadFile({
-        cloudPath,
-        filePath: tempFilePath,
-        config: {
-          env: cloudEnvId
+
+      const { avatarUrl, avatarFileId } = await this.uploadAvatarFile(tempFilePath, babyUid);
+      // 更新本地头像
+      this.setData({
+        'babyInfo.avatarUrl': avatarUrl,
+        'babyInfo.avatarFileId': avatarFileId
+      });
+
+      const updateRes = await wx.cloud.callFunction({
+        name: 'updateBabyAvatar',
+        data: {
+          babyUid,
+          avatarUrl,
+          avatarFileId
         }
       });
-      if (result.fileID) {
-        // 获取可访问的URL
-        const fileList = [{ fileID: result.fileID, maxAge: 604800 }];
-        const { fileList: fileUrlList } = await wx.cloud.getTempFileURL({
-          fileList: fileList,
-          config: {
-            env: cloudEnvId
-          }
-        });
-        const avatarUrl = fileUrlList[0].tempFileURL;
-        // 更新本地头像
-        this.setData({
-          'babyInfo.avatarUrl': avatarUrl,
-          'babyInfo.avatarFileId': result.fileID
-        });
-
-        const updateRes = await wx.cloud.callFunction({
-          name: 'updateBabyAvatar',
-          data: {
-            babyUid,
-            avatarUrl,
-            avatarFileId: result.fileID
-          }
-        });
-        if (!updateRes?.result?.ok) {
-          wx.hideLoading();
-          wx.showToast({
-            title: updateRes?.result?.message || '头像同步失败',
-            icon: 'none'
-          });
-          return;
-        }
-
-        const appInstance = getApp();
-        const updatedBabyInfo = {
-          ...(appInstance.globalData.babyInfo || {}),
-          ...this.data.babyInfo,
-          avatarUrl,
-          avatarFileId: result.fileID
-        };
-        appInstance.globalData.babyInfo = updatedBabyInfo;
-        wx.setStorageSync('baby_info', updatedBabyInfo);
-
-        const cacheKey = this.getAvatarCacheKey(babyUid);
-        wx.setStorageSync(cacheKey, {
-          fileId: result.fileID,
-          url: avatarUrl,
-          expiresAt: Date.now() + 6 * 24 * 60 * 60 * 1000
-        });
-        
+      if (!updateRes?.result?.ok) {
         wx.hideLoading();
         wx.showToast({
-          title: '头像已更新',
-          icon: 'success',
+          title: updateRes?.result?.message || '头像同步失败',
+          icon: 'none'
         });
+        this.setData({ uploadingAvatar: false });
+        if (options.closeAfter) this.hideAvatarCropper();
+        return;
       }
+
+      const appInstance = getApp();
+      const updatedBabyInfo = {
+        ...(appInstance.globalData.babyInfo || {}),
+        ...this.data.babyInfo,
+        avatarUrl,
+        avatarFileId
+      };
+      appInstance.globalData.babyInfo = updatedBabyInfo;
+      wx.setStorageSync('baby_info', updatedBabyInfo);
+
+      this.writeAvatarCache(babyUid, avatarUrl, avatarFileId);
+
+      wx.hideLoading();
+      wx.showToast({
+        title: '头像已更新',
+        icon: 'success',
+      });
+      this.setData({ uploadingAvatar: false });
+      if (options.closeAfter) this.hideAvatarCropper();
     } catch (error) {
       console.error('上传头像失败:', error);
       wx.hideLoading();
@@ -844,6 +944,8 @@ Page({
         title: '上传失败，请重试',
         icon: 'none',
       });
+      this.setData({ uploadingAvatar: false });
+      if (options.closeAfter) this.hideAvatarCropper();
     }
   },
 

@@ -670,6 +670,33 @@
   margin-bottom: 12rpx;
 }
 
+.source-popup-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14rpx 20rpx;
+  margin-bottom: 14rpx;
+  border-radius: 16rpx;
+  background: #fff6e0;
+  border: 1rpx dashed rgba(214, 173, 92, 0.6);
+}
+
+.source-popup-tip-text {
+  font-size: 22rpx;
+  color: #8a7240;
+}
+
+.source-popup-tip-link {
+  flex: none;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #8a5a05;
+  background: rgba(255, 213, 102, 0.55);
+  border: 1rpx solid rgba(214, 173, 92, 0.5);
+}
+
 .source-popup-body {
   max-height: 56vh;
 }
