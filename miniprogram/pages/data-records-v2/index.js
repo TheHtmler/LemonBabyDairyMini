@@ -16,7 +16,6 @@ const MedicationRecordModel = require('../../models/medicationRecord');
 const TreatmentRecordModel = require('../../models/treatmentRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
-const InvitationModel = require('../../models/invitation');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
@@ -2513,11 +2512,6 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   onShareAppMessage() {
-    const babyInfo = this.data.babyInfo || wx.getStorageSync('baby_info') || {};
-    const inviteCode = babyInfo.inviteCode;
-    if (inviteCode) {
-      return InvitationModel.getShareInfo(inviteCode, babyInfo.name);
-    }
     return {
       title: '柠檬宝宝喂养记录',
       path: '/pages/role-selection/index',
@@ -5779,6 +5773,12 @@ function createDataRecordsPageConfig(options = {}) {
     return { min: 72, max: 109, label: '默认参考' };
   },
 
+  getCalorieGoalPerKgRangeLines() {
+    return CALORIE_RANGE_BY_AGE.map(item => (
+      `${item.label}：${item.min}~${item.max} kcal/kg/d`
+    ));
+  },
+
   isTodayDate(dateStr = this.data.selectedDate) {
     return !!dateStr && dateStr === this.formatDate(new Date());
   },
@@ -6028,6 +6028,7 @@ function createDataRecordsPageConfig(options = {}) {
         ? overrides.specialProteinCoefficient
         : actualCoefficient(resolvedProteinSummary?.special),
       calorieGoalPerKgRange: overrides.calorieGoalPerKgRange ?? this.data.calorieGoalPerKgRange,
+      calorieGoalPerKgRangeLines: overrides.calorieGoalPerKgRangeLines ?? this.getCalorieGoalPerKgRangeLines(),
       macroRatios: overrides.macroRatios ?? this.data.macroRatios,
       fatRatioPopupLines: overrides.fatRatioPopupLines ?? this.data.fatRatioPopupLines,
       intakeOverview: overrides.intakeOverview ?? this.data.intakeOverview,

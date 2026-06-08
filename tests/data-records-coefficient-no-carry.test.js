@@ -136,3 +136,40 @@ test('summary protein coefficient is computed from actual intake over weight', (
     restore();
   }
 });
+
+test('summary calorie coefficient info keeps all age-range hints', () => {
+  const { pageConfig, restore } = loadDataRecordsPage();
+  try {
+    const page = createPageInstance(pageConfig, {
+      babyInfo: { birthday: '2026-01-01' },
+      selectedDate: '2026-05-01',
+      weight: '5',
+      feedings: []
+    });
+
+    const calorieMetrics = page.computeCalorieMetrics({
+      totalCalories: 480,
+      weight: '5',
+      dateStr: '2026-05-01'
+    });
+    const preview = page.buildSummaryPreviewData({
+      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+      caloriePerKg: calorieMetrics.caloriePerKg,
+      calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+      weight: '5',
+      feedings: []
+    });
+
+    assert.deepEqual(preview.topMetrics[1].infoLines, [
+      '当前：0-6月龄推荐 72~109 kcal/kg/d',
+      '各年龄段参考：',
+      '0-6月龄推荐：72~109 kcal/kg/d',
+      '6-12月龄推荐：65~97 kcal/kg/d',
+      '1-3岁推荐：66~99 kcal/kg/d',
+      '3-7岁推荐：59~88 kcal/kg/d',
+      '7-12岁推荐：43~65 kcal/kg/d'
+    ]);
+  } finally {
+    restore();
+  }
+});

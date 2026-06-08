@@ -9,12 +9,25 @@ const POWDER_STATUSES = {
   ARCHIVED: 'archived'
 };
 
+const DEFAULT_BREAST_MILK_NUTRITION_PER_100ML = {
+  protein: 1.1,
+  calories: 67,
+  fat: 4,
+  carbs: 6.8,
+  fiber: 0
+};
+
 function toNumberOrEmpty(value) {
   if (value === '' || value === undefined || value === null) {
     return '';
   }
   const num = Number(value);
   return Number.isFinite(num) ? num : '';
+}
+
+function toNumberOrDefault(value, fallback) {
+  const normalized = toNumberOrEmpty(value);
+  return normalized === '' ? fallback : normalized;
 }
 
 function hasValue(value) {
@@ -125,11 +138,11 @@ function buildProfileData(babyUid, settings = {}) {
     schemaVersion: 1,
     breastMilk: {
       nutritionPer100ml: {
-        protein: toNumberOrEmpty(settings.natural_milk_protein),
-        calories: toNumberOrEmpty(settings.natural_milk_calories),
-        fat: toNumberOrEmpty(settings.natural_milk_fat),
-        carbs: toNumberOrEmpty(settings.natural_milk_carbs),
-        fiber: toNumberOrEmpty(settings.natural_milk_fiber)
+        protein: toNumberOrDefault(settings.natural_milk_protein, DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.protein),
+        calories: toNumberOrDefault(settings.natural_milk_calories, DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.calories),
+        fat: toNumberOrDefault(settings.natural_milk_fat, DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.fat),
+        carbs: toNumberOrDefault(settings.natural_milk_carbs, DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.carbs),
+        fiber: toNumberOrDefault(settings.natural_milk_fiber, DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.fiber)
       }
     },
     formulaPowders: buildFormulaPowders(settings, timestamp),
@@ -166,12 +179,21 @@ exports.main = async (event = {}) => {
   const dryRun = event.dryRun === true;
   const targetBabyUid = event.babyUid || '';
   const pageSize = Number(event.pageSize) > 0 ? Number(event.pageSize) : 50;
-  let offset = 0;
+  const offsetStart = Number(event.offset) >= 0 ? Number(event.offset) : 0;
+  const maxBatches = Number(event.maxBatches) > 0 ? Number(event.maxBatches) : 0;
+  let offset = offsetStart;
+  let processedBatches = 0;
+  let hasMore = false;
   let migrated = 0;
   let skipped = 0;
   const logs = [];
 
   while (true) {
+    if (maxBatches > 0 && processedBatches >= maxBatches) {
+      hasMore = true;
+      break;
+    }
+
     const res = await getBabyInfoBatch({
       babyUid: targetBabyUid,
       pageSize,
@@ -179,6 +201,7 @@ exports.main = async (event = {}) => {
     });
     const batch = res.data || [];
     if (batch.length === 0) break;
+    processedBatches++;
 
     for (const babyDoc of batch) {
       const babyUid = babyDoc.babyUid;
@@ -222,5 +245,17 @@ exports.main = async (event = {}) => {
     offset += pageSize;
   }
 
-  return { migrated, skipped, dryRun, babyUid: targetBabyUid, logs };
+  return {
+    migrated,
+    skipped,
+    dryRun,
+    babyUid: targetBabyUid,
+    offset: offsetStart,
+    nextOffset: offset,
+    pageSize,
+    maxBatches,
+    processedBatches,
+    hasMore,
+    logs
+  };
 };

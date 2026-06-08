@@ -1,7 +1,8 @@
 {
   "scripts": {
     "migrate:milk-v2": "node scripts/run-milk-v2-migration.js",
-    "migrate:milk-v2:execute": "node scripts/run-milk-v2-migration.js --execute"
+    "migrate:milk-v2:execute": "node scripts/run-milk-v2-migration.js --execute",
+    "check:caregiver-roles": "node scripts/check-caregiver-roles.js"
   },
   "dependencies": {
     "wx-server-sdk": "^3.0.1"

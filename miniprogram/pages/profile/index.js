@@ -19,6 +19,13 @@ Page({
         path: '/pkg-misc/baby-info/index?from=profile'
       },
       {
+        id: 15,
+        name: '个人信息',
+        icon: 'info',
+        path: '/pkg-misc/personal-info/index',
+        description: '查看身份、展示名称与账号状态'
+      },
+      {
         id: 2,
         name: '配奶管理',
         icon: 'setting',
@@ -643,59 +650,9 @@ Page({
   // 清除数据库中的用户数据
   async clearDatabaseData(openid, babyUid) {
     if (!openid) return;
-    
-    try {
-      const db = wx.cloud.database();
-      const _ = db.command;
-      const app = getApp();
-      
-      // 获取用户角色
-      const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
-      
-      if (userRole === 'creator' && babyUid) {
-        // 如果是创建者，删除相关记录
-        
-        // 1. 删除宝宝信息
-        const babyInfoRes = await db.collection('baby_info').where({
-          babyUid: babyUid
-        }).get();
-        
-        if (babyInfoRes.data && babyInfoRes.data.length > 0) {
-          await db.collection('baby_info').doc(babyInfoRes.data[0]._id).remove();
-        }
-        
-        // 2. 删除创建者信息
-        const creatorRes = await db.collection('baby_creators').where({
-          _openid: openid
-        }).get();
-        
-        if (creatorRes.data && creatorRes.data.length > 0) {
-          await db.collection('baby_creators').doc(creatorRes.data[0]._id).remove();
-        }
-        
-        // 3. 删除所有相关的喂养记录
-        await db.collection('feeding_records').where({
-          babyUid: babyUid
-        }).remove();
-        
-        // 4. 删除所有相关的药物记录
-        await db.collection('medication_records').where({
-          babyUid: babyUid
-        }).remove();
-      } else if (userRole === 'participant' && babyUid) {
-        // 如果是参与者，仅删除参与者信息
-        const participantRes = await db.collection('baby_participants').where({
-          _openid: openid
-        }).get();
-        
-        if (participantRes.data && participantRes.data.length > 0) {
-          await db.collection('baby_participants').doc(participantRes.data[0]._id).remove();
-        }
-      }
-    } catch (error) {
-      console.error('清除数据库数据失败:', error);
-      // 即使数据库清除失败，我们也继续注销过程
-    }
+    // 注销只清除本机登录/绑定状态，不删除云端宝宝资料、参与关系或历史记录。
+    // 如需退出某个宝宝共享，应提供独立的“退出共享”动作。
+    console.log('注销仅清本地状态，保留云端数据:', { hasBabyUid: !!babyUid });
   },
 
   // 清除本地存储
@@ -837,12 +794,6 @@ Page({
   },
 
   onShareAppMessage() {
-    const InvitationModel = require('../../models/invitation');
-    const babyInfo = this.data.babyInfo || {};
-    const inviteCode = this.data.inviteCode || babyInfo.inviteCode;
-    if (inviteCode) {
-      return InvitationModel.getShareInfo(inviteCode, babyInfo.name);
-    }
     return {
       title: '柠檬宝宝喂养记录',
       path: '/pages/role-selection/index',
