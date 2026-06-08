@@ -69,7 +69,11 @@ Page({
     try {
       this.setData({ loading: true });
 
-      const reportData = await ReportRepository.getReportById(this.data.reportId);
+      const app = getApp();
+      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid') || '';
+      const reportData = await ReportRepository.getReportById(this.data.reportId, {
+        expectedBabyUid: babyUid
+      });
       if (!reportData) {
         throw new Error('report_not_found');
       }

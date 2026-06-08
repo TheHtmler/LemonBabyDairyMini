@@ -122,6 +122,42 @@ test('buildMigratedFeedingRecord normalizes legacy Date values into YYYY-MM-DD d
   assert.equal(migrated.startDateTime.getMinutes(), 10);
 });
 
+test('buildMigratedFeedingRecord falls back to default breast milk nutrition when profile is empty', () => {
+  const fn = loadFunctionWithMockCloud();
+  const migrated = fn._internal.buildMigratedFeedingRecord({
+    legacyRecord: {
+      _id: 'legacy-empty-breast-profile',
+      babyUid: 'baby-1',
+      date: '2026-06-07'
+    },
+    feeding: {
+      startTime: '09:00',
+      naturalMilkType: 'breast',
+      naturalMilkVolume: 100
+    },
+    feedingIndex: 0,
+    profile: {
+      breastMilk: {
+        nutritionPer100ml: {
+          protein: '',
+          calories: '',
+          fat: '',
+          carbs: '',
+          fiber: ''
+        }
+      },
+      formulaPowders: []
+    },
+    migrationVersion: 'milk-v2-test',
+    migratedAt: '__server_date__'
+  });
+
+  assert.equal(migrated.formulaComponents[0].nutritionSnapshot.protein, 1.1);
+  assert.equal(migrated.formulaComponents[0].nutritionSnapshot.calories, 67);
+  assert.equal(migrated.nutritionSummary.naturalProtein, 1.1);
+  assert.equal(migrated.nutritionSummary.calories, 67);
+});
+
 test('buildMigratedFeedingRecord preserves explicit powder weights and uses default milk profiles', () => {
   const fn = loadFunctionWithMockCloud();
   const migrated = fn._internal.buildMigratedFeedingRecord({

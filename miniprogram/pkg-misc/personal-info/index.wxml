@@ -1,0 +1,88 @@
+<view class="personal-page">
+  <view class="hero-card">
+    <view class="hero-copy">
+      <text class="hero-title">个人信息</text>
+      <text class="hero-subtitle">查看当前身份，遇到共享异常时可复制账号状态给开发者定位。</text>
+    </view>
+  </view>
+
+  <view class="info-card">
+    <view class="section-title">当前身份</view>
+    <view class="role-row">
+      <view class="role-badge {{userRole === 'creator' ? 'creator' : (userRole === 'participant' ? 'participant' : 'empty')}}">
+        {{roleLabel}}
+      </view>
+      <view class="role-copy">
+        <text class="role-desc">{{roleDescription}}</text>
+        <text class="role-meta">当前记录：{{babyName}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="info-card">
+    <view class="section-title">展示名称</view>
+    <view class="input-shell">
+      <input
+        class="name-input"
+        value="{{displayNameInput}}"
+        maxlength="12"
+        placeholder="请输入展示名称"
+        bindinput="onDisplayNameInput"
+      />
+      <button class="save-btn" loading="{{saving}}" bindtap="saveDisplayName">保存</button>
+    </view>
+    <text class="field-tip">展示名称用于区分家庭成员，例如妈妈、爸爸、外婆。</text>
+  </view>
+
+  <view class="info-card">
+    <view class="section-title">账号状态</view>
+    <view class="detail-block">
+      <view class="detail-row">
+        <text class="detail-label">展示名称</text>
+        <text class="detail-value">{{displayName || displayNameInput}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">角色</text>
+        <text class="detail-value">{{roleLabel}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">宝宝名称</text>
+        <text class="detail-value">{{babyName}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">创建者</text>
+        <text class="detail-value">{{creatorInfoText}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">参与者</text>
+        <text class="detail-value">{{participantsInfoText}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">绑定状态</text>
+        <text class="detail-value">{{bindingStatus}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">排查标识</text>
+        <text class="detail-value break-all">{{babyUid || '未绑定'}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">当前页面</text>
+        <text class="detail-value break-all">{{currentRouteText}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">设备信息</text>
+        <text class="detail-value break-all">{{systemInfoText}}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">小程序版本</text>
+        <text class="detail-value">{{appVersion}}</text>
+      </view>
+    </view>
+    <view class="action-row">
+      <view class="action-pill primary-btn" bindtap="copyAccountStatus">
+        <text>复制账号状态</text>
+      </view>
+    </view>
+    <text class="field-tip">复制内容不包含手机号或 openid，可直接发送给开发者协助定位问题。</text>
+  </view>
+</view>

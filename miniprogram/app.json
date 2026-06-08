@@ -7,7 +7,8 @@
     "pages/analysis-report/index",
     "pages/profile/index",
     "pages/meal-editor-v2/index",
-    "pages/onboarding/index"
+    "pages/onboarding/index",
+    "pages/milk-migration-tool/index"
   ],
   "subPackages": [
     {
@@ -44,6 +45,7 @@
         "feedback/index",
         "feedback-list/index",
         "share-data/index",
+        "personal-info/index",
         "emergency-support/index",
         "emergency-card/index",
         "about/index"

@@ -18,6 +18,14 @@ const PROTEIN_ROLES = {
   NONE: 'none'
 };
 
+const DEFAULT_BREAST_MILK_NUTRITION_PER_100ML = {
+  protein: 1.1,
+  calories: 67,
+  fat: 4,
+  carbs: 6.8,
+  fiber: 0
+};
+
 function toNumber(value, fallback = 0) {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
@@ -58,6 +66,20 @@ function normalizeNutrition(nutrition = {}) {
     carbs: toNumber(nutrition.carbs),
     fiber: toNumber(nutrition.fiber)
   };
+}
+
+function isEmptyNutritionValue(value) {
+  return value === '' || value === undefined || value === null;
+}
+
+function normalizeBreastMilkNutrition(nutrition = {}) {
+  return normalizeNutrition({
+    protein: isEmptyNutritionValue(nutrition.protein) ? DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.protein : nutrition.protein,
+    calories: isEmptyNutritionValue(nutrition.calories) ? DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.calories : nutrition.calories,
+    fat: isEmptyNutritionValue(nutrition.fat) ? DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.fat : nutrition.fat,
+    carbs: isEmptyNutritionValue(nutrition.carbs) ? DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.carbs : nutrition.carbs,
+    fiber: isEmptyNutritionValue(nutrition.fiber) ? DEFAULT_BREAST_MILK_NUTRITION_PER_100ML.fiber : nutrition.fiber
+  });
 }
 
 function normalizePowder(powder = {}) {
@@ -189,7 +211,7 @@ function buildBreastMilkComponent(profile = {}, volume) {
   return {
     kind: 'breast_milk',
     volume: roundValue(volume),
-    nutritionSnapshot: normalizeNutrition(nutrition)
+    nutritionSnapshot: normalizeBreastMilkNutrition(nutrition)
   };
 }
 

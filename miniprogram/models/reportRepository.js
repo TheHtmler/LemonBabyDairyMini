@@ -225,14 +225,23 @@ async function listReportsByBaby(babyUid, { limit = 100 } = {}) {
   return dedupeReports([...primaryReports, ...legacyReports]);
 }
 
-async function getReportById(reportId) {
+function normalizeReportForExpectedBaby(record, collectionName, expectedBabyUid = '') {
+  const normalized = normalizeReportRecord(record, collectionName);
+  if (expectedBabyUid && normalized.babyUid !== expectedBabyUid) {
+    return null;
+  }
+  return normalized;
+}
+
+async function getReportById(reportId, options = {}) {
   if (!reportId) return null;
   const db = getDb();
+  const expectedBabyUid = options.expectedBabyUid || '';
 
   try {
     const primary = await db.collection(COLLECTIONS.PRIMARY).doc(reportId).get();
     if (primary?.data) {
-      return normalizeReportRecord(primary.data, COLLECTIONS.PRIMARY);
+      return normalizeReportForExpectedBaby(primary.data, COLLECTIONS.PRIMARY, expectedBabyUid);
     }
   } catch (error) {
     // ignore and fallback to legacy
@@ -241,7 +250,7 @@ async function getReportById(reportId) {
   try {
     const legacy = await db.collection(COLLECTIONS.LEGACY).doc(reportId).get();
     if (legacy?.data) {
-      return normalizeReportRecord(legacy.data, COLLECTIONS.LEGACY);
+      return normalizeReportForExpectedBaby(legacy.data, COLLECTIONS.LEGACY, expectedBabyUid);
     }
   } catch (error) {
     return null;

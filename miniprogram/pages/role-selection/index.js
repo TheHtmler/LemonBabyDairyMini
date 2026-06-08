@@ -278,6 +278,31 @@ Page({
         throw new Error(result.message);
       }
 
+      wx.hideLoading();
+      const babyInfo = result.babyInfo;
+      const confirmed = await new Promise((resolve) => {
+        wx.showModal({
+          title: '确认加入记录',
+          content: `你将以参与者身份加入「${babyInfo.name || '宝宝'}」的喂养记录，加入后可查看和记录相关数据。`,
+          cancelText: '取消',
+          confirmText: '加入',
+          success: (res) => resolve(!!res.confirm),
+          fail: () => resolve(false)
+        });
+      });
+      if (!confirmed) {
+        this.app.globalData.userRole = '';
+        wx.removeStorageSync('user_role');
+        wx.removeStorageSync('has_selected_role');
+        this.setData({ selectedRole: '' });
+        return;
+      }
+
+      wx.showLoading({
+        title: '加入中...',
+        mask: true
+      });
+
       // 获取当前用户openid
       const openid = this.app.globalData.openid || wx.getStorageSync('openid');
       if (!openid) {
@@ -292,7 +317,6 @@ Page({
       }
 
       // 保存宝宝信息到本地和全局
-      const babyInfo = result.babyInfo;
       wx.setStorageSync('baby_uid', babyInfo.babyUid);
       wx.setStorageSync('baby_info_completed', true);
       this.app.globalData.babyUid = babyInfo.babyUid;

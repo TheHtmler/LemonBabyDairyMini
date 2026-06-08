@@ -1,0 +1,200 @@
+.personal-page {
+  min-height: 100vh;
+  background: #FFF5D6;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.hero-card,
+.info-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 184, 0, 0.12);
+}
+
+.hero-card {
+  padding: 34rpx 30rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(135deg, #FFF4BF, #FFFFFF);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.hero-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #3B3320;
+}
+
+.hero-subtitle {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #8A6A20;
+}
+
+.info-card {
+  padding: 28rpx;
+  margin-bottom: 22rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 22rpx;
+}
+
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.role-badge {
+  flex: 0 0 auto;
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.role-badge.creator {
+  background: #FFF1B8;
+  color: #A86D00;
+}
+
+.role-badge.participant {
+  background: #EAF8FF;
+  color: #2380A8;
+}
+
+.role-badge.empty {
+  background: #F1F1F1;
+  color: #888888;
+}
+
+.role-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.role-desc {
+  font-size: 26rpx;
+  color: #333333;
+  line-height: 1.4;
+}
+
+.role-meta,
+.field-tip {
+  font-size: 22rpx;
+  color: #999999;
+  line-height: 1.5;
+}
+
+.input-shell {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 14rpx;
+}
+
+.name-input {
+  flex: 1;
+  height: 82rpx;
+  border-radius: 18rpx;
+  background: #FFF9E6;
+  border: 2rpx solid rgba(255, 184, 0, 0.28);
+  padding: 0 22rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.save-btn {
+  margin: 0;
+  border-radius: 18rpx;
+  background: #FFB800;
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+.save-btn {
+  width: 150rpx;
+  height: 82rpx;
+  line-height: 82rpx;
+  padding: 0;
+}
+
+.save-btn::after {
+  border: none;
+}
+
+.detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: #FFF7E3;
+  margin-bottom: 22rpx;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+}
+
+.detail-label {
+  flex-shrink: 0;
+  min-width: 132rpx;
+  font-size: 24rpx;
+  color: #8A7C60;
+}
+
+.detail-value {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #333333;
+  word-break: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+.action-row {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin: 14rpx 0;
+}
+
+.action-pill {
+  min-width: 0;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary-btn {
+  color: #ffffff;
+  background: #FFB800;
+  box-shadow: 0 6rpx 14rpx rgba(255, 184, 0, 0.2);
+  font-size: 22rpx;
+  line-height: 1;
+  font-weight: 600;
+  white-space: nowrap;
+}

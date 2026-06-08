@@ -1,6 +1,5 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
-const InvitationModel = require('../../models/invitation');
 const NutritionModel = require('../../models/nutrition');
 const {
   buildReportArchivePreview,
@@ -90,12 +89,6 @@ Page({
   },
 
   onShareAppMessage() {
-    const app = getApp();
-    const babyInfo = app.globalData.babyInfo || wx.getStorageSync('baby_info') || {};
-    const inviteCode = babyInfo.inviteCode;
-    if (inviteCode) {
-      return InvitationModel.getShareInfo(inviteCode, babyInfo.name);
-    }
     return {
       title: '柠檬宝宝喂养记录',
       path: '/pages/role-selection/index',

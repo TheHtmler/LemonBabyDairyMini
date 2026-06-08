@@ -109,3 +109,40 @@ test('saveReport falls back to legacy collection when primary collection is unav
 
   global.wx = previousWx;
 });
+
+test('getReportById can reject reports outside the expected baby', async () => {
+  const previousWx = global.wx;
+
+  global.wx = {
+    cloud: {
+      database() {
+        return {
+          collection(name) {
+            return {
+              doc(id) {
+                return {
+                  get: async () => ({
+                    data: {
+                      _id: id,
+                      babyUid: name === ReportRepository.COLLECTIONS.PRIMARY ? 'baby-other' : 'baby-legacy',
+                      reportType: 'blood_ms',
+                      reportDate: new Date('2026-12-20T00:00:00+08:00'),
+                      indicators: {}
+                    }
+                  })
+                };
+              }
+            };
+          }
+        };
+      }
+    }
+  };
+
+  try {
+    const report = await ReportRepository.getReportById('report-1', { expectedBabyUid: 'baby-1' });
+    assert.equal(report, null);
+  } finally {
+    global.wx = previousWx;
+  }
+});

@@ -395,13 +395,53 @@ App({
     return babyInfo?.avatarUrl || this.getDefaultBabyAvatarUrl();
   },
 
+  async resolveBabyCaregiverInfo(babyUid) {
+    if (!babyUid) {
+      return {
+        creatorInfo: null,
+        participantsInfo: { count: 0, displayNames: [] }
+      };
+    }
+
+    try {
+      const db = wx.cloud.database();
+      const [creatorRes, participantRes] = await Promise.all([
+        db.collection('baby_creators').where({ babyUid }).limit(1).get(),
+        db.collection('baby_participants').where({ babyUid }).get()
+      ]);
+      const creator = creatorRes.data && creatorRes.data[0];
+      const participants = participantRes.data || [];
+
+      return {
+        creatorInfo: creator ? {
+          role: 'creator',
+          displayName: creator.displayName || '创建者'
+        } : null,
+        participantsInfo: {
+          count: participants.length,
+          displayNames: participants.map((item, index) => (
+            item.displayName || `参与者${index + 1}`
+          ))
+        }
+      };
+    } catch (error) {
+      console.error('读取宝宝协作信息失败:', error);
+      return {
+        creatorInfo: null,
+        participantsInfo: { count: 0, displayNames: [] }
+      };
+    }
+  },
+
   async cacheBabyInfo(babyInfo, options = {}) {
     if (!babyInfo) return null;
 
     const avatarUrl = await this.resolveBabyAvatarUrl(babyInfo, options);
+    const caregiverInfo = await this.resolveBabyCaregiverInfo(babyInfo.babyUid);
     const normalizedBabyInfo = {
       ...babyInfo,
-      avatarUrl: avatarUrl || this.getDefaultBabyAvatarUrl()
+      avatarUrl: avatarUrl || this.getDefaultBabyAvatarUrl(),
+      ...caregiverInfo
     };
 
     if (normalizedBabyInfo.babyUid) {

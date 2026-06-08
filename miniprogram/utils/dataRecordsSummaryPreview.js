@@ -27,6 +27,19 @@ return '--';
 }
 return `${range.min}~${range.max} kcal/kg/d`;
 }
+function buildCalorieGoalInfoLines(range, ageRangeLines = []) {
+if (!Array.isArray(ageRangeLines) || ageRangeLines.length === 0) {
+return range?.label ? [buildRangeValue(range), range.label] : [buildRangeValue(range)];
+}
+const currentLine = range?.label
+? `当前：${range.label} ${buildDailyRangeValue(range)}`
+: `当前：${buildDailyRangeValue(range)}`;
+return [
+currentLine,
+'各年龄段参考：',
+...ageRangeLines
+];
+}
 function getFoodProtein(overview = {}) {
 if (overview.protein !== undefined && overview.protein !== null) {
 return overview.protein;
@@ -294,7 +307,7 @@ detail: buildSourceBreakdownLine([
 ...createMetric('热卡系数', input.caloriePerKg === '' ? '--' : normalizeValue(input.caloriePerKg, '--'), 'kcal/kg/d'),
 detail: `推荐：${goalRangeDailyValue}`,
 infoTitle: '目标热卡系数',
-infoLines: input.calorieGoalPerKgRange?.label ? [goalRangeValue, input.calorieGoalPerKgRange.label] : [goalRangeValue]
+infoLines: buildCalorieGoalInfoLines(input.calorieGoalPerKgRange, input.calorieGoalPerKgRangeLines)
 },
 {
 ...createMetric('总蛋白', input.proteinSummaryDisplay?.total || 0, 'g'),
