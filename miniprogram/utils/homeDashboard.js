@@ -254,6 +254,118 @@ function buildNutritionGoals({ macroSummary = {}, weight = 0, coefficients = {} 
   };
 }
 
+function normalizeTargetMode(mode) {
+  return mode === 'calorie' ? 'calorie' : 'protein';
+}
+
+function isProteinTargetConfigured(targetPreferences = {}) {
+  return toNumber(targetPreferences.naturalProteinCoefficient, 0) > 0
+    && toNumber(targetPreferences.specialProteinCoefficient, 0) > 0;
+}
+
+function isCalorieTargetConfigured(targetPreferences = {}) {
+  return toNumber(targetPreferences.calorieCoefficient, 0) > 0;
+}
+
+function resolveActiveTargetMode(targetPreferences = {}, configuredModes = {}) {
+  const preferred = normalizeTargetMode(targetPreferences.preferredTargetMode);
+  if (configuredModes[preferred]) {
+    return preferred;
+  }
+  if (configuredModes.calorie && !configuredModes.protein) {
+    return 'calorie';
+  }
+  if (configuredModes.protein) {
+    return 'protein';
+  }
+  return 'actual';
+}
+
+function buildTargetRow(key, label, goal, unit, tone = '') {
+  const remaining = Math.max(0, round(goal.target - goal.actual, unit === 'kcal' ? 0 : 1));
+  return {
+    key,
+    label,
+    tone,
+    valueText: `${goal.actual}${unit}`,
+    targetText: goal.hasTarget ? `${goal.target}${unit}` : '',
+    remainingText: goal.hasTarget ? `${remaining}${unit}` : '',
+    pctText: goal.hasTarget ? `${goal.pct}%` : '',
+    subText: goal.hasTarget ? `${goal.actual}/${goal.target}${unit}` : `${goal.actual}${unit}`,
+    pct: goal.pct,
+    barPct: goal.barPct,
+    hasTarget: goal.hasTarget,
+    reached: goal.reached,
+    over: goal.over
+  };
+}
+
+/**
+ * 首页今日目标状态。
+ * 未设置目标时返回 actual 模式，保证线上老用户仍只看到实际摄入。
+ */
+function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPreferences = {} } = {}) {
+  const actual = buildNutritionSummary({ macroSummary, weight });
+  const w = toNumber(weight, 0);
+  const naturalCoef = toNumber(targetPreferences.naturalProteinCoefficient, 0);
+  const specialCoef = toNumber(targetPreferences.specialProteinCoefficient, 0);
+  const calorieCoef = toNumber(targetPreferences.calorieCoefficient, 0);
+  const configuredModes = {
+    protein: isProteinTargetConfigured(targetPreferences),
+    calorie: isCalorieTargetConfigured(targetPreferences)
+  };
+  const hasAnyTarget = configuredModes.protein || configuredModes.calorie;
+  const mode = resolveActiveTargetMode(targetPreferences, configuredModes);
+
+  const naturalTarget = configuredModes.protein && w > 0 ? naturalCoef * w : 0;
+  const specialTarget = configuredModes.protein && w > 0 ? specialCoef * w : 0;
+  const calorieTarget = configuredModes.calorie && w > 0 ? calorieCoef * w : 0;
+  const proteinActual = toNumber(macroSummary.naturalProtein, 0) + toNumber(macroSummary.specialProtein, 0);
+
+  const protein = {
+    total: buildGoal(proteinActual, naturalTarget + specialTarget, 1),
+    natural: buildGoal(toNumber(macroSummary.naturalProtein, 0), naturalTarget, 1),
+    special: buildGoal(toNumber(macroSummary.specialProtein, 0), specialTarget, 1),
+    hasTarget: configuredModes.protein
+  };
+  const calorie = {
+    ...buildGoal(toNumber(macroSummary.calories, 0), calorieTarget, 0),
+    perKg: actual.caloriesPerKg,
+    hasTarget: configuredModes.calorie
+  };
+  const activeGoal = mode === 'protein' ? protein.total : (mode === 'calorie' ? calorie : null);
+  const rows = mode === 'protein'
+    ? [
+      buildTargetRow('naturalProtein', '天然蛋白', protein.natural, 'g', 'nat'),
+      buildTargetRow('specialProtein', '特殊蛋白', protein.special, 'g', 'spe')
+    ]
+    : (mode === 'calorie'
+      ? [
+        buildTargetRow('calorie', '热量', calorie, 'kcal', 'cal')
+      ]
+      : []);
+
+  return {
+    mode,
+    hasAnyTarget,
+    configuredModes,
+    actual,
+    activeGoal: activeGoal ? {
+      ...activeGoal,
+      label: mode === 'protein' ? '总蛋白' : '热量',
+      unit: mode === 'protein' ? 'g' : 'kcal',
+      valueText: `${activeGoal.actual}${mode === 'protein' ? 'g' : 'kcal'}`,
+      targetText: `${activeGoal.target}${mode === 'protein' ? 'g' : 'kcal'}`,
+      actualText: `已摄入 ${activeGoal.actual}${mode === 'protein' ? 'g' : 'kcal'}`,
+      goalText: `目标 ${activeGoal.target}${mode === 'protein' ? 'g' : 'kcal'}`
+    } : null,
+    protein,
+    calorie,
+    rows,
+    setupCtaText: hasAnyTarget ? '设置目标' : '设置目标'
+  };
+}
+
 /**
  * 构建今日营养「实际摄入」概览（暂不做目标/达成率，仅展示实际值）
  * 热量取整；蛋白保留 1 位小数；各系数 = 对应摄入量 / 体重（无体重则为 0）。
@@ -683,6 +795,7 @@ module.exports = {
   isScheduledToday,
   buildMedicationChecklist,
   buildNutritionGoals,
+  buildNutritionTargetState,
   buildNutritionSummary,
   buildFeedingProgress,
   buildNextMealReference,

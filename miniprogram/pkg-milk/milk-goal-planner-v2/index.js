@@ -6,6 +6,12 @@ const dailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { mergeFoodNutrition, mergeTreatmentNutrition } = require('../../utils/dailySummaryV2Utils');
 const { getBabyUid } = require('../../utils/index');
 const {
+  normalizeTargetMode,
+  pickCoefficient,
+  readNutritionTargetPreferences,
+  writeNutritionTargetPreferences
+} = require('../../utils/nutritionTargetPreferences');
+const {
   BREAST_MILK_TAG_META,
   POWDER_CATEGORY_META,
   POWDER_STATUSES,
@@ -31,39 +37,6 @@ const getAppApi = typeof getApp === 'function' ? getApp : () => ({ globalData: {
 
 // 目标系数（天然/特殊蛋白、热量）属于“计算用的设定”，与真实喂养记录解耦：
 // 只本地按宝宝记住上次填的值，绝不写入 growth_records_v2，避免污染记录页的实时汇总。
-const TARGET_COEF_STORAGE_PREFIX = 'milk_goal_target_coef_';
-
-function targetCoefStorageKey(babyUid) {
-  return `${TARGET_COEF_STORAGE_PREFIX}${babyUid || 'default'}`;
-}
-
-function readLocalTargetCoefficients(babyUid) {
-  if (!wxApi || typeof wxApi.getStorageSync !== 'function') return {};
-  try {
-    const stored = wxApi.getStorageSync(targetCoefStorageKey(babyUid));
-    return stored && typeof stored === 'object' ? stored : {};
-  } catch (error) {
-    return {};
-  }
-}
-
-function writeLocalTargetCoefficients(babyUid, coefficients = {}) {
-  if (!wxApi || typeof wxApi.setStorageSync !== 'function') return false;
-  try {
-    wxApi.setStorageSync(targetCoefStorageKey(babyUid), coefficients);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-function pickCoefficient(localValue, snapshotValue) {
-  if (localValue !== undefined && localValue !== null && localValue !== '') {
-    return localValue;
-  }
-  return snapshotValue;
-}
-
 const DEFAULT_PLANNED_MEALS = 8;
 const MIN_PLANNED_MEALS = 1;
 const MAX_PLANNED_MEALS = 14;
@@ -77,14 +50,12 @@ const ROLE_LABELS = {
 // 奶粉来源分组：统一按 天然蛋白来源 → 特殊蛋白来源 → 能量补充来源 排列。
 // roles 决定该组可选哪些来源，checkRole 决定来源是否能贡献（蛋白或热量）。
 // optional=true 的分组（能量补充）默认不选，用户可手动添加。
-// 热量维度再细分“天然优先 / 特殊优先”：优先项的蛋白先定其奶量，剩余热量由另一侧补；
-// 非优先侧此时作为“热量补充”，故其 checkRole 用 energy。
-function getGroupRoleConfig(mode, caloriePriority = 'natural') {
+// 热量维度只看热量贡献，蛋白系数作为结果反推展示，不作为输入门槛。
+function getGroupRoleConfig(mode) {
   if (mode === 'calorie') {
-    const baseRole = caloriePriority === 'special' ? 'special' : 'natural';
     return [
-      { key: 'natural', label: '天然蛋白来源', hint: '母乳 / 普通配方粉', roles: ['natural'], checkRole: baseRole === 'natural' ? 'natural' : 'energy' },
-      { key: 'special', label: '特殊蛋白来源', hint: '特殊配方粉', roles: ['special'], checkRole: baseRole === 'special' ? 'special' : 'energy' },
+      { key: 'natural', label: '天然蛋白来源', hint: '母乳 / 普通配方粉', roles: ['natural'], checkRole: 'energy' },
+      { key: 'special', label: '特殊蛋白来源', hint: '特殊配方粉', roles: ['special'], checkRole: 'energy' },
       { key: 'energy', label: '能量补充来源', hint: '能量粉', roles: ['energy'], checkRole: 'energy', optional: true }
     ];
   }
@@ -280,6 +251,11 @@ Page({
     naturalProteinCoefficientInput: '',
     specialProteinCoefficientInput: '',
     calorieCoefficientInput: '',
+    coefficientTargetHints: {
+      naturalProtein: '--',
+      specialProtein: '--',
+      calorie: '--'
+    },
 
     selectedKeys: [],
     selectedSourcesText: '',
@@ -298,6 +274,10 @@ Page({
   async onLoad(options = {}) {
     const selectedDate = options.date || formatDateKey();
     const babyUid = getBabyUid() || (getAppApi().globalData && getAppApi().globalData.babyUid) || '';
+    const requestedMode = options.mode === 'calorie' || options.mode === 'protein'
+      ? normalizeTargetMode(options.mode)
+      : '';
+    this._requestedModeFromUrl = requestedMode;
     if (wxApi.setNavigationBarTitle) {
       wxApi.setNavigationBarTitle({ title: '剩余奶量推荐' });
     }
@@ -305,7 +285,8 @@ Page({
     this.setData({
       babyUid,
       selectedDate,
-      editingRecordId: options.recordId || options.id || ''
+      editingRecordId: options.recordId || options.id || '',
+      ...(requestedMode ? { calculationMode: requestedMode } : {})
     });
 
     await this.loadPageData();
@@ -381,7 +362,9 @@ Page({
       // 食物 + 治疗也是真实摄入，必须计入“已摄入”，否则剩余奶量会被高估。
       const otherIntake = computeOtherIntake(foodIntakes, (treatmentResult && treatmentResult.data) || []);
       // 系数优先用本地记住的目标值，没有再回退到档案/历史的快照值。
-      const localTarget = readLocalTargetCoefficients(this.data.babyUid);
+      const localTarget = readNutritionTargetPreferences(this.data.babyUid, wxApi);
+      const preferredMode = this._requestedModeFromUrl
+        || (localTarget.preferredTargetMode ? normalizeTargetMode(localTarget.preferredTargetMode) : this.data.calculationMode);
       // 默认计划顿数取“最近一天的喂奶顿数”；没有历史时回退到默认值。
       const plannedMeals = recentDayMealCount > 0
         ? Math.max(MIN_PLANNED_MEALS, Math.min(MAX_PLANNED_MEALS, recentDayMealCount))
@@ -395,6 +378,7 @@ Page({
         recentSourceKeys,
         plannedMeals,
         fedMeals: activeRecords.length,
+        calculationMode: preferredMode,
         weight: formatInputValue(basicInfoForPlanner.weight),
         naturalProteinCoefficientInput: formatInputValue(pickCoefficient(localTarget.naturalProteinCoefficient, basicInfoForPlanner.naturalProteinCoefficient)),
         specialProteinCoefficientInput: formatInputValue(pickCoefficient(localTarget.specialProteinCoefficient, basicInfoForPlanner.specialProteinCoefficient)),
@@ -611,24 +595,9 @@ Page({
     return usable.map((source) => this.rowFromCalorie(source, share));
   },
 
-  // 热量维度：优先项的蛋白系数先决定其奶量，剩余热量再由另一侧奶/能量粉补足。
-  // 天然优先：母乳量由天然蛋白系数定，剩余热量用特奶/能量粉补；
-  // 特殊优先：特奶量由特殊蛋白系数定，剩余热量用母乳/能量粉补。
+  // 热量维度只按热量缺口计算；蛋白系数作为结果反推展示，不参与热量优先的输入门槛。
   buildCalorieRows(selectedSources = [], goalState = this.computeGoalState()) {
-    const baseRole = this.data.caloriePriority === 'special' ? 'special' : 'natural';
-    const baseGap = baseRole === 'special'
-      ? goalState.remaining.specialProtein
-      : goalState.remaining.naturalProtein;
-
-    const baseSources = selectedSources.filter((source) => source.role === baseRole);
-    const fillerSources = selectedSources.filter((source) => source.role !== baseRole);
-
-    const baseRows = this.buildProteinRows(baseSources, baseGap);
-    const baseCalories = baseRows.reduce((sum, row) => sum + toPositiveNumber(row.calories), 0);
-    const fillCalories = Math.max(0, roundValue(goalState.remaining.calories - baseCalories));
-    const fillRows = this.buildCalorieFillRows(fillerSources, fillCalories);
-
-    return [...baseRows, ...fillRows];
+    return this.buildCalorieFillRows(selectedSources, goalState.remaining.calories);
   },
 
   // 按蛋白算时，反推这套方案的全天热量系数（v1 功能）：
@@ -685,11 +654,6 @@ Page({
 
     if (mode === 'calorie') {
       if (!calorieCoef) return { ...emptyResult, hint: '请先填写热量系数' };
-      if (this.data.caloriePriority === 'special') {
-        if (!specialCoef) return { ...emptyResult, hint: '请先填写特殊蛋白系数' };
-      } else if (!naturalCoef) {
-        return { ...emptyResult, hint: '请先填写天然蛋白系数' };
-      }
       gapsRemaining = goalState.remaining.calories;
       rows = this.buildCalorieRows(selectedSources, goalState);
     } else {
@@ -757,13 +721,9 @@ Page({
   },
 
   buildDetailCards(goalState = this.computeGoalState()) {
-    const calorieSecondary = this.data.caloriePriority === 'special'
-      ? ['special', '特殊蛋白', 'specialProtein', 'g']
-      : ['natural', '天然蛋白', 'naturalProtein', 'g'];
     const defs = this.data.calculationMode === 'calorie'
       ? [
-        ['energy', '热量', 'calories', 'kcal'],
-        calorieSecondary
+        ['energy', '热量', 'calories', 'kcal']
       ]
       : [
         ['natural', '天然蛋白', 'naturalProtein', 'g'],
@@ -903,13 +863,28 @@ Page({
     const detailCards = this.buildDetailCards(goalState);
     const intakeBreakdown = this.buildIntakeBreakdown(goalState);
     const sourceGroups = this.buildSourceGroups();
+    const coefficientTargetHints = this.buildCoefficientTargetHints();
     const selectedSet = new Set(this.data.selectedKeys || []);
     const selectedSourcesText = this.getPlannerSources()
       .filter((source) => selectedSet.has(source.key))
       .map((source) => source.name)
       .join('、');
 
-    this.setData({ result, perMeal, detailCards, intakeBreakdown, sourceGroups, selectedSourcesText });
+    this.setData({ result, perMeal, detailCards, intakeBreakdown, sourceGroups, coefficientTargetHints, selectedSourcesText });
+  },
+
+  buildCoefficientTargetHints() {
+    const weight = toPositiveNumber(this.data.weight);
+    const formatTarget = (coefficient, unit, precision = 1) => {
+      const coef = toPositiveNumber(coefficient);
+      if (!weight || !coef) return '--';
+      return `${roundValue(weight * coef, precision)}${unit}`;
+    };
+    return {
+      naturalProtein: formatTarget(this.data.naturalProteinCoefficientInput, 'g'),
+      specialProtein: formatTarget(this.data.specialProteinCoefficientInput, 'g'),
+      calorie: formatTarget(this.data.calorieCoefficientInput, 'kcal', 0)
+    };
   },
 
   // ---- 交互 ----
@@ -920,6 +895,7 @@ Page({
       calculationMode: mode,
       expandedSourceGroup: ''
     }, () => {
+      this.saveLocalTargetCoefficients();
       this.setDefaultSelections();
     });
   },
@@ -950,11 +926,12 @@ Page({
 
   // 仅本地保存目标系数，不落库、不影响记录页的真实数据汇总。
   saveLocalTargetCoefficients() {
-    return writeLocalTargetCoefficients(this.data.babyUid, {
+    return writeNutritionTargetPreferences(this.data.babyUid, {
       naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
       specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
-      calorieCoefficient: this.data.calorieCoefficientInput || ''
-    });
+      calorieCoefficient: this.data.calorieCoefficientInput || '',
+      preferredTargetMode: this.data.calculationMode === 'calorie' ? 'calorie' : 'protein'
+    }, wxApi);
   },
 
   beginEditWeight() {

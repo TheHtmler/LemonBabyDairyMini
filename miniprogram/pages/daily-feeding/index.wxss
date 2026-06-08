@@ -213,6 +213,77 @@ page {
   font-size: 22rpx;
   color: #D9A400;
 }
+.target-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-top: 20rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #FFF7DD, #FFF0C4);
+  border: 2rpx dashed rgba(255, 184, 0, 0.42);
+}
+.target-empty-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.target-empty-title {
+  font-size: 24rpx;
+  color: #9A6C0C;
+  font-weight: 800;
+}
+.target-empty-desc {
+  font-size: 20rpx;
+  color: #B07D00;
+  line-height: 1.35;
+}
+.target-empty-action {
+  flex: 0 0 auto;
+  font-size: 23rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #FFB800, #F59E0B);
+  padding: 9rpx 18rpx;
+  border-radius: 999rpx;
+  font-weight: 800;
+  box-shadow: 0 6rpx 14rpx rgba(255, 184, 0, 0.22);
+}
+.target-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  background: #FFF7DD;
+  border-radius: 18rpx;
+  padding: 8rpx;
+  margin-bottom: 20rpx;
+}
+.target-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 23rpx;
+  color: #B07D00;
+  background: rgba(255, 255, 255, 0.62);
+  border-radius: 14rpx;
+  padding: 10rpx 8rpx;
+  font-weight: 700;
+}
+.target-tab.on {
+  color: #fff;
+  background: linear-gradient(135deg, #FFB800, #F59E0B);
+  box-shadow: 0 6rpx 12rpx rgba(255, 184, 0, 0.2);
+}
+.target-tab.disabled {
+  color: #C9B98F;
+  background: rgba(255, 255, 255, 0.42);
+}
+.target-tab.setup {
+  flex: 0 0 88rpx;
+  color: #2E9E6B;
+  background: #E7F7EF;
+}
 .nutri-row {
   display: flex;
   align-items: center;
@@ -331,6 +402,9 @@ page {
 .ring.static {
   background: conic-gradient(from 180deg, #FFE27A, #FFB800, #FFD45E, #FFE27A);
 }
+.ring.target-ring {
+  box-shadow: inset 0 0 0 2rpx rgba(255, 184, 0, 0.12), 0 8rpx 18rpx rgba(255, 184, 0, 0.16);
+}
 .macro-stat {
   display: flex;
   align-items: center;
@@ -368,6 +442,97 @@ page {
   font-weight: 600;
   margin-top: 0;
 }
+.target-list {
+  gap: 14rpx;
+}
+.target-stat {
+  background: #FFFDF5;
+  border: 2rpx solid rgba(255, 184, 0, 0.1);
+  border-radius: 18rpx;
+  padding: 14rpx;
+}
+.target-stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+.target-stat-title {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #333;
+}
+.target-stat-title.nat { color: #F59E0B; }
+.target-stat-title.spe { color: #5B9DF9; }
+.target-stat-title.cal { color: #FF7A1A; }
+.target-stat-pct {
+  font-size: 22rpx;
+  font-weight: 900;
+  color: #F59E0B;
+  background: #FFF3D6;
+  border-radius: 999rpx;
+  padding: 3rpx 12rpx;
+}
+.target-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8rpx;
+  margin-bottom: 10rpx;
+}
+.target-value {
+  min-width: 0;
+  background: #F8F6EF;
+  border-radius: 12rpx;
+  padding: 8rpx 6rpx;
+  text-align: center;
+}
+.target-value.target {
+  background: linear-gradient(135deg, #FFF3D6, #FFE5A3);
+  border: 2rpx solid rgba(255, 184, 0, 0.24);
+  padding: 6rpx 4rpx;
+}
+.target-value.remain {
+  background: #FFF0E8;
+}
+.target-value-label {
+  display: block;
+  font-size: 18rpx;
+  color: #8A8A8A;
+  font-weight: 700;
+  margin-bottom: 2rpx;
+}
+.target-value.target .target-value-label,
+.target-value.target .target-value-number {
+  color: #B36B00;
+}
+.target-value.remain .target-value-label,
+.target-value.remain .target-value-number {
+  color: #D46B2C;
+}
+.target-value-number {
+  display: block;
+  font-size: 21rpx;
+  color: #333;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.target-bar {
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: #F0EFE6;
+  overflow: hidden;
+}
+.target-bar-i {
+  height: 100%;
+  border-radius: 999rpx;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.target-bar-i.tot { background: linear-gradient(90deg, #FFCE4F, #FFB800); }
+.target-bar-i.nat { background: linear-gradient(90deg, #FFD45E, #FFB800); }
+.target-bar-i.spe { background: linear-gradient(90deg, #8FD3FF, #5B9DF9); }
+.target-bar-i.cal { background: linear-gradient(90deg, #FFB27A, #FF9F45); }
 
 /* 喂养进度 */
 .feed-top {

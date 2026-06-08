@@ -5,12 +5,6 @@
     <view class="mode-tab {{calculationMode === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="switchCalculationMode">按热量算</view>
   </view>
 
-  <!-- 热量维度：优先策略 -->
-  <view class="priority-switch" wx:if="{{calculationMode === 'calorie'}}">
-    <view class="priority-tab {{caloriePriority === 'natural' ? 'active' : ''}}" data-priority="natural" bindtap="switchCaloriePriority">天然优先</view>
-    <view class="priority-tab {{caloriePriority === 'special' ? 'active' : ''}}" data-priority="special" bindtap="switchCaloriePriority">特殊优先</view>
-  </view>
-
   <!-- 基础信息：体重 + 系数 -->
   <view class="info-card">
     <view class="info-cell weight-cell">
@@ -37,6 +31,7 @@
         <input class="info-input" type="digit" value="{{naturalProteinCoefficientInput}}" data-field="naturalProteinCoefficientInput" bindinput="onCoefficientInput" bindblur="onCoefficientBlur" />
         <text class="info-suffix">g/kg</text>
       </view>
+      <text class="coef-target-hint">折算目标 {{coefficientTargetHints.naturalProtein}}</text>
     </view>
     <view class="info-cell" wx:if="{{calculationMode === 'protein'}}">
       <text class="info-label">特殊蛋白系数</text>
@@ -44,6 +39,7 @@
         <input class="info-input" type="digit" value="{{specialProteinCoefficientInput}}" data-field="specialProteinCoefficientInput" bindinput="onCoefficientInput" bindblur="onCoefficientBlur" />
         <text class="info-suffix">g/kg</text>
       </view>
+      <text class="coef-target-hint">折算目标 {{coefficientTargetHints.specialProtein}}</text>
     </view>
 
     <view class="info-cell" wx:if="{{calculationMode === 'calorie'}}">
@@ -52,20 +48,7 @@
         <input class="info-input" type="digit" value="{{calorieCoefficientInput}}" data-field="calorieCoefficientInput" bindinput="onCoefficientInput" bindblur="onCoefficientBlur" />
         <text class="info-suffix">kcal/kg</text>
       </view>
-    </view>
-    <view class="info-cell" wx:if="{{calculationMode === 'calorie' && caloriePriority === 'natural'}}">
-      <text class="info-label">天然蛋白系数</text>
-      <view class="info-input-shell">
-        <input class="info-input" type="digit" value="{{naturalProteinCoefficientInput}}" data-field="naturalProteinCoefficientInput" bindinput="onCoefficientInput" bindblur="onCoefficientBlur" />
-        <text class="info-suffix">g/kg</text>
-      </view>
-    </view>
-    <view class="info-cell" wx:if="{{calculationMode === 'calorie' && caloriePriority === 'special'}}">
-      <text class="info-label">特殊蛋白系数</text>
-      <view class="info-input-shell">
-        <input class="info-input" type="digit" value="{{specialProteinCoefficientInput}}" data-field="specialProteinCoefficientInput" bindinput="onCoefficientInput" bindblur="onCoefficientBlur" />
-        <text class="info-suffix">g/kg</text>
-      </view>
+      <text class="coef-target-hint">折算目标 {{coefficientTargetHints.calorie}}</text>
     </view>
   </view>
 
