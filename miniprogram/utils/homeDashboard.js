@@ -281,16 +281,77 @@ function resolveActiveTargetMode(targetPreferences = {}, configuredModes = {}) {
   return 'actual';
 }
 
+function buildGoalProgressMeta(goal) {
+  if (!goal || !goal.hasTarget) {
+    return {
+      status: 'unset',
+      statusText: '先设置目标',
+      helperText: '设置目标后可查看完成度',
+      remainingLabel: '还差',
+      overflowText: '',
+      ringPct: 0,
+      overPct: 0,
+      ringClass: 'pending'
+    };
+  }
+
+  if (goal.over) {
+    const overPct = Math.max(0, goal.pct - 100);
+    return {
+      status: 'over',
+      statusText: `超出 ${overPct}%`,
+      helperText: '已超过今日目标，后续记录注意控制',
+      remainingLabel: '超出',
+      overflowText: `超出 ${overPct}%`,
+      ringPct: 100,
+      overPct: Math.min(100, overPct),
+      ringClass: 'over'
+    };
+  }
+
+  if (goal.reached) {
+    return {
+      status: 'done',
+      statusText: '已达成',
+      helperText: '今天目标刚好达成，继续保持',
+      remainingLabel: '还差',
+      overflowText: '',
+      ringPct: 100,
+      overPct: 0,
+      ringClass: 'done'
+    };
+  }
+
+  return {
+    status: 'pending',
+    statusText: `还差 ${100 - goal.pct}%`,
+    helperText: '距离今日目标还有一点点',
+    remainingLabel: '还差',
+    overflowText: '',
+    ringPct: goal.barPct,
+    overPct: 0,
+    ringClass: 'pending'
+  };
+}
+
 function buildTargetRow(key, label, goal, unit, tone = '') {
   const remaining = Math.max(0, round(goal.target - goal.actual, unit === 'kcal' ? 0 : 1));
+  const overAmount = Math.max(0, round(goal.actual - goal.target, unit === 'kcal' ? 0 : 1));
+  const meta = buildGoalProgressMeta(goal);
   return {
     key,
     label,
     tone,
     valueText: `${goal.actual}${unit}`,
     targetText: goal.hasTarget ? `${goal.target}${unit}` : '',
-    remainingText: goal.hasTarget ? `${remaining}${unit}` : '',
+    remainingText: goal.hasTarget ? `${goal.over ? overAmount : remaining}${unit}` : '',
+    remainingLabel: meta.remainingLabel,
     pctText: goal.hasTarget ? `${goal.pct}%` : '',
+    status: meta.status,
+    statusText: meta.statusText,
+    helperText: meta.helperText,
+    overPct: meta.overPct,
+    ringClass: meta.ringClass,
     subText: goal.hasTarget ? `${goal.actual}/${goal.target}${unit}` : `${goal.actual}${unit}`,
     pct: goal.pct,
     barPct: goal.barPct,
@@ -334,6 +395,7 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
     hasTarget: configuredModes.calorie
   };
   const activeGoal = mode === 'protein' ? protein.total : (mode === 'calorie' ? calorie : null);
+  const activeMeta = buildGoalProgressMeta(activeGoal);
   const rows = mode === 'protein'
     ? [
       buildTargetRow('naturalProtein', '天然蛋白', protein.natural, 'g', 'nat'),
@@ -352,6 +414,7 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
     actual,
     activeGoal: activeGoal ? {
       ...activeGoal,
+      ...activeMeta,
       label: mode === 'protein' ? '总蛋白' : '热量',
       unit: mode === 'protein' ? 'g' : 'kcal',
       valueText: `${activeGoal.actual}${mode === 'protein' ? 'g' : 'kcal'}`,

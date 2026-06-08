@@ -62,11 +62,11 @@
             <text class="ring-perkg">{{nutrition.caloriesPerKg || 0}} kcal/kg</text>
           </view>
         </view>
-        <view class="ring target-ring" wx:else style="background: conic-gradient(from 180deg, #FFB800 0% {{nutritionTarget.activeGoal.barPct}}%, #F7EDD4 {{nutritionTarget.activeGoal.barPct}}% 100%);">
+        <view class="ring target-ring {{nutritionTarget.activeGoal.ringClass}}" wx:else style="background: conic-gradient(from 180deg, #FF7A1A 0% {{nutritionTarget.activeGoal.overPct}}%, transparent {{nutritionTarget.activeGoal.overPct}}% 100%), conic-gradient(from 180deg, #FFB800 0% {{nutritionTarget.activeGoal.ringPct}}%, #F7EDD4 {{nutritionTarget.activeGoal.ringPct}}% 100%);">
           <view class="ring-hole">
             <text class="ring-big">{{nutritionTarget.activeGoal.pct || 0}}%</text>
             <text class="ring-unit">{{nutritionTarget.activeGoal.label}}</text>
-            <text class="ring-perkg">完成度</text>
+            <text class="ring-status {{nutritionTarget.activeGoal.status}}">{{nutritionTarget.activeGoal.statusText}}</text>
           </view>
         </view>
       </view>
@@ -97,7 +97,10 @@
         <view class="target-stat" wx:for="{{nutritionTarget.rows}}" wx:key="key">
           <view class="target-stat-head">
             <text class="target-stat-title {{item.tone}}">{{item.label}}</text>
-            <text class="target-stat-pct">{{item.pctText}}</text>
+            <view class="target-stat-status">
+              <text class="target-stat-pct {{item.status}}">{{item.pctText}}</text>
+              <text class="target-stat-tip {{item.status}}">{{item.statusText}}</text>
+            </view>
           </view>
           <view class="target-values">
             <view class="target-value">
@@ -109,13 +112,15 @@
               <text class="target-value-number">{{item.targetText}}</text>
             </view>
             <view class="target-value remain">
-              <text class="target-value-label">还差</text>
+              <text class="target-value-label">{{item.remainingLabel}}</text>
               <text class="target-value-number">{{item.remainingText}}</text>
             </view>
           </view>
           <view class="target-bar" wx:if="{{item.hasTarget}}">
             <view class="target-bar-i {{item.tone}}" style="width: {{item.barPct}}%;"></view>
+            <view class="target-bar-over" wx:if="{{item.overPct > 0}}" style="width: {{item.overPct}}%;"></view>
           </view>
+          <text class="target-helper {{item.status}}">{{item.helperText}}</text>
         </view>
       </view>
     </view>
