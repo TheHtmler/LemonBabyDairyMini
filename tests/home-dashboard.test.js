@@ -8,6 +8,7 @@ const {
   diffInDays,
   buildMedicationChecklist,
   buildNutritionGoals,
+  buildNutritionTargetState,
   buildNutritionSummary,
   buildFeedingProgress,
   buildNextMealReference,
@@ -133,6 +134,96 @@ test('buildNutritionGoals：无系数时不显示目标', () => {
   assert.equal(goals.naturalProtein.hasTarget, true); // 天然蛋白默认 1.2
   assert.equal(goals.specialProtein.hasTarget, false);
   assert.equal(goals.calorie.hasTarget, false);
+});
+
+test('buildNutritionTargetState：没有任何目标时保持实际摄入模式', () => {
+  const state = buildNutritionTargetState({
+    macroSummary: { naturalProtein: 3, specialProtein: 2, calories: 400 },
+    weight: 4,
+    targetPreferences: {}
+  });
+
+  assert.equal(state.mode, 'actual');
+  assert.equal(state.hasAnyTarget, false);
+  assert.equal(state.activeGoal, null);
+  assert.equal(state.actual.calories, 400);
+  assert.equal(state.actual.totalProtein, 5);
+  assert.equal(state.setupCtaText, '设置目标');
+});
+
+test('buildNutritionTargetState：蛋白目标需要天然和特殊系数都设置', () => {
+  const missingSpecial = buildNutritionTargetState({
+    macroSummary: { naturalProtein: 3, specialProtein: 2, calories: 400 },
+    weight: 4,
+    targetPreferences: {
+      preferredTargetMode: 'protein',
+      naturalProteinCoefficient: '1.2'
+    }
+  });
+  assert.equal(missingSpecial.configuredModes.protein, false);
+  assert.equal(missingSpecial.mode, 'actual');
+
+  const state = buildNutritionTargetState({
+    macroSummary: { naturalProtein: 3, specialProtein: 2, calories: 400 },
+    weight: 4,
+    targetPreferences: {
+      preferredTargetMode: 'protein',
+      naturalProteinCoefficient: '1.2',
+      specialProteinCoefficient: '0.8'
+    }
+  });
+
+  assert.equal(state.mode, 'protein');
+  assert.equal(state.configuredModes.protein, true);
+  assert.equal(state.activeGoal.actual, 5);
+  assert.equal(state.activeGoal.target, 8);
+  assert.equal(state.activeGoal.pct, 63);
+  assert.equal(state.activeGoal.actualText, '已摄入 5g');
+  assert.equal(state.activeGoal.goalText, '目标 8g');
+  assert.equal(state.protein.natural.target, 4.8);
+  assert.equal(state.protein.special.target, 3.2);
+  assert.deepEqual(state.rows.map((row) => row.key), ['naturalProtein', 'specialProtein']);
+  assert.equal(state.rows[0].targetText, '4.8g');
+  assert.equal(state.rows[0].remainingText, '1.8g');
+  assert.equal(state.rows[0].pctText, '63%');
+  assert.equal(state.rows[1].targetText, '3.2g');
+  assert.equal(state.rows[1].remainingText, '1.2g');
+});
+
+test('buildNutritionTargetState：热量目标只需要热量系数并按首选维度展示', () => {
+  const calorieOnly = buildNutritionTargetState({
+    macroSummary: { naturalProtein: 3, specialProtein: 2, calories: 400 },
+    weight: 4,
+    targetPreferences: {
+      preferredTargetMode: 'calorie',
+      calorieCoefficient: '120'
+    }
+  });
+
+  assert.equal(calorieOnly.mode, 'calorie');
+  assert.equal(calorieOnly.configuredModes.calorie, true);
+  assert.equal(calorieOnly.configuredModes.protein, false);
+  assert.equal(calorieOnly.activeGoal.actual, 400);
+  assert.equal(calorieOnly.activeGoal.target, 480);
+  assert.equal(calorieOnly.activeGoal.pct, 83);
+  assert.equal(calorieOnly.activeGoal.actualText, '已摄入 400kcal');
+  assert.equal(calorieOnly.activeGoal.goalText, '目标 480kcal');
+  assert.deepEqual(calorieOnly.rows.map((row) => row.key), ['calorie']);
+  assert.equal(calorieOnly.rows[0].targetText, '480kcal');
+  assert.equal(calorieOnly.rows[0].remainingText, '80kcal');
+  assert.equal(calorieOnly.rows[0].pctText, '83%');
+
+  const proteinPreferred = buildNutritionTargetState({
+    macroSummary: { naturalProtein: 3, specialProtein: 2, calories: 400 },
+    weight: 4,
+    targetPreferences: {
+      preferredTargetMode: 'protein',
+      naturalProteinCoefficient: '1.2',
+      specialProteinCoefficient: '0.8',
+      calorieCoefficient: '120'
+    }
+  });
+  assert.equal(proteinPreferred.mode, 'protein');
 });
 
 test('buildNutritionSummary：只算实际摄入，热量取整、蛋白1位、含总蛋白与系数', () => {

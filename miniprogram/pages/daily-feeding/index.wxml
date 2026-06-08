@@ -33,10 +33,10 @@
     </view>
   </view>
 
-  <!-- 今日营养摄入（实际值，暂不做目标/达成率） -->
+  <!-- 今日营养摄入：未设置目标时显示实际值，设置目标后显示目标进度 -->
   <view class="card hero-nutri">
     <view class="card-head">
-      <text class="card-title">今日营养摄入</text>
+      <text class="card-title">{{nutritionTarget.hasAnyTarget ? '今日目标进度' : '今日营养摄入'}}</text>
       <view class="metric-chips">
         <view class="weight-chip" catchtap="openWeightModal" hover-class="press-soft" hover-stay-time="60">
           <text>体重 {{weight ? weight : '--'}}kg</text>
@@ -48,17 +48,29 @@
         </view>
       </view>
     </view>
+    <view class="target-tabs" wx:if="{{nutritionTarget.hasAnyTarget}}">
+      <view class="target-tab {{nutritionTarget.mode === 'protein' ? 'on' : ''}} {{nutritionTarget.configuredModes.protein ? '' : 'disabled'}}" data-mode="protein" catchtap="switchNutritionTargetMode">蛋白目标</view>
+      <view class="target-tab {{nutritionTarget.mode === 'calorie' ? 'on' : ''}} {{nutritionTarget.configuredModes.calorie ? '' : 'disabled'}}" data-mode="calorie" catchtap="switchNutritionTargetMode">热量目标</view>
+      <view class="target-tab setup" catchtap="openNutritionTargetSetup">设置</view>
+    </view>
     <view class="nutri-row">
       <view class="ring-col">
-        <view class="ring static">
+        <view class="ring static" wx:if="{{!nutritionTarget.hasAnyTarget}}">
           <view class="ring-hole">
             <text class="ring-big">{{nutrition.calories || 0}}</text>
             <text class="ring-unit">kcal</text>
             <text class="ring-perkg">{{nutrition.caloriesPerKg || 0}} kcal/kg</text>
           </view>
         </view>
+        <view class="ring target-ring" wx:else style="background: conic-gradient(from 180deg, #FFB800 0% {{nutritionTarget.activeGoal.barPct}}%, #F7EDD4 {{nutritionTarget.activeGoal.barPct}}% 100%);">
+          <view class="ring-hole">
+            <text class="ring-big">{{nutritionTarget.activeGoal.pct || 0}}%</text>
+            <text class="ring-unit">{{nutritionTarget.activeGoal.label}}</text>
+            <text class="ring-perkg">完成度</text>
+          </view>
+        </view>
       </view>
-      <view class="macro-list">
+      <view class="macro-list" wx:if="{{!nutritionTarget.hasAnyTarget}}">
         <view class="macro-stat">
           <text class="ms-k">天然蛋白</text>
           <view class="ms-right">
@@ -81,6 +93,38 @@
           </view>
         </view>
       </view>
+      <view class="macro-list target-list" wx:else>
+        <view class="target-stat" wx:for="{{nutritionTarget.rows}}" wx:key="key">
+          <view class="target-stat-head">
+            <text class="target-stat-title {{item.tone}}">{{item.label}}</text>
+            <text class="target-stat-pct">{{item.pctText}}</text>
+          </view>
+          <view class="target-values">
+            <view class="target-value">
+              <text class="target-value-label">已摄入</text>
+              <text class="target-value-number">{{item.valueText}}</text>
+            </view>
+            <view class="target-value target">
+              <text class="target-value-label">目标</text>
+              <text class="target-value-number">{{item.targetText}}</text>
+            </view>
+            <view class="target-value remain">
+              <text class="target-value-label">还差</text>
+              <text class="target-value-number">{{item.remainingText}}</text>
+            </view>
+          </view>
+          <view class="target-bar" wx:if="{{item.hasTarget}}">
+            <view class="target-bar-i {{item.tone}}" style="width: {{item.barPct}}%;"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="target-empty" wx:if="{{!nutritionTarget.hasAnyTarget}}" catchtap="openNutritionTargetSetup" hover-class="press-soft" hover-stay-time="60">
+      <view class="target-empty-copy">
+        <text class="target-empty-title">还没有设置今日目标</text>
+        <text class="target-empty-desc">设置蛋白或热量系数后，可查看完成度和还差多少</text>
+      </view>
+      <text class="target-empty-action">设置目标 ›</text>
     </view>
   </view>
 

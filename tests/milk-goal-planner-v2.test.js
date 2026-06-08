@@ -260,6 +260,8 @@ test('milk goal planner v2 renders a simple elderly-friendly recommendation page
   assert.match(wxml, /今天还需补充/);
   assert.match(wxml, /按蛋白算/);
   assert.match(wxml, /按热量算/);
+  assert.match(wxml, /coef-target-hint/);
+  assert.match(wxml, /折算目标/);
   assert.match(wxml, /分顿建议/);
   assert.match(wxml, /计算依据/);
   assert.match(wxml, /奶粉来源/);
@@ -364,7 +366,29 @@ test('calorie mode keeps natural protein fixed then fills remaining calories wit
   assert.equal(special.powderWeight, 125);
 });
 
-test('calorie mode with special-first fixes special protein then fills remaining calories with breast milk', () => {
+test('calorie mode only requires calorie coefficient and fills calories directly', () => {
+  const { pageConfig } = loadPlannerPage();
+  const page = createPageInstance(pageConfig, plannerData(pageConfig, {
+    calculationMode: 'calorie',
+    weight: '5',
+    naturalProteinCoefficientInput: '',
+    specialProteinCoefficientInput: '',
+    calorieCoefficientInput: '200',
+    selectedKeys: ['breast_milk', 'powder:special-a']
+  }));
+
+  page.rebuild();
+
+  assert.equal(page.data.result.ready, true);
+  assert.equal(page.data.result.hint, '');
+  const breast = page.data.result.rows.find((row) => row.key === 'breast_milk');
+  const special = page.data.result.rows.find((row) => row.key === 'powder:special-a');
+  assert.equal(breast.volume, 500);
+  assert.equal(special.volume, 1250);
+  assert.equal(special.powderWeight, 125);
+});
+
+test('calorie mode ignores protein priority and fills calories directly', () => {
   const { pageConfig } = loadPlannerPage();
   const page = createPageInstance(pageConfig, plannerData(pageConfig, {
     calculationMode: 'calorie',
@@ -380,15 +404,14 @@ test('calorie mode with special-first fixes special protein then fills remaining
 
   const special = page.data.result.rows.find((row) => row.key === 'powder:special-a');
   const breast = page.data.result.rows.find((row) => row.key === 'breast_milk');
-  // 特殊蛋白目标 5g：特奶 protein/100g=20 => 粉 25g（calories 400/100*25=100kcal），冲水 250ml
-  assert.equal(special.powderWeight, 25);
-  assert.equal(special.volume, 250);
-  // 剩余热量 1000-100=900kcal，由母乳补：calories/100ml=100 => 900ml
-  assert.equal(breast.volume, 900);
-  assert.equal(breast.calories, 900);
+  // 热量优先只按 1000kcal 缺口在已选来源间平分，不再锁定特殊蛋白目标。
+  assert.equal(special.powderWeight, 125);
+  assert.equal(special.volume, 1250);
+  assert.equal(breast.volume, 500);
+  assert.equal(breast.calories, 500);
 });
 
-test('calorie mode always lists 天然/特殊/能量 groups in order regardless of priority', () => {
+test('calorie mode lists 天然/特殊/能量 groups and only shows calorie basis', () => {
   const { pageConfig } = loadPlannerPage();
   const page = createPageInstance(pageConfig, plannerData(pageConfig, {
     calculationMode: 'calorie',
@@ -405,13 +428,7 @@ test('calorie mode always lists 天然/特殊/能量 groups in order regardless 
   // 能量补充组默认是可选的
   assert.equal(page.data.sourceGroups.find((group) => group.key === 'energy').optional, true);
 
-  page.switchCaloriePriority({ currentTarget: { dataset: { priority: 'special' } } });
-
-  assert.equal(page.data.caloriePriority, 'special');
-  // 切换优先级后分组顺序保持不变
-  assert.deepEqual(page.data.sourceGroups.map((group) => group.key), ['natural', 'special', 'energy']);
-  // 特殊优先下计算依据的次卡应是“特殊蛋白”
-  assert.equal(page.data.detailCards[1].title, '特殊蛋白');
+  assert.deepEqual(page.data.detailCards.map((item) => item.title), ['热量']);
 });
 
 test('energy supplement group is not selected by default but the user can add and remove it', () => {
@@ -984,6 +1001,22 @@ test('editing a target coefficient saves locally and never writes the growth rec
   assert.equal(saved.naturalProteinCoefficient, '1.3');
   assert.equal(saved.specialProteinCoefficient, '0.6');
   assert.equal(saved.calorieCoefficient, '110');
+});
+
+test('coefficient inputs show converted target values beside the settings', () => {
+  const { pageConfig } = loadPlannerPage();
+  const page = createPageInstance(pageConfig, plannerData(pageConfig, {
+    weight: '5',
+    naturalProteinCoefficientInput: '1.3',
+    specialProteinCoefficientInput: '0.6',
+    calorieCoefficientInput: '110'
+  }));
+
+  page.rebuild();
+
+  assert.equal(page.data.coefficientTargetHints.naturalProtein, '6.5g');
+  assert.equal(page.data.coefficientTargetHints.specialProtein, '3g');
+  assert.equal(page.data.coefficientTargetHints.calorie, '550kcal');
 });
 
 test('weight sync writes only the weight and no coefficient fields to the growth record', async () => {

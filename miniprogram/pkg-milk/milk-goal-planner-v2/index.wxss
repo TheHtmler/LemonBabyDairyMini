@@ -131,6 +131,19 @@
   color: #8a6a34;
 }
 
+.coef-target-hint {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: #fff2cd;
+  color: #9a6c0c;
+  font-size: 21rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  box-sizing: border-box;
+}
+
 .weight-show {
   display: flex;
   align-items: baseline;

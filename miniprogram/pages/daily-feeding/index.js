@@ -15,6 +15,10 @@ const {
   validation
 } = require('../../utils/index');
 const dashboard = require('../../utils/homeDashboard');
+const {
+  readNutritionTargetPreferences,
+  writeNutritionTargetPreferences
+} = require('../../utils/nutritionTargetPreferences');
 
 const app = getApp();
 
@@ -154,8 +158,15 @@ Page({
     showHeightModal: false,
     heightInput: '',
 
-    // 今日营养（实际摄入，暂不做目标/达成率）
+    // 今日营养：未设置目标时展示实际摄入；设置后展示目标进度。
     nutrition: { calories: 0, caloriesPerKg: 0, naturalProtein: 0, specialProtein: 0, totalProtein: 0 },
+    nutritionTarget: {
+      mode: 'actual',
+      hasAnyTarget: false,
+      configuredModes: { protein: false, calorie: false },
+      activeGoal: null,
+      rows: []
+    },
 
     // 喂养
     feedingProgress: { count: 0, plannedMeals: dashboard.DEFAULT_PLANNED_MEALS, totalVolume: 0, remaining: dashboard.DEFAULT_PLANNED_MEALS, lastMealTime: '', dots: [] },
@@ -378,13 +389,15 @@ Page({
     const weight = basicInfo.weight || '';
     const height = basicInfo.height || '';
     const foodCount = (daily.foodIntakeRecords || []).length;
-    const coefficients = {
-      natural: basicInfo.naturalProteinCoefficient,
-      special: basicInfo.specialProteinCoefficient,
-      calorie: basicInfo.calorieCoefficient
-    };
-
     const nutrition = dashboard.buildNutritionSummary({ macroSummary, weight });
+    const babyUid = getBabyUid();
+    const targetPreferences = readNutritionTargetPreferences(babyUid);
+    const nutritionTarget = dashboard.buildNutritionTargetState({
+      macroSummary,
+      weight,
+      targetPreferences
+    });
+    this._nutritionTargetContext = { macroSummary, weight, babyUid };
     const feedingProgress = dashboard.buildFeedingProgress({ milkRecords, plannedMeals });
 
     // 下一顿参考：按今日已喂顿数对应到上次那天的同序号那一顿（如今天已喂2顿→参考上次第3顿）
@@ -421,6 +434,7 @@ Page({
       height,
       foodCount,
       nutrition,
+      nutritionTarget,
       feedingProgress,
       feedingPlanHint,
       medicationsList: meds || [],
@@ -974,8 +988,55 @@ Page({
     wx.navigateTo({ url: `/pkg-records/treatment-record/index?date=${todayKey()}` });
   },
 
-  navigateToMilkGoalPlanner() {
-    wx.navigateTo({ url: `/pkg-milk/milk-goal-planner-v2/index?date=${todayKey()}&from=daily` });
+  rebuildNutritionTargetWithPreferences(targetPreferences = readNutritionTargetPreferences(getBabyUid())) {
+    const context = this._nutritionTargetContext || {};
+    const nutritionTarget = dashboard.buildNutritionTargetState({
+      macroSummary: context.macroSummary || {},
+      weight: context.weight || this.data.weight,
+      targetPreferences
+    });
+    this.setData({ nutritionTarget });
+    return nutritionTarget;
+  },
+
+  switchNutritionTargetMode(e) {
+    const mode = e.currentTarget.dataset.mode === 'calorie' ? 'calorie' : 'protein';
+    const current = this.data.nutritionTarget || {};
+    const configuredModes = current.configuredModes || {};
+    if (!configuredModes[mode]) {
+      wx.showToast({
+        title: mode === 'calorie' ? '请先设置热量系数' : '请先设置天然/特殊蛋白系数',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const babyUid = getBabyUid();
+    const targetPreferences = {
+      ...readNutritionTargetPreferences(babyUid),
+      preferredTargetMode: mode
+    };
+    writeNutritionTargetPreferences(babyUid, targetPreferences);
+    this.rebuildNutritionTargetWithPreferences(targetPreferences);
+  },
+
+  openNutritionTargetSetup(e = {}) {
+    const requested = e.currentTarget?.dataset?.mode;
+    const currentMode = this.data.nutritionTarget?.mode;
+    const mode = requested === 'calorie' || requested === 'protein'
+      ? requested
+      : (currentMode === 'calorie' || currentMode === 'protein' ? currentMode : 'protein');
+    this.navigateToMilkGoalPlanner({ currentTarget: { dataset: { mode } } });
+  },
+
+  navigateToMilkGoalPlanner(e = {}) {
+    const requested = e.currentTarget?.dataset?.mode;
+    const currentMode = this.data.nutritionTarget?.mode;
+    const mode = requested === 'calorie' || requested === 'protein'
+      ? requested
+      : (currentMode === 'calorie' || currentMode === 'protein' ? currentMode : '');
+    const modeParam = mode ? `&mode=${mode}` : '';
+    wx.navigateTo({ url: `/pkg-milk/milk-goal-planner-v2/index?date=${todayKey()}&from=daily${modeParam}` });
   },
 
   goToDataRecords() {
