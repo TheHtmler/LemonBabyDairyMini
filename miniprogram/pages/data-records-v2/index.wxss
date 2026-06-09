@@ -2661,6 +2661,7 @@
 .metric-info-anchor{position:relative;display:inline-flex;align-items:center}
 .metric-info-icon{display:inline-flex;align-items:center;justify-content:center;width:28rpx;height:28rpx;border-radius:50%;background:rgba(255,184,0,0.16);color:#8f6c18;font-size:20rpx;font-weight:600;line-height:1}
 .metric-info-bubble{position:absolute;top:calc(100% + 14rpx);left:50%;transform:translateX(-50%);width:240rpx;padding:16rpx 18rpx;border-radius:18rpx;background:rgba(61,47,16,0.96);box-shadow:0 16rpx 32rpx rgba(61,47,16,0.18);z-index:20}
+.metric-item .metric-info-bubble{width:340rpx}
 .metric-info-bubble::before{content:'';position:absolute;top:-10rpx;left:50%;width:20rpx;height:20rpx;background:rgba(61,47,16,0.96);transform:translateX(-50%) rotate(45deg);}
 .metric-info-bubble-title{display:block;font-size:22rpx;font-weight:600;color:#fff7df;margin-bottom:8rpx}
 .metric-info-bubble-line{display:block;font-size:20rpx;line-height:1.5;color:rgba(255,247,223,0.92)}

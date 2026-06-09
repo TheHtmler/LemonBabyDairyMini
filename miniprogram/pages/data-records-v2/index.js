@@ -651,7 +651,9 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     foodType: 'food',
     category: foodSnapshot.category || record.category || '辅食',
     foodId: record.foodId || '',
-    nameSnapshot: record.foodName || foodSnapshot.name || '食物',
+    // 过渡期食物仍来自旧 feeding_records.intakes，名称存在 nameSnapshot；
+    // v2 food_intake_records 则用 foodName/foodSnapshot.name。漏掉 nameSnapshot 会回退成固定“食物”。
+    nameSnapshot: record.foodName || foodSnapshot.name || record.nameSnapshot || '食物',
     unit: record.unit || 'g',
     quantity: Number(record.quantity) || 0,
     proteinSource: proteinSourceResolved,
@@ -2484,8 +2486,9 @@ function createDataRecordsPageConfig(options = {}) {
       }
 
       // 初始化完成后再加载数据
+      // 先加载宝宝信息（含生日），保证年龄段热卡系数区间能按当前宝宝年龄匹配（v2 模式同样需要）
+      await this.getBabyInfo();
       if (!this.isV2RecordsSource()) {
-        this.getBabyInfo();
         await this.loadNutritionSettings();
       }
       this.fetchDailyRecords(formattedDate);
@@ -2502,6 +2505,9 @@ function createDataRecordsPageConfig(options = {}) {
   onShow: async function() {
     if (!this.data.selectedDate) {
       return;
+    }
+    if (!this.data.babyInfo) {
+      await this.getBabyInfo();
     }
     if (!this.isV2RecordsSource()) {
       await this.loadNutritionSettings();
@@ -4620,40 +4626,42 @@ function createDataRecordsPageConfig(options = {}) {
 
       const res = await db.collection('baby_info').where({ babyUid }).limit(1).get();
       if (res.data && res.data.length > 0) {
+        const babyInfo = res.data[0];
         this.setData({
-          babyInfo: res.data[0],
-          fatRatioRangeText: this.getFatRatioRangeText(this.data.selectedDate, res.data[0].birthday)
+          babyInfo,
+          fatRatioRangeText: this.getFatRatioRangeText(this.data.selectedDate, babyInfo.birthday)
         });
-        
+
+        const fallbackUpdates = {};
         if (this.isTodayDate(this.data.selectedDate)) {
-          const fallbackUpdates = {};
           if ((this.data.weight === '--' || this.data.weight === '') && this.data.weightSource !== 'record') {
-            fallbackUpdates.weight = res.data[0].weight || '--';
-            fallbackUpdates.weightSource = res.data[0].weight ? 'global' : 'empty';
+            fallbackUpdates.weight = babyInfo.weight || '--';
+            fallbackUpdates.weightSource = babyInfo.weight ? 'global' : 'empty';
           }
           if ((this.data.height === '--' || this.data.height === '') && this.data.heightSource !== 'record') {
-            fallbackUpdates.height = res.data[0].height || '--';
-            fallbackUpdates.heightSource = res.data[0].height ? 'global' : 'empty';
-          }
-          if (Object.keys(fallbackUpdates).length > 0) {
-            this.setData({
-              ...fallbackUpdates,
-              summaryPreview: this.buildSummaryPreviewData(fallbackUpdates)
-            });
+            fallbackUpdates.height = babyInfo.height || '--';
+            fallbackUpdates.heightSource = babyInfo.height ? 'global' : 'empty';
           }
         }
 
-        // 更新热量相关区间，确保年龄段范围使用最新生日信息
+        // 生日加载后重算热量区间，确保「推荐系数范围」按当前宝宝年龄匹配，并同步刷新汇总概览
         const calorieMetrics = this.computeCalorieMetrics({
           totalCalories: this.data.macroSummary?.calories || 0,
-          weight: this.data.weight,
+          weight: fallbackUpdates.weight ?? this.data.weight,
           dateStr: this.data.selectedDate
         });
         this.setData({
+          ...fallbackUpdates,
           goalKcalRange: calorieMetrics.goalKcalRange,
           calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
           caloriePerKg: calorieMetrics.caloriePerKg,
-          dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal
+          dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+          summaryPreview: this.buildSummaryPreviewData({
+            ...fallbackUpdates,
+            calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+            caloriePerKg: calorieMetrics.caloriePerKg,
+            dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal
+          })
         });
       }
     } catch (error) {
@@ -5775,7 +5783,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   getCalorieGoalPerKgRangeLines() {
     return CALORIE_RANGE_BY_AGE.map(item => (
-      `${item.label}：${item.min}~${item.max} kcal/kg/d`
+      `${item.label} ${item.min}~${item.max}`
     ));
   },
 

@@ -161,13 +161,11 @@ test('summary calorie coefficient info keeps all age-range hints', () => {
     });
 
     assert.deepEqual(preview.topMetrics[1].infoLines, [
-      '当前：0-6月龄推荐 72~109 kcal/kg/d',
-      '各年龄段参考：',
-      '0-6月龄推荐：72~109 kcal/kg/d',
-      '6-12月龄推荐：65~97 kcal/kg/d',
-      '1-3岁推荐：66~99 kcal/kg/d',
-      '3-7岁推荐：59~88 kcal/kg/d',
-      '7-12岁推荐：43~65 kcal/kg/d'
+      '▸ 0-6月龄推荐 72~109',
+      '6-12月龄推荐 65~97',
+      '1-3岁推荐 66~99',
+      '3-7岁推荐 59~88',
+      '7-12岁推荐 43~65'
     ]);
   } finally {
     restore();
