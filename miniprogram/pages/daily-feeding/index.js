@@ -988,6 +988,10 @@ Page({
     wx.navigateTo({ url: `/pkg-records/treatment-record/index?date=${todayKey()}` });
   },
 
+  navigateToBowelRecord() {
+    wx.navigateTo({ url: `/pkg-records/bowel-record/index?date=${todayKey()}` });
+  },
+
   rebuildNutritionTargetWithPreferences(targetPreferences = readNutritionTargetPreferences(getBabyUid())) {
     const context = this._nutritionTargetContext || {};
     const nutritionTarget = dashboard.buildNutritionTargetState({

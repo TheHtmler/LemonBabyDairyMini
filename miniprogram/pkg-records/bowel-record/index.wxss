@@ -1,0 +1,261 @@
+.page {
+  min-height: 100vh;
+  padding: 16rpx 16rpx calc(160rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #FFF8E8 0%, #FFFDF7 100%);
+}
+
+.hero-card,
+.card {
+  background: #FFFFFF;
+  border-radius: 22rpx;
+  box-shadow: 0 8rpx 18rpx rgba(255, 184, 0, 0.08);
+}
+
+.hero-card {
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 231, 156, 0.4), transparent 30%),
+    linear-gradient(135deg, #FFF4D2, #FFFFFF);
+  border: 1rpx solid rgba(255, 184, 0, 0.18);
+}
+
+.hero-main {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 24rpx;
+  background: #fff1bd;
+  font-size: 40rpx;
+  box-shadow: inset 0 -4rpx 0 rgba(255, 184, 0, 0.14);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.hero-title,
+.section-title {
+  color: #332600;
+  font-weight: 800;
+}
+
+.hero-title {
+  font-size: 32rpx;
+  line-height: 1.2;
+}
+
+.hero-subtitle,
+.section-tip,
+.field-label,
+.type-tip {
+  color: #7C6B45;
+  font-size: 21rpx;
+}
+
+.card {
+  padding: 18rpx;
+  margin-bottom: 14rpx;
+}
+
+.compact-grid,
+.section-head,
+.footer-actions {
+  display: flex;
+}
+
+.compact-grid {
+  gap: 10rpx;
+}
+
+.compact-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.compact-picker,
+.compact-value,
+.notes-area {
+  width: 100%;
+  min-height: 62rpx;
+  padding: 14rpx 16rpx;
+  box-sizing: border-box;
+  border-radius: 16rpx;
+  background: #FFF9EA;
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+  color: #302400;
+  font-size: 23rpx;
+}
+
+.compact-picker {
+  display: flex;
+  align-items: center;
+}
+
+.compact-value {
+  display: flex;
+  align-items: center;
+}
+
+.fixed-date {
+  color: #6f5b2d;
+}
+
+.section-head {
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 27rpx;
+}
+
+.section-tip {
+  margin-top: 6rpx;
+}
+
+.bowel-type-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+}
+
+.bowel-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  min-height: 142rpx;
+  padding: 18rpx 10rpx;
+  border: 2rpx solid rgba(214, 173, 92, 0.14);
+  border-radius: 22rpx;
+  background: rgba(255, 249, 234, 0.72);
+  box-sizing: border-box;
+}
+
+.bowel-type-btn.active {
+  border-color: #FFB800;
+  background: rgba(255, 184, 0, 0.12);
+  box-shadow: 0 6rpx 16rpx rgba(255, 184, 0, 0.14);
+}
+
+.type-icon {
+  font-size: 42rpx;
+  line-height: 1;
+}
+
+.type-text {
+  font-size: 26rpx;
+  line-height: 1;
+  font-weight: 800;
+  color: #3f2a03;
+}
+
+.type-tip {
+  line-height: 1.2;
+  text-align: center;
+}
+
+.form-section {
+  margin-top: 18rpx;
+}
+
+.form-section:first-of-type {
+  margin-top: 0;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+  margin-top: 10rpx;
+}
+
+.option-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  min-height: 66rpx;
+  padding: 12rpx 8rpx;
+  border-radius: 16rpx;
+  background: #FFF9EA;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  color: #3f2a03;
+  font-size: 23rpx;
+  box-sizing: border-box;
+}
+
+.option-btn.active {
+  border-color: #FFB800;
+  background: rgba(255, 184, 0, 0.14);
+  font-weight: 800;
+}
+
+.option-icon {
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.notes-title {
+  margin-bottom: 12rpx;
+}
+
+.notes-area {
+  min-height: 140rpx;
+  line-height: 1.5;
+}
+
+.footer-actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  align-items: center;
+  padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 253, 247, 0.96);
+  box-shadow: 0 -6rpx 18rpx rgba(71, 51, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.save-btn {
+  width: 100%;
+  height: 84rpx;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 84rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #FFD45A 0%, #FFB800 100%);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 10rpx 22rpx rgba(255, 184, 0, 0.22);
+}
+
+.save-btn[disabled] {
+  opacity: 0.58;
+}

@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "喂奶记录",
   "navigationBarBackgroundColor": "#FFD84D",
-  "navigationBarTextStyle": "black"
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "nutrition-target-preview": "/components/nutrition-target-preview/nutrition-target-preview"
+  }
 }

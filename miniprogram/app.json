@@ -16,7 +16,8 @@
       "pages": [
         "meal-editor/index",
         "growth-records/index",
-        "treatment-record/index"
+        "treatment-record/index",
+        "bowel-record/index"
       ]
     },
     {

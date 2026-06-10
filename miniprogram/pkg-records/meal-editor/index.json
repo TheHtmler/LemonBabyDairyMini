@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "添加食物",
-  "enablePullDownRefresh": false
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "nutrition-target-preview": "/components/nutrition-target-preview/nutrition-target-preview"
+  }
 }

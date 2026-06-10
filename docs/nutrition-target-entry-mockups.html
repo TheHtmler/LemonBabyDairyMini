@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>记录入口目标提醒效果图</title>
+  <style>
+    :root {
+      --lemon: #ffbd18;
+      --lemon-soft: #fff4c6;
+      --cream: #fffaf0;
+      --ink: #332600;
+      --muted: #8c7953;
+      --line: rgba(193, 139, 40, 0.18);
+      --natural: #f3a619;
+      --special: #5aa6ff;
+      --danger: #e85d55;
+      --ok: #41a66b;
+      --warn: #d98918;
+      --calorie: #ff7a45;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 8%, rgba(255, 220, 84, 0.36), transparent 28%),
+        radial-gradient(circle at 92% 0%, rgba(255, 154, 84, 0.18), transparent 30%),
+        linear-gradient(180deg, #fffdf8 0%, #fff2cc 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    .page {
+      width: min(1680px, 100%);
+      margin: 0 auto;
+      padding: 38px 28px 46px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    .kicker {
+      margin-bottom: 10px;
+      color: #b67b00;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      max-width: 420px;
+    }
+
+    .legend span {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+      color: #6f5b2f;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .mock-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(270px, 1fr));
+      gap: 22px;
+      align-items: start;
+    }
+
+    .scene {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .scene-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 4px;
+    }
+
+    .scene-title strong {
+      font-size: 17px;
+    }
+
+    .scene-title em {
+      color: var(--muted);
+      font-size: 12px;
+      font-style: normal;
+    }
+
+    .phone {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      min-height: 760px;
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 80% 4%, rgba(255, 213, 85, 0.45), transparent 34%),
+        linear-gradient(180deg, #fffaf0 0%, #fff5dc 100%);
+      border: 8px solid #2b281f;
+      box-shadow: 0 24px 56px rgba(107, 72, 0, 0.22);
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 22px 6px;
+      color: #3c2d08;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .app {
+      padding: 8px 16px 92px;
+    }
+
+    .top-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+      padding: 16px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #ffcc3c 0%, #ffb800 100%);
+      box-shadow: 0 12px 24px rgba(255, 184, 0, 0.18);
+    }
+
+    .top-title {
+      display: block;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .top-sub {
+      display: block;
+      margin-top: 4px;
+      color: rgba(82, 50, 0, 0.72);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .pill-count {
+      min-width: 66px;
+      padding: 10px 8px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.28);
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 20px rgba(123, 84, 23, 0.06);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow {
+      display: block;
+      color: #c18b28;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+    }
+
+    .section h2 {
+      margin: 3px 0 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .link {
+      flex-shrink: 0;
+      color: #a96f00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 42px;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field {
+      padding: 11px 12px;
+      border-radius: 16px;
+      background: #fff7e3;
+      border: 1px solid rgba(255, 184, 0, 0.18);
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      color: #7c6b45;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .field .value {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .field .unit {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .preview {
+      min-height: 68px;
+      padding: 10px 6px;
+      border-radius: 15px;
+      background: #fff7e3;
+      text-align: center;
+    }
+
+    .preview b {
+      display: block;
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .preview span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .target-card {
+      position: relative;
+      margin-bottom: 12px;
+      padding: 14px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, #fffef9 0%, #fff6dc 100%);
+      border: 1px solid rgba(255, 184, 0, 0.24);
+      box-shadow: 0 14px 30px rgba(255, 184, 0, 0.12);
+    }
+
+    .target-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .target-head strong {
+      font-size: 16px;
+    }
+
+    .target-head small {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .target-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .target-item {
+      overflow: hidden;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(193, 139, 40, 0.12);
+    }
+
+    .target-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 9px;
+      color: #72551a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--natural);
+    }
+
+    .special .dot {
+      background: var(--special);
+    }
+
+    .target-value {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 24px;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+    }
+
+    .target-value span {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0;
+    }
+
+    .target-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      padding: 0 7px;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .badge.ok {
+      background: var(--ok);
+    }
+
+    .badge.warn {
+      background: var(--warn);
+    }
+
+    .badge.over {
+      background: var(--danger);
+    }
+
+    .bar {
+      position: relative;
+      overflow: hidden;
+      height: 6px;
+      margin-top: 10px;
+      border-radius: 999px;
+      background: #f4e4b8;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--natural);
+    }
+
+    .special .bar i {
+      background: var(--special);
+    }
+
+    .target-item.over {
+      background: #fff2f0;
+      border-color: rgba(232, 93, 85, 0.28);
+    }
+
+    .target-item.over .bar {
+      background: #ffd9d5;
+    }
+
+    .target-item.over .bar i {
+      background: var(--danger);
+    }
+
+    .calorie-note {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 15px;
+      background: rgba(255, 122, 69, 0.09);
+      color: #8c4a1e;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .calorie-note b {
+      color: var(--calorie);
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .food-line,
+    .drug-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 15px;
+      background: #fff9ea;
+    }
+
+    .food-line strong,
+    .drug-line strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .food-line span,
+    .drug-line span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .action {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 18px;
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 10px;
+    }
+
+    .btn {
+      height: 46px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .btn.ghost {
+      background: #fff;
+      color: #80662e;
+      border: 1px solid rgba(255, 184, 0, 0.2);
+    }
+
+    .btn.primary {
+      background: var(--lemon);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(255, 184, 0, 0.22);
+    }
+
+    .drawer {
+      margin: 12px -16px -92px;
+      padding: 16px 16px 110px;
+      border-radius: 26px 26px 0 0;
+      background: #fffdf7;
+      box-shadow: 0 -18px 36px rgba(62, 43, 0, 0.12);
+    }
+
+    .handle {
+      width: 52px;
+      height: 5px;
+      margin: 0 auto 14px;
+      border-radius: 999px;
+      background: rgba(138, 124, 96, 0.28);
+    }
+
+    .note-only {
+      padding: 15px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255, 122, 69, 0.12), rgba(255, 184, 0, 0.14));
+      border: 1px solid rgba(255, 122, 69, 0.2);
+    }
+
+    .note-only .big {
+      display: block;
+      margin: 8px 0 6px;
+      color: var(--calorie);
+      font-size: 32px;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+    }
+
+    .caption {
+      margin: 14px 2px 0;
+      color: #735f34;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    @media (max-width: 1240px) {
+      .mock-grid {
+        grid-template-columns: repeat(2, minmax(270px, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        padding: 24px 14px 34px;
+      }
+
+      .hero {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .legend {
+        justify-content: flex-start;
+      }
+
+      .mock-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <div class="kicker">LEMON BABY · TARGET PREVIEW</div>
+        <h1>记录入口目标提醒效果图</h1>
+        <p>主提醒只看天然蛋白和特殊蛋白；热量作为弱提醒，在配置热量目标、且当前记录会影响热量时出现。以下是 4 个典型场景，用来确认交互方向。</p>
+      </div>
+      <div class="legend" aria-label="状态说明">
+        <span>绿色：仍在目标内</span>
+        <span>橙色：接近目标</span>
+        <span>红色：保存后超出</span>
+        <span>热量：弱提醒</span>
+      </div>
+    </header>
+
+    <section class="mock-grid">
+      <article class="scene">
+        <div class="scene-title">
+          <strong>场景 A · 记一顿奶</strong>
+          <em>保存后仍在目标内</em>
+        </div>
+        <div class="phone">
+          <div class="status"><span>16:11</span><span>🍋 100%</span></div>
+          <div class="app">
+            <div class="section">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">本次记录</span>
+                  <h2>配奶录入</h2>
+                </div>
+                <span class="link">16:10</span>
+              </div>
+            </div>
+
+            <div class="target-card">
+              <div class="target-head">
+                <strong>保存后目标提醒</strong>
+                <small>按今日已记录 + 本次预估</small>
+              </div>
+              <div class="target-grid">
+                <div class="target-item">
+                  <div class="target-label"><span><i class="dot"></i> 天然蛋白</span><span class="badge ok">还差 1.6g</span></div>
+                  <div class="target-value">3.6<span>/ 5.2g</span></div>
+                  <div class="target-meta"><span>本次 +0.7g</span><span>69%</span></div>
+                  <div class="bar"><i style="width: 69%;"></i></div>
+                </div>
+                <div class="target-item special">
+                  <div class="target-label"><span><i class="dot"></i> 特殊蛋白</span><span class="badge ok">还差 2.0g</span></div>
+                  <div class="target-value">1.4<span>/ 3.4g</span></div>
+                  <div class="target-meta"><span>本次 +0.9g</span><span>41%</span></div>
+                  <div class="bar"><i style="width: 41%;"></i></div>
+                </div>
+              </div>
+              <div class="calorie-note">
+                <span>热量提醒</span>
+                <b>本次 +96 kcal · 今日还差 186 kcal</b>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">本次配奶</span>
+                  <h2>这次喝什么</h2>
+                </div>
+                <span class="link">+ 添加奶</span>
+              </div>
+              <div class="list">
+                <div class="food-line">
+                  <div><strong>母乳</strong><span>60 ml</span></div>
+                  <b>0.66g</b>
+                </div>
+                <div class="food-line">
+                  <div><strong>特奶</strong><span>粉 7g / 水 52ml</span></div>
+                  <b>0.92g</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">营养预览</span>
+                  <h2>本次合计</h2>
+                </div>
+              </div>
+              <div class="preview-grid">
+                <div class="preview"><b>112</b><span>总奶量 ml</span></div>
+                <div class="preview"><b>96</b><span>热量 kcal</span></div>
+                <div class="preview"><b>0.66</b><span>天然蛋白</span></div>
+                <div class="preview"><b>0.92</b><span>特殊蛋白</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="action"><div class="btn ghost">取消</div><div class="btn primary">保存</div></div>
+        </div>
+        <p class="caption">奶入口用目标卡替换现在偏单一的“剩余热量”提示，主信息聚焦蛋白，热量退到一行小提示。</p>
+      </article>
+
+      <article class="scene">
+        <div class="scene-title">
+          <strong>场景 B · 加食物</strong>
+          <em>接近天然蛋白目标</em>
+        </div>
+        <div class="phone">
+          <div class="status"><span>16:11</span><span>🍋 100%</span></div>
+          <div class="app">
+            <div class="top-card">
+              <div>
+                <span class="top-title">晚餐</span>
+                <span class="top-sub">2026-06-10 · 18:20</span>
+              </div>
+              <div class="pill-count">2<br><small>已加</small></div>
+            </div>
+
+            <div class="target-card">
+              <div class="target-head">
+                <strong>保存本顿后的目标</strong>
+                <small>含本顿 2 种食物</small>
+              </div>
+              <div class="target-grid">
+                <div class="target-item">
+                  <div class="target-label"><span><i class="dot"></i> 天然蛋白</span><span class="badge warn">还差 0.4g</span></div>
+                  <div class="target-value">4.8<span>/ 5.2g</span></div>
+                  <div class="target-meta"><span>本顿 +1.1g</span><span>92%</span></div>
+                  <div class="bar"><i style="width: 92%;"></i></div>
+                </div>
+                <div class="target-item special">
+                  <div class="target-label"><span><i class="dot"></i> 特殊蛋白</span><span class="badge ok">还差 2.8g</span></div>
+                  <div class="target-value">0.6<span>/ 3.4g</span></div>
+                  <div class="target-meta"><span>本顿 +0g</span><span>18%</span></div>
+                  <div class="bar"><i style="width: 18%;"></i></div>
+                </div>
+              </div>
+              <div class="calorie-note">
+                <span>热量提醒</span>
+                <b>本顿 +132 kcal · 今日还差 72 kcal</b>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">本顿食物</span>
+                  <h2>已添加 2 种</h2>
+                </div>
+                <span class="link">添加食物</span>
+              </div>
+              <div class="list">
+                <div class="food-line">
+                  <div><strong>米糊</strong><span>25g · 热量 92 kcal</span></div>
+                  <b>蛋白 0.7g</b>
+                </div>
+                <div class="food-line">
+                  <div><strong>南瓜泥</strong><span>40g · 热量 40 kcal</span></div>
+                  <b>蛋白 0.4g</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="preview-grid">
+                <div class="preview"><b>132</b><span>kcal</span></div>
+                <div class="preview"><b>1.1</b><span>蛋白</span></div>
+                <div class="preview"><b>28</b><span>碳水</span></div>
+                <div class="preview"><b>0.8</b><span>脂肪</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="action"><div class="btn ghost">添加食物</div><div class="btn primary">保存本顿</div></div>
+        </div>
+        <p class="caption">本顿列表页展示“整顿保存后”的状态，适合用户在保存前做最后判断。</p>
+      </article>
+
+      <article class="scene">
+        <div class="scene-title">
+          <strong>场景 C · 输入克数</strong>
+          <em>实时发现天然蛋白超出</em>
+        </div>
+        <div class="phone">
+          <div class="status"><span>16:11</span><span>🍋 100%</span></div>
+          <div class="app">
+            <div class="top-card">
+              <div>
+                <span class="top-title">晚加餐</span>
+                <span class="top-sub">正在添加 · 鸡蛋羹</span>
+              </div>
+              <div class="pill-count">1<br><small>草稿</small></div>
+            </div>
+
+            <div class="drawer">
+              <div class="handle"></div>
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">添加食物</span>
+                  <h2>鸡蛋羹</h2>
+                </div>
+                <span class="link">换一种</span>
+              </div>
+
+              <div class="input-row">
+                <div class="field">
+                  <label>份量</label>
+                  <div class="value">38 <span class="unit">g</span></div>
+                </div>
+                <div class="field">
+                  <label>单位</label>
+                  <div class="value" style="font-size: 19px;">克</div>
+                </div>
+              </div>
+
+              <div class="target-card" style="margin-top: 12px;">
+                <div class="target-head">
+                  <strong>加入后目标提醒</strong>
+                  <small>按当前输入实时计算</small>
+                </div>
+                <div class="target-grid">
+                  <div class="target-item over">
+                    <div class="target-label"><span><i class="dot"></i> 天然蛋白</span><span class="badge over">超出 0.3g</span></div>
+                    <div class="target-value">5.5<span>/ 5.2g</span></div>
+                    <div class="target-meta"><span>本项 +2.4g</span><span>106%</span></div>
+                    <div class="bar"><i style="width: 100%;"></i></div>
+                  </div>
+                  <div class="target-item special">
+                    <div class="target-label"><span><i class="dot"></i> 特殊蛋白</span><span class="badge ok">还差 3.4g</span></div>
+                    <div class="target-value">0<span>/ 3.4g</span></div>
+                    <div class="target-meta"><span>本项 +0g</span><span>0%</span></div>
+                    <div class="bar"><i style="width: 0%;"></i></div>
+                  </div>
+                </div>
+                <div class="calorie-note">
+                  <span>热量提醒</span>
+                  <b>本项 +56 kcal · 今日还差 148 kcal</b>
+                </div>
+              </div>
+
+              <div class="section" style="margin-bottom: 0;">
+                <div class="preview-grid">
+                  <div class="preview"><b>56</b><span>kcal</span></div>
+                  <div class="preview"><b>2.4</b><span>蛋白</span></div>
+                  <div class="preview"><b>0.8</b><span>碳水</span></div>
+                  <div class="preview"><b>3.1</b><span>脂肪</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action"><div class="btn ghost">取消</div><div class="btn primary">仍然加入</div></div>
+        </div>
+        <p class="caption">超出时不阻止保存，但把按钮文案改成“仍然加入”会更清楚，避免用户误操作。</p>
+      </article>
+
+      <article class="scene">
+        <div class="scene-title">
+          <strong>场景 D · 治疗记录</strong>
+          <em>只展示热量提醒</em>
+        </div>
+        <div class="phone">
+          <div class="status"><span>16:11</span><span>🍋 100%</span></div>
+          <div class="app">
+            <div class="section">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">治疗记录</span>
+                  <h2>输液</h2>
+                </div>
+                <span class="link">18:00</span>
+              </div>
+              <div class="list">
+                <div class="drug-line">
+                  <div><strong>10% 葡萄糖</strong><span>50ml · 自动估算</span></div>
+                  <b>17 kcal</b>
+                </div>
+                <div class="drug-line">
+                  <div><strong>左卡尼丁</strong><span>1.5ml · 不计营养</span></div>
+                  <b>--</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="note-only">
+              <span class="eyebrow">热量目标提醒</span>
+              <span class="big">+17 kcal</span>
+              <div class="calorie-note" style="margin-top: 0;">
+                <span>治疗保存后</span>
+                <b>今日热量 414 / 480 kcal，还差 66 kcal</b>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">总计入营养</span>
+                  <h2>治疗估算</h2>
+                </div>
+              </div>
+              <div class="preview-grid">
+                <div class="preview"><b>17</b><span>热量</span></div>
+                <div class="preview"><b>5</b><span>碳水</span></div>
+                <div class="preview"><b>0</b><span>蛋白</span></div>
+                <div class="preview"><b>0</b><span>脂肪</span></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <p style="margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65;">治疗项不影响天然/特殊蛋白，所以这里不放蛋白目标卡，避免误导。</p>
+            </div>
+          </div>
+          <div class="action"><div class="btn ghost">取消</div><div class="btn primary">保存</div></div>
+        </div>
+        <p class="caption">治疗入口只保留和当前数据相关的提醒，视觉上明显弱于蛋白提醒。</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

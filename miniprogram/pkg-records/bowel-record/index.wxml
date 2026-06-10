@@ -1,0 +1,139 @@
+<view class="page bowel-page">
+  <view class="hero-card">
+    <view class="hero-main">
+      <view class="hero-icon">{{form.typeIcon}}</view>
+      <view class="hero-copy">
+        <view class="hero-title">尿布记录</view>
+        <view class="hero-subtitle">{{isEdit ? '调整这条尿布记录' : '给今天补一条尿布记录'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card compact-card">
+    <view class="compact-grid">
+      <view class="compact-field">
+        <text class="field-label">日期</text>
+        <view class="compact-value fixed-date">📅 {{dateKey}}</view>
+      </view>
+      <view class="compact-field">
+        <text class="field-label">时间</text>
+        <picker mode="time" value="{{form.time}}" bindchange="onTimeChange">
+          <view class="compact-picker">🕒 {{form.time || '请选择'}}</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-head">
+      <view>
+        <view class="section-title">尿布里有什么</view>
+        <view class="section-tip">先选类型，再补充细节</view>
+      </view>
+    </view>
+    <view class="bowel-type-options">
+      <view class="bowel-type-btn {{form.type === 'stool' ? 'active' : ''}}" data-type="stool" bindtap="onTypeSelect">
+        <text class="type-icon">💩</text>
+        <text class="type-text">大便</text>
+        <text class="type-tip">记录性状颜色</text>
+      </view>
+      <view class="bowel-type-btn {{form.type === 'urine' ? 'active' : ''}}" data-type="urine" bindtap="onTypeSelect">
+        <text class="type-icon">💧</text>
+        <text class="type-text">小便</text>
+        <text class="type-tip">快速记尿尿</text>
+      </view>
+      <view class="bowel-type-btn {{form.type === 'mixed' ? 'active' : ''}}" data-type="mixed" bindtap="onTypeSelect">
+        <text class="type-icon">🌈</text>
+        <text class="type-text">混合</text>
+        <text class="type-tip">尿布里都有</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{form.type === 'stool' || form.type === 'mixed'}}">
+    <view class="section-head">
+      <view>
+        <view class="section-title">便便细节</view>
+        <view class="section-tip">这些信息可选，方便之后观察变化</view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="field-label">性状</text>
+      <view class="option-grid">
+        <view class="option-btn {{form.consistency === item.value ? 'active' : ''}}" wx:for="{{consistencyOptions}}" wx:key="value" data-field="consistency" data-value="{{item.value}}" bindtap="onOptionSelect">
+          <text class="option-icon">{{item.icon}}</text>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="field-label">颜色</text>
+      <view class="option-grid">
+        <view class="option-btn {{form.color === item.value ? 'active' : ''}}" wx:for="{{colorOptions}}" wx:key="value" data-field="color" data-value="{{item.value}}" bindtap="onOptionSelect">
+          <text class="option-icon">{{item.icon}}</text>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="field-label">气味</text>
+      <view class="option-grid">
+        <view class="option-btn {{form.smell === item.value ? 'active' : ''}}" wx:for="{{smellOptions}}" wx:key="value" data-field="smell" data-value="{{item.value}}" bindtap="onOptionSelect">
+          <text class="option-icon">{{item.icon}}</text>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="field-label">分量</text>
+      <view class="option-grid three">
+        <view class="option-btn {{form.amount === item.value ? 'active' : ''}}" wx:for="{{amountOptions}}" wx:key="value" data-field="amount" data-value="{{item.value}}" bindtap="onOptionSelect">
+          <text class="option-icon">{{item.icon}}</text>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{form.type === 'urine' || form.type === 'mixed'}}">
+    <view class="section-head">
+      <view>
+        <view class="section-title">小便细节</view>
+        <view class="section-tip">轻量记录尿量和尿色</view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="field-label">尿量</text>
+      <view class="option-grid three">
+        <view class="option-btn {{form.urineAmount === item.value ? 'active' : ''}}" wx:for="{{urineAmountOptions}}" wx:key="value" data-field="urineAmount" data-value="{{item.value}}" bindtap="onOptionSelect">
+          <text class="option-icon">{{item.icon}}</text>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="field-label">尿色</text>
+      <view class="option-grid three">
+        <view class="option-btn {{form.urineColor === item.value ? 'active' : ''}}" wx:for="{{urineColorOptions}}" wx:key="value" data-field="urineColor" data-value="{{item.value}}" bindtap="onOptionSelect">
+          <text class="option-icon">{{item.icon}}</text>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title notes-title">备注</view>
+    <textarea value="{{form.notes}}" bindinput="onNotesInput" placeholder="可选，比如状态、尿布情况或护理备注" class="notes-area" />
+  </view>
+
+  <view class="footer-actions">
+    <button class="save-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="saveBowelRecord">{{isEdit ? '保存修改' : '保存记录'}}</button>
+  </view>
+</view>

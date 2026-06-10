@@ -4,6 +4,10 @@ Component({
       type: String,
       value: '治疗记录'
     },
+    showTitle: {
+      type: Boolean,
+      value: true
+    },
     actionText: {
       type: String,
       value: '新增'

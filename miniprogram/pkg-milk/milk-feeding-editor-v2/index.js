@@ -1,7 +1,16 @@
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
 const feedingRecordV2Model = require('../../models/feedingRecordV2');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
+const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
+const {
+  readNutritionTargetPreferences,
+  pickCoefficient
+} = require('../../utils/nutritionTargetPreferences');
+const {
+  buildEntryTargetPreview,
+  normalizeSummary
+} = require('../../utils/nutritionTargetPreview');
 const {
   BREAST_MILK_TAG_META,
   POWDER_CATEGORY_META,
@@ -155,6 +164,15 @@ function createPowderFromComponent(component = {}) {
   });
 }
 
+function canLoadDailyTargetContext(wxLike = wxApi) {
+  try {
+    const command = wxLike?.cloud?.database?.().command;
+    return !!(command && typeof command.gte === 'function' && typeof command.lte === 'function');
+  } catch (error) {
+    return false;
+  }
+}
+
 Page({
   data: {
     babyUid: '',
@@ -179,6 +197,12 @@ Page({
     milkEntries: [],
     existingRecords: [],
     nutritionPreview: createEmptySummary(),
+    targetPreview: null,
+    targetContext: {
+      currentSummary: normalizeSummary(),
+      targetPreferences: {},
+      weight: ''
+    },
     goalPreview: {
       calorieGoal: '',
       consumedCalories: 0,
@@ -250,6 +274,7 @@ Page({
         }),
         getV2RecordsByDate(this.data.babyUid, this.data.selectedDate)
       ]);
+      const targetContext = await this.loadTargetContext(basicInfo || {}, records || []);
       const formulaPowders = ((settings && settings.formulaPowders) || [])
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
         .map(enrichPowder);
@@ -258,6 +283,7 @@ Page({
         nutritionSettings: settings || {},
         formulaPowders: sortFormulaPowdersByCategory(formulaPowders),
         existingRecords: records || [],
+        targetContext,
         weight: toInputValue(basicInfo?.weight),
         height: toInputValue(basicInfo?.height),
         naturalProteinCoefficientInput: toInputValue(basicInfo?.naturalProteinCoefficient),
@@ -275,6 +301,59 @@ Page({
       console.error('加载喂奶记录失败：', error);
       wxApi.showToast({ title: '加载失败，请稍后再试', icon: 'none' });
     }
+  },
+
+  summarizeRecordsForTarget(records = []) {
+    return normalizeSummary((records || []).reduce((summary, record = {}) => {
+      const nutrition = record.nutritionSummary || {};
+      summary.calories += Number(nutrition.calories) || 0;
+      summary.protein += Number(nutrition.protein) || 0;
+      summary.naturalProtein += Number(nutrition.naturalProtein) || 0;
+      summary.specialProtein += Number(nutrition.specialProtein) || 0;
+      summary.carbs += Number(nutrition.carbs) || 0;
+      summary.fat += Number(nutrition.fat) || 0;
+      return summary;
+    }, normalizeSummary()));
+  },
+
+  async loadTargetContext(basicInfo = {}, records = []) {
+    const localTarget = readNutritionTargetPreferences(this.data.babyUid, wxApi);
+    const fallbackSummary = this.summarizeRecordsForTarget(records);
+    let currentSummary = fallbackSummary;
+    let resolvedBasicInfo = basicInfo || {};
+
+    try {
+      if (!canLoadDailyTargetContext()) {
+        return {
+          currentSummary: fallbackSummary,
+          weight: pickCoefficient('', resolvedBasicInfo.weight),
+          targetPreferences: {
+            naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, resolvedBasicInfo.naturalProteinCoefficient),
+            specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, resolvedBasicInfo.specialProteinCoefficient),
+            calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, resolvedBasicInfo.calorieCoefficient)
+          }
+        };
+      }
+
+      const daily = await DailyRecordV2Service.getDailyRecordV2(this.data.babyUid, this.data.selectedDate);
+      currentSummary = normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || fallbackSummary);
+      resolvedBasicInfo = {
+        ...resolvedBasicInfo,
+        ...(daily?.basicInfo || {})
+      };
+    } catch (error) {
+      console.warn('加载当日目标上下文失败，使用当前喂奶记录估算:', error);
+    }
+
+    return {
+      currentSummary,
+      weight: pickCoefficient('', resolvedBasicInfo.weight),
+      targetPreferences: {
+        naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, resolvedBasicInfo.naturalProteinCoefficient),
+        specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, resolvedBasicInfo.specialProteinCoefficient),
+        calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, resolvedBasicInfo.calorieCoefficient)
+      }
+    };
   },
 
   onBasicInput(e) {
@@ -802,25 +881,47 @@ Page({
   refreshNutritionPreview() {
     const components = this.buildCurrentComponents();
     const nutritionPreview = buildNutritionSummary(components);
-    const consumedCalories = (this.data.existingRecords || []).reduce((total, record) => (
+    const targetContext = this.data.targetContext || {};
+    const previousSummary = this.getEditingPreviousSummary();
+    const targetPreview = buildEntryTargetPreview({
+      currentSummary: targetContext.currentSummary || this.summarizeRecordsForTarget(this.data.existingRecords || []),
+      draftSummary: nutritionPreview,
+      previousSummary,
+      weight: this.data.weight || targetContext.weight,
+      targetPreferences: targetContext.targetPreferences || {},
+      includeCalories: true
+    });
+    const dailyConsumedCalories = Number(targetContext.currentSummary?.calories);
+    const fallbackConsumedCalories = (this.data.existingRecords || []).reduce((total, record) => (
       total + (Number(record?.nutritionSummary?.calories) || 0)
     ), 0);
-    const weight = Number(this.data.weight);
-    const calorieCoefficient = Number(this.data.calorieCoefficientInput);
+    const consumedCalories = Number.isFinite(dailyConsumedCalories) ? dailyConsumedCalories : fallbackConsumedCalories;
+    const effectiveConsumedCalories = Math.max(0, consumedCalories - (Number(previousSummary.calories) || 0));
+    const weight = Number(this.data.weight || targetContext.weight);
+    const calorieCoefficient = Number(this.data.calorieCoefficientInput || targetContext.targetPreferences?.calorieCoefficient);
     const hasGoal = Number.isFinite(weight) && weight > 0 && Number.isFinite(calorieCoefficient) && calorieCoefficient > 0;
     const calorieGoal = hasGoal ? Math.round(weight * calorieCoefficient) : '';
-    const remainingBefore = hasGoal ? Math.max(0, Math.round(calorieGoal - consumedCalories)) : '';
-    const remainingAfter = hasGoal ? Math.max(0, Math.round(calorieGoal - consumedCalories - nutritionPreview.calories)) : '';
+    const remainingBefore = hasGoal ? Math.max(0, Math.round(calorieGoal - effectiveConsumedCalories)) : '';
+    const remainingAfter = hasGoal ? Math.max(0, Math.round(calorieGoal - effectiveConsumedCalories - nutritionPreview.calories)) : '';
 
     this.setData({
       nutritionPreview,
+      targetPreview,
       goalPreview: {
         calorieGoal,
-        consumedCalories: Math.round(consumedCalories),
+        consumedCalories: Math.round(effectiveConsumedCalories),
         remainingBefore,
         remainingAfter
       }
     });
+  },
+
+  getEditingPreviousSummary() {
+    if (this.data.editorMode !== 'edit') {
+      return normalizeSummary();
+    }
+    const record = this.resolveEditingRecord(this.data.existingRecords || []);
+    return normalizeSummary(record?.nutritionSummary || {});
   },
 
   buildBasicInfoSnapshot() {

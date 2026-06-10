@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "治疗记录"
+  "navigationBarTitleText": "治疗记录",
+  "usingComponents": {
+    "nutrition-target-preview": "/components/nutrition-target-preview/nutrition-target-preview"
+  }
 }

@@ -2344,6 +2344,89 @@
 
 /* === 排便记录样式 === */
 
+.bowel-card {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 231, 156, 0.34), transparent 28%),
+    linear-gradient(180deg, #fffef9 0%, #fff7e8 100%);
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+}
+
+.bowel-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+  margin-bottom: 16rpx;
+}
+
+.bowel-stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  padding: 14rpx 8rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 238, 185, 0.72);
+  border: 1rpx solid rgba(255, 184, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.bowel-stat-pill.urine {
+  background: rgba(232, 245, 255, 0.82);
+  border-color: rgba(99, 169, 231, 0.12);
+}
+
+.bowel-stat-pill.mixed {
+  background: rgba(239, 239, 255, 0.78);
+  border-color: rgba(135, 130, 224, 0.12);
+}
+
+.bowel-stat-label {
+  font-size: 20rpx;
+  line-height: 1;
+  color: #8d7344;
+}
+
+.bowel-stat-value {
+  font-size: 28rpx;
+  line-height: 1;
+  font-weight: 800;
+  color: #3f2a03;
+}
+
+.bowel-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 30rpx 18rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1rpx dashed rgba(255, 184, 0, 0.28);
+  color: #8d7344;
+}
+
+.bowel-empty-icon {
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.bowel-empty-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #5f4309;
+}
+
+.bowel-empty-desc {
+  font-size: 21rpx;
+  color: #9a7a38;
+}
+
+.bowel-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
 /* 排便记录分组 */
 .bowel-group {
   background: #ffffff;
@@ -2398,10 +2481,12 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 20rpx 24rpx;
-  border-bottom: 1rpx solid rgba(255, 184, 0, 0.08);
+  gap: 16rpx;
+  padding: 18rpx;
+  border: 1rpx solid rgba(255, 184, 0, 0.12);
+  border-radius: 22rpx;
   transition: all 0.3s ease;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .bowel-record-item:last-child {
@@ -2412,9 +2497,106 @@
   background: rgba(255, 184, 0, 0.05);
 }
 
-.bowel-record-item .record-content {
+.bowel-record-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 66rpx;
+  height: 66rpx;
+  border-radius: 22rpx;
+  background: #fff1bd;
+  font-size: 34rpx;
+  box-shadow: inset 0 -4rpx 0 rgba(255, 184, 0, 0.12);
+}
+
+.bowel-record-icon.urine {
+  background: #e7f5ff;
+  box-shadow: inset 0 -4rpx 0 rgba(99, 169, 231, 0.12);
+}
+
+.bowel-record-icon.mixed {
+  background: #f0efff;
+  box-shadow: inset 0 -4rpx 0 rgba(135, 130, 224, 0.12);
+}
+
+.bowel-record-content {
   flex: 1;
-  margin-right: 16rpx;
+  min-width: 0;
+}
+
+.bowel-record-main-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.bowel-record-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.bowel-record-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.bowel-record-time {
+  font-size: 22rpx;
+  line-height: 1.2;
+  color: #8d7344;
+}
+
+.bowel-record-time.inline {
+  display: inline;
+}
+
+.bowel-record-actions {
+  flex-shrink: 0;
+}
+
+.bowel-record-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.bowel-record-chip {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 235, 172, 0.7);
+  color: #6f4c07;
+  font-size: 22rpx;
+  line-height: 1.2;
+  border: 1rpx solid rgba(255, 184, 0, 0.12);
+}
+
+.bowel-record-chip.color {
+  background: rgba(255, 246, 232, 0.9);
+}
+
+.bowel-record-chip.amount {
+  background: rgba(240, 239, 255, 0.78);
+}
+
+.bowel-record-chip.smell {
+  background: rgba(232, 248, 238, 0.82);
+}
+
+.bowel-record-chip.urine {
+  background: rgba(232, 245, 255, 0.82);
+}
+
+.bowel-record-chip.urine-color {
+  background: rgba(255, 249, 218, 0.86);
 }
 
 .bowel-time-type {
@@ -2457,7 +2639,6 @@
   font-style: italic;
 }
 
-/* 排便记录弹窗样式 */
 .bowel-type-options {
   display: flex;
   gap: 16rpx;
@@ -2470,9 +2651,9 @@
   flex-direction: column;
   align-items: center;
   padding: 20rpx 16rpx;
-  border: 2rpx solid #E5E5E5;
-  border-radius: 16rpx;
-  background: #F8F8F8;
+  border: 2rpx solid rgba(214, 173, 92, 0.14);
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.82);
   transition: all 0.3s ease;
 }
 
@@ -2605,40 +2786,45 @@
 }
 
 /* 记录 Tabs */
+.tabs-scroll {
+  width: 100%;
+  margin: 16rpx 0 20rpx;
+  white-space: nowrap;
+}
+
 .tabs {
-  display: flex;
+  display: inline-flex;
+  min-width: 100%;
+  box-sizing: border-box;
+  gap: 8rpx;
   background-color: rgba(255, 184, 0, 0.1);
-  border-radius: 12rpx;
-  overflow: hidden;
-  margin: 16rpx 12rpx 20rpx;
+  border-radius: 16rpx;
+  padding: 8rpx 12rpx;
 }
 
 .tab {
-  flex: 1;
+  flex: 0 0 auto;
   text-align: center;
-  padding: 14rpx 0;
-  font-size: 24rpx;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  font-size: 23rpx;
+  line-height: 1;
   color: #666;
   position: relative;
-  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  font-weight: 600;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tab.active {
   color: #FFB800;
-  font-weight: 600;
   background-color: rgba(255, 184, 0, 0.2);
+  box-shadow: inset 0 0 0 2rpx rgba(255, 184, 0, 0.26);
 }
 
 .tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40%;
-  height: 6rpx;
-  background-color: #FFB800;
-  border-radius: 3rpx;
+  display: none;
 }
 
 .metric-info-overlay{position:fixed;inset:0;z-index:40}

@@ -1,7 +1,8 @@
 <view class="treatment-panel">
-  <view class="treatment-panel-header">
-    <text class="treatment-panel-title">{{title}}</text>
+  <view class="treatment-panel-header {{showTitle ? '' : 'actions-only'}}">
+    <text class="treatment-panel-title" wx:if="{{showTitle && title}}">{{title}}</text>
     <view class="treatment-panel-action" bindtap="handleAdd">
+      <image class="treatment-panel-action-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
       <text class="treatment-panel-action-text">{{actionText}}</text>
     </view>
   </view>

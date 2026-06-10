@@ -96,6 +96,13 @@
     </view>
   </view>
 
+  <nutrition-target-preview
+    preview="{{targetPreview}}"
+    title="热量目标提醒"
+    subtitle="治疗项不计入天然/特殊蛋白，仅提示热量影响"
+    showProtein="{{false}}"
+  />
+
   <view class="card summary-card">
     <view class="section-title">总计入营养</view>
     <view class="summary-strip">

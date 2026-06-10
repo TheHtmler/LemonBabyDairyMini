@@ -1,41 +1,38 @@
-<view class="page v2-page">
-  <view class="section-card secondary-card info-card">
-    <view class="panel-header">
-      <view class="panel-title-wrap">
-        <text class="section-eyebrow">本次记录</text>
-        <text class="section-title">配奶录入</text>
+<view class="page v2-page focused-feeding-page">
+  <view class="feeding-hero">
+    <view class="feeding-summary-strip">
+      <view class="feeding-summary-item">
+        <text class="feeding-summary-value">今日已喝 {{existingRecords.length}} 顿</text>
       </view>
+    </view>
+    <view class="hero-action-pill" bindtap="navigateToGoalPlanner">算奶</view>
+    <view class="hero-time-wrap">
       <picker mode="time" value="{{startTime}}" bindchange="onTimeChange">
-        <view class="field-picker compact-picker">{{startTime}}</view>
+        <view class="hero-time-pill">{{startTime}}</view>
       </picker>
     </view>
   </view>
 
-  <view class="goal-entry-card">
-    <view class="goal-entry-button" bindtap="navigateToGoalPlanner">
-      <view class="goal-entry-copy">
-        <text class="goal-entry-title">查看剩余奶量</text>
-        <text class="goal-entry-desc">按今日已保存喂奶记录计算，保存后预计剩余 {{goalPreview.remainingAfter !== '' ? goalPreview.remainingAfter : '--'}} kcal</text>
-      </view>
-      <text class="goal-entry-arrow">></text>
-    </view>
-  </view>
-
-  <view class="section-card primary-card mix-card">
+  <view class="section-card primary-card mix-card feeding-workbench">
     <view class="panel-header">
       <view class="panel-title-wrap">
-        <text class="section-eyebrow">本次配奶</text>
-        <text class="section-title">这次喝什么</text>
+        <view class="workbench-title-row">
+          <text class="section-title">这顿喝什么</text>
+        </view>
       </view>
-    </view>
-
-    <view class="add-milk-button" bindtap="addMilkEntry">
-      <text>+ 添加奶</text>
+      <view class="workbench-title-actions">
+        <view class="add-source-button" bindtap="addMilkEntry">
+          <view class="add-source-icon">🍼</view>
+          <text class="add-source-title">添加</text>
+          <text class="add-source-plus">+</text>
+        </view>
+      </view>
     </view>
 
     <view class="milk-entry-list-anchor">
       <view wx:if="{{!milkEntries.length}}" class="empty-state">
-        <text>本次还没有添加奶。</text>
+        <text class="empty-state-icon">🍼</text>
+        <text>先选一种奶吧</text>
       </view>
 
       <view wx:for="{{milkEntries}}" wx:key="localId" class="milk-entry-card milk-entry-card--{{item.kind === 'breast_milk' ? 'breast' : formulaPowders[item.powderPickerIndex].categoryBadgeClass}} {{item.justAdded ? 'just-added' : ''}}">
@@ -107,8 +104,8 @@
       <view class="add-milk-dialog-header">
         <view class="panel-title-wrap">
           <text class="section-eyebrow">添加奶</text>
-          <text class="section-title add-milk-dialog-title">选择要添加的奶</text>
-          <text class="add-milk-hint">选择后会直接加入本次配奶，再点一次可移除</text>
+          <text class="section-title add-milk-dialog-title">选奶粉</text>
+          <text class="add-milk-hint">可选多个不同奶粉</text>
         </view>
         <view class="add-milk-dialog-corner">
           <view class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">×</view>
@@ -137,55 +134,45 @@
     </view>
   </view>
 
-  <view class="section-card secondary-card">
-    <view class="panel-header compact-panel-header">
-      <view class="panel-title-wrap">
-        <text class="section-eyebrow">营养预览</text>
+  <view class="save-preview-stack">
+    <nutrition-target-preview
+      preview="{{targetPreview}}"
+      title="保存前看看"
+      subtitle="今日累计 + 本次"
+    />
+
+    <view class="section-card secondary-card quick-preview-card">
+      <view class="quick-preview-row">
+        <view class="quick-preview-item">
+          <text class="preview-value">{{nutritionPreview.totalVolume || 0}}</text>
+          <text class="preview-label">总奶量 ml</text>
+        </view>
+        <view class="quick-preview-item">
+          <text class="preview-value">{{nutritionPreview.calories || 0}}</text>
+          <text class="preview-label">热量 kcal</text>
+        </view>
+        <view class="quick-preview-item">
+          <text class="preview-value">{{nutritionPreview.totalPowderWeight || 0}}</text>
+          <text class="preview-label">奶粉 g</text>
+        </view>
       </view>
-    </view>
-    <view class="preview-grid preview-grid-compact">
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.totalVolume || 0}}</text>
-        <text class="preview-label">总奶量 ml</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.calories || 0}}</text>
-        <text class="preview-label">热量 kcal</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.naturalProtein || 0}}</text>
-        <text class="preview-label">天然蛋白 g</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.specialProtein || 0}}</text>
-        <text class="preview-label">特殊蛋白 g</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.protein || 0}}</text>
-        <text class="preview-label">总蛋白 g</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.carbs || 0}}</text>
-        <text class="preview-label">碳水 g</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.fat || 0}}</text>
-        <text class="preview-label">脂肪 g</text>
-      </view>
-      <view class="preview-item compact-preview-item">
-        <text class="preview-value">{{nutritionPreview.totalPowderWeight || 0}}</text>
-        <text class="preview-label">奶粉 g</text>
+      <view class="detail-preview-grid">
+        <text>天然蛋白 {{nutritionPreview.naturalProtein || 0}}g</text>
+        <text>特殊蛋白 {{nutritionPreview.specialProtein || 0}}g</text>
+        <text>总蛋白 {{nutritionPreview.protein || 0}}g</text>
+        <text>碳水 {{nutritionPreview.carbs || 0}}g</text>
+        <text>脂肪 {{nutritionPreview.fat || 0}}g</text>
       </view>
     </view>
   </view>
 
-  <view class="section-card secondary-card notes-card">
+  <view class="section-card secondary-card notes-card compact-notes-card">
     <view class="panel-header compact-panel-header">
       <view class="panel-title-wrap">
         <text class="section-eyebrow">备注</text>
       </view>
     </view>
-    <textarea class="notes-input compact-notes-input" value="{{notes}}" disabled="{{showAddMilkPanel}}" placeholder="可选，记录这次喂奶说明" bindinput="onNotesInput" />
+    <textarea class="notes-input compact-notes-input" value="{{notes}}" disabled="{{showAddMilkPanel}}" placeholder="喝奶状态 / 剩余量" bindinput="onNotesInput" />
   </view>
 
   <view class="footer-bar">

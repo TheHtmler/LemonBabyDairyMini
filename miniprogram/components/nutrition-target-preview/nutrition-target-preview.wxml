@@ -1,0 +1,44 @@
+<view class="target-preview" wx:if="{{preview && (preview.hasProteinTarget || preview.calorieNote.visible)}}">
+  <view class="target-preview-head">
+    <view>
+      <text class="target-preview-title">{{title}}</text>
+      <text class="target-preview-subtitle">{{subtitle}}</text>
+    </view>
+  </view>
+
+  <view class="target-preview-grid" wx:if="{{showProtein && preview.hasProteinTarget}}">
+    <view
+      class="target-preview-item {{item.tone}} {{item.status}}"
+      wx:for="{{preview.proteinRows}}"
+      wx:key="key"
+    >
+      <view class="target-preview-label-row">
+        <view class="target-preview-label">
+          <text class="target-preview-dot"></text>
+          <text>{{item.label}}</text>
+        </view>
+        <text class="target-preview-badge {{item.status}}">{{item.badgeText}}</text>
+      </view>
+      <view class="target-preview-value-row">
+        <text class="target-preview-value">{{item.actual}}</text>
+        <text class="target-preview-target" wx:if="{{item.hasTarget}}">/ {{item.targetText}}</text>
+      </view>
+      <view class="target-preview-meta">
+        <text>{{item.draftText}}</text>
+        <text wx:if="{{item.hasTarget}}">{{item.pct}}%</text>
+      </view>
+      <view class="target-preview-bar" wx:if="{{item.hasTarget}}">
+        <view class="target-preview-bar-inner" style="width: {{item.barPct}}%;"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="target-preview-empty" wx:elif="{{showProtein && !preview.hasProteinTarget}}">
+    <text>{{emptyText}}</text>
+  </view>
+
+  <view class="target-preview-calorie {{preview.calorieNote.status}}" wx:if="{{showCalorie && preview.calorieNote.visible}}">
+    <text class="target-preview-calorie-label">热量提醒</text>
+    <text class="target-preview-calorie-text">{{preview.calorieNote.text}}</text>
+  </view>
+</view>

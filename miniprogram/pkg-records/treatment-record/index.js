@@ -1,4 +1,15 @@
 const TreatmentRecordModel = require('../../models/treatmentRecord');
+const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
+const { getBabyUid } = require('../../utils/index');
+const {
+  readNutritionTargetPreferences,
+  pickCoefficient
+} = require('../../utils/nutritionTargetPreferences');
+const {
+  buildEntryTargetPreview,
+  summarizeTreatmentGroups,
+  normalizeSummary
+} = require('../../utils/nutritionTargetPreview');
 const {
   TREATMENT_ITEM_CATEGORIES,
   TREATMENT_ITEM_UNITS,
@@ -13,6 +24,16 @@ const {
 } = require('../../utils/treatmentUtils');
 
 const FIXED_CATEGORY_OPTIONS = TREATMENT_ITEM_CATEGORIES.filter(item => item.value !== 'custom');
+
+function canLoadDailyTargetContext() {
+  try {
+    const wxApi = typeof wx !== 'undefined' ? wx : null;
+    const command = wxApi?.cloud?.database?.().command;
+    return !!(command && typeof command.gte === 'function' && typeof command.lte === 'function');
+  } catch (error) {
+    return false;
+  }
+}
 
 function getTodayDateKey() {
   const now = new Date();
@@ -68,10 +89,17 @@ Page({
       notes: '',
       groups: []
     },
-    summary: calculateTreatmentRecordSummary([])
+    summary: calculateTreatmentRecordSummary([]),
+    originalTreatmentSummary: normalizeSummary(),
+    targetContext: {
+      currentSummary: normalizeSummary(),
+      targetPreferences: {},
+      weight: ''
+    },
+    targetPreview: null
   },
 
-  onLoad(options = {}) {
+  async onLoad(options = {}) {
     const dateKey = options.date || getTodayDateKey();
     const recordId = options.id || '';
     this.setData({
@@ -79,6 +107,7 @@ Page({
       recordId,
       isEdit: !!recordId
     });
+    await this.loadTargetContext(dateKey);
 
     if (recordId) {
       this.loadRecord(recordId);
@@ -95,7 +124,33 @@ Page({
         groups
       },
       summary: calculateTreatmentRecordSummary(groups)
+    }, () => {
+      this.refreshTargetPreview();
     });
+  },
+
+  async loadTargetContext(dateKey = this.data.dateKey) {
+    const babyUid = getBabyUid();
+    if (!babyUid || !dateKey) return;
+    if (!canLoadDailyTargetContext()) return;
+    try {
+      const daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, dateKey);
+      const basicInfo = daily?.basicInfo || daily?.summary?.basicInfo || {};
+      const localTarget = readNutritionTargetPreferences(babyUid);
+      this.setData({
+        targetContext: {
+          currentSummary: normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || {}),
+          weight: basicInfo.weight || '',
+          targetPreferences: {
+            naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),
+            specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, basicInfo.specialProteinCoefficient),
+            calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, basicInfo.calorieCoefficient)
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('加载治疗目标提醒上下文失败:', error);
+    }
   },
 
   async loadRecord(recordId) {
@@ -122,7 +177,10 @@ Page({
           notes: record.notes || '',
           groups
         },
-        summary: calculateTreatmentRecordSummary(groups)
+        summary: calculateTreatmentRecordSummary(groups),
+        originalTreatmentSummary: summarizeTreatmentGroups(groups)
+      }, () => {
+        this.refreshTargetPreview();
       });
     } catch (error) {
       console.error('加载治疗记录失败:', error);
@@ -142,11 +200,30 @@ Page({
         groups: safeGroups
       },
       summary: calculateTreatmentRecordSummary(safeGroups)
+    }, () => {
+      this.refreshTargetPreview();
     });
   },
 
   onDateChange(e) {
-    this.setData({ dateKey: e.detail.value });
+    const dateKey = e.detail.value;
+    this.setData({ dateKey }, async () => {
+      await this.loadTargetContext(dateKey);
+      this.refreshTargetPreview();
+    });
+  },
+
+  refreshTargetPreview() {
+    const targetContext = this.data.targetContext || {};
+    const targetPreview = buildEntryTargetPreview({
+      currentSummary: targetContext.currentSummary || {},
+      draftSummary: summarizeTreatmentGroups(this.data.form.groups || []),
+      previousSummary: this.data.isEdit ? this.data.originalTreatmentSummary : {},
+      weight: targetContext.weight,
+      targetPreferences: targetContext.targetPreferences || {},
+      includeCalories: true
+    });
+    this.setData({ targetPreview });
   },
 
   onNotesInput(e) {

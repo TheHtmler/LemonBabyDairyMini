@@ -350,7 +350,10 @@
   left: 0;
   right: 0;
   bottom: 0;
+  height: 78vh;
   max-height: 78vh;
+  display: flex;
+  flex-direction: column;
   padding: 16rpx 20rpx calc(24rpx + env(safe-area-inset-bottom));
   background: #FFFDF7;
   border-radius: 28rpx 28rpx 0 0;
@@ -410,7 +413,9 @@
 }
 
 .drawer-body {
-  min-height: 240rpx;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .select-body {
@@ -607,6 +612,9 @@
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 12rpx;
 }
 
 .selected-food-card {
@@ -685,8 +693,12 @@
 }
 
 .add-item-btn {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   width: 100%;
   height: 84rpx;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -698,6 +710,7 @@
   font-size: 28rpx;
   font-weight: 700;
   box-sizing: border-box;
+  box-shadow: 0 -10rpx 18rpx rgba(255, 253, 247, 0.94), 0 8rpx 16rpx rgba(255, 184, 0, 0.2);
 }
 
 .add-item-btn::after {

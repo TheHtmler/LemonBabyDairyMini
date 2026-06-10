@@ -149,6 +149,9 @@
       <view class="qa" bindtap="navigateToTreatmentRecord" hover-class="press-pop" hover-stay-time="60">
         <view class="qa-ic treat">🩺</view><text class="qa-nm">治疗</text>
       </view>
+      <view class="qa" bindtap="navigateToBowelRecord" hover-class="press-pop" hover-stay-time="60">
+        <view class="qa-ic bowel">💩</view><text class="qa-nm">记尿布</text>
+      </view>
       <view class="qa" bindtap="openWeightModal" hover-class="press-pop" hover-stay-time="60">
         <view class="qa-ic weight">⚖️</view><text class="qa-nm">量体重</text>
       </view>

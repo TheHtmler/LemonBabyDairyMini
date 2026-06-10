@@ -39,6 +39,12 @@
       <text class="section-title">本顿食物</text>
       <text class="section-meta">已添加 {{mealDraft.items.length}} 种</text>
     </view>
+    <nutrition-target-preview
+      preview="{{mealTargetPreview}}"
+      title="保存本顿后的目标"
+      subtitle="按今日已记录 + 本顿食物预估"
+      wx:if="{{mealDraft.items.length > 0}}"
+    />
     <view class="meal-summary-grid" wx:if="{{mealDraft.items.length > 0}}">
       <view class="meal-summary-item">
         <text class="meal-summary-value">{{mealSummary.calories || 0}}</text>
@@ -187,6 +193,11 @@
         />
         <text class="unit-text">{{currentFoodDraft.unit || 'g'}}</text>
       </view>
+      <nutrition-target-preview
+        preview="{{draftTargetPreview}}"
+        title="加入后目标提醒"
+        subtitle="按当前份量实时预估"
+      />
       <view class="field-block">
         <text class="field-label block">备注</text>
         <textarea
