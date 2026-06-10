@@ -388,7 +388,7 @@ Page({
 
     const weight = basicInfo.weight || '';
     const height = basicInfo.height || '';
-    const foodCount = (daily.foodIntakeRecords || []).length;
+    const foodCount = dashboard.buildFoodMealCount(daily.foodIntakeRecords || []);
     const nutrition = dashboard.buildNutritionSummary({ macroSummary, weight });
     const babyUid = getBabyUid();
     const targetPreferences = readNutritionTargetPreferences(babyUid);

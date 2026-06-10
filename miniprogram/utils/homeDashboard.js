@@ -483,6 +483,19 @@ function milkRecordVolumes(record = {}) {
   return { total, breast, special };
 }
 
+function buildFoodMealCount(foodIntakeRecords = []) {
+  const groups = new Set();
+  (foodIntakeRecords || []).forEach((record = {}, index) => {
+    if (!record || record.type === 'milk' || record.milkType) return;
+    if (record.mealBatchId) {
+      groups.add(`meal:${record.mealBatchId}`);
+      return;
+    }
+    groups.add(`single:${record._id || record.id || index}`);
+  });
+  return groups.size;
+}
+
 /**
  * 构建今日喂养进度
  * @param {Object} params
@@ -860,6 +873,7 @@ module.exports = {
   buildNutritionGoals,
   buildNutritionTargetState,
   buildNutritionSummary,
+  buildFoodMealCount,
   buildFeedingProgress,
   buildNextMealReference,
   buildWeeklyTrend,

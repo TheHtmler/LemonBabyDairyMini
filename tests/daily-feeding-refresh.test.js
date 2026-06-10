@@ -16,3 +16,10 @@ test('meal-editor and treatment-record notify daily-feeding page to reload after
   assert.match(treatmentRecord, /prevPage\.route [!=]==? 'pages\/daily-feeding\/index'/);
   assert.match(treatmentRecord, /await prevPage\.loadTodayData\(true\)/);
 });
+
+test('daily feeding page counts food progress by meal records instead of food items', () => {
+  const dailyFeeding = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
+
+  assert.match(dailyFeeding, /dashboard\.buildFoodMealCount\(daily\.foodIntakeRecords \|\| \[\]\)/);
+  assert.doesNotMatch(dailyFeeding, /const foodCount = \(daily\.foodIntakeRecords \|\| \[\]\)\.length/);
+});

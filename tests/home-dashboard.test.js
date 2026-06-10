@@ -10,6 +10,7 @@ const {
   buildNutritionGoals,
   buildNutritionTargetState,
   buildNutritionSummary,
+  buildFoodMealCount,
   buildFeedingProgress,
   buildNextMealReference,
   buildWeeklyTrend,
@@ -287,6 +288,16 @@ test('milkRecordVolumes：从组件拆分母乳/特奶', () => {
   assert.equal(v.total, 120);
   assert.equal(v.breast, 59);
   assert.equal(v.special, 61);
+});
+
+test('buildFoodMealCount：同一顿多个食物按一顿辅食统计', () => {
+  const records = [
+    { _id: 'food-1', mealBatchId: 'meal-a', nameSnapshot: '米粉' },
+    { _id: 'food-2', mealBatchId: 'meal-a', nameSnapshot: '苹果泥' },
+    { _id: 'food-3', nameSnapshot: '香蕉泥' }
+  ];
+
+  assert.equal(buildFoodMealCount(records), 2);
 });
 
 test('buildFeedingProgress：顿数/总量/进度点/最近时间', () => {
