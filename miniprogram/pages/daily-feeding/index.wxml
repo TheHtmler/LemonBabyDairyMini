@@ -247,12 +247,17 @@
       <text class="ttab {{timelineCategory === item.key ? 'on' : ''}}" wx:for="{{timelineTabs}}" wx:key="key" data-category="{{item.key}}" catchtap="switchTimelineCategory">{{item.label}}</text>
     </scroll-view>
     <scroll-view class="tl" scroll-y="true" enhanced="true" show-scrollbar="false" wx:if="{{timeline.length > 0}}">
-      <view class="tl-item" wx:for="{{timeline}}" wx:key="index">
-        <text class="tl-time">{{item.time}}</text>
-        <view class="tl-line"><view class="tl-node {{item.type}}"></view></view>
-        <view class="tl-body">
-          <text class="tl-title">{{item.title}}</text>
-          <text class="tl-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
+      <view class="tl-entry" wx:for="{{timeline}}" wx:key="index">
+        <view class="tl-item">
+          <text class="tl-time">{{item.time}}</text>
+          <view class="tl-line"><view class="tl-node {{item.type}}"></view></view>
+          <view class="tl-body">
+            <text class="tl-title">{{item.title}}</text>
+            <text class="tl-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
+          </view>
+        </view>
+        <view class="tl-gap-row" wx:if="{{item.gapText}}">
+          <text class="tl-gap">{{item.gapText}}</text>
         </view>
       </view>
     </scroll-view>

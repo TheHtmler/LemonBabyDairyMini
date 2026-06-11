@@ -768,6 +768,20 @@ function pushEvent(list, event) {
   });
 }
 
+function formatNutritionParts({ calories = 0, naturalProtein = 0, specialProtein = 0 } = {}) {
+  const parts = [];
+  if (toNumber(calories, 0) > 0) {
+    parts.push(`热量 ${round(calories, 0)}kcal`);
+  }
+  if (toNumber(naturalProtein, 0) > 0) {
+    parts.push(`天然蛋白 ${round(naturalProtein, 1)}g`);
+  }
+  if (toNumber(specialProtein, 0) > 0) {
+    parts.push(`特殊蛋白 ${round(specialProtein, 1)}g`);
+  }
+  return parts;
+}
+
 function formatHourMinute(date) {
   const h = `${date.getHours()}`.padStart(2, '0');
   const m = `${date.getMinutes()}`.padStart(2, '0');
@@ -795,6 +809,129 @@ function resolveTimeLabel(...candidates) {
   return '';
 }
 
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function resolveFoodProteinSplit(record = {}) {
+  const nutrition = record.nutrition || {};
+  const protein = toNumber(nutrition.protein);
+  const proteinSource = record.proteinSource
+    || (record.milkType === 'special_formula' ? 'special' : '');
+
+  const natural = isFiniteNumber(nutrition.naturalProtein)
+    ? nutrition.naturalProtein
+    : (isFiniteNumber(record.naturalProtein)
+      ? record.naturalProtein
+      : (proteinSource === 'special' ? 0 : protein));
+  const special = isFiniteNumber(nutrition.specialProtein)
+    ? nutrition.specialProtein
+    : (isFiniteNumber(record.specialProtein)
+      ? record.specialProtein
+      : (proteinSource === 'special' ? protein : 0));
+
+  return { natural, special };
+}
+
+function buildFoodTimelineGroups(foodIntakeRecords = []) {
+  const groups = new Map();
+
+  (foodIntakeRecords || []).forEach((record = {}, index) => {
+    if (!record || record.type === 'milk' || record.milkType) return;
+
+    const groupKey = record.mealBatchId
+      ? `meal:${record.mealBatchId}`
+      : `single:${record._id || record.id || index}`;
+    const time = resolveTimeLabel(record.mealTime, record.recordedAt, record.recordTime, record.time);
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, {
+        time,
+        mealLabel: record.mealLabel || '',
+        itemCount: 0,
+        calories: 0,
+        naturalProtein: 0,
+        specialProtein: 0
+      });
+    }
+
+    const group = groups.get(groupKey);
+    if (!group.time && time) {
+      group.time = time;
+    }
+    if (!group.mealLabel && record.mealLabel) {
+      group.mealLabel = record.mealLabel;
+    }
+    const nutrition = record.nutrition || {};
+    const { natural, special } = resolveFoodProteinSplit(record);
+    group.itemCount += 1;
+    group.calories += toNumber(nutrition.calories);
+    group.naturalProtein += toNumber(natural);
+    group.specialProtein += toNumber(special);
+  });
+
+  return Array.from(groups.values()).filter((group) => !!group.time);
+}
+
+function getBowelTypeText(type) {
+  const typeMap = {
+    stool: '大便',
+    urine: '小便',
+    mixed: '混合'
+  };
+  return typeMap[type] || '排便';
+}
+
+function getBowelConsistencyText(consistency) {
+  const consistencyMap = {
+    liquid: '水样',
+    loose: '稀便',
+    soft: '糊状',
+    normal: '正常',
+    hard: '干硬'
+  };
+  return consistencyMap[consistency] || '';
+}
+
+function getBowelColorText(color) {
+  const colorMap = {
+    yellow: '黄色',
+    green: '绿色',
+    brown: '褐色',
+    white: '白色',
+    red: '红色',
+    black: '黑色'
+  };
+  return colorMap[color] || '';
+}
+
+function getBowelAmountText(amount) {
+  const amountMap = {
+    small: '少量',
+    medium: '适量',
+    large: '大量'
+  };
+  return amountMap[amount] || '';
+}
+
+function getUrineAmountText(amount) {
+  const amountMap = {
+    small: '尿量偏少',
+    medium: '尿量正常',
+    large: '尿量较多'
+  };
+  return amountMap[amount] || '';
+}
+
+function getUrineColorText(color) {
+  const colorMap = {
+    clear: '清亮',
+    light_yellow: '淡黄',
+    dark_yellow: '深黄'
+  };
+  return colorMap[color] || '';
+}
+
 /**
  * 合并今日各类记录为时间轴（倒序，最近在前）
  * @param {Object} params
@@ -802,32 +939,33 @@ function resolveTimeLabel(...candidates) {
  * @param {Array}  params.foodIntakeRecords  食物记录
  * @param {Array}  params.medicationRecords  用药记录
  * @param {Array}  params.treatmentRecords   治疗记录
+ * @param {Array}  params.bowelRecords       大便/小便记录
  * @param {number} params.limit              最多条数（0=不限制）
  */
-function buildTimeline({ milkRecords = [], foodIntakeRecords = [], medicationRecords = [], treatmentRecords = [], limit = 0 } = {}) {
+function buildTimeline({ milkRecords = [], foodIntakeRecords = [], medicationRecords = [], treatmentRecords = [], bowelRecords = [], limit = 0 } = {}) {
   const events = [];
 
   (milkRecords || []).forEach((record = {}) => {
     const { total } = milkRecordVolumes(record);
-    const calories = toNumber((record.nutritionSummary || {}).calories, 0);
+    const nutrition = record.nutritionSummary || {};
     pushEvent(events, {
       type: 'milk',
       time: resolveTimeLabel(record.startTime, record.startDateTime),
       title: `喂奶 · ${round(total, 0)}ml`,
-      desc: calories > 0 ? `热量 ${round(calories, 0)}kcal` : ''
+      desc: formatNutritionParts(nutrition).join(' · ')
     });
   });
 
-  (foodIntakeRecords || []).forEach((record = {}) => {
-    // 食物存于旧版 intakes：时间字段是 recordedAt，名称是 nameSnapshot
-    const name = record.nameSnapshot || record.foodName || record.name || '辅食';
-    const quantity = record.quantity || record.amount;
-    const unit = record.unit || 'g';
+  buildFoodTimelineGroups(foodIntakeRecords).forEach((group) => {
+    const descParts = [
+      `含 ${group.itemCount}种食物`,
+      ...formatNutritionParts(group)
+    ];
     pushEvent(events, {
       type: 'food',
-      time: resolveTimeLabel(record.recordedAt, record.recordTime, record.time, record.mealTime),
-      title: `辅食 · ${name}`,
-      desc: quantity ? `${quantity}${unit}` : ''
+      time: group.time,
+      title: `辅食 · ${group.mealLabel || '食物记录'}`,
+      desc: descParts.join(' · ')
     });
   });
 
@@ -849,6 +987,33 @@ function buildTimeline({ milkRecords = [], foodIntakeRecords = [], medicationRec
       time: resolveTimeLabel(record.startTime, record.actualTime, record.startDateTime, record.time),
       title: `治疗 · ${name}`,
       desc: record.notes || ''
+    });
+  });
+
+  (bowelRecords || []).forEach((record = {}) => {
+    const typeText = getBowelTypeText(record.type);
+    const details = [];
+    if (record.type === 'stool' || record.type === 'mixed') {
+      details.push(
+        getBowelColorText(record.color),
+        getBowelConsistencyText(record.consistency),
+        getBowelAmountText(record.amount)
+      );
+    }
+    if (record.type === 'urine' || record.type === 'mixed') {
+      details.push(
+        getUrineAmountText(record.urineAmount),
+        getUrineColorText(record.urineColor)
+      );
+    }
+    if (record.notes) {
+      details.push(record.notes);
+    }
+    pushEvent(events, {
+      type: 'bowel',
+      time: resolveTimeLabel(record.timeString, record.recordTime, record.time),
+      title: typeText,
+      desc: details.filter(Boolean).join(' · ')
     });
   });
 

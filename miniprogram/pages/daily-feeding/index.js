@@ -19,6 +19,7 @@ const {
   readNutritionTargetPreferences,
   writeNutritionTargetPreferences
 } = require('../../utils/nutritionTargetPreferences');
+const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
 
 const app = getApp();
 
@@ -78,7 +79,8 @@ const TIMELINE_TABS = [
   { key: 'milk', label: '喂奶' },
   { key: 'food', label: '辅食' },
   { key: 'med', label: '用药' },
-  { key: 'treatment', label: '治疗' }
+  { key: 'treatment', label: '治疗' },
+  { key: 'bowel', label: '大小便' }
 ];
 const TIMELINE_DISPLAY_LIMIT = 12;
 
@@ -91,9 +93,35 @@ function timeStrToToday(timeStr) {
   return d;
 }
 
+function timelineTimeToMinutes(time) {
+  if (!time || typeof time !== 'string') return null;
+  const [h, m] = time.split(':').map((n) => parseInt(n, 10));
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+}
+
+function formatTimelineGap(minutes) {
+  if (!Number.isFinite(minutes) || minutes <= 0) return '';
+  if (minutes < 60) return `间隔 ${minutes}分钟`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `间隔 ${hours}小时${rest ? `${rest}分钟` : ''}`;
+}
+
 function filterTimeline(events, category) {
   const list = (events || []).filter((e) => (category === 'all' ? true : e.type === category));
-  return TIMELINE_DISPLAY_LIMIT > 0 ? list.slice(0, TIMELINE_DISPLAY_LIMIT) : list;
+  const visible = TIMELINE_DISPLAY_LIMIT > 0 ? list.slice(0, TIMELINE_DISPLAY_LIMIT) : list;
+  return visible.map((item, index) => {
+    const next = visible[index + 1];
+    const currentMinutes = timelineTimeToMinutes(item.time);
+    const nextMinutes = next ? timelineTimeToMinutes(next.time) : null;
+    return {
+      ...item,
+      gapText: next && currentMinutes !== null && nextMinutes !== null
+        ? formatTimelineGap(currentMinutes - nextMinutes)
+        : ''
+    };
+  });
 }
 
 function pad2(value) {
@@ -300,14 +328,13 @@ Page({
     try {
       const babyInfo = await getBabyInfo();
       const birthday = babyInfo && babyInfo.birthday;
-      const ageMonths = birthday ? this.calculateAgeInMonths(birthday) : null;
       this.setData({
         babyName: (babyInfo && babyInfo.name) || '柠檬宝宝',
         babyAvatarUrl: (babyInfo && babyInfo.avatarUrl) || '/images/LemonLogo.png',
         babyGender: normalizeGenderText(babyInfo && babyInfo.gender),
         babyGenderClass: genderClass(babyInfo && babyInfo.gender),
         babyBirthdayText: birthday || '',
-        babyAgeMonthsText: ageMonths === null ? '' : `${ageMonths} 月龄`,
+        babyAgeMonthsText: birthday ? formatBabyAgeText(birthday) : '',
         babyDays: birthday ? this.calculateBabyDays(birthday) : 0
       });
     } catch (error) {
@@ -320,15 +347,6 @@ Page({
     const now = new Date();
     if (isNaN(birthDate.getTime())) return 0;
     return Math.max(0, Math.ceil(Math.abs(now - birthDate) / (1000 * 60 * 60 * 24)));
-  },
-
-  calculateAgeInMonths(birthday, referenceDate = new Date()) {
-    const birthDate = new Date(birthday);
-    const refDate = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
-    if (isNaN(birthDate.getTime()) || isNaN(refDate.getTime())) return null;
-    let months = (refDate.getFullYear() - birthDate.getFullYear()) * 12 + (refDate.getMonth() - birthDate.getMonth());
-    if (refDate.getDate() < birthDate.getDate()) months -= 1;
-    return months < 0 ? 0 : months;
   },
 
   // === 核心：加载看板数据 ===
@@ -422,6 +440,7 @@ Page({
       foodIntakeRecords: daily.foodIntakeRecords || [],
       medicationRecords: daily.medicationRecords || [],
       treatmentRecords: daily.treatmentRecords || [],
+      bowelRecords: daily.bowelRecords || [],
       limit: 0
     });
     this.timelineAll = timelineAll;

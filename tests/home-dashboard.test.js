@@ -534,8 +534,8 @@ test('metricDisplayPrecision：各指标精度', () => {
 test('buildTimeline：合并各类记录并按时间倒序', () => {
   const timeline = buildTimeline({
     milkRecords: [
-      { startTime: '08:00', nutritionSummary: { totalVolume: 110, calories: 73 } },
-      { startTime: '11:05', nutritionSummary: { totalVolume: 120, calories: 80 } }
+      { startTime: '08:00', nutritionSummary: { totalVolume: 110, calories: 73, naturalProtein: 0.8 } },
+      { startTime: '11:05', nutritionSummary: { totalVolume: 120, calories: 80, naturalProtein: 0.6, specialProtein: 1.2 } }
     ],
     medicationRecords: [
       { actualTime: '08:12', medicationName: '左卡尼丁', dosage: '1.5', unit: 'ml' }
@@ -550,6 +550,7 @@ test('buildTimeline：合并各类记录并按时间倒序', () => {
   assert.equal(timeline.length, 3);
   assert.equal(timeline[0].time, '11:05');
   assert.equal(timeline[0].type, 'milk');
+  assert.equal(timeline[0].desc, '热量 80kcal · 天然蛋白 0.6g · 特殊蛋白 1.2g');
   assert.equal(timeline[1].time, '09:30');
   assert.equal(timeline[1].type, 'food');
   assert.equal(timeline[2].time, '08:12');
@@ -573,10 +574,94 @@ test('buildTimeline：真实字段（食物 recordedAt/nameSnapshot、治疗 sta
   assert.equal(timeline.length, 4);
   assert.equal(byType('milk').time, '08:00');
   assert.equal(byType('food').time, '09:30');
-  assert.equal(byType('food').title, '辅食 · 米粉');
+  assert.equal(byType('food').title, '辅食 · 食物记录');
+  assert.equal(byType('food').desc, '含 1种食物');
   assert.equal(byType('med').time, '08:12');
   assert.equal(byType('treatment').time, '14:20');
   assert.equal(byType('treatment').title, '治疗 · 静脉营养');
+});
+
+test('buildTimeline：辅食按顿聚合并显示食物种类数', () => {
+  const timeline = buildTimeline({
+    foodIntakeRecords: [
+      { _id: 'food-1', mealBatchId: 'meal-a', mealLabel: '早餐', mealTime: '09:30', nameSnapshot: '米粉', quantity: 30, unit: 'g' },
+      { _id: 'food-2', mealBatchId: 'meal-a', mealLabel: '早餐', mealTime: '09:30', nameSnapshot: '苹果泥', quantity: 20, unit: 'g' },
+      { _id: 'food-3', mealBatchId: 'meal-b', mealLabel: '午餐', mealTime: '12:10', nameSnapshot: '南瓜泥', quantity: 25, unit: 'g' }
+    ],
+    limit: 0
+  });
+
+  assert.equal(timeline.length, 2);
+  assert.equal(timeline[0].time, '12:10');
+  assert.equal(timeline[0].title, '辅食 · 午餐');
+  assert.equal(timeline[0].desc, '含 1种食物');
+  assert.equal(timeline[1].time, '09:30');
+  assert.equal(timeline[1].title, '辅食 · 早餐');
+  assert.equal(timeline[1].desc, '含 2种食物');
+});
+
+test('buildTimeline：辅食摘要显示热量与天然/特殊蛋白，不显示具体食物名', () => {
+  const timeline = buildTimeline({
+    foodIntakeRecords: [
+      {
+        _id: 'food-1',
+        mealBatchId: 'meal-a',
+        mealLabel: '早餐',
+        mealTime: '09:30',
+        nameSnapshot: '米粉',
+        nutrition: { calories: 40, protein: 1 },
+        naturalProtein: 1,
+        specialProtein: 0
+      },
+      {
+        _id: 'food-2',
+        mealBatchId: 'meal-a',
+        mealLabel: '早餐',
+        mealTime: '09:30',
+        nameSnapshot: '特殊配方',
+        nutrition: { calories: 30, protein: 0.5 },
+        proteinSource: 'special'
+      }
+    ],
+    limit: 0
+  });
+
+  assert.equal(timeline.length, 1);
+  assert.equal(timeline[0].title, '辅食 · 早餐');
+  assert.equal(timeline[0].desc, '含 2种食物 · 热量 70kcal · 天然蛋白 1g · 特殊蛋白 0.5g');
+  assert.equal(timeline[0].desc.includes('米粉'), false);
+  assert.equal(timeline[0].desc.includes('特殊配方'), false);
+});
+
+test('buildTimeline：大小便记录以事件类型进入时间轴', () => {
+  const timeline = buildTimeline({
+    milkRecords: [{ startTime: '08:00', nutritionSummary: { totalVolume: 100, calories: 67 } }],
+    bowelRecords: [
+      {
+        type: 'stool',
+        timeString: '10:20',
+        color: 'yellow',
+        consistency: 'soft',
+        amount: 'medium'
+      },
+      {
+        type: 'urine',
+        timeString: '09:05',
+        urineAmount: 'medium',
+        urineColor: 'light_yellow'
+      }
+    ],
+    limit: 0
+  });
+
+  assert.equal(timeline.length, 3);
+  assert.equal(timeline[0].type, 'bowel');
+  assert.equal(timeline[0].title, '大便');
+  assert.equal(timeline[0].desc, '黄色 · 糊状 · 适量');
+  assert.equal(timeline[1].type, 'bowel');
+  assert.equal(timeline[1].title, '小便');
+  assert.equal(timeline[1].desc, '尿量正常 · 淡黄');
+  assert.equal(timeline[2].type, 'milk');
 });
 
 test('buildTimeline：时间字段为 Date / datetime 字符串时归一化为 HH:MM', () => {

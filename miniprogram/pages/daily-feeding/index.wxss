@@ -1044,6 +1044,9 @@ page {
 .tl {
   max-height: 560rpx;
 }
+.tl-entry:last-child .tl-body {
+  padding-bottom: 0;
+}
 .tl-item {
   display: flex;
   gap: 16rpx;
@@ -1086,6 +1089,7 @@ page {
 .tl-node.food { border-color: #4CC38A; }
 .tl-node.med { border-color: #5B9DF9; }
 .tl-node.treatment { border-color: #A78BFA; }
+.tl-node.bowel { border-color: #F59E7A; }
 .tl-body {
   flex: 1;
   min-width: 0;
@@ -1101,6 +1105,20 @@ page {
   font-size: 22rpx;
   color: #B0B0B0;
   margin-top: 4rpx;
+}
+.tl-gap-row {
+  display: flex;
+  align-items: center;
+  margin: -12rpx 0 12rpx 92rpx;
+}
+.tl-gap {
+  display: inline-block;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: #FFF7D8;
+  color: #B58A00;
+  font-size: 20rpx;
+  line-height: 1.4;
 }
 
 /* 趋势 */
