@@ -56,12 +56,14 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       },
       food: {
         count: 2,
+        fluidVolume: 45,
         totalCalories: 160,
         protein: 6.2,
         carbs: 18
       },
       treatment: {
         count: 1,
+        fluidVolume: 120,
         totalCalories: 85,
         carbs: 25
       }
@@ -80,8 +82,8 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       value: '132',
       unit: 'kcal/kg/d',
       detail: '推荐：120~135 kcal/kg/d',
-      infoTitle: '目标热卡系数',
-      infoLines: ['120~135 kcal/kg', '稳定期']
+      infoTitle: '目标热卡系数（kcal/kg/d）',
+      infoLines: ['稳定期 120~135 kcal/kg/d']
     },
     {
       label: '总蛋白',
@@ -89,7 +91,15 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       unit: 'g',
       detail: '天然 8.30g · 特殊 4.10g'
     },
-    { label: '总奶量', value: '720', unit: 'ml', detail: '母：420ml · 特：300ml' }
+    {
+      label: '总液体量',
+      value: '885',
+      unit: 'ml',
+      detail: '奶 720 · 喝水 0 · 治疗 120',
+      infoTitle: '总液体量明细',
+      infoIcon: '!',
+      infoLines: ['母乳 420ml', '特奶 300ml', '喝水 0ml', '食物 45ml', '治疗 120ml']
+    }
   ]);
   assert.deepEqual(preview.nutritionStrip, [
     { label: '天然蛋白', value: '8.3', unit: 'g', source: '奶 5.10g · 食物 3.20g', premiumRatio: 77, premiumValue: '6.4', detailLabel: '天然蛋白系数', detailValue: '1.2', detailUnit: 'g/kg/d', detail: '1.2 g/kg/d' },
@@ -168,7 +178,10 @@ test('buildDataRecordsSummaryPreview falls back to placeholders for missing valu
   assert.equal(preview.topMetrics[1].detail, '推荐：--');
   assert.deepEqual(preview.topMetrics[1].infoLines, ['--']);
   assert.equal(preview.topMetrics[2].detail, '天然 0.00g · 特殊 0.00g');
-  assert.equal(preview.topMetrics[3].detail, '普：0ml · 特：0ml');
+  assert.equal(preview.topMetrics[3].label, '总液体量');
+  assert.equal(preview.topMetrics[3].detail, '奶 0 · 喝水 0 · 治疗 0');
+  assert.equal(preview.topMetrics[3].infoIcon, '!');
+  assert.deepEqual(preview.topMetrics[3].infoLines, ['普奶 0ml', '特奶 0ml', '喝水 0ml', '食物 0ml', '治疗 0ml']);
   assert.equal(preview.nutritionStrip[0].source, '奶 0.00g · 食物 0.00g');
   assert.equal(preview.nutritionStrip[1].source, '特奶 0.00g');
   assert.equal(preview.nutritionStrip[0].unit, 'g');
@@ -190,6 +203,98 @@ test('buildDataRecordsSummaryPreview falls back to placeholders for missing valu
   assert.equal(preview.sourceSections[1].meta, '0条记录');
   assert.equal(preview.sourceSections[2].meta, '0条记录');
   assert.equal(preview.coefficientRows[0].value, '--');
+});
+
+test('buildDataRecordsSummaryPreview includes drinking water and treatment ml in total liquid volume', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    naturalMilkType: 'formula',
+    drinkingWaterVolume: 35,
+    intakeOverview: {
+      milk: {
+        normal: { volume: 120 },
+        special: { volume: 80 }
+      },
+      food: {
+        fluidVolume: 20
+      },
+      treatment: {
+        fluidVolume: 50
+      }
+    }
+  });
+
+  assert.deepEqual(preview.topMetrics[3], {
+    label: '总液体量',
+    value: '305',
+    unit: 'ml',
+    detail: '奶 200 · 喝水 35 · 治疗 50',
+    infoTitle: '总液体量明细',
+    infoIcon: '!',
+    infoLines: ['普奶 120ml', '特奶 80ml', '喝水 35ml', '食物 20ml', '治疗 50ml']
+  });
+});
+
+test('buildDataRecordsSummaryPreview chooses breast milk or formula label in total liquid details', () => {
+  const breastPreview = buildDataRecordsSummaryPreview({
+    naturalMilkType: 'breast',
+    intakeOverview: {
+      milk: {
+        normal: { volume: 60 },
+        special: { volume: 0 }
+      }
+    }
+  });
+  const formulaPreview = buildDataRecordsSummaryPreview({
+    naturalMilkType: 'formula',
+    intakeOverview: {
+      milk: {
+        normal: { volume: 90 },
+        special: { volume: 0 }
+      }
+    }
+  });
+
+  assert.equal(breastPreview.topMetrics[3].infoLines[0], '母乳 60ml');
+  assert.equal(formulaPreview.topMetrics[3].infoLines[0], '普奶 90ml');
+});
+
+test('buildDataRecordsSummaryPreview shows both breast milk and formula when both are recorded', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    naturalMilkType: 'breast',
+    feedings: [
+      {
+        isV2FeedingRecord: true,
+        formulaComponents: [
+          { kind: 'breast_milk', volume: 60 },
+          {
+            kind: 'formula_powder',
+            category: 'regular_formula',
+            proteinRole: 'natural',
+            waterVolume: 90
+          },
+          {
+            kind: 'formula_powder',
+            category: 'special_formula',
+            proteinRole: 'special',
+            waterVolume: 120
+          }
+        ]
+      }
+    ],
+    intakeOverview: {
+      milk: {
+        normal: { volume: 150 },
+        special: { volume: 120 }
+      }
+    }
+  });
+
+  assert.deepEqual(preview.topMetrics[3].infoLines.slice(0, 4), [
+    '母乳 60ml',
+    '普奶 90ml',
+    '特奶 120ml',
+    '喝水 0ml'
+  ]);
 });
 
 test('buildDataRecordsSummaryPreview shows food special protein under special protein coefficient module', () => {
@@ -277,3 +382,22 @@ test('buildDataRecordsSummaryPreview derives v2 milk badges from component categ
   );
 });
 
+test('data records top metric info icon can be customized per metric', () => {
+  const pageWxml = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/pages/data-records-v2/index.wxml'),
+    'utf8'
+  );
+
+  assert.match(pageWxml, /\{\{item\.infoIcon \|\| 'i'\}\}/);
+});
+
+test('data records intake overview tracks only ml food as food fluid volume', () => {
+  const pageJs = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/pages/data-records-v2/index.js'),
+    'utf8'
+  );
+
+  assert.match(pageJs, /fluidVolume:\s*0/);
+  assert.match(pageJs, /if \(\(intake\.unit \|\| ''\)\.toLowerCase\(\) === 'ml'\) \{[\s\S]*overview\.food\.fluidVolume \+= Number\(intake\.quantity\) \|\| 0;/);
+  assert.match(pageJs, /overview\.food\.fluidVolume = roundNumber\(overview\.food\.fluidVolume, 2\);/);
+});

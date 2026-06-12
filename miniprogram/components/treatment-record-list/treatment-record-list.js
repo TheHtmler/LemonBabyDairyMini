@@ -12,6 +12,10 @@ Component({
       type: String,
       value: '新增'
     },
+    showAction: {
+      type: Boolean,
+      value: true
+    },
     records: {
       type: Array,
       value: []

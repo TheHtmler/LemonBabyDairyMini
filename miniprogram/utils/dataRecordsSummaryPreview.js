@@ -52,6 +52,47 @@ unit
 function buildSourceBreakdownLine(parts = []) {
 return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}`).join(' · ');
 }
+function buildCompactVolumeBreakdownLine(parts = []) {
+return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}`).join(' · ');
+}
+function buildVolumeInfoLines(parts = []) {
+return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}ml`);
+}
+function buildNormalMilkVolumeInfoParts(feedings = [], normalMilk = {}, naturalMilkType = 'formula') {
+const totals = { breast: 0, formula: 0 };
+(Array.isArray(feedings) ? feedings : []).forEach((feeding = {}) => {
+if (feeding.isV2FeedingRecord && Array.isArray(feeding.formulaComponents)) {
+feeding.formulaComponents.forEach((component = {}) => {
+if (component.kind === 'breast_milk') {
+totals.breast += toNumber(component.volume);
+return;
+}
+if (component.kind !== 'formula_powder') return;
+const isSpecial = component.proteinRole === 'special' || component.category === 'special_formula';
+if (!isSpecial) {
+totals.formula += toNumber(component.waterVolume);
+}
+});
+return;
+}
+const volume = toNumber(feeding.naturalMilkVolume);
+if (volume <= 0) return;
+if (feeding.naturalMilkType === 'formula') {
+totals.formula += volume;
+} else {
+totals.breast += volume;
+}
+});
+if (totals.breast > 0 || totals.formula > 0) {
+return [
+...(totals.breast > 0 ? [{ label: '母乳', value: totals.breast }] : []),
+...(totals.formula > 0 ? [{ label: '普奶', value: totals.formula }] : [])
+];
+}
+return naturalMilkType === 'breast'
+? [{ label: '母乳', value: normalMilk.volume || 0 }]
+: [{ label: '普奶', value: normalMilk.volume || 0 }];
+}
 function buildProteinBreakdownLine(parts = []) {
 return parts.map(({ label, value }) => `${label} ${formatTwoDecimals(value)}g`).join(' · ');
 }
@@ -257,12 +298,18 @@ const intakeOverview = input.intakeOverview || {};
 const milkOverview = intakeOverview.milk || {};
 const normalMilk = milkOverview.normal || {};
 const specialMilk = milkOverview.special || {};
+const waterOverview = intakeOverview.water || intakeOverview.drinkingWater || {};
 const foodOverview = intakeOverview.food || {};
 const treatmentOverview = intakeOverview.treatment || {};
 const macroRatios = input.macroRatios || {};
 const goalRangeValue = buildRangeValue(input.calorieGoalPerKgRange);
 const goalRangeDailyValue = buildDailyRangeValue(input.calorieGoalPerKgRange);
 const totalMilkVolume = toNumber(normalMilk.volume) + toNumber(specialMilk.volume);
+const foodFluidVolume = toNumber(input.foodFluidVolume ?? foodOverview.fluidVolume);
+const drinkingWaterVolume = toNumber(input.drinkingWaterVolume ?? input.waterVolume ?? waterOverview.volume);
+const treatmentFluidVolume = toNumber(input.treatmentFluidVolume ?? treatmentOverview.fluidVolume);
+const totalLiquidVolume = toNumber(input.totalLiquidVolume ?? input.totalFluidVolume ?? (totalMilkVolume + foodFluidVolume + drinkingWaterVolume + treatmentFluidVolume));
+const liquidInfoMilkParts = buildNormalMilkVolumeInfoParts(input.feedings || [], normalMilk, input.naturalMilkType);
 const totalMilkCalories = toNumber(normalMilk.calories) + toNumber(specialMilk.calories);
 const foodFat = toNumber(foodOverview.fat);
 const treatmentFat = toNumber(treatmentOverview.fat);
@@ -313,8 +360,21 @@ detail: buildProteinBreakdownLine([
 ])
 },
 {
-...createMetric('总奶量', input.totalMilk || 0, 'ml'),
-detail: `${normalMilkLabel}：${normalizeValue(normalMilk.volume || 0)}ml · 特：${normalizeValue(specialMilk.volume || 0)}ml`
+...createMetric('总液体量', totalLiquidVolume, 'ml'),
+detail: buildCompactVolumeBreakdownLine([
+{ label: '奶', value: totalMilkVolume },
+{ label: '喝水', value: drinkingWaterVolume },
+{ label: '治疗', value: treatmentFluidVolume }
+]),
+infoTitle: '总液体量明细',
+infoIcon: '!',
+infoLines: buildVolumeInfoLines([
+...liquidInfoMilkParts,
+{ label: '特奶', value: specialMilk.volume || 0 },
+{ label: '喝水', value: drinkingWaterVolume },
+{ label: '食物', value: foodFluidVolume },
+{ label: '治疗', value: treatmentFluidVolume }
+])
 }
 ],
 nutritionStrip: [
@@ -357,7 +417,7 @@ componentRows: milkComponentRows,
 meta: `${feedingRecordCount}条记录`
 } : {}),
 summaryText: useComponentMilkSection
-? `总奶量 ${normalizeValue(input.totalMilk || totalMilkVolume)}ml · 热量 ${roundDisplayNumber(componentCalories)}kcal · 蛋白 ${roundDisplayNumber(componentProtein)}g`
+? `奶量 ${normalizeValue(input.totalMilk || totalMilkVolume)}ml · 热量 ${roundDisplayNumber(componentCalories)}kcal · 蛋白 ${roundDisplayNumber(componentProtein)}g`
 : `${normalMilkColumnLabel} ${normalizeValue(normalMilk.volume || 0)}ml ${normalizeValue(normalMilk.calories || 0)}kcal ${formatTwoDecimals(normalMilk.protein || 0)}g蛋白 · 特奶 ${normalizeValue(specialMilk.volume || 0)}ml ${normalizeValue(specialMilk.calories || 0)}kcal ${formatTwoDecimals(specialMilk.protein || 0)}g蛋白`,
 columns: [
 {

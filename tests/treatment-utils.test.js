@@ -19,6 +19,8 @@ test('summarizeTreatmentRecords only counts nutrition-enabled items', () => {
             {
               category: 'dextrose',
               countInNutrition: true,
+              amount: 100,
+              unit: 'ml',
               calories: 102,
               carbsG: 25.5,
               proteinG: 0,
@@ -27,6 +29,8 @@ test('summarizeTreatmentRecords only counts nutrition-enabled items', () => {
             {
               category: 'drug',
               countInNutrition: false,
+              amount: 5,
+              unit: 'ml',
               calories: 999,
               carbsG: 999,
               proteinG: 999,
@@ -43,6 +47,8 @@ test('summarizeTreatmentRecords only counts nutrition-enabled items', () => {
             {
               category: 'lipid',
               countInNutrition: true,
+              amount: 2,
+              unit: 'mg',
               calories: 45,
               carbsG: 0,
               proteinG: 0,
@@ -59,6 +65,7 @@ test('summarizeTreatmentRecords only counts nutrition-enabled items', () => {
     groupCount: 2,
     itemCount: 3,
     nutritionItemCount: 2,
+    fluidVolume: 105,
     totalCalories: 147,
     carbs: 25.5,
     protein: 0,
@@ -117,6 +124,8 @@ test('mergeTreatmentIntoOverview appends treatment bucket without mutating milk 
           items: [
             {
               countInNutrition: true,
+              amount: 20,
+              unit: 'ml',
               calories: 68,
               carbsG: 17,
               proteinG: 0,
@@ -124,6 +133,8 @@ test('mergeTreatmentIntoOverview appends treatment bucket without mutating milk 
             },
             {
               countInNutrition: false,
+              amount: 3,
+              unit: 'mg',
               calories: 20,
               carbsG: 5,
               proteinG: 5,
@@ -142,6 +153,7 @@ test('mergeTreatmentIntoOverview appends treatment bucket without mutating milk 
     groupCount: 1,
     itemCount: 2,
     nutritionItemCount: 1,
+    fluidVolume: 20,
     totalCalories: 68,
     carbs: 17,
     protein: 0,
@@ -152,6 +164,7 @@ test('mergeTreatmentIntoOverview appends treatment bucket without mutating milk 
     groupCount: 0,
     itemCount: 0,
     nutritionItemCount: 0,
+    fluidVolume: 0,
     totalCalories: 0,
     carbs: 0,
     protein: 0,
@@ -257,8 +270,28 @@ test('summarizeTreatmentRecords falls back to record summary for legacy treatmen
   assert.equal(summary.count, 1);
   assert.equal(summary.groupCount, 1);
   assert.equal(summary.itemCount, 1);
+  assert.equal(summary.fluidVolume, 250);
   assert.equal(summary.totalCalories, 85);
   assert.equal(summary.carbs, 25);
+});
+
+test('summarizeTreatmentRecords counts only ml items as treatment fluid volume', () => {
+  const summary = summarizeTreatmentRecords([
+    {
+      groups: [
+        {
+          items: [
+            { name: '10%葡萄糖', amount: 80, unit: 'ml' },
+            { name: '左卡尼丁', amount: 200, unit: 'mg' },
+            { name: '自定义液体', volumeMl: 12.5, unit: 'ml' },
+            { name: '口服药', amount: 1, unit: '剂' }
+          ]
+        }
+      ]
+    }
+  ]);
+
+  assert.equal(summary.fluidVolume, 92.5);
 });
 
 test('treatment unit options include 剂 for unclear medication units', () => {

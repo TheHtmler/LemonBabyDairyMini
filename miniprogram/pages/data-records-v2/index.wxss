@@ -1538,8 +1538,10 @@
   width: 14.28%;
   height: 70rpx;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 2rpx;
   font-size: 28rpx;
   color: #333;
   position: relative;
@@ -1561,14 +1563,15 @@
   font-weight: bold;
 }
 
-.calendar-day.date-today:after {
-  content: '';
-  position: absolute;
-  bottom: 6rpx;
-  width: 6rpx;
-  height: 6rpx;
-  border-radius: 50%;
-  background-color: #FF9800;
+.calendar-day-number {
+  line-height: 1;
+}
+
+.calendar-today-label {
+  font-size: 24rpx;
+  line-height: 1;
+  color: #FF9800;
+  font-weight: 700;
 }
 
 .calendar-footer {

@@ -365,6 +365,7 @@ function createEmptyIntakeOverview() {
       specialProtein: 0,
       premiumProtein: 0,
       regularProtein: 0,
+      fluidVolume: 0,
       carbs: 0,
       fat: 0
     },
@@ -498,6 +499,9 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     }
 
     overview.food.count += 1;
+    if ((intake.unit || '').toLowerCase() === 'ml') {
+      overview.food.fluidVolume += Number(intake.quantity) || 0;
+    }
     overview.food.totalCalories += calories;
     overview.food.protein += protein;
     overview.food.naturalProtein += naturalProtein;
@@ -543,6 +547,7 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
   overview.food.specialProtein = roundNumber(overview.food.specialProtein, 2);
   overview.food.premiumProtein = roundNumber(overview.food.premiumProtein, 2);
   overview.food.regularProtein = roundNumber(overview.food.regularProtein, 2);
+  overview.food.fluidVolume = roundNumber(overview.food.fluidVolume, 2);
   overview.food.carbs = roundNumber(overview.food.carbs, 2);
   overview.food.fat = roundNumber(overview.food.fat, 2);
 
@@ -1289,6 +1294,30 @@ function cloneMedicationForDate(record = {}, selectedDate, babyUid) {
     actualDateTime: buildDateTimeFromDateKey(selectedDate, actualTime),
     createdAt: now,
     updatedAt: now
+  };
+}
+
+function cloneTreatmentForDate(record = {}, selectedDate, babyUid) {
+  const {
+    _id,
+    id,
+    date,
+    dateKey,
+    startDateTime,
+    createdAt,
+    updatedAt,
+    formattedStartTime,
+    groupSummaryText,
+    summaryText,
+    ...rest
+  } = record;
+
+  return {
+    ...rest,
+    babyUid: babyUid || record.babyUid || '',
+    date: selectedDate,
+    startTime: record.startTime || formatTimeFromDate(startDateTime) || '00:00',
+    groups: Array.isArray(record.groups) ? record.groups : []
   };
 }
 
@@ -2790,19 +2819,24 @@ function createDataRecordsPageConfig(options = {}) {
   openCopyCalendar(type) {
     const configMap = {
       feeding: {
-        hasSource: () => (this.data.feedings || []).length > 0,
-        emptyText: '当前日期暂无喂奶记录',
+        hasSource: () => true,
+        emptyText: '',
         label: '喂奶记录'
       },
       food: {
-        hasSource: () => (this.data.foodIntakes || []).length > 0,
-        emptyText: '当前日期暂无食物记录',
+        hasSource: () => true,
+        emptyText: '',
         label: '食物记录'
       },
       medication: {
-        hasSource: () => (this.data.medicationRecords || []).length > 0,
-        emptyText: '当前日期暂无用药记录',
+        hasSource: () => true,
+        emptyText: '',
         label: '用药记录'
+      },
+      treatment: {
+        hasSource: () => true,
+        emptyText: '',
+        label: '治疗记录'
       }
     };
 
@@ -2838,11 +2872,17 @@ function createDataRecordsPageConfig(options = {}) {
     this.openCopyCalendar('medication');
   },
 
+  onCopyTreatmentToDate() {
+    this.openCopyCalendar('treatment');
+  },
+
   async handleCopyDatePicked(targetDateStr) {
-    if (!targetDateStr) return;
-    if (targetDateStr === this.data.selectedDate) {
+    const sourceDateStr = targetDateStr;
+    const targetDate = this.data.selectedDate || this.formatDate(new Date());
+    if (!sourceDateStr || !targetDate) return;
+    if (sourceDateStr === targetDate) {
       wx.showToast({
-        title: '目标日期不能是当前日期',
+        title: '来源日期不能是当前日期',
         icon: 'none'
       });
       return;
@@ -2855,15 +2895,19 @@ function createDataRecordsPageConfig(options = {}) {
     });
 
     if (type === 'feeding') {
-      await this.applyFeedingCopyToDate(targetDateStr);
+      await this.applyFeedingCopyToDate(sourceDateStr, targetDate);
       return;
     }
     if (type === 'food') {
-      await this.applyFoodCopyToDate(targetDateStr);
+      await this.applyFoodCopyToDate(sourceDateStr, targetDate);
       return;
     }
     if (type === 'medication') {
-      await this.applyMedicationCopyToDate(targetDateStr);
+      await this.applyMedicationCopyToDate(sourceDateStr, targetDate);
+      return;
+    }
+    if (type === 'treatment') {
+      await this.applyTreatmentCopyToDate(sourceDateStr, targetDate);
     }
   },
 
@@ -2872,7 +2916,7 @@ function createDataRecordsPageConfig(options = {}) {
 
     return new Promise(resolve => {
       wx.showModal({
-        title: '目标日期已有记录',
+        title: '当前日期已有记录',
         content: `${this.formatDisplayDate(targetDateStr)} 已有${dimensionLabel}，是否确认覆盖？`,
         confirmText: '确认覆盖',
         success: res => resolve(!!res.confirm),
@@ -2881,7 +2925,7 @@ function createDataRecordsPageConfig(options = {}) {
     });
   },
 
-  async applyFeedingCopyToDate(targetDateStr) {
+  async applyFeedingCopyToDate(sourceDateStr, targetDateStr) {
     const babyUid = getBabyUid();
     if (!babyUid) {
       wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
@@ -2889,15 +2933,13 @@ function createDataRecordsPageConfig(options = {}) {
     }
 
     // 喂奶复制只走 v2（feeding_records_v2）
-    await this.applyV2FeedingCopyToDate(targetDateStr, babyUid);
+    await this.applyV2FeedingCopyToDate(sourceDateStr, targetDateStr, babyUid);
   },
 
-  async applyV2FeedingCopyToDate(targetDateStr, babyUid) {
+  async applyV2FeedingCopyToDate(sourceDateStr, targetDateStr, babyUid) {
     const seenSourceIds = new Set();
-    const sourceFeedings = [
-      ...(this.data.feedingRecords || []),
-      ...(this.data.feedings || [])
-    ]
+    const sourceRecords = await FeedingRecordV2Model.getRecordsByDate(babyUid, sourceDateStr);
+    const sourceFeedings = (sourceRecords || [])
       .filter(record => record?.isV2FeedingRecord || Array.isArray(record?.formulaComponents))
       .filter(record => {
         const key = record._id || record.id || `${record.startTime || ''}:${JSON.stringify(record.formulaComponents || [])}`;
@@ -2905,6 +2947,10 @@ function createDataRecordsPageConfig(options = {}) {
         seenSourceIds.add(key);
         return true;
       });
+    if (sourceFeedings.length === 0) {
+      wx.showToast({ title: '来源日期暂无喂奶记录', icon: 'none' });
+      return;
+    }
     const targetRecords = await FeedingRecordV2Model.getRecordsByDate(babyUid, targetDateStr);
     const shouldContinue = await this.confirmOverwriteForDimension({
       targetDateStr,
@@ -2915,7 +2961,7 @@ function createDataRecordsPageConfig(options = {}) {
 
     const copiedFeedings = sourceFeedings.map(item => cloneV2FeedingForDate(item, targetDateStr, babyUid));
 
-    wx.showLoading({ title: '复制中...' });
+    wx.showLoading({ title: '导入中...' });
     try {
       if (targetRecords && targetRecords.length > 0) {
         await Promise.all(targetRecords.map(record => FeedingRecordV2Model.deleteRecord(record._id || record.id)));
@@ -2925,25 +2971,29 @@ function createDataRecordsPageConfig(options = {}) {
       }
       await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
       wx.hideLoading();
-      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+      wx.showToast({ title: '已导入到当前日期', icon: 'success' });
       if (typeof this.forceRefreshData === 'function') {
         await this.forceRefreshData();
       }
     } catch (error) {
       console.error('复制v2喂奶记录失败:', error);
       wx.hideLoading();
-      wx.showToast({ title: '复制失败', icon: 'none' });
+      wx.showToast({ title: '导入失败', icon: 'none' });
     }
   },
 
-  async applyFoodCopyToDate(targetDateStr) {
+  async applyFoodCopyToDate(sourceDateStr, targetDateStr) {
     const babyUid = getBabyUid();
     if (!babyUid) {
       wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
       return;
     }
 
-    const sourceFoodIntakes = normalizeIntakes(this.data.foodIntakes || []);
+    const sourceFoodIntakes = normalizeIntakes(await DailyRecordV2Service.loadLegacyFoodIntakes(babyUid, sourceDateStr));
+    if (sourceFoodIntakes.length === 0) {
+      wx.showToast({ title: '来源日期暂无食物记录', icon: 'none' });
+      return;
+    }
 
     // 食物全部走 v1：复制到目标日的 feeding_records.intakes。
     // 按日期解析目标旧文档，保留其 feedings 与奶类 intakes，仅覆盖食物条目。
@@ -2966,7 +3016,7 @@ function createDataRecordsPageConfig(options = {}) {
     const copiedFoodIntakes = sourceFoodIntakes.map(item => cloneIntakeForDate(item, openid));
     const mergedIntakes = [...targetNonFoodIntakes, ...copiedFoodIntakes];
 
-    wx.showLoading({ title: '复制中...' });
+    wx.showLoading({ title: '导入中...' });
     try {
       const db = wx.cloud.database();
       await db.collection('feeding_records').doc(targetId).update({
@@ -2977,24 +3027,30 @@ function createDataRecordsPageConfig(options = {}) {
       });
       await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
       wx.hideLoading();
-      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+      wx.showToast({ title: '已导入到当前日期', icon: 'success' });
       if (typeof this.forceRefreshData === 'function') {
         await this.forceRefreshData();
       }
     } catch (error) {
       console.error('复制食物记录失败:', error);
       wx.hideLoading();
-      wx.showToast({ title: '复制失败', icon: 'none' });
+      wx.showToast({ title: '导入失败', icon: 'none' });
     }
   },
 
-  async applyMedicationCopyToDate(targetDateStr) {
+  async applyMedicationCopyToDate(sourceDateStr, targetDateStr) {
     const babyUid = getBabyUid();
     if (!babyUid) {
       wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
       return;
     }
 
+    const sourceResult = await MedicationRecordModel.findByDate(sourceDateStr, babyUid);
+    const sourceMedicationRecords = (sourceResult.success ? sourceResult.data : []) || [];
+    if (sourceMedicationRecords.length === 0) {
+      wx.showToast({ title: '来源日期暂无用药记录', icon: 'none' });
+      return;
+    }
     const targetResult = await MedicationRecordModel.findByDate(targetDateStr, babyUid);
     const targetRecords = (targetResult.success ? targetResult.data : []) || [];
     const shouldContinue = await this.confirmOverwriteForDimension({
@@ -3004,10 +3060,10 @@ function createDataRecordsPageConfig(options = {}) {
     });
     if (!shouldContinue) return;
 
-    const copiedMedicationRecords = (this.data.medicationRecords || []).map(record => cloneMedicationForDate(record, targetDateStr, babyUid));
+    const copiedMedicationRecords = sourceMedicationRecords.map(record => cloneMedicationForDate(record, targetDateStr, babyUid));
     const db = wx.cloud.database();
 
-    wx.showLoading({ title: '复制中...' });
+    wx.showLoading({ title: '导入中...' });
     try {
       if (targetRecords.length > 0) {
         await Promise.all(targetRecords.map(record => db.collection('medication_records').doc(record._id).remove()));
@@ -3028,11 +3084,64 @@ function createDataRecordsPageConfig(options = {}) {
       // 直接写库的复制路径也要让目标日汇总失效（这里绕过了模型层的自动失效）。
       await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
       wx.hideLoading();
-      wx.showToast({ title: '已复制到目标日期', icon: 'success' });
+      wx.showToast({ title: '已导入到当前日期', icon: 'success' });
+      if (typeof this.forceRefreshData === 'function') {
+        await this.forceRefreshData();
+      }
     } catch (error) {
       console.error('复制用药记录失败:', error);
       wx.hideLoading();
-      wx.showToast({ title: '复制失败', icon: 'none' });
+      wx.showToast({ title: '导入失败', icon: 'none' });
+    }
+  },
+
+  async applyTreatmentCopyToDate(sourceDateStr, targetDateStr) {
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    const sourceResult = await TreatmentRecordModel.findByDate(sourceDateStr, babyUid);
+    const sourceTreatmentRecords = (sourceResult.success ? sourceResult.data : []) || [];
+    if (sourceTreatmentRecords.length === 0) {
+      wx.showToast({ title: '来源日期暂无治疗记录', icon: 'none' });
+      return;
+    }
+    const targetResult = await TreatmentRecordModel.findByDate(targetDateStr, babyUid);
+    const targetRecords = (targetResult.success ? targetResult.data : []) || [];
+    const shouldContinue = await this.confirmOverwriteForDimension({
+      targetDateStr,
+      dimensionLabel: '治疗记录',
+      hasExisting: targetRecords.length > 0
+    });
+    if (!shouldContinue) return;
+
+    const copiedTreatmentRecords = sourceTreatmentRecords.map(record => cloneTreatmentForDate(record, targetDateStr, babyUid));
+
+    wx.showLoading({ title: '导入中...' });
+    try {
+      if (targetRecords.length > 0) {
+        await Promise.all(targetRecords.map(record => TreatmentRecordModel.delete(record._id || record.id)));
+      }
+      if (copiedTreatmentRecords.length > 0) {
+        const results = await Promise.all(copiedTreatmentRecords.map(record => TreatmentRecordModel.create(record)));
+        const failed = results.find(result => !result.success);
+        if (failed) {
+          throw new Error(failed.message || '导入失败');
+        }
+      } else {
+        await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
+      }
+      wx.hideLoading();
+      wx.showToast({ title: '已导入到当前日期', icon: 'success' });
+      if (typeof this.forceRefreshData === 'function') {
+        await this.forceRefreshData();
+      }
+    } catch (error) {
+      console.error('复制治疗记录失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: error.message || '导入失败', icon: 'none' });
     }
   },
 
@@ -3072,7 +3181,7 @@ function createDataRecordsPageConfig(options = {}) {
     if (this.data.copyCalendarContext) {
       if (isFutureDateKey(selectedDate)) {
         wx.showToast({
-          title: '复制目标不能晚于今天',
+          title: '来源日期不能晚于今天',
           icon: 'none'
         });
         return;

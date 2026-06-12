@@ -106,6 +106,7 @@ function createEmptyTreatmentOverview() {
     groupCount: 0,
     itemCount: 0,
     nutritionItemCount: 0,
+    fluidVolume: 0,
     totalCalories: 0,
     carbs: 0,
     protein: 0,
@@ -187,6 +188,9 @@ function summarizeTreatmentRecords(records = []) {
       const items = Array.isArray(group.items) ? group.items : [];
       items.forEach(item => {
         summary.itemCount += 1;
+        if ((item.unit || 'ml') === 'ml') {
+          summary.fluidVolume += toNumber(item.amount ?? item.volumeMl);
+        }
         if (!shouldCountInNutrition(item)) {
           return;
         }
@@ -218,6 +222,7 @@ function summarizeTreatmentRecords(records = []) {
   });
 
   summary.totalCalories = roundCalories(summary.totalCalories);
+  summary.fluidVolume = roundNumber(summary.fluidVolume, 2);
   summary.carbs = roundNumber(summary.carbs, 2);
   summary.protein = roundNumber(summary.protein, 2);
   summary.fat = roundNumber(summary.fat, 2);
