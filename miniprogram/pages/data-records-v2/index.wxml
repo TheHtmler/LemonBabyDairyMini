@@ -512,6 +512,7 @@
                     data-id="{{item._id}}" bindtap="onFoodSelect">
                 <view class="food-option-main">
                   <text class="food-option-name">{{item.name}}</text>
+                  <text class="food-option-source">{{item.sourceLabel}}</text>
                   <text class="food-option-tag">{{item.category || '未分类'}}</text>
                 </view>
                 <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>

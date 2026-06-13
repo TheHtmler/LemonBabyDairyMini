@@ -1,4 +1,5 @@
 // 食物数据模型，支持自定义食物库与营养计算
+const SystemFoodIndex = require('../utils/systemFoodIndex');
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -13,39 +14,26 @@ class FoodModel {
    * @param {string} babyUid
    * @returns {Promise<Array>}
    */
-  async getAvailableFoods(babyUid) {
+  async getAvailableFoods(babyUid, options = {}) {
     try {
-      const conditions = [];
-      if (babyUid) {
-        conditions.push({ babyUid: _.eq(babyUid) });
-        conditions.push({ sharedBabyUids: _.in([babyUid]) });
-      } else {
-        // 没有 babyUid 时仅取系统/公开数据
-        conditions.push({ isSystem: true });
-      }
-
-      const allFoods = [];
-      // 小程序端单次 limit 上限 20，按 20 分页
-      const pageSize = 20;
-      let offset = 0;
-      let hasMore = true;
-
-      while (hasMore) {
-        const res = await this.collection
-          .where(_.or(conditions))
-          .skip(offset)
-          .limit(pageSize)
-          .get();
-
-        const batch = (res && res.data) || [];
-        allFoods.push(...batch);
-
-        if (batch.length < pageSize) {
-          hasMore = false;
-        } else {
-          offset += batch.length;
+      const userFoodsPromise = babyUid ? this._getUserFoods(babyUid) : Promise.resolve([]);
+      const systemFoods = await this._getSystemFoodsFromIndex({
+        onProgress: async partialSystemFoods => {
+          if (typeof options.onProgress !== 'function') return;
+          const userFoods = await userFoodsPromise;
+          options.onProgress(this._mergeAndFormatFoods(partialSystemFoods, userFoods));
         }
-      }
+      });
+      const userFoods = await userFoodsPromise;
+      return this._mergeAndFormatFoods(systemFoods, userFoods);
+    } catch (error) {
+      console.error('获取食物列表失败:', error);
+      return [];
+    }
+  }
+
+  _mergeAndFormatFoods(systemFoods = [], userFoods = []) {
+      const allFoods = [...systemFoods, ...userFoods];
 
       const foodMap = new Map();
       const addFood = (doc, override = false) => {
@@ -58,20 +46,53 @@ class FoodModel {
 
       allFoods.forEach(doc => {
         if (!doc) return;
-        addFood(
-          {
-            ...doc,
-            aliasText: doc.aliasText || (Array.isArray(doc.alias) ? doc.alias.join(' / ') : (doc.alias || ''))
-          },
-          true
-        );
+        addFood(this._formatFoodDoc(doc), true);
       });
 
       return Array.from(foodMap.values());
+  }
+
+  async _getSystemFoodsFromIndex(options = {}) {
+    try {
+      return await SystemFoodIndex.getSystemFoodIndex(options);
     } catch (error) {
-      console.error('获取食物列表失败:', error);
+      console.warn('读取系统食物本地索引失败:', error);
       return [];
     }
+  }
+
+  async _getUserFoods(babyUid) {
+    if (!babyUid) return [];
+    return this._fetchFoodsByConditions([
+      { babyUid: _.eq(babyUid) },
+      { sharedBabyUids: _.in([babyUid]) }
+    ]);
+  }
+
+  async _fetchFoodsByConditions(conditions = []) {
+    const allFoods = [];
+    const pageSize = 20;
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const res = await this.collection
+        .where(conditions.length === 1 ? conditions[0] : _.or(conditions))
+        .skip(offset)
+        .limit(pageSize)
+        .get();
+
+      const batch = (res && res.data) || [];
+      allFoods.push(...batch);
+
+      if (batch.length < pageSize) {
+        hasMore = false;
+      } else {
+        offset += batch.length;
+      }
+    }
+
+    return allFoods;
   }
 
   async resolveFoodImageUrls(foods = []) {
@@ -125,7 +146,9 @@ class FoodModel {
    * @returns {Object} 营养数值
    */
   calculateNutrition(food, quantity) {
-    if (!food || !food.nutritionPerUnit) {
+    const nutrition = this._normalizeNutritionPerBasis(food || {});
+    const basis = this._normalizeNutritionBasis(food || {});
+    if (!food || !nutrition) {
       return {
         calories: 0,
         protein: 0,
@@ -136,9 +159,9 @@ class FoodModel {
       };
     }
 
-    const baseQuantity = Number(food.baseQuantity) || 100; // 默认以 100g/ml 为基准
+    const baseQuantity = Number(basis.quantity) || 100;
     const factor = quantity / baseQuantity;
-    const perUnit = food.nutritionPerUnit || {};
+    const perUnit = nutrition || {};
 
     const result = {
       calories: this._roundNumber((perUnit.calories || 0) * factor, 2),
@@ -168,15 +191,12 @@ class FoodModel {
         sharedBabyUids.push(foodData.babyUid);
       }
 
-      const payload = {
+      const payload = this._normalizeFoodForWrite({
         ...foodData,
-        sharedBabyUids,
-        image: foodData.image ? String(foodData.image).trim() : '',
-        baseQuantity: Number(foodData.baseQuantity) || 100,
-        nutritionPerUnit: this._normalizeNutrition(foodData.nutritionPerUnit),
-        createdAt: db.serverDate(),
-        updatedAt: db.serverDate()
-      };
+        sharedBabyUids
+      });
+      payload.createdAt = db.serverDate();
+      payload.updatedAt = db.serverDate();
 
       const res = await this.collection.add({
         data: payload
@@ -185,6 +205,72 @@ class FoodModel {
       return res._id;
     } catch (error) {
       console.error('创建食物失败:', error);
+      throw error;
+    }
+  }
+
+  async createSystemFoodSnapshot(systemFood, foodData, babyUid) {
+    if (!systemFood || !systemFood._id) {
+      throw new Error('缺少系统食物信息');
+    }
+    if (!foodData || !foodData.name) {
+      throw new Error('缺少快照食物数据');
+    }
+    if (!babyUid) {
+      throw new Error('缺少宝宝信息，无法创建食物快照');
+    }
+
+    try {
+      const sourceFood = this._formatFoodDoc(systemFood);
+      const sourceFoodCode = sourceFood.sourceFoodCode || sourceFood.origin?.foodCode || '';
+      const snapshotPayload = this._normalizeFoodForWrite({
+        ...sourceFood,
+        ...foodData,
+        isSystem: false,
+        babyUid,
+        sharedBabyUids: [babyUid],
+        sourceType: 'user_override',
+        ownerType: 'baby',
+        isSystemSnapshot: true,
+        sourceSystemFoodId: sourceFood._id,
+        sourceFoodCode,
+        snapshotOf: {
+          collection: 'food_catalog',
+          id: sourceFood._id,
+          sourceFoodCode
+        },
+        snapshotCreatedAt: db.serverDate(),
+        nutritionSource: 'user_override',
+        createdBy: foodData.createdBy || (getApp()?.globalData?.openid) || wx.getStorageSync?.('openid') || ''
+      });
+      delete snapshotPayload._id;
+      delete snapshotPayload.aliasText;
+
+      const existing = await this.collection
+        .where({
+          sourceSystemFoodId: sourceFood._id,
+          babyUid: _.eq(babyUid)
+        })
+        .limit(1)
+        .get();
+
+      if (existing.data && existing.data.length > 0) {
+        const existingId = existing.data[0]._id;
+        const { createdAt, createdBy, ...updatePayload } = snapshotPayload;
+        await this.updateFood(existingId, updatePayload, babyUid);
+        return existingId;
+      }
+
+      const res = await this.collection.add({
+        data: {
+          ...snapshotPayload,
+          createdAt: db.serverDate(),
+          updatedAt: db.serverDate()
+        }
+      });
+      return res._id;
+    } catch (error) {
+      console.error('创建系统食物快照失败:', error);
       throw error;
     }
   }
@@ -239,13 +325,8 @@ class FoodModel {
     }
 
     try {
-      const payload = {
-        ...foodData,
-        image: foodData.image ? String(foodData.image).trim() : '',
-        baseQuantity: Number(foodData.baseQuantity) || 100,
-        nutritionPerUnit: this._normalizeNutrition(foodData.nutritionPerUnit),
-        updatedAt: db.serverDate()
-      };
+      const payload = this._normalizeFoodForWrite(foodData);
+      payload.updatedAt = db.serverDate();
       delete payload.sharedBabyUids;
 
       const res = await this.collection
@@ -256,7 +337,6 @@ class FoodModel {
         .update({
           data: {
             ...payload,
-            defaultQuantity: _.remove(),
             sharedBabyUids: _.addToSet(babyUid)
           }
         });
@@ -297,6 +377,75 @@ class FoodModel {
     return Math.round(num * multiplier) / multiplier;
   }
 
+  _normalizeNutritionBasis(food = {}) {
+    const basis = food.nutritionBasis || food.servingBasis || {};
+    return {
+      quantity: Number(basis.quantity || food.baseQuantity) || 100,
+      unit: (basis.unit || food.baseUnit || (food.isLiquid ? 'ml' : 'g')).toString().trim() || 'g'
+    };
+  }
+
+  _normalizeNutritionPerBasis(food = {}) {
+    return this._normalizeNutrition(
+      food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {}
+    );
+  }
+
+  _getDefaultSourceType(food = {}) {
+    if (food.sourceType) return food.sourceType;
+    if (food.isSystem) return 'system';
+    if (food.ownerType === 'system') return 'system';
+    if (food.isSystemSnapshot || food.sourceSystemFoodId) return 'user_override';
+    return 'user_custom';
+  }
+
+  _normalizeFoodForWrite(foodData = {}) {
+    const nutritionBasis = this._normalizeNutritionBasis(foodData);
+    const nutritionPerBasis = this._normalizeNutritionPerBasis(foodData);
+    const sourceType = this._getDefaultSourceType(foodData);
+    const isSystem = sourceType === 'system' || foodData.ownerType === 'system' || foodData.isSystem === true;
+
+    const payload = {
+      ...foodData,
+      schemaVersion: Number(foodData.schemaVersion) || 2,
+      recordType: foodData.recordType || 'food_catalog_item',
+      status: foodData.status || 'active',
+      sourceType,
+      ownerType: foodData.ownerType || (isSystem ? 'system' : 'baby'),
+      isSystem,
+      image: foodData.image ? String(foodData.image).trim() : '',
+      nutritionBasis,
+      nutritionPerBasis,
+      nutritionExtra: foodData.nutritionExtra || {},
+      updatedAt: foodData.updatedAt
+    };
+
+    delete payload.nutritionPerUnit;
+    delete payload.nutritionPer100g;
+    delete payload.baseQuantity;
+    delete payload.baseUnit;
+    delete payload.aliasText;
+
+    return payload;
+  }
+
+  buildFoodSnapshot(food = {}) {
+    const formatted = this._formatFoodDoc(food);
+    return {
+      name: formatted.name || '',
+      category: formatted.category || '',
+      categoryLevel1: formatted.categoryLevel1 || formatted.category || '',
+      categoryLevel2: formatted.categoryLevel2 || '',
+      nutritionBasis: formatted.nutritionBasis,
+      nutritionPerBasis: formatted.nutritionPerBasis,
+      proteinSource: formatted.proteinSource || 'natural',
+      proteinQuality: formatted.proteinQuality || '',
+      sourceType: formatted.sourceType || '',
+      sourceSystemFoodId: formatted.sourceSystemFoodId || '',
+      sourceFoodCode: formatted.sourceFoodCode || formatted.origin?.foodCode || ''
+    };
+  }
+
   _formatSystemFoodDoc(food) {
     if (!food) return null;
     const category = food.categoryLevel1 || food.category || '婴幼儿辅食';
@@ -318,6 +467,43 @@ class FoodModel {
       isLiquid: !!food.isLiquid,
       image: food.image || '',
       aliasText: Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || '')
+    };
+  }
+
+  _formatFoodDoc(food) {
+    if (!food) return null;
+    const category = food.categoryLevel1 || food.category || '婴幼儿辅食';
+    const nutritionBasis = this._normalizeNutritionBasis(food);
+    const nutritionPerBasis = this._normalizeNutritionPerBasis(food);
+    const sourceType = this._getDefaultSourceType(food);
+    const isSystem = sourceType === 'system' || food.ownerType === 'system' || food.isSystem === true;
+    const aliasText = food.aliasText || (Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || ''));
+
+    return {
+      ...food,
+      category,
+      categoryLevel1: category,
+      categoryLevel2: food.categoryLevel2 || '',
+      schemaVersion: Number(food.schemaVersion) || 2,
+      recordType: food.recordType || 'food_catalog_item',
+      status: food.status || 'active',
+      sourceType,
+      ownerType: food.ownerType || (isSystem ? 'system' : 'baby'),
+      nutritionBasis,
+      nutritionPerBasis,
+      nutritionExtra: food.nutritionExtra || {},
+      baseUnit: nutritionBasis.unit,
+      baseQuantity: nutritionBasis.quantity,
+      nutritionPerUnit: nutritionPerBasis,
+      proteinSource: food.proteinSource || 'natural',
+      proteinQuality: food.proteinQuality || '',
+      nutritionSource: food.nutritionSource || (isSystem ? 'system' : 'manual'),
+      isSystem,
+      isCustom: !isSystem,
+      libraryScope: isSystem ? 'system' : 'mine',
+      image: food.image || '',
+      isLiquid: nutritionBasis.unit.toLowerCase() === 'ml' || !!food.isLiquid,
+      aliasText
     };
   }
 }

@@ -1,0 +1,12 @@
+{
+  "name": "getSystemFoodIndex",
+  "version": "1.0.0",
+  "description": "Return a slim local-search index for system foods",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"no tests\""
+  },
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}

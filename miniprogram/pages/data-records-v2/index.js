@@ -50,6 +50,7 @@ const DEFAULT_SPECIAL_MILK_PROTEIN = 13.1;
 const DEFAULT_SPECIAL_MILK_PROTEIN_ML = 1.97;
 const MILK_CATEGORY_ALIASES = ['milk', '奶类', '奶制品', '乳制品'];
 const MAX_RECENT_FOODS = 10;
+const FOOD_VISIBLE_LIMIT = 50;
 const CALORIE_RANGE_BY_AGE = [
   { maxMonths: 6, min: 72, max: 109, label: '0-6月龄推荐' },
   { maxMonths: 12, min: 65, max: 97, label: '6-12月龄推荐' },
@@ -1909,7 +1910,7 @@ function createDataRecordsPageConfig(options = {}) {
         })
       : baseList;
 
-    this.setData({ filteredFoodExperimentOptions: filtered });
+    this.setData({ filteredFoodExperimentOptions: filtered.slice(0, FOOD_VISIBLE_LIMIT) });
   },
 
   onFoodExperimentSearchInput(e) {
@@ -2059,7 +2060,8 @@ function createDataRecordsPageConfig(options = {}) {
             categoryLevel1: normalizedCategory,
             categoryLevel2: food.categoryLevel2 || '',
             isSystem: !!food.isSystem,
-            aliasText
+            aliasText,
+            sourceLabel: this.getFoodSourceLabel(food)
           };
         });
 
@@ -2115,7 +2117,13 @@ function createDataRecordsPageConfig(options = {}) {
 
   _getFoodUnit(food) {
     if (!food) return 'g';
-    return food.baseUnit || (food.isLiquid ? 'ml' : 'g');
+    return food.nutritionBasis?.unit || food.baseUnit || (food.isLiquid ? 'ml' : 'g');
+  },
+
+  getFoodSourceLabel(food = {}) {
+    if (food.isSystem) return '系统';
+    if (food.isSystemSnapshot || food.sourceType === 'user_override') return '系统修订';
+    return '我的';
   },
 
   filterFoodOptions(query = this.data.foodSearchQuery || '') {
@@ -2129,7 +2137,7 @@ function createDataRecordsPageConfig(options = {}) {
           return name.includes(normalized) || category.includes(normalized) || alias.includes(normalized);
         })
       : catalog;
-    this.setData({ filteredFoodOptions: filtered });
+    this.setData({ filteredFoodOptions: filtered.slice(0, FOOD_VISIBLE_LIMIT) });
   },
 
   onFoodSearchInput(e) {
@@ -2416,11 +2424,13 @@ function createDataRecordsPageConfig(options = {}) {
       foodType: foodType,
       category: categoryValue || (isMilk ? '奶类' : '辅食'),
       foodId: foodId,
+      foodSnapshot: FoodModel.buildFoodSnapshot(food),
       nameSnapshot: food.name,
       unit: food.baseUnit || 'g',
       quantity: numQuantity,
       proteinSource,
       proteinQuality,
+      sourceType: food.sourceType || (food.isSystem ? 'system' : 'user_custom'),
       nutrition: {
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
@@ -3269,12 +3279,7 @@ function createDataRecordsPageConfig(options = {}) {
       time,
       foodId: intake.foodId || '',
       foodName: intake.nameSnapshot || catalogFood.name || '',
-      foodSnapshot: {
-        name: intake.nameSnapshot || catalogFood.name || '',
-        category: intake.category || catalogFood.category || '辅食',
-        proteinSource: intake.proteinSource || catalogFood.proteinSource || 'natural',
-        nutritionPer100g: catalogFood.nutritionPer100g || {}
-      },
+      foodSnapshot: intake.foodSnapshot || FoodModel.buildFoodSnapshot(catalogFood),
       quantity: intake.quantity,
       unit: intake.unit || catalogFood.baseUnit || 'g',
       nutrition: {

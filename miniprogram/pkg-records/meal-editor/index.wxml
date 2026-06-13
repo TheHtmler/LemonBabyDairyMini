@@ -159,6 +159,7 @@
             />
             <view class="food-option-main">
               <text class="food-option-name">{{item.name}}</text>
+              <text class="food-option-source">{{item.sourceLabel}}</text>
               <view class="food-option-meta-row">
                 <text class="food-option-energy">{{item.nutritionPerUnit.calories || 0}}</text>
                 <text class="food-option-meta">kcal / {{item.baseQuantity || 100}}{{item.baseUnit || 'g'}}</text>

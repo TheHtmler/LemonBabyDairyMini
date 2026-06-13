@@ -569,6 +569,16 @@
   font-weight: 600;
 }
 
+.food-option-source {
+  align-self: flex-start;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #fff5d9;
+  color: #c47b00;
+  font-size: 20rpx;
+  line-height: 1;
+}
+
 .food-option-meta-row {
   display: flex;
   align-items: baseline;

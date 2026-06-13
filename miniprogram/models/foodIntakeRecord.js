@@ -32,7 +32,8 @@ function normalizeNutrition(nutrition = {}) {
     specialProtein: toNumber(nutrition.specialProtein),
     fat: toNumber(nutrition.fat),
     carbs: toNumber(nutrition.carbs),
-    fiber: toNumber(nutrition.fiber)
+    fiber: toNumber(nutrition.fiber),
+    sodium: toNumber(nutrition.sodium)
   };
 }
 
@@ -47,22 +48,45 @@ function normalizePlannedNutrition(nutrition = {}) {
   return normalized;
 }
 
-function normalizeNutritionPer100g(nutrition = {}) {
+function normalizeNutritionPerBasis(nutrition = {}) {
   return {
     calories: toNumber(nutrition.calories),
     protein: toNumber(nutrition.protein),
     fat: toNumber(nutrition.fat),
     carbs: toNumber(nutrition.carbs),
-    fiber: toNumber(nutrition.fiber)
+    fiber: toNumber(nutrition.fiber),
+    sodium: toNumber(nutrition.sodium)
+  };
+}
+
+function normalizeNutritionBasis(basis = {}) {
+  return {
+    quantity: toNumber(basis.quantity, 100) || 100,
+    unit: basis.unit || 'g'
   };
 }
 
 function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
+  const nutritionBasis = normalizeNutritionBasis(foodSnapshot.nutritionBasis || {
+    quantity: foodSnapshot.baseQuantity,
+    unit: foodSnapshot.baseUnit
+  });
+  const nutritionPerBasis = normalizeNutritionPerBasis(
+    foodSnapshot.nutritionPerBasis || foodSnapshot.nutritionPer100g
+  );
+
   return {
     name: foodSnapshot.name || fallbackName || '',
     category: foodSnapshot.category || '',
+    categoryLevel1: foodSnapshot.categoryLevel1 || foodSnapshot.category || '',
+    categoryLevel2: foodSnapshot.categoryLevel2 || '',
+    nutritionBasis,
     proteinSource: foodSnapshot.proteinSource || 'natural',
-    nutritionPer100g: normalizeNutritionPer100g(foodSnapshot.nutritionPer100g)
+    proteinQuality: foodSnapshot.proteinQuality || '',
+    nutritionPerBasis,
+    sourceType: foodSnapshot.sourceType || '',
+    sourceSystemFoodId: foodSnapshot.sourceSystemFoodId || '',
+    sourceFoodCode: foodSnapshot.sourceFoodCode || ''
   };
 }
 

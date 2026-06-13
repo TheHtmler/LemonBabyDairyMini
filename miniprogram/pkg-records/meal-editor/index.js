@@ -17,6 +17,7 @@ const {
 
 const app = getApp();
 const MAX_RECENT_FOODS = 10;
+const FOOD_VISIBLE_LIMIT = 50;
 const MEAL_LABELS = ['早餐', '午餐', '晚餐', '加餐'];
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 
@@ -374,7 +375,8 @@ Page({
       const catalog = [...(foodsWithImageUrls || [])]
         .map(food => ({
           ...food,
-          displayImage: food.imageUrl || food.image || FOOD_PLACEHOLDER_IMAGE
+          displayImage: food.imageUrl || food.image || FOOD_PLACEHOLDER_IMAGE,
+          sourceLabel: this.getFoodSourceLabel(food)
         }))
         .sort((a, b) => {
         const categoryA = (a.category || '').toString();
@@ -398,6 +400,12 @@ Page({
         filteredFoodOptions: []
       });
     }
+  },
+
+  getFoodSourceLabel(food = {}) {
+    if (food.isSystem) return '系统';
+    if (food.isSystemSnapshot || food.sourceType === 'user_override') return '系统修订';
+    return '我的';
   },
 
   async loadRecentFoodOptions() {
@@ -459,7 +467,7 @@ Page({
         })
       : baseList;
 
-    this.setData({ filteredFoodOptions: filtered });
+    this.setData({ filteredFoodOptions: filtered.slice(0, FOOD_VISIBLE_LIMIT) });
   },
 
   onMealTimeChange(e) {
@@ -649,6 +657,7 @@ Page({
       createdBy: originalItem?.createdBy || '',
       foodId,
       food,
+      foodSnapshot: FoodModel.buildFoodSnapshot(food),
       nameSnapshot: food.name,
       category: (food.category || '').toString().trim() || '辅食',
       unit: food.baseUnit || 'g',
@@ -663,6 +672,7 @@ Page({
       },
       proteinSource,
       proteinQuality: food.proteinQuality || '',
+      sourceType: food.sourceType || (food.isSystem ? 'system' : 'user_custom'),
       naturalProtein: roundNumber(naturalProtein, 2),
       specialProtein: roundNumber(specialProtein, 2),
       milkType: food.milkType || '',
@@ -816,6 +826,7 @@ Page({
           createdBy: intake.createdBy || '',
           foodId: intake.foodId || '',
           food: catalogFood || fallbackFood,
+          foodSnapshot: intake.foodSnapshot || FoodModel.buildFoodSnapshot(catalogFood || fallbackFood),
           nameSnapshot: intake.nameSnapshot || fallbackFood.name,
           category: intake.category || fallbackFood.category,
           unit: intake.unit || fallbackFood.baseUnit || 'g',
@@ -861,11 +872,13 @@ Page({
       foodType: 'food',
       category: item.category || '辅食',
       foodId: item.foodId,
+      foodSnapshot: item.foodSnapshot || FoodModel.buildFoodSnapshot(item.food || {}),
       nameSnapshot: item.nameSnapshot,
       unit: item.unit || 'g',
       quantity: item.quantity,
       proteinSource: item.proteinSource || 'natural',
       proteinQuality: item.proteinQuality || '',
+      sourceType: item.sourceType || item.foodSnapshot?.sourceType || 'manual_food',
       nutrition: item.nutrition || {},
       naturalProtein: item.naturalProtein || 0,
       specialProtein: item.specialProtein || 0,

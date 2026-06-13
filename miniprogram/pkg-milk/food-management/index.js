@@ -1,5 +1,6 @@
 const FoodModel = require('../../models/food');
 const FoodCategoryModel = require('../../models/foodCategory');
+const SystemFoodIndex = require('../../utils/systemFoodIndex');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
 const DEFAULT_CATEGORY_SUGGESTIONS = [
   '主食及谷薯',
@@ -19,6 +20,7 @@ const DEFAULT_CATEGORY_SUGGESTIONS = [
 const NUTRITION_NUMBER_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'];
 const PREMIUM_PROTEIN_CATEGORY_KEYWORDS = ['肉', '禽', '鱼', '虾', '蟹', '贝', '水产', '蛋', '乳', '奶', '豆'];
 const REGULAR_PROTEIN_CATEGORY_KEYWORDS = ['主食', '谷', '薯', '蔬菜', '水果', '辅食', '零食', '饮品', '甜品'];
+const FOOD_VISIBLE_LIMIT = 50;
 
 function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
@@ -67,12 +69,23 @@ const app = getApp();
 Page({
   data: {
     loading: false,
+    loadingTitle: '',
+    loadingHint: '',
+    loadingProgressText: '',
     foods: [],
     groupedFoods: [],
+    activeLibraryScope: 'system',
+    libraryTabs: [
+      { scope: 'system', label: '系统库' },
+      { scope: 'mine', label: '我的食物库' }
+    ],
     searchQuery: '',
     filteredFoodCount: 0,
     activeCategory: '',
     activeFoods: [],
+    activeFoodTotal: 0,
+    hasMoreActiveFoods: false,
+    visibleFoodLimit: FOOD_VISIBLE_LIMIT,
     categoryNavScrollIntoView: '',
     foodPanelScrollTop: 0,
     showAddModal: false,
@@ -99,6 +112,8 @@ Page({
     babyUid: '',
     editingFoodId: '',
     editingFoodName: '',
+    editingFoodIsSystemSource: false,
+    editingSourceSystemFoodId: '',
     foodPlaceholderImage: FOOD_PLACEHOLDER_IMAGE
   },
 
@@ -130,18 +145,47 @@ Page({
   async loadFoods() {
     try {
       await waitForAppInitialization();
-      this.setData({ loading: true });
+      const isFirstSystemIndexLoad = !SystemFoodIndex.hasLocalIndex();
+      this.setData({
+        loading: true,
+        loadingTitle: isFirstSystemIndexLoad ? '正在同步系统食物库' : '加载中...',
+        loadingHint: isFirstSystemIndexLoad ? '首次加载大量系统食物，可能需要十几秒，请耐心等候' : '',
+        loadingProgressText: ''
+      });
       const babyUid = this.data.babyUid || getBabyUid();
       this.setData({ babyUid: babyUid || '' });
-      const foodsFromDb = await FoodModel.getAvailableFoods(babyUid);
+      const foodsFromDb = await FoodModel.getAvailableFoods(babyUid, {
+        onProgress: foods => {
+          if (!isFirstSystemIndexLoad) return;
+          this.setData({
+            loadingTitle: '正在同步系统食物库',
+            loadingHint: '首次加载大量系统食物，可能需要十几秒，请耐心等候',
+            loadingProgressText: `已加载 ${foods.length} 种食物`
+          });
+        }
+      });
       const foodsWithImageUrls = await FoodModel.resolveFoodImageUrls(foodsFromDb || []);
 
-      const mergedFoods = (foodsWithImageUrls || [])
+      this.applyFoodList(foodsWithImageUrls || []);
+    } catch (error) {
+      console.error('加载食物数据失败:', error);
+      wx.showToast({
+        title: '加载失败',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ loading: false });
+    }
+  },
+
+  applyFoodList(foods = [], options = {}) {
+    const mergedFoods = (foods || [])
         .filter(item => !!item && !!item._id)
         .map(food => {
           const normalizedCategory = this.normalizeCategoryValue(
             food.category || food.categoryLevel1
           );
+          const listImage = food.imageUrl || food.image || '';
           return {
             ...food,
             category: normalizedCategory,
@@ -149,11 +193,20 @@ Page({
             categoryLevel2: food.categoryLevel2 || '',
             isSystem: !!food.isSystem,
             isCustom: !food.isSystem,
-            baseUnit: food.baseUnit || 'g',
-            baseQuantity: Number(food.baseQuantity) || 100,
+            isSystemSnapshot: !!food.isSystemSnapshot,
+            sourceType: food.sourceType || (food.isSystem ? 'system' : (food.isSystemSnapshot ? 'user_override' : 'user_custom')),
+            libraryScope: food.libraryScope || (food.isSystem ? 'system' : 'mine'),
+            nutritionBasis: food.nutritionBasis || {
+              quantity: Number(food.baseQuantity) || 100,
+              unit: food.baseUnit || 'g'
+            },
+            nutritionPerBasis: food.nutritionPerBasis || food.nutritionPerUnit || {},
+            baseUnit: food.nutritionBasis?.unit || food.baseUnit || 'g',
+            baseQuantity: Number(food.nutritionBasis?.quantity || food.baseQuantity) || 100,
             image: food.image || '',
-            displayImage: food.imageUrl || food.image || FOOD_PLACEHOLDER_IMAGE,
-            nutritionPerUnit: food.nutritionPerUnit || {
+            displayImage: listImage,
+            showListImage: !food.isSystem && !!listImage,
+            nutritionPerUnit: food.nutritionPerBasis || food.nutritionPerUnit || {
               calories: 0,
               protein: 0,
               carbs: 0,
@@ -166,41 +219,33 @@ Page({
         })
         .sort((a, b) => a.name.localeCompare(b.name));
 
-      const existingCategories = Array.from(
-        new Set(
-          mergedFoods.map(item => item.category || (DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯'))
-        )
-      );
-      const existingUnits = Array.from(
-        new Set(
-          mergedFoods.map(item => (item.baseUnit || '').toString().trim()).filter(Boolean)
-        )
-      );
-      const categorySuggestions = this.mergeCategorySuggestions(existingCategories);
-      const unitSuggestions = this.mergeUnitSuggestions(existingUnits);
+    const existingCategories = Array.from(
+      new Set(
+        mergedFoods.map(item => item.category || (DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯'))
+      )
+    );
+    const existingUnits = Array.from(
+      new Set(
+        mergedFoods.map(item => (item.baseUnit || '').toString().trim()).filter(Boolean)
+      )
+    );
+    const categorySuggestions = this.mergeCategorySuggestions(existingCategories);
+    const unitSuggestions = this.mergeUnitSuggestions(existingUnits);
 
-      this.setData({
-        foods: mergedFoods,
-        categorySuggestions,
-        categoryPickerIndex: this.getCategoryPickerIndex(
-          this.data.formData?.category || '',
-          categorySuggestions
-        ),
-        unitSuggestions,
-        unitPickerIndex: this.getUnitPickerIndex(this.data.formData?.unit || '', unitSuggestions)
-      });
-      this.updateGroupedFoods(mergedFoods, {
-        searchQuery: this.data.searchQuery
-      });
-    } catch (error) {
-      console.error('加载食物数据失败:', error);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'none'
-      });
-    } finally {
-      this.setData({ loading: false });
-    }
+    this.setData({
+      foods: mergedFoods,
+      loading: options.keepLoading === true,
+      categorySuggestions,
+      categoryPickerIndex: this.getCategoryPickerIndex(
+        this.data.formData?.category || '',
+        categorySuggestions
+      ),
+      unitSuggestions,
+      unitPickerIndex: this.getUnitPickerIndex(this.data.formData?.unit || '', unitSuggestions)
+    });
+    this.updateGroupedFoods(mergedFoods, {
+      searchQuery: this.data.searchQuery
+    });
   },
 
   async loadCustomCategories() {
@@ -293,11 +338,20 @@ Page({
 
   filterFoods(foods = [], query = '') {
     const normalized = normalizeSearchText(query);
+    const scopedFoods = this.filterFoodsByLibrary(foods);
     if (!normalized) {
-      return foods;
+      return scopedFoods;
     }
 
-    return foods.filter(food => this.matchesFoodSearch(food, normalized));
+    return scopedFoods.filter(food => this.matchesFoodSearch(food, normalized));
+  },
+
+  filterFoodsByLibrary(foods = []) {
+    const scope = this.data.activeLibraryScope || 'system';
+    return (foods || []).filter(food => {
+      const libraryScope = food.libraryScope || (food.isSystem ? 'system' : 'mine');
+      return libraryScope === scope;
+    });
   },
 
   getNextActiveCategory(groupedFoods = [], preferredCategory = '') {
@@ -317,6 +371,7 @@ Page({
   updateGroupedFoods(foods = this.data.foods || [], options = {}) {
     const searchQuery =
       options.searchQuery !== undefined ? options.searchQuery : (this.data.searchQuery || '');
+    const visibleFoodLimit = options.visibleFoodLimit || FOOD_VISIBLE_LIMIT;
     const filteredFoods = this.filterFoods(foods, searchQuery);
     const filteredGroups = this.groupFoodsByCategory(filteredFoods);
     const activeCategory = this.getNextActiveCategory(
@@ -330,9 +385,26 @@ Page({
       filteredFoodCount: filteredFoods.length,
       searchQuery,
       activeCategory,
-      activeFoods: activeGroup ? activeGroup.items : [],
-      categoryNavScrollIntoView: activeGroup ? activeGroup.navId : '',
-      foodPanelScrollTop: 0
+      visibleFoodLimit,
+      activeFoods: activeGroup ? activeGroup.items.slice(0, visibleFoodLimit) : [],
+      activeFoodTotal: activeGroup ? activeGroup.items.length : 0,
+      hasMoreActiveFoods: activeGroup ? activeGroup.items.length > visibleFoodLimit : false
+    });
+  },
+
+  switchLibraryScope(e) {
+    const { scope } = e.currentTarget.dataset || {};
+    if (!scope || scope === this.data.activeLibraryScope) return;
+    this.setData({
+      activeLibraryScope: scope,
+      activeCategory: '',
+      searchQuery: '',
+      visibleFoodLimit: FOOD_VISIBLE_LIMIT
+    }, () => {
+      this.updateGroupedFoods(this.data.foods || [], {
+        searchQuery: '',
+        activeCategory: ''
+      });
     });
   },
 
@@ -473,9 +545,11 @@ Page({
       category: normalizedCategory,
       categoryLevel1: normalizedCategory,
       categoryLevel2: formData.categoryLevel2 || '',
-      baseUnit,
-      baseQuantity: baseQuantity,
-      nutritionPerUnit: this.buildNutritionPayload(formData),
+      nutritionBasis: {
+        quantity: baseQuantity,
+        unit: baseUnit
+      },
+      nutritionPerBasis: this.buildNutritionPayload(formData),
       proteinSource: this.getProteinTypeOption(formData.proteinTypeIndex).value,
       proteinQuality: this.getProteinTypeOption(formData.proteinTypeIndex).quality,
       foodType: 'food',
@@ -493,7 +567,7 @@ Page({
       return createEmptyFormData(this.getDefaultCategory(), '');
     }
 
-    const nutrition = food.nutritionPerUnit || {};
+    const nutrition = food.nutritionPerBasis || food.nutritionPerUnit || {};
     const proteinSource = food.proteinSource || 'natural';
     const proteinQuality = food.proteinQuality || '';
     const typeIndex = this.data.proteinTypeOptions.findIndex(
@@ -504,8 +578,8 @@ Page({
       name: food.name || '',
       category: this.normalizeCategoryValue(food.category),
       categoryLevel2: food.categoryLevel2 || '',
-      unit: food.baseUnit || '',
-      baseQuantity: String(food.baseQuantity != null ? food.baseQuantity : 100),
+      unit: food.nutritionBasis?.unit || food.baseUnit || '',
+      baseQuantity: String(food.nutritionBasis?.quantity != null ? food.nutritionBasis.quantity : (food.baseQuantity != null ? food.baseQuantity : 100)),
       calories: nutrition.calories != null ? String(nutrition.calories) : '',
       image: food.image || '',
       protein: nutrition.protein != null ? String(nutrition.protein) : '',
@@ -536,6 +610,8 @@ Page({
       showUnitCreator: false,
       editingFoodId: '',
       editingFoodName: '',
+      editingFoodIsSystemSource: false,
+      editingSourceSystemFoodId: '',
       categoryPickerIndex: 0,
       unitPickerIndex: 0,
       proteinTypeTouched: false,
@@ -553,16 +629,13 @@ Page({
       wx.showToast({ title: '未找到食物', icon: 'none' });
       return;
     }
-    if (target.isSystem) {
-      wx.showToast({ title: '系统预设无法编辑', icon: 'none' });
-      return;
-    }
-
     const formData = this.buildFormDataFromFood(target);
     this.setData({
       showAddModal: true,
       editingFoodId: target._id,
       editingFoodName: target.name || '',
+      editingFoodIsSystemSource: !!target.isSystem,
+      editingSourceSystemFoodId: target.isSystem ? target._id : (target.sourceSystemFoodId || ''),
       energyKjInput: '',
       foodImagePreviewUrl: target.displayImage || target.image || '',
       customCategoryInput: '',
@@ -585,6 +658,8 @@ Page({
       uploadingFoodImage: false,
       editingFoodId: '',
       editingFoodName: '',
+      editingFoodIsSystemSource: false,
+      editingSourceSystemFoodId: '',
       customCategoryInput: '',
       customUnitInput: '',
       showCategoryCreator: false,
@@ -937,7 +1012,10 @@ Page({
 
       const editingId = this.data.editingFoodId;
 
-      if (editingId) {
+      if (editingId && this.data.editingFoodIsSystemSource) {
+        const sourceFood = (this.data.foods || []).find(item => item._id === this.data.editingSourceSystemFoodId || item._id === editingId);
+        await FoodModel.createSystemFoodSnapshot(sourceFood, newFood, babyUid);
+      } else if (editingId) {
         const { createdBy, babyUid: payloadBabyUid, ...updatePayload } = newFood;
         await FoodModel.updateFood(editingId, updatePayload, babyUid);
       } else {
@@ -956,7 +1034,7 @@ Page({
 
       wx.hideLoading();
       wx.showToast({
-        title: editingId ? '更新成功' : '添加成功',
+        title: editingId ? (this.data.editingFoodIsSystemSource ? '已保存到我的食物库' : '更新成功') : '添加成功',
         icon: 'success'
       });
 
@@ -987,9 +1065,25 @@ Page({
     const activeGroup = (this.data.groupedFoods || []).find(group => group.category === category);
     this.setData({
       activeCategory: category,
-      activeFoods: activeGroup ? activeGroup.items : [],
-      categoryNavScrollIntoView: activeGroup ? activeGroup.navId : '',
-      foodPanelScrollTop: 0
+      activeFoods: activeGroup ? activeGroup.items.slice(0, FOOD_VISIBLE_LIMIT) : [],
+      activeFoodTotal: activeGroup ? activeGroup.items.length : 0,
+      visibleFoodLimit: FOOD_VISIBLE_LIMIT,
+      hasMoreActiveFoods: activeGroup ? activeGroup.items.length > FOOD_VISIBLE_LIMIT : false
+    });
+  },
+
+  loadMoreActiveFoods() {
+    const activeGroup = (this.data.groupedFoods || []).find(
+      group => group.category === this.data.activeCategory
+    );
+    if (!activeGroup) return;
+
+    const nextLimit = (this.data.visibleFoodLimit || FOOD_VISIBLE_LIMIT) + FOOD_VISIBLE_LIMIT;
+    this.setData({
+      visibleFoodLimit: nextLimit,
+      activeFoods: activeGroup.items.slice(0, nextLimit),
+      activeFoodTotal: activeGroup.items.length,
+      hasMoreActiveFoods: activeGroup.items.length > nextLimit
     });
   },
 

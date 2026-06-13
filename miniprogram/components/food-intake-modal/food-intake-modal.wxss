@@ -204,6 +204,15 @@
   color: #333;
 }
 
+.food-option-source {
+  margin-left: 8rpx;
+  padding: 3rpx 10rpx;
+  border-radius: 999rpx;
+  background: #fff5d9;
+  color: #c47b00;
+  font-size: 18rpx;
+}
+
 .food-option-add {
   display: inline-flex;
   align-items: center;
