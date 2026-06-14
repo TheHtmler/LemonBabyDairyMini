@@ -205,14 +205,16 @@ function buildMilkComponentRows(feedings = []) {
 const rowMap = new Map();
 (feedings || [])
 .filter((feeding) => feeding?.isV2FeedingRecord && Array.isArray(feeding.formulaComponents))
-.flatMap((feeding) => feeding.formulaComponents)
-.forEach((component = {}) => {
+.forEach((feeding = {}) => {
+const countedKeys = new Set();
+(feeding.formulaComponents || []).forEach((component = {}) => {
 if (component.kind !== 'breast_milk' && component.kind !== 'formula_powder') return;
 const key = getComponentKey(component);
 const stats = calculateComponentStats(component);
 const base = getComponentBase(component);
 const current = rowMap.get(key) || {
 ...base,
+recordCount: 0,
 volume: 0,
 powderWeight: 0,
 calories: 0,
@@ -236,7 +238,12 @@ current.naturalProtein += stats.protein;
 }
 current.carbs += stats.carbs;
 current.fat += stats.fat;
+if (!countedKeys.has(key)) {
+current.recordCount += 1;
+countedKeys.add(key);
+}
 rowMap.set(key, current);
+});
 });
 return Array.from(rowMap.values()).map((row) => {
 const isZeroProtein = row.proteinRole === 'none';
@@ -250,6 +257,8 @@ badge: row.badge,
 badgeClass: row.badgeClass,
 badgeStyle: row.badgeStyle,
 name: row.name,
+recordCount: row.recordCount,
+sourceCountText: row.recordCount > 0 ? `${row.recordCount}次记录` : '',
 amountText: buildAmountText([
 row.volume > 0 ? `${formatVolume(row.volume)}ml` : '',
 row.powderWeight > 0 ? `粉${formatAmount(row.powderWeight)}g` : ''
@@ -414,7 +423,7 @@ type: 'milk',
 ...(useComponentMilkSection ? {
 variant: 'components',
 componentRows: milkComponentRows,
-meta: `${feedingRecordCount}条记录`
+meta: `${feedingRecordCount}条记录${milkComponentRows.length > 0 ? ` · ${milkComponentRows.length}类奶品` : ''}`
 } : {}),
 summaryText: useComponentMilkSection
 ? `奶量 ${normalizeValue(input.totalMilk || totalMilkVolume)}ml · 热量 ${roundDisplayNumber(componentCalories)}kcal · 蛋白 ${roundDisplayNumber(componentProtein)}g`
