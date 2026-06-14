@@ -382,6 +382,59 @@ test('buildDataRecordsSummaryPreview derives v2 milk badges from component categ
   );
 });
 
+test('buildDataRecordsSummaryPreview labels repeated v2 milk components with record counts', () => {
+  const makeFeeding = (id, startTime, component) => ({
+    _id: id,
+    startTime,
+    isV2FeedingRecord: true,
+    formulaComponents: [component]
+  });
+  const regularComponent = {
+    kind: 'formula_powder',
+    powderId: 'regular-a',
+    powderName: '普奶 A',
+    category: 'regular_formula',
+    proteinRole: 'natural',
+    waterVolume: 60,
+    powderWeight: 9,
+    nutritionSnapshot: { protein: 10, calories: 500, fat: 20, carbs: 55 }
+  };
+  const specialComponent = {
+    kind: 'formula_powder',
+    powderId: 'special-a',
+    powderName: '特奶 A',
+    category: 'special_formula',
+    proteinRole: 'special',
+    waterVolume: 90,
+    powderWeight: 13.5,
+    nutritionSnapshot: { protein: 13, calories: 520, fat: 24, carbs: 50 }
+  };
+  const preview = buildDataRecordsSummaryPreview({
+    isV2RecordsPage: true,
+    feedings: [
+      makeFeeding('milk-1', '08:00', regularComponent),
+      makeFeeding('milk-2', '10:00', regularComponent),
+      makeFeeding('milk-3', '12:00', specialComponent),
+      makeFeeding('milk-4', '14:00', specialComponent)
+    ]
+  });
+  const milkSection = preview.sourceSections[0];
+
+  assert.equal(milkSection.meta, '4条记录 · 2类奶品');
+  assert.deepEqual(
+    milkSection.componentRows.map((row) => ({
+      name: row.name,
+      recordCount: row.recordCount,
+      sourceCountText: row.sourceCountText,
+      amountText: row.amountText
+    })),
+    [
+      { name: '普奶 A', recordCount: 2, sourceCountText: '2次记录', amountText: '120ml / 粉18g' },
+      { name: '特奶 A', recordCount: 2, sourceCountText: '2次记录', amountText: '180ml / 粉27g' }
+    ]
+  );
+});
+
 test('data records top metric info icon can be customized per metric', () => {
   const pageWxml = fs.readFileSync(
     path.join(__dirname, '../miniprogram/pages/data-records-v2/index.wxml'),

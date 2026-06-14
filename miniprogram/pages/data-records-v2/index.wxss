@@ -2914,6 +2914,7 @@
 .overview-milk-component-badge.energy{background:#FFF0D8;color:#B76A1B;border-color:rgba(183,106,27,0.18)}
 .overview-milk-component-copy{display:flex;flex:1;flex-direction:column;justify-content:center;gap:2rpx;min-width:0;min-height:34rpx}
 .overview-milk-component-name{display:-webkit-box;font-size:21rpx;font-weight:600;color:#333333;line-height:1.22;white-space:normal;overflow:hidden;text-overflow:ellipsis;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-all}
+.overview-milk-component-count{display:block;font-size:17rpx;color:#999999;line-height:1.15;white-space:nowrap}
 .overview-milk-component-summary-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:4rpx 8rpx;min-width:0}
 .overview-milk-component-amount-row{display:block;flex:1 1 130rpx;min-width:0;font-size:18rpx;font-weight:500;color:#777777;line-height:1.25;white-space:normal;overflow:visible;word-break:break-word}
 .overview-milk-component-calories{flex:0 0 auto;font-size:18rpx;font-weight:700;color:#FF8C00;line-height:1.25;text-align:right;white-space:normal;overflow:visible;word-break:keep-all}

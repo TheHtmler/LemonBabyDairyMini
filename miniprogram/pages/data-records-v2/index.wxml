@@ -120,6 +120,7 @@
                   <text class="overview-milk-component-badge {{component.badgeClass}}" style="{{component.badgeStyle}}">{{component.badge}}</text>
                   <view class="overview-milk-component-copy">
                     <text class="overview-milk-component-name">{{component.name}}</text>
+                    <text class="overview-milk-component-count" wx:if="{{component.sourceCountText}}">{{component.sourceCountText}}</text>
                   </view>
                 </view>
                 <view class="overview-milk-component-summary-row">
