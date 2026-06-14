@@ -259,6 +259,13 @@ function shouldAcceptDownloadedIndex(meta, index) {
 }
 
 async function getSystemFoodIndex(options = {}) {
+  if (!options.forceRefresh && options.preferLocal === true) {
+    const localIndex = getLocalIndex();
+    if (localIndex.length > 0) {
+      return localIndex;
+    }
+  }
+
   let meta = null;
   try {
     meta = await getRemoteMeta();

@@ -8,8 +8,8 @@ const { getBabyUid } = require('../../utils/index');
 const {
   normalizeTargetMode,
   pickCoefficient,
-  readNutritionTargetPreferences,
-  writeNutritionTargetPreferences
+  getNutritionTargetPreferences,
+  saveNutritionTargetPreferences
 } = require('../../utils/nutritionTargetPreferences');
 const {
   BREAST_MILK_TAG_META,
@@ -362,7 +362,7 @@ Page({
       // 食物 + 治疗也是真实摄入，必须计入“已摄入”，否则剩余奶量会被高估。
       const otherIntake = computeOtherIntake(foodIntakes, (treatmentResult && treatmentResult.data) || []);
       // 系数优先用本地记住的目标值，没有再回退到档案/历史的快照值。
-      const localTarget = readNutritionTargetPreferences(this.data.babyUid, wxApi);
+      const localTarget = await getNutritionTargetPreferences(this.data.babyUid, wxApi);
       const preferredMode = this._requestedModeFromUrl
         || (localTarget.preferredTargetMode ? normalizeTargetMode(localTarget.preferredTargetMode) : this.data.calculationMode);
       // 默认计划顿数取“最近一天的喂奶顿数”；没有历史时回退到默认值。
@@ -894,8 +894,8 @@ Page({
     this.setData({
       calculationMode: mode,
       expandedSourceGroup: ''
-    }, () => {
-      this.saveLocalTargetCoefficients();
+    }, async () => {
+      await this.saveLocalTargetCoefficients();
       this.setDefaultSelections();
     });
   },
@@ -921,12 +921,12 @@ Page({
   },
 
   onCoefficientBlur() {
-    this.saveLocalTargetCoefficients();
+    return this.saveLocalTargetCoefficients();
   },
 
-  // 仅本地保存目标系数，不落库、不影响记录页的真实数据汇总。
+  // 保存宝宝维度目标系数到云端；本地缓存只作为离线兜底，不影响记录页真实摄入汇总。
   saveLocalTargetCoefficients() {
-    return writeNutritionTargetPreferences(this.data.babyUid, {
+    return saveNutritionTargetPreferences(this.data.babyUid, {
       naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
       specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
       calorieCoefficient: this.data.calorieCoefficientInput || '',

@@ -2,7 +2,7 @@ const TreatmentRecordModel = require('../../models/treatmentRecord');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
 const {
-  readNutritionTargetPreferences,
+  getNutritionTargetPreferences,
   pickCoefficient
 } = require('../../utils/nutritionTargetPreferences');
 const {
@@ -136,7 +136,7 @@ Page({
     try {
       const daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, dateKey);
       const basicInfo = daily?.basicInfo || daily?.summary?.basicInfo || {};
-      const localTarget = readNutritionTargetPreferences(babyUid);
+      const localTarget = await getNutritionTargetPreferences(babyUid);
       this.setData({
         targetContext: {
           currentSummary: normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || {}),

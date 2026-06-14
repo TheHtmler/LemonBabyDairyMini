@@ -62,13 +62,14 @@
     <scroll-view
       class="food-panel"
       scroll-y
+      scroll-top="{{foodPanelScrollTop}}"
       enhanced
       show-scrollbar="{{false}}"
-      bindscrolltolower="loadMoreActiveFoods"
+      bindscroll="onFoodPanelScroll"
     >
       <view class="food-panel-header">
         <text class="food-panel-title">{{activeCategory}}</text>
-        <text class="food-panel-count">已显示 {{activeFoods.length}} / {{activeFoodTotal}} 种</text>
+        <text class="food-panel-count">共 {{activeFoodTotal}} 种</text>
       </view>
       <block wx:for="{{activeFoods}}" wx:key="_id">
         <view class="food-item">
@@ -144,9 +145,6 @@
           </view>
         </view>
       </block>
-      <view class="load-more-foods" wx:if="{{hasMoreActiveFoods}}" bindtap="loadMoreActiveFoods">
-        继续加载更多
-      </view>
     </scroll-view>
   </view>
 

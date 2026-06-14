@@ -20,7 +20,6 @@ const DEFAULT_CATEGORY_SUGGESTIONS = [
 const NUTRITION_NUMBER_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'];
 const PREMIUM_PROTEIN_CATEGORY_KEYWORDS = ['肉', '禽', '鱼', '虾', '蟹', '贝', '水产', '蛋', '乳', '奶', '豆'];
 const REGULAR_PROTEIN_CATEGORY_KEYWORDS = ['主食', '谷', '薯', '蔬菜', '水果', '辅食', '零食', '饮品', '甜品'];
-const FOOD_VISIBLE_LIMIT = 50;
 
 function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
@@ -74,18 +73,16 @@ Page({
     loadingProgressText: '',
     foods: [],
     groupedFoods: [],
-    activeLibraryScope: 'system',
+    activeLibraryScope: 'mine',
     libraryTabs: [
-      { scope: 'system', label: '系统库' },
-      { scope: 'mine', label: '我的食物库' }
+      { scope: 'mine', label: '我的食物库' },
+      { scope: 'system', label: '系统库' }
     ],
     searchQuery: '',
     filteredFoodCount: 0,
     activeCategory: '',
     activeFoods: [],
     activeFoodTotal: 0,
-    hasMoreActiveFoods: false,
-    visibleFoodLimit: FOOD_VISIBLE_LIMIT,
     categoryNavScrollIntoView: '',
     foodPanelScrollTop: 0,
     showAddModal: false,
@@ -347,7 +344,7 @@ Page({
   },
 
   filterFoodsByLibrary(foods = []) {
-    const scope = this.data.activeLibraryScope || 'system';
+    const scope = this.data.activeLibraryScope || 'mine';
     return (foods || []).filter(food => {
       const libraryScope = food.libraryScope || (food.isSystem ? 'system' : 'mine');
       return libraryScope === scope;
@@ -371,7 +368,6 @@ Page({
   updateGroupedFoods(foods = this.data.foods || [], options = {}) {
     const searchQuery =
       options.searchQuery !== undefined ? options.searchQuery : (this.data.searchQuery || '');
-    const visibleFoodLimit = options.visibleFoodLimit || FOOD_VISIBLE_LIMIT;
     const filteredFoods = this.filterFoods(foods, searchQuery);
     const filteredGroups = this.groupFoodsByCategory(filteredFoods);
     const activeCategory = this.getNextActiveCategory(
@@ -385,10 +381,8 @@ Page({
       filteredFoodCount: filteredFoods.length,
       searchQuery,
       activeCategory,
-      visibleFoodLimit,
-      activeFoods: activeGroup ? activeGroup.items.slice(0, visibleFoodLimit) : [],
-      activeFoodTotal: activeGroup ? activeGroup.items.length : 0,
-      hasMoreActiveFoods: activeGroup ? activeGroup.items.length > visibleFoodLimit : false
+      activeFoods: activeGroup ? activeGroup.items : [],
+      activeFoodTotal: activeGroup ? activeGroup.items.length : 0
     });
   },
 
@@ -398,8 +392,7 @@ Page({
     this.setData({
       activeLibraryScope: scope,
       activeCategory: '',
-      searchQuery: '',
-      visibleFoodLimit: FOOD_VISIBLE_LIMIT
+      searchQuery: ''
     }, () => {
       this.updateGroupedFoods(this.data.foods || [], {
         searchQuery: '',
@@ -1065,26 +1058,18 @@ Page({
     const activeGroup = (this.data.groupedFoods || []).find(group => group.category === category);
     this.setData({
       activeCategory: category,
-      activeFoods: activeGroup ? activeGroup.items.slice(0, FOOD_VISIBLE_LIMIT) : [],
+      activeFoods: activeGroup ? activeGroup.items : [],
       activeFoodTotal: activeGroup ? activeGroup.items.length : 0,
-      visibleFoodLimit: FOOD_VISIBLE_LIMIT,
-      hasMoreActiveFoods: activeGroup ? activeGroup.items.length > FOOD_VISIBLE_LIMIT : false
+      foodPanelScrollTop: this.foodPanelCurrentScrollTop > 0 ? 0 : 1
+    }, () => {
+      if (this.data.foodPanelScrollTop !== 0) {
+        this.setData({ foodPanelScrollTop: 0 });
+      }
     });
   },
 
-  loadMoreActiveFoods() {
-    const activeGroup = (this.data.groupedFoods || []).find(
-      group => group.category === this.data.activeCategory
-    );
-    if (!activeGroup) return;
-
-    const nextLimit = (this.data.visibleFoodLimit || FOOD_VISIBLE_LIMIT) + FOOD_VISIBLE_LIMIT;
-    this.setData({
-      visibleFoodLimit: nextLimit,
-      activeFoods: activeGroup.items.slice(0, nextLimit),
-      activeFoodTotal: activeGroup.items.length,
-      hasMoreActiveFoods: activeGroup.items.length > nextLimit
-    });
+  onFoodPanelScroll(e) {
+    this.foodPanelCurrentScrollTop = Number(e.detail?.scrollTop) || 0;
   },
 
   onDeleteFood(e) {

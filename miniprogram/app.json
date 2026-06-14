@@ -15,6 +15,7 @@
       "root": "pkg-records",
       "pages": [
         "meal-editor/index",
+        "food-picker/index",
         "growth-records/index",
         "treatment-record/index",
         "bowel-record/index"

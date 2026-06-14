@@ -416,6 +416,31 @@ test('system food index reuses local cache when version and total match', async 
   }
 });
 
+test('system food index can prefer local cache without checking remote meta', async () => {
+  const mock = installWxForIndex({
+    meta: {
+      version: 'remote-version',
+      total: 1,
+      indexSchemaVersion: 1
+    },
+    foods: []
+  });
+
+  mock.storage.system_food_index_version = 'local-version';
+  mock.storage.system_food_index_schema_version = 1;
+  mock.storage.system_food_index = [{ _id: 'local-cache', name: '本地缓存食物', searchText: '本地缓存食物' }];
+
+  try {
+    const service = loadIndexService();
+    const index = await service.getSystemFoodIndex({ preferLocal: true });
+
+    assert.deepEqual(index, mock.storage.system_food_index);
+    assert.equal(mock.queries.length, 0);
+  } finally {
+    mock.restore();
+  }
+});
+
 test('system food index keeps cache usable when meta total is only a hint', async () => {
   const mock = installWxForIndex({
     meta: {

@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "选择食物",
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "nutrition-target-preview": "/components/nutrition-target-preview/nutrition-target-preview"
+  }
+}

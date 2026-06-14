@@ -270,12 +270,6 @@
   line-height: 1.5;
 }
 
-.meal-item-note {
-  font-size: 22rpx;
-  color: #8A7C60;
-  line-height: 1.5;
-}
-
 .meal-item-actions {
   display: flex;
   align-items: center;
@@ -418,155 +412,8 @@
   overflow: hidden;
 }
 
-.select-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 52vh;
-}
-
 .notes-input.compact {
   min-height: 112rpx;
-}
-
-.search-input {
-  display: flex;
-  align-items: center;
-  background: #FFF7E3;
-  border: 2rpx solid rgba(255, 184, 0, 0.14);
-  border-radius: 16rpx;
-  padding: 0 20rpx;
-  margin-bottom: 18rpx;
-}
-
-.search-input input {
-  width: 100%;
-  height: 76rpx;
-  font-size: 28rpx;
-  color: #333333;
-}
-
-.drawer-utility-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16rpx;
-}
-
-.drawer-utility-btn {
-  padding: 12rpx 18rpx;
-  border-radius: 999rpx;
-  background: rgba(255, 184, 0, 0.12);
-  color: #8A4B00;
-  font-size: 24rpx;
-}
-
-.food-select-layout {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 16rpx;
-}
-
-.category-sidebar {
-  width: 152rpx;
-  flex-shrink: 0;
-  height: 100%;
-  background: #FFF7E3;
-  border-radius: 20rpx;
-  padding: 12rpx 0;
-  box-sizing: border-box;
-}
-
-.category-nav-item {
-  position: relative;
-  padding: 20rpx 18rpx 20rpx 24rpx;
-  color: #8A7C60;
-  font-size: 24rpx;
-  line-height: 1.4;
-}
-
-.category-nav-item.active {
-  background: #ffffff;
-  color: #8A4B00;
-  font-weight: 600;
-}
-
-.category-nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 16rpx;
-  bottom: 16rpx;
-  width: 8rpx;
-  border-radius: 0 999rpx 999rpx 0;
-  background: #FFB800;
-}
-
-.category-nav-label {
-  display: block;
-}
-
-.food-list-panel {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-}
-
-.food-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16rpx;
-  margin-bottom: 12rpx;
-}
-
-.food-list-title {
-  font-size: 28rpx;
-  color: #333333;
-  font-weight: 700;
-}
-
-.food-list-count {
-  font-size: 22rpx;
-  color: #8A7C60;
-}
-
-.food-option {
-  display: flex;
-  align-items: center;
-  gap: 18rpx;
-  padding: 18rpx 0;
-  border-top: 1rpx solid rgba(255, 184, 0, 0.12);
-}
-
-.food-option:first-child {
-  border-top: none;
-  padding-top: 0;
-}
-
-.food-option-image {
-  flex-shrink: 0;
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 18rpx;
-  background: #F6F2E7;
-}
-
-.food-option-main {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 8rpx;
-}
-
-.food-option-name {
-  font-size: 28rpx;
-  color: #333333;
-  font-weight: 600;
 }
 
 .food-option-source {
@@ -579,43 +426,68 @@
   line-height: 1;
 }
 
-.food-option-meta-row {
+.batch-body {
   display: flex;
-  align-items: baseline;
-  gap: 8rpx;
+  flex-direction: column;
+  gap: 18rpx;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 12rpx;
+}
+
+.batch-food-card {
+  padding: 18rpx;
+  border-radius: 20rpx;
+  background: #FFF7E3;
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+}
+
+.batch-food-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.batch-food-main {
+  flex: 1;
   min-width: 0;
 }
 
-.food-option-energy {
-  flex-shrink: 0;
-  font-size: 26rpx;
-  color: #FF6B57;
-}
-
-.food-option-meta {
-  min-width: 0;
-  font-size: 22rpx;
-  color: #9F9684;
-}
-
-.food-option-sub {
+.batch-food-name {
   display: block;
-  font-size: 22rpx;
-  color: #B6A88D;
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.food-option-add {
-  flex-shrink: 0;
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 50%;
-  background: #F3F5F9;
-  color: #6B7380;
-  font-size: 38rpx;
-  line-height: 1;
+.batch-food-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  color: #8A7C60;
+}
+
+.batch-preview {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 18rpx;
+  margin-top: 12rpx;
+  font-size: 23rpx;
+  color: #8A4B00;
+}
+
+.batch-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  gap: 14rpx;
+  padding-top: 8rpx;
+  background: #FFFDF7;
 }
 
 .edit-body {
@@ -721,6 +593,12 @@
   font-weight: 700;
   box-sizing: border-box;
   box-shadow: 0 -10rpx 18rpx rgba(255, 253, 247, 0.94), 0 8rpx 16rpx rgba(255, 184, 0, 0.2);
+}
+
+.add-item-btn.secondary {
+  background: #FFF0BC;
+  color: #8A4B00;
+  box-shadow: none;
 }
 
 .add-item-btn::after {

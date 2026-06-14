@@ -37,12 +37,13 @@ test('food intake record model normalizes v2 snapshot nutrition basis fields', (
   assert.match(source, /nutritionPerBasis/);
 });
 
-test('food selection pages limit rendered options for local system index results', () => {
-  const mealEditorSource = readProjectFile('miniprogram/pkg-records/meal-editor/index.js');
+test('food selection pages handle local system index results in the right surface', () => {
+  const foodPickerSource = readProjectFile('miniprogram/pkg-records/food-picker/index.js');
   const dataRecordsSource = readProjectFile('miniprogram/pages/data-records-v2/index.js');
 
-  assert.match(mealEditorSource, /FOOD_VISIBLE_LIMIT\s*=\s*50/);
-  assert.match(mealEditorSource, /filteredFoodOptions:\s*filtered\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);
+  assert.match(foodPickerSource, /this\.filteredFoodOptions\s*=\s*baseList\.map\(food\s*=>/);
+  assert.match(foodPickerSource, /visibleFoodOptions:\s*list\.slice\(start,\s*end\)/);
+  assert.doesNotMatch(foodPickerSource, /\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);
   assert.match(dataRecordsSource, /FOOD_VISIBLE_LIMIT\s*=\s*50/);
   assert.match(dataRecordsSource, /filteredFoodOptions:\s*filtered\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);
   assert.match(dataRecordsSource, /filteredFoodExperimentOptions:\s*filtered\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);

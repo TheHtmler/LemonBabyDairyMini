@@ -18,6 +18,9 @@ class FoodModel {
     try {
       const userFoodsPromise = babyUid ? this._getUserFoods(babyUid) : Promise.resolve([]);
       const systemFoods = await this._getSystemFoodsFromIndex({
+        preferLocal: options.preferLocalSystemIndex === true,
+        forceRefresh: options.forceRefreshSystemIndex === true,
+        allowClientPaging: options.allowClientPaging === true,
         onProgress: async partialSystemFoods => {
           if (typeof options.onProgress !== 'function') return;
           const userFoods = await userFoodsPromise;
@@ -441,6 +444,7 @@ class FoodModel {
       proteinSource: formatted.proteinSource || 'natural',
       proteinQuality: formatted.proteinQuality || '',
       sourceType: formatted.sourceType || '',
+      libraryScope: formatted.libraryScope || (formatted.isSystem ? 'system' : 'mine'),
       sourceSystemFoodId: formatted.sourceSystemFoodId || '',
       sourceFoodCode: formatted.sourceFoodCode || formatted.origin?.foodCode || ''
     };

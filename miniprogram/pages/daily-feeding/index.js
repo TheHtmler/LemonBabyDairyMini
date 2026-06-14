@@ -17,7 +17,8 @@ const {
 const dashboard = require('../../utils/homeDashboard');
 const {
   readNutritionTargetPreferences,
-  writeNutritionTargetPreferences
+  getNutritionTargetPreferences,
+  saveNutritionTargetPreferences
 } = require('../../utils/nutritionTargetPreferences');
 const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
 
@@ -380,7 +381,7 @@ Page({
       ]);
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
-      this.applyDashboard({ daily, meds, plannedMeals, recentDay, today });
+      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, today });
 
       if (!silent) wx.hideLoading();
     } catch (error) {
@@ -389,7 +390,7 @@ Page({
     }
   },
 
-  applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, today }) {
+  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, today }) {
     const summary = daily.summary || {};
     const basicInfo = daily.basicInfo || summary.basicInfo || {};
     const macroSummary = summary.macroSummary || {};
@@ -409,7 +410,7 @@ Page({
     const foodCount = dashboard.buildFoodMealCount(daily.foodIntakeRecords || []);
     const nutrition = dashboard.buildNutritionSummary({ macroSummary, weight });
     const babyUid = getBabyUid();
-    const targetPreferences = readNutritionTargetPreferences(babyUid);
+    const targetPreferences = await getNutritionTargetPreferences(babyUid);
     const nutritionTarget = dashboard.buildNutritionTargetState({
       macroSummary,
       weight,
@@ -1022,7 +1023,7 @@ Page({
     return nutritionTarget;
   },
 
-  switchNutritionTargetMode(e) {
+  async switchNutritionTargetMode(e) {
     const mode = e.currentTarget.dataset.mode === 'calorie' ? 'calorie' : 'protein';
     const current = this.data.nutritionTarget || {};
     const configuredModes = current.configuredModes || {};
@@ -1036,10 +1037,10 @@ Page({
 
     const babyUid = getBabyUid();
     const targetPreferences = {
-      ...readNutritionTargetPreferences(babyUid),
+      ...await getNutritionTargetPreferences(babyUid),
       preferredTargetMode: mode
     };
-    writeNutritionTargetPreferences(babyUid, targetPreferences);
+    await saveNutritionTargetPreferences(babyUid, targetPreferences);
     this.rebuildNutritionTargetWithPreferences(targetPreferences);
   },
 

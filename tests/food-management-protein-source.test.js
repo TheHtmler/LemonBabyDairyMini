@@ -231,7 +231,7 @@ test('food management recommends regular protein for grain categories without ov
 test('food management separates system and mine libraries before grouping', () => {
   const page = loadFoodManagementPage();
   const instance = createPageInstance(page, {
-    activeLibraryScope: 'system',
+    activeLibraryScope: 'mine',
     searchQuery: '小麦',
     foods: [
       {
@@ -253,17 +253,23 @@ test('food management separates system and mine libraries before grouping', () =
     ]
   });
 
+  assert.equal(page.data.activeLibraryScope, 'mine');
+  assert.deepEqual(page.data.libraryTabs.map(item => item.scope), ['mine', 'system']);
   instance.updateGroupedFoods(instance.data.foods, { searchQuery: '' });
-  assert.deepEqual(instance.data.activeFoods.map(item => item._id), ['sys-1']);
+  assert.deepEqual(instance.data.activeFoods.map(item => item._id), ['mine-1']);
   instance.setData({ searchQuery: '小麦' });
 
-  instance.switchLibraryScope({ currentTarget: { dataset: { scope: 'mine' } } });
-  assert.equal(instance.data.activeLibraryScope, 'mine');
+  instance.switchLibraryScope({ currentTarget: { dataset: { scope: 'system' } } });
+  assert.equal(instance.data.activeLibraryScope, 'system');
   assert.equal(instance.data.searchQuery, '');
-  assert.deepEqual(instance.data.activeFoods.map(item => item._id), ['mine-1']);
+  assert.deepEqual(instance.data.activeFoods.map(item => item._id), ['sys-1']);
 });
 
-test('food management renders large categories incrementally with load more', () => {
+test('food management renders all foods in the active category at once', () => {
+  const wxml = fs.readFileSync(
+    require.resolve('../miniprogram/pkg-milk/food-management/index.wxml'),
+    'utf8'
+  );
   const page = loadFoodManagementPage();
   const foods = Array.from({ length: 60 }, (_, index) => ({
     _id: `sys-${index + 1}`,
@@ -281,17 +287,13 @@ test('food management renders large categories incrementally with load more', ()
   instance.updateGroupedFoods(instance.data.foods, { searchQuery: '' });
 
   assert.equal(instance.data.filteredFoodCount, 60);
-  assert.equal(instance.data.activeFoods.length, 50);
-  assert.equal(instance.data.activeFoodTotal, 60);
-  assert.equal(instance.data.hasMoreActiveFoods, true);
-
-  instance.loadMoreActiveFoods();
-
   assert.equal(instance.data.activeFoods.length, 60);
-  assert.equal(instance.data.hasMoreActiveFoods, false);
+  assert.equal(instance.data.activeFoodTotal, 60);
+  assert.doesNotMatch(wxml, /loadMoreActiveFoods/);
+  assert.doesNotMatch(wxml, /加载更多/);
 });
 
-test('food management category switching does not force scroll position', () => {
+test('food management category switching resets food panel scroll position', () => {
   const wxml = fs.readFileSync(
     require.resolve('../miniprogram/pkg-milk/food-management/index.wxml'),
     'utf8'
@@ -316,11 +318,48 @@ test('food management category switching does not force scroll position', () => 
   });
 
   assert.doesNotMatch(wxml, /scroll-into-view="\{\{categoryNavScrollIntoView\}\}"/);
-  assert.doesNotMatch(wxml, /scroll-top="\{\{foodPanelScrollTop\}\}"/);
+  assert.match(wxml, /scroll-top="\{\{foodPanelScrollTop\}\}"/);
+  assert.match(wxml, /bindscroll="onFoodPanelScroll"/);
+
+  instance.onFoodPanelScroll({ detail: { scrollTop: 280 } });
 
   instance.switchCategory({ currentTarget: { dataset: { category: '水果类' } } });
 
   assert.equal(instance.data.activeCategory, '水果类');
   assert.equal(instance.data.categoryNavScrollIntoView, 'food-category-8');
-  assert.equal(instance.data.foodPanelScrollTop, 280);
+  assert.equal(instance.data.foodPanelScrollTop, 0);
+});
+
+test('food management category switching forces a scroll refresh when already at top', () => {
+  const page = loadFoodManagementPage();
+  const scrollValues = [];
+  const instance = createPageInstance(page, {
+    activeCategory: '谷类及制品',
+    foodPanelScrollTop: 0,
+    groupedFoods: [
+      {
+        navId: 'food-category-0',
+        category: '谷类及制品',
+        items: [{ _id: 'food-1', name: '小米' }]
+      },
+      {
+        navId: 'food-category-1',
+        category: '水果类',
+        items: [{ _id: 'food-2', name: '苹果' }]
+      }
+    ]
+  });
+  const originalSetData = instance.setData;
+  instance.setData = function setData(updates, callback) {
+    if (Object.prototype.hasOwnProperty.call(updates, 'foodPanelScrollTop')) {
+      scrollValues.push(updates.foodPanelScrollTop);
+    }
+    return originalSetData.call(this, updates, callback);
+  };
+
+  instance.onFoodPanelScroll({ detail: { scrollTop: 0 } });
+  instance.switchCategory({ currentTarget: { dataset: { category: '水果类' } } });
+
+  assert.deepEqual(scrollValues, [1, 0]);
+  assert.equal(instance.data.foodPanelScrollTop, 0);
 });

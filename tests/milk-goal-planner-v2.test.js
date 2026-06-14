@@ -65,6 +65,7 @@ function loadPlannerPage(options = {}) {
     modalConfirm: options.modalConfirm !== false,
     navigatedBack: 0,
     growthUpserts: [],
+    babyInfoUpdates: [],
     storage
   };
 
@@ -83,15 +84,24 @@ function loadPlannerPage(options = {}) {
         return {
           command: { lt: (value) => ({ $lt: value }) },
           serverDate: () => new Date('2026-05-28T00:00:00Z'),
-          collection() {
+          collection(name) {
+            const collectionState = { docId: '' };
             return {
               where() { return this; },
               orderBy() { return this; },
               limit() { return this; },
-              doc() { return this; },
-              get: async () => ({ data: [] }),
+              doc(id) {
+                collectionState.docId = id;
+                return this;
+              },
+              get: async () => ({ data: name === 'baby_info' ? [{ _id: 'baby-doc-1', babyUid: 'baby-1' }] : [] }),
               add: async () => ({ _id: 'created' }),
-              update: async () => ({}),
+              update: async (payload) => {
+                if (name === 'baby_info') {
+                  calls.babyInfoUpdates.push({ docId: collectionState.docId, payload });
+                }
+                return {};
+              },
               remove: async () => ({})
             };
           }
@@ -983,7 +993,7 @@ test('collects recent source keys from existing records newest-first on load', a
   assert.ok(page.data.selectedKeys.includes('breast_milk'));
 });
 
-test('editing a target coefficient saves locally and never writes the growth record', () => {
+test('editing a target coefficient syncs cloud baby target preferences and never writes the growth record', async () => {
   const { pageConfig, calls } = loadPlannerPage();
   const page = createPageInstance(pageConfig, plannerData(pageConfig, {
     calculationMode: 'protein',
@@ -993,9 +1003,17 @@ test('editing a target coefficient saves locally and never writes the growth rec
     calorieCoefficientInput: '110'
   }));
 
-  page.onCoefficientBlur();
+  await page.onCoefficientBlur();
 
   assert.equal(calls.growthUpserts.length, 0);
+  assert.equal(calls.babyInfoUpdates.length, 1);
+  assert.equal(calls.babyInfoUpdates[0].docId, 'baby-doc-1');
+  assert.deepEqual(calls.babyInfoUpdates[0].payload.data.nutritionTargetPreferences, {
+    naturalProteinCoefficient: '1.3',
+    specialProteinCoefficient: '0.6',
+    calorieCoefficient: '110',
+    preferredTargetMode: 'protein'
+  });
   const saved = calls.storage['milk_goal_target_coef_baby-1'];
   assert.ok(saved, 'target coefficients should be persisted to local storage');
   assert.equal(saved.naturalProteinCoefficient, '1.3');

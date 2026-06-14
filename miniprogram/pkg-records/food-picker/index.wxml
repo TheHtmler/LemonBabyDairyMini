@@ -1,0 +1,197 @@
+<view class="page">
+  <view class="top-panel">
+    <view class="library-tabs">
+      <view
+        class="library-tab {{activeLibraryScope === item.scope ? 'active' : ''}}"
+        wx:for="{{libraryTabs}}"
+        wx:key="scope"
+        data-scope="{{item.scope}}"
+        bindtap="switchLibraryScope"
+      >
+        {{item.label}}
+      </view>
+    </view>
+    <view class="search-row">
+      <input
+        class="search-input"
+        type="text"
+        value="{{foodSearchQuery}}"
+        placeholder="搜索食物名称、分类或别名"
+        bindinput="onFoodSearchInput"
+      />
+      <view class="search-clear" wx:if="{{foodSearchQuery}}" bindtap="clearSearch">清空</view>
+    </view>
+    <view class="toolbar-row">
+      <text class="toolbar-count">当前 {{filteredFoodCount}} 种</text>
+      <view class="toolbar-add-tip">
+        <text>没有想要的食物？</text>
+        <text class="toolbar-link" bindtap="navigateToFoodManagement">去添加</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+
+  <view class="picker-layout" wx:if="{{!loading}}">
+    <scroll-view class="category-sidebar" scroll-y="true" show-scrollbar="{{false}}">
+      <view
+        class="category-nav-item {{activeCategory === item.value ? 'active' : ''}}"
+        wx:for="{{foodCategories}}"
+        wx:key="value"
+        data-category="{{item.value}}"
+        bindtap="onCategoryTap"
+      >
+        <text class="category-nav-label">{{item.label}}</text>
+      </view>
+      <view class="category-empty" wx:if="{{foodCategories.length === 0}}">暂无分类</view>
+    </scroll-view>
+
+    <scroll-view
+      class="food-list-panel"
+      scroll-y="true"
+      enhanced="{{true}}"
+      show-scrollbar="{{false}}"
+      bounces="{{false}}"
+      fast-deceleration="{{true}}"
+      scroll-top="{{foodListScrollTop}}"
+      bindscroll="onFoodListScroll"
+    >
+      <view class="food-virtual-spacer" style="height: {{virtualTopSpacerHeight}}px;"></view>
+      <view
+        class="food-option"
+        wx:for="{{visibleFoodOptions}}"
+        wx:key="_id"
+        data-id="{{item._id}}"
+      >
+        <image
+          class="food-option-image"
+          src="{{item.displayImage}}"
+          mode="aspectFill"
+          lazy-load="{{true}}"
+          data-url="{{item.displayImage}}"
+          catchtap="previewFoodOptionImage"
+        />
+        <view class="food-option-main">
+          <view class="food-title-row">
+            <text class="food-option-name">{{item.name}}</text>
+          </view>
+          <view class="food-option-meta-row">
+            <text class="food-option-energy">{{item.nutritionPerUnit.calories || 0}}</text>
+            <text class="food-option-meta">kcal / {{item.baseQuantity || 100}}{{item.baseUnit || 'g'}}</text>
+          </view>
+          <text class="food-option-sub">{{item.categoryLevel2 || item.category || '未分类'}}</text>
+          <text class="food-option-alias" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>
+        </view>
+        <view class="food-option-add {{item.selectedInCart ? 'active' : ''}}" data-id="{{item._id}}" catchtap="onFoodOptionTap">{{item.selectedInCart ? '✓' : '+'}}</view>
+      </view>
+      <view class="food-virtual-spacer" style="height: {{virtualBottomSpacerHeight}}px;"></view>
+      <view class="empty-state" wx:if="{{!loading && filteredFoodCount === 0}}">
+        <text>未找到匹配的食物</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="cart-mask" wx:if="{{cartExpanded && selectedFoodCart.length > 0}}" bindtap="collapseCart"></view>
+  <view
+    wx:if="{{cartFlyer.visible}}"
+    class="cart-flyer"
+    style="{{cartFlyer.outerStyle}}"
+  >
+    <view class="cart-flyer-dot" style="{{cartFlyer.innerStyle}}">+</view>
+  </view>
+
+  <view class="cart-detail-panel {{cartExpanded && selectedFoodCart.length > 0 ? 'visible' : ''}}">
+    <view class="cart-detail-header">
+      <text class="cart-detail-title">已选食物</text>
+      <view class="cart-detail-actions">
+        <text class="cart-detail-count">{{selectedFoodCart.length}} 种</text>
+        <text class="cart-clear" catchtap="clearSelectionCart">清空</text>
+      </view>
+    </view>
+    <scroll-view class="cart-detail-list" scroll-y="true" show-scrollbar="{{false}}">
+      <view class="cart-detail-item" wx:for="{{selectedFoodCart}}" wx:key="_id">
+        <image class="cart-detail-image" src="{{item.displayImage}}" mode="aspectFill" />
+        <view class="cart-detail-main">
+          <text class="cart-detail-name">{{item.name}}</text>
+          <text class="cart-detail-meta">{{item.categoryLevel2 || item.category || '未分类'}} · {{item.nutritionPerUnit.calories || 0}}kcal / {{item.baseQuantity || 100}}{{item.baseUnit || 'g'}}</text>
+        </view>
+        <view class="cart-detail-remove" data-id="{{item._id}}" catchtap="removeFoodFromSelectionCart">移除</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="cart-bar {{cartBumping ? 'bumping' : ''}}">
+    <view class="cart-main" bindtap="toggleCartExpanded">
+      <view id="cartIcon" class="cart-icon">
+        <view class="cart-plate-icon">
+          <view class="cart-plate"></view>
+          <view class="cart-fork"></view>
+          <view class="cart-spoon"></view>
+        </view>
+        <text class="cart-badge" wx:if="{{selectedFoodCart.length > 0}}">{{selectedFoodCart.length}}</text>
+      </view>
+      <view class="cart-copy">
+        <text wx:if="{{selectedFoodCart.length > 0}}" class="cart-title">已选 {{selectedFoodCart.length}} 种食物</text>
+        <text wx:else class="cart-title">已选食物</text>
+        <text class="cart-subtitle" wx:if="{{selectedFoodCart.length > 0}}">{{cartExpanded ? '收起明细' : '点击查看明细'}}</text>
+        <text class="cart-subtitle" wx:else>点击食物右侧的 + 添加到这里</text>
+      </view>
+    </view>
+    <view class="cart-confirm {{selectedFoodCart.length === 0 ? 'disabled' : ''}}" catchtap="confirmSelection">确定</view>
+  </view>
+
+  <view class="quantity-mask" wx:if="{{quantityDrawerVisible}}" bindtap="closeQuantityDrawer"></view>
+  <view class="quantity-drawer {{quantityDrawerVisible ? 'visible' : ''}}">
+    <view class="quantity-drawer-handle"></view>
+    <view class="quantity-drawer-header">
+      <view>
+        <text class="quantity-drawer-title">填写份量</text>
+        <text class="quantity-drawer-subtitle">给每种食物填写本顿份量</text>
+      </view>
+      <text class="quantity-drawer-close" bindtap="closeQuantityDrawer">关闭</text>
+    </view>
+    <nutrition-target-preview
+      preview="{{quantityTargetPreview}}"
+      title="蛋白目标"
+      subtitle="按已输入份量实时预估"
+      show-calorie="{{false}}"
+    />
+    <scroll-view class="quantity-draft-list" scroll-y="true" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view
+        class="quantity-draft-card"
+        wx:for="{{quantityDrafts}}"
+        wx:key="foodId"
+        wx:for-index="draftIndex"
+      >
+        <view class="quantity-draft-header">
+          <view class="quantity-draft-main">
+            <text class="quantity-draft-name">{{item.name}}</text>
+          </view>
+          <text class="quantity-draft-source">{{item.sourceLabel}}</text>
+        </view>
+        <view class="quantity-input-row">
+          <text class="quantity-input-label">份量</text>
+          <input
+            class="quantity-input"
+            type="digit"
+            placeholder="{{item.placeholder || '请输入'}}"
+            data-index="{{draftIndex}}"
+            bindinput="onQuantityDraftInput"
+          />
+          <text class="quantity-unit">{{item.unit || 'g'}}</text>
+        </view>
+        <view class="quantity-preview {{item.nutritionPreview ? '' : 'empty'}}">
+          <block wx:if="{{item.nutritionPreview}}">
+            <text>{{item.nutritionPreview.calories || 0}} kcal</text>
+            <text>蛋白 {{item.nutritionPreview.protein || 0}} g</text>
+          </block>
+          <text wx:else>输入份量后计算蛋白</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="quantity-actions">
+      <button class="quantity-action secondary" bindtap="closeQuantityDrawer">继续选食物</button>
+      <button class="quantity-action" bindtap="submitQuantityDrafts">加入本顿</button>
+    </view>
+  </view>
+</view>

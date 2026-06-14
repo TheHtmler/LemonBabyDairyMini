@@ -4,7 +4,7 @@ const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
 const {
-  readNutritionTargetPreferences,
+  getNutritionTargetPreferences,
   pickCoefficient
 } = require('../../utils/nutritionTargetPreferences');
 const {
@@ -317,7 +317,7 @@ Page({
   },
 
   async loadTargetContext(basicInfo = {}, records = []) {
-    const localTarget = readNutritionTargetPreferences(this.data.babyUid, wxApi);
+    const localTarget = await getNutritionTargetPreferences(this.data.babyUid, wxApi);
     const fallbackSummary = this.summarizeRecordsForTarget(records);
     let currentSummary = fallbackSummary;
     let resolvedBasicInfo = basicInfo || {};
