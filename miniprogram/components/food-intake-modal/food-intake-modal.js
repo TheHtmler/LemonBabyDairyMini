@@ -28,6 +28,10 @@ Component({
       type: Array,
       value: []
     },
+    hasMoreOptions: {
+      type: Boolean,
+      value: false
+    },
     selectedFoodId: {
       type: String,
       value: ''
@@ -83,6 +87,9 @@ Component({
     handleOptionTap(e) {
       const { id } = e.currentTarget.dataset;
       this.triggerEvent('optiontap', { id });
+    },
+    handleLoadMoreOptions() {
+      this.triggerEvent('loadmore');
     },
     handleConfirmSelect() {
       this.triggerEvent('confirmselect');

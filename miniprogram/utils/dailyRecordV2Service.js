@@ -1,4 +1,5 @@
 const FeedingRecordV2Model = require('../models/feedingRecordV2');
+const FoodIntakeRecordModel = require('../models/foodIntakeRecord');
 const MedicationRecordModel = require('../models/medicationRecord');
 const TreatmentRecordModel = require('../models/treatmentRecord');
 const DailySummaryV2Model = require('../models/dailySummaryV2');
@@ -130,7 +131,7 @@ async function loadEventRecords(babyUid, date) {
     growthRecords
   ] = await Promise.all([
     FeedingRecordV2Model.getRecordsByDate(babyUid, date),
-    loadLegacyFoodIntakes(babyUid, date),
+    FoodIntakeRecordModel.findByDate(babyUid, date),
     MedicationRecordModel.findByDate(date, babyUid),
     TreatmentRecordModel.findByDate(date, babyUid),
     loadBowelRecords(babyUid, date),
@@ -140,7 +141,7 @@ async function loadEventRecords(babyUid, date) {
   return {
     milkRecords: unwrapResult(milkRecords),
     foodIntakeRecords: unwrapResult(foodIntakeRecords),
-    usesLegacyFoodIntakes: true,
+    usesLegacyFoodIntakes: false,
     medicationRecords: unwrapResult(medicationResult),
     treatmentRecords: unwrapResult(treatmentResult),
     bowelRecords: unwrapResult(bowelRecords),

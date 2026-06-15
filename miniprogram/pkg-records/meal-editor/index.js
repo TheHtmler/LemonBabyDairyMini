@@ -1,8 +1,8 @@
 const FoodModel = require('../../models/food');
+const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
-const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
 const {
   getNutritionTargetPreferences,
   pickCoefficient
@@ -115,6 +115,38 @@ function writeFoodPickerTargetContext(context = {}) {
     weight: context.weight || '',
     targetPreferences: context.targetPreferences || {}
   });
+}
+
+function hasBasicInfoValue(value) {
+  return value !== '' && value !== null && value !== undefined;
+}
+
+function mergeMissingBasicInfo(primary = {}, fallback = {}) {
+  const merged = { ...(primary || {}) };
+  ['weight', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient'].forEach(key => {
+    if (!hasBasicInfoValue(merged[key]) && hasBasicInfoValue(fallback[key])) {
+      merged[key] = fallback[key];
+    }
+  });
+  return merged;
+}
+
+function readCachedBabyBasicInfo(babyUid = '') {
+  try {
+    const app = getApp();
+    const cached = app?.globalData?.babyInfo || wx.getStorageSync('baby_info') || {};
+    if (!cached || typeof cached !== 'object') return {};
+    if (cached.babyUid && babyUid && cached.babyUid !== babyUid) return {};
+    const targetPreferences = cached.nutritionTargetPreferences || {};
+    return {
+      weight: cached.weight || '',
+      naturalProteinCoefficient: cached.naturalProteinCoefficient || targetPreferences.naturalProteinCoefficient || '',
+      specialProteinCoefficient: cached.specialProteinCoefficient || targetPreferences.specialProteinCoefficient || '',
+      calorieCoefficient: cached.calorieCoefficient || targetPreferences.calorieCoefficient || ''
+    };
+  } catch (error) {
+    return {};
+  }
 }
 
 function getDateTimestamp(value) {
@@ -272,6 +304,7 @@ Page({
       targetPreferences: {},
       weight: ''
     },
+    targetContextLoaded: false,
     foodCatalog: [],
     drawerVisible: false,
     drawerStep: 'batch',
@@ -305,8 +338,11 @@ Page({
       },
       mealSummary: createEmptyMealSummary()
     });
-    await this.loadFoodCatalog();
-    await this.loadTargetContext();
+    const targetContextPromise = this.ensureTargetContextLoaded();
+    await Promise.all([
+      this.loadFoodCatalog(),
+      targetContextPromise
+    ]);
     if (editMealBatchId) {
       await this.loadExistingMeal(editMealBatchId);
     } else {
@@ -328,25 +364,49 @@ Page({
   async loadTargetContext() {
     const babyUid = getBabyUid();
     if (!babyUid) return;
-    if (!canLoadDailyTargetContext()) return;
-    try {
-      const daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, this.data.selectedDate);
-      const basicInfo = daily?.basicInfo || daily?.summary?.basicInfo || {};
-      const localTarget = await getNutritionTargetPreferences(babyUid);
-      this.setData({
-        targetContext: {
-          currentSummary: normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || {}),
-          weight: basicInfo.weight || '',
-          targetPreferences: {
-            naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),
-            specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, basicInfo.specialProteinCoefficient),
-            calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, basicInfo.calorieCoefficient)
-          }
-        }
-      });
-    } catch (error) {
-      console.warn('加载食物目标提醒上下文失败:', error);
+    let daily = null;
+    if (canLoadDailyTargetContext()) {
+      try {
+        daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, this.data.selectedDate);
+      } catch (error) {
+        console.warn('加载食物目标提醒每日汇总失败，将使用本地目标兜底:', error);
+      }
     }
+    const basicInfo = mergeMissingBasicInfo(
+      daily?.basicInfo || daily?.summary?.basicInfo || {},
+      readCachedBabyBasicInfo(babyUid)
+    );
+    let localTarget = {};
+    try {
+      localTarget = await getNutritionTargetPreferences(babyUid);
+    } catch (error) {
+      console.warn('加载本地目标系数失败:', error);
+    }
+    this.setData({
+      targetContext: {
+        currentSummary: normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || {}),
+        weight: basicInfo.weight || '',
+        targetPreferences: {
+          naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),
+          specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, basicInfo.specialProteinCoefficient),
+          calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, basicInfo.calorieCoefficient)
+        }
+      },
+      targetContextLoaded: true
+    });
+  },
+
+  ensureTargetContextLoaded() {
+    if (this.data.targetContextLoaded) {
+      return Promise.resolve();
+    }
+    if (!this.targetContextLoadPromise) {
+      this.targetContextLoadPromise = this.loadTargetContext()
+        .finally(() => {
+          this.targetContextLoadPromise = null;
+        });
+    }
+    return this.targetContextLoadPromise;
   },
 
   refreshTargetPreviews() {
@@ -475,7 +535,8 @@ Page({
     });
   },
 
-  openFoodDrawer() {
+  async openFoodDrawer() {
+    await this.ensureTargetContextLoaded();
     const currentItems = (this.data.mealDraft.items || [])
       .map(item => ({
         foodId: item.foodId,
@@ -563,7 +624,7 @@ Page({
     return true;
   },
 
-  backToFoodPicker() {
+  async backToFoodPicker() {
     const currentFoods = (this.data.batchFoodDrafts || [])
       .map(draft => draft.food)
       .filter(Boolean);
@@ -573,7 +634,8 @@ Page({
     this.setData({
       drawerVisible: false,
       batchFoodDrafts: []
-    }, () => {
+    }, async () => {
+      await this.ensureTargetContextLoaded();
       const targetContext = this.data.targetContext || {};
       writeFoodPickerTargetContext({
         currentSummary: targetContext.currentSummary || {},
@@ -663,7 +725,7 @@ Page({
       previousSummary: this.data.mode === 'edit' ? this.data.originalMealSummary : {},
       weight: targetContext.weight,
       targetPreferences: targetContext.targetPreferences || {},
-      includeCalories: false
+      includeCalories: true
     });
     this.setData({ batchTargetPreview });
   },
@@ -917,9 +979,7 @@ Page({
 
     try {
       wx.showLoading({ title: '加载中...', mask: true });
-      const mergedRecord = await this.getMergedDayRecord(this.data.selectedDate, babyUid);
-      const targetIntakes = (mergedRecord?.intakes || [])
-        .filter(item => item && item.mealBatchId === mealBatchId)
+      const targetIntakes = (await FoodIntakeRecordModel.findByMealBatch(babyUid, this.data.selectedDate, mealBatchId))
         .sort((a, b) => {
           const sortDiff = (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0);
           if (sortDiff !== 0) return sortDiff;
@@ -942,12 +1002,12 @@ Page({
         const snapshot = intake.foodSnapshot || {};
         const fallbackFood = {
           _id: intake.foodId || `legacy_food_${index}`,
-          name: intake.nameSnapshot || '食物',
-          category: intake.category || '辅食',
+          name: intake.foodName || intake.nameSnapshot || snapshot.name || '食物',
+          category: snapshot.category || intake.category || '辅食',
           baseUnit: intake.unit || 'g',
           milkType: intake.milkType || '',
-          proteinSource: intake.proteinSource || 'natural',
-          proteinQuality: intake.proteinQuality || '',
+          proteinSource: snapshot.proteinSource || intake.proteinSource || 'natural',
+          proteinQuality: snapshot.proteinQuality || intake.proteinQuality || '',
           sourceType: intake.sourceType || snapshot.sourceType || '',
           libraryScope: intake.libraryScope || snapshot.libraryScope || ''
         };
@@ -962,12 +1022,12 @@ Page({
           foodId: intake.foodId || '',
           food,
           foodSnapshot: intake.foodSnapshot || FoodModel.buildFoodSnapshot(food),
-          nameSnapshot: intake.nameSnapshot || fallbackFood.name,
+          nameSnapshot: intake.foodName || intake.nameSnapshot || fallbackFood.name,
           category: intake.category || fallbackFood.category,
           unit: intake.unit || fallbackFood.baseUnit || 'g',
           quantity: Number(intake.quantity) || 0,
           nutrition: intake.nutrition || {},
-          proteinSource: intake.proteinSource || fallbackFood.proteinSource || 'natural',
+          proteinSource: snapshot.proteinSource || intake.proteinSource || fallbackFood.proteinSource || 'natural',
           proteinQuality: intake.proteinQuality || (catalogFood?.proteinQuality) || '',
           libraryScope,
           sourceLabel: intake.sourceLabel || this.getFoodSourceLabel({
@@ -976,14 +1036,18 @@ Page({
             isSystem: libraryScope === 'system'
           }),
           sourceType: intake.sourceType || snapshot.sourceType || food.sourceType || (libraryScope === 'system' ? 'system' : 'user_custom'),
-          naturalProtein: typeof intake.naturalProtein === 'number' ? intake.naturalProtein : 0,
-          specialProtein: typeof intake.specialProtein === 'number' ? intake.specialProtein : 0,
+          naturalProtein: typeof intake.nutrition?.naturalProtein === 'number'
+            ? intake.nutrition.naturalProtein
+            : (typeof intake.naturalProtein === 'number' ? intake.naturalProtein : 0),
+          specialProtein: typeof intake.nutrition?.specialProtein === 'number'
+            ? intake.nutrition.specialProtein
+            : (typeof intake.specialProtein === 'number' ? intake.specialProtein : 0),
           milkType: intake.milkType || ''
         };
       });
 
       this.setData({
-        editRecordId: mergedRecord?._id || '',
+        editRecordId: '',
         mealDraft: {
           mealTime: firstIntake.mealTime || firstIntake.recordedAt || formatTime(new Date()),
           mealLabel: firstIntake.mealLabel || getDefaultMealLabel(firstIntake.mealTime || firstIntake.recordedAt || ''),
@@ -1026,12 +1090,12 @@ Page({
         isSystem: (item.libraryScope || item.foodSnapshot?.libraryScope) === 'system'
       }),
       sourceType: item.sourceType || item.foodSnapshot?.sourceType || 'manual_food',
-      nutrition: item.nutrition || {},
       naturalProtein: item.naturalProtein || 0,
       specialProtein: item.specialProtein || 0,
       milkType: item.milkType || '',
       notes: '',
       recordedAt: mealTime,
+      time: mealTime,
       mealBatchId,
       mealTime,
       mealLabel,
@@ -1039,7 +1103,13 @@ Page({
       sortOrder: index,
       createdAt: item.createdAt || now,
       updatedAt: now,
-      createdBy: item.createdBy || app.globalData.openid || wx.getStorageSync('openid') || ''
+      createdBy: item.createdBy || app.globalData.openid || wx.getStorageSync('openid') || '',
+      foodName: item.nameSnapshot || item.food?.name || '',
+      nutrition: {
+        ...(item.nutrition || {}),
+        naturalProtein: item.naturalProtein || item.nutrition?.naturalProtein || 0,
+        specialProtein: item.specialProtein || item.nutrition?.specialProtein || 0
+      }
     }));
   },
 
@@ -1090,25 +1160,12 @@ Page({
     wx.showLoading({ title: '保存中...', mask: true });
 
     try {
-      const db = wx.cloud.database();
-      const mergedRecord = await this.getMergedDayRecord(this.data.selectedDate, babyUid);
-      const [year, month, day] = this.data.selectedDate.split('-').map(Number);
-      const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-      const existingIntakes = dedupeIntakes([...(mergedRecord?.intakes || [])]);
-      const remainingIntakes = this.data.mode === 'edit'
-        ? existingIntakes.filter(item => item.mealBatchId !== mealBatchId)
-        : existingIntakes;
-      const updatedIntakes = [...mealIntakes, ...remainingIntakes];
-
-      const targetId = mergedRecord?._id || (await findOrCreateDailyRecord(this.data.selectedDate, babyUid)).recordId;
-      await db.collection('feeding_records').doc(targetId).update({
-        data: {
-          date: startOfDay,
-          basicInfo: mergedRecord?.basicInfo || {},
-          feedings: mergedRecord?.feedings || [],
-          intakes: updatedIntakes,
-          updatedAt: db.serverDate()
-        }
+      await FoodIntakeRecordModel.replaceMealBatch({
+        babyUid,
+        date: this.data.selectedDate,
+        mealBatchId,
+        records: mealIntakes,
+        operatorOpenid: app.globalData.openid || wx.getStorageSync('openid') || ''
       });
 
       // 食物（天然蛋白来源之一）直接写库，需让当天 daily_summary_v2 失效，

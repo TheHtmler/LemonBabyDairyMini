@@ -1,4 +1,5 @@
 const FoodModel = require('../../models/food');
+const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const { getBabyUid } = require('../../utils/index');
 const {
   buildEntryTargetPreview,
@@ -19,10 +20,12 @@ const FOOD_VIRTUAL_BUFFER = 6;
 const FOOD_VIRTUAL_MIN_WINDOW = 18;
 const FOOD_CART_FLY_DURATION = 520;
 const FOOD_CART_FLY_START_DELAY = 24;
+const FOOD_PICKER_CATALOG_CACHE_MAX_BYTES = 850 * 1024;
 const FOOD_LIBRARY_TABS = [
   { scope: 'mine', label: '我的食物' },
   { scope: 'system', label: '系统食物' }
 ];
+let cachedWindowInfo = null;
 
 function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
@@ -91,17 +94,94 @@ function writeFoodSelectionItems(items = []) {
   });
 }
 
-function safeSetStorageSync(key, value) {
+function estimateStorageBytes(value) {
+  let text = '';
+  try {
+    text = JSON.stringify(value);
+  } catch (error) {
+    return Infinity;
+  }
+  let bytes = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (code <= 0x7f) {
+      bytes += 1;
+    } else if (code <= 0x7ff) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff) {
+      bytes += 4;
+      index += 1;
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+}
+
+function truncateText(value, maxLength = 240) {
+  if (value === undefined || value === null) return '';
+  const text = value.toString();
+  return text.length > maxLength ? text.slice(0, maxLength) : text;
+}
+
+function compactObject(source = {}) {
+  return Object.keys(source).reduce((target, key) => {
+    const value = source[key];
+    if (value === undefined || value === null || value === '') return target;
+    if (Array.isArray(value) && value.length === 0) return target;
+    target[key] = value;
+    return target;
+  }, {});
+}
+
+function pickNutrition(nutrition = {}) {
+  if (!nutrition || typeof nutrition !== 'object') return undefined;
+  return compactObject({
+    calories: Number(nutrition.calories) || 0,
+    protein: Number(nutrition.protein) || 0,
+    carbs: Number(nutrition.carbs) || 0,
+    fat: Number(nutrition.fat) || 0,
+    fiber: Number(nutrition.fiber) || 0,
+    sodium: Number(nutrition.sodium) || 0
+  });
+}
+
+function getCachedWindowInfo() {
+  if (cachedWindowInfo) return cachedWindowInfo;
+  let info = {};
+  if (typeof wx.getWindowInfo === 'function') {
+    try {
+      info = wx.getWindowInfo() || {};
+    } catch (error) {
+      info = {};
+    }
+  }
+  cachedWindowInfo = {
+    windowWidth: Number(info.windowWidth) || 375,
+    windowHeight: Number(info.windowHeight) || 720
+  };
+  return cachedWindowInfo;
+}
+
+function safeRemoveStorageSync(key, options = {}) {
+  try {
+    wx.removeStorageSync(key);
+  } catch (error) {
+    if (!options.silent) {
+      console.warn('清理本地缓存失败:', key, error);
+    }
+  }
+}
+
+function safeSetStorageSync(key, value, options = {}) {
   try {
     wx.setStorageSync(key, value);
     return true;
   } catch (error) {
-    console.warn('写入本地缓存失败，已跳过缓存:', key, error);
-    try {
-      wx.removeStorageSync(key);
-    } catch (removeError) {
-      console.warn('清理本地缓存失败:', key, removeError);
+    if (!options.silent) {
+      console.warn('写入本地缓存失败，已跳过缓存:', key, error);
     }
+    safeRemoveStorageSync(key, options);
     return false;
   }
 }
@@ -135,6 +215,8 @@ Page({
     },
     quantityDrawerVisible: false,
     quantityDrafts: [],
+    quantityDraftScrollIntoView: '',
+    quantityDraftInvalidIndex: -1,
     quantityTargetContext: null,
     quantityTargetPreview: null
   },
@@ -154,6 +236,14 @@ Page({
     if (this.quantityTargetPreviewTimer) {
       clearTimeout(this.quantityTargetPreviewTimer);
       this.quantityTargetPreviewTimer = null;
+    }
+    if (this.cartFlyerStartTimer) {
+      clearTimeout(this.cartFlyerStartTimer);
+      this.cartFlyerStartTimer = null;
+    }
+    if (this.cartFlyerFinishTimer) {
+      clearTimeout(this.cartFlyerFinishTimer);
+      this.cartFlyerFinishTimer = null;
     }
     try {
       wx.removeStorageSync(FOOD_PICKER_TARGET_CONTEXT_KEY);
@@ -222,10 +312,7 @@ Page({
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, async () => {
-        safeSetStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, {
-          cachedAt: Date.now(),
-          catalog
-        });
+        this.cacheFoodCatalog(catalog);
         this.restoreSelectedFoodCartFromIds();
         await this.loadRecentFoodOptions();
         this.filterFoodOptions();
@@ -272,6 +359,60 @@ Page({
       });
   },
 
+  toFoodCatalogCacheItem(food = {}) {
+    const aliasText = food.aliasText || (Array.isArray(food.aliases)
+      ? food.aliases.slice(0, 20).join(' ')
+      : '');
+    return compactObject({
+      _id: food._id,
+      name: food.name,
+      category: food.category,
+      categoryLevel1: food.categoryLevel1,
+      categoryLevel2: food.categoryLevel2,
+      aliasText: truncateText(aliasText, 320),
+      image: truncateText(food.image, 500),
+      imageUrl: truncateText(food.imageUrl, 500),
+      displayImage: truncateText(food.displayImage, 500),
+      baseUnit: food.baseUnit,
+      baseQuantity: food.baseQuantity,
+      nutritionBasis: food.nutritionBasis ? compactObject({
+        quantity: Number(food.nutritionBasis.quantity) || 0,
+        unit: food.nutritionBasis.unit
+      }) : undefined,
+      nutritionPerBasis: pickNutrition(food.nutritionPerBasis),
+      nutritionPerUnit: pickNutrition(food.nutritionPerUnit),
+      proteinSource: food.proteinSource,
+      proteinSplit: food.proteinSplit,
+      isSystem: food.isSystem === true,
+      isSystemSnapshot: food.isSystemSnapshot === true,
+      sourceType: food.sourceType,
+      sourceFoodId: food.sourceFoodId,
+      libraryScope: this.getFoodLibraryScope(food),
+      sourceLabel: this.getFoodSourceLabel(food)
+    });
+  },
+
+  buildFoodCatalogCachePayload(catalog = [], cachedAt = Date.now()) {
+    const slimCatalog = (catalog || [])
+      .map(food => this.toFoodCatalogCacheItem(food))
+      .filter(food => food._id && food.name);
+    if (!slimCatalog.length) return null;
+    const payload = {
+      cachedAt,
+      catalog: slimCatalog
+    };
+    return estimateStorageBytes(payload) <= FOOD_PICKER_CATALOG_CACHE_MAX_BYTES ? payload : null;
+  },
+
+  cacheFoodCatalog(catalog = this.data.foodCatalog || []) {
+    const payload = this.buildFoodCatalogCachePayload(catalog);
+    if (!payload) {
+      safeRemoveStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, { silent: true });
+      return false;
+    }
+    return safeSetStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, payload, { silent: true });
+  },
+
   async resolveCatalogImageUrls(catalog = this.data.foodCatalog || []) {
     const cloudImageFoods = (catalog || []).filter(food =>
       (food?.image || '').toString().trim().startsWith('cloud://')
@@ -290,10 +431,7 @@ Page({
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, () => {
-        safeSetStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, {
-          cachedAt: Date.now(),
-          catalog: resolvedCatalog
-        });
+        this.cacheFoodCatalog(resolvedCatalog);
         this.restoreSelectedFoodCartFromIds();
         this.filterFoodOptions(this.data.foodSearchQuery || '');
       });
@@ -365,12 +503,10 @@ Page({
       return;
     }
     try {
-      const db = wx.cloud.database();
-      const result = await db.collection('feeding_records')
-        .where({ babyUid })
-        .orderBy('date', 'desc')
-        .limit(30)
-        .get();
+      const recentRecords = await FoodIntakeRecordModel.findRecentFoodIntakes(babyUid, {
+        limit: MAX_RECENT_FOODS * 2,
+        fetchLimit: 60
+      });
       const foodMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
       const recentByScope = {
         mine: [],
@@ -380,21 +516,15 @@ Page({
         mine: new Set(),
         system: new Set()
       };
-      for (const record of result.data || []) {
-        for (const intake of record?.intakes || []) {
-          if (!intake || intake.type === 'milk') continue;
-          if (!intake.foodId) continue;
-          const food = foodMap.get(intake.foodId);
-          if (!food) continue;
-          const scope = this.getFoodLibraryScope(food);
-          if (!recentByScope[scope] || recentByScope[scope].length >= MAX_RECENT_FOODS) continue;
-          if (seenByScope[scope].has(intake.foodId)) continue;
-          seenByScope[scope].add(intake.foodId);
-          recentByScope[scope].push(food);
-          if (recentByScope.mine.length >= MAX_RECENT_FOODS && recentByScope.system.length >= MAX_RECENT_FOODS) {
-            break;
-          }
-        }
+      for (const intake of recentRecords || []) {
+        if (!intake || !intake.foodId) continue;
+        const food = foodMap.get(intake.foodId);
+        if (!food) continue;
+        const scope = this.getFoodLibraryScope(food);
+        if (!recentByScope[scope] || recentByScope[scope].length >= MAX_RECENT_FOODS) continue;
+        if (seenByScope[scope].has(intake.foodId)) continue;
+        seenByScope[scope].add(intake.foodId);
+        recentByScope[scope].push(food);
         if (recentByScope.mine.length >= MAX_RECENT_FOODS && recentByScope.system.length >= MAX_RECENT_FOODS) {
           break;
         }
@@ -477,9 +607,7 @@ Page({
 
   getVirtualWindowSize() {
     if (this.virtualWindowSize) return this.virtualWindowSize;
-    const windowHeight = typeof wx.getWindowInfo === 'function'
-      ? Number(wx.getWindowInfo().windowHeight) || 720
-      : 720;
+    const windowHeight = getCachedWindowInfo().windowHeight;
     const itemHeight = this.getFoodVirtualItemHeight();
     this.virtualWindowSize = Math.max(
       FOOD_VIRTUAL_MIN_WINDOW,
@@ -490,9 +618,7 @@ Page({
 
   getFoodVirtualItemHeight() {
     if (this.foodVirtualItemHeight) return this.foodVirtualItemHeight;
-    const windowWidth = typeof wx.getWindowInfo === 'function'
-      ? Number(wx.getWindowInfo().windowWidth) || 375
-      : 375;
+    const windowWidth = getCachedWindowInfo().windowWidth;
     this.foodVirtualItemHeight = Math.max(1, Math.round(FOOD_VIRTUAL_ROW_HEIGHT_RPX * windowWidth / 750));
     return this.foodVirtualItemHeight;
   },
@@ -655,33 +781,17 @@ Page({
 
   addFoodToSelectionCart(food, e) {
     if (!food?._id) return;
-    this.pendingCartFoodIds = this.pendingCartFoodIds || new Set();
     const exists = (this.data.selectedFoodCart || []).some(item => item._id === food._id);
-    if (exists || this.pendingCartFoodIds.has(food._id)) {
+    if (exists) {
       wx.showToast({ title: '已在待添加列表', icon: 'none' });
       return;
     }
 
-    this.pendingCartFoodIds.add(food._id);
-    const pendingFoodIds = [...(this.data.pendingFoodIds || []), food._id];
     this.setData({
-      pendingFoodIds,
+      selectedFoodCart: [...(this.data.selectedFoodCart || []), food],
       ...this.getVisibleFoodSelectedStateUpdate(food._id, true)
     });
-    this.playAddToCartAnimation(e, () => {
-      if (!this.pendingCartFoodIds?.has(food._id)) return;
-      this.pendingCartFoodIds.delete(food._id);
-      const nextPendingFoodIds = (this.data.pendingFoodIds || []).filter(id => id !== food._id);
-      const alreadySelected = (this.data.selectedFoodCart || []).some(item => item._id === food._id);
-      if (alreadySelected) {
-        this.setData({ pendingFoodIds: nextPendingFoodIds });
-        return;
-      }
-      this.setData({
-        selectedFoodCart: [...(this.data.selectedFoodCart || []), food],
-        pendingFoodIds: nextPendingFoodIds
-      });
-    });
+    this.playAddToCartAnimation(e);
   },
 
   clearSelectionCart() {
@@ -747,6 +857,8 @@ Page({
     this.setData({
       quantityDrawerVisible: true,
       cartExpanded: false,
+      quantityDraftScrollIntoView: '',
+      quantityDraftInvalidIndex: -1,
       quantityDrafts: selectedFoods.map((food, index) => {
         const initialQuantity = initialQuantities.get(food._id);
         const quantity = parseFloat(initialQuantity || '');
@@ -778,6 +890,8 @@ Page({
     }
     this.setData({
       quantityDrawerVisible: false,
+      quantityDraftScrollIntoView: '',
+      quantityDraftInvalidIndex: -1,
       quantityTargetPreview: null
     });
   },
@@ -789,6 +903,18 @@ Page({
     this.quantityDraftValues = this.quantityDraftValues || {};
     this.quantityDraftValues[draftIndex] = e.detail.value || '';
     this.refreshQuantityPreview(draftIndex);
+  },
+
+  scrollToQuantityDraft(index) {
+    const draftIndex = Number(index);
+    if (!Number.isInteger(draftIndex) || draftIndex < 0) return;
+    const targetId = `quantityDraftItem${draftIndex}`;
+    this.setData({
+      quantityDraftScrollIntoView: '',
+      quantityDraftInvalidIndex: draftIndex
+    }, () => {
+      this.setData({ quantityDraftScrollIntoView: targetId });
+    });
   },
 
   findSelectedCartFood(foodId) {
@@ -812,6 +938,10 @@ Page({
       updates[`quantityDrafts[${index}].nutritionPreview`] = !food || isNaN(quantity) || quantity <= 0
         ? null
         : FoodModel.calculateNutrition(food, quantity);
+      if (index === this.data.quantityDraftInvalidIndex && !isNaN(quantity) && quantity > 0) {
+        updates.quantityDraftInvalidIndex = -1;
+        updates.quantityDraftScrollIntoView = '';
+      }
     }
     if (this.data.quantityTargetContext) {
       const context = this.data.quantityTargetContext;
@@ -825,7 +955,7 @@ Page({
         previousSummary: context.previousSummary || {},
         weight: context.weight,
         targetPreferences: context.targetPreferences || {},
-        includeCalories: false
+        includeCalories: true
       });
     }
     this.setData(updates);
@@ -884,7 +1014,7 @@ Page({
       previousSummary: context.previousSummary || {},
       weight: context.weight,
       targetPreferences: context.targetPreferences || {},
-      includeCalories: false
+      includeCalories: true
     });
     this.setData({ quantityTargetPreview });
   },
@@ -900,6 +1030,7 @@ Page({
       const draft = drafts[index];
       const quantity = parseFloat(this.quantityDraftValues?.[index] || '');
       if (isNaN(quantity) || quantity <= 0) {
+        this.scrollToQuantityDraft(index);
         wx.showToast({ title: `请填写${draft.name || '食物'}的有效份量`, icon: 'none' });
         return;
       }
@@ -925,35 +1056,64 @@ Page({
     }
 
     const runAnimation = rect => {
-      const fallbackWindowHeight = typeof wx.getWindowInfo === 'function'
-        ? wx.getWindowInfo().windowHeight
-        : 720;
+      const fallbackWindowHeight = getCachedWindowInfo().windowHeight;
       const targetX = rect ? rect.left + rect.width / 2 : 56;
       const targetY = rect ? rect.top + rect.height / 2 : fallbackWindowHeight - 48;
       const deltaX = Math.round(targetX - startX);
       const deltaY = Math.round(targetY - startY);
+      const arcHeight = Math.max(
+        36,
+        Math.min(80, Math.round(Math.abs(deltaX) * 0.08 + Math.max(0, deltaY) * 0.035))
+      );
       const startLeft = Math.round(startX - 12);
       const startTop = Math.round(startY - 12);
       const token = (this.cartFlyerToken || 0) + 1;
       this.cartFlyerToken = token;
 
-      this.setData({
-        cartFlyer: {
-          visible: true,
-          outerStyle: `left: ${startLeft}px; top: ${startTop}px; transform: translate3d(0, 0, 0);`,
-          innerStyle: 'transform: translate3d(0, 0, 0) scale(1); opacity: 1;'
-        }
-      });
+      if (this.cartFlyerStartTimer) {
+        clearTimeout(this.cartFlyerStartTimer);
+        this.cartFlyerStartTimer = null;
+      }
+      if (this.cartFlyerFinishTimer) {
+        clearTimeout(this.cartFlyerFinishTimer);
+        this.cartFlyerFinishTimer = null;
+      }
 
-      setTimeout(() => {
+      const showFlyer = () => {
         if (this.cartFlyerToken !== token) return;
         this.setData({
-          'cartFlyer.outerStyle': `left: ${startLeft}px; top: ${startTop}px; transform: translate3d(${deltaX}px, 0, 0);`,
-          'cartFlyer.innerStyle': `transform: translate3d(0, ${deltaY}px, 0) scale(0.48); opacity: 0.12;`
+          cartFlyer: {
+            visible: true,
+            outerStyle: [
+              `left: ${startLeft}px`,
+              `top: ${startTop}px`,
+              `--fly-x: ${deltaX}px`,
+              `animation: cartFlyerX ${FOOD_CART_FLY_DURATION}ms linear both`
+            ].join('; '),
+            innerStyle: [
+              `--fly-y: ${deltaY}px`,
+              `--fly-peak-y: ${-arcHeight}px`,
+              `animation: cartFlyerGravity ${FOOD_CART_FLY_DURATION}ms both`
+            ].join('; ')
+          }
         });
-      }, FOOD_CART_FLY_START_DELAY);
+      };
 
-      setTimeout(() => {
+      const restartDelay = this.data.cartFlyer?.visible ? FOOD_CART_FLY_START_DELAY : 0;
+      if (restartDelay > 0) {
+        this.setData({
+          cartFlyer: {
+            visible: false,
+            outerStyle: '',
+            innerStyle: ''
+          }
+        });
+        this.cartFlyerStartTimer = setTimeout(showFlyer, restartDelay);
+      } else {
+        showFlyer();
+      }
+
+      this.cartFlyerFinishTimer = setTimeout(() => {
         if (this.cartFlyerToken === token) {
           this.setData({
             cartFlyer: {
@@ -965,7 +1125,7 @@ Page({
         }
         if (typeof onDone === 'function') onDone();
         this.triggerCartBump();
-      }, FOOD_CART_FLY_DURATION + FOOD_CART_FLY_START_DELAY + 40);
+      }, FOOD_CART_FLY_DURATION + restartDelay + 40);
     };
 
     if (typeof wx.createSelectorQuery !== 'function') {

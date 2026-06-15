@@ -20,6 +20,7 @@ const DEFAULT_CATEGORY_SUGGESTIONS = [
 const NUTRITION_NUMBER_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'];
 const PREMIUM_PROTEIN_CATEGORY_KEYWORDS = ['肉', '禽', '鱼', '虾', '蟹', '贝', '水产', '蛋', '乳', '奶', '豆'];
 const REGULAR_PROTEIN_CATEGORY_KEYWORDS = ['主食', '谷', '薯', '蔬菜', '水果', '辅食', '零食', '饮品', '甜品'];
+const ACTIVE_FOOD_RENDER_BATCH = 30;
 
 function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
@@ -83,6 +84,8 @@ Page({
     activeCategory: '',
     activeFoods: [],
     activeFoodTotal: 0,
+    activeFoodRenderLimit: ACTIVE_FOOD_RENDER_BATCH,
+    hasMoreActiveFoods: false,
     categoryNavScrollIntoView: '',
     foodPanelScrollTop: 0,
     showAddModal: false,
@@ -365,6 +368,20 @@ Page({
     return groupedFoods[0].category;
   },
 
+  buildActiveFoodState(activeGroup, renderLimit = ACTIVE_FOOD_RENDER_BATCH) {
+    const items = activeGroup ? (activeGroup.items || []) : [];
+    const limit = Math.min(
+      Math.max(Number(renderLimit) || ACTIVE_FOOD_RENDER_BATCH, ACTIVE_FOOD_RENDER_BATCH),
+      items.length
+    );
+    return {
+      activeFoods: items.slice(0, limit),
+      activeFoodTotal: items.length,
+      activeFoodRenderLimit: limit,
+      hasMoreActiveFoods: limit < items.length
+    };
+  },
+
   updateGroupedFoods(foods = this.data.foods || [], options = {}) {
     const searchQuery =
       options.searchQuery !== undefined ? options.searchQuery : (this.data.searchQuery || '');
@@ -375,14 +392,17 @@ Page({
       options.activeCategory !== undefined ? options.activeCategory : this.data.activeCategory
     );
     const activeGroup = filteredGroups.find(group => group.category === activeCategory);
+    const activeFoodState = this.buildActiveFoodState(
+      activeGroup,
+      options.activeFoodRenderLimit || ACTIVE_FOOD_RENDER_BATCH
+    );
 
     this.setData({
       groupedFoods: filteredGroups,
       filteredFoodCount: filteredFoods.length,
       searchQuery,
       activeCategory,
-      activeFoods: activeGroup ? activeGroup.items : [],
-      activeFoodTotal: activeGroup ? activeGroup.items.length : 0
+      ...activeFoodState
     });
   },
 
@@ -1058,8 +1078,7 @@ Page({
     const activeGroup = (this.data.groupedFoods || []).find(group => group.category === category);
     this.setData({
       activeCategory: category,
-      activeFoods: activeGroup ? activeGroup.items : [],
-      activeFoodTotal: activeGroup ? activeGroup.items.length : 0,
+      ...this.buildActiveFoodState(activeGroup),
       foodPanelScrollTop: this.foodPanelCurrentScrollTop > 0 ? 0 : 1
     }, () => {
       if (this.data.foodPanelScrollTop !== 0) {
@@ -1070,6 +1089,17 @@ Page({
 
   onFoodPanelScroll(e) {
     this.foodPanelCurrentScrollTop = Number(e.detail?.scrollTop) || 0;
+  },
+
+  loadMoreActiveFoods() {
+    if (!this.data.hasMoreActiveFoods) return;
+    const activeGroup = (this.data.groupedFoods || [])
+      .find(group => group.category === this.data.activeCategory);
+    if (!activeGroup) return;
+    this.setData(this.buildActiveFoodState(
+      activeGroup,
+      (Number(this.data.activeFoodRenderLimit) || ACTIVE_FOOD_RENDER_BATCH) + ACTIVE_FOOD_RENDER_BATCH
+    ));
   },
 
   onDeleteFood(e) {

@@ -26,7 +26,7 @@
               <text>添加食物</text>
             </view>
           </view>
-          <scroll-view class="food-option-list food-experiment-option-list" scroll-y="true">
+          <scroll-view class="food-option-list food-experiment-option-list" scroll-y="true" bindscrolltolower="handleLoadMoreOptions">
             <view class="food-option"
                   wx:for="{{options}}" wx:key="_id"
                   data-id="{{item._id}}" bindtap="handleOptionTap">
@@ -39,6 +39,9 @@
             </view>
             <view class="food-option-empty" wx:if="{{options.length === 0}}">
               <text>未找到匹配的食物，请调整搜索条件</text>
+            </view>
+            <view class="food-option-load-more" wx:if="{{hasMoreOptions}}">
+              <text>继续下滑加载更多食物</text>
             </view>
           </scroll-view>
         </view>

@@ -50,7 +50,7 @@ const DEFAULT_SPECIAL_MILK_PROTEIN = 13.1;
 const DEFAULT_SPECIAL_MILK_PROTEIN_ML = 1.97;
 const MILK_CATEGORY_ALIASES = ['milk', '奶类', '奶制品', '乳制品'];
 const MAX_RECENT_FOODS = 10;
-const FOOD_VISIBLE_LIMIT = 50;
+const FOOD_OPTION_RENDER_BATCH = 50;
 const CALORIE_RANGE_BY_AGE = [
   { maxMonths: 6, min: 72, max: 109, label: '0-6月龄推荐' },
   { maxMonths: 12, min: 65, max: 97, label: '6-12月龄推荐' },
@@ -743,8 +743,7 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     foodType: 'food',
     category: foodSnapshot.category || record.category || '辅食',
     foodId: record.foodId || '',
-    // 过渡期食物仍来自旧 feeding_records.intakes，名称存在 nameSnapshot；
-    // v2 food_intake_records 则用 foodName/foodSnapshot.name。漏掉 nameSnapshot 会回退成固定“食物”。
+    // v2 food_intake_records 使用 foodName/foodSnapshot.name；迁移数据可能仍带 nameSnapshot。
     nameSnapshot: record.foodName || foodSnapshot.name || record.nameSnapshot || '食物',
     unit: record.unit || 'g',
     quantity: Number(record.quantity) || 0,
@@ -753,7 +752,7 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     nutrition: normalizeFoodNutritionFields(nutrition, { roundMacros: true }),
     naturalProtein: roundNumber(naturalProteinResolved, 2),
     specialProtein: roundNumber(specialProteinResolved, 2),
-    // 保留来源旧文档 id：页面食物来自 feeding_records.intakes，删除需回写该文档
+    // 迁移数据可能保留旧文档 id；主删除路径已经走 food_intake_records。
     legacyRecordId: record.legacyRecordId || '',
     milkType: '',
     notes: record.notes || '',
@@ -1369,6 +1368,9 @@ function createDataRecordsPageConfig(options = {}) {
     foodCategories: [],
     categorizedFoods: {},
     filteredFoodOptions: [],
+    filteredFoodOptionCount: 0,
+    filteredFoodOptionRenderLimit: FOOD_OPTION_RENDER_BATCH,
+    hasMoreFilteredFoodOptions: false,
     foodSearchQuery: '',
     foodModalMode: 'create',
     editingFoodIntakeId: '',
@@ -1398,6 +1400,9 @@ function createDataRecordsPageConfig(options = {}) {
     foodExperimentCategory: 'recent',
     foodExperimentStep: 'select',
     filteredFoodExperimentOptions: [],
+    filteredFoodExperimentOptionCount: 0,
+    foodExperimentRenderLimit: FOOD_OPTION_RENDER_BATCH,
+    hasMoreFoodExperimentOptions: false,
     recentFoodOptions: [],
     intakeOverview: createEmptyIntakeOverview(),
     medicationRecords: [],
@@ -1564,7 +1569,10 @@ function createDataRecordsPageConfig(options = {}) {
       editingFoodIntakeId: '',
       editingFoodIntakeIndex: -1,
       foodSearchQuery: '',
-      filteredFoodOptions: this.data.foodCatalog,
+      filteredFoodOptions: [],
+      filteredFoodOptionCount: 0,
+      filteredFoodOptionRenderLimit: FOOD_OPTION_RENDER_BATCH,
+      hasMoreFilteredFoodOptions: false,
       showFoodIntakeModal: true
     }, () => {
       this.filterFoodOptions('');
@@ -1586,6 +1594,10 @@ function createDataRecordsPageConfig(options = {}) {
         notes: ''
       },
       foodSearchQuery: '',
+      filteredFoodOptions: [],
+      filteredFoodOptionCount: 0,
+      filteredFoodOptionRenderLimit: FOOD_OPTION_RENDER_BATCH,
+      hasMoreFilteredFoodOptions: false,
       foodModalMode: 'create',
       editingFoodIntakeId: '',
       editingFoodIntakeIndex: -1
@@ -1615,7 +1627,10 @@ function createDataRecordsPageConfig(options = {}) {
       },
       foodExperimentSearchQuery: '',
       foodExperimentStep: 'select',
-      filteredFoodExperimentOptions: this.data.foodCatalog,
+      filteredFoodExperimentOptions: [],
+      filteredFoodExperimentOptionCount: 0,
+      foodExperimentRenderLimit: FOOD_OPTION_RENDER_BATCH,
+      hasMoreFoodExperimentOptions: false,
       showFoodIntakeExperimentModal: true
     }, () => {
       this.loadRecentFoodOptions().then(() => {
@@ -1747,15 +1762,9 @@ function createDataRecordsPageConfig(options = {}) {
         try {
           wx.showLoading({ title: '删除中...' });
           if (this.isV2RecordsSource()) {
-            const groupItems = (this.data.intakes || []).filter(item => item.mealBatchId === mealBatchId);
-            const legacyItems = groupItems.filter(item => item.legacyRecordId);
-            const v2Items = groupItems.filter(item => !item.legacyRecordId && !!item._id);
-            if (legacyItems.length > 0) {
-              await this.deleteLegacyFoodIntakes(legacyItems);
-            }
-            if (v2Items.length > 0) {
-              await Promise.all(v2Items.map(item => FoodIntakeRecordModel.deleteFoodIntake(item._id)));
-            }
+            await FoodIntakeRecordModel.deleteMealBatch(getBabyUid(), this.data.selectedDate, mealBatchId, {
+              operatorOpenid: wx.getStorageSync('openid') || ''
+            });
             await DailySummaryV2Model.markDirty(getBabyUid(), this.data.selectedDate);
             wx.hideLoading();
             wx.showToast({ title: '本顿已删除', icon: 'success' });
@@ -1816,6 +1825,9 @@ function createDataRecordsPageConfig(options = {}) {
       foodExperimentCategory: 'recent',
       foodExperimentStep: 'select',
       filteredFoodExperimentOptions: [],
+      filteredFoodExperimentOptionCount: 0,
+      foodExperimentRenderLimit: FOOD_OPTION_RENDER_BATCH,
+      hasMoreFoodExperimentOptions: false,
       foodModalMode: 'create',
       editingFoodIntakeId: '',
       editingFoodIntakeIndex: -1,
@@ -1881,7 +1893,7 @@ function createDataRecordsPageConfig(options = {}) {
     }
   },
 
-  filterFoodExperimentOptions(query = this.data.foodExperimentSearchQuery || '') {
+  filterFoodExperimentOptions(query = this.data.foodExperimentSearchQuery || '', options = {}) {
     const normalized = (query || '').trim().toLowerCase();
     const catalog = this.data.foodCatalog || [];
     const currentCategory = this.data.foodExperimentCategory || 'recent';
@@ -1910,13 +1922,27 @@ function createDataRecordsPageConfig(options = {}) {
         })
       : baseList;
 
-    this.setData({ filteredFoodExperimentOptions: filtered.slice(0, FOOD_VISIBLE_LIMIT) });
+    const renderLimit = options.append
+      ? (Number(this.data.foodExperimentRenderLimit) || FOOD_OPTION_RENDER_BATCH) + FOOD_OPTION_RENDER_BATCH
+      : FOOD_OPTION_RENDER_BATCH;
+    const nextLimit = Math.min(renderLimit, filtered.length);
+    this.setData({
+      filteredFoodExperimentOptions: filtered.slice(0, nextLimit),
+      filteredFoodExperimentOptionCount: filtered.length,
+      foodExperimentRenderLimit: nextLimit,
+      hasMoreFoodExperimentOptions: nextLimit < filtered.length
+    });
   },
 
   onFoodExperimentSearchInput(e) {
     const query = e.detail.value || '';
     this.setData({ foodExperimentSearchQuery: query });
     this.filterFoodExperimentOptions(query);
+  },
+
+  loadMoreFoodExperimentOptions() {
+    if (!this.data.hasMoreFoodExperimentOptions) return;
+    this.filterFoodExperimentOptions(this.data.foodExperimentSearchQuery || '', { append: true });
   },
 
   onFoodExperimentCategorySelect(e) {
@@ -2045,7 +2071,9 @@ function createDataRecordsPageConfig(options = {}) {
   async loadFoodCatalog() {
     try {
       const babyUid = getBabyUid();
-      const remoteFoods = await FoodModel.getAvailableFoods(babyUid);
+      const remoteFoods = await FoodModel.getAvailableFoods(babyUid, {
+        preferLocalSystemIndex: true
+      });
       const combinedFoods = (remoteFoods || [])
         .filter(item => !!item && !!item._id)
         .map(food => {
@@ -2126,7 +2154,7 @@ function createDataRecordsPageConfig(options = {}) {
     return '我的';
   },
 
-  filterFoodOptions(query = this.data.foodSearchQuery || '') {
+  filterFoodOptions(query = this.data.foodSearchQuery || '', options = {}) {
     const normalized = (query || '').trim().toLowerCase();
     const catalog = this.data.foodCatalog || [];
     const filtered = normalized
@@ -2137,13 +2165,27 @@ function createDataRecordsPageConfig(options = {}) {
           return name.includes(normalized) || category.includes(normalized) || alias.includes(normalized);
         })
       : catalog;
-    this.setData({ filteredFoodOptions: filtered.slice(0, FOOD_VISIBLE_LIMIT) });
+    const renderLimit = options.append
+      ? (Number(this.data.filteredFoodOptionRenderLimit) || FOOD_OPTION_RENDER_BATCH) + FOOD_OPTION_RENDER_BATCH
+      : FOOD_OPTION_RENDER_BATCH;
+    const nextLimit = Math.min(renderLimit, filtered.length);
+    this.setData({
+      filteredFoodOptions: filtered.slice(0, nextLimit),
+      filteredFoodOptionCount: filtered.length,
+      filteredFoodOptionRenderLimit: nextLimit,
+      hasMoreFilteredFoodOptions: nextLimit < filtered.length
+    });
   },
 
   onFoodSearchInput(e) {
     const value = e.detail.value || '';
     this.setData({ foodSearchQuery: value });
     this.filterFoodOptions(value);
+  },
+
+  loadMoreFilteredFoodOptions() {
+    if (!this.data.hasMoreFilteredFoodOptions) return;
+    this.filterFoodOptions(this.data.foodSearchQuery || '', { append: true });
   },
 
   onFoodSelect(e) {
@@ -2240,7 +2282,7 @@ function createDataRecordsPageConfig(options = {}) {
     });
   },
 
-  // 旧 feeding_records.intakes 里食物的唯一标识：优先 _id，否则用组合键兜底
+  // 迁移/回滚辅助：旧 intakes 里食物的唯一标识优先 _id，否则用组合键兜底。
   legacyIntakeKey(intake = {}) {
     if (intake._id) return `id:${intake._id}`;
     return [
@@ -2252,7 +2294,7 @@ function createDataRecordsPageConfig(options = {}) {
     ].join('|');
   },
 
-  // 从旧 feeding_records 文档的 intakes 数组中移除匹配的食物（页面食物来源是 V1 旧 intakes）
+  // 迁移/回滚辅助：从旧 feeding_records 文档的 intakes 数组中移除匹配的食物。
   async deleteLegacyFoodIntakes(targets = []) {
     const db = wx.cloud.database();
     const byDoc = new Map();
@@ -2305,12 +2347,10 @@ function createDataRecordsPageConfig(options = {}) {
         try {
           wx.showLoading({ title: '删除中...' });
           if (this.isV2RecordsSource()) {
-            // 页面食物来自旧 feeding_records.intakes，从旧文档移除；仅 v2 food_intake_records 才走文档删除
-            if (target.legacyRecordId) {
-              await this.deleteLegacyFoodIntakes([target]);
-            } else {
-              await FoodIntakeRecordModel.deleteFoodIntake(target._id);
-            }
+            await FoodIntakeRecordModel.softDeleteFoodIntake(target._id, {
+              babyUid: getBabyUid(),
+              operatorOpenid: wx.getStorageSync('openid') || ''
+            });
             await DailySummaryV2Model.markDirty(getBabyUid(), this.data.selectedDate);
             wx.hideLoading();
             wx.showToast({ title: '已删除', icon: 'success' });
@@ -2434,6 +2474,8 @@ function createDataRecordsPageConfig(options = {}) {
       nutrition: {
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
+        naturalProtein: roundNumber(naturalProtein, 2),
+        specialProtein: roundNumber(specialProtein, 2),
         carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
         fat: roundNumber(Number(nutrition.fat) || 0, 2),
         fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
@@ -2452,105 +2494,23 @@ function createDataRecordsPageConfig(options = {}) {
     const isEdit = this.data.foodModalMode === 'edit' && this.data.editingFoodIntakeId;
     try {
       wx.showLoading({ title: '保存中...' });
-      // 食物全部走 v1：写入当天 feeding_records.intakes。
-      // 按日期解析旧文档（不用 this.data.recordId，它在 v2 页面是 v2 记录 id），
-      // 并保留该文档的 feedings 与其它 intakes（奶类等），只增改食物条目。
-      {
-        const db = wx.cloud.database();
-        const { recordId: legacyRecordId, record: legacyRecord } = await findOrCreateDailyRecord(
-          this.data.selectedDate,
-          babyUid,
-          this.buildPersistedBasicInfoForDate({}, this.data.selectedDate)
-        );
-        const docIntakes = Array.isArray(legacyRecord?.intakes) ? [...legacyRecord.intakes] : [];
-
-        if (isEdit) {
-          const targetIndex = docIntakes.findIndex(item => item._id === this.data.editingFoodIntakeId);
-          if (targetIndex === -1) {
-            wx.hideLoading();
-            wx.showToast({ title: '记录不存在', icon: 'none' });
-            return;
-          }
-          const original = docIntakes[targetIndex];
-          docIntakes[targetIndex] = {
-            ...original,
-            ...intake,
-            _id: original._id,
-            createdAt: original.createdAt || intake.createdAt,
-            createdBy: original.createdBy || intake.createdBy
-          };
-        } else {
-          docIntakes.unshift(intake);
-        }
-
-        await db.collection('feeding_records').doc(legacyRecordId).update({
-          data: {
-            intakes: docIntakes,
-            updatedAt: db.serverDate()
-          }
-        });
-        await DailySummaryV2Model.markDirty(babyUid, this.data.selectedDate);
-        wx.hideLoading();
-        wx.showToast({ title: isEdit ? '修改成功' : '添加成功', icon: 'success' });
-        this.loadRecentFoodOptions();
-        this.hideFoodIntakeModal();
-        await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
-        return;
-      }
-
-      const db = wx.cloud.database();
-      const [year, month, day] = this.data.selectedDate.split('-').map(Number);
-      const recordDate = new Date(year, month - 1, day);
-
-      let recordId = this.data.recordId;
-      let existingIntakes = [...this.data.intakes];
+      const foodIntakePayload = {
+        ...intake,
+        babyUid,
+        date: this.data.selectedDate,
+        foodName: food.name,
+        time: recordTimeValue,
+        source: 'data_records_v2',
+        operatorOpenid: wx.getStorageSync('openid') || ''
+      };
       if (isEdit) {
-        const targetIndex = existingIntakes.findIndex(item => item._id === this.data.editingFoodIntakeId);
-        if (targetIndex === -1) {
-          wx.hideLoading();
-          wx.showToast({ title: '记录不存在', icon: 'none' });
-          return;
-        }
-        const original = existingIntakes[targetIndex];
-        existingIntakes[targetIndex] = {
-          ...original,
-          ...intake,
-          _id: original._id,
-          createdAt: original.createdAt || intake.createdAt,
-          createdBy: original.createdBy || intake.createdBy
-        };
+        await FoodIntakeRecordModel.updateFoodIntake(this.data.editingFoodIntakeId, foodIntakePayload);
       } else {
-        existingIntakes.unshift(intake);
+        await FoodIntakeRecordModel.createFoodIntake(foodIntakePayload);
       }
-
-      const updatedSummary = calculateMacroSummary(existingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
-      const updatedOverview = calculateIntakeOverview(this.data.feedings || [], existingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
-
-      if (!recordId) {
-        const result = await findOrCreateDailyRecord(this.data.selectedDate, babyUid, this.buildPersistedBasicInfoForDate({}, this.data.selectedDate));
-        recordId = result.recordId;
-        this.setData({ recordId });
-      }
-      await db.collection('feeding_records').doc(recordId).update({
-        data: {
-          intakes: existingIntakes,
-          summary: updatedSummary,
-          updatedAt: db.serverDate()
-        }
-      });
-
+      await DailySummaryV2Model.markDirty(babyUid, this.data.selectedDate);
       wx.hideLoading();
       wx.showToast({ title: isEdit ? '修改成功' : '添加成功', icon: 'success' });
-      this.setData({
-        intakes: existingIntakes,
-        foodIntakes: existingIntakes.filter(item => item.type !== 'milk'),
-        foodMealGroups: groupFoodIntakesByMeal(existingIntakes.filter(item => item.type !== 'milk')),
-        legacyFoodIntakes: getLegacyFoodIntakes(existingIntakes.filter(item => item.type !== 'milk')),
-        macroSummary: updatedSummary,
-        macroRatios: this.computeMacroRatios(updatedSummary),
-        intakeOverview: updatedOverview
-      });
-
       this.loadRecentFoodOptions();
       this.hideFoodIntakeModal();
       await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
@@ -2999,42 +2959,45 @@ function createDataRecordsPageConfig(options = {}) {
       return;
     }
 
-    const sourceFoodIntakes = normalizeIntakes(await DailyRecordV2Service.loadLegacyFoodIntakes(babyUid, sourceDateStr));
+    const sourceFoodIntakes = normalizeIntakes(await FoodIntakeRecordModel.findByDate(babyUid, sourceDateStr));
     if (sourceFoodIntakes.length === 0) {
       wx.showToast({ title: '来源日期暂无食物记录', icon: 'none' });
       return;
     }
 
-    // 食物全部走 v1：复制到目标日的 feeding_records.intakes。
-    // 按日期解析目标旧文档，保留其 feedings 与奶类 intakes，仅覆盖食物条目。
-    const { recordId: targetId, record: targetRecord } = await findOrCreateDailyRecord(
-      targetDateStr,
-      babyUid,
-      this.buildPersistedBasicInfoForDate({}, targetDateStr)
-    );
-    const targetIntakes = Array.isArray(targetRecord?.intakes) ? targetRecord.intakes : [];
-    const targetFoodCount = targetIntakes.filter(item => item.type !== 'milk' && !item.milkType).length;
+    const targetFoodIntakes = await FoodIntakeRecordModel.findByDate(babyUid, targetDateStr);
     const shouldContinue = await this.confirmOverwriteForDimension({
       targetDateStr,
       dimensionLabel: '食物记录',
-      hasExisting: targetFoodCount > 0
+      hasExisting: targetFoodIntakes.length > 0
     });
     if (!shouldContinue) return;
 
-    const targetNonFoodIntakes = targetIntakes.filter(item => item.type === 'milk' || item.milkType);
     const openid = wx.getStorageSync('openid') || '';
-    const copiedFoodIntakes = sourceFoodIntakes.map(item => cloneIntakeForDate(item, openid));
-    const mergedIntakes = [...targetNonFoodIntakes, ...copiedFoodIntakes];
+    const copiedFoodIntakes = sourceFoodIntakes.map(item => ({
+      ...cloneIntakeForDate(item, openid),
+      babyUid,
+      date: targetDateStr,
+      source: 'data_records_v2_copy',
+      operatorOpenid: openid,
+      nutrition: {
+        ...(item.nutrition || {}),
+        naturalProtein: item.nutrition?.naturalProtein ?? item.naturalProtein ?? 0,
+        specialProtein: item.nutrition?.specialProtein ?? item.specialProtein ?? 0
+      }
+    }));
 
     wx.showLoading({ title: '导入中...' });
     try {
-      const db = wx.cloud.database();
-      await db.collection('feeding_records').doc(targetId).update({
-        data: {
-          intakes: mergedIntakes,
-          updatedAt: db.serverDate()
-        }
-      });
+      if (targetFoodIntakes.length > 0) {
+        await Promise.all(targetFoodIntakes.map(record => FoodIntakeRecordModel.softDeleteFoodIntake(record._id, {
+          babyUid,
+          operatorOpenid: openid
+        })));
+      }
+      if (copiedFoodIntakes.length > 0) {
+        await Promise.all(copiedFoodIntakes.map(record => FoodIntakeRecordModel.createFoodIntake(record)));
+      }
       await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
       wx.hideLoading();
       wx.showToast({ title: '已导入到当前日期', icon: 'success' });

@@ -218,6 +218,53 @@ function hasAnalysisContent(record = {}) {
     (Array.isArray(record.intakes) && record.intakes.length > 0);
 }
 
+function hasFoodSummaryContent(food = {}) {
+  return [
+    food.calories,
+    food.protein,
+    food.naturalProtein,
+    food.specialProtein,
+    food.carbs,
+    food.fat,
+    food.fiber
+  ].some(value => Number(value) > 0);
+}
+
+function dailySummaryToAnalysisRecord(summary = {}) {
+  const food = summary.food || {};
+  const foodIntakes = hasFoodSummaryContent(food)
+    ? [{
+      _id: `daily-summary-food-${summary.date || summary._id || ''}`,
+      type: 'food',
+      foodId: '',
+      nameSnapshot: '食物汇总',
+      proteinSource: 'natural',
+      nutrition: {
+        calories: roundCalories(Number(food.calories) || 0),
+        protein: roundNumber(Number(food.protein) || 0, 2),
+        naturalProtein: roundNumber(Number(food.naturalProtein) || 0, 2),
+        specialProtein: roundNumber(Number(food.specialProtein) || 0, 2),
+        carbs: roundNumber(Number(food.carbs) || 0, 2),
+        fat: roundNumber(Number(food.fat) || 0, 2),
+        fiber: roundNumber(Number(food.fiber) || 0, 2)
+      },
+      naturalProtein: roundNumber(Number(food.naturalProtein) || 0, 2),
+      specialProtein: roundNumber(Number(food.specialProtein) || 0, 2)
+    }]
+    : [];
+
+  return {
+    _id: summary._id || `daily-summary-${summary.date || ''}`,
+    babyUid: summary.babyUid || '',
+    date: summary.date || '',
+    basicInfo: { ...(summary.basicInfo || {}) },
+    feedings: [],
+    intakes: foodIntakes,
+    source: 'daily_summary_v2',
+    dailySummaryV2: summary
+  };
+}
+
 function getTreatmentRecordDateKey(record = {}) {
   if (record.dateKey && typeof record.dateKey === 'string') {
     return record.dateKey;
@@ -726,7 +773,7 @@ Page({
         let skip = 0;
         
         while (hasMore) {
-          let query = db.collection('feeding_records').where(whereObj);
+          let query = db.collection('daily_summary_v2').where(whereObj);
           if (typeof query.orderBy === 'function') {
             query = query.orderBy('date', 'asc');
           }
@@ -753,41 +800,29 @@ Page({
 
       const startKey = this.formatDateKey(queryStartDate);
       const endKey = this.formatDateKey(queryEndDate);
-      const [dateTypeRecords, stringTypeRecords] = await Promise.all([
-        fetchPaged({
-          babyUid: babyUid,
-          date: _.gte(queryStartDate).and(_.lte(queryEndDate))
-        }),
-        fetchPaged({
-          babyUid: babyUid,
-          date: _.gte(startKey).and(_.lte(endKey))
-        })
-      ]);
+      const summaryRecords = await fetchPaged({
+        babyUid,
+        status: 'active',
+        date: _.gte(startKey).and(_.lte(endKey))
+      });
 
       const mergedMap = new Map();
-      dateTypeRecords.concat(stringTypeRecords).forEach(record => {
+      summaryRecords.map(dailySummaryToAnalysisRecord).forEach(record => {
         if (!record) return;
-        const key = record._id || `${record.babyUid || ''}_${normalizeDateKey(record.date)}_${JSON.stringify(record.feedings || [])}_${JSON.stringify(record.intakes || [])}`;
-        mergedMap.set(key, record);
+        const key = normalizeDateKey(record.date);
+        mergedMap.set(key, mergeDailyAnalysisRecord(mergedMap.get(key), record));
       });
       let allData = Array.from(mergedMap.values());
       
       console.log('分页查询完成，总共:', allData.length, '条');
 
-      // 奶统计切换到 v2：从 feeding_records_v2 读奶，旧 feeding_records 仅保留食物/基础信息。
-      // 同一天若有 v2 奶记录则以 v2 为准（剥离旧奶 feedings），避免与旧数据双计。
+      // 奶统计来自 feeding_records_v2；食物来自 daily_summary_v2.food，避免再读旧 intakes。
       const v2MilkRecords = await this.loadV2MilkRecordsForRange(babyUid, startKey, endKey);
       const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
-      if (v2MilkByDate.size > 0) {
-        allData = allData.map(record => (
-          v2MilkByDate.has(normalizeDateKey(record.date))
-            ? { ...record, feedings: [] }
-            : record
-        ));
-        v2MilkByDate.forEach(dailyRecord => {
-          allData.push(dailyRecord);
-        });
-      }
+      v2MilkByDate.forEach((dailyRecord, dateKey) => {
+        mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), dailyRecord));
+      });
+      allData = Array.from(mergedMap.values()).filter(hasAnalysisContent);
       
       // 在前端排序，兼容 Date 和 YYYY-MM-DD 字符串两种日期形态
       if (allData.length > 0) {

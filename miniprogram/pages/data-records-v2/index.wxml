@@ -507,7 +507,7 @@
               <text class="search-icon">🔍</text>
               <input type="text" value="{{foodSearchQuery}}" placeholder="搜索食物名称或类别" confirm-type="search" bindinput="onFoodSearchInput" />
             </view>
-            <scroll-view class="food-option-list" scroll-y="true">
+            <scroll-view class="food-option-list" scroll-y="true" bindscrolltolower="loadMoreFilteredFoodOptions">
               <view class="food-option {{newFoodIntake.foodId === item._id ? 'selected' : ''}}"
                     wx:for="{{filteredFoodOptions}}" wx:key="_id"
                     data-id="{{item._id}}" bindtap="onFoodSelect">
@@ -520,6 +520,9 @@
               </view>
               <view class="food-option-empty" wx:if="{{filteredFoodOptions.length === 0}}">
                 <text>未找到匹配的食物，请调整搜索条件</text>
+              </view>
+              <view class="food-option-load-more" wx:if="{{hasMoreFilteredFoodOptions}}">
+                <text>继续下滑加载更多食物</text>
               </view>
             </scroll-view>
           </view>
@@ -571,6 +574,7 @@
     categories="{{foodExperimentCategories}}"
     activeCategory="{{foodExperimentCategory}}"
     options="{{filteredFoodExperimentOptions}}"
+    hasMoreOptions="{{hasMoreFoodExperimentOptions}}"
     selectedFoodId="{{foodExperiment.foodId}}"
     foodExperiment="{{foodExperiment}}"
     confirmDisabled="{{!foodExperiment.foodId}}"
@@ -580,6 +584,7 @@
     bind:searchinput="onFoodExperimentSearchInput"
     bind:categorytap="onFoodExperimentCategorySelect"
     bind:optiontap="onFoodExperimentFoodSelect"
+    bind:loadmore="loadMoreFoodExperimentOptions"
     bind:confirmselect="confirmFoodExperimentSelection"
     bind:backtoselect="backToFoodExperimentSelection"
     bind:quantityinput="onFoodExperimentQuantityInput"

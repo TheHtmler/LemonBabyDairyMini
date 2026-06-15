@@ -76,6 +76,36 @@ test('getNutritionTargetPreferences reads cloud baby target preferences and refr
   assert.deepEqual(storage[targetCoefStorageKey('baby-1')], preferences);
 });
 
+test('getNutritionTargetPreferences keeps local coefficients when cloud target preferences are empty', async () => {
+  const { wx, storage } = createWxMock({
+    babyDoc: {
+      _id: 'doc-1',
+      nutritionTargetPreferences: {
+        naturalProteinCoefficient: '',
+        specialProteinCoefficient: '',
+        calorieCoefficient: '',
+        preferredTargetMode: ''
+      }
+    }
+  });
+  storage[targetCoefStorageKey('baby-1')] = {
+    naturalProteinCoefficient: '1.4',
+    specialProteinCoefficient: '0.7',
+    calorieCoefficient: '120',
+    preferredTargetMode: 'protein'
+  };
+
+  const preferences = await getNutritionTargetPreferences('baby-1', wx);
+
+  assert.deepEqual(preferences, {
+    naturalProteinCoefficient: '1.4',
+    specialProteinCoefficient: '0.7',
+    calorieCoefficient: '120',
+    preferredTargetMode: 'protein'
+  });
+  assert.deepEqual(storage[targetCoefStorageKey('baby-1')], preferences);
+});
+
 test('saveNutritionTargetPreferences writes baby target preferences to cloud and local cache', async () => {
   const { wx, storage, writes } = createWxMock({
     babyDoc: { _id: 'doc-1' }

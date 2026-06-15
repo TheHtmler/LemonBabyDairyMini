@@ -1,4 +1,4 @@
-<view class="target-preview" wx:if="{{preview && (preview.hasProteinTarget || preview.calorieNote.visible)}}">
+<view class="target-preview" wx:if="{{preview}}">
   <view class="target-preview-head">
     <view>
       <text class="target-preview-title">{{title}}</text>
@@ -37,7 +37,7 @@
     <text>{{emptyText}}</text>
   </view>
 
-  <view class="target-preview-calorie {{preview.calorieNote.status}}" wx:if="{{showCalorie && preview.calorieNote.visible}}">
+  <view class="target-preview-calorie {{preview.calorieNote.status}}" wx:if="{{showCalorie && preview.calorieNote && preview.calorieNote.visible}}">
     <text class="target-preview-calorie-label">热量提醒</text>
     <text class="target-preview-calorie-text">{{preview.calorieNote.text}}</text>
   </view>

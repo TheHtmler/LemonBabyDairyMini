@@ -265,7 +265,7 @@ test('food management separates system and mine libraries before grouping', () =
   assert.deepEqual(instance.data.activeFoods.map(item => item._id), ['sys-1']);
 });
 
-test('food management renders all foods in the active category at once', () => {
+test('food management renders the active category incrementally', () => {
   const wxml = fs.readFileSync(
     require.resolve('../miniprogram/pkg-milk/food-management/index.wxml'),
     'utf8'
@@ -287,10 +287,15 @@ test('food management renders all foods in the active category at once', () => {
   instance.updateGroupedFoods(instance.data.foods, { searchQuery: '' });
 
   assert.equal(instance.data.filteredFoodCount, 60);
-  assert.equal(instance.data.activeFoods.length, 60);
+  assert.ok(instance.data.activeFoods.length < 60);
   assert.equal(instance.data.activeFoodTotal, 60);
-  assert.doesNotMatch(wxml, /loadMoreActiveFoods/);
-  assert.doesNotMatch(wxml, /加载更多/);
+  assert.equal(instance.data.hasMoreActiveFoods, true);
+  assert.match(wxml, /bindscrolltolower="loadMoreActiveFoods"/);
+
+  instance.loadMoreActiveFoods();
+
+  assert.equal(instance.data.activeFoods.length, 60);
+  assert.equal(instance.data.hasMoreActiveFoods, false);
 });
 
 test('food management category switching resets food panel scroll position', () => {

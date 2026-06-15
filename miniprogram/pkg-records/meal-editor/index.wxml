@@ -118,7 +118,6 @@
         preview="{{batchTargetPreview}}"
         title="蛋白目标"
         subtitle="按已输入份量实时预估"
-        show-calorie="{{false}}"
       />
       <view
         class="batch-food-card"

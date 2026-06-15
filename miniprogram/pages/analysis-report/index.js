@@ -28,6 +28,86 @@ function normalizeFeedingDateKey(value) {
   return formatDateKey(date);
 }
 
+function roundNumber(value, precision = 2) {
+  const num = Number(value);
+  if (Number.isNaN(num)) return 0;
+  const multiplier = Math.pow(10, precision);
+  return Math.round(num * multiplier) / multiplier;
+}
+
+function roundCalories(value) {
+  const num = Number(value);
+  if (Number.isNaN(num)) return 0;
+  return Math.round(num);
+}
+
+function hasFoodSummaryContent(food = {}) {
+  return [
+    food.calories,
+    food.protein,
+    food.naturalProtein,
+    food.specialProtein,
+    food.carbs,
+    food.fat,
+    food.fiber
+  ].some(value => Number(value) > 0);
+}
+
+function dailySummaryToFeedingWindowRecord(summary = {}) {
+  const food = summary.food || {};
+  const intakes = hasFoodSummaryContent(food)
+    ? [{
+      _id: `daily-summary-food-${summary.date || summary._id || ''}`,
+      type: 'food',
+      foodId: '',
+      nameSnapshot: '食物汇总',
+      proteinSource: 'natural',
+      nutrition: {
+        calories: roundCalories(Number(food.calories) || 0),
+        protein: roundNumber(Number(food.protein) || 0, 2),
+        naturalProtein: roundNumber(Number(food.naturalProtein) || 0, 2),
+        specialProtein: roundNumber(Number(food.specialProtein) || 0, 2),
+        carbs: roundNumber(Number(food.carbs) || 0, 2),
+        fat: roundNumber(Number(food.fat) || 0, 2),
+        fiber: roundNumber(Number(food.fiber) || 0, 2)
+      },
+      naturalProtein: roundNumber(Number(food.naturalProtein) || 0, 2),
+      specialProtein: roundNumber(Number(food.specialProtein) || 0, 2)
+    }]
+    : [];
+
+  return {
+    _id: summary._id || `daily-summary-${summary.date || ''}`,
+    babyUid: summary.babyUid || '',
+    date: summary.date || '',
+    basicInfo: { ...(summary.basicInfo || {}) },
+    feedings: [],
+    intakes,
+    source: 'daily_summary_v2'
+  };
+}
+
+function mergeFeedingWindowRecord(existing, record = {}) {
+  if (!existing) return record;
+  return {
+    ...existing,
+    ...record,
+    date: existing.date || record.date,
+    basicInfo: {
+      ...(existing.basicInfo || {}),
+      ...(record.basicInfo || {})
+    },
+    feedings: [
+      ...(Array.isArray(existing.feedings) ? existing.feedings : []),
+      ...(Array.isArray(record.feedings) ? record.feedings : [])
+    ],
+    intakes: [
+      ...(Array.isArray(existing.intakes) ? existing.intakes : []),
+      ...(Array.isArray(record.intakes) ? record.intakes : [])
+    ]
+  };
+}
+
 const PREVIEW_MODES = {
   ARCHIVE: 'archive',
   DETAIL: 'detail',
@@ -170,33 +250,35 @@ Page({
     }
   },
 
-  // 后台加载喂养窗口数据（旧 feeding_records + v2 喂奶），仅供趋势视图营养对照使用。
+  // 后台加载营养窗口数据：食物来自 daily_summary_v2，奶来自 feeding_records_v2。
   // 与档案渲染解耦，避免分页拉取慢/卡住时让整页一直停在 loading。
   async loadFeedingWindow(babyUid) {
     if (!babyUid) return;
     try {
       const db = wx.cloud.database();
-      const [feedingRes, v2MilkRecords] = await Promise.all([
-        db.collection('feeding_records')
-          .where({ babyUid })
+      const [summaryRes, v2MilkRecords] = await Promise.all([
+        db.collection('daily_summary_v2')
+          .where({ babyUid, status: 'active' })
           .orderBy('date', 'desc')
           .limit(365)
           .get(),
         this.loadV2MilkRecords(babyUid)
       ]);
 
-      const legacyRecords = (feedingRes.data || []).filter((record) => !!record.date);
-      // 奶统计切到 v2：奶来自 feeding_records_v2，旧 feeding_records 仅保留食物/基础信息。
-      // 同一天若有 v2 奶记录则以 v2 为准（剥离旧奶 feedings），避免与旧数据双计。
+      const recordsByDate = new Map();
+      (summaryRes.data || [])
+        .filter((record) => !!record.date)
+        .map(dailySummaryToFeedingWindowRecord)
+        .forEach((record) => {
+          const dateKey = normalizeFeedingDateKey(record.date);
+          recordsByDate.set(dateKey, mergeFeedingWindowRecord(recordsByDate.get(dateKey), record));
+        });
       const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
-      const feedingRecords = legacyRecords.map((record) => (
-        v2MilkByDate.has(normalizeFeedingDateKey(record.date))
-          ? { ...record, feedings: [] }
-          : record
-      ));
-      v2MilkByDate.forEach((dailyRecord) => {
-        feedingRecords.push(dailyRecord);
+      v2MilkByDate.forEach((dailyRecord, dateKey) => {
+        recordsByDate.set(dateKey, mergeFeedingWindowRecord(recordsByDate.get(dateKey), dailyRecord));
       });
+      const feedingRecords = Array.from(recordsByDate.values())
+        .filter(record => (record.feedings || []).length > 0 || (record.intakes || []).length > 0);
 
       this.setData({ feedingRecordsCache: feedingRecords });
 

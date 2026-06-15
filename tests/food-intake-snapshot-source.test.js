@@ -37,14 +37,26 @@ test('food intake record model normalizes v2 snapshot nutrition basis fields', (
   assert.match(source, /nutritionPerBasis/);
 });
 
+test('data records v2 food actions use food_intake_records as the write surface', () => {
+  const source = readProjectFile('miniprogram/pages/data-records-v2/index.js');
+
+  assert.match(source, /FoodIntakeRecordModel\.createFoodIntake\(/);
+  assert.match(source, /FoodIntakeRecordModel\.softDeleteFoodIntake\(/);
+  assert.match(source, /FoodIntakeRecordModel\.deleteMealBatch\(/);
+  assert.match(source, /FoodIntakeRecordModel\.findByDate\(babyUid,\s*sourceDateStr\)/);
+  assert.doesNotMatch(source, /食物全部走 v1/);
+  assert.doesNotMatch(source, /intakes:\s*updatedIntakes/);
+});
+
 test('food selection pages handle local system index results in the right surface', () => {
   const foodPickerSource = readProjectFile('miniprogram/pkg-records/food-picker/index.js');
   const dataRecordsSource = readProjectFile('miniprogram/pages/data-records-v2/index.js');
 
   assert.match(foodPickerSource, /this\.filteredFoodOptions\s*=\s*baseList\.map\(food\s*=>/);
   assert.match(foodPickerSource, /visibleFoodOptions:\s*list\.slice\(start,\s*end\)/);
-  assert.doesNotMatch(foodPickerSource, /\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);
-  assert.match(dataRecordsSource, /FOOD_VISIBLE_LIMIT\s*=\s*50/);
-  assert.match(dataRecordsSource, /filteredFoodOptions:\s*filtered\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);
-  assert.match(dataRecordsSource, /filteredFoodExperimentOptions:\s*filtered\.slice\(0,\s*FOOD_VISIBLE_LIMIT\)/);
+  assert.doesNotMatch(foodPickerSource, /FOOD_VISIBLE_LIMIT/);
+  assert.doesNotMatch(dataRecordsSource, /FOOD_VISIBLE_LIMIT/);
+  assert.match(dataRecordsSource, /preferLocalSystemIndex:\s*true/);
+  assert.match(dataRecordsSource, /hasMoreFilteredFoodOptions/);
+  assert.match(dataRecordsSource, /hasMoreFoodExperimentOptions/);
 });

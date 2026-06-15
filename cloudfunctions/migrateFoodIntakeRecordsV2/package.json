@@ -1,0 +1,14 @@
+{
+  "name": "migrateFoodIntakeRecordsV2",
+  "version": "1.0.0",
+  "description": "Copy legacy food intakes into food_intake_records",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}

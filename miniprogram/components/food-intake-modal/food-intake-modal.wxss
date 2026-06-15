@@ -244,6 +244,13 @@
   color: #999;
 }
 
+.food-option-load-more {
+  padding: 18rpx 0 10rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #b6975d;
+}
+
 .food-experiment-form-step {
   display: flex;
   flex-direction: column;

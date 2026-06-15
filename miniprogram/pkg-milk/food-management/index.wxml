@@ -66,6 +66,7 @@
       enhanced
       show-scrollbar="{{false}}"
       bindscroll="onFoodPanelScroll"
+      bindscrolltolower="loadMoreActiveFoods"
     >
       <view class="food-panel-header">
         <text class="food-panel-title">{{activeCategory}}</text>
@@ -145,6 +146,7 @@
           </view>
         </view>
       </block>
+      <view class="food-load-more" wx:if="{{hasMoreActiveFoods}}">继续下滑加载更多食物</view>
     </scroll-view>
   </view>
 

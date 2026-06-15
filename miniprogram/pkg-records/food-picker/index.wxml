@@ -154,11 +154,18 @@
       preview="{{quantityTargetPreview}}"
       title="蛋白目标"
       subtitle="按已输入份量实时预估"
-      show-calorie="{{false}}"
     />
-    <scroll-view class="quantity-draft-list" scroll-y="true" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <scroll-view
+      class="quantity-draft-list"
+      scroll-y="true"
+      enhanced="{{true}}"
+      show-scrollbar="{{false}}"
+      scroll-into-view="{{quantityDraftScrollIntoView}}"
+      scroll-with-animation="{{true}}"
+    >
       <view
-        class="quantity-draft-card"
+        id="quantityDraftItem{{draftIndex}}"
+        class="quantity-draft-card {{quantityDraftInvalidIndex === draftIndex ? 'invalid' : ''}}"
         wx:for="{{quantityDrafts}}"
         wx:key="foodId"
         wx:for-index="draftIndex"

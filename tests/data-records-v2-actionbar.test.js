@@ -28,7 +28,7 @@ test('treatment record tab uses the same titleless icon action as feeding record
   assert.match(pageJs, /await this\.applyMedicationCopyToDate\(sourceDateStr, targetDate\)/);
   assert.match(pageJs, /if \(type === 'treatment'\) \{[\s\S]*await this\.applyTreatmentCopyToDate\(sourceDateStr, targetDate\)/);
   assert.match(pageJs, /FeedingRecordV2Model\.getRecordsByDate\(babyUid, sourceDateStr\)/);
-  assert.match(pageJs, /DailyRecordV2Service\.loadLegacyFoodIntakes\(babyUid, sourceDateStr\)/);
+  assert.match(pageJs, /FoodIntakeRecordModel\.findByDate\(babyUid, sourceDateStr\)/);
   assert.match(pageJs, /MedicationRecordModel\.findByDate\(sourceDateStr, babyUid\)/);
   assert.match(pageJs, /async applyTreatmentCopyToDate\(sourceDateStr, targetDateStr\)/);
   assert.match(pageJs, /TreatmentRecordModel\.findByDate\(sourceDateStr, babyUid\)/);

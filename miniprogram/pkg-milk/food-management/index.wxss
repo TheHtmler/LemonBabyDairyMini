@@ -442,6 +442,13 @@
   border: none;
 }
 
+.food-load-more {
+  padding: 12rpx 0 22rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #b6975d;
+}
+
 .add-btn {
   position: fixed;
   right: 40rpx;
@@ -477,6 +484,7 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
+  animation: foodModalFadeIn 0.2s ease both;
 }
 
 .modal-content {
@@ -493,6 +501,27 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  animation: foodModalSlideUp 0.24s cubic-bezier(0.2, 0.82, 0.2, 1) both;
+}
+
+@keyframes foodModalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes foodModalSlideUp {
+  from {
+    opacity: 0.92;
+    transform: translate3d(0, 36rpx, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .modal-header {

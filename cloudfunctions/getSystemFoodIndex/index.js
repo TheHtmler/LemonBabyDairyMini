@@ -109,6 +109,7 @@ exports.main = async (event = {}) => {
       sourceType: 'system'
     })
     .field(INDEX_FIELDS)
+    .orderBy('sourceFoodCode', 'asc')
     .skip(startIndex)
     .limit(batchSize)
     .get();

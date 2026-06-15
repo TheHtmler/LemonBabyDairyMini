@@ -2324,6 +2324,13 @@
   color: #999;
 }
 
+.food-option-load-more {
+  padding: 18rpx 0 10rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #b6975d;
+}
+
 .nutrition-preview {
   margin-top: 16rpx;
   background: rgba(255, 184, 0, 0.08);

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
+const FOOD_PICKER_CATALOG_CACHE_KEY = 'meal_food_picker_catalog_cache';
 
 function installWxMock(storage = {}) {
   const previousWx = global.wx;
@@ -47,11 +48,16 @@ function installWxMock(storage = {}) {
   };
 }
 
+function targetCoefStorageKey(babyUid) {
+  return `milk_goal_target_coef_${babyUid || 'default'}`;
+}
+
 function loadPage(relativePath) {
   const pagePath = require.resolve(relativePath);
   [
     pagePath,
     require.resolve('../miniprogram/models/food.js'),
+    require.resolve('../miniprogram/models/foodIntakeRecord.js'),
     require.resolve('../miniprogram/models/dailySummaryV2.js'),
     require.resolve('../miniprogram/utils/dailyRecordV2Service.js'),
     require.resolve('../miniprogram/utils/index.js'),
@@ -151,8 +157,8 @@ test('food picker supports system and mine library tabs with cart selection', as
     assert.equal(instance.data.filteredFoodCount, 1);
 
     instance.onFoodOptionTap({ currentTarget: { dataset: { id: 'mine-1' } } });
-    assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), []);
-    assert.deepEqual(instance.data.pendingFoodIds, ['mine-1']);
+    assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), ['mine-1']);
+    assert.deepEqual(instance.data.pendingFoodIds, []);
     assert.equal(instance.data.visibleFoodOptions[0].selectedInCart, true);
     await new Promise(resolve => setTimeout(resolve, 220));
     assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), ['mine-1']);
@@ -175,6 +181,15 @@ test('food picker supports system and mine library tabs with cart selection', as
   } finally {
     restoreWx();
   }
+});
+
+test('meal editor persists meal batches through food_intake_records v2 model', () => {
+  const source = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.js', 'utf8');
+
+  assert.match(source, /FoodIntakeRecordModel\s*=\s*require\('\.\.\/\.\.\/models\/foodIntakeRecord'\)/);
+  assert.match(source, /FoodIntakeRecordModel\.findByMealBatch\(babyUid,\s*this\.data\.selectedDate,\s*mealBatchId\)/);
+  assert.match(source, /FoodIntakeRecordModel\.replaceMealBatch\(/);
+  assert.doesNotMatch(source, /db\.collection\('feeding_records'\)\.doc\(targetId\)\.update\(\{\s*data:\s*\{[\s\S]*?intakes:\s*updatedIntakes/);
 });
 
 test('food picker recent category filters recent foods inside each library tab', () => {
@@ -289,7 +304,7 @@ test('food picker virtualizes visible food rows while keeping the full filtered 
   }
 });
 
-test('food picker adds to cart only after fly animation finishes', async () => {
+test('food picker adds to cart immediately while fly animation plays', async () => {
   const storage = {};
   const restoreWx = installWxMock(storage);
   try {
@@ -315,18 +330,66 @@ test('food picker adds to cart only after fly animation finishes', async () => {
       touches: [{ clientX: 320, clientY: 180 }]
     });
 
-    assert.deepEqual(instance.data.selectedFoodCart, []);
+    assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), ['mine-1']);
     assert.equal(instance.data.cartFlyer.visible, true);
-    assert.match(instance.data.cartFlyer.outerStyle, /translate3d\(0, 0, 0\)/);
+    assert.match(instance.data.cartFlyer.outerStyle, /--fly-x:\s*-272px/);
+    assert.doesNotMatch(instance.data.cartFlyer.outerStyle, /--fly-peak-x/);
+    assert.match(instance.data.cartFlyer.outerStyle, /animation:\s*cartFlyerX/);
+    assert.match(instance.data.cartFlyer.innerStyle, /--fly-y:\s*572px/);
+    assert.match(instance.data.cartFlyer.innerStyle, /--fly-peak-y:\s*-42px/);
+    assert.match(instance.data.cartFlyer.innerStyle, /animation:\s*cartFlyerGravity/);
 
-    await new Promise(resolve => setTimeout(resolve, 120));
-    assert.deepEqual(instance.data.selectedFoodCart, []);
-    assert.match(instance.data.cartFlyer.outerStyle, /translate3d\(-272px, 0, 0\)/);
-    assert.match(instance.data.cartFlyer.innerStyle, /translate3d\(0, 572px, 0\)/);
-
-    await new Promise(resolve => setTimeout(resolve, 490));
+    await new Promise(resolve => setTimeout(resolve, 610));
     assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), ['mine-1']);
     assert.equal(instance.data.cartFlyer.visible, false);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker restarts fly animation for rapid consecutive additions', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const secondFood = {
+      ...mineFood,
+      _id: 'mine-2',
+      name: '南瓜泥'
+    };
+    const instance = createPageInstance(page, {
+      foodCatalog: [mineFood, secondFood],
+      activeLibraryScope: 'mine',
+      activeCategory: '婴幼儿辅食'
+    });
+    global.wx.getWindowInfo = () => ({ windowWidth: 375, windowHeight: 800 });
+    global.wx.createSelectorQuery = () => ({
+      select() {
+        return this;
+      },
+      boundingClientRect(callback) {
+        callback({ left: 16, top: 720, width: 64, height: 64 });
+        return this;
+      },
+      exec() {}
+    });
+
+    instance.addFoodToSelectionCart(mineFood, {
+      touches: [{ clientX: 320, clientY: 180 }]
+    });
+    assert.equal(instance.data.cartFlyer.visible, true);
+
+    instance.addFoodToSelectionCart(secondFood, {
+      touches: [{ clientX: 300, clientY: 260 }]
+    });
+
+    assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), ['mine-1', 'mine-2']);
+    assert.equal(instance.data.cartFlyer.visible, false);
+
+    await new Promise(resolve => setTimeout(resolve, 40));
+    assert.equal(instance.data.cartFlyer.visible, true);
+    assert.match(instance.data.cartFlyer.outerStyle, /top:\s*248px/);
+    assert.match(instance.data.cartFlyer.outerStyle, /--fly-x:\s*-252px/);
   } finally {
     restoreWx();
   }
@@ -348,7 +411,8 @@ test('food picker clears the cart and cancels pending fly-to-cart additions', as
     instance.addFoodToSelectionCart(mineFood, {
       touches: [{ clientX: 0, clientY: 0 }]
     });
-    assert.deepEqual(instance.data.pendingFoodIds, ['mine-1']);
+    assert.deepEqual(instance.data.pendingFoodIds, []);
+    assert.deepEqual(instance.data.selectedFoodCart.map(item => item._id), ['mine-1']);
     assert.equal(instance.data.visibleFoodOptions[0].selectedInCart, true);
 
     instance.clearSelectionCart();
@@ -384,28 +448,16 @@ test('food picker builds separate recent lists for mine and system foods', async
     const instance = createPageInstance(page, {
       foodCatalog: [...systemFoods, ...myFoods]
     });
-    const records = [
-      {
-        intakes: [
-          ...systemFoods.map(food => ({ type: 'food', foodId: food._id })),
-          { type: 'food', foodId: 'mine-a' },
-          { type: 'food', foodId: 'mine-b' }
-        ]
-      }
+    const FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord');
+    const previousFindRecent = FoodIntakeRecordModel.findRecentFoodIntakes;
+    FoodIntakeRecordModel.findRecentFoodIntakes = async () => [
+      ...systemFoods.map(food => ({ foodId: food._id })),
+      { foodId: 'mine-a' },
+      { foodId: 'mine-b' }
     ];
-    global.wx.cloud.database = () => ({
-      collection: () => ({
-        where: () => ({
-          orderBy: () => ({
-            limit: () => ({
-              get: async () => ({ data: records })
-            })
-          })
-        })
-      })
-    });
 
     await instance.loadRecentFoodOptions();
+    FoodIntakeRecordModel.findRecentFoodIntakes = previousFindRecent;
 
     assert.deepEqual(instance.data.recentFoodOptionsByScope.system.map(item => item._id), systemFoods.slice(0, 10).map(item => item._id));
     assert.deepEqual(instance.data.recentFoodOptionsByScope.mine.map(item => item._id), ['mine-a', 'mine-b']);
@@ -552,7 +604,7 @@ test('existing meal foods are preselected and updated when continuing to add foo
       mealSummary: { calories: 24, protein: 0.6, carbs: 3.6, fat: 0.3, fiber: 0, sodium: 0 }
     });
 
-    meal.openFoodDrawer();
+    await meal.openFoodDrawer();
 
     assert.deepEqual(storage[FOOD_PICKER_SELECTION_KEY], {
       schemaVersion: 3,
@@ -649,7 +701,8 @@ test('food picker quantity drawer previews protein target without category subti
       weight: 5,
       targetPreferences: {
         naturalProteinCoefficient: 1,
-        specialProteinCoefficient: 0.5
+        specialProteinCoefficient: 0.5,
+        calorieCoefficient: 80
       }
     }
   };
@@ -667,6 +720,8 @@ test('food picker quantity drawer previews protein target without category subti
     assert.equal(picker.data.quantityDrafts[0].category, undefined);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].actual, 3);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].targetText, '5g');
+    assert.equal(picker.data.quantityTargetPreview.calorieNote.visible, true);
+    assert.match(picker.data.quantityTargetPreview.calorieNote.text, /热量|kcal|还差/);
 
     picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '50' } });
 
@@ -674,6 +729,38 @@ test('food picker quantity drawer previews protein target without category subti
     assert.equal(picker.data.quantityDrafts[0].nutritionPreview.protein, 5.95);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].actual, 9);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].status, 'over');
+    assert.match(picker.data.quantityTargetPreview.calorieNote.text, /本次 \+169 kcal/);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker quantity drawer scrolls to the first missing quantity on submit', () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    let toastTitle = '';
+    global.wx.showToast = options => {
+      toastTitle = options.title;
+    };
+    const pickerPage = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const picker = createPageInstance(pickerPage, {
+      selectedFoodCart: [systemFood, mineFood]
+    });
+
+    picker.confirmSelection();
+    picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '50' } });
+    picker.submitQuantityDrafts();
+
+    assert.equal(toastTitle, '请填写家庭米糊的有效份量');
+    assert.equal(picker.data.quantityDraftScrollIntoView, 'quantityDraftItem1');
+    assert.equal(picker.data.quantityDraftInvalidIndex, 1);
+    assert.equal(storage.__navigateBack, undefined);
+
+    picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 1 } }, detail: { value: '20' } });
+
+    assert.equal(picker.data.quantityDraftInvalidIndex, -1);
+    assert.equal(picker.data.quantityDraftScrollIntoView, '');
   } finally {
     restoreWx();
   }
@@ -734,9 +821,11 @@ test('legacy batch quantity drawer shows protein target at the top', () => {
         weight: 5,
         targetPreferences: {
           naturalProteinCoefficient: 1,
-          specialProteinCoefficient: 0.5
+          specialProteinCoefficient: 0.5,
+          calorieCoefficient: 80
         }
-      }
+      },
+      targetContextLoaded: true
     });
 
     meal.handleFoodPickerSelection();
@@ -744,18 +833,20 @@ test('legacy batch quantity drawer shows protein target at the top', () => {
     assert.equal(meal.data.drawerVisible, true);
     assert.equal(meal.data.batchTargetPreview.proteinRows[0].actual, 3);
     assert.equal(meal.data.batchTargetPreview.proteinRows[0].targetText, '5g');
+    assert.equal(meal.data.batchTargetPreview.calorieNote.visible, true);
 
     meal.onBatchQuantityInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '50' } });
 
     assert.equal(meal.data.batchFoodDrafts[0].nutritionPreview.protein, 5.95);
     assert.equal(meal.data.batchTargetPreview.proteinRows[0].actual, 9);
     assert.equal(meal.data.batchTargetPreview.proteinRows[0].status, 'over');
+    assert.match(meal.data.batchTargetPreview.calorieNote.text, /本次 \+169 kcal/);
   } finally {
     restoreWx();
   }
 });
 
-test('meal editor writes target context before opening food picker', () => {
+test('meal editor writes target context before opening food picker', async () => {
   const storage = {};
   const restoreWx = installWxMock(storage);
   try {
@@ -784,10 +875,11 @@ test('meal editor writes target context before opening food picker', () => {
           naturalProteinCoefficient: 1,
           specialProteinCoefficient: 0.5
         }
-      }
+      },
+      targetContextLoaded: true
     });
 
-    meal.openFoodDrawer();
+    await meal.openFoodDrawer();
 
     assert.equal(storage.__navigateTo, '/pkg-records/food-picker/index');
     assert.deepEqual(storage[FOOD_PICKER_TARGET_CONTEXT_KEY], {
@@ -801,6 +893,69 @@ test('meal editor writes target context before opening food picker', () => {
         specialProteinCoefficient: 0.5
       }
     });
+  } finally {
+    restoreWx();
+  }
+});
+
+test('meal editor loads target context from local preferences before opening food picker', async () => {
+  const storage = {
+    baby_info: {
+      babyUid: 'baby-1',
+      weight: 5.6
+    },
+    [targetCoefStorageKey('baby-1')]: {
+      naturalProteinCoefficient: '1.2',
+      specialProteinCoefficient: '0.5',
+      calorieCoefficient: '100'
+    }
+  };
+  const restoreWx = installWxMock(storage);
+  try {
+    const mealPage = loadPage('../miniprogram/pkg-records/meal-editor/index.js');
+    const meal = createPageInstance(mealPage, {
+      mealDraft: {
+        mealTime: '08:30',
+        mealLabel: '早餐',
+        mealNote: '',
+        items: []
+      }
+    });
+
+    await meal.loadTargetContext();
+    await meal.openFoodDrawer();
+
+    assert.equal(storage.__navigateTo, '/pkg-records/food-picker/index');
+    assert.equal(storage[FOOD_PICKER_TARGET_CONTEXT_KEY].weight, 5.6);
+    assert.deepEqual(storage[FOOD_PICKER_TARGET_CONTEXT_KEY].targetPreferences, {
+      naturalProteinCoefficient: '1.2',
+      specialProteinCoefficient: '0.5',
+      calorieCoefficient: '100'
+    });
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker caches window info instead of repeatedly reading it', () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    let calls = 0;
+    global.wx.getWindowInfo = () => {
+      calls += 1;
+      return { windowWidth: 375, windowHeight: 800 };
+    };
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const instance = createPageInstance(page);
+
+    instance.getFoodVirtualItemHeight();
+    instance.getVirtualWindowSize();
+    instance.playAddToCartAnimation({
+      touches: [{ clientX: 300, clientY: 260 }]
+    });
+
+    assert.equal(calls, 1);
   } finally {
     restoreWx();
   }
@@ -842,12 +997,45 @@ test('food picker selection storage keeps only compact id and quantity items', (
   }
 });
 
-test('food picker catalog cache failure does not break catalog loading', async () => {
+test('food picker catalog cache stores only slim render fields', () => {
   const storage = {};
   const restoreWx = installWxMock(storage);
   try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const instance = createPageInstance(page);
+    const cacheWritten = instance.cacheFoodCatalog([
+      {
+        ...systemFood,
+        aliases: Array.from({ length: 300 }, (_, index) => `alias-${index}`),
+        aliasText: '小麦 别名',
+        rawPayload: 'x'.repeat(300000),
+        excelOrigin: { rows: Array.from({ length: 100 }, (_, index) => ({ index, value: 'origin' })) }
+      },
+      mineFood
+    ]);
+
+    assert.equal(cacheWritten, true);
+    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog.length, 2);
+    assert.equal(JSON.stringify(storage[FOOD_PICKER_CATALOG_CACHE_KEY]).includes('rawPayload'), false);
+    assert.equal(JSON.stringify(storage[FOOD_PICKER_CATALOG_CACHE_KEY]).includes('excelOrigin'), false);
+    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].nutritionPerUnit.calories, 338);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker catalog cache failure does not break catalog loading', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  const previousWarn = console.warn;
+  const warnings = [];
+  try {
+    console.warn = (...args) => {
+      warnings.push(args.map(String).join(' '));
+      previousWarn(...args);
+    };
     global.wx.setStorageSync = (key, value) => {
-      if (key === 'meal_food_picker_catalog_cache') {
+      if (key === FOOD_PICKER_CATALOG_CACHE_KEY) {
         throw new Error('exceed storage item max length');
       }
       storage[key] = value;
@@ -865,8 +1053,10 @@ test('food picker catalog cache failure does not break catalog loading', async (
     await instance.loadFoodCatalog();
 
     assert.equal(instance.data.loading, false);
-    assert.equal(removedKey, 'meal_food_picker_catalog_cache');
+    assert.equal(removedKey, FOOD_PICKER_CATALOG_CACHE_KEY);
+    assert.equal(warnings.some(message => message.includes(FOOD_PICKER_CATALOG_CACHE_KEY)), false);
   } finally {
+    console.warn = previousWarn;
     restoreWx();
   }
 });
@@ -897,6 +1087,10 @@ test('meal editor navigates to full page food picker and food picker is register
     require.resolve('../miniprogram/pkg-records/food-picker/index.wxss'),
     'utf8'
   );
+  const targetPreviewWxml = fs.readFileSync(
+    require.resolve('../miniprogram/components/nutrition-target-preview/nutrition-target-preview.wxml'),
+    'utf8'
+  );
 
   assert.match(appJson, /"food-picker\/index"/);
   assert.doesNotMatch(mealWxml, /food-library-tabs/);
@@ -910,6 +1104,7 @@ test('meal editor navigates to full page food picker and food picker is register
   assert.doesNotMatch(mealWxml, /currentFoodDraft\.notes/);
   assert.match(mealWxml, /batchTargetPreview/);
   assert.match(mealWxml, /title="蛋白目标"/);
+  assert.doesNotMatch(mealWxml, /show-calorie="\{\{false\}\}"/);
   assert.match(mealJs, /refreshBatchTargetPreview/);
   assert.doesNotMatch(mealJs, /onBatchNotesInput/);
   assert.doesNotMatch(mealJs, /onDraftNotesInput/);
@@ -927,6 +1122,7 @@ test('meal editor navigates to full page food picker and food picker is register
     assert.match(pickerWxml, />加入本顿</);
     assert.match(pickerWxml, /nutrition-target-preview/);
     assert.match(pickerWxml, /title="蛋白目标"/);
+    assert.doesNotMatch(pickerWxml, /show-calorie="\{\{false\}\}"/);
     assert.doesNotMatch(pickerWxml, /quantity-draft-sub/);
     assert.match(pickerJs, /FOOD_PICKER_TARGET_CONTEXT_KEY/);
     assert.match(pickerJs, /refreshQuantityTargetPreview/);
@@ -954,8 +1150,12 @@ test('meal editor navigates to full page food picker and food picker is register
   assert.match(pickerJs, /playAddToCartAnimation/);
   assert.match(pickerJs, /clearSelectionCart/);
   assert.match(pickerJs, /cartFlyerToken/);
-  assert.match(pickerJs, /cartFlyer\.outerStyle/);
-  assert.match(pickerJs, /cartFlyer\.innerStyle/);
+  assert.match(pickerJs, /--fly-x/);
+  assert.match(pickerJs, /--fly-y/);
+  assert.match(pickerJs, /--fly-peak-y/);
+  assert.doesNotMatch(pickerJs, /--fly-peak-x/);
+  assert.match(pickerJs, /cartFlyerX/);
+  assert.match(pickerJs, /cartFlyerGravity/);
   assert.match(pickerJs, /pendingFoodIds/);
   assert.match(pickerJs, /writeFoodSelectionItems/);
   assert.match(pickerJs, /schemaVersion:\s*3/);
@@ -966,8 +1166,14 @@ test('meal editor navigates to full page food picker and food picker is register
   assert.match(mealJs, /addSelectedFoodItemsToMeal/);
   assert.doesNotMatch(pickerWxss, /transition-property:\s*left,\s*top/);
   assert.match(pickerWxss, /\.cart-flyer-dot/);
-  assert.match(pickerWxss, /transition:\s*transform 0\.52s linear/);
-  assert.match(pickerWxss, /cubic-bezier\(0\.18,\s*0\.86,\s*0\.42,\s*1\)/);
+  assert.match(pickerWxss, /@keyframes\s+cartFlyerX/);
+  assert.match(pickerWxss, /@keyframes\s+cartFlyerGravity/);
+  assert.match(pickerWxss, /var\(--fly-peak-y\)/);
+  assert.match(pickerWxss, /animation-timing-function:\s*ease-out/);
+  assert.match(pickerWxss, /animation-timing-function:\s*ease-in/);
+  assert.doesNotMatch(pickerWxss, /transition:\s*transform 0\.52s linear/);
+  assert.doesNotMatch(targetPreviewWxml, /\(preview\.hasProteinTarget \|\| preview\.calorieNote\.visible\)/);
+  assert.match(targetPreviewWxml, /wx:if="\{\{preview\}\}"/);
   assert.match(pickerWxss, /display:\s*flex;\s*[\s\S]*?justify-content:\s*center;/);
   assert.match(pickerWxss, /\.quantity-drawer\s*\{[\s\S]*?height:\s*82vh;/);
   assert.match(pickerWxss, /\.quantity-draft-list\s*\{[\s\S]*?height:\s*0;/);

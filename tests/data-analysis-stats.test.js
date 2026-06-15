@@ -725,14 +725,21 @@ test('data-analysis redraws initialized charts after chartData changes', () => {
   assert.deepEqual(drawnCharts[2].chart.options.padding, { top: 24, right: 30, bottom: 42, left: 38 });
 });
 
-test('data-analysis fetchFeedingRecords keeps paging past 100 records', async () => {
+test('data-analysis fetchFeedingRecords reads daily_summary_v2 with paging past 100 records', async () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
-  const allRecords = Array.from({ length: 120 }, (_, index) => ({
-    _id: `record_${index}`,
-    babyUid: 'baby_1',
-    date: new Date(`2026-03-${String((index % 30) + 1).padStart(2, '0')}T00:00:00+08:00`)
-  }));
+  const allRecords = Array.from({ length: 120 }, (_, index) => {
+    const date = new Date(2026, 0, index + 1);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return {
+      _id: `summary_${index}`,
+      babyUid: 'baby_1',
+      date: dateKey,
+      status: 'active',
+      basicInfo: { weight: 5 },
+      food: { calories: 10, protein: 1, naturalProtein: 1, specialProtein: 0, carbs: 1, fat: 1 }
+    };
+  });
 
   const wxMock = {
     getStorageSync() {
@@ -754,7 +761,7 @@ test('data-analysis fetchFeedingRecords keeps paging past 100 records', async ()
               return {};
             }
           },
-          collection() {
+          collection(name) {
             let skipValue = 0;
             let limitValue = 20;
             return {
@@ -770,6 +777,10 @@ test('data-analysis fetchFeedingRecords keeps paging past 100 records', async ()
                 return this;
               },
               get() {
+                assert.notEqual(name, 'feeding_records');
+                if (name === 'feeding_records_v2') {
+                  return Promise.resolve({ data: [] });
+                }
                 return Promise.resolve({
                   data: allRecords.slice(skipValue, skipValue + limitValue)
                 });
@@ -791,23 +802,20 @@ test('data-analysis fetchFeedingRecords keeps paging past 100 records', async ()
   );
 
   assert.equal(records.length, 120);
+  assert.equal(records[0].intakes[0].nutrition.calories, 10);
 });
 
-test('data-analysis fetchFeedingRecords includes legacy string date records', async () => {
+test('data-analysis fetchFeedingRecords includes daily summary string date records', async () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
-  const dateRecords = [
+  const summaryRecords = [
     {
-      _id: 'date_record',
+      _id: 'summary_record',
       babyUid: 'baby_1',
-      date: new Date('2026-03-20T00:00:00+08:00')
-    }
-  ];
-  const stringRecords = [
-    {
-      _id: 'string_record',
-      babyUid: 'baby_1',
-      date: '2026-03-21'
+      date: '2026-03-21',
+      status: 'active',
+      basicInfo: { weight: 5 },
+      food: { calories: 20, protein: 2, naturalProtein: 2, specialProtein: 0, carbs: 2, fat: 1 }
     }
   ];
 
@@ -836,12 +844,10 @@ test('data-analysis fetchFeedingRecords includes legacy string date records', as
             }
           },
           collection(name) {
-            let queryDate = null;
             let skipValue = 0;
             let limitValue = 20;
             return {
-              where(query) {
-                queryDate = query.date;
+              where() {
                 return this;
               },
               orderBy() {
@@ -856,15 +862,12 @@ test('data-analysis fetchFeedingRecords includes legacy string date records', as
                 return this;
               },
               get() {
-                // 奶统计 v2 数据源是独立集合，本用例只校验旧 feeding_records 的日期兼容合并
+                assert.notEqual(name, 'feeding_records');
                 if (name === 'feeding_records_v2') {
                   return Promise.resolve({ data: [] });
                 }
-                const source = typeof queryDate?.__gte === 'string'
-                  ? stringRecords
-                  : dateRecords;
                 return Promise.resolve({
-                  data: source.slice(skipValue, skipValue + limitValue)
+                  data: summaryRecords.slice(skipValue, skipValue + limitValue)
                 });
               }
             };
@@ -883,5 +886,6 @@ test('data-analysis fetchFeedingRecords includes legacy string date records', as
     ))
   );
 
-  assert.deepEqual(records.map(record => record._id), ['date_record', 'string_record']);
+  assert.deepEqual(records.map(record => record._id), ['summary_record']);
+  assert.equal(records[0].intakes[0].nutrition.calories, 20);
 });

@@ -47,10 +47,12 @@ function loadPlannerPage(options = {}) {
   const pagePath = require.resolve('../miniprogram/pkg-milk/milk-goal-planner-v2/index.js');
   const profilePath = require.resolve('../miniprogram/models/nutritionProfile.js');
   const modelPath = require.resolve('../miniprogram/models/feedingRecordV2.js');
+  const foodIntakeModelPath = require.resolve('../miniprogram/models/foodIntakeRecord.js');
   const utilsPath = require.resolve('../miniprogram/utils/index.js');
   delete require.cache[pagePath];
   delete require.cache[profilePath];
   delete require.cache[modelPath];
+  delete require.cache[foodIntakeModelPath];
   delete require.cache[utilsPath];
 
   const previousPage = global.Page;
@@ -131,12 +133,11 @@ function loadPlannerPage(options = {}) {
   ]);
 
   const dailySummaryModelPath = require.resolve('../miniprogram/models/dailySummaryV2.js');
-  const dailyServicePath = require.resolve('../miniprogram/utils/dailyRecordV2Service.js');
   const treatmentModelPath = require.resolve('../miniprogram/models/treatmentRecord.js');
   const profileModel = require(profilePath);
   const feedingRecordV2Model = require(modelPath);
+  const foodIntakeModel = require(foodIntakeModelPath);
   const dailySummaryModel = require(dailySummaryModelPath);
-  const dailyService = require(dailyServicePath);
   const treatmentModel = require(treatmentModelPath);
   const utilsModule = require(utilsPath);
   const previousGetNutritionProfileSettings = profileModel.getNutritionProfileSettings;
@@ -144,8 +145,8 @@ function loadPlannerPage(options = {}) {
   const previousGetRecentDayMealCount = feedingRecordV2Model.getRecentDayMealCount;
   const previousResolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot;
   const previousUpsertGrowthRecordForDate = feedingRecordV2Model.upsertGrowthRecordForDate;
+  const previousFindFoodByDate = foodIntakeModel.findByDate;
   const previousMarkDirty = dailySummaryModel.markDirty;
-  const previousLoadLegacyFood = dailyService.loadLegacyFoodIntakes;
   const previousFindTreatmentByDate = treatmentModel.findByDate;
   const previousGetBabyUid = utilsModule.getBabyUid;
   calls.summaryDirtyMarks = [];
@@ -167,7 +168,7 @@ function loadPlannerPage(options = {}) {
     calls.growthUpserts.push({ babyUid, date, growthData });
     return { recordId: 'growth-created' };
   });
-  dailyService.loadLegacyFoodIntakes = options.findFoodByDate || (async () => []);
+  foodIntakeModel.findByDate = options.findFoodByDate || (async () => []);
   treatmentModel.findByDate = options.findTreatmentByDate || (async () => ({ success: true, data: [] }));
   utilsModule.getBabyUid = options.getBabyUid || (() => 'baby-1');
 
@@ -182,8 +183,8 @@ function loadPlannerPage(options = {}) {
   feedingRecordV2Model.getRecentDayMealCount = previousGetRecentDayMealCount;
   feedingRecordV2Model.resolveBasicInfoSnapshot = previousResolveBasicInfoSnapshot;
   feedingRecordV2Model.upsertGrowthRecordForDate = previousUpsertGrowthRecordForDate;
+  foodIntakeModel.findByDate = previousFindFoodByDate;
   dailySummaryModel.markDirty = previousMarkDirty;
-  dailyService.loadLegacyFoodIntakes = previousLoadLegacyFood;
   treatmentModel.findByDate = previousFindTreatmentByDate;
   utilsModule.getBabyUid = previousGetBabyUid;
   global.Page = previousPage;
@@ -643,8 +644,8 @@ test('loadPageData folds food and treatment intake into the consumed basis', asy
   assert.equal(goal.consumed.calories, 55);
 });
 
-test('reads food copied into legacy feeding_records.intakes (copy-to-today scenario)', async () => {
-  // 模拟“从周日复制到周一”：食物落在旧 feeding_records.intakes，
+test('reads food copied into food_intake_records (copy-to-today scenario)', async () => {
+  // 模拟“从周日复制到周一”：食物落在 food_intake_records，
   // 计算页必须读到它，否则已摄入蛋白会是 0。
   let askedFood = null;
   const { pageConfig } = loadPlannerPage({

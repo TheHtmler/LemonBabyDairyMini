@@ -543,6 +543,7 @@ test('getSystemFoodIndex cloud function returns a slim index payload', () => {
   assert.match(source, /nextStart/);
   assert.match(source, /hasMore/);
   assert.match(source, /sourceType:\s*'system'/);
+  assert.match(source, /\.orderBy\('sourceFoodCode',\s*'asc'\)/);
   assert.doesNotMatch(source, /where\(\{\s*sourceType:\s*'system',\s*status:\s*'active'\s*\}\)/);
   assert.match(source, /nutritionPerBasis/);
   assert.match(source, /searchText/);

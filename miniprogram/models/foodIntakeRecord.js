@@ -171,6 +171,19 @@ function normalizeFoodIntakeUpdate(data = {}) {
   return updateData;
 }
 
+function normalizeSortOrder(value, index = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : index;
+}
+
+function recordUpdatedTimestamp(record = {}) {
+  return record.updatedAt || record.recordedAt || record.createdAt || record.time || '';
+}
+
+function recentFoodKey(record = {}) {
+  return record.foodId || record.foodSnapshot?.sourceFoodCode || record.foodName || record.foodSnapshot?.name || '';
+}
+
 async function createFoodIntake(data = {}) {
   const timestamp = serverDate();
   const operatorOpenid = resolveOperatorOpenid(data);
@@ -215,6 +228,146 @@ async function deleteFoodIntake(recordId, options = {}) {
   return true;
 }
 
+async function softDeleteFoodIntake(recordId, options = {}) {
+  const timestamp = serverDate();
+  const operatorOpenid = resolveOperatorOpenid(options);
+  await foodIntakeCollection.doc(recordId).update({
+    data: {
+      status: 'deleted',
+      deletedAt: timestamp,
+      ...(operatorOpenid ? { deletedBy: operatorOpenid } : {}),
+      ...buildUpdateAuditFields({
+        timestamp,
+        operatorOpenid
+      })
+    }
+  });
+  return true;
+}
+
+async function findByMealBatch(babyUid, date, mealBatchId) {
+  const res = await foodIntakeCollection
+    .where({
+      babyUid,
+      date,
+      mealBatchId,
+      status: 'active'
+    })
+    .orderBy('sortOrder', 'asc')
+    .get();
+
+  return (res.data || [])
+    .filter((record) => record.status === 'active')
+    .sort((left, right) => {
+      const sortDiff = normalizeSortOrder(left.sortOrder) - normalizeSortOrder(right.sortOrder);
+      if (sortDiff !== 0) return sortDiff;
+      return String(left.recordedAt || '').localeCompare(String(right.recordedAt || ''));
+    })
+    .map((record) => normalizeFoodIntakeRecord(record));
+}
+
+async function deleteMealBatch(babyUid, date, mealBatchId, options = {}) {
+  const records = await findByMealBatch(babyUid, date, mealBatchId);
+  await Promise.all(records.map(record => softDeleteFoodIntake(record._id, {
+    ...options,
+    babyUid
+  })));
+  return {
+    deletedCount: records.length,
+    deletedIds: records.map(record => record._id).filter(Boolean)
+  };
+}
+
+async function createFoodIntakes(records = [], defaults = {}) {
+  const createdIds = [];
+  for (const [index, record] of (records || []).entries()) {
+    const payload = {
+      ...defaults,
+      ...record,
+      sortOrder: normalizeSortOrder(record.sortOrder, index)
+    };
+    const result = await createFoodIntake(payload);
+    createdIds.push(result._id);
+  }
+  return createdIds;
+}
+
+async function replaceMealBatch(options = {}) {
+  const {
+    babyUid = '',
+    date = '',
+    mealBatchId = '',
+    records = [],
+    operatorOpenid = ''
+  } = options;
+  const deleteResult = await deleteMealBatch(babyUid, date, mealBatchId, {
+    babyUid,
+    operatorOpenid
+  });
+  const createdIds = await createFoodIntakes(records, {
+    babyUid,
+    date,
+    mealBatchId,
+    operatorOpenid,
+    source: options.source || 'meal_editor_v2'
+  });
+
+  return {
+    deletedCount: deleteResult.deletedCount,
+    deletedIds: deleteResult.deletedIds,
+    createdIds
+  };
+}
+
+async function findMigratedLegacyIntake(options = {}) {
+  const {
+    babyUid = '',
+    recordId = '',
+    intakeId = '',
+    migrationVersion = '',
+    collection = 'feeding_records'
+  } = options;
+  const res = await foodIntakeCollection
+    .where({
+      babyUid,
+      status: 'active',
+      source: 'legacy_migration',
+      migrationVersion,
+      'legacySource.collection': collection,
+      'legacySource.recordId': recordId,
+      'legacySource.intakeId': intakeId
+    })
+    .limit(1)
+    .get();
+  const record = (res.data || [])[0];
+  return record ? normalizeFoodIntakeRecord(record) : null;
+}
+
+async function findRecentFoodIntakes(babyUid, options = {}) {
+  const fetchLimit = Number(options.fetchLimit) || Math.max(Number(options.limit) || 20, 20);
+  const outputLimit = Number(options.limit) || 20;
+  const res = await foodIntakeCollection
+    .where({
+      babyUid,
+      status: 'active'
+    })
+    .orderBy('recordedAt', 'desc')
+    .limit(fetchLimit)
+    .get();
+  const seen = new Set();
+  const recent = [];
+  (res.data || [])
+    .filter((record) => record.status === 'active')
+    .sort((left, right) => String(recordUpdatedTimestamp(right)).localeCompare(String(recordUpdatedTimestamp(left))))
+    .forEach((record) => {
+      const key = recentFoodKey(record);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      recent.push(normalizeFoodIntakeRecord(record));
+    });
+  return recent.slice(0, outputLimit);
+}
+
 async function findByDate(babyUid, date) {
   const res = await foodIntakeCollection
     .where({
@@ -232,8 +385,15 @@ async function findByDate(babyUid, date) {
 
 module.exports = {
   createFoodIntake,
+  createFoodIntakes,
   updateFoodIntake,
   deleteFoodIntake,
+  softDeleteFoodIntake,
+  deleteMealBatch,
+  replaceMealBatch,
+  findByMealBatch,
+  findMigratedLegacyIntake,
+  findRecentFoodIntakes,
   findByDate,
   normalizeFoodIntakeRecord
 };

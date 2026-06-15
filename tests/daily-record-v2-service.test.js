@@ -160,14 +160,7 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
   };
   const { db, calls } = createDbMock({
     dailySummaryData: [cleanSummary],
-    legacyFeedingRecords: [
-      {
-        _id: 'legacy-day-1',
-        babyUid: 'baby-1',
-        date: '2026-05-25',
-        intakes: [{ _id: 'food-1', type: 'food', nutrition: { calories: 40 } }]
-      }
-    ],
+    foodIntakeData: [{ _id: 'food-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', nutrition: { calories: 40 } }],
     growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }],
     bowelRecords: [{ _id: 'bowel-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }]
   });
@@ -179,7 +172,7 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
   };
   models.FoodIntakeRecordModel.findByDate = async (babyUid, date) => {
     modelCalls.push(['food', babyUid, date]);
-    throw new Error('food_intake_records should not be read before food v2 launch');
+    return [{ _id: 'food-1', nutrition: { calories: 40 } }];
   };
   models.MedicationRecordModel.findByDate = async (date, babyUid) => {
     modelCalls.push(['medication', babyUid, date]);
@@ -196,15 +189,15 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
     assert.equal(dailyRecord.summary._id, 'summary-1');
     assert.deepEqual(dailyRecord.basicInfo, { weight: '6.2' });
     assert.deepEqual(dailyRecord.milkRecords, [{ _id: 'milk-1' }]);
-    assert.deepEqual(dailyRecord.foodIntakeRecords, [{ _id: 'food-1', type: 'food', nutrition: { calories: 40 }, legacyRecordId: 'legacy-day-1', date: '2026-05-25' }]);
-    assert.equal(dailyRecord.usesLegacyFoodIntakes, true);
+    assert.deepEqual(dailyRecord.foodIntakeRecords, [{ _id: 'food-1', nutrition: { calories: 40 } }]);
+    assert.equal(dailyRecord.usesLegacyFoodIntakes, false);
     assert.deepEqual(dailyRecord.medicationRecords, [{ _id: 'medication-1' }]);
     assert.deepEqual(dailyRecord.treatmentRecords, [{ _id: 'treatment-1' }]);
     assert.deepEqual(dailyRecord.bowelRecords, [{ _id: 'bowel-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }]);
-    assert.deepEqual(modelCalls.map(([name]) => name), ['milk', 'medication', 'treatment']);
+    assert.deepEqual(modelCalls.map(([name]) => name), ['milk', 'food', 'medication', 'treatment']);
     assert.equal(calls.addCollection, '');
     assert.equal(calls.updateCollection, '');
-    assert.equal(calls.collectionReads.includes('feeding_records'), true);
+    assert.equal(calls.collectionReads.includes('feeding_records'), false);
   } finally {
     restore();
   }
@@ -309,24 +302,19 @@ test('getDailyRecordV2 rebuilds and upserts summary when cache is missing or dir
   const { db, calls } = createDbMock({
     dailySummaryData: [{ _id: 'summary-dirty', babyUid: 'baby-1', date: '2026-05-25', status: 'active', isDirty: true }],
     growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', weight: '6.3' }],
-    legacyFeedingRecords: [
+    foodIntakeData: [
       {
-        _id: 'legacy-day-1',
+        _id: 'food-1',
         babyUid: 'baby-1',
         date: '2026-05-25',
-        intakes: [
-          {
-            _id: 'food-1',
-            type: 'food',
-            nutrition: {
-              calories: 20,
-              protein: 1,
-              naturalProtein: 1,
-              carbs: 4,
-              fat: 0.5
-            }
-          }
-        ]
+        status: 'active',
+        nutrition: {
+          calories: 20,
+          protein: 1,
+          naturalProtein: 1,
+          carbs: 4,
+          fat: 0.5
+        }
       }
     ],
     bowelRecords: [{ _id: 'bowel-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', type: 'normal' }]
@@ -343,9 +331,10 @@ test('getDailyRecordV2 rebuilds and upserts summary when cache is missing or dir
       }
     }
   ];
-  models.FoodIntakeRecordModel.findByDate = async () => {
-    throw new Error('food_intake_records should not be read before food v2 launch');
-  };
+  models.FoodIntakeRecordModel.findByDate = async () => db.collection('food_intake_records')
+    .where({ babyUid: 'baby-1', date: '2026-05-25', status: 'active' })
+    .get()
+    .then(res => res.data || []);
   models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
   models.TreatmentRecordModel.findByDate = async () => ({
     success: true,
@@ -378,114 +367,105 @@ test('getDailyRecordV2 rebuilds and upserts summary when cache is missing or dir
     assert.equal(calls.updateCollection, 'daily_summary_v2');
     assert.equal(calls.updateDocId, 'summary-dirty');
     assert.equal(calls.updateData.isDirty, false);
-    assert.equal(calls.collectionReads.includes('feeding_records'), true);
+    assert.equal(calls.collectionReads.includes('feeding_records'), false);
   } finally {
     restore();
   }
 });
 
-test('dirty daily_summary_v2 rebuild uses actual legacy food nutrition and ignores food v2 collection', async () => {
+test('dirty daily_summary_v2 rebuild uses actual food_intake_records nutrition and ignores legacy food intakes', async () => {
   const { db, calls } = createDbMock({
     dailySummaryData: [{ _id: 'summary-dirty', babyUid: 'baby-1', date: '2026-05-25', status: 'active', isDirty: true }],
-    legacyFeedingRecords: [
+    foodIntakeData: [
       {
-        _id: 'legacy-day-1',
+        _id: 'food-half-1',
         babyUid: 'baby-1',
         date: '2026-05-25',
-        intakes: [
-          {
-            _id: 'food-half-1',
-            type: 'food',
-            status: 'active',
-            recordedAt: new Date('2026-05-25T08:30:00.000Z'),
-            nameSnapshot: '米粉',
-            quantity: 10,
-            plannedQuantity: 20,
-            unit: 'g',
-            nutrition: {
-              calories: 50,
-              protein: 2,
-              naturalProtein: 1.5,
-              specialProtein: 0.5,
-              carbs: 7.25,
-              fat: 0.75,
-              fiber: 1.125
-            },
-            plannedNutrition: {
-              calories: 100,
-              protein: 4,
-              naturalProtein: 3,
-              specialProtein: 1,
-              carbs: 14.5,
-              fat: 1.5,
-              fiber: 2.25
-            },
-            completionPercent: 50,
-            mealCombinationSource: {
-              combinationId: 'combo-breakfast',
-              combinationName: '早餐组合'
-            }
-          },
-          {
-            _id: 'food-half-2',
-            type: 'food',
-            status: 'active',
-            recordedAt: new Date('2026-05-25T08:35:00.000Z'),
-            nameSnapshot: '苹果泥',
-            quantity: 5.1175,
-            plannedQuantity: 10.235,
-            unit: 'g',
-            nutrition: {
-              calories: 10.235,
-              protein: 0.333,
-              naturalProtein: 0.123,
-              specialProtein: 0.21,
-              carbs: 1.234,
-              fat: 0.456,
-              fiber: 0.789
-            },
-            plannedNutrition: {
-              calories: 20.47,
-              protein: 0.666,
-              naturalProtein: 0.246,
-              specialProtein: 0.42,
-              carbs: 2.468,
-              fat: 0.912,
-              fiber: 1.578
-            },
-            completionPercent: 50,
-            mealCombinationSource: {
-              combinationId: 'combo-breakfast',
-              combinationName: '早餐组合'
-            }
-          },
-          {
-            _id: 'food-archived',
-            type: 'food',
-            status: 'archived',
-            recordedAt: new Date('2026-05-25T08:40:00.000Z'),
-            nameSnapshot: '应被状态过滤',
-            nutrition: { calories: 999 },
-            plannedNutrition: { calories: 1998 },
-            completionPercent: 50
-          }
-        ]
+        status: 'active',
+        recordedAt: new Date('2026-05-25T08:30:00.000Z'),
+        foodName: '米粉',
+        quantity: 10,
+        plannedQuantity: 20,
+        unit: 'g',
+        nutrition: {
+          calories: 50,
+          protein: 2,
+          naturalProtein: 1.5,
+          specialProtein: 0.5,
+          carbs: 7.25,
+          fat: 0.75,
+          fiber: 1.125
+        },
+        plannedNutrition: {
+          calories: 100,
+          protein: 4,
+          naturalProtein: 3,
+          specialProtein: 1,
+          carbs: 14.5,
+          fat: 1.5,
+          fiber: 2.25
+        },
+        completionPercent: 50,
+        mealCombinationSource: {
+          combinationId: 'combo-breakfast',
+          combinationName: '早餐组合'
+        }
       },
       {
-        _id: 'legacy-other-date',
+        _id: 'food-half-2',
+        babyUid: 'baby-1',
+        date: '2026-05-25',
+        status: 'active',
+        recordedAt: new Date('2026-05-25T08:35:00.000Z'),
+        foodName: '苹果泥',
+        quantity: 5.1175,
+        plannedQuantity: 10.235,
+        unit: 'g',
+        nutrition: {
+          calories: 10.235,
+          protein: 0.333,
+          naturalProtein: 0.123,
+          specialProtein: 0.21,
+          carbs: 1.234,
+          fat: 0.456,
+          fiber: 0.789
+        },
+        plannedNutrition: {
+          calories: 20.47,
+          protein: 0.666,
+          naturalProtein: 0.246,
+          specialProtein: 0.42,
+          carbs: 2.468,
+          fat: 0.912,
+          fiber: 1.578
+        },
+        completionPercent: 50,
+        mealCombinationSource: {
+          combinationId: 'combo-breakfast',
+          combinationName: '早餐组合'
+        }
+      },
+      {
+        _id: 'food-archived',
+        babyUid: 'baby-1',
+        date: '2026-05-25',
+        status: 'archived',
+        recordedAt: new Date('2026-05-25T08:40:00.000Z'),
+        foodName: '应被状态过滤',
+        nutrition: { calories: 999 },
+        plannedNutrition: { calories: 1998 },
+        completionPercent: 50
+      },
+      {
+        _id: 'food-other-date',
         babyUid: 'baby-1',
         date: '2026-05-24',
-        intakes: [
-          {
-            _id: 'food-other-date',
-            type: 'food',
-            recordedAt: new Date('2026-05-24T08:30:00.000Z'),
-            nameSnapshot: '应被日期过滤',
-            nutrition: { calories: 999 },
-            plannedNutrition: { calories: 1998 },
-            completionPercent: 50
-          }
-        ]
+        status: 'active',
+        recordedAt: new Date('2026-05-24T08:30:00.000Z'),
+        foodName: '应被日期过滤',
+        nutrition: { calories: 999 },
+        plannedNutrition: { calories: 1998 },
+        completionPercent: 50
       }
     ]
   });
@@ -515,8 +495,8 @@ test('dirty daily_summary_v2 rebuild uses actual legacy food nutrition and ignor
       fat: 1.21
     });
     assert.equal(dailyRecord.summary.recordCounts.food, 2);
-    assert.equal(calls.whereCalls.some((call) => call.collectionName === 'food_intake_records'), false);
-    assert.equal(calls.whereCalls.some((call) => call.collectionName === 'feeding_records'), true);
+    assert.equal(calls.whereCalls.some((call) => call.collectionName === 'food_intake_records'), true);
+    assert.equal(calls.whereCalls.some((call) => call.collectionName === 'feeding_records'), false);
     assert.equal(calls.updateCollection, 'daily_summary_v2');
     assert.deepEqual(calls.updateData.food, dailyRecord.summary.food);
   } finally {
@@ -565,25 +545,20 @@ test('getDailyRecordV2 refreshes clean cache when legacy food changes the daily 
   };
   const { db, calls } = createDbMock({
     dailySummaryData: [cachedMilkOnlySummary],
-    legacyFeedingRecords: [
+    foodIntakeData: [
       {
-        _id: 'legacy-day-1',
+        _id: 'v2-food-1',
         babyUid: 'baby-1',
         date: '2026-05-25',
-        intakes: [
-          {
-            _id: 'legacy-food-1',
-            type: 'food',
-            nutrition: {
-              calories: 20,
-              protein: 1,
-              naturalProtein: 1,
-              specialProtein: 0,
-              carbs: 4,
-              fat: 0.5
-            }
-          }
-        ]
+        status: 'active',
+        nutrition: {
+          calories: 20,
+          protein: 1,
+          naturalProtein: 1,
+          specialProtein: 0,
+          carbs: 4,
+          fat: 0.5
+        }
       }
     ],
     growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', weight: '6.2', height: '61' }]
@@ -601,9 +576,10 @@ test('getDailyRecordV2 refreshes clean cache when legacy food changes the daily 
       }
     }
   ];
-  models.FoodIntakeRecordModel.findByDate = async () => {
-    throw new Error('food_intake_records should not be read before food v2 launch');
-  };
+  models.FoodIntakeRecordModel.findByDate = async () => db.collection('food_intake_records')
+    .where({ babyUid: 'baby-1', date: '2026-05-25', status: 'active' })
+    .get()
+    .then(res => res.data || []);
   models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
   models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
 

@@ -1,8 +1,8 @@
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
+const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const TreatmentRecordModel = require('../../models/treatmentRecord');
-const dailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { mergeFoodNutrition, mergeTreatmentNutrition } = require('../../utils/dailySummaryV2Utils');
 const { getBabyUid } = require('../../utils/index');
 const {
@@ -27,9 +27,7 @@ const getRecentDayMealCount = FeedingRecordV2Model.getRecentDayMealCount.bind(Fe
 const resolveBasicInfoSnapshot = FeedingRecordV2Model.resolveBasicInfoSnapshot.bind(FeedingRecordV2Model);
 const upsertGrowthRecordForDate = FeedingRecordV2Model.upsertGrowthRecordForDate.bind(FeedingRecordV2Model);
 const markDailySummaryDirty = DailySummaryV2Model.markDirty.bind(DailySummaryV2Model);
-// 食物现统一存于旧版 feeding_records.intakes（“复制到某天”也写在这里），
-// 与数据记录页同源；不要读 V2 food_intake_records，否则复制来的食物算不进来。
-const getFoodIntakesByDate = dailyRecordV2Service.loadLegacyFoodIntakes.bind(dailyRecordV2Service);
+const getFoodIntakesByDate = FoodIntakeRecordModel.findByDate.bind(FoodIntakeRecordModel);
 const getTreatmentsByDate = TreatmentRecordModel.findByDate.bind(TreatmentRecordModel);
 const wxApi = wx;
 const getCurrentPagesApi = typeof getCurrentPages === 'function' ? getCurrentPages : () => [];

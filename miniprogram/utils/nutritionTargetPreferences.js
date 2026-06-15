@@ -23,6 +23,15 @@ function normalizeTargetPreferences(preferences = {}) {
   };
 }
 
+function hasTargetCoefficient(preferences = {}) {
+  if (!preferences || typeof preferences !== 'object') return false;
+  return [
+    preferences.naturalProteinCoefficient,
+    preferences.specialProteinCoefficient,
+    preferences.calorieCoefficient
+  ].some(value => value !== undefined && value !== null && value !== '');
+}
+
 function readNutritionTargetPreferences(babyUid, wxOverride = null) {
   const wxApi = wxOverride || getWxApi();
   if (!wxApi || typeof wxApi.getStorageSync !== 'function') return {};
@@ -82,7 +91,7 @@ async function writeCloudNutritionTargetPreferences(babyUid, preferences = {}, w
 async function getNutritionTargetPreferences(babyUid, wxOverride = null) {
   const wxApi = wxOverride || getWxApi();
   const cloudPreferences = await readCloudNutritionTargetPreferences(babyUid, wxApi);
-  if (cloudPreferences && Object.keys(cloudPreferences).length > 0) {
+  if (hasTargetCoefficient(cloudPreferences)) {
     writeNutritionTargetPreferences(babyUid, cloudPreferences, wxApi);
     return cloudPreferences;
   }
@@ -112,6 +121,7 @@ module.exports = {
   targetCoefStorageKey,
   normalizeTargetMode,
   normalizeTargetPreferences,
+  hasTargetCoefficient,
   readNutritionTargetPreferences,
   writeNutritionTargetPreferences,
   readCloudNutritionTargetPreferences,
