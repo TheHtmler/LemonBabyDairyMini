@@ -1,0 +1,61 @@
+<view class="target-modal-mask {{visible ? 'show' : ''}}" bindtap="handleClose" catchtouchmove="stopBubble">
+  <view class="target-modal-sheet {{visible ? 'show' : ''}}" catchtap="stopBubble">
+    <view class="sheet-header">
+      <view>
+        <text class="sheet-title">{{title}}</text>
+        <text class="sheet-subtitle">用于首页目标进度和记录时的目标提醒</text>
+      </view>
+      <view class="sheet-close" bindtap="handleClose">关闭</view>
+    </view>
+
+    <view class="mode-tabs">
+      <view class="mode-tab {{activeMode === 'protein' ? 'active' : ''}}" data-mode="protein" bindtap="handleModeTap">蛋白目标</view>
+      <view class="mode-tab {{activeMode === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="handleModeTap">热量目标</view>
+    </view>
+
+    <view class="sheet-body">
+      <view class="loading" wx:if="{{loading}}">正在读取目标...</view>
+      <block wx:else>
+        <view class="target-section" wx:if="{{activeMode === 'protein'}}">
+          <view class="section-head">
+            <text class="section-title">蛋白目标</text>
+            <text class="section-desc">两个系数都填写后，会展示天然/特殊蛋白完成度</text>
+          </view>
+          <view class="field-row">
+            <view class="field-main">
+              <text class="field-label">天然蛋白系数</text>
+              <input class="field-input" type="digit" value="{{form.naturalProteinCoefficient}}" placeholder="例如 1.2" placeholder-class="input-placeholder" data-field="naturalProteinCoefficient" bindinput="handleInput" />
+            </view>
+            <text class="field-unit">g/kg</text>
+          </view>
+          <view class="field-row">
+            <view class="field-main">
+              <text class="field-label">特殊蛋白系数</text>
+              <input class="field-input" type="digit" value="{{form.specialProteinCoefficient}}" placeholder="例如 0.5" placeholder-class="input-placeholder" data-field="specialProteinCoefficient" bindinput="handleInput" />
+            </view>
+            <text class="field-unit">g/kg</text>
+          </view>
+        </view>
+
+        <view class="target-section" wx:if="{{activeMode === 'calorie'}}">
+          <view class="section-head">
+            <text class="section-title">热量目标</text>
+            <text class="section-desc">填写后，会在首页和记录预览中提示热量目标</text>
+          </view>
+          <view class="field-row">
+            <view class="field-main">
+              <text class="field-label">热量目标系数</text>
+              <input class="field-input" type="digit" value="{{form.calorieCoefficient}}" placeholder="例如 100" placeholder-class="input-placeholder" data-field="calorieCoefficient" bindinput="handleInput" />
+            </view>
+            <text class="field-unit">kcal/kg</text>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="sheet-footer">
+      <button class="btn-cancel" bindtap="handleClose">取消</button>
+      <button class="btn-confirm" loading="{{saving}}" disabled="{{loading || saving}}" bindtap="handleSave">保存目标</button>
+    </view>
+  </view>
+</view>

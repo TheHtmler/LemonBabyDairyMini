@@ -25,6 +25,7 @@ const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
 const app = getApp();
 
 const TREND_DAYS = 7;
+const HOME_BOOT_MIN_DURATION = 800;
 
 // 近7天趋势可切换的指标（数据均来自 daily_summary_v2）
 // 蛋白拆成 总/天然/特殊 三个独立单柱 tab，保证每天数值都标得清楚；
@@ -196,6 +197,8 @@ Page({
       activeGoal: null,
       rows: []
     },
+    targetSettingsModalVisible: false,
+    targetSettingsMode: 'protein',
 
     // 喂养
     feedingProgress: { count: 0, plannedMeals: dashboard.DEFAULT_PLANNED_MEALS, totalVolume: 0, remaining: dashboard.DEFAULT_PLANNED_MEALS, lastMealTime: '', dots: [] },
@@ -233,13 +236,23 @@ Page({
     releaseNoticeText: '看板已升级：聚焦今日营养达成、喂养进度与用药打卡，明细请到「数据记录」查看。',
 
     // 入场动画开关（每次 onShow 重置以重播）
-    animReady: false
+    animReady: false,
+    // 首页首屏用页面内主题 loading，避免从角色页跳入后再弹系统 loading。
+    isHomeBooting: true,
+    homeLoadingText: '宝宝记录准备中...',
+    homeDataReady: false,
+    trendLoading: false
   },
 
   onLoad() {
     this.rangeSummaries = [];
     this._ready = false;
-    this.setData({ todayDate: todayKey() });
+    this._skipHomeBoot = this.consumeSkipHomeBootFlag();
+    this.setData({
+      todayDate: todayKey(),
+      isHomeBooting: this._skipHomeBoot ? false : true,
+      homeDataReady: false
+    });
     this.initializePage();
   },
 
@@ -252,7 +265,8 @@ Page({
     // 每次进入/返回首页都重播入场动画（CSS 动画需先卸下再挂上才会重新执行）
     this.replayEntrance();
     if (this._ready) {
-      await this.loadDashboard({ silent: true });
+      await this.loadDashboard({ silent: true, rebuildTrend: false });
+      this.loadDeferredDashboardParts();
     }
   },
 
@@ -295,15 +309,18 @@ Page({
   },
 
   async initializePage() {
+    const bootStartedAt = Date.now();
+    const skipHomeBoot = this._skipHomeBoot === true;
     try {
-      wx.showLoading({ title: '正在初始化...', mask: true });
-      await waitForAppInitialization((progress, text) => {
-        wx.showLoading({ title: text || '正在初始化...', mask: true });
+      this.setData({
+        isHomeBooting: skipHomeBoot ? false : true,
+        homeLoadingText: '宝宝记录准备中...'
       });
+      await waitForAppInitialization();
 
       const hasPermission = await checkUserPermission();
       if (!hasPermission) {
-        wx.hideLoading();
+        this.setData({ isHomeBooting: false });
         wx.showModal({
           title: '权限不足',
           content: '您没有权限访问此页面，请重新登录',
@@ -313,15 +330,33 @@ Page({
         return;
       }
 
-      this.setData({ app });
+      this.setData({ app, homeLoadingText: '宝宝记录准备中...' });
       await this.initBabyInfoCache();
-      await this.loadDashboard({ silent: true });
+      await this.loadDashboard({ silent: true, rebuildTrend: false });
       this._ready = true;
-      wx.hideLoading();
+      await this.finishHomeBoot(bootStartedAt, { skipMinDuration: skipHomeBoot });
+      this.loadDeferredDashboardParts();
     } catch (error) {
-      wx.hideLoading();
+      await this.finishHomeBoot(bootStartedAt, { skipMinDuration: skipHomeBoot });
       handleError(error, { title: '页面初始化失败' });
     }
+  },
+
+  consumeSkipHomeBootFlag() {
+    const shouldSkip = app.globalData && app.globalData.skipHomeBootOnce === true;
+    if (app.globalData) {
+      app.globalData.skipHomeBootOnce = false;
+    }
+    return shouldSkip;
+  },
+
+  async finishHomeBoot(bootStartedAt, options = {}) {
+    const { skipMinDuration = false } = options;
+    const elapsed = Date.now() - bootStartedAt;
+    if (!skipMinDuration && elapsed < HOME_BOOT_MIN_DURATION) {
+      await new Promise(resolve => setTimeout(resolve, HOME_BOOT_MIN_DURATION - elapsed));
+    }
+    this.setData({ isHomeBooting: false, homeLoadingText: '' });
   },
 
   // === 宝宝信息 ===
@@ -352,7 +387,7 @@ Page({
 
   // === 核心：加载看板数据 ===
   async loadDashboard(options = {}) {
-    const silent = options.silent;
+    const { silent, rebuildTrend = true } = options;
     try {
       if (!silent) wx.showLoading({ title: '加载中...' });
 
@@ -365,15 +400,17 @@ Page({
       const today = todayKey();
       // 趋势窗口不含今天（T-1~T-7），故往前多取一天到 T-7。
       const startKey = shiftDateKey(today, -TREND_DAYS);
+      const rangeSummariesPromise = rebuildTrend
+        ? DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, today, {
+          rebuildMissing: true,
+          skipDates: [today]
+        })
+        : Promise.resolve(this.rangeSummaries || []);
 
       const [daily, rangeSummaries, meds, plannedMeals, recentDay] = await Promise.all([
         DailyRecordV2Service.getDailyRecordV2(babyUid, today),
-        // 趋势补齐 T-7~T-1 缺失/过期的汇总，与「数据记录」页同源；
-        // 今天交给上面的 getDailyRecordV2 处理，这里跳过以免并发重复重建。
-        DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, today, {
-          rebuildMissing: true,
-          skipDates: [today]
-        }),
+        // 首屏不发趋势请求；完整补齐放到 loadDeferredDashboardParts，避免拖慢首页首屏。
+        rangeSummariesPromise,
         MedicationModel.getMedications(),
         FeedingRecordV2Model.getRecentDayMealCount(babyUid, today),
         // 下一顿参考：取上次（最近历史日）那天的全部喂奶记录，按今日已喂顿数对应同序号那一顿
@@ -388,6 +425,40 @@ Page({
       if (!silent) wx.hideLoading();
       handleError(error, { title: '加载数据失败' });
     }
+  },
+
+  async loadDeferredDashboardParts(today = todayKey()) {
+    if (this._trendRefreshPromise) return this._trendRefreshPromise;
+
+    const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
+    if (!babyUid) return Promise.resolve();
+
+    const startKey = shiftDateKey(today, -TREND_DAYS);
+    this.setData({ trendLoading: true });
+
+    this._trendRefreshPromise = DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, today, {
+      rebuildMissing: true,
+      skipDates: [today]
+    })
+      .then((rangeSummaries) => {
+        this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
+        const trend = this.computeTrend(this.data.trendMetric, today);
+        this.setData({
+          weeklyTrend: trend.weeklyTrend,
+          trendStats: trend.trendStats,
+          trendLoading: false
+        });
+        this.rebuildMedChecklist();
+      })
+      .catch((error) => {
+        console.warn('延后补齐首页趋势失败:', error);
+        this.setData({ trendLoading: false });
+      })
+      .finally(() => {
+        this._trendRefreshPromise = null;
+      });
+
+    return this._trendRefreshPromise;
   },
 
   async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, today }) {
@@ -462,7 +533,8 @@ Page({
       timeline,
       hasTimeline: timelineAll.length > 0,
       weeklyTrend: trend.weeklyTrend,
-      trendStats: trend.trendStats
+      trendStats: trend.trendStats,
+      homeDataReady: true
     });
   },
 
@@ -1050,7 +1122,19 @@ Page({
     const mode = requested === 'calorie' || requested === 'protein'
       ? requested
       : (currentMode === 'calorie' || currentMode === 'protein' ? currentMode : 'protein');
-    this.navigateToMilkGoalPlanner({ currentTarget: { dataset: { mode } } });
+    this.setData({
+      targetSettingsModalVisible: true,
+      targetSettingsMode: mode
+    });
+  },
+
+  closeNutritionTargetSettings() {
+    this.setData({ targetSettingsModalVisible: false });
+  },
+
+  handleNutritionTargetsSaved(e = {}) {
+    const preferences = e.detail?.preferences || readNutritionTargetPreferences(getBabyUid());
+    this.rebuildNutritionTargetWithPreferences(preferences);
   },
 
   navigateToMilkGoalPlanner(e = {}) {

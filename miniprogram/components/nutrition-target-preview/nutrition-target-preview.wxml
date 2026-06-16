@@ -1,9 +1,16 @@
 <view class="target-preview" wx:if="{{preview}}">
   <view class="target-preview-head">
     <view>
-      <text class="target-preview-title">{{title}}</text>
+      <text class="target-preview-title">{{showProtein && !preview.hasProteinTarget ? emptyTitle : title}}</text>
       <text class="target-preview-subtitle">{{subtitle}}</text>
     </view>
+    <view
+      class="target-preview-action"
+      wx:if="{{showSetupAction && ((showProtein && preview.hasProteinTarget) || (showCalorie && preview.calorieNote && preview.calorieNote.visible))}}"
+      bindtap="handleSetupTap"
+      hover-class="press-soft"
+      hover-stay-time="60"
+    >{{actionText}}</view>
   </view>
 
   <view class="target-preview-grid" wx:if="{{showProtein && preview.hasProteinTarget}}">
@@ -34,11 +41,28 @@
   </view>
 
   <view class="target-preview-empty" wx:elif="{{showProtein && !preview.hasProteinTarget}}">
-    <text>{{emptyText}}</text>
+    <view class="target-preview-empty-copy">
+      <text>{{emptyText}}</text>
+    </view>
+    <view class="target-preview-empty-action" bindtap="handleSetupTap" hover-class="press-soft" hover-stay-time="60">{{setupText}}</view>
+  </view>
+
+  <view class="target-preview-empty" wx:elif="{{showCalorie && !showProtein && (!preview.calorieNote || !preview.calorieNote.visible)}}">
+    <view class="target-preview-empty-copy">
+      <text>{{emptyText}}</text>
+    </view>
+    <view class="target-preview-empty-action" bindtap="handleSetupTap" hover-class="press-soft" hover-stay-time="60">{{setupText}}</view>
   </view>
 
   <view class="target-preview-calorie {{preview.calorieNote.status}}" wx:if="{{showCalorie && preview.calorieNote && preview.calorieNote.visible}}">
     <text class="target-preview-calorie-label">热量提醒</text>
     <text class="target-preview-calorie-text">{{preview.calorieNote.text}}</text>
   </view>
+
+  <nutrition-target-settings-modal
+    visible="{{settingsModalVisible}}"
+    mode="{{settingsModalMode}}"
+    bind:close="closeSettingsModal"
+    bind:saved="handleSettingsSaved"
+  />
 </view>

@@ -129,6 +129,12 @@ Page({
     });
   },
 
+  async onShow() {
+    if (!this.data.dateKey) return;
+    await this.loadTargetContext(this.data.dateKey);
+    this.refreshTargetPreview();
+  },
+
   async loadTargetContext(dateKey = this.data.dateKey) {
     const babyUid = getBabyUid();
     if (!babyUid || !dateKey) return;
@@ -224,6 +230,11 @@ Page({
       includeCalories: true
     });
     this.setData({ targetPreview });
+  },
+
+  async handleNutritionTargetsSaved() {
+    await this.loadTargetContext(this.data.dateKey);
+    this.refreshTargetPreview();
   },
 
   onNotesInput(e) {

@@ -126,6 +126,114 @@ test('summarizeTreatmentGroups contributes calories but not natural or special p
   });
 });
 
+test('nutrition target preview shows a setup entry when protein target is unset', () => {
+  const js = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.js',
+    'utf8'
+  );
+  const wxml = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.wxml',
+    'utf8'
+  );
+  const wxss = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.wxss',
+    'utf8'
+  );
+  const json = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.json',
+    'utf8'
+  );
+  const modalJs = fs.readFileSync(
+    'miniprogram/components/nutrition-target-settings-modal/nutrition-target-settings-modal.js',
+    'utf8'
+  );
+  const modalWxml = fs.readFileSync(
+    'miniprogram/components/nutrition-target-settings-modal/nutrition-target-settings-modal.wxml',
+    'utf8'
+  );
+  const modalWxss = fs.readFileSync(
+    'miniprogram/components/nutrition-target-settings-modal/nutrition-target-settings-modal.wxss',
+    'utf8'
+  );
+
+  assert.match(wxml, /\{\{showProtein && !preview\.hasProteinTarget \? emptyTitle : title\}\}/);
+  assert.match(wxml, /target-preview-empty-copy/);
+  assert.match(wxml, /class="target-preview-empty-action" bindtap="handleSetupTap"/);
+  assert.match(wxml, /\{\{setupText\}\}/);
+  assert.match(js, /emptyTitle:[\s\S]*value:\s*'还没有设置蛋白目标'/);
+  assert.match(js, /setupText:[\s\S]*value:\s*'去设置目标'/);
+  assert.match(json, /nutrition-target-settings-modal/);
+  assert.match(wxml, /<nutrition-target-settings-modal/);
+  assert.match(js, /handleSetupTap\(\)/);
+  assert.match(js, /settingsModalVisible:\s*true/);
+  assert.doesNotMatch(js, /wx\.navigateTo\(\{\s*url:\s*this\.data\.setupUrl\s*\}\)/);
+  assert.match(modalJs, /saveNutritionTargetPreferences/);
+  assert.match(modalJs, /triggerEvent\('saved', \{ preferences \}\)/);
+  assert.match(modalWxml, /设置营养目标|蛋白目标|热量目标/);
+  assert.match(modalWxml, /class="target-section" wx:if="\{\{activeMode === 'protein'\}\}"/);
+  assert.match(modalWxml, /class="target-section" wx:if="\{\{activeMode === 'calorie'\}\}"/);
+  assert.match(modalWxss, /\.target-modal-mask\s*\{[\s\S]*align-items:\s*center/);
+  assert.match(modalWxss, /\.target-modal-mask\s*\{[\s\S]*justify-content:\s*center/);
+  assert.match(modalWxss, /\.target-modal-sheet\s*\{[\s\S]*border-radius:\s*34rpx/);
+  assert.match(modalWxss, /\.btn-cancel,\s*\n\.btn-confirm\s*\{[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;[\s\S]*margin:\s*0;[\s\S]*line-height:\s*normal;[\s\S]*box-sizing:\s*border-box;/);
+  assert.match(modalWxss, /\.btn-cancel::after,\s*\n\.btn-confirm::after\s*\{[\s\S]*border:\s*none/);
+  const sheetStyle = modalWxss.match(/\.target-modal-sheet\s*\{[\s\S]*?\n\}/)[0];
+  assert.doesNotMatch(sheetStyle, /bottom:\s*0/);
+  assert.doesNotMatch(sheetStyle, /translateY\(100%\)/);
+  assert.match(wxss, /\.target-preview-empty-action\s*\{/);
+  assert.match(wxss, /border-radius:\s*999rpx/);
+});
+
+test('nutrition target preview keeps a modify entry when a target is displayed', () => {
+  const js = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.js',
+    'utf8'
+  );
+  const wxml = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.wxml',
+    'utf8'
+  );
+  const wxss = fs.readFileSync(
+    'miniprogram/components/nutrition-target-preview/nutrition-target-preview.wxss',
+    'utf8'
+  );
+  const treatmentWxml = fs.readFileSync(
+    'miniprogram/pkg-records/treatment-record/index.wxml',
+    'utf8'
+  );
+
+  assert.match(js, /actionText:[\s\S]*value:\s*'修改目标'/);
+  assert.match(js, /showSetupAction:[\s\S]*value:\s*true/);
+  assert.match(wxml, /class="target-preview-action"[\s\S]*bindtap="handleSetupTap"/);
+  assert.match(wxml, /\{\{actionText\}\}/);
+  assert.match(wxml, /showSetupAction && \(\(showProtein && preview\.hasProteinTarget\) \|\| \(showCalorie && preview\.calorieNote && preview\.calorieNote\.visible\)\)/);
+  assert.match(wxml, /wx:elif="\{\{showCalorie && !showProtein && \(!preview\.calorieNote \|\| !preview\.calorieNote\.visible\)\}\}"/);
+  assert.match(wxss, /\.target-preview-action\s*\{/);
+  assert.match(wxss, /color:\s*#D99700/);
+  assert.match(treatmentWxml, /setup-mode="calorie"/);
+  assert.doesNotMatch(treatmentWxml, /setup-url=/);
+});
+
+test('target preview pages refresh targets after returning from setup', () => {
+  const treatmentJs = fs.readFileSync('miniprogram/pkg-records/treatment-record/index.js', 'utf8');
+  const treatmentWxml = fs.readFileSync('miniprogram/pkg-records/treatment-record/index.wxml', 'utf8');
+  const milkEditorJs = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.js', 'utf8');
+  const milkEditorWxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  const mealEditorWxml = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.wxml', 'utf8');
+  const foodPickerWxml = fs.readFileSync('miniprogram/pkg-records/food-picker/index.wxml', 'utf8');
+
+  assert.match(treatmentJs, /async onShow\(\)\s*\{[\s\S]*await this\.loadTargetContext\(this\.data\.dateKey\);[\s\S]*this\.refreshTargetPreview\(\);[\s\S]*\}/);
+  assert.match(treatmentJs, /async handleNutritionTargetsSaved\(\)/);
+  assert.match(milkEditorJs, /async refreshTargetContextFromPreferences\(\)/);
+  assert.match(milkEditorJs, /await this\.refreshTargetContextFromPreferences\(\);/);
+  assert.match(milkEditorJs, /async handleNutritionTargetsSaved\(\)/);
+  assert.match(milkEditorJs, /this\.refreshNutritionPreview\(\);/);
+  assert.match(treatmentWxml, /bind:targetssaved="handleNutritionTargetsSaved"/);
+  assert.match(milkEditorWxml, /bind:targetssaved="handleNutritionTargetsSaved"/);
+  assert.match(mealEditorWxml, /bind:targetssaved="handleNutritionTargetsSaved"/);
+  assert.match(foodPickerWxml, /bind:targetssaved="handleNutritionTargetsSaved"/);
+});
+
 test('meal editor food drawer keeps add button reachable after target preview expands content', () => {
   const wxss = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.wxss', 'utf8');
 

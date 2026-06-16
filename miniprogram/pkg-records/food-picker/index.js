@@ -1,6 +1,7 @@
 const FoodModel = require('../../models/food');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const { getBabyUid } = require('../../utils/index');
+const { getNutritionTargetPreferences, hasTargetCoefficient } = require('../../utils/nutritionTargetPreferences');
 const {
   buildEntryTargetPreview,
   summarizeFoodItems,
@@ -230,6 +231,10 @@ Page({
     );
     const hasCache = await this.loadCachedFoodCatalog();
     await this.loadFoodCatalog({ silent: hasCache });
+  },
+
+  async onShow() {
+    await this.refreshQuantityTargetPreferences();
   },
 
   onUnload() {
@@ -1017,6 +1022,36 @@ Page({
       includeCalories: true
     });
     this.setData({ quantityTargetPreview });
+  },
+
+  async refreshQuantityTargetPreferences() {
+    const context = this.data.quantityTargetContext;
+    if (!context) return;
+    const babyUid = getBabyUid();
+    if (!babyUid) {
+      this.refreshQuantityTargetPreview();
+      return;
+    }
+
+    try {
+      const targetPreferences = await getNutritionTargetPreferences(babyUid);
+      if (!hasTargetCoefficient(targetPreferences)) {
+        this.refreshQuantityTargetPreview();
+        return;
+      }
+      this.setData({
+        'quantityTargetContext.targetPreferences': targetPreferences
+      }, () => {
+        this.refreshQuantityTargetPreview();
+      });
+    } catch (error) {
+      console.warn('刷新食物选择目标系数失败:', error);
+      this.refreshQuantityTargetPreview();
+    }
+  },
+
+  async handleNutritionTargetsSaved() {
+    await this.refreshQuantityTargetPreferences();
   },
 
   submitQuantityDrafts() {

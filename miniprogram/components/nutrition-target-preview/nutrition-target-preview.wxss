@@ -32,6 +32,17 @@
   color: #8d7344;
 }
 
+.target-preview-action {
+  flex-shrink: 0;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 184, 0, 0.13);
+  color: #D99700;
+  font-size: 21rpx;
+  line-height: 1.4;
+  font-weight: 800;
+}
+
 .target-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -164,12 +175,33 @@
 }
 
 .target-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
   padding: 18rpx;
   border-radius: 18rpx;
   background: rgba(255, 255, 255, 0.78);
   color: #8d7344;
   font-size: 22rpx;
   line-height: 1.5;
+}
+
+.target-preview-empty-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.target-preview-empty-action {
+  flex-shrink: 0;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #FFD45E, #FFB800);
+  color: #5f3a00;
+  font-size: 22rpx;
+  line-height: 1.2;
+  font-weight: 800;
+  box-shadow: 0 8rpx 16rpx rgba(255, 184, 0, 0.22);
 }
 
 .target-preview-calorie {

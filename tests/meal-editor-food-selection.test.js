@@ -937,6 +937,102 @@ test('meal editor loads target context from local preferences before opening foo
   }
 });
 
+test('meal editor refreshes target preferences after returning from target setup', async () => {
+  const storage = {
+    baby_info: {
+      babyUid: 'baby-1',
+      weight: 5
+    },
+    [targetCoefStorageKey('baby-1')]: {
+      naturalProteinCoefficient: '1.4',
+      specialProteinCoefficient: '0.7',
+      calorieCoefficient: '110'
+    }
+  };
+  const restoreWx = installWxMock(storage);
+  try {
+    const mealPage = loadPage('../miniprogram/pkg-records/meal-editor/index.js');
+    const meal = createPageInstance(mealPage, {
+      mealDraft: {
+        mealTime: '08:30',
+        mealLabel: '早餐',
+        mealNote: '',
+        items: [{
+          foodId: 'mine-1',
+          food: mineFood,
+          quantity: 50,
+          unit: 'g',
+          nutrition: { calories: 40, protein: 1, carbs: 6, fat: 0.5 },
+          proteinSource: 'natural',
+          naturalProtein: 1,
+          specialProtein: 0
+        }]
+      },
+      targetContext: {
+        currentSummary: { calories: 0, protein: 0, naturalProtein: 0, specialProtein: 0 },
+        weight: 5,
+        targetPreferences: {}
+      },
+      targetContextLoaded: true
+    });
+    meal.hasLoadedCatalog = true;
+    meal.loadFoodCatalog = async () => {};
+
+    await meal.onShow();
+
+    assert.deepEqual(meal.data.targetContext.targetPreferences, {
+      naturalProteinCoefficient: '1.4',
+      specialProteinCoefficient: '0.7',
+      calorieCoefficient: '110'
+    });
+    assert.equal(meal.data.mealTargetPreview.proteinRows[0].targetText, '7g');
+    assert.equal(meal.data.mealTargetPreview.hasProteinTarget, true);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker refreshes quantity target preferences after returning from target setup', async () => {
+  const storage = {
+    [FOOD_PICKER_TARGET_CONTEXT_KEY]: {
+      schemaVersion: 1,
+      currentSummary: { calories: 0, protein: 0, naturalProtein: 0, specialProtein: 0 },
+      previousSummary: {},
+      baseMealSummary: {},
+      weight: 5,
+      targetPreferences: {}
+    },
+    [targetCoefStorageKey('baby-1')]: {
+      naturalProteinCoefficient: '1.3',
+      specialProteinCoefficient: '0.6',
+      calorieCoefficient: '100'
+    }
+  };
+  const restoreWx = installWxMock(storage);
+  try {
+    const pickerPage = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const picker = createPageInstance(pickerPage, {
+      selectedFoodCart: [mineFood]
+    });
+
+    picker.loadFoodPickerTargetContext();
+    picker.confirmSelection();
+    assert.equal(picker.data.quantityTargetPreview.hasProteinTarget, false);
+
+    await picker.refreshQuantityTargetPreferences();
+
+    assert.deepEqual(picker.data.quantityTargetContext.targetPreferences, {
+      naturalProteinCoefficient: '1.3',
+      specialProteinCoefficient: '0.6',
+      calorieCoefficient: '100'
+    });
+    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].targetText, '6.5g');
+    assert.equal(picker.data.quantityTargetPreview.hasProteinTarget, true);
+  } finally {
+    restoreWx();
+  }
+});
+
 test('food picker caches window info instead of repeatedly reading it', () => {
   const storage = {};
   const restoreWx = installWxMock(storage);

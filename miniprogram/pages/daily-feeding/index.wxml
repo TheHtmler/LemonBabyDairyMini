@@ -1,4 +1,14 @@
-<view class="home {{animReady ? 'anim-on' : ''}}">
+<view class="home {{animReady ? 'anim-on' : ''}} {{homeDataReady ? 'data-ready' : 'data-pending'}}">
+  <view class="home-boot-mask" wx:if="{{isHomeBooting}}">
+    <view class="home-boot-card">
+      <view class="lemon-loader">
+        <image class="home-milk-lemon-art" src="/images/milk-lemon-loading.png" mode="aspectFit"></image>
+      </view>
+      <text class="home-boot-title">柠檬宝宝正在准备今日记录</text>
+      <text class="home-boot-sub">{{homeLoadingText || '马上就好啦～'}}</text>
+    </view>
+  </view>
+
   <!-- 公告（单行跑马灯，与旧版一致） -->
   <view class="notice" wx:if="{{releaseNoticeVisible && releaseNoticeText}}">
     <view class="notice-fixed"><text class="notice-prefix">公告</text></view>
@@ -272,6 +282,7 @@
     <scroll-view class="trend-tabs" scroll-x="true" enhanced="true" show-scrollbar="false">
       <text class="ttab {{trendMetric === item.key ? 'on' : ''}}" wx:for="{{trendMetrics}}" wx:key="key" data-metric="{{item.key}}" catchtap="switchTrendMetric">{{item.label}}</text>
     </scroll-view>
+    <text class="trend-loading" wx:if="{{trendLoading}}">柠檬宝宝正在轻轻补齐近7天趋势～</text>
     <view class="trend">
       <view class="trend-bars">
         <view class="trend-col" wx:for="{{weeklyTrend.points}}" wx:key="date">
@@ -354,6 +365,13 @@
       </view>
     </view>
   </view>
+
+  <nutrition-target-settings-modal
+    visible="{{targetSettingsModalVisible}}"
+    mode="{{targetSettingsMode}}"
+    bind:close="closeNutritionTargetSettings"
+    bind:saved="handleNutritionTargetsSaved"
+  />
 
   <!-- 记录用药弹窗 -->
   <medication-modal

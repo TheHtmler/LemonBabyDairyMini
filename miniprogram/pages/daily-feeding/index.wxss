@@ -5,8 +5,117 @@ page {
 .home {
   padding: 20rpx 24rpx 60rpx;
   box-sizing: border-box;
+  min-height: 100vh;
 }
 
+.home.data-pending .baby-card,
+.home.data-pending .card {
+  position: relative;
+  overflow: hidden;
+}
+
+.home.data-pending .baby-card::after,
+.home.data-pending .card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 236, 179, 0.42), transparent);
+  animation: home-skeleton-shimmer 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.home.data-pending .baby-name,
+.home.data-pending .baby-sub,
+.home.data-pending .ring,
+.home.data-pending .macro-stat,
+.home.data-pending .qa,
+.home.data-pending .feed-top,
+.home.data-pending .next,
+.home.data-pending .trend {
+  opacity: 0.48;
+}
+
+@keyframes home-skeleton-shimmer {
+  from { transform: translateX(0); }
+  to { transform: translateX(340%); }
+}
+
+.home-boot-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255, 232, 143, 0.72), transparent 30%),
+    radial-gradient(circle at 78% 76%, rgba(181, 226, 140, 0.24), transparent 28%),
+    linear-gradient(180deg, #FFF9E6 0%, #FFF1C6 100%);
+}
+.home-boot-card {
+  width: 520rpx;
+  max-width: 100%;
+  padding: 24rpx 42rpx;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  text-align: center;
+  animation: boot-card-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.lemon-loader {
+  position: relative;
+  width: 280rpx;
+  height: 230rpx;
+  margin: 0 auto 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lemon-loader::before {
+  content: '';
+  position: absolute;
+  width: 260rpx;
+  height: 162rpx;
+  border-radius: 50%;
+  background: rgba(255, 214, 102, 0.24);
+  filter: blur(34rpx);
+  transform: translateY(30rpx);
+}
+.home-milk-lemon-art {
+  position: relative;
+  width: 270rpx;
+  height: 218rpx;
+  animation: lemon-breathe 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 10rpx 18rpx rgba(255, 184, 0, 0.2));
+}
+.home-boot-title {
+  display: block;
+  font-size: 31rpx;
+  color: #8A6200;
+  font-weight: 800;
+}
+.home-boot-sub {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #B07D00;
+}
+@keyframes boot-card-in {
+  from { opacity: 0; transform: translateY(20rpx) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lemon-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
 /* 公告（单行跑马灯） */
 .notice {
   display: flex;
@@ -84,7 +193,7 @@ page {
   background: #FFE27A;
   flex: 0 0 auto;
   box-shadow: 0 6rpx 14rpx rgba(255, 184, 0, 0.32);
-  animation: baby-breathe 3.2s ease-in-out infinite;
+  animation: baby-breathe 3.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 @keyframes baby-breathe {
   0%, 100% { transform: scale(1); }
@@ -299,7 +408,7 @@ page {
   justify-content: center;
 }
 .anim-on .ring {
-  animation: ring-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: ring-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes ring-pop {
   0% { transform: scale(0.82); opacity: 0; }
@@ -783,7 +892,7 @@ page {
 .med-check.partial { background: #fff; border: 3rpx solid #4CC38A; }
 .med-check.todo { background: #fff; border: 3rpx solid #E6D9B0; }
 .med-tick {
-  animation: tick-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: tick-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .med-check-half {
   width: 20rpx;
@@ -793,8 +902,7 @@ page {
 }
 @keyframes tick-pop {
   0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.25); opacity: 1; }
-  100% { transform: scale(1); }
+  100% { transform: scale(1); opacity: 1; }
 }
 .med-main {
   flex: 1;
@@ -1191,6 +1299,15 @@ page {
   color: #F59E0B;
   font-weight: 700;
 }
+.trend-loading {
+  display: block;
+  margin: 4rpx 0 14rpx;
+  font-size: 22rpx;
+  color: #B07D00;
+  background: #FFF7DD;
+  border-radius: 999rpx;
+  padding: 8rpx 18rpx;
+}
 .trend-foot {
   display: flex;
   margin-top: 22rpx;
@@ -1338,7 +1455,13 @@ page {
 .anim-on .notice,
 .anim-on .hero,
 .anim-on .card {
-  animation: home-rise 0.45s ease-out both;
+  animation: home-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-on .hero {
+  animation-delay: 0.04s;
+}
+.anim-on .hero-nutri {
+  animation-delay: 0.08s;
 }
 @keyframes home-rise {
   from { opacity: 0; transform: translateY(18rpx); }
@@ -1361,4 +1484,19 @@ page {
 .press-pop {
   transform: scale(0.92);
   opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-boot-card,
+  .home-milk-lemon-art,
+  .notice-track,
+  .baby-avatar,
+  .anim-on .notice,
+  .anim-on .hero,
+  .anim-on .card,
+  .anim-on .ring,
+  .med-tick {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
 }

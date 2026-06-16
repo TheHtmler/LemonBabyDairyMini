@@ -355,7 +355,9 @@ Page({
     if (!this.hasLoadedCatalog) {
       return;
     }
-    if (this.handleFoodPickerSelection()) {
+    const hasFoodPickerSelection = this.handleFoodPickerSelection();
+    await this.reloadTargetContextAndPreviews();
+    if (hasFoodPickerSelection) {
       return;
     }
     await this.loadFoodCatalog();
@@ -409,9 +411,21 @@ Page({
     return this.targetContextLoadPromise;
   },
 
+  async reloadTargetContextAndPreviews() {
+    await this.loadTargetContext();
+    this.refreshTargetPreviews();
+  },
+
+  async handleNutritionTargetsSaved() {
+    await this.reloadTargetContextAndPreviews();
+  },
+
   refreshTargetPreviews() {
     this.refreshMealTargetPreview();
     this.refreshDraftTargetPreview();
+    if ((this.data.batchFoodDrafts || []).length > 0) {
+      this.refreshBatchTargetPreview();
+    }
   },
 
   refreshMealTargetPreview() {

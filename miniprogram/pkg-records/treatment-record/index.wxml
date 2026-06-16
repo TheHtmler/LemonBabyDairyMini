@@ -101,6 +101,8 @@
     title="热量目标提醒"
     subtitle="治疗项不计入天然/特殊蛋白，仅提示热量影响"
     showProtein="{{false}}"
+    setup-mode="calorie"
+    bind:targetssaved="handleNutritionTargetsSaved"
   />
 
   <view class="card summary-card">

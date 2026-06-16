@@ -255,6 +255,7 @@ Page({
       this._pendingPowderRefresh = false;
       await this.reloadFormulaPowders();
     }
+    await this.refreshTargetContextFromPreferences();
   },
 
   async loadPageData() {
@@ -354,6 +355,28 @@ Page({
         calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, resolvedBasicInfo.calorieCoefficient)
       }
     };
+  },
+
+  async refreshTargetContextFromPreferences() {
+    if (!this.data.babyUid) return;
+    const targetContext = await this.loadTargetContext({
+      weight: this.data.weight,
+      naturalProteinCoefficient: this.data.naturalProteinCoefficientInput,
+      specialProteinCoefficient: this.data.specialProteinCoefficientInput,
+      calorieCoefficient: this.data.calorieCoefficientInput
+    }, this.data.existingRecords || []);
+    this.setData({
+      targetContext,
+      naturalProteinCoefficientInput: targetContext.targetPreferences?.naturalProteinCoefficient || this.data.naturalProteinCoefficientInput,
+      specialProteinCoefficientInput: targetContext.targetPreferences?.specialProteinCoefficient || this.data.specialProteinCoefficientInput,
+      calorieCoefficientInput: targetContext.targetPreferences?.calorieCoefficient || this.data.calorieCoefficientInput
+    }, () => {
+      this.refreshNutritionPreview();
+    });
+  },
+
+  async handleNutritionTargetsSaved() {
+    await this.refreshTargetContextFromPreferences();
   },
 
   onBasicInput(e) {

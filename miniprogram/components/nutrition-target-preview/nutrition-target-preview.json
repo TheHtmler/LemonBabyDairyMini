@@ -1,3 +1,6 @@
 {
-  "component": true
+  "component": true,
+  "usingComponents": {
+    "nutrition-target-settings-modal": "/components/nutrition-target-settings-modal/nutrition-target-settings-modal"
+  }
 }

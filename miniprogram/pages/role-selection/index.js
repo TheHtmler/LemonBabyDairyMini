@@ -6,7 +6,7 @@ Page({
     selectedRole: '',  // 存储选中的角色
     isPageLoaded: false, // 标记页面是否已加载完成
     isInitializing: true, // 初始化状态标记
-    loadingText: '正在初始化...',
+    loadingText: '宝宝记录准备中...',
     initFailed: false, // 初始化失败标记
     initProgress: 0, // 初始化进度
     inviteCode: '', // 邀请码（从链接参数获取）
@@ -47,7 +47,7 @@ Page({
     // 首次加载时执行完整初始化
     this.initializeApp();
   },
-  
+
   /**
    * 检查并初始化（用于onShow中的重新检查）
    */
@@ -79,11 +79,11 @@ Page({
    */
   async initializeApp() {
     const startTime = Date.now();
-    const minLoadingTime = 1000; // 最小loading时间1000ms
+    const minLoadingTime = 800; // 保留轻微品牌过渡，避免文案一闪而过
     
     this.setData({ 
       isInitializing: true,
-      loadingText: '正在初始化...',
+      loadingText: '宝宝记录准备中...',
       initProgress: 0,
       initFailed: false
     });
@@ -91,7 +91,6 @@ Page({
     try {
       // 更新进度
       this.setData({ 
-        loadingText: '正在获取用户信息...',
         initProgress: 20
       });
       
@@ -100,7 +99,6 @@ Page({
       
       // 更新进度
       this.setData({ 
-        loadingText: '正在验证用户状态...',
         initProgress: 60
       });
       
@@ -112,18 +110,17 @@ Page({
       
       // 更新进度
       this.setData({ 
-        loadingText: '初始化完成',
         initProgress: 100
       });
       
-      // 设置初始化完成
-      this.setData({ 
-        isInitializing: false,
-        loadingText: ''
-      });
-      
       // 根据初始化结果决定导航
-      this.handleNavigation(initResult);
+      const isNavigating = this.handleNavigation(initResult);
+      if (!isNavigating) {
+        this.setData({
+          isInitializing: false,
+          loadingText: ''
+        });
+      }
       
     } catch (error) {
       console.error('初始化应用失败:', error);
@@ -156,7 +153,7 @@ Page({
   retryInitialization() {
     this.setData({
       initFailed: false,
-      loadingText: '正在重新初始化...',
+      loadingText: '宝宝记录准备中...',
       initProgress: 0
     });
     this.initializeApp();
@@ -174,10 +171,26 @@ Page({
     // 如果已经选择角色且完成宝宝信息，直接进入主页面
     if (userRole && babyInfoValid) {
       console.log('用户已完成设置，跳转到主页面');
+      this.app.globalData.skipHomeBootOnce = true;
+      this.setData({
+        initProgress: 100
+      });
       wx.switchTab({
         url: '/pages/daily-feeding/index',
+        fail: (err) => {
+          console.error('跳转主页面失败:', err);
+          this.app.globalData.skipHomeBootOnce = false;
+          this.setData({
+            isInitializing: false,
+            loadingText: ''
+          });
+          wx.showToast({
+            title: '进入首页失败，请重试',
+            icon: 'none'
+          });
+        }
       });
-      return;
+      return true;
     }
     
     // 如果已选择角色但未完成宝宝信息，清除角色选择状态，让用户重新选择
@@ -200,11 +213,12 @@ Page({
       
       // 重新初始化app
       this.app.reinitializeApp();
-      return;
+      return false;
     }
     
     // 如果未选择角色，留在当前页面等待用户选择
     console.log('未选择角色，保持在角色选择页面');
+    return false;
   },
   
   /**

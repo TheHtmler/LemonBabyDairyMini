@@ -1,6 +1,7 @@
 {
   "usingComponents": {
-    "medication-modal": "/components/medication-modal/medication-modal"
+    "medication-modal": "/components/medication-modal/medication-modal",
+    "nutrition-target-settings-modal": "/components/nutrition-target-settings-modal/nutrition-target-settings-modal"
   },
   "enablePullDownRefresh": true
 }

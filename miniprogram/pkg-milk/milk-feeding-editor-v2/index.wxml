@@ -139,6 +139,7 @@
       preview="{{targetPreview}}"
       title="保存前看看"
       subtitle="今日累计 + 本次"
+      bind:targetssaved="handleNutritionTargetsSaved"
     />
 
     <view class="section-card secondary-card quick-preview-card">
