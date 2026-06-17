@@ -12,6 +12,7 @@ function assertPngHasAlpha(filePath) {
 test('meal-editor and treatment-record notify daily-feeding page to reload after save', () => {
   const mealEditor = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.js', 'utf8');
   const treatmentRecord = fs.readFileSync('miniprogram/pkg-records/treatment-record/index.js', 'utf8');
+  const milkFeedingEditorV2 = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.js', 'utf8');
 
   assert.match(mealEditor, /notifyPreviousPageRefresh\s*\(/);
   assert.match(mealEditor, /await this\.notifyPreviousPageRefresh\(\);[\s\S]*wx\.navigateBack\(\)/);
@@ -22,6 +23,12 @@ test('meal-editor and treatment-record notify daily-feeding page to reload after
   assert.match(treatmentRecord, /await this\.notifyPreviousPageRefresh\(\);[\s\S]*wx\.navigateBack\(\)/);
   assert.match(treatmentRecord, /prevPage\.route [!=]==? 'pages\/daily-feeding\/index'/);
   assert.match(treatmentRecord, /await prevPage\.loadTodayData\(true\)/);
+
+  [mealEditor, treatmentRecord, milkFeedingEditorV2].forEach((source) => {
+    assert.match(source, /typeof prevPage\.fetchDailyRecords === 'function'/);
+    assert.match(source, /await prevPage\.fetchDailyRecords\([^,]+,\s*\{\s*silent:\s*true\s*\}\)/);
+    assert.doesNotMatch(source, /prevPage\.route === 'pages\/data-records-v2\/index'/);
+  });
 });
 
 test('daily feeding page counts food progress by meal records instead of food items', () => {

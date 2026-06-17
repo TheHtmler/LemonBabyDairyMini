@@ -240,12 +240,6 @@ function getDefaultMealLabel(timeValue = formatTime(new Date())) {
   return '加餐';
 }
 
-function isFutureDateKey(dateKey) {
-  const target = dateKey || '';
-  const today = formatDateKey(new Date());
-  return !!target && target > today;
-}
-
 function createEmptyMealSummary() {
   return {
     calories: 0,
@@ -1130,18 +1124,20 @@ Page({
   async notifyPreviousPageRefresh() {
     const pages = getCurrentPages();
     const prevPage = pages[pages.length - 2];
-    if (!prevPage || prevPage.route !== 'pages/daily-feeding/index' || typeof prevPage.loadTodayData !== 'function') {
+    if (!prevPage) {
       return;
     }
-    await prevPage.loadTodayData(true);
+    if (typeof prevPage.fetchDailyRecords === 'function') {
+      await prevPage.fetchDailyRecords(this.data.selectedDate, { silent: true });
+      return;
+    }
+    if (prevPage.route === 'pages/daily-feeding/index' && typeof prevPage.loadTodayData === 'function') {
+      await prevPage.loadTodayData(true);
+    }
   },
 
   async saveMeal() {
     if (this.data.isSaving) return;
-    if (isFutureDateKey(this.data.selectedDate)) {
-      wx.showToast({ title: '暂不支持记录未来日期', icon: 'none' });
-      return;
-    }
 
     let items = [...(this.data.mealDraft.items || [])];
     if (this.data.drawerStep === 'edit' && this.data.currentFoodDraft.food) {

@@ -85,6 +85,11 @@
   background-color: #FFF9E6;
 }
 
+.date-item.future {
+  background-color: #F1FAFF;
+  border: 1rpx dashed rgba(91, 157, 249, 0.38);
+}
+
 .date-item.selected {
   background-color: #FFF0B8;
   transform: scale(1.05);

@@ -417,10 +417,16 @@ Page({
   async notifyPreviousPageRefresh() {
     const pages = getCurrentPages();
     const prevPage = pages[pages.length - 2];
-    if (!prevPage || prevPage.route !== 'pages/daily-feeding/index' || typeof prevPage.loadTodayData !== 'function') {
+    if (!prevPage) {
       return;
     }
-    await prevPage.loadTodayData(true);
+    if (typeof prevPage.fetchDailyRecords === 'function') {
+      await prevPage.fetchDailyRecords(this.data.dateKey, { silent: true });
+      return;
+    }
+    if (prevPage.route === 'pages/daily-feeding/index' && typeof prevPage.loadTodayData === 'function') {
+      await prevPage.loadTodayData(true);
+    }
   },
 
   async saveRecord() {

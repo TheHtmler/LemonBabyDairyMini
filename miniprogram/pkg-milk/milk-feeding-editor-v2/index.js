@@ -988,6 +988,21 @@ Page({
     return true;
   },
 
+  async notifyPreviousPageRefresh() {
+    const pages = getCurrentPages();
+    const prevPage = pages[pages.length - 2];
+    if (!prevPage) {
+      return;
+    }
+    if (typeof prevPage.fetchDailyRecords === 'function') {
+      await prevPage.fetchDailyRecords(this.data.selectedDate, { silent: true });
+      return;
+    }
+    if (prevPage.route === 'pages/daily-feeding/index' && typeof prevPage.loadTodayData === 'function') {
+      await prevPage.loadTodayData(true);
+    }
+  },
+
   async saveFeedingRecord() {
     if (!this.data.startTime) {
       wxApi.showToast({ title: '请选择喂奶时间', icon: 'none' });
@@ -1031,6 +1046,7 @@ Page({
         await addFeedingRecordV2(payload);
       }
       await markDailySummaryDirty(this.data.babyUid, this.data.selectedDate);
+      await this.notifyPreviousPageRefresh();
       wxApi.hideLoading();
       wxApi.showToast({ title: '已保存', icon: 'success' });
       setTimeout(() => {

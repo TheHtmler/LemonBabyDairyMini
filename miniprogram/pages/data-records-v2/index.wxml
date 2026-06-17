@@ -4,7 +4,7 @@
     <view class="date-scroll-container">
       <scroll-view scroll-x="true" scroll-into-view="{{currentDateId}}" scroll-with-animation="true" class="date-list" enhanced="true" show-scrollbar="false" enable-flex="{{false}}" bounces="{{true}}" fast-deceleration="{{true}}">
         <view class="date-items-container">
-          <view id="date-{{index}}" class="date-item {{selectedDateIndex === index ? 'selected' : ''}} {{index === 0 ? 'today' : ''}}" wx:for="{{dateList}}" wx:key="date" data-date="{{item.date}}" data-index="{{index}}" bindtap="onDateItemClick">
+          <view id="date-{{index}}" class="date-item {{selectedDateIndex === index ? 'selected' : ''}} {{item.isToday ? 'today' : ''}} {{item.isFuture ? 'future' : ''}}" wx:for="{{dateList}}" wx:key="date" data-date="{{item.date}}" data-index="{{index}}" bindtap="onDateItemClick">
             <text class="weekday">{{item.weekday}}</text>
             <text class="day">{{item.day}}</text>
             <text class="month">{{item.month}}月</text>
@@ -38,7 +38,7 @@
             <view class="hero-badge" wx:for="{{summaryPreview.heroBadges}}" wx:key="label">
               <view class="hero-badge-head">
                 <text class="hero-badge-label">{{item.label}}</text>
-                <view class="hero-badge-edit" wx:if="{{item.field}}" bindtap="openBasicInfoEditor" data-field="{{item.field}}" data-label="{{item.label}}" data-unit="{{item.unit}}">
+                <view class="hero-badge-edit" wx:if="{{item.field && !isSelectedFuture}}" bindtap="openBasicInfoEditor" data-field="{{item.field}}" data-label="{{item.label}}" data-unit="{{item.unit}}">
                   <image class="hero-badge-edit-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
                 </view>
               </view>
@@ -438,7 +438,7 @@
         </view>
       </view>
       <view class="calendar-grid">
-        <view class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate && !copyCalendarContext ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}} {{copyCalendarContext && isFutureCalendarDay(item.date) ? 'disabled-future' : ''}}" wx:for="{{calendarDays}}" wx:key="date" bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}" data-date="{{item.date}}">
+        <view class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate && !copyCalendarContext ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}} {{copyCalendarContext && isFutureCalendarDay(item.date) ? 'disabled-future' : ''}} {{!copyCalendarContext && isBeyondFuturePrerecordDate(item.date) ? 'disabled-future' : ''}}" wx:for="{{calendarDays}}" wx:key="date" bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}" data-date="{{item.date}}">
           <text class="calendar-today-label" wx:if="{{item.isToday}}">今天</text>
           <text class="calendar-day-number" wx:else>{{item.day}}</text>
         </view>

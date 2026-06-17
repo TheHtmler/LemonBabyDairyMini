@@ -45,3 +45,39 @@ test('treatment record tab uses the same titleless icon action as feeding record
   assert.match(componentWxss, /\.treatment-panel-header\.actions-only\s*\{[^}]*justify-content: flex-end;/s);
   assert.match(componentWxss, /\.treatment-panel-action-icon\s*\{[^}]*width: 24rpx;[^}]*height: 24rpx;/s);
 });
+
+test('data records supports seven-day future prerecording without future weight edits', () => {
+  const pageJs = fs.readFileSync('miniprogram/pages/data-records-v2/index.js', 'utf8');
+  const pageWxml = fs.readFileSync('miniprogram/pages/data-records-v2/index.wxml', 'utf8');
+  const pageWxss = fs.readFileSync('miniprogram/pages/data-records-v2/index.wxss', 'utf8');
+  const mealEditorJs = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.js', 'utf8');
+
+  assert.match(pageJs, /const FUTURE_PRERECORD_DAYS\s*=\s*7/);
+  assert.match(pageJs, /function addDaysToDateKey\(dateKey,\s*days\)/);
+  assert.match(pageJs, /function getFuturePrerecordEndDateKey\(/);
+  assert.match(pageJs, /function isBeyondFuturePrerecordDate\(dateStr\)/);
+  assert.match(pageJs, /const historyRangeLength = Math\.max\(baseRangeLength - 1,\s*daysToToday\)/);
+  assert.match(pageJs, /const futureRangeLength = FUTURE_PRERECORD_DAYS/);
+  assert.match(pageJs, /for \(let offset = futureRangeLength; offset >= -historyRangeLength; offset -= 1\)/);
+  assert.match(pageJs, /date\.setDate\(today\.getDate\(\) \+ offset\)/);
+  assert.match(pageJs, /isFuture:\s*this\.formatDate\(date\) > todayKey/);
+  assert.match(pageWxml, /date-item[\s\S]*\{\{item\.isFuture \? 'future' : ''\}\}/);
+  assert.match(pageWxml, /isBeyondFuturePrerecordDate\(item\.date\) \? 'disabled-future' : ''/);
+  assert.match(pageWxss, /\.date-item\.future\s*\{/);
+  assert.match(pageJs, /title:\s*'最多可提前记录7天'/);
+  assert.match(pageJs, /const selectedIndex = this\.initDateList\(today\)/);
+  assert.match(pageJs, /currentDateId:\s*`date-\$\{selectedIndex\}`/);
+  assert.match(pageJs, /const selectedIndex = futureRangeLength - dayOffsetFromToday/);
+
+  assert.match(pageJs, /isSelectedFuture:\s*isFutureDateKey\(selectedDate\)/);
+  assert.match(pageWxml, /wx:if="\{\{item\.field && !isSelectedFuture\}\}"/);
+  assert.match(pageJs, /openBasicInfoEditor\(e\)\s*\{[\s\S]*if \(this\.data\.isSelectedFuture\)/);
+
+  assert.doesNotMatch(mealEditorJs, /暂不支持记录未来日期/);
+  assert.doesNotMatch(mealEditorJs, /if \(isFutureDateKey\(this\.data\.selectedDate\)\)/);
+
+  assert.match(pageJs, /async markFuturePrerecordSummariesDirty\(babyUid,\s*startDateStr\)/);
+  assert.match(pageJs, /for \(let offset = 0; offset <= FUTURE_PRERECORD_DAYS; offset \+= 1\)/);
+  assert.match(pageJs, /await DailySummaryV2Model\.markDirty\(babyUid,\s*targetDateStr\)/);
+  assert.match(pageJs, /await this\.markFuturePrerecordSummariesDirty\(babyUid,\s*selectedDate\)/);
+});

@@ -51,6 +51,7 @@ const DEFAULT_SPECIAL_MILK_PROTEIN_ML = 1.97;
 const MILK_CATEGORY_ALIASES = ['milk', '奶类', '奶制品', '乳制品'];
 const MAX_RECENT_FOODS = 10;
 const FOOD_OPTION_RENDER_BATCH = 50;
+const FUTURE_PRERECORD_DAYS = 7;
 const CALORIE_RANGE_BY_AGE = [
   { maxMonths: 6, min: 72, max: 109, label: '0-6月龄推荐' },
   { maxMonths: 12, min: 65, max: 97, label: '6-12月龄推荐' },
@@ -1341,6 +1342,22 @@ function isFutureDateKey(dateStr) {
   return target > today;
 }
 
+function addDaysToDateKey(dateKey, days) {
+  const date = parseDateKey(dateKey);
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+}
+
+function getFuturePrerecordEndDateKey(referenceDate = new Date()) {
+  return addDaysToDateKey(toDateKey(referenceDate), FUTURE_PRERECORD_DAYS);
+}
+
+function isBeyondFuturePrerecordDate(dateStr) {
+  const target = toDateKey(dateStr);
+  const endDate = getFuturePrerecordEndDateKey(new Date());
+  return !!target && target > endDate;
+}
+
 function parseDateKey(dateStr) {
   if (!dateStr) return new Date();
   const [year, month, day] = String(dateStr).split('-').map(Number);
@@ -1450,6 +1467,7 @@ function createDataRecordsPageConfig(options = {}) {
     // 滚动相关
     currentDateId: '',
     selectedDateIndex: 0,
+    isSelectedFuture: false,
     isReturning: false,
     showAddFeedingModal: false,
     showAddMedicationModal: false,
@@ -2531,11 +2549,10 @@ function createDataRecordsPageConfig(options = {}) {
       });
     }
 
-    this.initDateList();
-
     // 获取并格式化今天的日期
     const today = new Date();
     const formattedDate = this.formatDate(today);
+    const selectedIndex = this.initDateList(today);
 
     // 格式化今日完整日期显示（年月日）
     const todayFullDate = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
@@ -2543,10 +2560,11 @@ function createDataRecordsPageConfig(options = {}) {
     this.setData({
       selectedDate: formattedDate,
       formattedSelectedDate: this.formatDisplayDate(formattedDate),
-      currentDateId: 'date-0',
-      selectedDateIndex: 0,
+      currentDateId: `date-${selectedIndex}`,
+      selectedDateIndex: selectedIndex,
       todayFullDate: todayFullDate,
-      isSelectedToday: true
+      isSelectedToday: true,
+      isSelectedFuture: false
     });
 
     this.initCalendar(today.getFullYear(), today.getMonth() + 1);
@@ -2620,27 +2638,36 @@ function createDataRecordsPageConfig(options = {}) {
     const selectedDate = baseDate instanceof Date ? new Date(baseDate) : parseDateKey(baseDate);
     const today = parseDateKey(this.formatDate(new Date()));
     const msPerDay = 24 * 60 * 60 * 1000;
-    const daysToToday = Math.max(0, Math.floor((today.getTime() - selectedDate.getTime()) / msPerDay));
+    const selectedDateKey = this.formatDate(selectedDate);
+    const todayKey = this.formatDate(today);
+    const dayOffsetFromToday = Math.floor((selectedDate.getTime() - today.getTime()) / msPerDay);
+    const daysToToday = Math.max(0, -dayOffsetFromToday);
     const baseRangeLength = this.data.dateRangeLength || 30;
-    const rangeLength = Math.max(baseRangeLength, daysToToday + 8);
+    const historyRangeLength = Math.max(baseRangeLength - 1, daysToToday);
+    const futureRangeLength = FUTURE_PRERECORD_DAYS;
     const dateList = [];
     
-    // 始终保持从今天向过去的连续时间轴，确保历史日期能被滚动到
-    for (let i = 0; i < rangeLength; i++) {
+    // 顶部快捷日期条沿用原来的“新日期在左”顺序：未来 7 天 -> 今天 -> 历史日期。
+    for (let offset = futureRangeLength; offset >= -historyRangeLength; offset -= 1) {
       const date = new Date(today);
-      date.setDate(today.getDate() - i);
+      date.setDate(today.getDate() + offset);
       dateList.push({
-        id: `date-${i}`,
+        id: `date-${dateList.length}`,
         date: this.formatDate(date),
         day: date.getDate(),
         month: date.getMonth() + 1,
         weekday: getWeekday(date),
-        isToday: this.formatDate(date) === this.formatDate(new Date())
+        isToday: this.formatDate(date) === todayKey,
+        isFuture: this.formatDate(date) > todayKey
       });
     }
     
     this.setData({ dateList });
-    return Math.min(daysToToday, Math.max(rangeLength - 1, 0));
+    const selectedIndex = futureRangeLength - dayOffsetFromToday;
+    if (selectedDateKey > getFuturePrerecordEndDateKey(today)) {
+      return 0;
+    }
+    return Math.min(Math.max(selectedIndex, 0), Math.max(dateList.length - 1, 0));
   },
 
   // 初始化日历数据
@@ -2746,7 +2773,8 @@ function createDataRecordsPageConfig(options = {}) {
       formattedSelectedDate: this.formatDisplayDate(selectedDate),
       selectedDateIndex: index,
       currentDateId: `date-${index}`,
-      isSelectedToday: selectedDate === this.formatDate(new Date())
+      isSelectedToday: selectedDate === this.formatDate(new Date()),
+      isSelectedFuture: isFutureDateKey(selectedDate)
     });
     
     this.fetchDailyRecords(selectedDate);
@@ -3162,6 +3190,14 @@ function createDataRecordsPageConfig(options = {}) {
       this.handleCopyDatePicked(selectedDate);
       return;
     }
+
+    if (isBeyondFuturePrerecordDate(selectedDate)) {
+      wx.showToast({
+        title: '最多可提前记录7天',
+        icon: 'none'
+      });
+      return;
+    }
     
     const selectedIndex = this.initDateList(parseDateKey(selectedDate));
     
@@ -3170,8 +3206,9 @@ function createDataRecordsPageConfig(options = {}) {
       formattedSelectedDate: this.formatDisplayDate(selectedDate),
       showCalendarPicker: false,
       selectedDateIndex: selectedIndex,
-      currentDateId: `date-${selectedIndex}`,
-      isSelectedToday: selectedDate === this.formatDate(new Date())
+      currentDateId: selectedIndex >= 0 ? `date-${selectedIndex}` : '',
+      isSelectedToday: selectedDate === this.formatDate(new Date()),
+      isSelectedFuture: isFutureDateKey(selectedDate)
     });
     
     this.fetchDailyRecords(selectedDate);
@@ -3193,7 +3230,8 @@ function createDataRecordsPageConfig(options = {}) {
       showCalendarPicker: false,
       selectedDateIndex: selectedIndex,
       currentDateId: `date-${selectedIndex}`,
-      isSelectedToday: true
+      isSelectedToday: true,
+      isSelectedFuture: false
     });
     
     this.fetchDailyRecords(formattedDate);
@@ -3202,6 +3240,10 @@ function createDataRecordsPageConfig(options = {}) {
 
   isFutureCalendarDay(dateStr) {
     return isFutureDateKey(dateStr);
+  },
+
+  isBeyondFuturePrerecordDate(dateStr) {
+    return isBeyondFuturePrerecordDate(dateStr);
   },
 
   switchTab: function(e) {
@@ -6008,6 +6050,10 @@ function createDataRecordsPageConfig(options = {}) {
   openBasicInfoEditor(e) {
     const { field = '', label = '', unit = '' } = e.currentTarget.dataset || {};
     if (!field) return;
+    if (this.data.isSelectedFuture) {
+      wx.showToast({ title: '未来日期不可编辑身高体重', icon: 'none' });
+      return;
+    }
     const currentValue = this.data[field];
     this.setData({
       showBasicInfoModal: true,
@@ -6146,6 +6192,9 @@ function createDataRecordsPageConfig(options = {}) {
       if (result?.recordId && !this.data.growthRecordId) {
         this.setData({ growthRecordId: result.recordId });
       }
+      if (Object.prototype.hasOwnProperty.call(updates, 'weight') || Object.prototype.hasOwnProperty.call(updates, 'height')) {
+        await this.markFuturePrerecordSummariesDirty(babyUid, selectedDate);
+      }
       return;
     }
 
@@ -6164,6 +6213,21 @@ function createDataRecordsPageConfig(options = {}) {
     });
     // 直接写库的 legacy 分支也要让当天汇总失效（v2 分支由模型层自动失效）。
     await DailySummaryV2Model.markDirty(babyUid, selectedDate);
+    if (Object.prototype.hasOwnProperty.call(updates, 'weight') || Object.prototype.hasOwnProperty.call(updates, 'height')) {
+      await this.markFuturePrerecordSummariesDirty(babyUid, selectedDate);
+    }
+  },
+
+  async markFuturePrerecordSummariesDirty(babyUid, startDateStr) {
+    if (!babyUid || !startDateStr) return;
+    const today = toDateKey(new Date());
+    const startDate = startDateStr < today ? today : startDateStr;
+    const endDate = getFuturePrerecordEndDateKey(today);
+    for (let offset = 0; offset <= FUTURE_PRERECORD_DAYS; offset += 1) {
+      const targetDateStr = addDaysToDateKey(startDate, offset);
+      if (targetDateStr > endDate) break;
+      await DailySummaryV2Model.markDirty(babyUid, targetDateStr);
+    }
   },
 
   isNumberValue(value) {
