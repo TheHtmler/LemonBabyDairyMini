@@ -81,3 +81,61 @@ test('data records supports seven-day future prerecording without future weight 
   assert.match(pageJs, /await DailySummaryV2Model\.markDirty\(babyUid,\s*targetDateStr\)/);
   assert.match(pageJs, /await this\.markFuturePrerecordSummariesDirty\(babyUid,\s*selectedDate\)/);
 });
+
+test('data record modals avoid null string props and component tag selectors', () => {
+  const pageJs = fs.readFileSync('miniprogram/pages/data-records-v2/index.js', 'utf8');
+  const pageWxml = fs.readFileSync('miniprogram/pages/data-records-v2/index.wxml', 'utf8');
+  const foodModalWxml = fs.readFileSync('miniprogram/components/food-intake-modal/food-intake-modal.wxml', 'utf8');
+  const foodModalWxss = fs.readFileSync('miniprogram/components/food-intake-modal/food-intake-modal.wxss', 'utf8');
+  const feedingModalWxml = fs.readFileSync('miniprogram/components/feeding-modal/feeding-modal.wxml', 'utf8');
+  const feedingModalWxss = fs.readFileSync('miniprogram/components/feeding-modal/feeding-modal.wxss', 'utf8');
+
+  assert.match(pageWxml, /selectedMedicationName="\{\{newMedication\.name \|\| ''\}\}"/);
+  assert.match(pageWxml, /dosage="\{\{newMedication\.dosage \|\| ''\}\}"/);
+  assert.match(pageWxml, /unit="\{\{newMedication\.unit \|\| ''\}\}"/);
+  assert.match(pageWxml, /time="\{\{newMedication\.time \|\| ''\}\}"/);
+  assert.match(pageWxml, /frequency="\{\{newMedication\.frequency \|\| ''\}\}"/);
+  assert.match(pageWxml, /notes="\{\{newMedication\.notes \|\| ''\}\}"/);
+  assert.match(pageWxml, /selectedMedicationName="\{\{editingMedication \? \(editingMedication\.medicationName \|\| ''\) : ''\}\}"/);
+  assert.match(pageWxml, /dosage="\{\{editingMedication \? \(editingMedication\.dosage \|\| ''\) : ''\}\}"/);
+  assert.match(pageWxml, /unit="\{\{editingMedication \? \(editingMedication\.unit \|\| ''\) : ''\}\}"/);
+  assert.match(pageWxml, /time="\{\{editingMedication \? \(editingMedication\.actualTime \|\| ''\) : ''\}\}"/);
+  assert.match(pageWxml, /frequency="\{\{editingMedication \? \(editingMedication\.frequency \|\| ''\) : ''\}\}"/);
+  assert.match(pageWxml, /notes="\{\{editingMedication \? \(editingMedication\.notes \|\| ''\) : ''\}\}"/);
+  assert.match(pageJs, /dosage:\s*medication\.dosage \|\| ''/);
+  assert.match(pageJs, /unit:\s*medication\.unit \|\| ''/);
+
+  assert.match(foodModalWxml, /class="[^"]*input-group-input[^"]*"/);
+  assert.match(foodModalWxml, /class="[^"]*food-search-control[^"]*"/);
+  assert.match(foodModalWxml, /placeholder-class="food-search-placeholder"/);
+  assert.match(foodModalWxss, /\.input-group-input\s*\{/);
+  assert.match(foodModalWxss, /\.food-search-control\s*\{/);
+  assert.match(foodModalWxss, /\.food-search-placeholder\s*\{/);
+  assert.doesNotMatch(foodModalWxss, /\.[\w-]+\s+(input|text|view|button|textarea|picker|image|scroll-view)\b/);
+  assert.doesNotMatch(foodModalWxss, /::placeholder/);
+  assert.match(feedingModalWxml, /class="goal-coef-control"/);
+  assert.match(feedingModalWxml, /class="goal-calorie-control"/);
+  assert.match(feedingModalWxml, /class="nutrient-row-text"/);
+  assert.match(feedingModalWxml, /placeholder-class="notes-input-placeholder"/);
+  assert.match(feedingModalWxss, /\.goal-coef-control\s*\{/);
+  assert.match(feedingModalWxss, /\.goal-calorie-control\s*\{/);
+  assert.match(feedingModalWxss, /\.nutrient-row-text\s*\{/);
+  assert.match(feedingModalWxss, /\.notes-input-placeholder\s*\{/);
+  assert.doesNotMatch(feedingModalWxss, /\.[\w-]+\s+(input|text|view|button|textarea|picker|image|scroll-view)\b/);
+  assert.doesNotMatch(feedingModalWxss, /::placeholder/);
+});
+
+test('data records food catalog setData uses slim items without duplicated category buckets', () => {
+  const pageJs = fs.readFileSync('miniprogram/pages/data-records-v2/index.js', 'utf8');
+
+  assert.match(pageJs, /buildSlimFoodCatalogItem\(food = \{\}\)/);
+  assert.match(pageJs, /const slimFoods = combinedFoods\.map\(food => this\.buildSlimFoodCatalogItem\(food\)\)/);
+  assert.match(pageJs, /this\._foodCatalog = slimFoods/);
+  assert.match(pageJs, /this\._foodCatalogById = new Map\(slimFoods\.map\(food => \[food\._id, food\]\)\)/);
+  assert.match(pageJs, /getFoodCatalog\(\)/);
+  assert.match(pageJs, /foodCatalog: \[\]/);
+  assert.doesNotMatch(pageJs, /foodCatalog: slimFoods/);
+  assert.doesNotMatch(pageJs, /foodCatalog: combinedFoods/);
+  assert.doesNotMatch(pageJs, /categorizedFoods,\s*\n\s*foodCategories/);
+  assert.doesNotMatch(pageJs, /categorizedFoods\[[^\]]+\]\.push\(food\)/);
+});

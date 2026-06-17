@@ -81,22 +81,6 @@
   margin-bottom: 10rpx;
 }
 
-.input-group input {
-  width: 100%;
-  height: 72rpx;
-  border: 2rpx solid rgba(0, 0, 0, 0.08);
-  border-radius: 12rpx;
-  padding: 0 20rpx;
-  box-sizing: border-box;
-  font-size: 30rpx;
-  color: #333;
-  background: #fff;
-}
-
-.input-group input::placeholder {
-  color: #B5B5B5;
-}
-
 .picker-value {
   padding: 20rpx;
   background: rgba(255, 184, 0, 0.08);
@@ -183,7 +167,7 @@
   background: rgba(255, 184, 0, 0.08);
 }
 
-.nutrient-row text {
+.nutrient-row-text {
   color: #FF8C00;
 }
 
@@ -207,7 +191,7 @@
   outline: none;
 }
 
-.notes-input::placeholder {
+.notes-input-placeholder {
   color: #999;
   font-size: 26rpx;
 }
@@ -274,7 +258,7 @@
   padding: 10rpx 14rpx;
 }
 
-.goal-calorie-field input {
+.goal-calorie-control {
   flex: 1;
   font-size: 28rpx;
   color: #333;
@@ -338,7 +322,7 @@
   gap: 8rpx;
 }
 
-.goal-coef-input input {
+.goal-coef-control {
   flex: 1;
   font-size: 26rpx;
   color: #333;

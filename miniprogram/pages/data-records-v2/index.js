@@ -1556,7 +1556,8 @@ function createDataRecordsPageConfig(options = {}) {
       options = options.currentTarget.dataset || {};
     }
     const preferredCategory = options.category || options.preferredCategory || '';
-    if (!this.data.foodCatalog || this.data.foodCatalog.length === 0) {
+    const catalog = this.getFoodCatalog();
+    if (!catalog.length) {
       wx.showToast({
         title: '请先前往“我的-食物管理”添加食物',
         icon: 'none'
@@ -1565,8 +1566,8 @@ function createDataRecordsPageConfig(options = {}) {
     }
     const categories = this.data.foodCategories.length > 0 ? this.data.foodCategories : ['婴幼儿辅食'];
     let defaultCategory = preferredCategory || categories[0];
-    let foodsInCategory = this.data.categorizedFoods[defaultCategory] || [];
-    let defaultOptions = foodsInCategory.length > 0 ? foodsInCategory : this.data.foodCatalog;
+    let foodsInCategory = catalog.filter(food => (food.category || '婴幼儿辅食') === defaultCategory);
+    let defaultOptions = foodsInCategory.length > 0 ? foodsInCategory : catalog;
     let defaultFood = defaultOptions[0] || null;
     if (!defaultFood) {
       wx.showToast({ title: '暂无可用食物，请先添加', icon: 'none' });
@@ -1625,7 +1626,7 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   showFoodIntakeExperimentModal() {
-    if (!this.data.foodCatalog || this.data.foodCatalog.length === 0) {
+    if (!this.getFoodCatalog().length) {
       wx.showToast({
         title: '请先前往“我的-食物管理”添加食物',
         icon: 'none'
@@ -1854,7 +1855,7 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   initFoodExperimentCategories(preserveSelection = false) {
-    const catalog = this.data.foodCatalog || [];
+    const catalog = this.getFoodCatalog();
     const categorySet = new Set();
     catalog.forEach(food => {
       if (food.category) categorySet.add(food.category);
@@ -1886,7 +1887,7 @@ function createDataRecordsPageConfig(options = {}) {
         .orderBy('date', 'desc')
         .limit(30)
         .get();
-      const catalog = this.data.foodCatalog || [];
+      const catalog = this.getFoodCatalog();
       const foodMap = new Map(catalog.map(food => [food._id, food]));
       const result = [];
       const seen = new Set();
@@ -1913,7 +1914,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   filterFoodExperimentOptions(query = this.data.foodExperimentSearchQuery || '', options = {}) {
     const normalized = (query || '').trim().toLowerCase();
-    const catalog = this.data.foodCatalog || [];
+    const catalog = this.getFoodCatalog();
     const currentCategory = this.data.foodExperimentCategory || 'recent';
     let baseList = [];
 
@@ -1980,7 +1981,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   onFoodExperimentFoodSelect(e) {
     const { id } = e.detail;
-    const selectedFood = (this.data.foodCatalog || []).find(food => food._id === id);
+    const selectedFood = this.getFoodById(id);
     if (!selectedFood) return;
     this.setData({
       'foodExperiment.foodId': selectedFood._id,
@@ -2086,6 +2087,68 @@ function createDataRecordsPageConfig(options = {}) {
     });
   },
 
+  buildSlimFoodCatalogItem(food = {}) {
+    const nutritionBasis = food.nutritionBasis || {
+      quantity: food.baseQuantity || 100,
+      unit: food.baseUnit || (food.isLiquid ? 'ml' : 'g')
+    };
+    const nutritionPerBasis = food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {};
+
+    return {
+      _id: food._id || '',
+      name: food.name || '',
+      category: food.category || '婴幼儿辅食',
+      categoryLevel1: food.categoryLevel1 || food.category || '婴幼儿辅食',
+      categoryLevel2: food.categoryLevel2 || '',
+      baseUnit: nutritionBasis.unit || food.baseUnit || 'g',
+      baseQuantity: Number(nutritionBasis.quantity || food.baseQuantity) || 100,
+      nutritionBasis: {
+        quantity: Number(nutritionBasis.quantity || food.baseQuantity) || 100,
+        unit: nutritionBasis.unit || food.baseUnit || 'g'
+      },
+      nutritionPerBasis: {
+        calories: Number(nutritionPerBasis.calories) || 0,
+        protein: Number(nutritionPerBasis.protein) || 0,
+        carbs: Number(nutritionPerBasis.carbs) || 0,
+        fat: Number(nutritionPerBasis.fat) || 0,
+        fiber: Number(nutritionPerBasis.fiber) || 0,
+        sodium: Number(nutritionPerBasis.sodium) || 0
+      },
+      nutritionPerUnit: {
+        calories: Number(nutritionPerBasis.calories) || 0,
+        protein: Number(nutritionPerBasis.protein) || 0,
+        carbs: Number(nutritionPerBasis.carbs) || 0,
+        fat: Number(nutritionPerBasis.fat) || 0,
+        fiber: Number(nutritionPerBasis.fiber) || 0,
+        sodium: Number(nutritionPerBasis.sodium) || 0
+      },
+      proteinSource: food.proteinSource || 'natural',
+      proteinQuality: food.proteinQuality || '',
+      proteinSplit: food.proteinSplit || null,
+      milkType: food.milkType || '',
+      nutritionSource: food.nutritionSource || '',
+      sourceType: food.sourceType || (food.isSystem ? 'system' : 'user_custom'),
+      sourceSystemFoodId: food.sourceSystemFoodId || '',
+      sourceFoodCode: food.sourceFoodCode || '',
+      isSystem: !!food.isSystem,
+      isLiquid: !!food.isLiquid || String(nutritionBasis.unit || '').toLowerCase() === 'ml',
+      aliasText: food.aliasText || '',
+      sourceLabel: food.sourceLabel || this.getFoodSourceLabel(food)
+    };
+  },
+
+  getFoodCatalog() {
+    return Array.isArray(this._foodCatalog) ? this._foodCatalog : (this.data.foodCatalog || []);
+  },
+
+  getFoodById(foodId) {
+    if (!foodId) return null;
+    if (this._foodCatalogById && this._foodCatalogById.has(foodId)) {
+      return this._foodCatalogById.get(foodId);
+    }
+    return this.getFoodCatalog().find(food => food._id === foodId) || null;
+  },
+
   async loadFoodCatalog() {
     try {
       const babyUid = getBabyUid();
@@ -2111,29 +2174,19 @@ function createDataRecordsPageConfig(options = {}) {
           };
         });
 
-      const categorizedFoods = {};
       const categorySet = new Set();
-
       combinedFoods.forEach(food => {
-        const category = food.category || '婴幼儿辅食';
-        if (!categorizedFoods[category]) {
-          categorizedFoods[category] = [];
-        }
-        categorizedFoods[category].push(food);
-        categorySet.add(category);
+        categorySet.add(food.category || '婴幼儿辅食');
       });
 
-      Object.keys(categorizedFoods).forEach(category => {
-        categorizedFoods[category] = categorizedFoods[category].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-      });
-
+      const slimFoods = combinedFoods.map(food => this.buildSlimFoodCatalogItem(food));
       const foodCategories = Array.from(categorySet).sort((a, b) => a.localeCompare(b));
+      this._foodCatalog = slimFoods;
+      this._foodCatalogById = new Map(slimFoods.map(food => [food._id, food]));
 
       this.setData({
-        foodCatalog: combinedFoods,
-        categorizedFoods,
+        foodCatalog: [],
+        categorizedFoods: {},
         foodCategories
       }, () => {
         this.filterFoodOptions(this.data.foodSearchQuery || '');
@@ -2141,6 +2194,8 @@ function createDataRecordsPageConfig(options = {}) {
       });
     } catch (error) {
       console.error('加载食物库失败:', error);
+      this._foodCatalog = [];
+      this._foodCatalogById = new Map();
       this.setData({
         foodCatalog: [],
         foodCategories: [],
@@ -2174,7 +2229,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   filterFoodOptions(query = this.data.foodSearchQuery || '', options = {}) {
     const normalized = (query || '').trim().toLowerCase();
-    const catalog = this.data.foodCatalog || [];
+    const catalog = this.getFoodCatalog();
     const filtered = normalized
       ? catalog.filter(food => {
           const name = (food.name || '').toLowerCase();
@@ -2208,7 +2263,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   onFoodSelect(e) {
     const id = e.currentTarget.dataset.id;
-    const selectedFood = (this.data.foodCatalog || []).find(food => food._id === id);
+    const selectedFood = this.getFoodById(id);
     if (!selectedFood) return;
     this.setData({
       'newFoodIntake.category': selectedFood.category || '',
@@ -2264,7 +2319,7 @@ function createDataRecordsPageConfig(options = {}) {
       wx.showToast({ title: '记录不存在', icon: 'none' });
       return;
     }
-    const catalogFood = (this.data.foodCatalog || []).find(food => food._id === target.foodId);
+    const catalogFood = this.getFoodById(target.foodId);
     const selectedFood = catalogFood || {
       _id: target.foodId || '',
       name: target.nameSnapshot,
@@ -3267,7 +3322,7 @@ function createDataRecordsPageConfig(options = {}) {
     const time = intake.recordedAt || intake.mealTime || formatTime(new Date());
     const [year, month, day] = String(dateStr).split('-').map(Number);
     const [hours, minutes] = String(time || '00:00').split(':').map(Number);
-    const catalogFood = (this.data.foodCatalog || []).find(food => food._id === intake.foodId) || {};
+    const catalogFood = this.getFoodById(intake.foodId) || {};
 
     return {
       babyUid,
@@ -4652,9 +4707,9 @@ function createDataRecordsPageConfig(options = {}) {
     }
     const newMedication = {
       ...this.data.newMedication,
-      name: medication.name,
-      dosage: medication.dosage,
-      unit: medication.unit,
+      name: medication.name || '',
+      dosage: medication.dosage || '',
+      unit: medication.unit || '',
       frequency: medication.frequency || ''
     };
     this.setData({ newMedication, selectedMedicationIndex: index });

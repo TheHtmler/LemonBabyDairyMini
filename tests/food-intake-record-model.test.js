@@ -188,6 +188,30 @@ test('replaceMealBatch soft deletes existing meal records then creates replaceme
   assert.equal(writes.adds[0].data.source, 'meal_editor_v2');
 });
 
+test('createFoodIntake preserves food snapshot library identity for recent foods', async () => {
+  const { db, writes } = createDbMock();
+  const model = loadFreshModel(db);
+
+  await model.createFoodIntake({
+    babyUid: 'baby-1',
+    date: '2026-06-15',
+    foodId: 'sys-old',
+    foodName: '小麦',
+    foodSnapshot: {
+      name: '小麦',
+      libraryScope: 'system',
+      sourceType: 'system',
+      sourceSystemFoodId: 'sys-source-1',
+      sourceFoodCode: '011101'
+    }
+  });
+
+  assert.equal(writes.adds[0].data.foodSnapshot.libraryScope, 'system');
+  assert.equal(writes.adds[0].data.foodSnapshot.sourceType, 'system');
+  assert.equal(writes.adds[0].data.foodSnapshot.sourceSystemFoodId, 'sys-source-1');
+  assert.equal(writes.adds[0].data.foodSnapshot.sourceFoodCode, '011101');
+});
+
 test('findMigratedLegacyIntake locates records by legacy source and migration version', async () => {
   const { db, writes } = createDbMock({
     foodIntakeRecords: [
@@ -242,3 +266,55 @@ test('findRecentFoodIntakes keeps the newest active record for each food', async
   assert.deepEqual(records.map(item => item._id), ['rice-new', 'apple']);
 }
 );
+
+test('findRecentFoodIntakes includes legacy active records without status', async () => {
+  const { db, writes } = createDbMock({
+    foodIntakeRecords: [
+      { _id: 'legacy-rice', babyUid: 'baby-1', date: '2026-06-15', foodId: 'rice', foodName: '米粉', recordedAt: '2026-06-15T09:00:00.000Z' },
+      { _id: 'deleted-apple', babyUid: 'baby-1', date: '2026-06-15', status: 'deleted', foodId: 'apple', foodName: '苹果泥', recordedAt: '2026-06-15T10:00:00.000Z' }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  const records = await model.findRecentFoodIntakes('baby-1', { limit: 5 });
+
+  assert.deepEqual(records.map(item => item._id), ['legacy-rice']);
+  assert.deepEqual(writes.reads[0].where, { babyUid: 'baby-1' });
+});
+
+test('findRecentFoodIntakes fetches recent dates before limiting time-only meal records', async () => {
+  const olderIsoRecords = Array.from({ length: 60 }, (_, index) => ({
+    _id: `old-${index}`,
+    babyUid: 'baby-1',
+    date: '2026-06-16',
+    status: 'active',
+    foodId: `old-food-${index}`,
+    foodName: `旧食物${index}`,
+    recordedAt: `2026-06-16T${String(index % 24).padStart(2, '0')}:00:00.000Z`
+  }));
+  const { db, writes } = createDbMock({
+    foodIntakeRecords: [
+      ...olderIsoRecords,
+      {
+        _id: 'today-system-food',
+        babyUid: 'baby-1',
+        date: '2026-06-17',
+        status: 'active',
+        foodId: 'sys-wheat',
+        foodName: '小麦',
+        recordedAt: '16:00',
+        foodSnapshot: {
+          libraryScope: 'system',
+          sourceType: 'system',
+          sourceFoodCode: '011101'
+        }
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  const records = await model.findRecentFoodIntakes('baby-1', { limit: 1, fetchLimit: 60 });
+
+  assert.equal(writes.reads[0].orderBy.field, 'date');
+  assert.deepEqual(records.map(item => item._id), ['today-system-food']);
+});

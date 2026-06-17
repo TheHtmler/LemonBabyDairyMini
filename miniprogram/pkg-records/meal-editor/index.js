@@ -485,15 +485,29 @@ Page({
         if (categoryA !== categoryB) return categoryA.localeCompare(categoryB);
         return (a.name || '').localeCompare(b.name || '');
         });
-      this.setData({
-        foodCatalog: catalog
-      });
+      this.setFoodCatalog(catalog);
     } catch (error) {
       console.error('加载食物库失败:', error);
-      this.setData({
-        foodCatalog: []
-      });
+      this.setFoodCatalog([]);
     }
+  },
+
+  getFoodCatalog() {
+    return Array.isArray(this._foodCatalog) ? this._foodCatalog : (this.data.foodCatalog || []);
+  },
+
+  setFoodCatalog(catalog = []) {
+    const list = Array.isArray(catalog) ? catalog : [];
+    this._foodCatalog = list;
+    this._foodCatalogById = new Map(list.map(food => [food._id, food]));
+  },
+
+  getFoodById(foodId) {
+    if (!foodId) return null;
+    if (this._foodCatalogById && this._foodCatalogById.has(foodId)) {
+      return this._foodCatalogById.get(foodId);
+    }
+    return this.getFoodCatalog().find(food => food._id === foodId) || null;
   },
 
   getFoodSourceLabel(food = {}) {
@@ -610,8 +624,7 @@ Page({
     const selectedFoodIds = readFoodSelectionIds(selection);
     if (!selectedFoodIds.length) return false;
     wx.removeStorageSync(FOOD_PICKER_SELECTION_KEY);
-    const catalogMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
-    const selectedFoods = selectedFoodIds.map(id => catalogMap.get(id)).filter(Boolean);
+    const selectedFoods = selectedFoodIds.map(id => this.getFoodById(id)).filter(Boolean);
     if (!selectedFoods.length) {
       wx.showToast({ title: '未找到所选食物，请重新选择', icon: 'none' });
       return false;
@@ -1003,10 +1016,9 @@ Page({
         return;
       }
 
-      const catalogMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
       const firstIntake = targetIntakes[0];
       const items = targetIntakes.map((intake, index) => {
-        const catalogFood = catalogMap.get(intake.foodId);
+        const catalogFood = this.getFoodById(intake.foodId);
         const snapshot = intake.foodSnapshot || {};
         const fallbackFood = {
           _id: intake.foodId || `legacy_food_${index}`,

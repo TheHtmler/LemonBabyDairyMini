@@ -12,6 +12,7 @@ const {
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
 const FOOD_PICKER_CATALOG_CACHE_KEY = 'meal_food_picker_catalog_cache';
+const FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY = 'meal_food_picker_last_library_scope';
 const FOOD_PICKER_CATALOG_CACHE_TTL = 10 * 60 * 1000;
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 const MAX_RECENT_FOODS = 10;
@@ -224,6 +225,7 @@ Page({
 
   async onLoad() {
     this.loadFoodPickerTargetContext();
+    this.restoreLastLibraryScope();
     const previousSelection = wx.getStorageSync(FOOD_PICKER_SELECTION_KEY);
     this.pendingSelectedFoodIds = readFoodSelectionIds(previousSelection);
     this.pendingSelectedFoodQuantities = new Map(
@@ -278,16 +280,31 @@ Page({
     });
   },
 
+  isValidLibraryScope(scope = '') {
+    return FOOD_LIBRARY_TABS.some(item => item.scope === scope);
+  },
+
+  restoreLastLibraryScope() {
+    const scope = wx.getStorageSync(FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY);
+    if (!this.isValidLibraryScope(scope) || scope === this.data.activeLibraryScope) return;
+    this.setData({ activeLibraryScope: scope });
+  },
+
+  rememberLibraryScope(scope = '') {
+    if (!this.isValidLibraryScope(scope)) return;
+    safeSetStorageSync(FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY, scope, { silent: true });
+  },
+
   async loadCachedFoodCatalog() {
     const cache = wx.getStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY);
     const catalog = Array.isArray(cache?.catalog) ? cache.catalog : [];
     if (!catalog.length || Date.now() - (Number(cache.cachedAt) || 0) > FOOD_PICKER_CATALOG_CACHE_TTL) {
       return false;
     }
+    this.setFoodCatalog(catalog);
     const foodCategories = this.buildFoodCategories(catalog, this.data.activeLibraryScope);
     await new Promise(resolve => {
       this.setData({
-        foodCatalog: catalog,
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, () => {
@@ -311,9 +328,9 @@ Page({
         preferLocalSystemIndex: true
       });
       const catalog = this.formatFoodCatalog(foods || []);
+      this.setFoodCatalog(catalog);
       const foodCategories = this.buildFoodCategories(catalog, this.data.activeLibraryScope);
       this.setData({
-        foodCatalog: catalog,
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, async () => {
@@ -329,6 +346,7 @@ Page({
     } catch (error) {
       console.error('加载食物库失败:', error);
       wx.showToast({ title: '加载失败', icon: 'none' });
+      this.setFoodCatalog([]);
       this.setData({
         foodCatalog: [],
         foodCategories: [],
@@ -391,7 +409,8 @@ Page({
       isSystem: food.isSystem === true,
       isSystemSnapshot: food.isSystemSnapshot === true,
       sourceType: food.sourceType,
-      sourceFoodId: food.sourceFoodId,
+      sourceSystemFoodId: food.sourceSystemFoodId,
+      sourceFoodCode: food.sourceFoodCode || food.origin?.foodCode,
       libraryScope: this.getFoodLibraryScope(food),
       sourceLabel: this.getFoodSourceLabel(food)
     });
@@ -409,7 +428,7 @@ Page({
     return estimateStorageBytes(payload) <= FOOD_PICKER_CATALOG_CACHE_MAX_BYTES ? payload : null;
   },
 
-  cacheFoodCatalog(catalog = this.data.foodCatalog || []) {
+  cacheFoodCatalog(catalog = this.getFoodCatalog()) {
     const payload = this.buildFoodCatalogCachePayload(catalog);
     if (!payload) {
       safeRemoveStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, { silent: true });
@@ -418,7 +437,64 @@ Page({
     return safeSetStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, payload, { silent: true });
   },
 
-  async resolveCatalogImageUrls(catalog = this.data.foodCatalog || []) {
+  getFoodCatalog() {
+    return Array.isArray(this._foodCatalog) ? this._foodCatalog : (this.data.foodCatalog || []);
+  },
+
+  setFoodCatalog(catalog = []) {
+    const list = Array.isArray(catalog) ? catalog : [];
+    this._foodCatalog = list;
+    this._foodCatalogById = new Map(list.map(food => [food._id, food]));
+  },
+
+  getFoodById(foodId) {
+    if (!foodId) return null;
+    if (this._foodCatalogById && this._foodCatalogById.has(foodId)) {
+      return this._foodCatalogById.get(foodId);
+    }
+    return this.getFoodCatalog().find(food => food._id === foodId) || null;
+  },
+
+  findFoodForRecentIntake(intake = {}) {
+    const byId = this.getFoodById(intake.foodId);
+    if (byId) return byId;
+
+    const snapshot = intake.foodSnapshot || {};
+    const desiredScope = intake.libraryScope || snapshot.libraryScope ||
+      ((intake.sourceType || snapshot.sourceType) === 'system' ? 'system' : '');
+    const matchesDesiredScope = food => !desiredScope || this.getFoodLibraryScope(food) === desiredScope;
+    const sourceSystemFoodId = snapshot.sourceSystemFoodId || intake.sourceSystemFoodId || '';
+    const bySourceSystemId = this.getFoodById(sourceSystemFoodId);
+    if (bySourceSystemId) return bySourceSystemId;
+
+    const sourceFoodCode = snapshot.sourceFoodCode || intake.sourceFoodCode || '';
+    if (sourceFoodCode) {
+      const byCode = this.getFoodCatalog().find(food =>
+        matchesDesiredScope(food) &&
+        (food.sourceFoodCode === sourceFoodCode || food.origin?.foodCode === sourceFoodCode)
+      );
+      if (byCode) return byCode;
+    }
+
+    const snapshotName = snapshot.name || intake.foodName || intake.nameSnapshot || '';
+    const snapshotCategory = snapshot.category || intake.category || '';
+    if (snapshotName) {
+      const byName = this.getFoodCatalog().find(food =>
+        matchesDesiredScope(food) &&
+        food.name === snapshotName &&
+        (!snapshotCategory || food.category === snapshotCategory || food.categoryLevel1 === snapshotCategory)
+      );
+      if (byName || desiredScope) return byName || null;
+      return this.getFoodCatalog().find(food =>
+        food.name === snapshotName &&
+        (!snapshotCategory || food.category === snapshotCategory || food.categoryLevel1 === snapshotCategory)
+      ) || null;
+    }
+
+    return null;
+  },
+
+  async resolveCatalogImageUrls(catalog = this.getFoodCatalog()) {
     const cloudImageFoods = (catalog || []).filter(food =>
       (food?.image || '').toString().trim().startsWith('cloud://')
     );
@@ -431,8 +507,8 @@ Page({
         this.data.activeLibraryScope,
         this.data.foodSearchQuery || ''
       );
+      this.setFoodCatalog(resolvedCatalog);
       this.setData({
-        foodCatalog: resolvedCatalog,
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, () => {
@@ -456,7 +532,7 @@ Page({
   },
 
   buildFoodCategories(
-    catalog = this.data.foodCatalog || [],
+    catalog = this.getFoodCatalog(),
     scope = this.data.activeLibraryScope || 'mine',
     query = this.data.foodSearchQuery || ''
   ) {
@@ -489,8 +565,7 @@ Page({
   restoreSelectedFoodCartFromIds() {
     const ids = Array.isArray(this.pendingSelectedFoodIds) ? this.pendingSelectedFoodIds : [];
     if (!ids.length) return;
-    const foodMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
-    const selectedFoodCart = ids.map(id => foodMap.get(id)).filter(Boolean);
+    const selectedFoodCart = ids.map(id => this.getFoodById(id)).filter(Boolean);
     this.setData({ selectedFoodCart }, () => {
       this.filterFoodOptions(this.data.foodSearchQuery || '');
     });
@@ -512,7 +587,6 @@ Page({
         limit: MAX_RECENT_FOODS * 2,
         fetchLimit: 60
       });
-      const foodMap = new Map((this.data.foodCatalog || []).map(food => [food._id, food]));
       const recentByScope = {
         mine: [],
         system: []
@@ -522,13 +596,13 @@ Page({
         system: new Set()
       };
       for (const intake of recentRecords || []) {
-        if (!intake || !intake.foodId) continue;
-        const food = foodMap.get(intake.foodId);
+        if (!intake) continue;
+        const food = this.findFoodForRecentIntake(intake);
         if (!food) continue;
         const scope = this.getFoodLibraryScope(food);
         if (!recentByScope[scope] || recentByScope[scope].length >= MAX_RECENT_FOODS) continue;
-        if (seenByScope[scope].has(intake.foodId)) continue;
-        seenByScope[scope].add(intake.foodId);
+        if (seenByScope[scope].has(food._id)) continue;
+        seenByScope[scope].add(food._id);
         recentByScope[scope].push(food);
         if (recentByScope.mine.length >= MAX_RECENT_FOODS && recentByScope.system.length >= MAX_RECENT_FOODS) {
           break;
@@ -568,7 +642,7 @@ Page({
     const normalized = normalizeSearchText(query);
     const activeCategory = this.data.activeCategory || '';
     const activeLibraryScope = this.data.activeLibraryScope || 'mine';
-    let baseList = (this.data.foodCatalog || []).filter(food =>
+    let baseList = this.getFoodCatalog().filter(food =>
       this.getFoodLibraryScope(food) === activeLibraryScope
     );
 
@@ -694,7 +768,8 @@ Page({
   switchLibraryScope(e) {
     const { scope } = e.currentTarget.dataset || {};
     if (!scope || scope === this.data.activeLibraryScope) return;
-    const foodCategories = this.buildFoodCategories(this.data.foodCatalog || [], scope);
+    this.rememberLibraryScope(scope);
+    const foodCategories = this.buildFoodCategories(this.getFoodCatalog(), scope);
     this.setData({
       activeLibraryScope: scope,
       foodCategories,
@@ -716,7 +791,7 @@ Page({
   onFoodSearchInput(e) {
     const query = e.detail.value || '';
     const foodCategories = this.buildFoodCategories(
-      this.data.foodCatalog || [],
+      this.getFoodCatalog(),
       this.data.activeLibraryScope,
       query
     );
@@ -731,7 +806,7 @@ Page({
 
   clearSearch() {
     const foodCategories = this.buildFoodCategories(
-      this.data.foodCatalog || [],
+      this.getFoodCatalog(),
       this.data.activeLibraryScope,
       ''
     );
@@ -750,7 +825,7 @@ Page({
     const visibleIndex = this.findVisibleFoodIndex(id);
     const food = visibleIndex >= 0
       ? this.data.visibleFoodOptions[visibleIndex]
-      : this.findFilteredFoodOption(id) || (this.data.foodCatalog || []).find(item => item._id === id);
+      : this.findFilteredFoodOption(id) || this.getFoodById(id);
     if (!food) return;
     this.addFoodToSelectionCart(food, e);
   },
@@ -925,7 +1000,7 @@ Page({
   findSelectedCartFood(foodId) {
     if (!foodId) return null;
     return (this.data.selectedFoodCart || []).find(food => food._id === foodId)
-      || (this.data.foodCatalog || []).find(food => food._id === foodId)
+      || this.getFoodById(foodId)
       || null;
   },
 

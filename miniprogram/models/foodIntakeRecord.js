@@ -85,6 +85,7 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
     proteinQuality: foodSnapshot.proteinQuality || '',
     nutritionPerBasis,
     sourceType: foodSnapshot.sourceType || '',
+    libraryScope: foodSnapshot.libraryScope || (foodSnapshot.sourceType === 'system' ? 'system' : ''),
     sourceSystemFoodId: foodSnapshot.sourceSystemFoodId || '',
     sourceFoodCode: foodSnapshot.sourceFoodCode || ''
   };
@@ -176,8 +177,29 @@ function normalizeSortOrder(value, index = 0) {
   return Number.isFinite(num) ? num : index;
 }
 
+function isTimeOnly(value = '') {
+  return /^\d{1,2}:\d{2}(:\d{2})?$/.test(String(value || '').trim());
+}
+
+function normalizeTimeOnly(value = '') {
+  const parts = String(value || '').trim().split(':');
+  const hours = String(Number(parts[0]) || 0).padStart(2, '0');
+  const minutes = String(Number(parts[1]) || 0).padStart(2, '0');
+  const seconds = String(Number(parts[2]) || 0).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+}
+
 function recordUpdatedTimestamp(record = {}) {
-  return record.updatedAt || record.recordedAt || record.createdAt || record.time || '';
+  const auditTimestamp = record.updatedAt || record.createdAt;
+  if (auditTimestamp) return auditTimestamp;
+
+  const date = record.date || '';
+  const recordTime = record.recordedAt || record.time || '';
+  if (date && isTimeOnly(recordTime)) {
+    return `${date}T${normalizeTimeOnly(recordTime)}`;
+  }
+  if (recordTime) return recordTime;
+  return date;
 }
 
 function recentFoodKey(record = {}) {
@@ -348,16 +370,15 @@ async function findRecentFoodIntakes(babyUid, options = {}) {
   const outputLimit = Number(options.limit) || 20;
   const res = await foodIntakeCollection
     .where({
-      babyUid,
-      status: 'active'
+      babyUid
     })
-    .orderBy('recordedAt', 'desc')
+    .orderBy('date', 'desc')
     .limit(fetchLimit)
     .get();
   const seen = new Set();
   const recent = [];
   (res.data || [])
-    .filter((record) => record.status === 'active')
+    .filter((record) => record.status !== 'deleted')
     .sort((left, right) => String(recordUpdatedTimestamp(right)).localeCompare(String(recordUpdatedTimestamp(left))))
     .forEach((record) => {
       const key = recentFoodKey(record);

@@ -27,11 +27,11 @@
           </view>
         </view>
         <view class="nutrient-row">
-          <text>蛋白 {{feedingData.normalProtein || 0}} g</text>
-          <text>热量 {{feedingData.normalCalories || 0}} kcal</text>
+          <text class="nutrient-row-text">蛋白 {{feedingData.normalProtein || 0}} g</text>
+          <text class="nutrient-row-text">热量 {{feedingData.normalCalories || 0}} kcal</text>
         </view>
         <view class="nutrient-row" wx:if="{{feedingData.naturalMilkType === 'formula'}}">
-          <text>粉重 {{feedingData.formulaPowderWeight || 0}} g</text>
+          <text class="nutrient-row-text">粉重 {{feedingData.formulaPowderWeight || 0}} g</text>
         </view>
 
         <view class="input-group">
@@ -44,11 +44,11 @@
           </view>
         </view>
         <view class="nutrient-row">
-          <text>蛋白 {{feedingData.specialProtein || 0}} g</text>
-          <text>热量 {{feedingData.specialCalories || 0}} kcal</text>
+          <text class="nutrient-row-text">蛋白 {{feedingData.specialProtein || 0}} g</text>
+          <text class="nutrient-row-text">热量 {{feedingData.specialCalories || 0}} kcal</text>
         </view>
         <view class="nutrient-row">
-          <text>粉重 {{feedingData.specialMilkPowder || 0}} g</text>
+          <text class="nutrient-row-text">粉重 {{feedingData.specialMilkPowder || 0}} g</text>
         </view>
 
         <view class="goal-hint-card" wx:if="{{showGoalHint}}">
@@ -62,7 +62,7 @@
           <view class="goal-calorie-input" wx:if="{{quickGoalTarget === 'calorie'}}">
             <text class="goal-calorie-label">热量系数</text>
             <view class="goal-calorie-field">
-              <input type="digit" value="{{calorieCoefficientInput}}" placeholder="请输入热量系数" data-field="calorieCoefficientInput" bindinput="handleCoefficientInput" />
+              <input class="goal-calorie-control" type="digit" value="{{calorieCoefficientInput}}" placeholder="请输入热量系数" data-field="calorieCoefficientInput" bindinput="handleCoefficientInput" />
               <text class="goal-calorie-unit">kcal/kg</text>
             </view>
           </view>
@@ -74,14 +74,14 @@
               <view class="goal-coef-field">
                 <text class="goal-coef-label">天然蛋白系数</text>
                 <view class="goal-coef-input">
-                  <input type="digit" value="{{naturalProteinCoefficientInput}}" placeholder="请输入天然蛋白系数" data-field="naturalProteinCoefficientInput" bindinput="handleCoefficientInput" />
+                  <input class="goal-coef-control" type="digit" value="{{naturalProteinCoefficientInput}}" placeholder="请输入天然蛋白系数" data-field="naturalProteinCoefficientInput" bindinput="handleCoefficientInput" />
                   <text class="goal-coef-unit">g/kg/d</text>
                 </view>
               </view>
               <view class="goal-coef-field">
                 <text class="goal-coef-label">特殊蛋白系数</text>
                 <view class="goal-coef-input">
-                  <input type="digit" value="{{specialProteinCoefficientInput}}" placeholder="请输入特殊蛋白系数" data-field="specialProteinCoefficientInput" bindinput="handleCoefficientInput" />
+                  <input class="goal-coef-control" type="digit" value="{{specialProteinCoefficientInput}}" placeholder="请输入特殊蛋白系数" data-field="specialProteinCoefficientInput" bindinput="handleCoefficientInput" />
                   <text class="goal-coef-unit">g/kg/d</text>
                 </view>
               </view>
@@ -159,7 +159,7 @@
         </view>
         <view class="input-group">
           <text class="label">备注</text>
-          <textarea class="notes-input" placeholder="可选，记录特殊情况" 
+          <textarea class="notes-input" placeholder="可选，记录特殊情况" placeholder-class="notes-input-placeholder"
                     value="{{feedingData.notes}}" data-field="notes" bindinput="handleInputChange"></textarea>
         </view>
       </view>

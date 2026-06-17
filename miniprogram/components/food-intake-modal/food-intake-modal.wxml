@@ -7,7 +7,7 @@
       <view class="food-experiment-search" wx:if="{{step === 'select'}}">
         <view class="food-search-input">
           <text class="search-icon">🔍</text>
-          <input type="text" value="{{searchQuery}}" placeholder="搜索食物名称或类别" confirm-type="search" bindinput="handleSearchInput" />
+          <input class="food-search-control" type="text" value="{{searchQuery}}" placeholder="搜索食物名称或类别" placeholder-class="food-search-placeholder" confirm-type="search" bindinput="handleSearchInput" />
         </view>
       </view>
       <view class="food-experiment-select" wx:if="{{step === 'select'}}">
@@ -56,7 +56,7 @@
         <view class="food-experiment-form-body">
           <view class="input-group">
             <text class="label">份量 ({{foodExperiment.unit || 'g'}})</text>
-            <input type="digit" value="{{foodExperiment.quantity}}" bindinput="handleQuantityInput" placeholder="请输入重量" />
+            <input class="input-group-input" type="digit" value="{{foodExperiment.quantity}}" bindinput="handleQuantityInput" placeholder="请输入重量" />
           </view>
           <view class="input-group">
             <text class="label">{{timeLabel}}</text>

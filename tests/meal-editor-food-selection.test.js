@@ -223,6 +223,130 @@ test('food picker recent category filters recent foods inside each library tab',
   }
 });
 
+test('food picker restores last system tab so system recent foods show on reentry', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const firstEntry = createPageInstance(page, {
+      foodCatalog: [systemFood, mineFood],
+      activeLibraryScope: 'mine',
+      activeCategory: 'recent',
+      recentFoodOptionsByScope: {
+        mine: [],
+        system: [systemFood]
+      }
+    });
+
+    firstEntry.switchLibraryScope({ currentTarget: { dataset: { scope: 'system' } } });
+    assert.equal(storage.meal_food_picker_last_library_scope, 'system');
+
+    const secondEntry = createPageInstance(page, {
+      foodCatalog: [systemFood, mineFood],
+      activeLibraryScope: 'mine',
+      activeCategory: 'recent',
+      recentFoodOptionsByScope: {
+        mine: [],
+        system: [systemFood]
+      }
+    });
+    secondEntry.restoreLastLibraryScope();
+    secondEntry.setData({
+      foodCategories: secondEntry.buildFoodCategories([systemFood, mineFood], secondEntry.data.activeLibraryScope)
+    });
+    secondEntry.filterFoodOptions('');
+
+    assert.equal(secondEntry.data.activeLibraryScope, 'system');
+    assert.deepEqual(secondEntry.data.visibleFoodOptions.map(item => item._id), ['sys-1']);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker recent system foods resolve by source code when saved id changes', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  let FoodIntakeRecordModel;
+  let previousFindRecent;
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord');
+    previousFindRecent = FoodIntakeRecordModel.findRecentFoodIntakes;
+    const currentSystemFood = {
+      ...systemFood,
+      _id: 'sys-new',
+      sourceFoodCode: 'FOOD-001'
+    };
+    const instance = createPageInstance(page, {
+      foodCatalog: [currentSystemFood],
+      activeLibraryScope: 'system',
+      activeCategory: 'recent'
+    });
+    FoodIntakeRecordModel.findRecentFoodIntakes = async () => [{
+      foodId: 'sys-old',
+      foodSnapshot: {
+        sourceFoodCode: 'FOOD-001',
+        libraryScope: 'system',
+        name: currentSystemFood.name
+      }
+    }];
+
+    await instance.loadRecentFoodOptions();
+
+    assert.deepEqual(instance.data.recentFoodOptionsByScope.system.map(item => item._id), ['sys-new']);
+  } finally {
+    if (FoodIntakeRecordModel) {
+      FoodIntakeRecordModel.findRecentFoodIntakes = previousFindRecent;
+    }
+    restoreWx();
+  }
+});
+
+test('food picker recent fallback keeps legacy system foods in the system tab', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  let FoodIntakeRecordModel;
+  let previousFindRecent;
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord');
+    previousFindRecent = FoodIntakeRecordModel.findRecentFoodIntakes;
+    const currentSystemFood = {
+      ...systemFood,
+      _id: 'sys-new'
+    };
+    const sameNameMineFood = {
+      ...mineFood,
+      _id: 'mine-wheat',
+      name: currentSystemFood.name,
+      category: currentSystemFood.category
+    };
+    const instance = createPageInstance(page, {
+      foodCatalog: [sameNameMineFood, currentSystemFood],
+      activeLibraryScope: 'system',
+      activeCategory: 'recent'
+    });
+    FoodIntakeRecordModel.findRecentFoodIntakes = async () => [{
+      foodId: 'sys-old',
+      libraryScope: 'system',
+      foodSnapshot: {
+        name: currentSystemFood.name,
+        category: currentSystemFood.category
+      }
+    }];
+
+    await instance.loadRecentFoodOptions();
+
+    assert.deepEqual(instance.data.recentFoodOptionsByScope.system.map(item => item._id), ['sys-new']);
+    assert.deepEqual(instance.data.recentFoodOptionsByScope.mine.map(item => item._id), []);
+  } finally {
+    if (FoodIntakeRecordModel) {
+      FoodIntakeRecordModel.findRecentFoodIntakes = previousFindRecent;
+    }
+    restoreWx();
+  }
+});
+
 test('food picker search filters category tabs and items together', () => {
   const storage = {};
   const restoreWx = installWxMock(storage);
@@ -476,7 +600,9 @@ test('food picker keeps loading while cached catalog waits for recent foods', as
   const restoreWx = installWxMock(storage);
   try {
     const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
-    const instance = createPageInstance(page);
+    const instance = createPageInstance(page, {
+      activeCategory: '婴幼儿辅食'
+    });
     let releaseRecent;
     const recentLoaded = new Promise(resolve => {
       releaseRecent = resolve;
@@ -501,6 +627,46 @@ test('food picker keeps loading while cached catalog waits for recent foods', as
     assert.equal(instance.data.loading, false);
     assert.deepEqual(instance.data.visibleFoodOptions.map(item => item._id), ['mine-1']);
     assert.equal(instance.data.filteredFoodCount, 1);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker keeps catalog outside page data when loading cached foods', async () => {
+  const largeFood = {
+    ...mineFood,
+    _id: 'mine-large',
+    name: '大字段食物',
+    rawPayload: 'x'.repeat(1024 * 1024)
+  };
+  const storage = {
+    meal_food_picker_catalog_cache: {
+      cachedAt: Date.now(),
+      catalog: [largeFood]
+    }
+  };
+  const restoreWx = installWxMock(storage);
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const instance = createPageInstance(page, {
+      activeCategory: '婴幼儿辅食'
+    });
+    const setDataKeys = [];
+    const originalSetData = instance.setData;
+    instance.setData = function(updates, callback) {
+      setDataKeys.push(Object.keys(updates));
+      return originalSetData.call(this, updates, callback);
+    };
+    instance.loadRecentFoodOptions = async () => {};
+
+    const hasCache = await instance.loadCachedFoodCatalog();
+
+    assert.equal(hasCache, true);
+    assert.equal(instance.data.foodCatalog.length, 0);
+    assert.equal(instance.getFoodCatalog().length, 1);
+    assert.equal(instance.getFoodById('mine-large').name, '大字段食物');
+    assert.equal(setDataKeys.some(keys => keys.includes('foodCatalog')), false);
+    assert.deepEqual(instance.data.visibleFoodOptions.map(item => item._id), ['mine-large']);
   } finally {
     restoreWx();
   }
@@ -1102,6 +1268,8 @@ test('food picker catalog cache stores only slim render fields', () => {
     const cacheWritten = instance.cacheFoodCatalog([
       {
         ...systemFood,
+        sourceSystemFoodId: 'sys-source-1',
+        sourceFoodCode: '011101',
         aliases: Array.from({ length: 300 }, (_, index) => `alias-${index}`),
         aliasText: '小麦 别名',
         rawPayload: 'x'.repeat(300000),
@@ -1115,7 +1283,51 @@ test('food picker catalog cache stores only slim render fields', () => {
     assert.equal(JSON.stringify(storage[FOOD_PICKER_CATALOG_CACHE_KEY]).includes('rawPayload'), false);
     assert.equal(JSON.stringify(storage[FOOD_PICKER_CATALOG_CACHE_KEY]).includes('excelOrigin'), false);
     assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].nutritionPerUnit.calories, 338);
+    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].sourceSystemFoodId, 'sys-source-1');
+    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].sourceFoodCode, '011101');
   } finally {
+    restoreWx();
+  }
+});
+
+test('meal editor keeps loaded food catalog outside page data', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  let previousGetAvailableFoods;
+  let previousResolveFoodImageUrls;
+  let FoodModel;
+  try {
+    const page = loadPage('../miniprogram/pkg-records/meal-editor/index.js');
+    FoodModel = require('../miniprogram/models/food');
+    previousGetAvailableFoods = FoodModel.getAvailableFoods;
+    previousResolveFoodImageUrls = FoodModel.resolveFoodImageUrls;
+    FoodModel.getAvailableFoods = async () => [{
+      ...mineFood,
+      _id: 'mine-large',
+      name: '大字段食物',
+      rawPayload: 'x'.repeat(1024 * 1024)
+    }];
+    FoodModel.resolveFoodImageUrls = async foods => foods;
+
+    const instance = createPageInstance(page);
+    const setDataKeys = [];
+    const originalSetData = instance.setData;
+    instance.setData = function(updates, callback) {
+      setDataKeys.push(Object.keys(updates));
+      return originalSetData.call(this, updates, callback);
+    };
+
+    await instance.loadFoodCatalog();
+
+    assert.equal(setDataKeys.some(keys => keys.includes('foodCatalog')), false);
+    assert.equal(instance.data.foodCatalog.length, 0);
+    assert.equal(instance.getFoodCatalog().length, 1);
+    assert.equal(instance.getFoodById('mine-large').name, '大字段食物');
+  } finally {
+    if (FoodModel) {
+      FoodModel.getAvailableFoods = previousGetAvailableFoods;
+      FoodModel.resolveFoodImageUrls = previousResolveFoodImageUrls;
+    }
     restoreWx();
   }
 });
