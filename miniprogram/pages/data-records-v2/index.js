@@ -3475,6 +3475,8 @@ function createDataRecordsPageConfig(options = {}) {
     const feedings = record.feedings || [];
     const intakes = normalizeIntakes(record.intakes || []);
     const foodIntakes = intakes.filter(item => item.type !== 'milk');
+    const foodMealGroups = groupFoodIntakesByMeal(foodIntakes);
+    const legacyFoodIntakes = getLegacyFoodIntakes(foodIntakes);
     const basicInfo = serviceResult.basicInfo || serviceResult.summary?.basicInfo || record.basicInfo || {};
     const recordWeight = basicInfo.weight || '';
     const recordHeight = basicInfo.height || '';
@@ -3514,8 +3516,8 @@ function createDataRecordsPageConfig(options = {}) {
       feedingRecords: feedings,
       intakes,
       foodIntakes,
-      foodMealGroups: groupFoodIntakesByMeal(foodIntakes),
-      legacyFoodIntakes: getLegacyFoodIntakes(foodIntakes),
+      foodMealGroups,
+      legacyFoodIntakes,
       macroSummary,
       macroRatios: this.computeMacroRatios(macroSummary),
       fatRatioRangeText: this.getFatRatioRangeText(dateStr),

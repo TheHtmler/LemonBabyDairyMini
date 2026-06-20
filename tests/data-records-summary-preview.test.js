@@ -95,7 +95,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       label: '总液体量',
       value: '885',
       unit: 'ml',
-      detail: '奶 720 · 喝水 0 · 治疗 120',
+      detail: '奶 720 · 喝水 0 · 其他 165',
       infoTitle: '总液体量明细',
       infoIcon: '!',
       infoLines: ['母乳 420ml', '特奶 300ml', '喝水 0ml', '食物 45ml', '治疗 120ml']
@@ -143,6 +143,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       stats: [
         { label: '热量', value: '160 kcal' },
         { label: '蛋白', value: '6.2 g' },
+        { label: '液体', value: '45 ml' },
         { label: '碳水', value: '18 g' }
       ]
     },
@@ -179,7 +180,7 @@ test('buildDataRecordsSummaryPreview falls back to placeholders for missing valu
   assert.deepEqual(preview.topMetrics[1].infoLines, ['--']);
   assert.equal(preview.topMetrics[2].detail, '天然 0.00g · 特殊 0.00g');
   assert.equal(preview.topMetrics[3].label, '总液体量');
-  assert.equal(preview.topMetrics[3].detail, '奶 0 · 喝水 0 · 治疗 0');
+  assert.equal(preview.topMetrics[3].detail, '奶 0 · 喝水 0');
   assert.equal(preview.topMetrics[3].infoIcon, '!');
   assert.deepEqual(preview.topMetrics[3].infoLines, ['普奶 0ml', '特奶 0ml', '喝水 0ml', '食物 0ml', '治疗 0ml']);
   assert.equal(preview.nutritionStrip[0].source, '奶 0.00g · 食物 0.00g');
@@ -227,11 +228,30 @@ test('buildDataRecordsSummaryPreview includes drinking water and treatment ml in
     label: '总液体量',
     value: '305',
     unit: 'ml',
-    detail: '奶 200 · 喝水 35 · 治疗 50',
+    detail: '奶 200 · 喝水 35 · 其他 70',
     infoTitle: '总液体量明细',
     infoIcon: '!',
     infoLines: ['普奶 120ml', '特奶 80ml', '喝水 35ml', '食物 20ml', '治疗 50ml']
   });
+});
+
+test('buildDataRecordsSummaryPreview rounds liquid volume display to whole ml', () => {
+  const preview = buildDataRecordsSummaryPreview({
+    naturalMilkType: 'breast',
+    intakeOverview: {
+      milk: {
+        normal: { volume: 890.5699999999999 },
+        special: { volume: 0 }
+      },
+      food: {
+        fluidVolume: 8
+      }
+    }
+  });
+
+  assert.equal(preview.topMetrics[3].value, '899');
+  assert.equal(preview.topMetrics[3].detail, '奶 891 · 喝水 0 · 其他 8');
+  assert.deepEqual(preview.topMetrics[3].infoLines, ['母乳 891ml', '特奶 0ml', '喝水 0ml', '食物 8ml', '治疗 0ml']);
 });
 
 test('buildDataRecordsSummaryPreview chooses breast milk or formula label in total liquid details', () => {

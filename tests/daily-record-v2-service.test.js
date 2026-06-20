@@ -27,7 +27,14 @@ function createDbMock(overrides = {}) {
     return {
       _where: whereInput,
       _orderBy: null,
-      limit() {
+      _skip: 0,
+      _limit: null,
+      skip(value) {
+        this._skip = Number(value) || 0;
+        return this;
+      },
+      limit(value) {
+        this._limit = Number(value) || 0;
         return this;
       },
       orderBy(field, direction) {
@@ -51,6 +58,10 @@ function createDbMock(overrides = {}) {
             const result = left[field] > right[field] ? 1 : -1;
             return direction === 'desc' ? -result : result;
           });
+        }
+        if (this._skip > 0 || this._limit !== null) {
+          const end = this._limit !== null ? this._skip + this._limit : undefined;
+          data = data.slice(this._skip, end);
         }
         return { data };
       }

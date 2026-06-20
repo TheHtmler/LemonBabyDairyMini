@@ -3,6 +3,8 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
+const BABY_INFO_COLLECTION = 'baby_info';
+const LEGACY_FEEDING_RECORDS_COLLECTION = 'feeding_records';
 const DAILY_SUMMARY_COLLECTION = 'daily_summary_v2';
 const FEEDING_RECORDS_V2_COLLECTION = 'feeding_records_v2';
 const FOOD_INTAKE_COLLECTION = 'food_intake_records';
@@ -472,7 +474,49 @@ async function rebuildDailySummaryForDate(babyUid, date, options = {}) {
   return { date, summary: savedSummary, dryRun: false };
 }
 
+async function loadBabyUidCandidates(collectionName, limit = 1000) {
+  const res = await db.collection(collectionName)
+    .where({})
+    .limit(limit)
+    .get();
+  return (res.data || [])
+    .map(record => record.babyUid || '')
+    .filter(Boolean);
+}
+
+async function listBabyUids(event = {}) {
+  const pageSize = Number(event.pageSize) || 50;
+  const offset = Number(event.offset) || 0;
+  const scanLimit = Number(event.scanLimit) || 1000;
+  const [fromBabyInfo, fromLegacyFeeding, fromFoodIntakes] = await Promise.all([
+    loadBabyUidCandidates(BABY_INFO_COLLECTION, scanLimit),
+    loadBabyUidCandidates(LEGACY_FEEDING_RECORDS_COLLECTION, scanLimit),
+    loadBabyUidCandidates(FOOD_INTAKE_COLLECTION, scanLimit)
+  ]);
+  const allBabyUids = Array.from(new Set([
+    ...fromBabyInfo,
+    ...fromLegacyFeeding,
+    ...fromFoodIntakes
+  ])).sort();
+  const babyUids = allBabyUids.slice(offset, offset + pageSize);
+  return {
+    ok: true,
+    mode: 'listBabyUids',
+    pageSize,
+    offset,
+    scanLimit,
+    nextOffset: offset + babyUids.length,
+    hasMore: offset + babyUids.length < allBabyUids.length,
+    total: allBabyUids.length,
+    babyUids
+  };
+}
+
 exports.main = async (event = {}) => {
+  if (event.listBabyUids === true) {
+    return listBabyUids(event);
+  }
+
   const babyUid = event.babyUid || '';
   const dryRun = event.dryRun !== false;
   const pageSize = Number(event.pageSize) || 10;
@@ -519,6 +563,7 @@ exports.main = async (event = {}) => {
 
 exports._internal = {
   enumerateDateKeys,
+  listBabyUids,
   mergeMilkNutrition,
   mergeFoodNutrition,
   buildDailySummaryForDate,

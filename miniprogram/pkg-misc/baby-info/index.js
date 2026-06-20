@@ -1,3 +1,5 @@
+const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
+
 Page({
   data: {
     babyInfo: {
@@ -107,6 +109,7 @@ Page({
   // 设置用户角色的辅助方法
   setUserRole(role) {
     this.app.globalData.userRole = role;
+    wx.removeStorageSync(ACCOUNT_LOGGED_OUT_KEY);
     wx.setStorageSync('user_role', role);
     wx.setStorageSync('has_selected_role', true);
   },
