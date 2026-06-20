@@ -1,3 +1,5 @@
+const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
+
 Page({
   /**
    * 页面的初始数据
@@ -235,6 +237,7 @@ Page({
     
     // 将角色信息存储到全局数据和本地存储
     this.app.globalData.userRole = role;
+    wx.removeStorageSync(ACCOUNT_LOGGED_OUT_KEY);
     wx.setStorageSync('user_role', role);
     wx.setStorageSync('has_selected_role', true);
     

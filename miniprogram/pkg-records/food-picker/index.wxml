@@ -182,6 +182,7 @@
           <input
             class="quantity-input"
             type="digit"
+            value="{{item.quantity}}"
             placeholder="{{item.placeholder || '请输入'}}"
             data-index="{{draftIndex}}"
             bindinput="onQuantityDraftInput"

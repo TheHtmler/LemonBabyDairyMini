@@ -7,6 +7,9 @@ function normalizeValue(value, fallback = '0') {
 if (value === undefined || value === null || value === '') {
 return fallback;
 }
+if (typeof value === 'number' && Number.isFinite(value)) {
+return String(Number(value.toFixed(2)));
+}
 return String(value);
 }
 function toNumber(value) {
@@ -53,10 +56,20 @@ function buildSourceBreakdownLine(parts = []) {
 return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}`).join(' · ');
 }
 function buildCompactVolumeBreakdownLine(parts = []) {
-return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}`).join(' · ');
+return parts.map(({ label, value }) => `${label} ${roundDisplayInteger(value)}`).join(' · ');
+}
+function buildLiquidSummaryLine({ milk = 0, water = 0, other = 0 } = {}) {
+const parts = [
+{ label: '奶', value: milk },
+{ label: '喝水', value: water }
+];
+if (toNumber(other) > 0) {
+parts.push({ label: '其他', value: other });
+}
+return buildCompactVolumeBreakdownLine(parts);
 }
 function buildVolumeInfoLines(parts = []) {
-return parts.map(({ label, value }) => `${label} ${normalizeValue(value)}ml`);
+return parts.map(({ label, value }) => `${label} ${roundDisplayInteger(value)}ml`);
 }
 function buildNormalMilkVolumeInfoParts(feedings = [], normalMilk = {}, naturalMilkType = 'formula') {
 const totals = { breast: 0, formula: 0 };
@@ -369,12 +382,12 @@ detail: buildProteinBreakdownLine([
 ])
 },
 {
-...createMetric('总液体量', totalLiquidVolume, 'ml'),
-detail: buildCompactVolumeBreakdownLine([
-{ label: '奶', value: totalMilkVolume },
-{ label: '喝水', value: drinkingWaterVolume },
-{ label: '治疗', value: treatmentFluidVolume }
-]),
+...createMetric('总液体量', roundDisplayInteger(totalLiquidVolume), 'ml'),
+detail: buildLiquidSummaryLine({
+milk: totalMilkVolume,
+water: drinkingWaterVolume,
+other: foodFluidVolume + treatmentFluidVolume
+}),
 infoTitle: '总液体量明细',
 infoIcon: '!',
 infoLines: buildVolumeInfoLines([
@@ -461,6 +474,7 @@ summaryText: `热量 ${normalizeValue(foodOverview.totalCalories || 0)} kcal · 
 stats: buildNonZeroStats([
 { label: '热量', value: buildStatValue(foodOverview.totalCalories || 0, 'kcal') },
 { label: '蛋白', value: buildStatValue(getFoodProtein(foodOverview), 'g') },
+{ label: '液体', value: buildStatValue(roundDisplayInteger(foodFluidVolume), 'ml') },
 { label: '碳水', value: buildStatValue(foodOverview.carbs || 0, 'g') },
 { label: '脂肪', value: buildStatValue(foodFat, 'g') }
 ])

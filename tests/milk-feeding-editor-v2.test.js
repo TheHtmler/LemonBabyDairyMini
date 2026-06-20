@@ -211,9 +211,9 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
   assert.doesNotMatch(source, /loadRecentDefaults/);
   assert.doesNotMatch(source, /applyRecordDefaults/);
 
-  assert.match(wxml, /本次记录/);
-  assert.match(wxml, /配奶录入/);
-  assert.match(wxml, /这次喝什么/);
+  assert.match(wxml, /今日已喝/);
+  assert.match(wxml, /这顿喝什么/);
+  assert.match(wxml, /保存前看看/);
   assert.match(wxml, /添加奶/);
   assert.doesNotMatch(wxml, /recent-default-row/);
   assert.doesNotMatch(wxml, /recentDefaultText/);
@@ -222,7 +222,7 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
   assert.match(wxml, /add-milk-dialog-panel/);
   assert.match(wxml, /add-milk-dialog-header/);
   assert.match(wxml, /add-milk-dialog-close/);
-  assert.match(wxml, /选择后会直接加入本次配奶/);
+  assert.match(wxml, /可选多个不同奶粉/);
   assert.match(wxml, /flyMilkAnimation\.active/);
   assert.match(wxml, /milk-fly-ghost/);
   assert.match(wxml, /style="\{\{flyMilkAnimation\.style\}\}"/);
@@ -230,9 +230,9 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
   assert.match(wxml, /flyMilkAnimation\.badge/);
   assert.match(wxml, /add-milk-option-source/);
   assert.match(wxml, /data-index="\{\{index\}\}"/);
-  assert.match(wxml, /营养预览/);
-  assert.match(wxml, /碳水 g/);
-  assert.match(wxml, /脂肪 g/);
+  assert.match(wxml, /nutrition-target-preview/);
+  assert.match(wxml, /nutritionPreview\.carbs/);
+  assert.match(wxml, /nutritionPreview\.fat/);
   assert.doesNotMatch(wxml, /无蛋白热量/);
   assert.doesNotMatch(wxml, /膳食纤维/);
   assert.doesNotMatch(wxml, /奶量组件/);
@@ -243,12 +243,12 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
   assert.match(wxml, /style="\{\{breastMilkTag\.badgeStyle\}\}"/);
   assert.match(wxml, /style="\{\{formulaPowders\[item\.powderPickerIndex\]\.categoryBadgeStyle\}\}"/);
   assert.match(wxml, /style="\{\{item\.categoryBadgeStyle\}\}"/);
-  assert.match(wxml, /查看剩余奶量/);
+  assert.match(wxml, /算奶/);
   assert.match(wxml, /bindtap="navigateToGoalPlanner"/);
   assert.doesNotMatch(wxml, /按 v2/);
   assert.match(wxml, /wx:for="\{\{milkEntries\}\}"/);
-  assert.match(wxml, /class="page v2-page"/);
-  assert.match(wxml, /info-card/);
+  assert.match(wxml, /class="page v2-page/);
+  assert.match(wxml, /feeding-hero/);
   assert.match(wxml, /panel-header/);
   assert.match(wxml, /primary-card mix-card/);
   assert.match(wxml, /选择奶粉/);

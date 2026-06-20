@@ -30,6 +30,7 @@ function createDbMock(overrides = {}) {
       _where: whereInput,
       _orderBy: null,
       _limit: 0,
+      _skip: 0,
       where(nextWhere) {
         this._where = {
           ...this._where,
@@ -45,8 +46,12 @@ function createDbMock(overrides = {}) {
         this._limit = value;
         return this;
       },
+      skip(value) {
+        this._skip = value;
+        return this;
+      },
       async get() {
-        writes.reads.push({ collectionName, where: this._where, orderBy: this._orderBy, limit: this._limit });
+        writes.reads.push({ collectionName, where: this._where, orderBy: this._orderBy, limit: this._limit, skip: this._skip });
         let data = (dataByCollection[collectionName] || []).filter((item) => matchesWhere(item, this._where));
         if (this._orderBy) {
           const { field, direction } = this._orderBy;
@@ -58,9 +63,8 @@ function createDbMock(overrides = {}) {
             return direction === 'desc' ? -result : result;
           });
         }
-        if (this._limit > 0) {
-          data = data.slice(0, this._limit);
-        }
+        const limit = this._limit > 0 ? this._limit : 20;
+        data = data.slice(this._skip, this._skip + limit);
         return { data };
       }
     };
@@ -136,6 +140,25 @@ test('findByMealBatch returns active records for one meal sorted by sortOrder', 
   const records = await model.findByMealBatch('baby-1', '2026-06-15', 'meal-a');
 
   assert.deepEqual(records.map(item => item._id), ['food-1', 'food-2']);
+});
+
+test('findByDate returns all active records for a busy food day', async () => {
+  const foodIntakeRecords = Array.from({ length: 25 }, (_, index) => ({
+    _id: `food-${String(index).padStart(2, '0')}`,
+    babyUid: 'baby-1',
+    date: '2026-06-15',
+    mealBatchId: index < 13 ? 'meal-a' : 'meal-b',
+    status: 'active',
+    recordedAt: `2026-06-15T08:${String(index).padStart(2, '0')}:00.000Z`,
+    foodName: `食物${index}`
+  }));
+  const { db, writes } = createDbMock({ foodIntakeRecords });
+  const model = loadFreshModel(db);
+
+  const records = await model.findByDate('baby-1', '2026-06-15');
+
+  assert.equal(records.length, 25);
+  assert.equal(writes.reads.length > 1, true);
 });
 
 test('softDeleteFoodIntake marks one record deleted without hard remove', async () => {

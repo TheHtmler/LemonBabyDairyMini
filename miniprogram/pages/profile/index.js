@@ -1,5 +1,7 @@
 const { isDeveloperOpenid } = require('../../config/developer');
 
+const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
+
 Page({
   data: {
     userInfo: {},
@@ -667,6 +669,7 @@ Page({
       if (openid) {
         wx.setStorageSync('openid', openid);
       }
+      wx.setStorageSync(ACCOUNT_LOGGED_OUT_KEY, true);
       
       // 清除角色选择状态
       wx.removeStorageSync('has_selected_role');

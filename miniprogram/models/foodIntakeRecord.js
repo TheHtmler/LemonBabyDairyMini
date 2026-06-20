@@ -1,5 +1,6 @@
 const db = wx.cloud.database();
 const foodIntakeCollection = db.collection('food_intake_records');
+const DB_READ_BATCH_SIZE = 20;
 const {
   buildCreateAuditFields,
   buildUpdateAuditFields,
@@ -206,6 +207,28 @@ function recentFoodKey(record = {}) {
   return record.foodId || record.foodSnapshot?.sourceFoodCode || record.foodName || record.foodSnapshot?.name || '';
 }
 
+async function loadAllFoodIntakes({ where = {}, orderBy = null, batchSize = DB_READ_BATCH_SIZE } = {}) {
+  const records = [];
+  let offset = 0;
+
+  while (true) {
+    let query = foodIntakeCollection.where(where);
+    if (orderBy?.field) {
+      query = query.orderBy(orderBy.field, orderBy.direction || 'asc');
+    }
+    const res = await query
+      .skip(offset)
+      .limit(batchSize)
+      .get();
+    const batch = res.data || [];
+    records.push(...batch);
+    if (batch.length < batchSize) break;
+    offset += batch.length;
+  }
+
+  return records;
+}
+
 async function createFoodIntake(data = {}) {
   const timestamp = serverDate();
   const operatorOpenid = resolveOperatorOpenid(data);
@@ -268,17 +291,17 @@ async function softDeleteFoodIntake(recordId, options = {}) {
 }
 
 async function findByMealBatch(babyUid, date, mealBatchId) {
-  const res = await foodIntakeCollection
-    .where({
+  const records = await loadAllFoodIntakes({
+    where: {
       babyUid,
       date,
       mealBatchId,
       status: 'active'
-    })
-    .orderBy('sortOrder', 'asc')
-    .get();
+    },
+    orderBy: { field: 'sortOrder', direction: 'asc' }
+  });
 
-  return (res.data || [])
+  return records
     .filter((record) => record.status === 'active')
     .sort((left, right) => {
       const sortDiff = normalizeSortOrder(left.sortOrder) - normalizeSortOrder(right.sortOrder);
@@ -390,16 +413,16 @@ async function findRecentFoodIntakes(babyUid, options = {}) {
 }
 
 async function findByDate(babyUid, date) {
-  const res = await foodIntakeCollection
-    .where({
+  const records = await loadAllFoodIntakes({
+    where: {
       babyUid,
       date,
       status: 'active'
-    })
-    .orderBy('recordedAt', 'asc')
-    .get();
+    },
+    orderBy: { field: 'recordedAt', direction: 'asc' }
+  });
 
-  return (res.data || [])
+  return records
     .filter((record) => record.status === 'active')
     .map((record) => normalizeFoodIntakeRecord(record));
 }

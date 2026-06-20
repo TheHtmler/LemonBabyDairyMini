@@ -688,7 +688,7 @@ test('food picker confirms quantities in place and meal editor adds them directl
     assert.deepEqual(picker.data.quantityDrafts.map(item => Object.prototype.hasOwnProperty.call(item, 'notes')), [false, false]);
     picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '50' } });
     picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 1 } }, detail: { value: '25' } });
-    assert.deepEqual(picker.data.quantityDrafts.map(item => item.quantity), ['', '']);
+    assert.deepEqual(picker.data.quantityDrafts.map(item => item.quantity), ['50', '25']);
     assert.deepEqual(picker.quantityDraftValues, { 0: '50', 1: '25' });
     assert.deepEqual(picker.data.quantityDrafts.map(item => item.nutritionPreview.protein), [5.95, 0.5]);
     picker.submitQuantityDrafts();
@@ -735,6 +735,39 @@ test('food picker confirms quantities in place and meal editor adds them directl
     assert.deepEqual(mealIntakes.map(item => item.notes), ['', '']);
     assert.deepEqual(mealIntakes.map(item => item.mealNote), ['午餐整体备注', '午餐整体备注']);
     assert.equal(meal.data.mealSummary.calories, 189);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker keeps entered quantities when continuing to choose more foods', () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    const pickerPage = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const picker = createPageInstance(pickerPage, {
+      selectedFoodCart: [systemFood]
+    });
+
+    picker.confirmSelection();
+    picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '10' } });
+    picker.closeQuantityDrawer();
+    picker.setData({
+      selectedFoodCart: [systemFood, mineFood]
+    });
+
+    picker.confirmSelection();
+    picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 1 } }, detail: { value: '3' } });
+    picker.submitQuantityDrafts();
+
+    assert.equal(storage.__navigateBack, true);
+    assert.deepEqual(storage[FOOD_PICKER_SELECTION_KEY], {
+      schemaVersion: 3,
+      items: [
+        { foodId: 'sys-1', quantity: 10 },
+        { foodId: 'mine-1', quantity: 3 }
+      ]
+    });
   } finally {
     restoreWx();
   }
@@ -891,7 +924,7 @@ test('food picker quantity drawer previews protein target without category subti
 
     picker.onQuantityDraftInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '50' } });
 
-    assert.equal(picker.data.quantityDrafts[0].quantity, '');
+    assert.equal(picker.data.quantityDrafts[0].quantity, '50');
     assert.equal(picker.data.quantityDrafts[0].nutritionPreview.protein, 5.95);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].actual, 9);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].status, 'over');
@@ -1435,7 +1468,7 @@ test('meal editor navigates to full page food picker and food picker is register
     assert.match(pickerJs, /FOOD_PICKER_TARGET_CONTEXT_KEY/);
     assert.match(pickerJs, /refreshQuantityTargetPreview/);
     assert.match(mealJs, /writeFoodPickerTargetContext/);
-  assert.doesNotMatch(pickerWxml, /value="\{\{item\.quantity\}\}"/);
+  assert.match(pickerWxml, /value="\{\{item\.quantity\}\}"/);
   assert.match(pickerWxml, /nutritionPreview/);
   assert.match(pickerWxml, /蛋白 \{\{item\.nutritionPreview\.protein/);
   assert.match(pickerWxml, /输入份量后计算蛋白/);
@@ -1469,7 +1502,8 @@ test('meal editor navigates to full page food picker and food picker is register
   assert.match(pickerJs, /schemaVersion:\s*3/);
   assert.match(pickerJs, /quantityDraftValues/);
   assert.match(pickerJs, /refreshQuantityPreview/);
-  assert.doesNotMatch(pickerJs, /\[`quantityDrafts\[\$\{draftIndex\}\]\.quantity`\]/);
+  assert.match(pickerJs, /\[`quantityDrafts\[\$\{draftIndex\}\]\.quantity`\]/);
+  assert.match(pickerWxml, /value="\{\{item\.quantity\}\}"/);
   assert.match(mealJs, /readFoodSelectionItems/);
   assert.match(mealJs, /addSelectedFoodItemsToMeal/);
   assert.doesNotMatch(pickerWxss, /transition-property:\s*left,\s*top/);

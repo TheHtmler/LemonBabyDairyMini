@@ -1,4 +1,6 @@
 // app.js
+const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
+
 App({
   globalData: {
     userInfo: null,
@@ -140,12 +142,14 @@ App({
       this.initReady = null;
       
       // 重置用户的角色选择状态
+      wx.setStorageSync(ACCOUNT_LOGGED_OUT_KEY, true);
       wx.removeStorageSync('has_selected_role');
       wx.removeStorageSync('user_role');
       wx.removeStorageSync('baby_uid');
       wx.removeStorageSync('creator_phone');
       wx.removeStorageSync('bound_creator_phone');
       wx.removeStorageSync('baby_info_completed');
+      wx.removeStorageSync('baby_info');
       
       // 跳转到角色选择页面
       wx.reLaunch({
@@ -250,6 +254,11 @@ App({
         console.error('getUserRole: openid为空，无法获取用户角色');
         return null;
       }
+
+      if (wx.getStorageSync(ACCOUNT_LOGGED_OUT_KEY)) {
+        console.log('检测到本机已注销，跳过云端角色自动恢复');
+        return null;
+      }
       
       console.log('开始查询用户角色，openid:', openid);
       const db = wx.cloud.database();
@@ -289,8 +298,7 @@ App({
           console.log('===app.getUserRole结束：从数据库获取创建者（已完成宝宝信息）===');
           return detectedRole;
         } else {
-          console.log('===app.getUserRole结束：从数据库获取创建者（未完成宝宝信息）===');
-          return null;
+          console.log('数据库中的创建者关系未完成宝宝信息，继续检查参与者关系');
         }
       }
       
@@ -586,9 +594,11 @@ App({
    */
   async waitForInitialization() {
     if (this.globalData.isInitialized) {
+      const userRole = this.globalData.userRole;
       return {
         openid: this.globalData.openid,
-        userRole: this.globalData.userRole,
+        userRole,
+        babyInfoValid: userRole ? await this.validateBabyInfo() : false,
         success: true
       };
     }

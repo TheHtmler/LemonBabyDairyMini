@@ -1,4 +1,5 @@
 const InvitationModel = require('../../models/invitation');
+const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 
 Page({
   data: {
@@ -18,6 +19,7 @@ Page({
       // 如果有角色参数，保存到全局和本地
       const app = getApp();
       app.globalData.userRole = options.role;
+      wx.removeStorageSync(ACCOUNT_LOGGED_OUT_KEY);
       wx.setStorageSync('user_role', options.role);
       wx.setStorageSync('has_selected_role', true);
     }

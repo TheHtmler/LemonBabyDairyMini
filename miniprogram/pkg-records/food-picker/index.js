@@ -882,6 +882,8 @@ Page({
     if (!selectedIds.size) return;
 
     this.pendingCartFoodIds = new Set();
+    this.quantityDraftValues = {};
+    this.quantityDraftValuesByFoodId = new Map();
     this.cartFlyerToken = (this.cartFlyerToken || 0) + 1;
 
     if (this.filteredFoodOptions?.length) {
@@ -908,6 +910,8 @@ Page({
   removeFoodFromSelectionCart(e) {
     const { id } = e.currentTarget.dataset || {};
     if (!id) return;
+    this.persistQuantityDraftValues();
+    this.quantityDraftValuesByFoodId?.delete(id);
     const nextCart = (this.data.selectedFoodCart || []).filter(item => item._id !== id);
     this.setData({
       selectedFoodCart: nextCart,
@@ -926,30 +930,54 @@ Page({
     this.setData({ cartExpanded: false });
   },
 
+  getQuantityDraftValue(draft = {}, index) {
+    if (Object.prototype.hasOwnProperty.call(this.quantityDraftValues || {}, index)) {
+      return this.quantityDraftValues[index] || '';
+    }
+    return draft.quantity || draft.initialQuantity || '';
+  },
+
+  persistQuantityDraftValues() {
+    const nextValues = new Map(this.quantityDraftValuesByFoodId || []);
+    (this.data.quantityDrafts || []).forEach((draft = {}, index) => {
+      if (!draft.foodId) return;
+      const value = this.getQuantityDraftValue(draft, index);
+      if (value !== undefined && value !== null && value !== '') {
+        nextValues.set(draft.foodId, String(value));
+      } else {
+        nextValues.delete(draft.foodId);
+      }
+    });
+    this.quantityDraftValuesByFoodId = nextValues;
+  },
+
   openQuantityDrawer() {
     const selectedFoods = this.data.selectedFoodCart || [];
     if (!selectedFoods.length) {
       wx.showToast({ title: '请先选择食物', icon: 'none' });
       return;
     }
+    this.persistQuantityDraftValues();
     this.quantityDraftValues = {};
     const initialQuantities = this.pendingSelectedFoodQuantities || new Map();
+    const preservedQuantities = this.quantityDraftValuesByFoodId || new Map();
     this.setData({
       quantityDrawerVisible: true,
       cartExpanded: false,
       quantityDraftScrollIntoView: '',
       quantityDraftInvalidIndex: -1,
       quantityDrafts: selectedFoods.map((food, index) => {
-        const initialQuantity = initialQuantities.get(food._id);
+        const initialQuantity = preservedQuantities.get(food._id) ?? initialQuantities.get(food._id);
         const quantity = parseFloat(initialQuantity || '');
+        const quantityText = !isNaN(quantity) && quantity > 0 ? String(initialQuantity) : '';
         if (!isNaN(quantity) && quantity > 0) {
-          this.quantityDraftValues[index] = String(initialQuantity);
+          this.quantityDraftValues[index] = quantityText;
         }
         return {
           foodId: food._id,
           name: food.name,
           sourceLabel: food.sourceLabel,
-          quantity: '',
+          quantity: quantityText,
           initialQuantity: !isNaN(quantity) && quantity > 0 ? quantity : '',
           placeholder: !isNaN(quantity) && quantity > 0 ? `当前 ${quantity}` : '请输入',
           unit: food.baseUnit || 'g',
@@ -968,6 +996,7 @@ Page({
       clearTimeout(this.quantityTargetPreviewTimer);
       this.quantityTargetPreviewTimer = null;
     }
+    this.persistQuantityDraftValues();
     this.setData({
       quantityDrawerVisible: false,
       quantityDraftScrollIntoView: '',
@@ -982,7 +1011,12 @@ Page({
     if (!Number.isInteger(draftIndex) || draftIndex < 0) return;
     this.quantityDraftValues = this.quantityDraftValues || {};
     this.quantityDraftValues[draftIndex] = e.detail.value || '';
-    this.refreshQuantityPreview(draftIndex);
+    this.setData({
+      [`quantityDrafts[${draftIndex}].quantity`]: e.detail.value || ''
+    }, () => {
+      this.persistQuantityDraftValues();
+      this.refreshQuantityPreview(draftIndex);
+    });
   },
 
   scrollToQuantityDraft(index) {
@@ -1013,7 +1047,7 @@ Page({
     for (let index = startIndex; index < endIndex; index += 1) {
       const draft = drafts[index];
       if (!draft) continue;
-      const quantity = parseFloat(this.quantityDraftValues?.[index] || '');
+      const quantity = parseFloat(this.getQuantityDraftValue(draft, index));
       const food = this.findSelectedCartFood(draft.foodId);
       updates[`quantityDrafts[${index}].nutritionPreview`] = !food || isNaN(quantity) || quantity <= 0
         ? null
@@ -1046,7 +1080,7 @@ Page({
     const items = [];
     for (let index = 0; index < drafts.length; index += 1) {
       const draft = drafts[index];
-      const quantity = parseFloat(this.quantityDraftValues?.[index] || '');
+      const quantity = parseFloat(this.getQuantityDraftValue(draft, index));
       if (isNaN(quantity) || quantity <= 0) continue;
 
       const food = this.findSelectedCartFood(draft.foodId);
@@ -1138,7 +1172,7 @@ Page({
     const items = [];
     for (let index = 0; index < drafts.length; index += 1) {
       const draft = drafts[index];
-      const quantity = parseFloat(this.quantityDraftValues?.[index] || '');
+      const quantity = parseFloat(this.getQuantityDraftValue(draft, index));
       if (isNaN(quantity) || quantity <= 0) {
         this.scrollToQuantityDraft(index);
         wx.showToast({ title: `请填写${draft.name || '食物'}的有效份量`, icon: 'none' });
