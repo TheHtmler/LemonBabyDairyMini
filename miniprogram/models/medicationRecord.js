@@ -258,6 +258,37 @@ class MedicationRecordModel {
       .get();
   }
 
+  /**
+   * 获取每个非每日药在指定日期前的最近一次记录
+   * @param {string} babyUid 宝宝UID
+   * @param {Array<string>} medicationIds 药物ID数组
+   * @param {Date} beforeDate 截止日期（不含当天）
+   * @returns {Promise<Array>}
+   */
+  async getLatestRecordsBeforeDateForMedications(babyUid, medicationIds = [], beforeDate = new Date()) {
+    const ids = Array.from(new Set((medicationIds || []).filter(Boolean)));
+    if (!babyUid || ids.length === 0) {
+      return [];
+    }
+
+    const before = this.getDateStart(beforeDate);
+    const results = await Promise.all(ids.map(async (medicationId) => {
+      const res = await this.collection
+        .where({
+          babyUid,
+          medicationId,
+          date: this.db.command.lt(before)
+        })
+        .orderBy('date', 'desc')
+        .orderBy('actualDateTime', 'desc')
+        .limit(1)
+        .get();
+      return (res.data || [])[0] || null;
+    }));
+
+    return results.filter(Boolean);
+  }
+
 
 
   /**

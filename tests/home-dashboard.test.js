@@ -14,6 +14,8 @@ const {
   buildFeedingProgress,
   buildNextMealReference,
   buildWeeklyTrend,
+  buildMedicationHistoryFromRecords,
+  buildPeriodicMedicationIds,
   weightedAverageCoefficient,
   metricDisplayPrecision,
   buildTimeline,
@@ -109,6 +111,44 @@ test('buildMedicationChecklist：AD/D3 各自隔日，靠历史自然错开', ()
   const d3 = plan.items.find((i) => i.medicationId === 'd3');
   assert.equal(ad.scheduledToday, true);
   assert.equal(d3.scheduledToday, false);
+});
+
+test('buildMedicationHistoryFromRecords：原始记录包含近两日用药时首屏不误显示隔三天药', () => {
+  const meds = [
+    { _id: 'sodium', name: '碳酸氢钠片', frequency: '每3天1次', frequencyDays: '3', frequencyTimes: '1' }
+  ];
+  const history = buildMedicationHistoryFromRecords([
+    {
+      medicationId: 'sodium',
+      medicationName: '碳酸氢钠片',
+      date: new Date(2026, 5, 20),
+      actualTime: '13:32'
+    },
+    {
+      medicationId: 'sodium',
+      medicationName: '碳酸氢钠片',
+      date: new Date(2026, 5, 21),
+      actualTime: '10:02'
+    }
+  ], '2026-06-22');
+  const plan = buildMedicationChecklist({ meds, todayRecords: [], history, todayKey: '2026-06-22' });
+
+  assert.deepEqual(history, [
+    { date: '2026-06-20', takenMedicationIds: ['sodium'] },
+    { date: '2026-06-21', takenMedicationIds: ['sodium'] }
+  ]);
+  assert.equal(plan.items[0].scheduledToday, false);
+  assert.equal(plan.totalCount, 0);
+});
+
+test('buildPeriodicMedicationIds：只为非每日药查询历史', () => {
+  const meds = [
+    { _id: 'daily', name: '每日药', frequencyDays: '1', frequencyTimes: '3' },
+    { _id: 'weekly', name: '每周药', frequencyDays: '7', frequencyTimes: '1' },
+    { _id: 'monthly', name: '每月药', frequency: '每月1次' }
+  ];
+
+  assert.deepEqual(buildPeriodicMedicationIds(meds), ['weekly', 'monthly']);
 });
 
 test('buildNutritionGoals：天然蛋白目标=1.2×体重，热量取整', () => {
