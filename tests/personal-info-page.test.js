@@ -8,6 +8,35 @@ function readProjectFile(relativePath) {
   return fs.readFileSync(path.resolve(__dirname, '..', relativePath), 'utf8');
 }
 
+function loadPersonalInfoPage() {
+  const pagePath = require.resolve('../miniprogram/pkg-misc/personal-info/index.js');
+  delete require.cache[pagePath];
+
+  let pageConfig = null;
+  const previousPage = global.Page;
+  global.Page = (config) => {
+    pageConfig = config;
+  };
+
+  require(pagePath);
+  global.Page = previousPage;
+
+  return pageConfig;
+}
+
+function createPersonalInfoPageInstance(page, data = {}) {
+  return {
+    ...page,
+    data: {
+      ...page.data,
+      ...data
+    },
+    setData(update) {
+      Object.assign(this.data, update);
+    }
+  };
+}
+
 function loadMiniProgramApp({ storage = {}, creators = [], participants = [], babyInfos = [] } = {}) {
   let appConfig = null;
   const storageMap = new Map(Object.entries(storage));
@@ -113,6 +142,51 @@ test('personal info page is registered and supports identity editing and status 
   assert.match(wxml, /当前页面/);
   assert.match(wxml, /设备信息/);
   assert.match(wxml, /复制账号状态/);
+});
+
+test('personal info status copy includes current openid for troubleshooting', () => {
+  const page = loadPersonalInfoPage();
+  const instance = createPersonalInfoPageInstance(page, {
+    babyName: '柠檬宝宝',
+    userRole: 'creator',
+    roleLabel: '创建者',
+    displayName: '妈妈',
+    creatorInfoText: '妈妈',
+    participantsInfoText: '1 位：爸爸',
+    bindingStatus: '已绑定宝宝记录',
+    babyUid: 'baby-1',
+    currentRouteText: 'pkg-misc/personal-info/index',
+    systemInfoText: 'iPhone | iOS 18',
+    appVersion: '1.0.0'
+  });
+  const previousWx = global.wx;
+  const previousGetApp = global.getApp;
+  let clipboardText = '';
+
+  global.getApp = () => ({
+    globalData: {
+      openid: 'openid-1'
+    }
+  });
+  global.wx = {
+    getStorageSync() {
+      return '';
+    },
+    setClipboardData({ data, success }) {
+      clipboardText = data;
+      if (success) success();
+    },
+    showToast() {}
+  };
+
+  try {
+    page.copyAccountStatus.call(instance);
+  } finally {
+    global.wx = previousWx;
+    global.getApp = previousGetApp;
+  }
+
+  assert.match(clipboardText, /OpenID：openid-1/);
 });
 
 test('cached babyInfo includes creator and participants info snapshots', () => {

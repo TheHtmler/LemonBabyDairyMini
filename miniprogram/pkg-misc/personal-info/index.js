@@ -201,10 +201,13 @@ Page({
   },
 
   copyAccountStatus() {
+    const app = typeof getApp === 'function' ? getApp() : { globalData: {} };
+    const openid = app.globalData.openid || wx.getStorageSync('openid') || '';
     const lines = [
       '账号状态',
       `当前记录：${this.data.babyName || '暂无记录'}`,
       `当前身份：${this.data.roleLabel}`,
+      `OpenID：${openid || '未获取'}`,
       `展示名称：${this.data.displayName || defaultDisplayName(this.data.userRole)}`,
       `创建者：${this.data.creatorInfoText}`,
       `参与者：${this.data.participantsInfoText}`,

@@ -1,0 +1,138 @@
+.member-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fff8df 0%, #fff2c8 100%);
+  padding: 28rpx;
+  box-sizing: border-box;
+}
+
+.hero-card,
+.state-card,
+.empty-card,
+.member-card {
+  background: #fffdf5;
+  border-radius: 28rpx;
+  box-shadow: 0 10rpx 28rpx rgba(255, 184, 0, 0.14);
+  border: 1rpx solid rgba(255, 184, 0, 0.18);
+}
+
+.hero-card {
+  padding: 40rpx 34rpx;
+  margin-bottom: 28rpx;
+}
+
+.hero-title {
+  display: block;
+  color: #4a3510;
+  font-size: 42rpx;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.hero-subtitle {
+  display: block;
+  color: #7c6534;
+  font-size: 27rpx;
+  line-height: 1.6;
+}
+
+.state-card,
+.empty-card {
+  padding: 54rpx 34rpx;
+  text-align: center;
+  color: #8a7443;
+  font-size: 28rpx;
+}
+
+.empty-title {
+  display: block;
+  color: #4a3510;
+  font-size: 34rpx;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.empty-copy {
+  display: block;
+  line-height: 1.6;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.member-card {
+  padding: 30rpx;
+}
+
+.member-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 22rpx;
+}
+
+.member-avatar {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffe27a 0%, #ffb800 100%);
+  color: #5b3b00;
+  font-size: 30rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  display: block;
+  color: #3e2a08;
+  font-size: 34rpx;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+}
+
+.member-meta {
+  display: block;
+  color: #856c37;
+  font-size: 25rpx;
+  line-height: 1.55;
+  word-break: break-all;
+}
+
+.member-actions {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 26rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  padding: 0;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.action-btn.subtle {
+  background: #fff3c4;
+  color: #7a5600;
+}
+
+.action-btn.danger {
+  background: #fff0ec;
+  color: #c53b24;
+}

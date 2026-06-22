@@ -1,0 +1,38 @@
+<view class="member-page">
+  <view class="hero-card">
+    <text class="hero-title">成员管理</text>
+    <text class="hero-subtitle">管理已通过邀请码加入的家庭成员，备注只对创建者可见。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载成员...</text>
+  </view>
+
+  <view wx:elif="{{members.length === 0}}" class="empty-card">
+    <text class="empty-title">暂无参与者</text>
+    <text class="empty-copy">家人通过邀请码加入后，会出现在这里。</text>
+  </view>
+
+  <view wx:else class="member-list">
+    <view class="member-card" wx:for="{{members}}" wx:key="_id">
+      <view class="member-main">
+        <view class="member-avatar">{{index + 1}}</view>
+        <view class="member-info">
+          <text class="member-name">{{item.displayName}}</text>
+          <text class="member-meta">{{item.joinedAtText}}</text>
+          <text class="member-meta" wx:if="{{item.selfDisplayName && item.selfDisplayName !== item.displayName}}">
+            自称：{{item.selfDisplayName}}
+          </text>
+          <text class="member-meta" wx:if="{{item.openidSuffix}}">
+            OpenID 尾号：{{item.openidSuffix}}
+          </text>
+        </view>
+      </view>
+
+      <view class="member-actions">
+        <button class="action-btn subtle" data-id="{{item._id}}" bindtap="onEditRemark">修改备注</button>
+        <button class="action-btn danger" data-id="{{item._id}}" bindtap="onRemoveMember">解除参与者</button>
+      </view>
+    </view>
+  </view>
+</view>
