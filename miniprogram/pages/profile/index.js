@@ -1,6 +1,7 @@
 const { isDeveloperOpenid } = require('../../config/developer');
 
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
+const CREATOR_CANCEL_CONFIRM_TEXT = '确认注销';
 
 Page({
   data: {
@@ -70,6 +71,14 @@ Page({
         showForCreator: true
       },
       {
+        id: 16,
+        name: '成员管理',
+        icon: 'participant',
+        path: '/pkg-misc/member-management/index',
+        description: '备注或解除已加入的参与者',
+        showForCreator: true
+      },
+      {
         id: 12,
         name: '意见反馈',
         icon: 'info',
@@ -112,9 +121,19 @@ Page({
       },
       {
         id: 8,
-        name: '注销账户',
+        name: '注销账号',
         icon: 'logout',
-        action: 'logout'
+        action: 'cancelCreatorAccount',
+        description: '永久删除该宝宝记录和所有历史数据',
+        showForCreator: true
+      },
+      {
+        id: 17,
+        name: '解绑',
+        icon: 'logout',
+        action: 'unbindParticipant',
+        description: '解除你的参与者身份，不影响历史记录',
+        showForParticipant: true
       }
     ],
     defaultAvatarUrl: '/images/LemonLogo.png',
@@ -130,22 +149,27 @@ Page({
       defaultAvatarUrl: '/images/LemonLogo.png'
     });
 
-    // 获取用户角色
-    const app = getApp();
-    const userRole = app.globalData.userRole || wx.getStorageSync('user_role');
-    const openid = app.globalData.openid || wx.getStorageSync('openid') || '';
-    this.setData({
-      userRole: userRole,
-      isDeveloper: isDeveloperOpenid(openid)
-    });
+    this.refreshIdentityState();
 
     // 获取宝宝信息
     this.getBabyInfo();
   },
 
   onShow: function () {
+    this.refreshIdentityState();
     if (this.data.uploadingAvatar) return;
     this.getBabyInfo();
+  },
+
+  refreshIdentityState() {
+    const app = getApp();
+    const userRole = app.globalData.userRole || wx.getStorageSync('user_role') || '';
+    const openid = app.globalData.openid || wx.getStorageSync('openid') || '';
+    this.setData({
+      userRole,
+      isDeveloper: isDeveloperOpenid(openid)
+    });
+    return { app, userRole, openid };
   },
 
   getAvatarCacheKey(babyUid) {
@@ -508,9 +532,14 @@ Page({
   handleMenuClick: function (e) {
     const item = e.currentTarget.dataset.item;
     
-    // 处理注销账户
-    if (item.action === 'logout') {
-      this.handleLogout();
+    // 处理账号注销或参与者解绑
+    if (item.action === 'cancelCreatorAccount') {
+      this.handleCreatorAccountCancellation();
+      return;
+    }
+
+    if (item.action === 'unbindParticipant') {
+      this.handleParticipantUnbind();
       return;
     }
     
@@ -530,8 +559,10 @@ Page({
   handleMenuClick: function(e) {
     const item = e.currentTarget.dataset.item;
     
-    if (item.action === 'logout') {
-      this.handleLogout();
+    if (item.action === 'cancelCreatorAccount') {
+      this.handleCreatorAccountCancellation();
+    } else if (item.action === 'unbindParticipant') {
+      this.handleParticipantUnbind();
     } else if (item.action === 'share') {
       this.handleShareData();
     } else if (item.path) {
@@ -558,103 +589,123 @@ Page({
     });
   },
 
-  // 处理注销账户
-  handleLogout: function() {
-    wx.showModal({
-      title: '注销账户',
-      content: '确定要注销账户吗？注销后将清除所有数据，需要重新选择角色。',
-      success: (res) => {
-        if (res.confirm) {
-          this.clearUserData();
-        }
-      }
+  showConfirmModal(options = {}) {
+    return new Promise((resolve) => {
+      wx.showModal({
+        ...options,
+        success: (res) => resolve(res),
+        fail: () => resolve({ confirm: false })
+      });
     });
   },
 
-  // 清除用户数据并跳转到角色选择页
-  async clearUserData() {
+  async handleCreatorAccountCancellation() {
+    const firstConfirm = await this.showConfirmModal({
+      title: '确认注销账号？',
+      content: '注销后将永久删除宝宝资料、喂养/用药/成长等历史记录，并解除所有参与者访问。此操作不可恢复。',
+      confirmText: '继续注销',
+      confirmColor: '#D93026',
+      cancelText: '取消'
+    });
+    if (!firstConfirm.confirm) return;
+
+    const secondConfirm = await this.showConfirmModal({
+      title: `请输入“${CREATOR_CANCEL_CONFIRM_TEXT}”完成注销`,
+      editable: true,
+      placeholderText: `请输入：${CREATOR_CANCEL_CONFIRM_TEXT}`,
+      confirmText: '确认注销',
+      confirmColor: '#D93026',
+      cancelText: '取消'
+    });
+    if (!secondConfirm.confirm) return;
+
+    if (String(secondConfirm.content || '').trim() !== CREATOR_CANCEL_CONFIRM_TEXT) {
+      wx.showToast({
+        title: '确认文字不正确',
+        icon: 'none'
+      });
+      return;
+    }
+
+    await this.executeAccountCleanup({
+      action: 'cancelCreatorAccount',
+      loadingTitle: '正在注销...',
+      successTitle: '注销成功',
+      errorTitle: '注销失败，请重试'
+    });
+  },
+
+  async handleParticipantUnbind() {
+    const confirmed = await this.showConfirmModal({
+      title: '确认解绑？',
+      content: '解绑后你将不再作为参与者查看或记录该宝宝数据。宝宝资料和历史记录会保留，创建者和其他参与者不受影响。如需重新加入，需要创建者的邀请码。',
+      confirmText: '确认解绑',
+      confirmColor: '#D93026',
+      cancelText: '取消'
+    });
+    if (!confirmed.confirm) return;
+
+    await this.executeAccountCleanup({
+      action: 'unbindParticipant',
+      loadingTitle: '正在解绑...',
+      successTitle: '已解绑',
+      errorTitle: '解绑失败，请重试'
+    });
+  },
+
+  async executeAccountCleanup({ action, loadingTitle, successTitle, errorTitle }) {
+    const app = getApp();
+    const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
+    if (!babyUid) {
+      wx.showToast({
+        title: '当前未绑定宝宝记录',
+        icon: 'none'
+      });
+      return;
+    }
+
     try {
       wx.showLoading({
-        title: '正在注销...',
+        title: loadingTitle,
         mask: true
       });
 
-      const app = getApp();
-      const openid = app.globalData.openid || wx.getStorageSync('openid');
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-      
-      let dbClearSuccess = true;
-      
-      if (openid) {
-        // 清除数据库中的用户数据
-        try {
-          await this.clearDatabaseData(openid, babyUid);
-        } catch (dbError) {
-          console.error('数据库清理出错:', dbError);
-          dbClearSuccess = false;
+      const res = await wx.cloud.callFunction({
+        name: 'accountCleanup',
+        data: {
+          action,
+          babyUid
         }
+      });
+      const result = res && res.result;
+      if (!result || !result.ok) {
+        throw new Error(result?.message || errorTitle);
       }
 
-      // 如果数据库清理成功，则手动清理本地存储和全局数据
-      if (dbClearSuccess) {
-        // 清除本地缓存
-        this.clearLocalStorage();
-        
-        // 重置全局数据
-        this.resetGlobalData();
+      this.clearLocalStorage();
+      this.resetGlobalData();
 
-        wx.hideLoading();
-        
-        // 显示成功提示
-        wx.showToast({
-          title: '注销成功',
-          icon: 'success',
-          duration: 1500,
-          success: () => {
-            // 跳转至角色选择页
-            setTimeout(() => {
-              wx.reLaunch({
-                url: '/pages/role-selection/index'
-              });
-            }, 1500);
-          }
-        });
-      } else {
-        // 如果数据库清理失败，则使用app.logout作为备选方案
-        wx.hideLoading();
-        
-        // 调用全局logout方法
-        const logoutSuccess = await app.logout();
-        
-        if (logoutSuccess) {
-          wx.showToast({
-            title: '注销成功',
-            icon: 'success'
-          });
-        } else {
-          wx.showToast({
-            title: '注销过程中出现错误',
-            icon: 'none'
-          });
-        }
-      }
-    } catch (error) {
-      console.error('注销账户失败:', error);
       wx.hideLoading();
-      
       wx.showToast({
-        title: '注销失败，请重试',
+        title: successTitle,
+        icon: 'success',
+        duration: 1200,
+        success: () => {
+          setTimeout(() => {
+            wx.reLaunch({
+              url: '/pages/role-selection/index'
+            });
+          }, 1200);
+        }
+      });
+    } catch (error) {
+      console.error('账号清理失败:', error);
+      wx.hideLoading();
+      wx.showToast({
+        title: error.message || errorTitle,
         icon: 'none'
       });
     }
-  },
-
-  // 清除数据库中的用户数据
-  async clearDatabaseData(openid, babyUid) {
-    if (!openid) return;
-    // 注销只清除本机登录/绑定状态，不删除云端宝宝资料、参与关系或历史记录。
-    // 如需退出某个宝宝共享，应提供独立的“退出共享”动作。
-    console.log('注销仅清本地状态，保留云端数据:', { hasBabyUid: !!babyUid });
   },
 
   // 清除本地存储
