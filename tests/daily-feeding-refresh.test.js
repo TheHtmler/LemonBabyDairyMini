@@ -115,6 +115,14 @@ test('daily feeding uses themed first-paint loading and defers trend rebuild', (
   assert.doesNotMatch(dailyFeedingWxss, /milk-lemon-loading\.svg/);
 });
 
+test('daily feeding medication checklist uses raw medication history before deferred summaries', () => {
+  const dailyFeeding = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
+
+  assert.match(dailyFeeding, /MedicationRecordModel\s*\.\s*getLatestRecordsBeforeDateForMedications/);
+  assert.match(dailyFeeding, /buildMedicationHistoryFromRecords/);
+  assert.match(dailyFeeding, /medicationHistoryRecords/);
+});
+
 test('role selection startup loading uses lemon themed motion without a long forced wait', () => {
   const roleSelection = fs.readFileSync('miniprogram/pages/role-selection/index.js', 'utf8');
   const roleSelectionWxml = fs.readFileSync('miniprogram/pages/role-selection/index.wxml', 'utf8');

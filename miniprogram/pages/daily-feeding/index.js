@@ -141,6 +141,12 @@ function shiftDateKey(baseKey, deltaDays) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
+function dateKeyToDate(dateKey) {
+  const [y, m, d] = String(dateKey || '').split('-').map(Number);
+  if (![y, m, d].every(Number.isFinite)) return new Date();
+  return new Date(y, m - 1, d);
+}
+
 function buildGreeting() {
   const hour = new Date().getHours();
   if (hour < 6) return '夜深了，注意休息～';
@@ -400,6 +406,7 @@ Page({
       const today = todayKey();
       // 趋势窗口不含今天（T-1~T-7），故往前多取一天到 T-7。
       const startKey = shiftDateKey(today, -TREND_DAYS);
+      const medsPromise = MedicationModel.getMedications();
       const rangeSummariesPromise = rebuildTrend
         ? DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, today, {
           rebuildMissing: true,
@@ -407,18 +414,31 @@ Page({
         })
         : Promise.resolve(this.rangeSummaries || []);
 
-      const [daily, rangeSummaries, meds, plannedMeals, recentDay] = await Promise.all([
+      const medicationHistoryPromise = medsPromise
+        .then((meds) => {
+          const periodicMedicationIds = dashboard.buildPeriodicMedicationIds(meds);
+          return MedicationRecordModel
+            .getLatestRecordsBeforeDateForMedications(babyUid, periodicMedicationIds, dateKeyToDate(today));
+        })
+        .then((records) => Array.isArray(records) ? records : (records && records.data) || [])
+        .catch((error) => {
+          console.warn('加载用药历史失败:', error);
+          return null;
+        });
+
+      const [daily, rangeSummaries, meds, plannedMeals, recentDay, medicationHistoryRecords] = await Promise.all([
         DailyRecordV2Service.getDailyRecordV2(babyUid, today),
         // 首屏不发趋势请求；完整补齐放到 loadDeferredDashboardParts，避免拖慢首页首屏。
         rangeSummariesPromise,
-        MedicationModel.getMedications(),
+        medsPromise,
         FeedingRecordV2Model.getRecentDayMealCount(babyUid, today),
         // 下一顿参考：取上次（最近历史日）那天的全部喂奶记录，按今日已喂顿数对应同序号那一顿
-        FeedingRecordV2Model.getRecentDayRecords(babyUid, today).catch(() => ({ date: '', records: [] }))
+        FeedingRecordV2Model.getRecentDayRecords(babyUid, today).catch(() => ({ date: '', records: [] })),
+        medicationHistoryPromise
       ]);
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
-      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, today });
+      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, today });
 
       if (!silent) wx.hideLoading();
     } catch (error) {
@@ -461,7 +481,7 @@ Page({
     return this._trendRefreshPromise;
   },
 
-  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, today }) {
+  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, medicationHistoryRecords = [], today }) {
     const summary = daily.summary || {};
     const basicInfo = daily.basicInfo || summary.basicInfo || {};
     const macroSummary = summary.macroSummary || {};
@@ -500,6 +520,10 @@ Page({
     // 保存当日用药记录与上下文，供打卡的「乐观本地更新」复用，避免每次打卡都整页刷新
     this._medTodayRecords = (daily.medicationRecords || []).slice();
     this._medToday = today;
+    this._medHistoryRecords = Array.isArray(medicationHistoryRecords) ? medicationHistoryRecords.slice() : null;
+    this._medHistory = Array.isArray(this._medHistoryRecords)
+      ? dashboard.buildMedicationHistoryFromRecords(this._medHistoryRecords, today)
+      : null;
     const medicationChecklist = dashboard.buildMedicationChecklist({
       meds,
       todayRecords: this._medTodayRecords,
@@ -553,8 +577,11 @@ Page({
     };
   },
 
-  // 从范围汇总里取每日已服药 id（供隔日药推算）
+  // 优先用原始 medication_records 推算隔 N 天用药；失败时退回范围汇总。
   buildMedicationHistory(today) {
+    if (Array.isArray(this._medHistory)) {
+      return this._medHistory;
+    }
     return (this.rangeSummaries || [])
       .filter((summary) => summary && summary.date && summary.date < today)
       .map((summary) => ({

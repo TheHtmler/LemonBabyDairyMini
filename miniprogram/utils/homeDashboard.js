@@ -55,6 +55,19 @@ function formatDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+function dateKeyFromValue(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const matched = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (matched) {
+      return `${matched[1]}-${matched[2]}-${matched[3]}`;
+    }
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return formatDateKey(date);
+}
+
 function diffInDays(fromKey, toKey) {
   const from = parseDateKey(fromKey);
   const to = parseDateKey(toKey);
@@ -210,6 +223,37 @@ function buildMedicationChecklist({ meds = [], todayRecords = [], history = [], 
     hasPending: pending > 0,
     hasPlan: todayItems.length > 0
   };
+}
+
+function buildMedicationHistoryFromRecords(records = [], todayKey = '') {
+  const grouped = {};
+  (records || []).forEach((record = {}) => {
+    const date = dateKeyFromValue(record.date || record.actualDateTime || record.createdAt);
+    if (!date || date === todayKey) return;
+    const id = record.medicationId || record.medicationName || record._id || record.id || '';
+    if (!id) return;
+    if (!grouped[date]) {
+      grouped[date] = [];
+    }
+    grouped[date].push(id);
+  });
+
+  return Object.keys(grouped)
+    .sort()
+    .map((date) => ({
+      date,
+      takenMedicationIds: grouped[date]
+    }));
+}
+
+function buildPeriodicMedicationIds(meds = []) {
+  return (meds || [])
+    .filter((med) => {
+      const { days } = parseMedicationFrequency(med);
+      return Number.isFinite(days) && days > 1;
+    })
+    .map((med) => med._id || med.id || med.name || '')
+    .filter(Boolean);
 }
 
 function buildGoal(actual, target, precision = 2) {
@@ -1035,6 +1079,8 @@ module.exports = {
   parseMedicationFrequency,
   isScheduledToday,
   buildMedicationChecklist,
+  buildMedicationHistoryFromRecords,
+  buildPeriodicMedicationIds,
   buildNutritionGoals,
   buildNutritionTargetState,
   buildNutritionSummary,
