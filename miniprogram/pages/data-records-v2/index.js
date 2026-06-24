@@ -2640,7 +2640,6 @@ function createDataRecordsPageConfig(options = {}) {
 
       const hasPermission = await checkUserPermission();
       if (!hasPermission) {
-        wx.hideLoading();
         wx.showModal({
           title: '权限不足',
           content: '您没有权限访问此页面，请重新登录',
@@ -2658,12 +2657,12 @@ function createDataRecordsPageConfig(options = {}) {
       if (!this.isV2RecordsSource()) {
         await this.loadNutritionSettings();
       }
-      this.fetchDailyRecords(formattedDate);
-
-      wx.hideLoading();
+      // 复用初始化期间的全屏 loading，等数据真正加载完成再关闭（silent 避免重复开关 loading）
+      await this.fetchDailyRecords(formattedDate, { silent: true });
     } catch (error) {
-      wx.hideLoading();
       console.error('data-records 初始化失败:', error);
+    } finally {
+      wx.hideLoading();
     }
   },
 
@@ -3625,15 +3624,16 @@ function createDataRecordsPageConfig(options = {}) {
 
       if (!babyUid) {
         console.error('未找到宝宝UID，跳过数据查询');
+        if (!silent) {
+          this.setData({ isDataLoading: false });
+          wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+        }
         return;
       }
 
       if (useV2Records) {
         const serviceResult = await DailyRecordV2Service.getDailyRecordV2(babyUid, dateStr);
         await this.applyV2DailyServiceResult(dateStr, babyUid, serviceResult);
-        if (!silent) {
-          wx.hideLoading();
-        }
         return;
       }
 
@@ -3821,14 +3821,8 @@ function createDataRecordsPageConfig(options = {}) {
         this.processFeedingData([], []);
       }
       
-      if (!silent) {
-        wx.hideLoading();
-      }
     } catch (error) {
       console.error('获取当日记录失败:', error);
-      if (!silent) {
-        wx.hideLoading();
-      }
       wx.showToast({
         title: '获取记录失败',
         icon: 'error'
@@ -3838,6 +3832,10 @@ function createDataRecordsPageConfig(options = {}) {
       this.setData({
         isDataLoading: false
       });
+    } finally {
+      if (!silent) {
+        wx.hideLoading();
+      }
     }
   },
 
@@ -4153,11 +4151,14 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   // 下拉刷新
-  onPullDownRefresh: function() {
-    if (this.data.selectedDate) {
-      this.fetchDailyRecords(this.data.selectedDate);
+  onPullDownRefresh: async function() {
+    try {
+      if (this.data.selectedDate) {
+        await this.fetchDailyRecords(this.data.selectedDate);
+      }
+    } finally {
+      wx.stopPullDownRefresh();
     }
-    wx.stopPullDownRefresh();
   },
 
   // 获取最近的喂奶记录数据作为默认值
