@@ -19,7 +19,7 @@
 
   <!-- 菜单列表 -->
   <view class="menu-container">
-        <view class="menu-item {{item.action === 'migration' ? 'migration-item' : ''}} {{item.action === 'share' ? 'share-item' : ''}}" 
+        <view class="menu-item {{item.action === 'share' ? 'share-item' : ''}}" 
           wx:for="{{menuList}}" 
           wx:key="id" 
           wx:if="{{(!item.showForCreator || (item.showForCreator && userRole === 'creator')) && (!item.showForParticipant || (item.showForParticipant && userRole === 'participant')) && (!item.showForDeveloper || (item.showForDeveloper && isDeveloper))}}"

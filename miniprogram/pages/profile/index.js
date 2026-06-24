@@ -529,32 +529,6 @@ Page({
     });
   },
 
-  handleMenuClick: function (e) {
-    const item = e.currentTarget.dataset.item;
-    
-    // 处理账号注销或参与者解绑
-    if (item.action === 'cancelCreatorAccount') {
-      this.handleCreatorAccountCancellation();
-      return;
-    }
-
-    if (item.action === 'unbindParticipant') {
-      this.handleParticipantUnbind();
-      return;
-    }
-    
-    // 处理数据迁移
-    if (item.action === 'migration') {
-      this.handleMigration();
-      return;
-    }
-    
-    // 跳转到对应页面
-    wx.navigateTo({
-      url: item.path
-    });
-  },
-  
   // 处理菜单点击
   handleMenuClick: function(e) {
     const item = e.currentTarget.dataset.item;
