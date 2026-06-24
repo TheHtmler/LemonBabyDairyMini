@@ -552,14 +552,3 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
   assert.doesNotMatch(wxss, /text:first-child/);
   assert.doesNotMatch(wxss, /\bgap\s*:/);
 });
-
-test('legacy nutrition settings page remains on the old entry model', () => {
-  const source = fs.readFileSync('miniprogram/pkg-milk/nutrition-settings/index.js', 'utf8');
-
-  assert.match(source, /require\('\.\.\/\.\.\/models\/nutrition'\)/);
-  assert.match(source, /getNutritionSettings\(babyUid\)/);
-  assert.match(source, /updateNutritionSettings\(babyUid/);
-  assert.doesNotMatch(source, /require\('\.\.\/\.\.\/models\/nutritionProfile'\)/);
-  assert.doesNotMatch(source, /getNutritionProfileSettings/);
-  assert.doesNotMatch(source, /updateNutritionProfileSettings/);
-});

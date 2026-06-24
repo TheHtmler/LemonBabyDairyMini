@@ -137,8 +137,33 @@
 
 ## 5. 建议执行顺序
 
-1. ✅ **本次**：profile 死代码清理 + 本文档。
-2. **第二批（低风险删除）**：迁移工具页 / 迁移云函数 / 脚本 / 过时文档规则 / 孤儿旧营养页（同步改测试）。删前补做 orphan 检查 + dry-run rebuild。
+1. ✅ **第一批**：profile 死代码清理 + 本文档。
+2. ✅ **第二批（低风险删除，本次）**：迁移工具页 / 5 个迁移云函数 / 迁移脚本 / 过时文档规则 / 孤儿旧营养页（同步改测试）。详见 §6。
 3. **第三批（中风险）**：`data-records-v2` legacy 死分支 + `feedingRecordStore` + service legacy 函数（单独 PR、逐块删、强测试）。
 4. **第四批（需先迁移）**：§2 三类活路径——历史体重统一到 v2、去 `nutrition_settings` 双写、清理 `legacyFoodIntakes` UI。
 5. **并入调用次数优化**：营养计算收敛（§4）与 `cloud-usage-optimization.md` 方案甲一起做。
+
+---
+
+## 6. 执行记录
+
+### 第一批（commit 6781ec7）
+- 删除 `profile` 被覆盖的重复 `handleMenuClick`（含未定义 `handleMigration` 调用）+ `migration-item` 的 wxml/wxss 样式。
+- 新增本文档。
+
+### 第二批（本次）
+
+**已删除：**
+- 页面：`pages/milk-migration-tool/`、`pkg-milk/nutrition-settings/`（+ `app.json` 两处注册）
+- 云函数：`migrateFeedingRecordsV2`、`migrateFoodIntakeRecordsV2`、`migrateNutritionProfiles`、`migrateNutritionSettings`、`backfillGrowthRecordsV2`
+- 脚本：`scripts/run-milk-v2-migration.js`、`scripts/milk-v2-migration-wx-console.js`、`scripts/lib/milk-v2-migration-cli.js`、`scripts/milk-v2-migration.env.example`；`package.json` 的 `migrate:milk-v2*`；`.gitignore` 对应忽略项
+- 测试：`migrate-feeding-records-v2`、`migrate-food-intake-records-v2`、`migrate-nutrition-profiles`、`backfill-growth-records-v2`、`milk-v2-migration-script`
+- 文档/规则：`docs/miniprogram/milk-v2-launch-playbook.md`、`milk-v2-migration-runbook.md`、`.cursor/rules/daily-summary-v2-food-cleanup.mdc`
+- 测试调整：`nutrition-profile-settings-entry.test.js`（改为断言旧页已移除）、`nutrition-settings-formula-powders.test.js`（删除「旧页保留」用例）
+- 结果：全量测试 **428 通过**。
+
+**本次保留 / 暂缓（对原计划的修正）：**
+- `@cloudbase/node-sdk` devDependency **保留**：`scripts/check-caregiver-roles.js` 仍在用（原计划「删后确认」结论 = 保留）。
+- `pages/meal-editor-v2/`（redirect 兼容层）**暂留**：可能被旧分享链接命中，需单独确认后再删。
+- `cloudfunctions/migrateFoodType`、`migrateProteinQuality` **暂留**：属 food_catalog 字段迁移，不在「奶/食物记录 v1→v2」范围，需确认字段已全量回填后再删。
+- 第三批（`data-records-v2` 死分支等）、第四批（活路径迁移）未动。

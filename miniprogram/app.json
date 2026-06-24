@@ -7,8 +7,7 @@
     "pages/analysis-report/index",
     "pages/profile/index",
     "pages/meal-editor-v2/index",
-    "pages/onboarding/index",
-    "pages/milk-migration-tool/index"
+    "pages/onboarding/index"
   ],
   "subPackages": [
     {
@@ -27,7 +26,6 @@
         "milk-feeding-editor-v2/index",
         "milk-goal-planner-v2/index",
         "nutrition-profile-settings/index",
-        "nutrition-settings/index",
         "food-management/index"
       ]
     },
