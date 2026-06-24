@@ -6,9 +6,6 @@ const {
   buildReportDetailPreview,
   buildReportTrendPreview
 } = require('../../utils/reportWorkbench');
-const {
-  groupV2FeedingRecordsByDate
-} = require('../../utils/dataRecordsV2Adapter');
 
 function formatDateKey(date) {
   const year = date.getFullYear();
@@ -26,6 +23,28 @@ function normalizeFeedingDateKey(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return formatDateKey(date);
+}
+
+function parseDateKey(value) {
+  const key = normalizeFeedingDateKey(value);
+  if (!key) return null;
+  const [year, month, day] = key.split('-').map(Number);
+  if (![year, month, day].every(Number.isFinite)) return null;
+  return new Date(year, month - 1, day);
+}
+
+function addDays(dateKey, deltaDays) {
+  const date = parseDateKey(dateKey);
+  if (!date) return '';
+  date.setDate(date.getDate() + deltaDays);
+  return formatDateKey(date);
+}
+
+function daysBetweenInclusive(startDate, endDate) {
+  const start = parseDateKey(startDate);
+  const end = parseDateKey(endDate);
+  if (!start || !end || end < start) return 0;
+  return Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
 }
 
 function roundNumber(value, precision = 2) {
@@ -53,8 +72,28 @@ function hasFoodSummaryContent(food = {}) {
   ].some(value => Number(value) > 0);
 }
 
+function hasSummaryMetricsContent(metrics = {}) {
+  return [
+    metrics.calories,
+    metrics.protein,
+    metrics.naturalProtein,
+    metrics.specialProtein,
+    metrics.carbs,
+    metrics.fat
+  ].some(value => Number(value) > 0);
+}
+
 function dailySummaryToFeedingWindowRecord(summary = {}) {
   const food = summary.food || {};
+  const macroSummary = summary.macroSummary || {};
+  const summaryMetrics = {
+    calories: roundCalories(Number(macroSummary.calories ?? food.calories) || 0),
+    protein: roundNumber(Number(macroSummary.protein ?? food.protein) || 0, 2),
+    naturalProtein: roundNumber(Number(macroSummary.naturalProtein ?? food.naturalProtein) || 0, 2),
+    specialProtein: roundNumber(Number(macroSummary.specialProtein ?? food.specialProtein) || 0, 2),
+    carbs: roundNumber(Number(macroSummary.carbs ?? food.carbs) || 0, 2),
+    fat: roundNumber(Number(macroSummary.fat ?? food.fat) || 0, 2)
+  };
   const intakes = hasFoodSummaryContent(food)
     ? [{
       _id: `daily-summary-food-${summary.date || summary._id || ''}`,
@@ -83,6 +122,7 @@ function dailySummaryToFeedingWindowRecord(summary = {}) {
     basicInfo: { ...(summary.basicInfo || {}) },
     feedings: [],
     intakes,
+    summaryMetrics: hasSummaryMetricsContent(summaryMetrics) ? summaryMetrics : null,
     source: 'daily_summary_v2'
   };
 }
@@ -127,6 +167,60 @@ function getReportById(reports = [], reportId = '') {
 function inferTrendType(filterType, reports = [], selectedReportId = '') {
   if (filterType && filterType !== 'all') return filterType;
   return getReportById(reports, selectedReportId)?.reportType || '';
+}
+
+function resolveFeedingWindowRange(reports = []) {
+  const byType = (reports || []).reduce((map, report = {}) => {
+    const type = report.reportType || '';
+    const dateKey = normalizeFeedingDateKey(report.reportDate);
+    if (!type || !dateKey) return map;
+    if (!map[type]) map[type] = [];
+    map[type].push({ ...report, dateKey });
+    return map;
+  }, {});
+
+  let startDate = '';
+  let endDate = '';
+  Object.values(byType).forEach((items) => {
+    const sorted = [...items].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+    sorted.forEach((report, index) => {
+      const previous = sorted[index - 1];
+      const intervalStart = previous ? addDays(previous.dateKey, 1) : addDays(report.dateKey, -7);
+      const intervalEnd = addDays(report.dateKey, -1);
+      if (!intervalStart || !intervalEnd || intervalEnd < intervalStart) return;
+      startDate = startDate ? (intervalStart < startDate ? intervalStart : startDate) : intervalStart;
+      endDate = endDate ? (intervalEnd > endDate ? intervalEnd : endDate) : intervalEnd;
+    });
+  });
+
+  return startDate && endDate ? { startDate, endDate } : null;
+}
+
+async function queryDailySummariesForRange(db, babyUid, startDate, endDate) {
+  const _ = db.command;
+  const pageSize = 20;
+  const maxPages = Math.max(1, Math.ceil(daysBetweenInclusive(startDate, endDate) / pageSize));
+  const summaries = [];
+  let skip = 0;
+  let page = 0;
+  while (page < maxPages) {
+    const res = await db.collection('daily_summary_v2')
+      .where({
+        babyUid,
+        status: 'active',
+        date: _.gte(startDate).and(_.lte(endDate))
+      })
+      .orderBy('date', 'asc')
+      .skip(skip)
+      .limit(pageSize)
+      .get();
+    const batch = res.data || [];
+    summaries.push(...batch);
+    if (batch.length < pageSize) break;
+    skip += batch.length;
+    page += 1;
+  }
+  return summaries;
 }
 
 function readFocusRequest() {
@@ -239,7 +333,7 @@ Page({
       });
 
       // 后台补齐喂养营养对照数据（趋势视图用），失败/超时都不影响档案展示
-      this.loadFeedingWindow(babyUid);
+      this.loadFeedingWindow(babyUid, reports);
     } catch (error) {
       console.error('加载报告数据失败:', error);
       wx.showToast({
@@ -250,35 +344,29 @@ Page({
     }
   },
 
-  // 后台加载营养窗口数据：食物来自 daily_summary_v2，奶来自 feeding_records_v2。
+  // 后台加载营养窗口数据：直接使用 daily_summary_v2 的按日汇总，避免为趋势卡重复拉全年原始明细。
   // 与档案渲染解耦，避免分页拉取慢/卡住时让整页一直停在 loading。
-  async loadFeedingWindow(babyUid) {
+  async loadFeedingWindow(babyUid, reports = this.data.reportsCache || []) {
     if (!babyUid) return;
     try {
+      const range = resolveFeedingWindowRange(reports);
+      if (!range) {
+        this.setData({ feedingRecordsCache: [] });
+        return;
+      }
       const db = wx.cloud.database();
-      const [summaryRes, v2MilkRecords] = await Promise.all([
-        db.collection('daily_summary_v2')
-          .where({ babyUid, status: 'active' })
-          .orderBy('date', 'desc')
-          .limit(365)
-          .get(),
-        this.loadV2MilkRecords(babyUid)
-      ]);
+      const summaries = await queryDailySummariesForRange(db, babyUid, range.startDate, range.endDate);
 
       const recordsByDate = new Map();
-      (summaryRes.data || [])
+      (summaries || [])
         .filter((record) => !!record.date)
         .map(dailySummaryToFeedingWindowRecord)
         .forEach((record) => {
           const dateKey = normalizeFeedingDateKey(record.date);
           recordsByDate.set(dateKey, mergeFeedingWindowRecord(recordsByDate.get(dateKey), record));
         });
-      const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
-      v2MilkByDate.forEach((dailyRecord, dateKey) => {
-        recordsByDate.set(dateKey, mergeFeedingWindowRecord(recordsByDate.get(dateKey), dailyRecord));
-      });
       const feedingRecords = Array.from(recordsByDate.values())
-        .filter(record => (record.feedings || []).length > 0 || (record.intakes || []).length > 0);
+        .filter(record => record.summaryMetrics || (record.feedings || []).length > 0 || (record.intakes || []).length > 0);
 
       this.setData({ feedingRecordsCache: feedingRecords });
 
@@ -292,50 +380,6 @@ Page({
       }
     } catch (error) {
       console.warn('加载喂养窗口数据失败（趋势营养对照降级）:', error);
-    }
-  },
-
-  // 读取近一年的 v2 喂奶记录作为奶统计数据源。失败返回空数组，自动降级回旧数据，避免页面崩溃。
-  async loadV2MilkRecords(babyUid) {
-    if (!babyUid) {
-      return [];
-    }
-    try {
-      const db = wx.cloud.database();
-      const _ = db.command;
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 365);
-      const startKey = formatDateKey(cutoff);
-      const MAX_LIMIT = 20;
-      // 安全上限：最多翻 200 页（≈4000 条），防止异常情况下分页死循环把页面卡在 loading
-      const MAX_PAGES = 200;
-      let all = [];
-      let skip = 0;
-      let hasMore = true;
-      let pages = 0;
-      while (hasMore && pages < MAX_PAGES) {
-        const res = await db.collection('feeding_records_v2')
-          .where({
-            babyUid,
-            status: 'active',
-            date: _.gte(startKey)
-          })
-          .orderBy('date', 'desc')
-          .skip(skip)
-          .limit(MAX_LIMIT)
-          .get();
-        const batch = res.data || [];
-        all = all.concat(batch);
-        skip += batch.length;
-        pages += 1;
-        if (batch.length < MAX_LIMIT) {
-          hasMore = false;
-        }
-      }
-      return all;
-    } catch (error) {
-      console.warn('加载 v2 喂奶记录失败，报告营养窗口降级为旧数据:', error);
-      return [];
     }
   },
 

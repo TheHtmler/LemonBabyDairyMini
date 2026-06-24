@@ -11,9 +11,7 @@ const {
 
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
-const FOOD_PICKER_CATALOG_CACHE_KEY = 'meal_food_picker_catalog_cache';
 const FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY = 'meal_food_picker_last_library_scope';
-const FOOD_PICKER_CATALOG_CACHE_TTL = 10 * 60 * 1000;
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 const MAX_RECENT_FOODS = 10;
 const RECENT_CATEGORY = 'recent';
@@ -22,7 +20,6 @@ const FOOD_VIRTUAL_BUFFER = 6;
 const FOOD_VIRTUAL_MIN_WINDOW = 18;
 const FOOD_CART_FLY_DURATION = 520;
 const FOOD_CART_FLY_START_DELAY = 24;
-const FOOD_PICKER_CATALOG_CACHE_MAX_BYTES = 850 * 1024;
 const FOOD_LIBRARY_TABS = [
   { scope: 'mine', label: '我的食物' },
   { scope: 'system', label: '系统食物' }
@@ -93,58 +90,6 @@ function writeFoodSelectionItems(items = []) {
         quantity: item.quantity
       }))
       .filter(item => item.foodId && item.quantity)
-  });
-}
-
-function estimateStorageBytes(value) {
-  let text = '';
-  try {
-    text = JSON.stringify(value);
-  } catch (error) {
-    return Infinity;
-  }
-  let bytes = 0;
-  for (let index = 0; index < text.length; index += 1) {
-    const code = text.charCodeAt(index);
-    if (code <= 0x7f) {
-      bytes += 1;
-    } else if (code <= 0x7ff) {
-      bytes += 2;
-    } else if (code >= 0xd800 && code <= 0xdbff) {
-      bytes += 4;
-      index += 1;
-    } else {
-      bytes += 3;
-    }
-  }
-  return bytes;
-}
-
-function truncateText(value, maxLength = 240) {
-  if (value === undefined || value === null) return '';
-  const text = value.toString();
-  return text.length > maxLength ? text.slice(0, maxLength) : text;
-}
-
-function compactObject(source = {}) {
-  return Object.keys(source).reduce((target, key) => {
-    const value = source[key];
-    if (value === undefined || value === null || value === '') return target;
-    if (Array.isArray(value) && value.length === 0) return target;
-    target[key] = value;
-    return target;
-  }, {});
-}
-
-function pickNutrition(nutrition = {}) {
-  if (!nutrition || typeof nutrition !== 'object') return undefined;
-  return compactObject({
-    calories: Number(nutrition.calories) || 0,
-    protein: Number(nutrition.protein) || 0,
-    carbs: Number(nutrition.carbs) || 0,
-    fat: Number(nutrition.fat) || 0,
-    fiber: Number(nutrition.fiber) || 0,
-    sodium: Number(nutrition.sodium) || 0
   });
 }
 
@@ -231,8 +176,7 @@ Page({
     this.pendingSelectedFoodQuantities = new Map(
       readFoodSelectionItems(previousSelection).map(item => [item.foodId, item.quantity])
     );
-    const hasCache = await this.loadCachedFoodCatalog();
-    await this.loadFoodCatalog({ silent: hasCache });
+    await this.loadFoodCatalog();
   },
 
   async onShow() {
@@ -295,29 +239,6 @@ Page({
     safeSetStorageSync(FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY, scope, { silent: true });
   },
 
-  async loadCachedFoodCatalog() {
-    const cache = wx.getStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY);
-    const catalog = Array.isArray(cache?.catalog) ? cache.catalog : [];
-    if (!catalog.length || Date.now() - (Number(cache.cachedAt) || 0) > FOOD_PICKER_CATALOG_CACHE_TTL) {
-      return false;
-    }
-    this.setFoodCatalog(catalog);
-    const foodCategories = this.buildFoodCategories(catalog, this.data.activeLibraryScope);
-    await new Promise(resolve => {
-      this.setData({
-        foodCategories,
-        activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
-      }, () => {
-        this.restoreSelectedFoodCartFromIds();
-        resolve();
-      });
-    });
-    await this.loadRecentFoodOptions();
-    this.filterFoodOptions();
-    this.setData({ loading: false });
-    return true;
-  },
-
   async loadFoodCatalog(options = {}) {
     const babyUid = getBabyUid();
     if (!options.silent) {
@@ -334,7 +255,6 @@ Page({
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, async () => {
-        this.cacheFoodCatalog(catalog);
         this.restoreSelectedFoodCartFromIds();
         await this.loadRecentFoodOptions();
         this.filterFoodOptions();
@@ -380,61 +300,6 @@ Page({
         if (categoryA !== categoryB) return categoryA.localeCompare(categoryB);
         return (a.name || '').localeCompare(b.name || '');
       });
-  },
-
-  toFoodCatalogCacheItem(food = {}) {
-    const aliasText = food.aliasText || (Array.isArray(food.aliases)
-      ? food.aliases.slice(0, 20).join(' ')
-      : '');
-    return compactObject({
-      _id: food._id,
-      name: food.name,
-      category: food.category,
-      categoryLevel1: food.categoryLevel1,
-      categoryLevel2: food.categoryLevel2,
-      aliasText: truncateText(aliasText, 320),
-      image: truncateText(food.image, 500),
-      imageUrl: truncateText(food.imageUrl, 500),
-      displayImage: truncateText(food.displayImage, 500),
-      baseUnit: food.baseUnit,
-      baseQuantity: food.baseQuantity,
-      nutritionBasis: food.nutritionBasis ? compactObject({
-        quantity: Number(food.nutritionBasis.quantity) || 0,
-        unit: food.nutritionBasis.unit
-      }) : undefined,
-      nutritionPerBasis: pickNutrition(food.nutritionPerBasis),
-      nutritionPerUnit: pickNutrition(food.nutritionPerUnit),
-      proteinSource: food.proteinSource,
-      proteinSplit: food.proteinSplit,
-      isSystem: food.isSystem === true,
-      isSystemSnapshot: food.isSystemSnapshot === true,
-      sourceType: food.sourceType,
-      sourceSystemFoodId: food.sourceSystemFoodId,
-      sourceFoodCode: food.sourceFoodCode || food.origin?.foodCode,
-      libraryScope: this.getFoodLibraryScope(food),
-      sourceLabel: this.getFoodSourceLabel(food)
-    });
-  },
-
-  buildFoodCatalogCachePayload(catalog = [], cachedAt = Date.now()) {
-    const slimCatalog = (catalog || [])
-      .map(food => this.toFoodCatalogCacheItem(food))
-      .filter(food => food._id && food.name);
-    if (!slimCatalog.length) return null;
-    const payload = {
-      cachedAt,
-      catalog: slimCatalog
-    };
-    return estimateStorageBytes(payload) <= FOOD_PICKER_CATALOG_CACHE_MAX_BYTES ? payload : null;
-  },
-
-  cacheFoodCatalog(catalog = this.getFoodCatalog()) {
-    const payload = this.buildFoodCatalogCachePayload(catalog);
-    if (!payload) {
-      safeRemoveStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, { silent: true });
-      return false;
-    }
-    return safeSetStorageSync(FOOD_PICKER_CATALOG_CACHE_KEY, payload, { silent: true });
   },
 
   getFoodCatalog() {
@@ -512,7 +377,6 @@ Page({
         foodCategories,
         activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
       }, () => {
-        this.cacheFoodCatalog(resolvedCatalog);
         this.restoreSelectedFoodCartFromIds();
         this.filterFoodOptions(this.data.foodSearchQuery || '');
       });

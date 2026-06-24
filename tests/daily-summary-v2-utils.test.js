@@ -3,6 +3,51 @@ const assert = require('node:assert/strict');
 
 const utilsPath = '../miniprogram/utils/dailySummaryV2Utils.js';
 
+test('buildDailySummaryV2 stores natural and special milk volumes for analysis without reading feeding details', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-06-24',
+    milkRecords: [
+      {
+        nutritionSummary: {
+          totalVolume: 120,
+          calories: 80,
+          protein: 2,
+          naturalProtein: 0.7,
+          specialProtein: 1.3,
+          carbs: 6,
+          fat: 3
+        },
+        formulaComponents: [
+          { kind: 'breast_milk', volume: 59 },
+          { kind: 'formula_powder', proteinRole: 'special', waterVolume: 61 }
+        ]
+      },
+      {
+        nutritionSummary: {
+          totalVolume: 90,
+          calories: 60,
+          protein: 1,
+          naturalProtein: 1,
+          specialProtein: 0,
+          carbs: 4,
+          fat: 2
+        },
+        formulaComponents: [
+          { kind: 'formula_powder', proteinRole: 'regular', waterVolume: 90 }
+        ]
+      }
+    ]
+  });
+
+  assert.equal(summary.milk.totalVolume, 210);
+  assert.equal(summary.milk.naturalMilkVolume, 149);
+  assert.equal(summary.milk.specialMilkVolume, 61);
+});
+
 test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel sections', () => {
   const {
     buildDailySummaryV2
@@ -102,6 +147,8 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
   assert.equal(summary.date, '2026-05-25');
   assert.deepEqual(summary.milk, {
     totalVolume: 120,
+    naturalMilkVolume: 0,
+    specialMilkVolume: 0,
     totalPowderWeight: 16.67,
     calories: 85.56,
     protein: 2.35,

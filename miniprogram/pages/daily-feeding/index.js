@@ -426,16 +426,16 @@ Page({
           return null;
         });
 
-      const [daily, rangeSummaries, meds, plannedMeals, recentDay, medicationHistoryRecords] = await Promise.all([
+      const [daily, rangeSummaries, meds, recentDay, medicationHistoryRecords] = await Promise.all([
         DailyRecordV2Service.getDailyRecordV2(babyUid, today),
         // 首屏不发趋势请求；完整补齐放到 loadDeferredDashboardParts，避免拖慢首页首屏。
         rangeSummariesPromise,
         medsPromise,
-        FeedingRecordV2Model.getRecentDayMealCount(babyUid, today),
         // 下一顿参考：取上次（最近历史日）那天的全部喂奶记录，按今日已喂顿数对应同序号那一顿
         FeedingRecordV2Model.getRecentDayRecords(babyUid, today).catch(() => ({ date: '', records: [] })),
         medicationHistoryPromise
       ]);
+      const plannedMeals = Array.isArray(recentDay?.records) ? recentDay.records.length : 0;
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
       await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, today });

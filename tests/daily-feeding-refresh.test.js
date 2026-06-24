@@ -123,6 +123,14 @@ test('daily feeding medication checklist uses raw medication history before defe
   assert.match(dailyFeeding, /medicationHistoryRecords/);
 });
 
+test('daily feeding derives planned meals from recent day records without duplicate query', () => {
+  const dailyFeeding = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
+
+  assert.doesNotMatch(dailyFeeding, /FeedingRecordV2Model\.getRecentDayMealCount/);
+  assert.match(dailyFeeding, /FeedingRecordV2Model\.getRecentDayRecords\(babyUid,\s*today\)/);
+  assert.match(dailyFeeding, /plannedMeals\s*=\s*Array\.isArray\(recentDay\?\.records\)\s*\?\s*recentDay\.records\.length\s*:\s*0/);
+});
+
 test('role selection startup loading uses lemon themed motion without a long forced wait', () => {
   const roleSelection = fs.readFileSync('miniprogram/pages/role-selection/index.js', 'utf8');
   const roleSelectionWxml = fs.readFileSync('miniprogram/pages/role-selection/index.wxml', 'utf8');

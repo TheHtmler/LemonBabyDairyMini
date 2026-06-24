@@ -48,6 +48,20 @@ function createDbMock(overrides = {}) {
             if (expected && expected.__op === 'lt') {
               return record[key] < expected.value;
             }
+            if (expected && expected.__op === 'lte') {
+              return record[key] <= expected.value;
+            }
+            if (expected && expected.__op === 'gte') {
+              return record[key] >= expected.value;
+            }
+            if (expected && expected.__op === 'and') {
+              return expected.conditions.every((condition) => {
+                if (condition.__op === 'lt') return record[key] < condition.value;
+                if (condition.__op === 'lte') return record[key] <= condition.value;
+                if (condition.__op === 'gte') return record[key] >= condition.value;
+                return false;
+              });
+            }
             return record[key] === expected;
           })
         ));
@@ -70,8 +84,32 @@ function createDbMock(overrides = {}) {
 
   const db = {
     command: {
+      gte(value) {
+        return {
+          __op: 'gte',
+          value,
+          and(other) {
+            return { __op: 'and', conditions: [this, other] };
+          }
+        };
+      },
       lt(value) {
-        return { __op: 'lt', value };
+        return {
+          __op: 'lt',
+          value,
+          and(other) {
+            return { __op: 'and', conditions: [this, other] };
+          }
+        };
+      },
+      lte(value) {
+        return {
+          __op: 'lte',
+          value,
+          and(other) {
+            return { __op: 'and', conditions: [this, other] };
+          }
+        };
       }
     },
     serverDate() {
@@ -173,7 +211,7 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
     dailySummaryData: [cleanSummary],
     foodIntakeData: [{ _id: 'food-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', nutrition: { calories: 40 } }],
     growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }],
-    bowelRecords: [{ _id: 'bowel-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }]
+    bowelRecords: [{ _id: 'bowel-1', babyUid: 'baby-1', date: '2026-05-25', recordTime: new Date(2026, 4, 25, 10), status: 'active' }]
   });
   const { service, models, restore } = loadFreshService(db);
   const modelCalls = [];
@@ -204,7 +242,7 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
     assert.equal(dailyRecord.usesLegacyFoodIntakes, false);
     assert.deepEqual(dailyRecord.medicationRecords, [{ _id: 'medication-1' }]);
     assert.deepEqual(dailyRecord.treatmentRecords, [{ _id: 'treatment-1' }]);
-    assert.deepEqual(dailyRecord.bowelRecords, [{ _id: 'bowel-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }]);
+    assert.deepEqual(dailyRecord.bowelRecords.map(record => record._id), ['bowel-1']);
     assert.deepEqual(modelCalls.map(([name]) => name), ['milk', 'food', 'medication', 'treatment']);
     assert.equal(calls.addCollection, '');
     assert.equal(calls.updateCollection, '');
@@ -691,6 +729,180 @@ test('getDailySummariesForRange reads daily_summary_v2 without legacy fallback b
 
     assert.deepEqual(summaries.map((summary) => summary._id), ['summary-1', 'summary-2']);
     assert.equal(calls.collectionReads.includes('feeding_records'), false);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange pushes date range into daily_summary_v2 query', async () => {
+  const { db, calls } = createDbMock({
+    dailySummaryData: [
+      { _id: 'before', babyUid: 'baby-1', date: '2026-05-23', status: 'active', isDirty: false },
+      { _id: 'in-1', babyUid: 'baby-1', date: '2026-05-24', status: 'active', isDirty: false },
+      { _id: 'in-2', babyUid: 'baby-1', date: '2026-05-25', status: 'active', isDirty: false },
+      { _id: 'after', babyUid: 'baby-1', date: '2026-05-26', status: 'active', isDirty: false }
+    ]
+  });
+  const { service, restore } = loadFreshService(db);
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-05-24', '2026-05-25');
+    const summaryQuery = calls.whereCalls.find(call => call.collectionName === 'daily_summary_v2')?.whereInput;
+    assert.deepEqual(summaries.map(summary => summary._id), ['in-1', 'in-2']);
+    assert.equal(summaryQuery.date.__op, 'and');
+    assert.deepEqual(summaryQuery.date.conditions.map(condition => condition.__op), ['gte', 'lte']);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange rereads daily_summary_v2 for repeated range reads to keep summaries fresh', async () => {
+  const { db, calls } = createDbMock({
+    dailySummaryData: [
+      { _id: 'summary-1', babyUid: 'baby-1', date: '2026-05-24', status: 'active', isDirty: false },
+      { _id: 'summary-2', babyUid: 'baby-1', date: '2026-05-25', status: 'active', isDirty: false }
+    ]
+  });
+  const { service, restore } = loadFreshService(db);
+
+  try {
+    await service.getDailySummariesForRange('baby-1', '2026-05-24', '2026-05-25', {
+      rebuildMissing: true,
+      skipDates: []
+    });
+    const readsAfterFirst = calls.collectionReads.length;
+    await service.getDailySummariesForRange('baby-1', '2026-05-24', '2026-05-25', {
+      rebuildMissing: true,
+      skipDates: []
+    });
+    assert.deepEqual(calls.collectionReads.slice(readsAfterFirst), ['daily_summary_v2']);
+  } finally {
+    restore();
+  }
+});
+
+// —— 第 2 步：getDailyRecordV2 进程内明细缓存（命中 / 失效 / forceRefresh / invalidate / 零回退） ——
+
+// 构造一个「干净且重建不会触发 upsert」的当天场景：
+// 首次必为 cache miss（读 6 集合且不写库，从而 finalSummary 保留预置 rev），第二次方可命中。
+function setupDailyRecordCacheScenario(summaryOverrides = {}) {
+  const summary = {
+    _id: 'summary-cache',
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    status: 'active',
+    isDirty: false,
+    rev: 111,
+    basicInfo: { weight: '6.2', height: '61' },
+    milk: { calories: 100, protein: 2, naturalProtein: 2, specialProtein: 0, totalVolume: 100, totalPowderWeight: 0 },
+    food: { calories: 0, protein: 0, naturalProtein: 0, specialProtein: 0, fat: 0, carbs: 0, fiber: 0 },
+    treatment: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    macroSummary: { calories: 100, protein: 2, naturalProtein: 2, specialProtein: 0, carbs: 0, fat: 0 },
+    recordCounts: { milk: 1, food: 0, medication: 0, treatment: 0, bowel: 0 },
+    ...summaryOverrides
+  };
+  const { db, calls } = createDbMock({
+    dailySummaryData: [summary],
+    growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', weight: '6.2', height: '61' }]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => { modelCalls.push('milk'); return []; };
+  models.FoodIntakeRecordModel.findByDate = async () => { modelCalls.push('food'); return []; };
+  models.MedicationRecordModel.findByDate = async () => { modelCalls.push('medication'); return { success: true, data: [] }; };
+  models.TreatmentRecordModel.findByDate = async () => { modelCalls.push('treatment'); return { success: true, data: [] }; };
+  return { db, calls, service, restore, summary, modelCalls };
+}
+
+test('getDailyRecordV2 第二次命中缓存：跳过 6 个事件集合，只探测 summary 一次', async () => {
+  const { calls, service, restore, modelCalls } = setupDailyRecordCacheScenario();
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25'); // miss
+    assert.ok(modelCalls.length > 0, '首次应读取事件集合');
+    assert.equal(calls.updateCollection, '', '干净且无增量不应 upsert（否则 rev 会变导致第二次无法命中）');
+
+    modelCalls.length = 0;
+    const readsBefore = calls.collectionReads.length;
+    const second = await service.getDailyRecordV2('baby-1', '2026-05-25'); // hit
+    assert.deepEqual(modelCalls, [], '命中缓存不应再读事件集合');
+    assert.deepEqual(calls.collectionReads.slice(readsBefore), ['daily_summary_v2'], '命中时只探测 summary 一次');
+    assert.equal(second.summary._id, 'summary-cache');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordV2 在 rev 变化（含别端写入）时失效并重读', async () => {
+  const { service, restore, summary, modelCalls } = setupDailyRecordCacheScenario();
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25'); // miss，缓存 rev=111
+    modelCalls.length = 0;
+    summary.rev = 222; // 模拟别端写入后云端 rev 变化
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    assert.ok(modelCalls.length > 0, 'rev 变化应失效并重读事件集合');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordV2 在 isDirty=true 时失效并重读', async () => {
+  const { service, restore, summary, modelCalls } = setupDailyRecordCacheScenario();
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    modelCalls.length = 0;
+    summary.isDirty = true; // 本端写入后被标脏
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    assert.ok(modelCalls.length > 0, 'isDirty 应失效并重读事件集合');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordV2 forceRefresh 忽略缓存强制重读', async () => {
+  const { service, restore, modelCalls } = setupDailyRecordCacheScenario();
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    modelCalls.length = 0;
+    await service.getDailyRecordV2('baby-1', '2026-05-25', { forceRefresh: true });
+    assert.ok(modelCalls.length > 0, 'forceRefresh 应强制重读');
+  } finally {
+    restore();
+  }
+});
+
+test('invalidateDailyRecordCache 使指定日期缓存失效', async () => {
+  const { service, restore, modelCalls } = setupDailyRecordCacheScenario();
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    modelCalls.length = 0;
+    service.invalidateDailyRecordCache('baby-1', '2026-05-25');
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    assert.ok(modelCalls.length > 0, '失效后应重读');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordV2 对无 rev 的旧文档不缓存（行为同改造前，零回退）', async () => {
+  const { service, restore, modelCalls } = setupDailyRecordCacheScenario({ rev: undefined });
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    modelCalls.length = 0;
+    await service.getDailyRecordV2('baby-1', '2026-05-25');
+    assert.ok(modelCalls.length > 0, '无 rev 不应命中缓存，仍读事件集合');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordV2 跨天使用独立缓存：不同日期不会串用昨天明细', async () => {
+  const { service, restore, modelCalls } = setupDailyRecordCacheScenario();
+  try {
+    await service.getDailyRecordV2('baby-1', '2026-05-25'); // 缓存「昨天」
+    modelCalls.length = 0;
+    const next = await service.getDailyRecordV2('baby-1', '2026-05-26'); // 过 0 点后的「今天」
+    assert.ok(modelCalls.length > 0, '不同日期应 cache miss、按新日期重新读取事件集合');
+    assert.equal(next.date, '2026-05-26', '返回的是新日期的数据');
   } finally {
     restore();
   }

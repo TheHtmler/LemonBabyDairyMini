@@ -201,6 +201,55 @@ test('buildReportWorkbenchView uses v2 feeding nutrition snapshot for the milk w
   assert.equal(view.nutritionWindows[0].metrics[2].value, '16');
 });
 
+test('buildReportWorkbenchView uses daily summary metrics without raw feeding records', () => {
+  const reports = [
+    {
+      _id: 'urine-current',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-16T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '120', status: 'high' }
+      }
+    },
+    {
+      _id: 'urine-previous',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-12T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '100', status: 'high' }
+      }
+    }
+  ];
+
+  const view = buildReportWorkbenchView({
+    selectedReportId: 'urine-current',
+    reports,
+    feedingRecords: [
+      {
+        _id: 'summary-day',
+        date: '2026-11-14',
+        basicInfo: { weight: 5 },
+        source: 'daily_summary_v2',
+        summaryMetrics: {
+          calories: 100,
+          protein: 7,
+          naturalProtein: 5,
+          specialProtein: 2,
+          carbs: 10,
+          fat: 4
+        }
+      }
+    ],
+    nutritionSettings: {},
+    fallbackWeight: 5
+  });
+
+  assert.equal(view.nutritionWindows[0].metrics[0].value, '1');
+  assert.equal(view.nutritionWindows[0].metrics[1].value, '0.4');
+  assert.equal(view.nutritionWindows[0].metrics[2].value, '20');
+  assert.equal(view.nutritionWindows[0].metrics[3].value, '4');
+});
+
 test('buildReportWorkbenchView exposes all blood-ms indicators including amino acid markers', () => {
   const reports = [
     {

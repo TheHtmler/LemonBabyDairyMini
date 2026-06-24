@@ -574,6 +574,26 @@ function formatDelta(currentValue, previousValue) {
 }
 
 function buildDailyNutritionMetric(record = {}, nutritionSettings = {}, fallbackWeight = 0) {
+  if (record.summaryMetrics) {
+    const metrics = record.summaryMetrics || {};
+    const weight = Number(record.basicInfo?.weight) || Number(fallbackWeight) || 0;
+    const calories = Number(metrics.calories) || 0;
+    const protein = Number(metrics.protein) || 0;
+    const naturalProtein = Number(metrics.naturalProtein) || 0;
+    const specialProtein = Number(metrics.specialProtein) || 0;
+    return {
+      date: toDateKey(record.date),
+      weight,
+      calories,
+      carbs: Number(metrics.carbs) || 0,
+      fat: Number(metrics.fat) || 0,
+      naturalProteinCoefficient: weight > 0 ? roundNumber(naturalProtein / weight, 2) : null,
+      specialProteinCoefficient: weight > 0 ? roundNumber(specialProtein / weight, 2) : null,
+      totalProteinCoefficient: weight > 0 ? roundNumber(protein / weight, 2) : null,
+      calorieCoefficient: weight > 0 ? roundNumber(calories / weight, 1) : null
+    };
+  }
+
   const normalizedIntakes = normalizeIntakes(record.intakes || []);
   const treatmentRecords = record.treatmentRecords || [];
   const summary = calculateMacroSummary(normalizedIntakes, record.feedings || [], nutritionSettings, treatmentRecords);

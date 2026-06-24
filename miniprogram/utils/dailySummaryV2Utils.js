@@ -28,6 +28,8 @@ function createEmptyBasicInfo() {
 function createEmptyMilkSummary() {
   return {
     totalVolume: 0,
+    naturalMilkVolume: 0,
+    specialMilkVolume: 0,
     totalPowderWeight: 0,
     calories: 0,
     protein: 0,
@@ -117,6 +119,8 @@ function createEmptyDailySummaryV2(babyUid = '', date = '') {
 function roundMilkSummary(summary = {}) {
   return {
     totalVolume: roundValue(summary.totalVolume),
+    naturalMilkVolume: roundValue(summary.naturalMilkVolume),
+    specialMilkVolume: roundValue(summary.specialMilkVolume),
     totalPowderWeight: roundValue(summary.totalPowderWeight),
     calories: roundValue(summary.calories),
     protein: roundValue(summary.protein),
@@ -164,7 +168,10 @@ function mergeMilkNutrition(records = []) {
   const summary = createEmptyMilkSummary();
   (Array.isArray(records) ? records : []).forEach((record = {}) => {
     const nutrition = record.nutritionSummary || {};
+    const volumeSplit = getMilkRecordVolumeSplit(record);
     summary.totalVolume += toNumber(nutrition.totalVolume);
+    summary.naturalMilkVolume += volumeSplit.naturalMilkVolume;
+    summary.specialMilkVolume += volumeSplit.specialMilkVolume;
     summary.totalPowderWeight += toNumber(nutrition.totalPowderWeight);
     summary.calories += toNumber(nutrition.calories);
     summary.protein += toNumber(nutrition.protein);
@@ -175,6 +182,37 @@ function mergeMilkNutrition(records = []) {
     summary.zeroProteinCalories += toNumber(nutrition.zeroProteinCalories);
   });
   return roundMilkSummary(summary);
+}
+
+function getMilkRecordVolumeSplit(record = {}) {
+  const components = Array.isArray(record.formulaComponents) ? record.formulaComponents : [];
+  let naturalMilkVolume = 0;
+  let specialMilkVolume = 0;
+
+  components.forEach((component = {}) => {
+    if (component.kind === 'breast_milk') {
+      naturalMilkVolume += toNumber(component.volume);
+      return;
+    }
+    if (component.kind === 'formula_powder') {
+      const volume = toNumber(component.waterVolume);
+      if (component.proteinRole === 'special') {
+        specialMilkVolume += volume;
+      } else {
+        naturalMilkVolume += volume;
+      }
+    }
+  });
+
+  if (naturalMilkVolume <= 0 && specialMilkVolume <= 0) {
+    naturalMilkVolume = toNumber(record.naturalMilkVolume);
+    specialMilkVolume = toNumber(record.specialMilkVolume);
+  }
+
+  return {
+    naturalMilkVolume,
+    specialMilkVolume
+  };
 }
 
 function isFiniteNumber(value) {

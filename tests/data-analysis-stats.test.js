@@ -889,3 +889,106 @@ test('data-analysis fetchFeedingRecords includes daily summary string date recor
   assert.deepEqual(records.map(record => record._id), ['summary_record']);
   assert.equal(records[0].intakes[0].nutrition.calories, 20);
 });
+
+test('data-analysis uses daily_summary_v2 milk volume split without reading feeding_records_v2', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  const reads = [];
+  const summaryRecords = [
+    {
+      _id: 'summary-with-milk',
+      babyUid: 'baby_1',
+      date: '2026-03-21',
+      status: 'active',
+      basicInfo: { weight: 5 },
+      milk: {
+        totalVolume: 120,
+        naturalMilkVolume: 59,
+        specialMilkVolume: 61,
+        calories: 80,
+        protein: 2,
+        naturalProtein: 0.7,
+        specialProtein: 1.3,
+        carbs: 6,
+        fat: 3
+      },
+      food: { calories: 20, protein: 2, naturalProtein: 2, specialProtein: 0, carbs: 2, fat: 1 },
+      macroSummary: {
+        calories: 100,
+        protein: 4,
+        naturalProtein: 2.7,
+        specialProtein: 1.3,
+        carbs: 8,
+        fat: 4
+      }
+    }
+  ];
+
+  const wxMock = {
+    getStorageSync() {
+      return 'baby_1';
+    },
+    showToast() {},
+    cloud: {
+      database() {
+        return {
+          command: {
+            gte(value) {
+              return {
+                and(condition) {
+                  return { __gte: value, __and: condition };
+                }
+              };
+            },
+            lte(value) {
+              return { __lte: value };
+            }
+          },
+          collection(name) {
+            let skipValue = 0;
+            let limitValue = 20;
+            return {
+              where() {
+                return this;
+              },
+              orderBy() {
+                return this;
+              },
+              skip(value) {
+                skipValue = value;
+                return this;
+              },
+              limit(value) {
+                limitValue = value;
+                return this;
+              },
+              get() {
+                reads.push(name);
+                assert.notEqual(name, 'feeding_records_v2');
+                return Promise.resolve({
+                  data: name === 'daily_summary_v2'
+                    ? summaryRecords.slice(skipValue, skipValue + limitValue)
+                    : []
+                });
+              }
+            };
+          }
+        };
+      }
+    }
+  };
+
+  const records = await withWxAndApp(
+    wxMock,
+    { globalData: { babyUid: 'baby_1' } },
+    () => withMutedConsole(() => instance.fetchFeedingRecords(
+      new Date('2026-03-01T00:00:00+08:00'),
+      new Date('2026-03-31T23:59:59+08:00')
+    ))
+  );
+
+  assert.deepEqual(records.map(record => record._id), ['summary-with-milk']);
+  assert.equal(records[0].feedings[0].naturalMilkVolume, 59);
+  assert.equal(records[0].feedings[0].specialMilkVolume, 61);
+  assert.deepEqual(reads, ['daily_summary_v2']);
+});

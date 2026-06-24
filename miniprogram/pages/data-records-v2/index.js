@@ -13,6 +13,7 @@ function getWeekday(date) {
 const NutritionModel = require('../../models/nutrition');
 // 引入药物记录模型
 const MedicationRecordModel = require('../../models/medicationRecord');
+const MedicationModel = require('../../models/medication');
 const TreatmentRecordModel = require('../../models/treatmentRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
@@ -1551,11 +1552,12 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   // 显示食物摄入弹窗
-  showFoodIntakeModal(options = {}) {
+  async showFoodIntakeModal(options = {}) {
     if (options && options.currentTarget) {
       options = options.currentTarget.dataset || {};
     }
     const preferredCategory = options.category || options.preferredCategory || '';
+    await this.loadFoodCatalog();
     const catalog = this.getFoodCatalog();
     if (!catalog.length) {
       wx.showToast({
@@ -1625,7 +1627,8 @@ function createDataRecordsPageConfig(options = {}) {
     });
   },
 
-  showFoodIntakeExperimentModal() {
+  async showFoodIntakeExperimentModal() {
+    await this.loadFoodCatalog();
     if (!this.getFoodCatalog().length) {
       wx.showToast({
         title: '请先前往“我的-食物管理”添加食物',
@@ -2304,7 +2307,7 @@ function createDataRecordsPageConfig(options = {}) {
     });
   },
 
-  openEditFoodModal(e) {
+  async openEditFoodModal(e) {
     const { index, id } = e.currentTarget.dataset;
     const foodIntakes = this.data.foodIntakes || [];
     let targetIndex = typeof index === 'number' ? index : -1;
@@ -2319,6 +2322,7 @@ function createDataRecordsPageConfig(options = {}) {
       wx.showToast({ title: '记录不存在', icon: 'none' });
       return;
     }
+    await this.loadFoodCatalog();
     const catalogFood = this.getFoodById(target.foodId);
     const selectedFood = catalogFood || {
       _id: target.foodId || '',
@@ -2655,8 +2659,6 @@ function createDataRecordsPageConfig(options = {}) {
         await this.loadNutritionSettings();
       }
       this.fetchDailyRecords(formattedDate);
-      this.loadMedications();
-      this.loadFoodCatalog();
 
       wx.hideLoading();
     } catch (error) {
@@ -2676,8 +2678,6 @@ function createDataRecordsPageConfig(options = {}) {
       await this.loadNutritionSettings();
     }
     this.fetchDailyRecords(this.data.selectedDate);
-    this.loadMedications();
-    this.loadFoodCatalog();
   },
 
   onShareAppMessage() {
@@ -4343,8 +4343,9 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   // 显示补充用药记录弹窗
-  showAddMedicationModal() {
+  async showAddMedicationModal() {
     console.log('显示用药记录弹窗', this.data.showAddMedicationModal);
+    await this.loadMedications();
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     
@@ -4689,12 +4690,8 @@ function createDataRecordsPageConfig(options = {}) {
   // 加载药物配置
   async loadMedications() {
     try {
-      const db = wx.cloud.database();
-      const app = getApp();
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-      if (!babyUid) return;
-      const res = await db.collection('medications').where({ babyUid }).get();
-      this.setData({ medications: res.data });
+      const medications = await MedicationModel.getMedications();
+      this.setData({ medications });
     } catch (error) {
       console.error('加载药物配置失败:', error);
     }

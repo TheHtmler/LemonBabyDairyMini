@@ -4,7 +4,6 @@ const fs = require('node:fs');
 
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
-const FOOD_PICKER_CATALOG_CACHE_KEY = 'meal_food_picker_catalog_cache';
 
 function installWxMock(storage = {}) {
   const previousWx = global.wx;
@@ -585,88 +584,6 @@ test('food picker builds separate recent lists for mine and system foods', async
 
     assert.deepEqual(instance.data.recentFoodOptionsByScope.system.map(item => item._id), systemFoods.slice(0, 10).map(item => item._id));
     assert.deepEqual(instance.data.recentFoodOptionsByScope.mine.map(item => item._id), ['mine-a', 'mine-b']);
-  } finally {
-    restoreWx();
-  }
-});
-
-test('food picker keeps loading while cached catalog waits for recent foods', async () => {
-  const storage = {
-    meal_food_picker_catalog_cache: {
-      cachedAt: Date.now(),
-      catalog: [mineFood]
-    }
-  };
-  const restoreWx = installWxMock(storage);
-  try {
-    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
-    const instance = createPageInstance(page, {
-      activeCategory: '婴幼儿辅食'
-    });
-    let releaseRecent;
-    const recentLoaded = new Promise(resolve => {
-      releaseRecent = resolve;
-    });
-    instance.loadRecentFoodOptions = async () => {
-      assert.equal(instance.data.loading, true);
-      await recentLoaded;
-      instance.setData({
-        recentFoodOptionsByScope: {
-          mine: [mineFood],
-          system: []
-        }
-      });
-    };
-
-    const loadingPromise = instance.loadCachedFoodCatalog();
-    assert.equal(instance.data.loading, true);
-    releaseRecent();
-    const hasCache = await loadingPromise;
-
-    assert.equal(hasCache, true);
-    assert.equal(instance.data.loading, false);
-    assert.deepEqual(instance.data.visibleFoodOptions.map(item => item._id), ['mine-1']);
-    assert.equal(instance.data.filteredFoodCount, 1);
-  } finally {
-    restoreWx();
-  }
-});
-
-test('food picker keeps catalog outside page data when loading cached foods', async () => {
-  const largeFood = {
-    ...mineFood,
-    _id: 'mine-large',
-    name: '大字段食物',
-    rawPayload: 'x'.repeat(1024 * 1024)
-  };
-  const storage = {
-    meal_food_picker_catalog_cache: {
-      cachedAt: Date.now(),
-      catalog: [largeFood]
-    }
-  };
-  const restoreWx = installWxMock(storage);
-  try {
-    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
-    const instance = createPageInstance(page, {
-      activeCategory: '婴幼儿辅食'
-    });
-    const setDataKeys = [];
-    const originalSetData = instance.setData;
-    instance.setData = function(updates, callback) {
-      setDataKeys.push(Object.keys(updates));
-      return originalSetData.call(this, updates, callback);
-    };
-    instance.loadRecentFoodOptions = async () => {};
-
-    const hasCache = await instance.loadCachedFoodCatalog();
-
-    assert.equal(hasCache, true);
-    assert.equal(instance.data.foodCatalog.length, 0);
-    assert.equal(instance.getFoodCatalog().length, 1);
-    assert.equal(instance.getFoodById('mine-large').name, '大字段食物');
-    assert.equal(setDataKeys.some(keys => keys.includes('foodCatalog')), false);
-    assert.deepEqual(instance.data.visibleFoodOptions.map(item => item._id), ['mine-large']);
   } finally {
     restoreWx();
   }
@@ -1292,37 +1209,6 @@ test('food picker selection storage keeps only compact id and quantity items', (
   }
 });
 
-test('food picker catalog cache stores only slim render fields', () => {
-  const storage = {};
-  const restoreWx = installWxMock(storage);
-  try {
-    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
-    const instance = createPageInstance(page);
-    const cacheWritten = instance.cacheFoodCatalog([
-      {
-        ...systemFood,
-        sourceSystemFoodId: 'sys-source-1',
-        sourceFoodCode: '011101',
-        aliases: Array.from({ length: 300 }, (_, index) => `alias-${index}`),
-        aliasText: '小麦 别名',
-        rawPayload: 'x'.repeat(300000),
-        excelOrigin: { rows: Array.from({ length: 100 }, (_, index) => ({ index, value: 'origin' })) }
-      },
-      mineFood
-    ]);
-
-    assert.equal(cacheWritten, true);
-    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog.length, 2);
-    assert.equal(JSON.stringify(storage[FOOD_PICKER_CATALOG_CACHE_KEY]).includes('rawPayload'), false);
-    assert.equal(JSON.stringify(storage[FOOD_PICKER_CATALOG_CACHE_KEY]).includes('excelOrigin'), false);
-    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].nutritionPerUnit.calories, 338);
-    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].sourceSystemFoodId, 'sys-source-1');
-    assert.equal(storage[FOOD_PICKER_CATALOG_CACHE_KEY].catalog[0].sourceFoodCode, '011101');
-  } finally {
-    restoreWx();
-  }
-});
-
 test('meal editor keeps loaded food catalog outside page data', async () => {
   const storage = {};
   const restoreWx = installWxMock(storage);
@@ -1365,41 +1251,14 @@ test('meal editor keeps loaded food catalog outside page data', async () => {
   }
 });
 
-test('food picker catalog cache failure does not break catalog loading', async () => {
-  const storage = {};
-  const restoreWx = installWxMock(storage);
-  const previousWarn = console.warn;
-  const warnings = [];
-  try {
-    console.warn = (...args) => {
-      warnings.push(args.map(String).join(' '));
-      previousWarn(...args);
-    };
-    global.wx.setStorageSync = (key, value) => {
-      if (key === FOOD_PICKER_CATALOG_CACHE_KEY) {
-        throw new Error('exceed storage item max length');
-      }
-      storage[key] = value;
-    };
-    let removedKey = '';
-    global.wx.removeStorageSync = key => {
-      removedKey = key;
-      delete storage[key];
-    };
-    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
-    const instance = createPageInstance(page);
-    instance.loadRecentFoodOptions = async () => {};
-    instance.resolveCatalogImageUrls = async () => {};
+test('food picker loads latest catalog directly without local catalog cache', () => {
+  const source = fs.readFileSync(require.resolve('../miniprogram/pkg-records/food-picker/index.js'), 'utf8');
+  const onLoadBlock = source.match(/async onLoad\(\) \{[\s\S]*?\n  \},\n\n  async onShow/)[0];
 
-    await instance.loadFoodCatalog();
-
-    assert.equal(instance.data.loading, false);
-    assert.equal(removedKey, FOOD_PICKER_CATALOG_CACHE_KEY);
-    assert.equal(warnings.some(message => message.includes(FOOD_PICKER_CATALOG_CACHE_KEY)), false);
-  } finally {
-    console.warn = previousWarn;
-    restoreWx();
-  }
+  assert.match(onLoadBlock, /await this\.loadFoodCatalog\(\)/);
+  assert.doesNotMatch(source, /meal_food_picker_catalog_cache/);
+  assert.doesNotMatch(source, /loadCachedFoodCatalog/);
+  assert.doesNotMatch(source, /cacheFoodCatalog/);
 });
 
 test('meal editor navigates to full page food picker and food picker is registered', () => {

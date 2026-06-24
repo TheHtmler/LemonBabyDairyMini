@@ -1,3 +1,5 @@
+const MedicationModel = require('../../models/medication');
+
 Page({
   data: {
     medications: [],
@@ -31,7 +33,6 @@ Page({
   async loadMedications() {
     try {
       wx.showLoading({ title: '加载中...' });
-      const db = wx.cloud.database();
       
       // 获取当前宝宝UID
       const app = getApp();
@@ -43,8 +44,8 @@ Page({
         return;
       }
 
-      const res = await db.collection('medications').where({ babyUid }).get();
-      this.setData({ medications: res.data });
+      const medications = await MedicationModel.getMedications();
+      this.setData({ medications });
     } catch (error) {
       console.error('加载药物列表失败:', error);
       wx.showToast({

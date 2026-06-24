@@ -387,12 +387,6 @@ Page({
     };
   },
 
-  // 创建默认的药物管理配置
-  createDefaultMedicationSettings() {
-    // 不再使用硬编码的默认药物管理配置
-    return [];
-  },
-
   // 保存宝宝信息
   async saveBabyInfo() {
     // 检查表单有效性
@@ -484,9 +478,8 @@ Page({
         }
       }
 
-      // 创建默认的配奶设置和药物管理配置
+      // 创建默认的配奶设置
       const nutritionSettings = this.data.babyInfo.nutritionSettings || this.createDefaultNutritionSettings();
-      const medicationSettings = this.data.babyInfo.medicationSettings || this.createDefaultMedicationSettings();
 
       const babyInfo = {
         name: this.data.babyInfo.name,
@@ -501,7 +494,6 @@ Page({
         avatarFileId: avatarFileId,
         babyUid: babyUid, // 添加宝宝唯一ID
         nutritionSettings: nutritionSettings, // 添加默认配奶设置
-        medicationSettings: medicationSettings, // 添加默认药物管理配置
         nutritionSettingsConfirmed: this.data.userRole !== 'creator', // 只有创建者需要确认设置
         // 如果是创建者，添加邀请码
         ...(this.data.userRole === 'creator' && {

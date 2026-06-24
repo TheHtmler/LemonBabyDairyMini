@@ -40,6 +40,12 @@ function createPersonalInfoPageInstance(page, data = {}) {
 function loadMiniProgramApp({ storage = {}, creators = [], participants = [], babyInfos = [] } = {}) {
   let appConfig = null;
   const storageMap = new Map(Object.entries(storage));
+  const calls = {
+    baby_creators: 0,
+    baby_participants: 0,
+    baby_info: 0,
+    getOpenid: 0
+  };
   const sandbox = {
     console,
     App(config) {
@@ -56,6 +62,13 @@ function loadMiniProgramApp({ storage = {}, creators = [], participants = [], ba
         storageMap.delete(key);
       },
       cloud: {
+        async callFunction({ name }) {
+          if (name === 'getOpenid') {
+            calls.getOpenid += 1;
+            return { result: { openid: 'cloud-openid' } };
+          }
+          return { result: {} };
+        },
         database() {
           return {
             collection(name) {
@@ -64,6 +77,7 @@ function loadMiniProgramApp({ storage = {}, creators = [], participants = [], ba
                   return {
                     async get() {
                       if (name === 'baby_creators') {
+                        calls.baby_creators += 1;
                         return {
                           data: creators.filter((item) => (
                             (!query._openid || item._openid === query._openid)
@@ -72,6 +86,7 @@ function loadMiniProgramApp({ storage = {}, creators = [], participants = [], ba
                         };
                       }
                       if (name === 'baby_participants') {
+                        calls.baby_participants += 1;
                         return {
                           data: participants.filter((item) => (
                             (!query._openid || item._openid === query._openid)
@@ -80,6 +95,7 @@ function loadMiniProgramApp({ storage = {}, creators = [], participants = [], ba
                         };
                       }
                       if (name === 'baby_info') {
+                        calls.baby_info += 1;
                         return {
                           data: babyInfos.filter((item) => (
                             !query.babyUid || item.babyUid === query.babyUid
@@ -107,7 +123,8 @@ function loadMiniProgramApp({ storage = {}, creators = [], participants = [], ba
   vm.runInNewContext(readProjectFile('miniprogram/app.js'), sandbox);
   return {
     app: appConfig,
-    storage: storageMap
+    storage: storageMap,
+    calls
   };
 }
 
@@ -200,6 +217,20 @@ test('cached babyInfo includes creator and participants info snapshots', () => {
   assert.match(source, /wx\.setStorageSync\('baby_info', normalizedBabyInfo\)/);
 });
 
+test('getOpenid reuses cached storage openid without cloud function call', async () => {
+  const { app, calls } = loadMiniProgramApp({
+    storage: {
+      openid: 'cached-openid'
+    }
+  });
+
+  const openid = await app.getOpenid();
+
+  assert.equal(openid, 'cached-openid');
+  assert.equal(app.globalData.openid, 'cached-openid');
+  assert.equal(calls.getOpenid, 0);
+});
+
 test('logout keeps persisted baby records intact', () => {
   const source = readProjectFile('miniprogram/pages/profile/index.js');
 
@@ -273,6 +304,62 @@ test('invalid creator relation does not block restoring valid participant role',
   assert.equal(app.globalData.userRole, 'participant');
   assert.equal(storage.get('user_role'), 'participant');
   assert.equal(storage.get('baby_uid'), 'baby-1');
+});
+
+test('app.checkPermission re-queries relations for same openid and baby to keep permission fresh', async () => {
+  const { app, calls } = loadMiniProgramApp({
+    storage: {
+      baby_uid: 'baby-1'
+    },
+    creators: [
+      {
+        _openid: 'openid-1',
+        babyUid: 'baby-1',
+        phone: '13800000000'
+      }
+    ]
+  });
+
+  app.globalData.openid = 'openid-1';
+  app.globalData.babyUid = 'baby-1';
+
+  assert.equal(await app.checkPermission(), true);
+  assert.equal(await app.checkPermission(), true);
+  assert.equal(calls.baby_creators, 2);
+  assert.equal(calls.baby_participants, 0);
+});
+
+test('validateBabyInfo re-queries relations after getUserRole instead of using session cache', async () => {
+  const { app, calls } = loadMiniProgramApp({
+    creators: [
+      {
+        _openid: 'openid-1',
+        babyUid: 'baby-1',
+        phone: '13800000000'
+      }
+    ],
+    babyInfos: [
+      {
+        babyUid: 'baby-1',
+        name: '柠檬宝宝',
+        birthday: '2026-01-01',
+        weight: 4.2
+      }
+    ],
+    storage: {
+      baby_info_completed: true
+    }
+  });
+
+  app.globalData.openid = 'openid-1';
+  const role = await app.getUserRole();
+  const creatorReadsAfterRole = calls.baby_creators;
+  const participantReadsAfterRole = calls.baby_participants;
+
+  assert.equal(role, 'creator');
+  assert.equal(await app.validateBabyInfo(), true);
+  assert.equal(calls.baby_creators, creatorReadsAfterRole + 1);
+  assert.equal(calls.baby_participants, participantReadsAfterRole);
 });
 
 test('initialized app returns baby info validity for bound participant', async () => {

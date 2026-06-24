@@ -230,7 +230,57 @@ function hasFoodSummaryContent(food = {}) {
   ].some(value => Number(value) > 0);
 }
 
-function dailySummaryToAnalysisRecord(summary = {}) {
+function hasMilkSummaryContent(milk = {}) {
+  return [
+    milk.totalVolume,
+    milk.naturalMilkVolume,
+    milk.specialMilkVolume,
+    milk.calories,
+    milk.protein,
+    milk.naturalProtein,
+    milk.specialProtein,
+    milk.carbs,
+    milk.fat
+  ].some(value => Number(value) > 0);
+}
+
+function hasSummaryMilkVolumeSplit(summary = {}) {
+  const milk = summary.milk || {};
+  const totalVolume = Number(milk.totalVolume) || 0;
+  if (totalVolume <= 0) return true;
+  const naturalMilkVolume = Number(milk.naturalMilkVolume) || 0;
+  const specialMilkVolume = Number(milk.specialMilkVolume) || 0;
+  return naturalMilkVolume + specialMilkVolume > 0;
+}
+
+function summaryNeedsMilkRecordFallback(summary = {}) {
+  const milkCount = Number(summary.recordCounts?.milk) || 0;
+  const milk = summary.milk || {};
+  const totalVolume = Number(milk.totalVolume) || 0;
+  return (milkCount > 0 || totalVolume > 0) && !hasSummaryMilkVolumeSplit(summary);
+}
+
+function buildMilkSummaryFeeding(summary = {}) {
+  const milk = summary.milk || {};
+  if (!hasMilkSummaryContent(milk) || !hasSummaryMilkVolumeSplit(summary)) return null;
+  return {
+    _id: `daily-summary-milk-${summary.date || summary._id || ''}`,
+    source: 'daily_summary_v2',
+    isV2FeedingRecord: true,
+    naturalMilkVolume: roundNumber(Number(milk.naturalMilkVolume) || 0, 2),
+    specialMilkVolume: roundNumber(Number(milk.specialMilkVolume) || 0, 2),
+    totalMilkVolume: roundNumber(Number(milk.totalVolume) || 0, 2),
+    nutritionDisplay: {
+      calories: roundCalories(Number(milk.calories) || 0),
+      carbs: roundNumber(Number(milk.carbs) || 0, 2),
+      fat: roundNumber(Number(milk.fat) || 0, 2),
+      naturalProtein: roundNumber(Number(milk.naturalProtein) || 0, 2),
+      specialProtein: roundNumber(Number(milk.specialProtein) || 0, 2)
+    }
+  };
+}
+
+function dailySummaryToAnalysisRecord(summary = {}, options = {}) {
   const food = summary.food || {};
   const foodIntakes = hasFoodSummaryContent(food)
     ? [{
@@ -253,12 +303,16 @@ function dailySummaryToAnalysisRecord(summary = {}) {
     }]
     : [];
 
+  const milkFeeding = options.includeMilkSummary === true
+    ? buildMilkSummaryFeeding(summary)
+    : null;
+
   return {
     _id: summary._id || `daily-summary-${summary.date || ''}`,
     babyUid: summary.babyUid || '',
     date: summary.date || '',
     basicInfo: { ...(summary.basicInfo || {}) },
-    feedings: [],
+    feedings: milkFeeding ? [milkFeeding] : [],
     intakes: foodIntakes,
     source: 'daily_summary_v2',
     dailySummaryV2: summary
@@ -805,23 +859,28 @@ Page({
         status: 'active',
         date: _.gte(startKey).and(_.lte(endKey))
       });
+      const canUseSummaryMilkOnly = summaryRecords.every(summary => !summaryNeedsMilkRecordFallback(summary));
 
       const mergedMap = new Map();
-      summaryRecords.map(dailySummaryToAnalysisRecord).forEach(record => {
-        if (!record) return;
-        const key = normalizeDateKey(record.date);
-        mergedMap.set(key, mergeDailyAnalysisRecord(mergedMap.get(key), record));
-      });
+      summaryRecords
+        .map(summary => dailySummaryToAnalysisRecord(summary, { includeMilkSummary: canUseSummaryMilkOnly }))
+        .forEach(record => {
+          if (!record) return;
+          const key = normalizeDateKey(record.date);
+          mergedMap.set(key, mergeDailyAnalysisRecord(mergedMap.get(key), record));
+        });
       let allData = Array.from(mergedMap.values());
       
       console.log('分页查询完成，总共:', allData.length, '条');
 
-      // 奶统计来自 feeding_records_v2；食物来自 daily_summary_v2.food，避免再读旧 intakes。
-      const v2MilkRecords = await this.loadV2MilkRecordsForRange(babyUid, startKey, endKey);
-      const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
-      v2MilkByDate.forEach((dailyRecord, dateKey) => {
-        mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), dailyRecord));
-      });
+      // 新 summary 可直接提供奶量拆分；老 summary 缺字段时再回退读取 v2 明细。
+      if (!canUseSummaryMilkOnly) {
+        const v2MilkRecords = await this.loadV2MilkRecordsForRange(babyUid, startKey, endKey);
+        const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
+        v2MilkByDate.forEach((dailyRecord, dateKey) => {
+          mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), dailyRecord));
+        });
+      }
       allData = Array.from(mergedMap.values()).filter(hasAnalysisContent);
       
       // 在前端排序，兼容 Date 和 YYYY-MM-DD 字符串两种日期形态

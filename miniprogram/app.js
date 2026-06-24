@@ -95,6 +95,13 @@ App({
   // 获取openid
   async getOpenid() {
     try {
+      const cachedOpenid = this.globalData.openid || wx.getStorageSync('openid');
+      if (cachedOpenid) {
+        console.log('使用缓存openid');
+        this.globalData.openid = cachedOpenid;
+        return cachedOpenid;
+      }
+
       console.log('调用云函数获取openid...');
       const result = await wx.cloud.callFunction({
         name: 'getOpenid'
@@ -162,7 +169,7 @@ App({
       return false;
     }
   },
-  
+
   // 检查用户权限
   async checkPermission() {
     console.log('===app.checkPermission开始===');
@@ -184,7 +191,7 @@ App({
         this.globalData.permission = true;
         return true;
       }
-      
+
       // 查询数据库判断用户角色
       const db = wx.cloud.database({
         env: this.globalData.cloudEnvId

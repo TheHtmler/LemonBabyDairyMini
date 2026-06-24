@@ -139,3 +139,36 @@ test('data records food catalog setData uses slim items without duplicated categ
   assert.doesNotMatch(pageJs, /categorizedFoods,\s*\n\s*foodCategories/);
   assert.doesNotMatch(pageJs, /categorizedFoods\[[^\]]+\]\.push\(food\)/);
 });
+
+test('data records loads medications through MedicationModel instead of direct db query', () => {
+  const pageJs = fs.readFileSync('miniprogram/pages/data-records-v2/index.js', 'utf8');
+  const loadMedicationsBlock = pageJs.match(/async loadMedications\(\) \{[\s\S]*?\n  \},\n\n  \/\/ 选择药物处理/)[0];
+
+  assert.match(pageJs, /const MedicationModel = require\('\.\.\/\.\.\/models\/medication'\)/);
+  assert.match(loadMedicationsBlock, /MedicationModel\.getMedications\(\)/);
+  assert.doesNotMatch(loadMedicationsBlock, /db\.collection\('medications'\)\.where/);
+});
+
+test('data records lazy-loads food and medication catalogs only when opening related modals', () => {
+  const pageJs = fs.readFileSync('miniprogram/pages/data-records-v2/index.js', 'utf8');
+  const initializeBlock = pageJs.match(/async initializePage\(formattedDate\) \{[\s\S]*?\n  \},\n\n  onShow:/)[0];
+  const onShowBlock = pageJs.match(/onShow: async function\(\) \{[\s\S]*?\n  \},\n\n  onShareAppMessage/)[0];
+  const foodModalBlock = pageJs.match(/(?:async\s+)?showFoodIntakeModal\(options = \{\}\) \{[\s\S]*?\n  \},\n\n  hideFoodIntakeModal/)[0];
+  const foodExperimentBlock = pageJs.match(/(?:async\s+)?showFoodIntakeExperimentModal\(\) \{[\s\S]*?\n  \},\n\n  navigateToMealEditor/)[0];
+  const editFoodBlock = pageJs.match(/(?:async\s+)?openEditFoodModal\(e\) \{[\s\S]*?\n  \},\n\n  \/\/ 迁移\/回滚辅助/)[0];
+  const medicationModalBlock = pageJs.match(/(?:async\s+)?showAddMedicationModal\(\) \{[\s\S]*?\n  \},\n\n  goToMedicationManage/)[0];
+
+  assert.doesNotMatch(initializeBlock, /this\.loadMedications\(\)/);
+  assert.doesNotMatch(initializeBlock, /this\.loadFoodCatalog\(\)/);
+  assert.doesNotMatch(onShowBlock, /this\.loadMedications\(\)/);
+  assert.doesNotMatch(onShowBlock, /this\.loadFoodCatalog\(\)/);
+
+  assert.match(foodModalBlock, /async\s+showFoodIntakeModal/);
+  assert.match(foodModalBlock, /await this\.loadFoodCatalog\(\)/);
+  assert.match(foodExperimentBlock, /async\s+showFoodIntakeExperimentModal/);
+  assert.match(foodExperimentBlock, /await this\.loadFoodCatalog\(\)/);
+  assert.match(editFoodBlock, /async\s+openEditFoodModal/);
+  assert.match(editFoodBlock, /await this\.loadFoodCatalog\(\)/);
+  assert.match(medicationModalBlock, /async\s+showAddMedicationModal/);
+  assert.match(medicationModalBlock, /await this\.loadMedications\(\)/);
+});

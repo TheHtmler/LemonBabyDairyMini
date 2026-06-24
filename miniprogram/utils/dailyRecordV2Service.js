@@ -308,40 +308,78 @@ async function rebuildDailySummaryForDate(babyUid, date, preloadedEvents = null)
   };
 }
 
-async function getDailyRecordV2(babyUid, date) {
-  const [cachedSummary, loadedEventRecords] = await Promise.all([
-    DailySummaryV2Model.getByDate(babyUid, date),
-    loadEventRecords(babyUid, date)
-  ]);
+// —— 当天明细的进程内缓存 ——
+// key: `${babyUid}|${date}` -> { rev, eventRecords, summary }
+// 仅当 daily_summary_v2 当天文档「干净(isDirty=false) 且 rev 与缓存一致」时命中；
+// 命中即复用明细、跳过 6 个事件集合的读取。rev 由写入端（markDirty/rebuild）更新，
+// 因此本端任何写、以及别端（多端/家庭成员）的写都会让 rev 变化而自动失效——无需手动通知。
+const dailyRecordCache = new Map();
+
+function dailyRecordCacheKey(babyUid, date) {
+  return `${babyUid}|${date}`;
+}
+
+// 设置类写入（用药方案/营养/宝宝信息等，不经过 markDirty）保存后可主动失效；
+// 不传 date 则按 babyUid 维度无法定位单天，这里约定：不带参数时清空全部（如切换宝宝/退出登录）。
+function invalidateDailyRecordCache(babyUid, date) {
+  if (babyUid && date) {
+    dailyRecordCache.delete(dailyRecordCacheKey(babyUid, date));
+    return;
+  }
+  dailyRecordCache.clear();
+}
+
+async function getDailyRecordV2(babyUid, date, options = {}) {
+  const cacheKey = dailyRecordCacheKey(babyUid, date);
+  // 先只读 1 条当天 summary 作为「变更探测」（含 isDirty 与客户端版本戳 rev）。
+  const cachedSummary = await DailySummaryV2Model.getByDate(babyUid, date);
+  const cachedEntry = options.forceRefresh === true ? null : dailyRecordCache.get(cacheKey);
+
+  // 命中：summary 干净 + 有本地明细缓存 + rev 有效且一致 → 不读 6 个事件集合。
+  if (
+    cachedSummary &&
+    cachedSummary.isDirty !== true &&
+    cachedEntry &&
+    cachedSummary.rev != null &&
+    cachedEntry.rev === cachedSummary.rev
+  ) {
+    return buildServiceResult(babyUid, date, cachedEntry.eventRecords, cachedSummary);
+  }
+
+  // 未命中/失效：读 6 个事件集合并按原有语义重建（与改造前逐字等价）。
+  const loadedEventRecords = await loadEventRecords(babyUid, date);
   const eventRecords = await ensureGrowthRecordForDate(babyUid, date, loadedEventRecords);
 
+  let finalSummary;
   if (cachedSummary && cachedSummary.isDirty !== true) {
     const rebuilt = buildDailySummaryV2({
       babyUid,
       date,
       ...eventRecords
     });
-    if (shouldRefreshCachedSummary(cachedSummary, rebuilt)) {
-      const savedSummary = await DailySummaryV2Model.upsertSummary({
-        ...rebuilt,
-        _id: cachedSummary._id
-      });
-      return buildServiceResult(babyUid, date, eventRecords, savedSummary);
-    }
-    return buildServiceResult(babyUid, date, eventRecords, cachedSummary);
+    finalSummary = shouldRefreshCachedSummary(cachedSummary, rebuilt)
+      ? await DailySummaryV2Model.upsertSummary({ ...rebuilt, _id: cachedSummary._id })
+      : cachedSummary;
+  } else {
+    const rebuilt = buildDailySummaryV2({
+      babyUid,
+      date,
+      ...eventRecords
+    });
+    finalSummary = await DailySummaryV2Model.upsertSummary({
+      ...rebuilt,
+      _id: cachedSummary?._id
+    });
   }
 
-  const rebuilt = buildDailySummaryV2({
-    babyUid,
-    date,
-    ...eventRecords
-  });
-  const savedSummary = await DailySummaryV2Model.upsertSummary({
-    ...rebuilt,
-    _id: cachedSummary?._id
-  });
+  // 写回缓存：只有带 rev 才缓存。老文档无 rev → 不缓存，下次仍读 6 集合（行为同改造前，零回退）。
+  if (finalSummary && finalSummary.rev != null) {
+    dailyRecordCache.set(cacheKey, { rev: finalSummary.rev, eventRecords, summary: finalSummary });
+  } else {
+    dailyRecordCache.delete(cacheKey);
+  }
 
-  return buildServiceResult(babyUid, date, eventRecords, savedSummary);
+  return buildServiceResult(babyUid, date, eventRecords, finalSummary);
 }
 
 function enumerateDateKeys(startDate, endDate) {
@@ -403,6 +441,7 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
 
 module.exports = {
   getDailyRecordV2,
+  invalidateDailyRecordCache,
   rebuildDailySummaryForDate,
   getDailySummariesForRange,
   loadLegacyFoodIntakes

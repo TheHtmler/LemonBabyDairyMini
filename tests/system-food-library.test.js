@@ -7,6 +7,7 @@ function installWxMock(collectionDocs = []) {
   const previousWx = global.wx;
   const previousGetApp = global.getApp;
   const writes = [];
+  const calls = { queryGets: 0, cloudFunctions: 0 };
   const storage = {};
 
   const command = {
@@ -57,6 +58,7 @@ function installWxMock(collectionDocs = []) {
         return this;
       },
       async get() {
+        calls.queryGets += 1;
         return {
           data: applyQuery(collectionDocs, query).slice(offset, offset + limitCount)
         };
@@ -81,6 +83,7 @@ function installWxMock(collectionDocs = []) {
     },
     cloud: {
       async callFunction({ name }) {
+        calls.cloudFunctions += 1;
         if (name === 'getSystemFoodIndex') {
           return {
             result: {
@@ -127,6 +130,7 @@ function installWxMock(collectionDocs = []) {
 
   return {
     writes,
+    calls,
     restore() {
       global.wx = previousWx;
       global.getApp = previousGetApp;
@@ -236,6 +240,36 @@ test('FoodModel returns system foods for a baby and calculates from nutrition ba
       fiber: 5.4,
       sodium: 0
     });
+  } finally {
+    mock.restore();
+  }
+});
+
+test('FoodModel reads available foods each time so custom food changes are always fresh', async () => {
+  const { FoodModel, mock } = loadFoodModel([
+    {
+      _id: 'sys-1',
+      name: '小麦',
+      sourceType: 'system',
+      ownerType: 'system',
+      status: 'active'
+    },
+    {
+      _id: 'user-1',
+      name: '自定义米糊',
+      babyUid: 'baby-1',
+      sharedBabyUids: ['baby-1']
+    }
+  ]);
+
+  try {
+    await FoodModel.getAvailableFoods('baby-1');
+    await FoodModel.getAvailableFoods('baby-1');
+    assert.equal(mock.calls.queryGets, 2, '第二次同宝宝读取也应重新查询自定义食物');
+
+    await FoodModel.createFood({ name: '新米糊', babyUid: 'baby-1' });
+    await FoodModel.getAvailableFoods('baby-1');
+    assert.equal(mock.calls.queryGets, 3, '写入后下一次读取仍应查询最新自定义食物');
   } finally {
     mock.restore();
   }
