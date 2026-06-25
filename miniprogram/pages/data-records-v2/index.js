@@ -3482,10 +3482,12 @@ function createDataRecordsPageConfig(options = {}) {
     const treatmentRecordsToSet = formatTreatmentRecords(serviceResult.treatmentRecords || []);
     const medicationRecordsToSet = serviceResult.medicationRecords || [];
     const bowelRecordsToSet = serviceResult.bowelRecords || [];
-    const calculatedSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
-    const macroSummary = serviceResult.summary?.macroSummary || calculatedSummary;
+    const summaryMacro = serviceResult.summary?.macroSummary;
+    const macroSummary = summaryMacro || calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
     const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
-    const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
+    const proteinSummaryDisplay = summaryMacro
+      ? this.buildProteinSummaryDisplayFromMacroSummary(summaryMacro, intakeOverview)
+      : this.computeProteinSummaryDisplay(intakeOverview);
     const calorieMetrics = this.computeCalorieMetrics({
       totalCalories: macroSummary.calories,
       weight: recordWeight,
@@ -6031,6 +6033,21 @@ function createDataRecordsPageConfig(options = {}) {
     const total = (milkNormalProtein + milkSpecialProtein + foodNaturalProtein + foodSpecialProtein + treatmentProtein).toFixed(2);
 
     // 优质蛋白 = 奶类天然蛋白（奶均为优质）+ 食物中标记为 premium 的天然蛋白
+    const premium = (milkNormalProtein + foodPremiumProtein).toFixed(2);
+    const regular = foodRegularProtein.toFixed(2);
+    const naturalNum = Number(natural);
+    const premiumRatio = naturalNum > 0 ? Math.round((Number(premium) / naturalNum) * 100) : 0;
+
+    return { natural, special, total, premium, regular, premiumRatio };
+  },
+
+  buildProteinSummaryDisplayFromMacroSummary(macroSummary = {}, intakeOverview = this.data.intakeOverview) {
+    const natural = (Number(macroSummary.naturalProtein) || 0).toFixed(2);
+    const special = (Number(macroSummary.specialProtein) || 0).toFixed(2);
+    const total = (Number(macroSummary.protein) || (Number(natural) + Number(special))).toFixed(2);
+    const milkNormalProtein = intakeOverview?.milk?.normal?.protein || 0;
+    const foodPremiumProtein = intakeOverview?.food?.premiumProtein || 0;
+    const foodRegularProtein = intakeOverview?.food?.regularProtein || 0;
     const premium = (milkNormalProtein + foodPremiumProtein).toFixed(2);
     const regular = foodRegularProtein.toFixed(2);
     const naturalNum = Number(natural);

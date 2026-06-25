@@ -137,6 +137,50 @@ test('summary protein coefficient is computed from actual intake over weight', (
   }
 });
 
+test('v2 daily record protein display uses authoritative daily summary', async () => {
+  const { pageConfig, restore } = loadDataRecordsPage();
+  try {
+    const page = createPageInstance(pageConfig, {
+      babyInfo: { birthday: '2026-01-01' },
+      selectedDate: '2026-06-01',
+      nutritionSettings: {},
+      proteinSummaryDisplay: { natural: 0, special: 0 },
+      intakeOverview: {},
+      feedings: []
+    });
+
+    await page.applyV2DailyServiceResult('2026-06-01', 'baby-1', {
+      summary: {
+        basicInfo: {
+          weight: 5,
+          height: 60
+        },
+        macroSummary: {
+          calories: 120,
+          protein: 10,
+          naturalProtein: 7,
+          specialProtein: 3,
+          carbs: 0,
+          fat: 0
+        }
+      },
+      milkRecords: [],
+      foodIntakeRecords: [],
+      treatmentRecords: [],
+      medicationRecords: [],
+      bowelRecords: []
+    });
+
+    assert.equal(page.data.proteinSummaryDisplay.natural, '7.00');
+    assert.equal(page.data.proteinSummaryDisplay.special, '3.00');
+    assert.equal(page.data.proteinSummaryDisplay.total, '10.00');
+    assert.equal(page.data.naturalProteinCoefficient, 1.4);
+    assert.equal(page.data.specialProteinCoefficient, 0.6);
+  } finally {
+    restore();
+  }
+});
+
 test('summary calorie coefficient info keeps all age-range hints', () => {
   const { pageConfig, restore } = loadDataRecordsPage();
   try {

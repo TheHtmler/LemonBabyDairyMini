@@ -313,44 +313,6 @@ test('normalizeSettings keeps explicit formula powder profiles and normalizes mi
   assert.equal(settings.mixingPlans[0].components[0].powderId, 'energy-1');
 });
 
-test('updateNutritionSettings writes new profile fields while keeping legacy compatibility fields', async () => {
-  const { db, writes } = createDbMock();
-  const NutritionModel = loadNutritionModel(db);
-
-  const success = await NutritionModel.updateNutritionSettings('baby-1', {
-    formula_milk_protein: '10.6',
-    formula_milk_calories: '505',
-    formula_milk_ratio: {
-      powder: '4.5',
-      water: '30'
-    },
-    formulaPowders: [
-      {
-        id: 'regular-1',
-        name: '普奶A',
-        category: 'regular_formula',
-        proteinRole: 'natural',
-        nutritionPer100g: {
-          protein: '10.6',
-          calories: '505'
-        },
-        mixRatio: {
-          powder: '4.5',
-          water: '30'
-        }
-      }
-    ],
-    mixingPlans: [],
-    activeMixingPlanId: ''
-  });
-
-  assert.equal(success, true);
-  assert.equal(writes.babyInfoUpdate.nutritionSettings.formula_milk_protein, '10.6');
-  assert.equal(writes.babyInfoUpdate.nutritionSettings.formulaPowders.length, 1);
-  assert.equal(writes.compatAdd.formula_milk_protein, '10.6');
-  assert.equal(writes.compatAdd.formulaPowders.length, 1);
-});
-
 test('nutrition profile settings v2 page exposes formula powder profiles without mixing plan UI', () => {
   const source = fs.readFileSync('miniprogram/pkg-milk/nutrition-profile-settings/index.js', 'utf8');
   const wxml = fs.readFileSync('miniprogram/pkg-milk/nutrition-profile-settings/index.wxml', 'utf8');

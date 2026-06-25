@@ -316,11 +316,14 @@ Page({
     const { id } = e.currentTarget.dataset;
     
     try {
-      await wx.showModal({
+      const modalRes = await wx.showModal({
         title: '确认删除',
         content: '确定要删除这个药物吗？',
         confirmColor: '#FFB800'
       });
+      if (!modalRes.confirm) {
+        return;
+      }
 
       wx.showLoading({ title: '删除中...' });
       const db = wx.cloud.database();

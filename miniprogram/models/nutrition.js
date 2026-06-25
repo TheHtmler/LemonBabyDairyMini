@@ -7,7 +7,6 @@ const {
 const MilkNutritionProfileModel = require('./nutritionProfile');
 
 const db = wx.cloud.database();
-const nutritionCollection = db.collection('nutrition_settings');
 const babyInfoCollection = db.collection('baby_info');
 
 class NutritionModel {
@@ -93,36 +92,6 @@ class NutritionModel {
     return settings.formula_milk_protein !== '' && settings.formula_milk_calories !== '' && ratio.powder !== '' && ratio.water !== '';
   }
   
-  mergeFormulaSettings(primary, fallback) {
-    if (!fallback) return primary;
-    const pick = (first, second) => {
-      // 优先非空的 second，否则用 first，再兜底空字符串
-      return (second !== undefined && second !== null && second !== '') ? second : (first ?? '');
-    };
-
-    const merged = { ...primary };
-    merged.formula_milk_protein = pick(merged.formula_milk_protein, fallback.formula_milk_protein);
-    merged.formula_milk_calories = pick(merged.formula_milk_calories, fallback.formula_milk_calories);
-    merged.formula_milk_fat = pick(merged.formula_milk_fat, fallback.formula_milk_fat);
-    merged.formula_milk_carbs = pick(merged.formula_milk_carbs, fallback.formula_milk_carbs);
-    merged.formula_milk_fiber = pick(merged.formula_milk_fiber, fallback.formula_milk_fiber);
-    const fallbackRatio = fallback.formula_milk_ratio || {};
-    const currentRatio = merged.formula_milk_ratio || {};
-    merged.formula_milk_ratio = {
-      powder: pick(currentRatio.powder, fallbackRatio.powder),
-      water: pick(currentRatio.water, fallbackRatio.water)
-    };
-    const primaryPowders = primary.formulaPowders || [];
-    const fallbackPowders = fallback.formulaPowders || [];
-    merged.formulaPowders = fallbackPowders.length > 0 ? fallbackPowders : primaryPowders;
-    const powderSource = merged.formulaPowders || [];
-    const primaryPlans = primary.mixingPlans || [];
-    const fallbackPlans = fallback.mixingPlans || [];
-    merged.mixingPlans = fallbackPlans.length > 0 ? fallbackPlans : normalizeMixingPlans(primaryPlans, powderSource);
-    merged.activeMixingPlanId = pick(primary.activeMixingPlanId, fallback.activeMixingPlanId);
-    return merged;
-  }
-
   /**
    * 创建默认配奶设置
    * @returns {object} 默认配奶设置
@@ -172,32 +141,15 @@ class NutritionModel {
         return this.normalizeSettings(profileSettings);
       }
 
-      // 1) 读取两个集合
-      const [babyRes, compatRes] = await Promise.all([
-        this.collection.where({ babyUid }).get(),
-        nutritionCollection.where({ babyUid }).get()
-      ]);
-
+      // 兜底：milk_nutrition_profiles 无档案时，从 baby_info.nutritionSettings 读取
+      const babyRes = await this.collection.where({ babyUid }).get();
       const babyDoc = babyRes.data && babyRes.data[0];
-      const compatDoc = compatRes.data && compatRes.data[0];
-
       const babySettings = this.hasSettingsData(babyDoc?.nutritionSettings)
         ? this.normalizeSettings(babyDoc.nutritionSettings)
         : null;
-      const compatSettings = compatDoc ? this.normalizeSettings(compatDoc) : null;
 
-      // 2) 选择主配置（优先新集合），并用另一个补全缺失的配方字段
-      let merged = null;
-      if (compatSettings && babySettings) {
-        merged = this.mergeFormulaSettings(compatSettings, babySettings);
-      } else if (compatSettings) {
-        merged = compatSettings;
-      } else if (babySettings) {
-        merged = babySettings;
-      }
-
-      // 3) 如果都没有，返回默认值
-      if (!merged) {
+      // 都没有则返回默认值
+      if (!babySettings) {
         const defaultSettings = this.createDefaultSettings();
         if (babyDoc?._id) {
           await this.collection.doc(babyDoc._id).update({
@@ -207,73 +159,10 @@ class NutritionModel {
         return defaultSettings;
       }
 
-      // 4) 写回 baby_info 以保持最新结构
-      if (babyDoc?._id) {
-        await this.collection.doc(babyDoc._id).update({
-          data: {
-            nutritionSettings: merged,
-            updatedAt: db.serverDate()
-          }
-        });
-      }
-
-      return merged;
+      return babySettings;
     } catch (err) {
       console.error('获取配奶设置失败：', err);
       return null;
-    }
-  }
-
-  /**
-   * 更新配奶设置
-   * @param {string} babyUid 宝宝UID
-   * @param {object} settings 配奶设置对象
-   * @returns {Promise<boolean>} 是否成功
-   */
-  async updateNutritionSettings(babyUid, settings) {
-    try {
-      const normalizedSettings = this.normalizeSettings(settings);
-      const res = await this.collection.where({
-        babyUid: babyUid
-      }).get();
-      
-      if (res.data && res.data.length > 0) {
-        await this.collection.doc(res.data[0]._id).update({
-          data: {
-            nutritionSettings: normalizedSettings,
-            updatedAt: db.serverDate()
-          }
-        });
-      }
-
-      // 同步兼容表，方便旧版本及后台查看（即使 baby_info 中没有记录也保存）
-      const compatRes = await nutritionCollection.where({
-        babyUid: babyUid
-      }).get();
-
-      if (compatRes.data && compatRes.data.length > 0) {
-        await nutritionCollection.doc(compatRes.data[0]._id).update({
-          data: {
-            ...normalizedSettings,
-            babyUid: babyUid,
-            updatedAt: db.serverDate()
-          }
-        });
-      } else {
-        await nutritionCollection.add({
-          data: {
-            ...normalizedSettings,
-            babyUid: babyUid,
-            createdAt: db.serverDate(),
-            updatedAt: db.serverDate()
-          }
-        });
-      }
-
-      return true;
-    } catch (err) {
-      console.error('更新配奶设置失败：', err);
-      return false;
     }
   }
 

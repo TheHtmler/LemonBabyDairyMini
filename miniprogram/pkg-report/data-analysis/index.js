@@ -1036,7 +1036,7 @@ Page({
     }
   },
 
-  async fetchRecordsByDateUpperBound(collectionName, babyUid, dateField, endDate) {
+  async fetchRecordsByDateUpperBound(collectionName, babyUid, dateField, endDate, extraWhere = {}) {
     const db = wx.cloud.database();
     const _ = db.command;
     const pageSize = 100;
@@ -1048,7 +1048,8 @@ Page({
       const res = await db.collection(collectionName)
         .where({
           babyUid,
-          [dateField]: _.lte(endDate)
+          [dateField]: _.lte(endDate),
+          ...extraWhere
         })
         .orderBy(dateField, 'desc')
         .skip(skip)
@@ -1144,11 +1145,12 @@ Page({
 
       const queryEndDate = new Date(endDate);
       queryEndDate.setHours(23, 59, 59, 999);
-      const [feedingHistory, growthHistory] = await Promise.all([
-        this.fetchRecordsByDateUpperBound('feeding_records', babyUid, 'date', queryEndDate),
+      // 每日体重在 v2 升级后写入 growth_records_v2（含历史回填），手动测量仍在 growth_records
+      const [dailyWeightHistory, growthHistory] = await Promise.all([
+        this.fetchRecordsByDateUpperBound('growth_records_v2', babyUid, 'date', queryEndDate, { status: 'active' }),
         this.fetchRecordsByDateUpperBound('growth_records', babyUid, 'recordDate', queryEndDate)
       ]);
-      return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, feedingHistory, growthHistory);
+      return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, dailyWeightHistory, growthHistory);
     } catch (error) {
       console.warn('加载历史体重快照失败，降级使用当前范围记录:', error);
       return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, records, []);
