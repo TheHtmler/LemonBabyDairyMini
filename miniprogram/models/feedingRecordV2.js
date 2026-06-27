@@ -15,6 +15,7 @@ const feedingRecordV2Collection = db.collection('feeding_records_v2');
 const growthRecordsV2Collection = db.collection('growth_records_v2');
 const legacyFeedingRecordCollection = db.collection('feeding_records');
 const babyInfoCollection = db.collection('baby_info');
+const CARRY_FORWARD_GROWTH_SOURCE = 'daily_record_v2_carry_forward';
 
 function serverDate() {
   return db.serverDate();
@@ -41,6 +42,12 @@ function normalizeBasicInfoSnapshot(input = {}, source = 'manual') {
 
 function hasBasicInfoValue(value) {
   return value !== '' && value !== null && value !== undefined;
+}
+
+function normalizeComparableValue(value) {
+  if (!hasBasicInfoValue(value)) return '';
+  const num = Number(value);
+  return Number.isFinite(num) ? String(num) : String(value).trim();
 }
 
 const GROWTH_COEFFICIENT_FIELDS = [
@@ -153,6 +160,82 @@ async function queryLatestPreviousGrowthRecord(babyUid, date) {
   }
 
   return (res.data || [])[0] || null;
+}
+
+async function queryFutureGrowthRecords(babyUid, date) {
+  let res;
+  try {
+    res = await growthRecordsV2Collection
+      .where({
+        babyUid,
+        status: 'active',
+        date: db.command.gt(date)
+      })
+      .orderBy('date', 'asc')
+      .get();
+  } catch (error) {
+    if (isMissingCollectionError(error)) {
+      return [];
+    }
+    throw error;
+  }
+
+  return res.data || [];
+}
+
+async function propagateGrowthFieldsForward({
+  babyUid,
+  date,
+  previousValues = {},
+  nextValues = {},
+  operatorOpenid = ''
+} = {}) {
+  const fields = ['weight', 'height']
+    .filter((field) => (
+      hasBasicInfoValue(nextValues[field]) &&
+      hasBasicInfoValue(previousValues[field]) &&
+      normalizeComparableValue(nextValues[field]) !== normalizeComparableValue(previousValues[field])
+    ));
+
+  if (fields.length === 0) return;
+
+  const futureRecords = await queryFutureGrowthRecords(babyUid, date);
+  const timestamp = serverDate();
+
+  for (const record of futureRecords) {
+    const updateData = {};
+    let shouldStop = false;
+
+    for (const field of fields) {
+      const recordValue = record[field];
+      const previousValue = previousValues[field];
+      if (hasBasicInfoValue(recordValue) &&
+        normalizeComparableValue(recordValue) !== normalizeComparableValue(previousValue)) {
+        shouldStop = true;
+        break;
+      }
+      updateData[field] = nextValues[field];
+    }
+
+    if (shouldStop) {
+      break;
+    }
+
+    if (Object.keys(updateData).length === 0 || !record._id) {
+      continue;
+    }
+
+    await growthRecordsV2Collection.doc(record._id).update({
+      data: {
+        ...updateData,
+        ...buildUpdateAuditFields({
+          timestamp,
+          operatorOpenid
+        })
+      }
+    });
+    await markSummaryDirtySafe(babyUid, record.date);
+  }
 }
 
 async function queryBabyInfoInitialSnapshot(babyUid) {
@@ -289,6 +372,7 @@ class FeedingRecordV2Model {
     const existing = await queryActiveGrowthRecord(babyUid, date);
     const timestamp = serverDate();
     const operatorOpenid = resolveOperatorOpenid(growthData);
+    const previousGrowthRecord = existing || await queryLatestPreviousGrowthRecord(babyUid, date);
     const payload = {
       weight: growthData.weight || '',
       height: growthData.height || growthData.length || '',
@@ -303,6 +387,7 @@ class FeedingRecordV2Model {
         await growthRecordsV2Collection.doc(existing._id).update({
           data: {
             ...payload,
+            source: growthData.source || 'data_records_v2',
             ...buildUpdateAuditFields({
               timestamp,
               operatorOpenid
@@ -316,6 +401,13 @@ class FeedingRecordV2Model {
         throw error;
       }
       await markSummaryDirtySafe(babyUid, date);
+      await propagateGrowthFieldsForward({
+        babyUid,
+        date,
+        previousValues: existing || previousGrowthRecord || {},
+        nextValues: payload,
+        operatorOpenid
+      });
       return { recordId: existing._id };
     }
 
@@ -327,7 +419,7 @@ class FeedingRecordV2Model {
           date,
           ...payload,
           schemaVersion: 1,
-          source: 'data_records_v2',
+          source: growthData.source || 'data_records_v2',
           ...buildCreateAuditFields({
             timestamp,
             operatorOpenid,
@@ -343,6 +435,13 @@ class FeedingRecordV2Model {
       throw error;
     }
     await markSummaryDirtySafe(babyUid, date);
+    await propagateGrowthFieldsForward({
+      babyUid,
+      date,
+      previousValues: previousGrowthRecord || {},
+      nextValues: payload,
+      operatorOpenid
+    });
     return { recordId: res._id };
   }
 

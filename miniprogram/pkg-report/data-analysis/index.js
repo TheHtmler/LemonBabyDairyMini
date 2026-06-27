@@ -10,6 +10,7 @@ const {
 const {
   groupV2FeedingRecordsByDate
 } = require('../../utils/dataRecordsV2Adapter');
+const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -818,46 +819,10 @@ Page({
       console.log('查询日期范围:', this.formatDateKey(queryStartDate), '到', this.formatDateKey(queryEndDate));
       console.log('查询时间戳:', queryStartDate.getTime(), '到', queryEndDate.getTime());
       
-      const fetchPaged = async (whereObj) => {
-        // 使用分页查询获取所有数据（避免云数据库的20条默认限制）
-        console.log('======== 开始分页查询 ========');
-        let allData = [];
-        const MAX_LIMIT = 20; // 云数据库单次查询最大20条
-        let hasMore = true;
-        let skip = 0;
-        
-        while (hasMore) {
-          let query = db.collection('daily_summary_v2').where(whereObj);
-          if (typeof query.orderBy === 'function') {
-            query = query.orderBy('date', 'asc');
-          }
-          const res = await query
-            .skip(skip)
-            .limit(MAX_LIMIT)
-            .get();
-          const batch = res.data || [];
-          
-          console.log(`分页查询 skip=${skip}, 返回${batch.length}条`);
-          
-          if (batch.length > 0) {
-            allData = allData.concat(batch);
-            skip += batch.length;
-          }
-          
-          // 如果返回数量小于limit，说明已经查完了
-          if (batch.length < MAX_LIMIT) {
-            hasMore = false;
-          }
-        }
-        return allData;
-      };
-
       const startKey = this.formatDateKey(queryStartDate);
       const endKey = this.formatDateKey(queryEndDate);
-      const summaryRecords = await fetchPaged({
-        babyUid,
-        status: 'active',
-        date: _.gte(startKey).and(_.lte(endKey))
+      const summaryRecords = await DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, endKey, {
+        rebuildMissing: true
       });
       const canUseSummaryMilkOnly = summaryRecords.every(summary => !summaryNeedsMilkRecordFallback(summary));
 

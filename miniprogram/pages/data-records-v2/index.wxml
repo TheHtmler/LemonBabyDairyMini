@@ -197,7 +197,10 @@
             </view>
           </view>
         </view>
-          <view class="meal-group-list" wx:if="{{foodMealGroups.length > 0}}">
+          <view class="empty-data" wx:if="{{loadingRecordTabs.food}}">
+            <view class="empty-text">加载中...</view>
+          </view>
+          <view class="meal-group-list" wx:elif="{{foodMealGroups.length > 0}}">
             <view class="meal-group-card" wx:for="{{foodMealGroups}}" wx:key="id">
               <view class="meal-group-header" bindtap="toggleFoodMealGroup" data-id="{{item.id}}">
                 <view class="meal-group-top">
@@ -243,7 +246,7 @@
               </view>
             </view>
           </view>
-          <view class="intake-list" wx:if="{{legacyFoodIntakes.length > 0}}">
+          <view class="intake-list" wx:if="{{!loadingRecordTabs.food && legacyFoodIntakes.length > 0}}">
             <view class="food-record-item" wx:for="{{legacyFoodIntakes}}" wx:key="_id">
               <view class="record-content">
                 <food-record-item record="{{item}}" />
@@ -258,7 +261,7 @@
               </view>
             </view>
           </view>
-          <view class="empty-data" wx:if="{{foodMealGroups.length === 0 && legacyFoodIntakes.length === 0}}">
+          <view class="empty-data" wx:if="{{!loadingRecordTabs.food && foodMealGroups.length === 0 && legacyFoodIntakes.length === 0}}">
             <view class="empty-text">暂无食物记录</view>
           </view>
         </view>
@@ -277,7 +280,10 @@
             </view>
           </view>
         </view>
-          <view class="medication-group-records">
+          <view class="empty-data" wx:if="{{loadingRecordTabs.medication}}">
+            <view class="empty-text">加载中...</view>
+          </view>
+          <view class="medication-group-records" wx:else>
             <view class="medication-record-item" wx:for="{{medicationRecords}}" wx:key="_id" wx:for-item="record">
               <view class="record-content">
                 <medication-record-item record="{{record}}" />
@@ -293,7 +299,7 @@
               </view>
             </view>
           </view>
-          <view class="empty-data" wx:if="{{medicationRecords.length === 0}}">
+          <view class="empty-data" wx:if="{{!loadingRecordTabs.medication && medicationRecords.length === 0}}">
             <view class="empty-text">暂无用药记录</view>
           </view>
         </view>
@@ -310,7 +316,11 @@
               <text>补充记录</text>
             </view>
           </view>
+          <view class="empty-data" wx:if="{{loadingRecordTabs.treatment}}">
+            <view class="empty-text">加载中...</view>
+          </view>
           <treatment-record-list
+            wx:else
             show-title="{{false}}"
             show-action="{{false}}"
             records="{{treatmentRecords}}"
@@ -345,7 +355,10 @@
               <text class="bowel-stat-value">{{bowelStats.mixed}}次</text>
             </view>
           </view>
-          <view class="bowel-record-list" wx:if="{{bowelRecords.length > 0}}">
+          <view class="empty-data" wx:if="{{loadingRecordTabs.bowel}}">
+            <view class="empty-text">加载中...</view>
+          </view>
+          <view class="bowel-record-list" wx:elif="{{bowelRecords.length > 0}}">
             <view class="bowel-record-item" wx:for="{{bowelRecords}}" wx:key="_id" wx:for-item="record">
               <view class="bowel-record-icon {{record.type}}">
                 <text>{{record.typeIcon}}</text>
@@ -381,7 +394,7 @@
               </view>
             </view>
           </view>
-          <view class="bowel-empty-state" wx:if="{{!bowelRecords.length}}" bindtap="navigateToBowelRecord">
+          <view class="bowel-empty-state" wx:if="{{!loadingRecordTabs.bowel && !bowelRecords.length}}" bindtap="navigateToBowelRecord">
             <text class="bowel-empty-icon">🌙</text>
             <text class="bowel-empty-title">今天还没有尿布记录</text>
             <text class="bowel-empty-desc">点这里补一条小记录</text>
@@ -403,7 +416,10 @@
             </view>
           </view>
         </view>
-          <view wx:if="{{feedingRecords.length > 0}}">
+          <view class="empty-data" wx:if="{{loadingRecordTabs.feeding}}">
+            <view class="empty-text">加载中...</view>
+          </view>
+          <view wx:elif="{{feedingRecords.length > 0}}">
             <feeding-record-card
               wx:for="{{feedingRecords}}"
               wx:key="index"
@@ -467,8 +483,8 @@
         </view>
       </view>
       <view class="basic-info-modal-footer">
-        <view class="basic-info-modal-btn secondary" bindtap="closeBasicInfoModal">取消</view>
-        <view class="basic-info-modal-btn primary" bindtap="confirmBasicInfoEdit">确认</view>
+        <view class="basic-info-modal-btn secondary {{isSavingBasicInfo ? 'disabled' : ''}}" bindtap="closeBasicInfoModal">{{isSavingBasicInfo ? '保存中' : '取消'}}</view>
+        <view class="basic-info-modal-btn primary {{isSavingBasicInfo ? 'disabled' : ''}}" bindtap="confirmBasicInfoEdit">{{isSavingBasicInfo ? '保存中...' : '确认'}}</view>
       </view>
     </view>
   </view>

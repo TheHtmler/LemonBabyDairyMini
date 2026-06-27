@@ -252,6 +252,145 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
   }
 });
 
+test('getDailySummaryForDate returns clean summary without loading event detail collections', async () => {
+  const cleanSummary = {
+    _id: 'summary-clean',
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    status: 'active',
+    isDirty: false,
+    rev: 100,
+    basicInfo: { weight: '6.2' },
+    macroSummary: { calories: 150, protein: 3 }
+  };
+  const { db, calls } = createDbMock({
+    dailySummaryData: [cleanSummary]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    modelCalls.push('milk');
+    return [];
+  };
+  models.FoodIntakeRecordModel.findByDate = async () => {
+    modelCalls.push('food');
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => {
+    modelCalls.push('medication');
+    return { success: true, data: [] };
+  };
+  models.TreatmentRecordModel.findByDate = async () => {
+    modelCalls.push('treatment');
+    return { success: true, data: [] };
+  };
+
+  try {
+    const summary = await service.getDailySummaryForDate('baby-1', '2026-05-25');
+
+    assert.equal(summary._id, 'summary-clean');
+    assert.deepEqual(summary.basicInfo, { weight: '6.2' });
+    assert.deepEqual(modelCalls, []);
+    assert.deepEqual(calls.collectionReads, ['daily_summary_v2']);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummaryForDate rebuilds dirty summary before returning it', async () => {
+  const dirtySummary = {
+    _id: 'summary-dirty',
+    babyUid: 'baby-1',
+    date: '2026-05-25',
+    status: 'active',
+    isDirty: true,
+    rev: 100,
+    basicInfo: { weight: '5.9' },
+    macroSummary: { calories: 0, protein: 0 }
+  };
+  const { db, calls } = createDbMock({
+    dailySummaryData: [dirtySummary],
+    growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', weight: '6.2' }]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    modelCalls.push('milk');
+    return [
+      {
+        _id: 'milk-1',
+        nutritionSummary: {
+          totalVolume: 120,
+          calories: 80,
+          protein: 2,
+          naturalProtein: 2
+        }
+      }
+    ];
+  };
+  models.FoodIntakeRecordModel.findByDate = async () => {
+    modelCalls.push('food');
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => {
+    modelCalls.push('medication');
+    return { success: true, data: [] };
+  };
+  models.TreatmentRecordModel.findByDate = async () => {
+    modelCalls.push('treatment');
+    return { success: true, data: [] };
+  };
+
+  try {
+    const summary = await service.getDailySummaryForDate('baby-1', '2026-05-25');
+
+    assert.equal(summary._id, 'summary-dirty');
+    assert.equal(summary.isDirty, false);
+    assert.equal(summary.basicInfo.weight, '6.2');
+    assert.equal(summary.macroSummary.calories, 80);
+    assert.deepEqual(modelCalls, ['milk', 'food', 'medication', 'treatment']);
+    assert.equal(calls.updateCollection, 'daily_summary_v2');
+    assert.equal(calls.updateDocId, 'summary-dirty');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordTabDetails loads only the requested food tab details', async () => {
+  const { db, calls } = createDbMock({});
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    modelCalls.push('milk');
+    return [];
+  };
+  models.FoodIntakeRecordModel.findByDate = async (babyUid, date) => {
+    modelCalls.push(['food', babyUid, date]);
+    return [{ _id: 'food-1', babyUid, date, status: 'active' }];
+  };
+  models.MedicationRecordModel.findByDate = async () => {
+    modelCalls.push('medication');
+    return { success: true, data: [] };
+  };
+  models.TreatmentRecordModel.findByDate = async () => {
+    modelCalls.push('treatment');
+    return { success: true, data: [] };
+  };
+
+  try {
+    const details = await service.getDailyRecordTabDetails('baby-1', '2026-05-25', 'food');
+
+    assert.deepEqual(details, {
+      tab: 'food',
+      foodIntakeRecords: [{ _id: 'food-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }]
+    });
+    assert.deepEqual(modelCalls, [['food', 'baby-1', '2026-05-25']]);
+    assert.deepEqual(calls.collectionReads, []);
+  } finally {
+    restore();
+  }
+});
+
 test('getDailyRecordV2 rebuilds clean cache when cached basicInfo is empty but milk snapshots have body measurements', async () => {
   const cleanSummary = {
     _id: 'summary-empty-basic',

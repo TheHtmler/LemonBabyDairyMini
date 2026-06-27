@@ -172,3 +172,15 @@ test('data records lazy-loads food and medication catalogs only when opening rel
   assert.match(medicationModalBlock, /async\s+showAddMedicationModal/);
   assert.match(medicationModalBlock, /await this\.loadMedications\(\)/);
 });
+
+test('data records tab empty states wait for lazy detail loading to finish', () => {
+  const wxml = fs.readFileSync('miniprogram/pages/data-records-v2/index.wxml', 'utf8');
+
+  assert.match(wxml, /loadingRecordTabs\.food/);
+  assert.match(wxml, /!loadingRecordTabs\.food && foodMealGroups\.length === 0 && legacyFoodIntakes\.length === 0/);
+  assert.match(wxml, /loadingRecordTabs\.medication/);
+  assert.match(wxml, /!loadingRecordTabs\.medication && medicationRecords\.length === 0/);
+  assert.match(wxml, /loadingRecordTabs\.treatment/);
+  assert.match(wxml, /loadingRecordTabs\.bowel/);
+  assert.match(wxml, /loadingRecordTabs\.feeding/);
+});
