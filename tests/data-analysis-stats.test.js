@@ -79,6 +79,21 @@ async function withWxAndApp(wxMock, appMock, callback) {
   }
 }
 
+async function withDailySummaryRangeStub(summaryRecords, callback) {
+  const service = require('../miniprogram/utils/dailyRecordV2Service.js');
+  const original = service.getDailySummariesForRange;
+  const calls = [];
+  service.getDailySummariesForRange = async (babyUid, startDate, endDate, options = {}) => {
+    calls.push({ babyUid, startDate, endDate, options });
+    return summaryRecords;
+  };
+  try {
+    return await callback(calls);
+  } finally {
+    service.getDailySummariesForRange = original;
+  }
+}
+
 async function withFixedNow(isoString, callback) {
   const RealDate = global.Date;
   class FixedDate extends RealDate {
@@ -725,10 +740,10 @@ test('data-analysis redraws initialized charts after chartData changes', () => {
   assert.deepEqual(drawnCharts[2].chart.options.padding, { top: 24, right: 30, bottom: 42, left: 38 });
 });
 
-test('data-analysis fetchFeedingRecords reads daily_summary_v2 with paging past 100 records', async () => {
+test('data-analysis fetchFeedingRecords reads daily summaries through shared service', async () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
-  const allRecords = Array.from({ length: 120 }, (_, index) => {
+  const summaryRecords = Array.from({ length: 31 }, (_, index) => {
     const date = new Date(2026, 0, index + 1);
     const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return {
@@ -746,62 +761,28 @@ test('data-analysis fetchFeedingRecords reads daily_summary_v2 with paging past 
       return 'baby_1';
     },
     showToast() {},
-    cloud: {
-      database() {
-        return {
-          command: {
-            gte() {
-              return {
-                and() {
-                  return {};
-                }
-              };
-            },
-            lte() {
-              return {};
-            }
-          },
-          collection(name) {
-            let skipValue = 0;
-            let limitValue = 20;
-            return {
-              where() {
-                return this;
-              },
-              skip(value) {
-                skipValue = value;
-                return this;
-              },
-              limit(value) {
-                limitValue = value;
-                return this;
-              },
-              get() {
-                assert.notEqual(name, 'feeding_records');
-                if (name === 'feeding_records_v2') {
-                  return Promise.resolve({ data: [] });
-                }
-                return Promise.resolve({
-                  data: allRecords.slice(skipValue, skipValue + limitValue)
-                });
-              }
-            };
-          }
-        };
-      }
-    }
+    cloud: { database: () => ({}) }
   };
 
   const records = await withWxAndApp(
     wxMock,
     { globalData: { babyUid: 'baby_1' } },
-    () => withMutedConsole(() => instance.fetchFeedingRecords(
-      new Date('2026-03-01T00:00:00+08:00'),
-      new Date('2026-03-31T23:59:59+08:00')
-    ))
+    () => withDailySummaryRangeStub(summaryRecords, (calls) => withMutedConsole(async () => {
+      const result = await instance.fetchFeedingRecords(
+        new Date('2026-03-01T00:00:00+08:00'),
+        new Date('2026-03-31T23:59:59+08:00')
+      );
+      assert.deepEqual(calls, [{
+        babyUid: 'baby_1',
+        startDate: '2026-03-01',
+        endDate: '2026-03-31',
+        options: { rebuildMissing: true }
+      }]);
+      return result;
+    }))
   );
 
-  assert.equal(records.length, 120);
+  assert.equal(records.length, 31);
   assert.equal(records[0].intakes[0].nutrition.calories, 10);
 });
 
@@ -824,66 +805,16 @@ test('data-analysis fetchFeedingRecords includes daily summary string date recor
       return 'baby_1';
     },
     showToast() {},
-    cloud: {
-      database() {
-        return {
-          command: {
-            gte(value) {
-              return {
-                __gte: value,
-                and(condition) {
-                  return {
-                    __gte: value,
-                    __and: condition
-                  };
-                }
-              };
-            },
-            lte(value) {
-              return { __lte: value };
-            }
-          },
-          collection(name) {
-            let skipValue = 0;
-            let limitValue = 20;
-            return {
-              where() {
-                return this;
-              },
-              orderBy() {
-                return this;
-              },
-              skip(value) {
-                skipValue = value;
-                return this;
-              },
-              limit(value) {
-                limitValue = value;
-                return this;
-              },
-              get() {
-                assert.notEqual(name, 'feeding_records');
-                if (name === 'feeding_records_v2') {
-                  return Promise.resolve({ data: [] });
-                }
-                return Promise.resolve({
-                  data: summaryRecords.slice(skipValue, skipValue + limitValue)
-                });
-              }
-            };
-          }
-        };
-      }
-    }
+    cloud: { database: () => ({}) }
   };
 
   const records = await withWxAndApp(
     wxMock,
     { globalData: { babyUid: 'baby_1' } },
-    () => withMutedConsole(() => instance.fetchFeedingRecords(
+    () => withDailySummaryRangeStub(summaryRecords, () => withMutedConsole(() => instance.fetchFeedingRecords(
       new Date('2026-03-01T00:00:00+08:00'),
       new Date('2026-03-31T23:59:59+08:00')
-    ))
+    )))
   );
 
   assert.deepEqual(records.map(record => record._id), ['summary_record']);
@@ -932,44 +863,12 @@ test('data-analysis uses daily_summary_v2 milk volume split without reading feed
     cloud: {
       database() {
         return {
-          command: {
-            gte(value) {
-              return {
-                and(condition) {
-                  return { __gte: value, __and: condition };
-                }
-              };
-            },
-            lte(value) {
-              return { __lte: value };
-            }
-          },
           collection(name) {
-            let skipValue = 0;
-            let limitValue = 20;
             return {
-              where() {
-                return this;
-              },
-              orderBy() {
-                return this;
-              },
-              skip(value) {
-                skipValue = value;
-                return this;
-              },
-              limit(value) {
-                limitValue = value;
-                return this;
-              },
               get() {
                 reads.push(name);
                 assert.notEqual(name, 'feeding_records_v2');
-                return Promise.resolve({
-                  data: name === 'daily_summary_v2'
-                    ? summaryRecords.slice(skipValue, skipValue + limitValue)
-                    : []
-                });
+                return Promise.resolve({ data: [] });
               }
             };
           }
@@ -981,14 +880,14 @@ test('data-analysis uses daily_summary_v2 milk volume split without reading feed
   const records = await withWxAndApp(
     wxMock,
     { globalData: { babyUid: 'baby_1' } },
-    () => withMutedConsole(() => instance.fetchFeedingRecords(
+    () => withDailySummaryRangeStub(summaryRecords, () => withMutedConsole(() => instance.fetchFeedingRecords(
       new Date('2026-03-01T00:00:00+08:00'),
       new Date('2026-03-31T23:59:59+08:00')
-    ))
+    )))
   );
 
   assert.deepEqual(records.map(record => record._id), ['summary-with-milk']);
   assert.equal(records[0].feedings[0].naturalMilkVolume, 59);
   assert.equal(records[0].feedings[0].specialMilkVolume, 61);
-  assert.deepEqual(reads, ['daily_summary_v2']);
+  assert.deepEqual(reads, []);
 });

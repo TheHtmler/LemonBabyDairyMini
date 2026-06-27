@@ -9,7 +9,6 @@ const {
 const db = wx.cloud.database();
 const milkNutritionProfileCollection = db.collection('milk_nutrition_profiles');
 const babyInfoCollection = db.collection('baby_info');
-const nutritionSettingsCollection = db.collection('nutrition_settings');
 
 function toNumberOrEmpty(value) {
   if (value === '' || value === undefined || value === null) {
@@ -57,13 +56,6 @@ function createEmptyLegacySettings() {
     formulaPowders: [],
     mixingPlans: [],
     activeMixingPlanId: ''
-  };
-}
-
-function mergeLegacySettings(babySettings = {}, compatSettings = {}) {
-  return {
-    ...babySettings,
-    ...compatSettings
   };
 }
 
@@ -236,11 +228,8 @@ class MilkNutritionProfileModel {
         return null;
       }
 
-      const [babyRes, compatRes] = await Promise.all([
-        getFirstDocument(babyInfoCollection, babyUid, 'baby_info'),
-        getFirstDocument(nutritionSettingsCollection, babyUid, 'nutrition_settings')
-      ]);
-      const legacySettings = mergeLegacySettings(babyRes?.nutritionSettings || {}, compatRes || {});
+      const babyRes = await getFirstDocument(babyInfoCollection, babyUid, 'baby_info');
+      const legacySettings = babyRes?.nutritionSettings || {};
 
       if (!hasLegacySettingsData(legacySettings)) {
         return null;

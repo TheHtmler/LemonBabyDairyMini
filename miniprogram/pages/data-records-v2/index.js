@@ -1540,11 +1540,14 @@ function createDataRecordsPageConfig(options = {}) {
       '>6岁: 25%-30%'
     ],
     activeTab: 'feeding',
+    loadedRecordTabs: {},
+    loadingRecordTabs: {},
     summaryPreview: buildDataRecordsSummaryPreview({ isV2RecordsPage: options.recordSource === 'v2' }),
     activeMetricInfoLabel: '',
     activeMetricInfoTitle: '',
     activeMetricInfoLines: [],
     showBasicInfoModal: false,
+    isSavingBasicInfo: false,
     editingField: '',
     editingLabel: '',
     editingUnit: '',
@@ -3300,16 +3303,18 @@ function createDataRecordsPageConfig(options = {}) {
     return isBeyondFuturePrerecordDate(dateStr);
   },
 
-  switchTab: function(e) {
+  switchTab: async function(e) {
     const tab = e.currentTarget.dataset.tab;
     if (!tab) return;
     this.setData({ activeTab: tab });
-  },
-
-  switchTab: function(e) {
-    const tab = e.currentTarget.dataset.tab;
-    if (!tab) return;
-    this.setData({ activeTab: tab });
+    if (this.isV2RecordsSource()) {
+      try {
+        await this.loadActiveTabDetails(this.data.selectedDate, getBabyUid());
+      } catch (error) {
+        console.error('加载记录分类明细失败:', error);
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      }
+    }
   },
 
   isV2RecordsSource() {
@@ -3469,6 +3474,239 @@ function createDataRecordsPageConfig(options = {}) {
     };
   },
 
+  buildIntakeOverviewFromDailySummary(summary = {}) {
+    const overview = createEmptyIntakeOverview();
+    const milk = summary.milk || {};
+    const food = summary.food || {};
+    const treatment = summary.treatment || {};
+    const counts = summary.recordCounts || {};
+    const naturalMilkVolume = Number(milk.naturalMilkVolume) || 0;
+    const specialMilkVolume = Number(milk.specialMilkVolume) || 0;
+
+    overview.milk.normal = {
+      ...overview.milk.normal,
+      volume: naturalMilkVolume || Math.max((Number(milk.totalVolume) || 0) - specialMilkVolume, 0),
+      calories: Number(milk.calories) || 0,
+      protein: Number(milk.naturalProtein) || 0,
+      carbs: Number(milk.carbs) || 0,
+      fat: Number(milk.fat) || 0
+    };
+    overview.milk.special = {
+      ...overview.milk.special,
+      volume: specialMilkVolume,
+      calories: 0,
+      protein: Number(milk.specialProtein) || 0,
+      carbs: 0,
+      fat: 0
+    };
+    overview.milk.totalCalories = Number(milk.calories) || 0;
+    overview.food = {
+      ...overview.food,
+      count: Number(counts.food) || 0,
+      totalCalories: Number(food.calories) || 0,
+      protein: Number(food.protein) || 0,
+      naturalProtein: Number(food.naturalProtein) || 0,
+      specialProtein: Number(food.specialProtein) || 0,
+      carbs: Number(food.carbs) || 0,
+      fat: Number(food.fat) || 0
+    };
+    overview.treatment = {
+      ...overview.treatment,
+      count: Number(counts.treatment) || 0,
+      totalCalories: Number(treatment.calories) || 0,
+      protein: Number(treatment.protein) || 0,
+      carbs: Number(treatment.carbs) || 0,
+      fat: Number(treatment.fat) || 0
+    };
+
+    return overview;
+  },
+
+  buildV2SummaryState(dateStr, summary = {}) {
+    const basicInfo = summary.basicInfo || {};
+    const recordWeight = basicInfo.weight || '';
+    const recordHeight = basicInfo.height || '';
+    const macroSummary = summary.macroSummary || {};
+    const intakeOverview = this.buildIntakeOverviewFromDailySummary(summary);
+    const proteinSummaryDisplay = this.buildProteinSummaryDisplayFromMacroSummary(macroSummary, intakeOverview);
+    const calorieMetrics = this.computeCalorieMetrics({
+      totalCalories: macroSummary.calories,
+      weight: recordWeight,
+      dateStr
+    });
+    const totalMilk = Number(summary.milk?.totalVolume) || (
+      (Number(intakeOverview.milk.normal.volume) || 0) + (Number(intakeOverview.milk.special.volume) || 0)
+    );
+    const coefficientWeight = Number(recordWeight) || 0;
+    const naturalProteinIntakeNum = Number(proteinSummaryDisplay?.natural) || 0;
+    const specialProteinIntakeNum = Number(proteinSummaryDisplay?.special) || 0;
+    const naturalCoefficientDisplay = coefficientWeight > 0 && naturalProteinIntakeNum > 0
+      ? roundNumber(naturalProteinIntakeNum / coefficientWeight, 2)
+      : '';
+    const specialCoefficientDisplay = coefficientWeight > 0 && specialProteinIntakeNum > 0
+      ? roundNumber(specialProteinIntakeNum / coefficientWeight, 2)
+      : '';
+    const counts = summary.recordCounts || {};
+    const hasRecord = ['milk', 'food', 'medication', 'treatment', 'bowel']
+      .some(key => (Number(counts[key]) || 0) > 0);
+
+    return {
+      recordId: summary._id || `summary_${dateStr || ''}`,
+      feedings: [],
+      feedingRecords: [],
+      intakes: [],
+      foodIntakes: [],
+      foodMealGroups: [],
+      legacyFoodIntakes: [],
+      medicationRecords: [],
+      treatmentRecords: [],
+      bowelRecords: [],
+      groupedBowelRecords: [],
+      bowelStats: createEmptyBowelStats(),
+      loadedRecordTabs: {},
+      loadingRecordTabs: {},
+      macroSummary,
+      macroRatios: this.computeMacroRatios(macroSummary),
+      fatRatioRangeText: this.getFatRatioRangeText(dateStr),
+      intakeOverview,
+      proteinSummaryDisplay,
+      weight: recordWeight || '--',
+      height: recordHeight || '--',
+      weightSource: recordWeight ? 'record' : 'empty',
+      heightSource: recordHeight ? 'record' : 'empty',
+      naturalProteinCoefficientInput: basicInfo.naturalProteinCoefficient || '',
+      specialProteinCoefficientInput: basicInfo.specialProteinCoefficient || '',
+      totalNaturalMilk: Math.round(intakeOverview.milk.normal.volume || 0),
+      totalSpecialMilk: Math.round(intakeOverview.milk.special.volume || 0),
+      totalMilk: Math.round(totalMilk),
+      totalBreastMilkKcal: Math.round(intakeOverview.milk.normal.calories || 0),
+      totalSpecialMilkKcal: Math.round(intakeOverview.milk.special.calories || 0),
+      totalFormulaPowderWeight: Number(summary.milk?.totalPowderWeight) || 0,
+      naturalProteinCoefficient: naturalCoefficientDisplay,
+      specialProteinCoefficient: specialCoefficientDisplay,
+      dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+      caloriePerKg: calorieMetrics.caloriePerKg,
+      goalKcalRange: calorieMetrics.goalKcalRange,
+      calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+      summaryPreview: this.buildSummaryPreviewData({
+        formattedSelectedDate: this.formatDisplayDate(dateStr),
+        feedings: [],
+        intakeOverview,
+        proteinSummaryDisplay,
+        weight: recordWeight || '--',
+        height: recordHeight || '--',
+        totalMilk,
+        dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
+        caloriePerKg: calorieMetrics.caloriePerKg,
+        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+        macroRatios: this.computeMacroRatios(macroSummary),
+        naturalProteinCoefficient: naturalCoefficientDisplay,
+        specialProteinCoefficient: specialCoefficientDisplay
+      }),
+      hasRecord,
+      isDataLoading: false
+    };
+  },
+
+  applyV2DailySummary(summary, dateStr) {
+    this.setData(this.buildV2SummaryState(dateStr, summary || {}));
+  },
+
+  applyDailyRecordTabDetails(tab, details = {}) {
+    const loadedRecordTabs = {
+      ...(this.data.loadedRecordTabs || {}),
+      [tab]: true
+    };
+    const loadingRecordTabs = {
+      ...(this.data.loadingRecordTabs || {}),
+      [tab]: false
+    };
+
+    if (tab === 'feeding') {
+      const milkRecords = details.milkRecords || [];
+      const record = milkRecords.length > 0
+        ? createDailyRecordFromV2(milkRecords, this.data.selectedDate, getBabyUid())
+        : { feedings: [] };
+      const feedings = record.feedings || [];
+      this.setData({
+        feedings,
+        feedingRecords: feedings,
+        summaryPreview: this.buildSummaryPreviewData({
+          formattedSelectedDate: this.formatDisplayDate(this.data.selectedDate),
+          feedings,
+          intakeOverview: this.data.intakeOverview,
+          proteinSummaryDisplay: this.data.proteinSummaryDisplay,
+          weight: this.data.weight,
+          height: this.data.height,
+          totalMilk: this.data.totalMilk,
+          dailyCaloriesTotal: this.data.dailyCaloriesTotal,
+          caloriePerKg: this.data.caloriePerKg,
+          calorieGoalPerKgRange: this.data.calorieGoalPerKgRange,
+          macroRatios: this.data.macroRatios,
+          naturalProteinCoefficient: this.data.naturalProteinCoefficient,
+          specialProteinCoefficient: this.data.specialProteinCoefficient
+        }),
+        loadedRecordTabs,
+        loadingRecordTabs
+      });
+      return;
+    }
+
+    if (tab === 'food') {
+      const foodIntakes = foodIntakeRecordsToLegacyIntakes(details.foodIntakeRecords || []);
+      this.setData({
+        intakes: foodIntakes,
+        foodIntakes,
+        foodMealGroups: groupFoodIntakesByMeal(foodIntakes),
+        legacyFoodIntakes: getLegacyFoodIntakes(foodIntakes),
+        loadedRecordTabs,
+        loadingRecordTabs
+      });
+      return;
+    }
+
+    if (tab === 'medication') {
+      this.setData({
+        medicationRecords: details.medicationRecords || [],
+        loadedRecordTabs,
+        loadingRecordTabs
+      });
+      return;
+    }
+
+    if (tab === 'treatment') {
+      this.setData({
+        treatmentRecords: formatTreatmentRecords(details.treatmentRecords || []),
+        loadedRecordTabs,
+        loadingRecordTabs
+      });
+      return;
+    }
+
+    if (tab === 'bowel') {
+      this.processBowelData(details.bowelRecords || []);
+      this.setData({ loadedRecordTabs, loadingRecordTabs });
+    }
+  },
+
+  async loadActiveTabDetails(dateStr = this.data.selectedDate, babyUid = getBabyUid(), options = {}) {
+    const tab = this.data.activeTab || 'feeding';
+    const loadedRecordTabs = this.data.loadedRecordTabs || {};
+    if (!options.force && loadedRecordTabs[tab]) {
+      return;
+    }
+
+    this.setData({
+      loadingRecordTabs: {
+        ...(this.data.loadingRecordTabs || {}),
+        [tab]: true
+      }
+    });
+
+    const details = await DailyRecordV2Service.getDailyRecordTabDetails(babyUid, dateStr, tab);
+    this.applyDailyRecordTabDetails(tab, details);
+  },
+
   async applyV2DailyServiceResult(dateStr, babyUid, serviceResult = {}) {
     const record = this.buildDailyRecordFromV2ServiceResult(serviceResult, dateStr, babyUid);
     const feedings = record.feedings || [];
@@ -3482,10 +3720,12 @@ function createDataRecordsPageConfig(options = {}) {
     const treatmentRecordsToSet = formatTreatmentRecords(serviceResult.treatmentRecords || []);
     const medicationRecordsToSet = serviceResult.medicationRecords || [];
     const bowelRecordsToSet = serviceResult.bowelRecords || [];
-    const calculatedSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
-    const macroSummary = serviceResult.summary?.macroSummary || calculatedSummary;
+    const summaryMacro = serviceResult.summary?.macroSummary;
+    const macroSummary = summaryMacro || calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
     const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
-    const proteinSummaryDisplay = this.computeProteinSummaryDisplay(intakeOverview);
+    const proteinSummaryDisplay = summaryMacro
+      ? this.buildProteinSummaryDisplayFromMacroSummary(summaryMacro, intakeOverview)
+      : this.computeProteinSummaryDisplay(intakeOverview);
     const calorieMetrics = this.computeCalorieMetrics({
       totalCalories: macroSummary.calories,
       weight: recordWeight,
@@ -3632,8 +3872,9 @@ function createDataRecordsPageConfig(options = {}) {
       }
 
       if (useV2Records) {
-        const serviceResult = await DailyRecordV2Service.getDailyRecordV2(babyUid, dateStr);
-        await this.applyV2DailyServiceResult(dateStr, babyUid, serviceResult);
+        const summary = await DailyRecordV2Service.getDailySummaryForDate(babyUid, dateStr);
+        this.applyV2DailySummary(summary, dateStr);
+        await this.loadActiveTabDetails(dateStr, babyUid, { force: true });
         return;
       }
 
@@ -6039,6 +6280,21 @@ function createDataRecordsPageConfig(options = {}) {
     return { natural, special, total, premium, regular, premiumRatio };
   },
 
+  buildProteinSummaryDisplayFromMacroSummary(macroSummary = {}, intakeOverview = this.data.intakeOverview) {
+    const natural = (Number(macroSummary.naturalProtein) || 0).toFixed(2);
+    const special = (Number(macroSummary.specialProtein) || 0).toFixed(2);
+    const total = (Number(macroSummary.protein) || (Number(natural) + Number(special))).toFixed(2);
+    const milkNormalProtein = intakeOverview?.milk?.normal?.protein || 0;
+    const foodPremiumProtein = intakeOverview?.food?.premiumProtein || 0;
+    const foodRegularProtein = intakeOverview?.food?.regularProtein || 0;
+    const premium = (milkNormalProtein + foodPremiumProtein).toFixed(2);
+    const regular = foodRegularProtein.toFixed(2);
+    const naturalNum = Number(natural);
+    const premiumRatio = naturalNum > 0 ? Math.round((Number(premium) / naturalNum) * 100) : 0;
+
+    return { natural, special, total, premium, regular, premiumRatio };
+  },
+
   computeMacroRatios(summary = this.data.macroSummary) {
     const protein = Number(summary?.protein) || 0;
     const carbs = Number(summary?.carbs) || 0;
@@ -6120,6 +6376,7 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   closeBasicInfoModal() {
+    if (this.data.isSavingBasicInfo) return;
     this.setData({
       showBasicInfoModal: false,
       editingField: '',
@@ -6137,6 +6394,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   async confirmBasicInfoEdit() {
     const { editingField, editingLabel, editBasicInfoValue, selectedDate } = this.data;
+    if (this.data.isSavingBasicInfo) return;
     const rawValue = String(editBasicInfoValue || '').trim();
     if (!editingField) return;
     if (!rawValue) {
@@ -6156,50 +6414,70 @@ function createDataRecordsPageConfig(options = {}) {
     };
 
     if (editingField === 'weight') {
-      const nextOverview = calculateIntakeOverview(
-        this.data.feedings || [],
-        this.data.intakes || [],
-        nextValue,
-        this.data.nutritionSettings || {},
-        this.data.treatmentRecords || []
-      );
-      const nextProteinSummary = this.computeProteinSummaryDisplay(nextOverview);
+      const nextOverview = this.isV2RecordsSource()
+        ? (this.data.intakeOverview || createEmptyIntakeOverview())
+        : calculateIntakeOverview(
+          this.data.feedings || [],
+          this.data.intakes || [],
+          nextValue,
+          this.data.nutritionSettings || {},
+          this.data.treatmentRecords || []
+        );
+      const nextProteinSummary = this.isV2RecordsSource()
+        ? this.buildProteinSummaryDisplayFromMacroSummary(this.data.macroSummary || {}, nextOverview)
+        : this.computeProteinSummaryDisplay(nextOverview);
       const calorieMetrics = this.computeCalorieMetrics({
         totalCalories: this.data.macroSummary?.calories || 0,
         weight: nextValue,
         dateStr: selectedDate
       });
+      const naturalProteinIntakeNum = Number(nextProteinSummary?.natural) || 0;
+      const specialProteinIntakeNum = Number(nextProteinSummary?.special) || 0;
       Object.assign(nextState, {
         intakeOverview: nextOverview,
         proteinSummaryDisplay: nextProteinSummary,
+        naturalProteinCoefficient: nextValue > 0 && naturalProteinIntakeNum > 0
+          ? roundNumber(naturalProteinIntakeNum / nextValue, 2)
+          : '',
+        specialProteinCoefficient: nextValue > 0 && specialProteinIntakeNum > 0
+          ? roundNumber(specialProteinIntakeNum / nextValue, 2)
+          : '',
         caloriePerKg: calorieMetrics.caloriePerKg,
         dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
         goalKcalRange: calorieMetrics.goalKcalRange,
-        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange
+        calorieGoalPerKgRange: calorieMetrics.calorieGoalPerKgRange,
+        macroRatios: this.computeMacroRatios(this.data.macroSummary || {})
       });
     }
 
-    this.setData({
-      ...nextState,
-      showBasicInfoModal: false,
-      editingField: '',
-      editingLabel: '',
-      editingUnit: '',
-      editBasicInfoValue: '',
-      summaryPreview: this.buildSummaryPreviewData(nextState)
-    });
-
-    if (editingField === 'weight') {
-      this.calculateTotalMilk(this.data.feedingRecords || []);
-    } else {
-      this.updateSummaryPreview({ height: nextValue });
-    }
-
     try {
+      this.setData({ isSavingBasicInfo: true });
+      wx.showLoading({ title: '保存中...', mask: true });
       await this.saveBasicInfoFields({ [editingField]: nextValue });
+      this.setData({
+        ...nextState,
+        showBasicInfoModal: false,
+        isSavingBasicInfo: false,
+        editingField: '',
+        editingLabel: '',
+        editingUnit: '',
+        editBasicInfoValue: '',
+        summaryPreview: this.buildSummaryPreviewData(nextState)
+      });
+
+      if (editingField === 'weight') {
+        if (!this.isV2RecordsSource()) {
+          this.calculateTotalMilk(this.data.feedingRecords || []);
+        }
+      } else {
+        this.updateSummaryPreview({ height: nextValue });
+      }
+      wx.hideLoading();
       wx.showToast({ title: `${editingLabel}已保存`, icon: 'success' });
     } catch (err) {
       console.error(`保存${editingLabel}失败`, err);
+      this.setData({ isSavingBasicInfo: false });
+      wx.hideLoading();
       wx.showToast({ title: err?.userMessage || '保存失败', icon: 'none' });
     }
   },

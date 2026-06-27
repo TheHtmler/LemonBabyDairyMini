@@ -2964,3 +2964,4 @@
 .basic-info-modal-btn{flex:1;display:flex;align-items:center;justify-content:center;height:80rpx;border-radius:18rpx;font-size:28rpx}
 .basic-info-modal-btn.secondary{background:#F5F5F5;color:#666666}
 .basic-info-modal-btn.primary{background:#FFB800;color:#FFFFFF}
+.basic-info-modal-btn.disabled{opacity:.55}

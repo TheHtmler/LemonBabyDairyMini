@@ -53,6 +53,9 @@ function createDbMock(overrides = {}) {
             if (expected && expected.__op === 'lt') {
               return item[key] < expected.value;
             }
+            if (expected && expected.__op === 'gt') {
+              return item[key] > expected.value;
+            }
             return item[key] === expected;
           });
         });
@@ -74,6 +77,9 @@ function createDbMock(overrides = {}) {
     command: {
       lt(value) {
         return { __op: 'lt', value };
+      },
+      gt(value) {
+        return { __op: 'gt', value };
       }
     },
     serverDate() {
@@ -312,6 +318,122 @@ test('upsertGrowthRecordForDate updates coefficients without wiping existing one
   assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'naturalProteinCoefficient'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'specialProteinCoefficient'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'calorieCoefficient'), false);
+});
+
+test('upsertGrowthRecordForDate propagates changed weight until the next explicit different weight', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-a',
+        babyUid: 'baby-1',
+        date: '2026-06-01',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 5.0
+      },
+      {
+        _id: 'growth-carry',
+        babyUid: 'baby-1',
+        date: '2026-06-02',
+        status: 'active',
+        source: 'daily_record_v2_carry_forward',
+        weight: 5.0
+      },
+      {
+        _id: 'growth-b',
+        babyUid: 'baby-1',
+        date: '2026-06-03',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 6.0
+      },
+      {
+        _id: 'growth-after-b',
+        babyUid: 'baby-1',
+        date: '2026-06-04',
+        status: 'active',
+        source: 'daily_record_v2_carry_forward',
+        weight: 6.0
+      }
+    ],
+    dailySummaryV2Data: [
+      { _id: 'summary-a', babyUid: 'baby-1', date: '2026-06-01', status: 'active' },
+      { _id: 'summary-carry', babyUid: 'baby-1', date: '2026-06-02', status: 'active' },
+      { _id: 'summary-b', babyUid: 'baby-1', date: '2026-06-03', status: 'active' }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-06-01', {
+    operatorOpenid: 'openid-editor',
+    weight: 5.5
+  });
+
+  const growthUpdates = writes.updates.filter(update => update.collectionName === 'growth_records_v2');
+  assert.equal(growthUpdates.find(update => update.docId === 'growth-a').data.weight, 5.5);
+  assert.equal(growthUpdates.find(update => update.docId === 'growth-carry').data.weight, 5.5);
+  assert.equal(growthUpdates.some(update => update.docId === 'growth-b'), false);
+  assert.equal(growthUpdates.some(update => update.docId === 'growth-after-b'), false);
+
+  const dirtySummaryIds = writes.updates
+    .filter(update => update.collectionName === 'daily_summary_v2')
+    .map(update => update.docId);
+  assert.ok(dirtySummaryIds.includes('summary-a'));
+  assert.ok(dirtySummaryIds.includes('summary-carry'));
+  assert.equal(dirtySummaryIds.includes('summary-b'), false);
+});
+
+test('upsertGrowthRecordForDate propagates newly inserted weight over previous carried future dates', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-prev',
+        babyUid: 'baby-1',
+        date: '2026-05-31',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 5.0
+      },
+      {
+        _id: 'growth-carry',
+        babyUid: 'baby-1',
+        date: '2026-06-02',
+        status: 'active',
+        source: 'daily_record_v2_carry_forward',
+        weight: 5.0
+      },
+      {
+        _id: 'growth-b',
+        babyUid: 'baby-1',
+        date: '2026-06-03',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 6.0
+      }
+    ],
+    dailySummaryV2Data: [
+      { _id: 'summary-carry', babyUid: 'baby-1', date: '2026-06-02', status: 'active' }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-06-01', {
+    operatorOpenid: 'openid-editor',
+    weight: 5.5
+  });
+
+  assert.equal(writes.addCollection, 'growth_records_v2');
+  assert.equal(writes.addData.date, '2026-06-01');
+  assert.equal(writes.addData.weight, 5.5);
+
+  const growthUpdates = writes.updates.filter(update => update.collectionName === 'growth_records_v2');
+  assert.equal(growthUpdates.find(update => update.docId === 'growth-carry').data.weight, 5.5);
+  assert.equal(growthUpdates.some(update => update.docId === 'growth-b'), false);
+
+  const dirtySummaryIds = writes.updates
+    .filter(update => update.collectionName === 'daily_summary_v2')
+    .map(update => update.docId);
+  assert.ok(dirtySummaryIds.includes('summary-carry'));
 });
 
 test('getRecordsByDate ignores v2 daily basic info documents in the feeding list', async () => {

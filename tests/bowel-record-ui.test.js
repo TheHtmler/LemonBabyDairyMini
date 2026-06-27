@@ -39,7 +39,7 @@ test('data records page shows diaper records as a peer record tab with icon-rich
   assert.match(wxml, /record\.smellIcon/);
   assert.match(wxml, /record\.urineAmountText/);
   assert.match(wxml, /record\.urineColorText/);
-  assert.match(wxml, /class="bowel-empty-state" wx:if="\{\{!bowelRecords\.length\}\}"/);
+  assert.match(wxml, /class="bowel-empty-state" wx:if="\{\{!loadingRecordTabs\.bowel && !bowelRecords\.length\}\}"/);
   assert.match(wxml, /今天还没有尿布记录/);
 
   assert.match(js, /function createEmptyBowelStats\(\)/);

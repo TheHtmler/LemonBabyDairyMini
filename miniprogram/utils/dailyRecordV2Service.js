@@ -276,7 +276,10 @@ async function ensureGrowthRecordForDate(babyUid, date, eventRecords = {}) {
     height: hasValue(snapshot.height) ? snapshot.height : currentBasicInfo.height
   };
 
-  await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, date, nextBasicInfo);
+  await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, date, {
+    ...nextBasicInfo,
+    source: 'daily_record_v2_carry_forward'
+  });
   return {
     ...eventRecords,
     growthRecords: [
@@ -382,6 +385,58 @@ async function getDailyRecordV2(babyUid, date, options = {}) {
   return buildServiceResult(babyUid, date, eventRecords, finalSummary);
 }
 
+async function getDailySummaryForDate(babyUid, date, options = {}) {
+  const cachedSummary = await DailySummaryV2Model.getByDate(babyUid, date);
+  if (cachedSummary && cachedSummary.isDirty !== true) {
+    return cachedSummary;
+  }
+
+  if (options.rebuildStale === false) {
+    return cachedSummary || null;
+  }
+
+  const { summary } = await rebuildDailySummaryForDate(babyUid, date);
+  return summary || null;
+}
+
+async function getDailyRecordTabDetails(babyUid, date, tab) {
+  switch (tab) {
+    case 'feeding':
+    case 'milk':
+      return {
+        tab: 'feeding',
+        milkRecords: unwrapResult(await FeedingRecordV2Model.getRecordsByDate(babyUid, date))
+      };
+    case 'food':
+      return {
+        tab: 'food',
+        foodIntakeRecords: unwrapResult(await FoodIntakeRecordModel.findByDate(babyUid, date))
+      };
+    case 'medication':
+      return {
+        tab: 'medication',
+        medicationRecords: unwrapResult(await MedicationRecordModel.findByDate(date, babyUid))
+      };
+    case 'treatment':
+      return {
+        tab: 'treatment',
+        treatmentRecords: unwrapResult(await TreatmentRecordModel.findByDate(date, babyUid))
+      };
+    case 'bowel':
+      return {
+        tab: 'bowel',
+        bowelRecords: await loadBowelRecords(babyUid, date)
+      };
+    case 'growth':
+      return {
+        tab: 'growth',
+        growthRecords: await loadGrowthRecords(babyUid, date)
+      };
+    default:
+      throw new Error(`Unsupported daily record tab: ${tab}`);
+  }
+}
+
 function enumerateDateKeys(startDate, endDate) {
   const result = [];
   const [sy, sm, sd] = String(startDate).split('-').map(Number);
@@ -441,6 +496,8 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
 
 module.exports = {
   getDailyRecordV2,
+  getDailySummaryForDate,
+  getDailyRecordTabDetails,
   invalidateDailyRecordCache,
   rebuildDailySummaryForDate,
   getDailySummariesForRange,

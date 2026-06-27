@@ -45,14 +45,15 @@ test('analysis-report page reads and deletes reports through report repository',
 
   assert.match(js, /require\('\.\.\/\.\.\/models\/reportRepository'\)/);
   assert.match(js, /require\('\.\.\/\.\.\/models\/nutrition'\)/);
+  assert.match(js, /require\('\.\.\/\.\.\/utils\/dailyRecordV2Service'\)/);
   assert.match(js, /NutritionModel\.getNutritionSettings/);
   assert.match(js, /ReportRepository\.listReportsByBaby/);
-  assert.match(js, /collection\('daily_summary_v2'\)/);
-  assert.match(js, /date:\s*_\.gte\(startDate\)\.and\(_\.lte\(endDate\)\)/);
-  assert.match(js, /orderBy\('date', 'asc'\)/);
+  assert.match(js, /DailyRecordV2Service\.getDailySummariesForRange/);
+  assert.match(js, /rebuildMissing:\s*true/);
   assert.match(js, /ReportRepository\.deleteReport/);
   assert.doesNotMatch(js, /loadV2MilkRecords/);
   assert.doesNotMatch(js, /feeding_records_v2/);
+  assert.doesNotMatch(js, /collection\('daily_summary_v2'\)/);
   assert.doesNotMatch(js, /collection\('feeding_records'\)/);
   assert.doesNotMatch(js, /collection\('baby_reports'\)/);
 });

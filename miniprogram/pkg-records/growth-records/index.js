@@ -259,26 +259,25 @@ Page({
         head: parseValue(record.head)
       }));
 
-      // 2. 从 feeding_records 分页加载全部每日体重
+      // 2. 从 growth_records_v2 分页加载全部每日体重（v2 升级后每日体重写入此集合，含历史回填）
       const batchSize = 100;
-      let allFeedingData = [];
+      let allDailyData = [];
       let skip = 0;
       let hasMore = true;
       while (hasMore) {
-        const batch = await db.collection('feeding_records')
-          .where({ babyUid })
+        const batch = await db.collection('growth_records_v2')
+          .where({ babyUid, status: 'active' })
           .orderBy('date', 'asc')
           .skip(skip)
           .limit(batchSize)
           .get();
-        allFeedingData = allFeedingData.concat(batch.data || []);
+        allDailyData = allDailyData.concat(batch.data || []);
         hasMore = (batch.data || []).length === batchSize;
         skip += batchSize;
       }
-      const feedingRes = { data: allFeedingData };
       const { babyInfo } = this.data;
-      const dailyWeightRecords = (feedingRes.data || [])
-        .filter(r => r.basicInfo && r.basicInfo.weight)
+      const dailyWeightRecords = allDailyData
+        .filter(r => r.weight)
         .map(r => {
           const dateStr = this.formatDate(r.date);
           const monthAge = babyInfo.birthday
@@ -287,10 +286,10 @@ Page({
           return {
             recordDate: r.date,
             monthAge,
-            weight: parseValue(r.basicInfo.weight),
+            weight: parseValue(r.weight),
             length: null,
             head: null,
-            _fromFeeding: true
+            _fromDaily: true
           };
         });
 

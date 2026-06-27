@@ -1,6 +1,7 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
 const NutritionModel = require('../../models/nutrition');
+const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const {
   buildReportArchivePreview,
   buildReportDetailPreview,
@@ -38,13 +39,6 @@ function addDays(dateKey, deltaDays) {
   if (!date) return '';
   date.setDate(date.getDate() + deltaDays);
   return formatDateKey(date);
-}
-
-function daysBetweenInclusive(startDate, endDate) {
-  const start = parseDateKey(startDate);
-  const end = parseDateKey(endDate);
-  if (!start || !end || end < start) return 0;
-  return Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
 }
 
 function roundNumber(value, precision = 2) {
@@ -196,33 +190,6 @@ function resolveFeedingWindowRange(reports = []) {
   return startDate && endDate ? { startDate, endDate } : null;
 }
 
-async function queryDailySummariesForRange(db, babyUid, startDate, endDate) {
-  const _ = db.command;
-  const pageSize = 20;
-  const maxPages = Math.max(1, Math.ceil(daysBetweenInclusive(startDate, endDate) / pageSize));
-  const summaries = [];
-  let skip = 0;
-  let page = 0;
-  while (page < maxPages) {
-    const res = await db.collection('daily_summary_v2')
-      .where({
-        babyUid,
-        status: 'active',
-        date: _.gte(startDate).and(_.lte(endDate))
-      })
-      .orderBy('date', 'asc')
-      .skip(skip)
-      .limit(pageSize)
-      .get();
-    const batch = res.data || [];
-    summaries.push(...batch);
-    if (batch.length < pageSize) break;
-    skip += batch.length;
-    page += 1;
-  }
-  return summaries;
-}
-
 function readFocusRequest() {
   const focus = wx.getStorageSync(ANALYSIS_REPORT_FOCUS_KEY);
   if (!focus || typeof focus !== 'object') return null;
@@ -354,8 +321,9 @@ Page({
         this.setData({ feedingRecordsCache: [] });
         return;
       }
-      const db = wx.cloud.database();
-      const summaries = await queryDailySummariesForRange(db, babyUid, range.startDate, range.endDate);
+      const summaries = await DailyRecordV2Service.getDailySummariesForRange(babyUid, range.startDate, range.endDate, {
+        rebuildMissing: true
+      });
 
       const recordsByDate = new Map();
       (summaries || [])

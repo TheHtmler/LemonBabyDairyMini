@@ -223,23 +223,6 @@
   margin-right: 10rpx;
 }
 
-/* 迁移菜单项特殊样式 */
-.migration-item {
-  background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 184, 77, 0.05));
-  border: 2rpx solid rgba(255, 149, 0, 0.2);
-  border-radius: 12rpx;
-  margin: 8rpx 12rpx;
-}
-
-.migration-item .menu-name {
-  color: #ff9500;
-  font-weight: bold;
-}
-
-.migration-item .menu-desc {
-  color: #ff9500;
-}
-
 /* 分享菜单项特殊样式 */
 .share-item {
   background: linear-gradient(135deg, rgba(255, 184, 0, 0.1), rgba(255, 200, 77, 0.05));

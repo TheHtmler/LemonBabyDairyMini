@@ -497,7 +497,7 @@ test('updateNutritionProfileSettings treats zero updated count as success when p
   assert.equal(writes.profileAdd, null);
 });
 
-test('getNutritionProfileSettings falls back to legacy settings before migration without writing data', async () => {
+test('getNutritionProfileSettings falls back to legacy baby_info settings before migration without writing data', async () => {
   const { db, writes } = createDbMock({
     profileData: [],
     babyInfoData: [
@@ -506,19 +506,13 @@ test('getNutritionProfileSettings falls back to legacy settings before migration
         babyUid: 'baby-1',
         nutritionSettings: {
           natural_milk_protein: '1.1',
-          natural_milk_calories: '67'
-        }
-      }
-    ],
-    compatData: [
-      {
-        _id: 'compat-doc-1',
-        babyUid: 'baby-1',
-        formula_milk_protein: '10.6',
-        formula_milk_calories: '505',
-        formula_milk_ratio: {
-          powder: '4.5',
-          water: '30'
+          natural_milk_calories: '67',
+          formula_milk_protein: '10.6',
+          formula_milk_calories: '505',
+          formula_milk_ratio: {
+            powder: '4.5',
+            water: '30'
+          }
         }
       }
     ]

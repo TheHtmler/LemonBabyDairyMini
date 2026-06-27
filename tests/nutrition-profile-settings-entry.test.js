@@ -25,11 +25,11 @@ function loadProfilePage() {
   return pageConfig;
 }
 
-test('app.json keeps legacy and nutrition profile settings pages registered for rollback', () => {
+test('app.json registers nutrition profile settings page and drops the legacy page', () => {
   const appConfig = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
 
-  assert.ok(appConfigHasPage(appConfig, 'pkg-milk/nutrition-settings/index'));
   assert.ok(appConfigHasPage(appConfig, 'pkg-milk/nutrition-profile-settings/index'));
+  assert.ok(!appConfigHasPage(appConfig, 'pkg-milk/nutrition-settings/index'));
 });
 
 test('profile menu switches 配奶管理 to nutrition profile settings without exposing v2 wording', () => {
