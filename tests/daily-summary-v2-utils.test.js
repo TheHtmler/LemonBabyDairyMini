@@ -163,6 +163,8 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
     protein: 1.73,
     naturalProtein: 1.23,
     specialProtein: 0.5,
+    premiumProtein: 0,
+    regularProtein: 1.23,
     fat: 0.56,
     carbs: 20.79,
     fiber: 0.32
@@ -238,6 +240,40 @@ test('mergeFoodNutrition splits natural/special protein for legacy top-level int
   assert.equal(summary.food.specialProtein, 2);
   assert.equal(summary.macroSummary.naturalProtein, 4);
   assert.equal(summary.macroSummary.specialProtein, 2);
+});
+
+test('buildDailySummaryV2 tracks premium and regular natural protein from food quality', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-06-28',
+    foodIntakeRecords: [
+      {
+        proteinQuality: 'premium',
+        nutrition: { calories: 10, protein: 1.37, naturalProtein: 1.37, specialProtein: 0 }
+      },
+      {
+        proteinQuality: 'regular',
+        nutrition: { calories: 12, protein: 0.75, naturalProtein: 0.75, specialProtein: 0 }
+      },
+      {
+        proteinSource: 'special',
+        nutrition: { calories: 30, protein: 2, specialProtein: 2 }
+      },
+      {
+        foodSnapshot: { proteinQuality: 'premium' },
+        nutrition: { calories: 14, protein: 1.46, naturalProtein: 1.46, specialProtein: 0 }
+      }
+    ]
+  });
+
+  assert.equal(summary.food.naturalProtein, 3.58);
+  assert.equal(summary.food.specialProtein, 2);
+  assert.equal(summary.food.premiumProtein, 2.83);
+  assert.equal(summary.food.regularProtein, 0.75);
 });
 
 test('macroSummary includes milk carbs and fat from v2 nutritionSummary', () => {

@@ -474,3 +474,13 @@ test('data records intake overview tracks only ml food as food fluid volume', ()
   assert.match(pageJs, /if \(\(intake\.unit \|\| ''\)\.toLowerCase\(\) === 'ml'\) \{[\s\S]*overview\.food\.fluidVolume \+= Number\(intake\.quantity\) \|\| 0;/);
   assert.match(pageJs, /overview\.food\.fluidVolume = roundNumber\(overview\.food\.fluidVolume, 2\);/);
 });
+
+test('data records restores food protein quality totals from daily summary cache', () => {
+  const pageJs = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/pages/data-records-v2/index.js'),
+    'utf8'
+  );
+
+  assert.match(pageJs, /premiumProtein:\s*Number\(food\.premiumProtein\)\s*\|\|\s*0/);
+  assert.match(pageJs, /regularProtein:\s*Number\(food\.regularProtein\)\s*\|\|\s*0/);
+});

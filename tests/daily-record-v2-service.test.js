@@ -670,6 +670,8 @@ test('dirty daily_summary_v2 rebuild uses actual food_intake_records nutrition a
       protein: 2.33,
       naturalProtein: 1.62,
       specialProtein: 0.71,
+      premiumProtein: 0,
+      regularProtein: 1.62,
       fat: 1.21,
       carbs: 8.48,
       fiber: 1.91

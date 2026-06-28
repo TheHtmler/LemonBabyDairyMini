@@ -3507,6 +3507,8 @@ function createDataRecordsPageConfig(options = {}) {
       protein: Number(food.protein) || 0,
       naturalProtein: Number(food.naturalProtein) || 0,
       specialProtein: Number(food.specialProtein) || 0,
+      premiumProtein: Number(food.premiumProtein) || 0,
+      regularProtein: Number(food.regularProtein) || 0,
       carbs: Number(food.carbs) || 0,
       fat: Number(food.fat) || 0
     };

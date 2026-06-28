@@ -231,6 +231,7 @@ test('rebuild writes daily_summary_v2 from v2 milk and food facts', async () => 
         babyUid: 'baby-1',
         date: '2026-06-04',
         status: 'active',
+        proteinQuality: 'premium',
         nutrition: {
           calories: 50,
           protein: 1,
@@ -265,6 +266,8 @@ test('rebuild writes daily_summary_v2 from v2 milk and food facts', async () => 
     protein: 1,
     naturalProtein: 1,
     specialProtein: 0,
+    premiumProtein: 1,
+    regularProtein: 0,
     fat: 1,
     carbs: 8,
     fiber: 0.5

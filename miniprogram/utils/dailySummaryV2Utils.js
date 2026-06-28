@@ -47,6 +47,8 @@ function createEmptyFoodSummary() {
     protein: 0,
     naturalProtein: 0,
     specialProtein: 0,
+    premiumProtein: 0,
+    regularProtein: 0,
     fat: 0,
     carbs: 0,
     fiber: 0
@@ -138,6 +140,8 @@ function roundFoodSummary(summary = {}) {
     protein: roundValue(summary.protein),
     naturalProtein: roundValue(summary.naturalProtein),
     specialProtein: roundValue(summary.specialProtein),
+    premiumProtein: roundValue(summary.premiumProtein),
+    regularProtein: roundValue(summary.regularProtein),
     fat: roundValue(summary.fat),
     carbs: roundValue(summary.carbs),
     fiber: roundValue(summary.fiber)
@@ -248,10 +252,17 @@ function mergeFoodNutrition(records = []) {
   (Array.isArray(records) ? records : []).forEach((record = {}) => {
     const nutrition = record.nutrition || {};
     const { natural, special } = resolveFoodProteinSplit(record);
+    const naturalProtein = toNumber(natural);
+    const proteinQuality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
     summary.calories += toNumber(nutrition.calories);
     summary.protein += toNumber(nutrition.protein);
-    summary.naturalProtein += toNumber(natural);
+    summary.naturalProtein += naturalProtein;
     summary.specialProtein += toNumber(special);
+    if (proteinQuality === 'premium') {
+      summary.premiumProtein += naturalProtein;
+    } else if (naturalProtein > 0) {
+      summary.regularProtein += naturalProtein;
+    }
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);
     summary.fiber += toNumber(nutrition.fiber);

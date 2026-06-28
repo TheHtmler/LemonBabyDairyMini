@@ -95,6 +95,8 @@ function createEmptySummary(babyUid = '', date = '') {
       protein: 0,
       naturalProtein: 0,
       specialProtein: 0,
+      premiumProtein: 0,
+      regularProtein: 0,
       fat: 0,
       carbs: 0,
       fiber: 0
@@ -199,10 +201,17 @@ function mergeFoodNutrition(records = []) {
   (records || []).forEach((record = {}) => {
     const nutrition = record.nutrition || {};
     const split = resolveFoodProteinSplit(record);
+    const naturalProtein = toNumber(split.natural);
+    const proteinQuality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
     food.calories += toNumber(nutrition.calories);
     food.protein += toNumber(nutrition.protein);
-    food.naturalProtein += toNumber(split.natural);
+    food.naturalProtein += naturalProtein;
     food.specialProtein += toNumber(split.special);
+    if (proteinQuality === 'premium') {
+      food.premiumProtein += naturalProtein;
+    } else if (naturalProtein > 0) {
+      food.regularProtein += naturalProtein;
+    }
     food.fat += toNumber(nutrition.fat);
     food.carbs += toNumber(nutrition.carbs);
     food.fiber += toNumber(nutrition.fiber);
