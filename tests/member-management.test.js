@@ -138,11 +138,27 @@ test('profile exposes creator-only member management entry and route', () => {
   const appJson = JSON.parse(readProjectFile('miniprogram/app.json'));
   const miscPackage = appJson.subPackages.find((item) => item.root === 'pkg-misc');
   const profileSource = readProjectFile('miniprogram/pages/profile/index.js');
+  const homeSource = readProjectFile('miniprogram/pages/daily-feeding/index.wxml');
 
   assert.ok(miscPackage.pages.includes('member-management/index'));
   assert.match(profileSource, /name:\s*'成员管理'/);
   assert.match(profileSource, /path:\s*'\/pkg-misc\/member-management\/index'/);
   assert.match(profileSource, /showForCreator:\s*true/);
+  assert.doesNotMatch(profileSource, /name:\s*'分享数据'/);
+  assert.match(homeSource, /data-url="\/pkg-misc\/member-management\/index"/);
+  assert.doesNotMatch(homeSource, /data-url="\/pkg-misc\/share-data\/index"/);
+});
+
+test('member management page contains invite entry into share data flow', () => {
+  const source = readProjectFile('miniprogram/pkg-misc/member-management/index.wxml');
+  const js = readProjectFile('miniprogram/pkg-misc/member-management/index.js');
+  const inviteEntryCount = (source.match(/bindtap="onInviteMember"/g) || []).length;
+
+  assert.equal(inviteEntryCount, 1);
+  assert.doesNotMatch(source, /hero-invite-btn/);
+  assert.match(source, /bindtap="onInviteMember"/);
+  assert.match(js, /onInviteMember\(\)/);
+  assert.match(js, /url:\s*'\/pkg-misc\/share-data\/index'/);
 });
 
 test('member management page formats participant names by remark, self name, then fallback', () => {

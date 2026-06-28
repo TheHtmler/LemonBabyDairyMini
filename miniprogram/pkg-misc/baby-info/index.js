@@ -364,6 +364,56 @@ Page({
     return `baby_${timestamp}_${randomNum}`;
   },
 
+  getTimestampValue(value) {
+    if (!value) return 0;
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === 'object' && typeof value.toDate === 'function') {
+      const date = value.toDate();
+      return date instanceof Date ? date.getTime() : 0;
+    }
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : 0;
+  },
+
+  sortDocumentsByFreshness(records = []) {
+    return [...(records || [])].sort((left = {}, right = {}) => {
+      const rightTime = this.getTimestampValue(right.updatedAt || right.createdAt);
+      const leftTime = this.getTimestampValue(left.updatedAt || left.createdAt);
+      return rightTime - leftTime;
+    });
+  },
+
+  async findBabyInfoByUid(db, babyUid) {
+    if (!db || !babyUid) return null;
+    const res = await db.collection('baby_info').where({ babyUid }).get();
+    return (res.data && res.data[0]) || null;
+  },
+
+  async resolveBabyUidForSave(db, openid) {
+    const localBabyUid = this.data.babyInfo.babyUid
+      || (this.app.globalData && this.app.globalData.babyUid)
+      || (typeof wx !== 'undefined' && wx.getStorageSync ? wx.getStorageSync('baby_uid') : '');
+    if (localBabyUid) return localBabyUid;
+    if (!db || !openid) return '';
+
+    const creatorRes = await db.collection('baby_creators').where({
+      _openid: openid
+    }).get();
+    const creators = this.sortDocumentsByFreshness(creatorRes.data || []);
+    for (const creator of creators) {
+      if (creator.babyUid && await this.findBabyInfoByUid(db, creator.babyUid)) {
+        return creator.babyUid;
+      }
+    }
+
+    // 兼容历史数据：早期 baby_info 直接依赖系统自动写入的 _openid。
+    const babyInfoRes = await db.collection('baby_info').where({
+      _openid: openid
+    }).get();
+    const babyInfos = this.sortDocumentsByFreshness(babyInfoRes.data || []);
+    return (babyInfos[0] && babyInfos[0].babyUid) || '';
+  },
+
   // 创建默认的配奶设置
   createDefaultNutritionSettings() {
     return {
@@ -389,6 +439,10 @@ Page({
 
   // 保存宝宝信息
   async saveBabyInfo() {
+    if (this.data.isFormSubmitting) {
+      return;
+    }
+
     // 检查表单有效性
     if (!this.data.isFormValid) {
       wx.showToast({
@@ -457,8 +511,8 @@ Page({
         console.log('为新宝宝生成邀请码:', inviteCode);
       }
 
-      // 使用现有的宝宝UID或生成新的
-      const babyUid = this.data.babyInfo.babyUid || this.generateBabyUid();
+      // 使用现有的宝宝UID；本地丢失时先从云端创建者关系恢复，最后才生成新的。
+      const babyUid = await this.resolveBabyUidForSave(db, openid) || this.generateBabyUid();
       console.log('使用宝宝ID:', babyUid);
 
       // 头像处理：新用户在 onAvatarCropped 时把本地头像暂存到 pendingAvatarPath，

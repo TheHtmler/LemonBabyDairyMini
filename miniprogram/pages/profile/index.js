@@ -63,19 +63,11 @@ Page({
         description: '身高体重曲线与成长里程碑'
       },
       {
-        id: 5,
-        name: '分享数据',
-        icon: 'participant',
-        action: 'share',
-        description: '邀请家人一起记录宝宝成长',
-        showForCreator: true
-      },
-      {
         id: 16,
         name: '成员管理',
         icon: 'participant',
         path: '/pkg-misc/member-management/index',
-        description: '备注或解除已加入的参与者',
+        description: '邀请、备注或解除参与者',
         showForCreator: true
       },
       {
@@ -537,30 +529,11 @@ Page({
       this.handleCreatorAccountCancellation();
     } else if (item.action === 'unbindParticipant') {
       this.handleParticipantUnbind();
-    } else if (item.action === 'share') {
-      this.handleShareData();
     } else if (item.path) {
       wx.navigateTo({
         url: item.path
       });
     }
-  },
-
-  // 处理分享数据
-  handleShareData() {
-    // 检查是否为创建者
-    if (this.data.userRole !== 'creator') {
-      wx.showToast({
-        title: '只有创建者可以分享数据',
-        icon: 'none'
-      });
-      return;
-    }
-
-    // 跳转到分享页面
-    wx.navigateTo({
-      url: '/pkg-misc/share-data/index'
-    });
   },
 
   showConfirmModal(options = {}) {

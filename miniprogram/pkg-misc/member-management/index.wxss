@@ -35,6 +35,56 @@
   line-height: 1.6;
 }
 
+.invite-strip {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 26rpx 28rpx;
+  margin-bottom: 28rpx;
+  background: #4a3510;
+  border-radius: 28rpx;
+  box-shadow: 0 12rpx 26rpx rgba(74, 53, 16, 0.18);
+}
+
+.invite-mark {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 22rpx;
+  background: #fff0a8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  flex-shrink: 0;
+}
+
+.invite-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.invite-title {
+  display: block;
+  color: #fff8d8;
+  font-size: 31rpx;
+  font-weight: 700;
+  margin-bottom: 6rpx;
+}
+
+.invite-desc {
+  display: block;
+  color: rgba(255, 248, 216, 0.76);
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.invite-arrow {
+  color: #ffd75a;
+  font-size: 25rpx;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 .state-card,
 .empty-card {
   padding: 54rpx 34rpx;

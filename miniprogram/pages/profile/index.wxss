@@ -5,11 +5,12 @@
   min-height: 100vh;
   background-color: #FFF5D6;
   padding: 30rpx;
+  box-sizing: border-box;
 }
 
 /* 用户信息样式 */
 .user-info {
-  width: 90%;
+  width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -19,6 +20,7 @@
   margin-bottom: 30rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
   position: relative;
+  box-sizing: border-box;
 }
 
 /* 重写头像选择器样式，覆盖微信按钮默认样式 */
@@ -113,7 +115,7 @@
 
 /* 菜单列表样式 */
 .menu-container {
-  width: 90%;
+  width: 100%;
   background-color: #FFFFFF;
   border-radius: 20rpx;
   margin-bottom: 30rpx;

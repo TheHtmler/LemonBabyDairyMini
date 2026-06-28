@@ -328,8 +328,8 @@
       <view class="me" data-url="/pkg-misc/emergency-support/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
         <view class="me-ic">🆘</view><text class="me-nm">应急支持</text>
       </view>
-      <view wx:if="{{isCreator}}" class="me" data-url="/pkg-misc/share-data/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">🔗</view><text class="me-nm">数据共享</text>
+      <view wx:if="{{isCreator}}" class="me" data-url="/pkg-misc/member-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+        <view class="me-ic">👪</view><text class="me-nm">成员协作</text>
       </view>
     </view>
   </view>

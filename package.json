@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "check:babyinfo-duplicates": "node scripts/check-babyinfo-duplicates.js",
     "check:caregiver-roles": "node scripts/check-caregiver-roles.js"
   },
   "dependencies": {

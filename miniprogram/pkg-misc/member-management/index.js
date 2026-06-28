@@ -36,6 +36,12 @@ Page({
     });
   },
 
+  onInviteMember() {
+    wx.navigateTo({
+      url: '/pkg-misc/share-data/index'
+    });
+  },
+
   formatParticipantMember(participant = {}, index = 0) {
     const creatorRemark = trimText(participant.creatorRemark);
     const selfDisplayName = trimText(participant.displayName);

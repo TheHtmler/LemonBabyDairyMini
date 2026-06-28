@@ -3,10 +3,13 @@ const InvitationModel = require('../../models/invitation');
 Page({
   data: {
     babyInfo: null,
+    babyName: '宝宝',
+    babyUid: '',
     inviteCode: '',
     inviteCodeExpiry: null,
     loading: true,
-    hasInviteCode: false
+    hasInviteCode: false,
+    generating: false
   },
 
   onLoad: function (options) {
@@ -28,15 +31,15 @@ Page({
         mask: true
       });
 
-      const openid = wx.getStorageSync('openid');
-      if (!openid) {
-        throw new Error('请先登录');
+      const app = getApp();
+      const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
+      if (!babyUid) {
+        throw new Error('未找到宝宝信息，请返回成员管理页重试');
       }
 
-      // 获取宝宝信息
       const db = wx.cloud.database();
       const result = await db.collection('baby_info').where({
-        _openid: openid
+        babyUid: babyUid
       }).get();
 
       if (result.data.length === 0) {
@@ -68,6 +71,8 @@ Page({
 
       this.setData({
         babyInfo: babyInfo,
+        babyName: babyInfo.name || babyInfo.babyName || '宝宝',
+        babyUid: babyUid,
         inviteCode: validInviteCode ? babyInfo.inviteCode : '',
         inviteCodeExpiry: formattedExpiry,
         hasInviteCode: validInviteCode,
@@ -91,19 +96,27 @@ Page({
 
   // 生成邀请码
   async generateInviteCode() {
+    if (this.data.generating) return;
+
     try {
+      this.setData({ generating: true });
       wx.showLoading({
         title: '生成邀请码...',
         mask: true
       });
 
       const db = wx.cloud.database();
-      const openid = wx.getStorageSync('openid');
+      const babyUid = this.data.babyUid
+        || (getApp().globalData && getApp().globalData.babyUid)
+        || wx.getStorageSync('baby_uid');
+      if (!babyUid) {
+        throw new Error('未找到宝宝信息，请返回成员管理页重试');
+      }
       const newInviteCode = InvitationModel.generateInviteCode();
       const newExpiry = InvitationModel.getInviteCodeExpiry();
 
       const updateResult = await db.collection('baby_info').where({
-        _openid: openid
+        babyUid: babyUid
       }).update({
         data: {
           inviteCode: newInviteCode,
@@ -129,11 +142,13 @@ Page({
           hasInviteCode: true
         });
 
-        // 更新全局数据
         const app = getApp();
         if (app.globalData.babyInfo) {
           app.globalData.babyInfo.inviteCode = newInviteCode;
           app.globalData.babyInfo.inviteCodeExpiry = newExpiry;
+        }
+        if (app.getBabyInfo) {
+          app.getBabyInfo({ forceDb: true, refreshAvatar: false }).catch(() => null);
         }
 
         wx.hideLoading();
@@ -151,6 +166,8 @@ Page({
         title: error.message || '生成邀请码失败',
         icon: 'none'
       });
+    } finally {
+      this.setData({ generating: false });
     }
   },
 
@@ -172,41 +189,6 @@ Page({
           icon: 'success'
         });
       }
-    });
-  },
-
-  // 微信分享
-  onWechatShare() {
-    if (!this.data.inviteCode) {
-      wx.showToast({
-        title: '暂无邀请码',
-        icon: 'none'
-      });
-      return;
-    }
-
-    const babyName = this.data.babyInfo.babyName || '宝宝';
-    const shareTitle = `邀请您一起记录${babyName}的喂养数据`;
-    const shareContent = `邀请码：${this.data.inviteCode}`;
-
-    wx.showShareMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage', 'shareTimeline']
-    });
-
-    // 设置分享内容
-    wx.onShareAppMessage(() => {
-      return {
-        title: shareTitle,
-        desc: shareContent,
-        path: `/pages/role-selection/index?inviteCode=${this.data.inviteCode}`,
-        imageUrl: '/images/LemonLogo.png'
-      };
-    });
-
-    wx.showToast({
-      title: '请点击右上角分享',
-      icon: 'none'
     });
   },
 
@@ -233,7 +215,7 @@ Page({
       };
     }
 
-    const babyName = this.data.babyInfo.babyName || '宝宝';
+    const babyName = this.data.babyName || '宝宝';
     return {
       title: `邀请您一起记录${babyName}的喂养数据`,
       desc: `邀请码：${this.data.inviteCode}`,

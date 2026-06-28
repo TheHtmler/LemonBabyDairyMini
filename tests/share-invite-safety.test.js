@@ -35,6 +35,36 @@ test('dedicated invite surfaces still provide invite-code sharing', () => {
   assert.match(babyInfo, /InvitationModel\.getShareInfo/);
 });
 
+test('share data page uses current babyUid instead of openid-wide baby info queries', () => {
+  const shareData = readMiniProgramFile('pkg-misc/share-data/index.js');
+
+  assert.match(shareData, /globalData\.babyUid/);
+  assert.match(shareData, /wx\.getStorageSync\('baby_uid'\)/);
+  assert.match(shareData, /where\(\{\s*babyUid:\s*babyUid\s*\}\)/);
+  assert.doesNotMatch(shareData, /collection\('baby_info'\)\.where\(\{\s*_openid/);
+  assert.doesNotMatch(shareData, /where\(\{\s*_openid:\s*openid\s*\}\)\.update/);
+});
+
+test('share data invite page uses a focused ticket layout', () => {
+  const wxml = readMiniProgramFile('pkg-misc/share-data/index.wxml');
+  const wxss = readMiniProgramFile('pkg-misc/share-data/index.wxss');
+  const js = readMiniProgramFile('pkg-misc/share-data/index.js');
+
+  assert.match(js, /babyName:\s*'宝宝'/);
+  assert.match(js, /babyName:\s*babyInfo\.name \|\| babyInfo\.babyName \|\| '宝宝'/);
+  assert.match(wxml, /class="invite-shell"/);
+  assert.match(wxml, /class="hero-panel"/);
+  assert.match(wxml, /class="code-panel/);
+  assert.match(wxml, /class="invite-action-grid"/);
+  assert.match(wxml, /class="step-panel"/);
+  assert.doesNotMatch(wxml, /babyInfo\.name \|\| babyInfo\.babyName/);
+  assert.doesNotMatch(wxml, /微信分享/);
+  assert.doesNotMatch(wxml, /open-type="share"/);
+  assert.match(wxml, /复制邀请码/);
+  assert.doesNotMatch(js, /onWechatShare\(\)/);
+  assert.doesNotMatch(wxss, /background:\s*#4a3510/);
+});
+
 test('invite link join flow asks for confirmation before adding participant', () => {
   const roleSelection = readMiniProgramFile('pages/role-selection/index.js');
   const joinBody = roleSelection.match(/async joinByInviteCode\(inviteCode\) \{[\s\S]*?\n  \}/)?.[0] || '';

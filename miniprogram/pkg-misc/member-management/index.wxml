@@ -1,7 +1,16 @@
 <view class="member-page">
   <view class="hero-card">
     <text class="hero-title">成员管理</text>
-    <text class="hero-subtitle">管理已通过邀请码加入的家庭成员，备注只对创建者可见。</text>
+    <text class="hero-subtitle">邀请家人一起记录，也可以备注或解除已加入的参与者。</text>
+  </view>
+
+  <view class="invite-strip" bindtap="onInviteMember">
+    <view class="invite-mark">🍋</view>
+    <view class="invite-copy">
+      <text class="invite-title">分享邀请码</text>
+      <text class="invite-desc">30 天有效，家人确认后即可加入协作记录。</text>
+    </view>
+    <text class="invite-arrow">去邀请</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">
