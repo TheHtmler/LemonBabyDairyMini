@@ -43,3 +43,24 @@ test('ec-canvas supports draggable crosshair guide line', () => {
   assert.match(wxml, /bindtouchmove/);
   assert.match(wxml, /crosshair-line/);
 });
+
+test('growth chart leaves enough right padding for composite-axis units', () => {
+  const source = fs.readFileSync(
+    require.resolve('../miniprogram/pkg-records/growth-records/index.js'),
+    'utf8'
+  );
+
+  assert.match(source, /padding:\s*\{\s*top:\s*30,\s*right:\s*40,\s*bottom:\s*30,\s*left:\s*36\s*\}/);
+});
+
+test('composite growth percentile labels are drawn inside the plot area', () => {
+  const source = fs.readFileSync(
+    require.resolve('../miniprogram/pkg-records/components/ec-canvas/ec-canvas.js'),
+    'utf8'
+  );
+
+  assert.match(source, /highestPoint/);
+  assert.match(source, /pointToX\(highestPoint\) - 4/);
+  assert.match(source, /ctx\.fillText\(lp\.label,\s*lp\.x,\s*lp\.y \+ 3\)/);
+  assert.doesNotMatch(source, /ctx\.fillText\(lp\.label,\s*plotRight \+ 24/);
+});

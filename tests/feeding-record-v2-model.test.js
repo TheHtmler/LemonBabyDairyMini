@@ -17,6 +17,7 @@ function createDbMock(overrides = {}) {
   };
   const dataByCollection = {
     growth_records_v2: overrides.growthRecordsV2Data || [],
+    growth_curve_points: overrides.growthCurvePointsData || [],
     feeding_records_v2: overrides.v2Data || [],
     feeding_records: overrides.legacyData || [],
     baby_info: overrides.babyInfoData || [],
@@ -250,22 +251,183 @@ test('upsertGrowthRecordForDate creates a v2 growth record without touching lega
     height: 58
   });
 
-  assert.equal(writes.addCollection, 'growth_records_v2');
-  assert.equal(writes.addData.babyUid, 'baby-1');
-  assert.equal(writes.addData.date, '2026-05-21');
-  assert.equal(writes.addData.weight, 5.2);
-  assert.equal(writes.addData.height, 58);
-  assert.equal(writes.addData.headCircumference, '');
-  assert.equal(writes.addData.notes, '');
-  assert.equal(writes.addData.changes, '');
-  assert.equal(writes.addData.status, 'active');
-  assert.equal(writes.addData.source, 'data_records_v2');
-  assert.equal(writes.addData.schemaVersion, 1);
-  assert.equal(writes.addData.createdBy, 'openid-creator');
-  assert.equal(writes.addData.updatedBy, 'openid-creator');
-  assert.equal(writes.addData.deletedAt, null);
-  assert.equal(writes.addData.deletedBy, '');
+  const growthAdd = writes.adds.find(add => add.collectionName === 'growth_records_v2');
+  assert.equal(growthAdd.data.babyUid, 'baby-1');
+  assert.equal(growthAdd.data.date, '2026-05-21');
+  assert.equal(growthAdd.data.weight, 5.2);
+  assert.equal(growthAdd.data.height, 58);
+  assert.equal(growthAdd.data.headCircumference, '');
+  assert.equal(growthAdd.data.notes, '');
+  assert.equal(growthAdd.data.changes, '');
+  assert.equal(growthAdd.data.status, 'active');
+  assert.equal(growthAdd.data.source, 'data_records_v2');
+  assert.equal(growthAdd.data.schemaVersion, 1);
+  assert.equal(growthAdd.data.createdBy, 'openid-creator');
+  assert.equal(growthAdd.data.updatedBy, 'openid-creator');
+  assert.equal(growthAdd.data.deletedAt, null);
+  assert.equal(growthAdd.data.deletedBy, '');
   assert.equal(writes.touchedLegacyFeedingRecordsForWrite, false);
+});
+
+test('upsertGrowthRecordForDate writes growth curve points for real body measurements', async () => {
+  const { db, writes } = createDbMock();
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-05-21', {
+    operatorOpenid: 'openid-creator',
+    weight: 5.2,
+    height: 58
+  });
+
+  const pointAdds = writes.adds.filter(add => add.collectionName === 'growth_curve_points');
+  assert.deepEqual(pointAdds.map(add => ({
+    babyUid: add.data.babyUid,
+    date: add.data.date,
+    metric: add.data.metric,
+    value: add.data.value,
+    sourceRecordId: add.data.sourceRecordId,
+    source: add.data.source,
+    status: add.data.status
+  })), [
+    {
+      babyUid: 'baby-1',
+      date: '2026-05-21',
+      metric: 'weight',
+      value: 5.2,
+      sourceRecordId: 'v2-record-1',
+      source: 'data_records_v2',
+      status: 'active'
+    },
+    {
+      babyUid: 'baby-1',
+      date: '2026-05-21',
+      metric: 'height',
+      value: 58,
+      sourceRecordId: 'v2-record-1',
+      source: 'data_records_v2',
+      status: 'active'
+    }
+  ]);
+});
+
+test('upsertGrowthRecordForDate skips growth curve points when body measurements continue unchanged', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-prev',
+        babyUid: 'baby-1',
+        date: '2026-02-01',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 10,
+        height: 76
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-02-10', {
+    operatorOpenid: 'openid-creator',
+    weight: 10,
+    height: 76
+  });
+
+  const pointAdds = writes.adds.filter(add => add.collectionName === 'growth_curve_points');
+  assert.deepEqual(pointAdds, []);
+});
+
+test('upsertGrowthRecordForDate archives stale growth curve points when an edited value no longer changes', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-prev',
+        babyUid: 'baby-1',
+        date: '2026-02-01',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 10
+      },
+      {
+        _id: 'growth-current',
+        babyUid: 'baby-1',
+        date: '2026-02-10',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 10.4
+      }
+    ],
+    growthCurvePointsData: [
+      {
+        _id: 'point-current-weight',
+        babyUid: 'baby-1',
+        sourceRecordId: 'growth-current',
+        date: '2026-02-10',
+        metric: 'weight',
+        value: 10.4,
+        status: 'active'
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-02-10', {
+    operatorOpenid: 'openid-editor',
+    weight: 10
+  });
+
+  const pointUpdate = writes.updates.find(update => (
+    update.collectionName === 'growth_curve_points' &&
+    update.docId === 'point-current-weight'
+  ));
+  assert.equal(pointUpdate.data.status, 'archived');
+  assert.equal(pointUpdate.data.deletedAt, '__server_date__');
+  assert.equal(pointUpdate.data.deletedBy, 'openid-editor');
+});
+
+test('upsertGrowthRecordForDate resyncs future growth curve points after editing historical measurements', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-current',
+        babyUid: 'baby-1',
+        date: '2026-02-01',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 10
+      },
+      {
+        _id: 'growth-future',
+        babyUid: 'baby-1',
+        date: '2026-02-10',
+        status: 'active',
+        source: 'data_records_v2',
+        weight: 10.4
+      }
+    ],
+    growthCurvePointsData: [
+      {
+        _id: 'point-future-weight',
+        babyUid: 'baby-1',
+        sourceRecordId: 'growth-future',
+        date: '2026-02-10',
+        metric: 'weight',
+        value: 10.4,
+        status: 'active'
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-02-01', {
+    operatorOpenid: 'openid-editor',
+    weight: 10.4
+  });
+
+  const futurePointUpdate = writes.updates.find(update => (
+    update.collectionName === 'growth_curve_points' &&
+    update.docId === 'point-future-weight'
+  ));
+  assert.equal(futurePointUpdate.data.status, 'archived');
 });
 
 test('upsertGrowthRecordForDate persists protein and calorie coefficients on add', async () => {
@@ -281,12 +443,12 @@ test('upsertGrowthRecordForDate persists protein and calorie coefficients on add
     calorieCoefficient: 100
   });
 
-  assert.equal(writes.addCollection, 'growth_records_v2');
-  assert.equal(writes.addData.weight, 5.3);
-  assert.equal(writes.addData.height, 59);
-  assert.equal(writes.addData.naturalProteinCoefficient, 1.2);
-  assert.equal(writes.addData.specialProteinCoefficient, 0.9);
-  assert.equal(writes.addData.calorieCoefficient, 100);
+  const growthAdd = writes.adds.find(add => add.collectionName === 'growth_records_v2');
+  assert.equal(growthAdd.data.weight, 5.3);
+  assert.equal(growthAdd.data.height, 59);
+  assert.equal(growthAdd.data.naturalProteinCoefficient, 1.2);
+  assert.equal(growthAdd.data.specialProteinCoefficient, 0.9);
+  assert.equal(growthAdd.data.calorieCoefficient, 100);
 });
 
 test('upsertGrowthRecordForDate updates coefficients without wiping existing ones on partial weight update', async () => {
@@ -422,9 +584,9 @@ test('upsertGrowthRecordForDate propagates newly inserted weight over previous c
     weight: 5.5
   });
 
-  assert.equal(writes.addCollection, 'growth_records_v2');
-  assert.equal(writes.addData.date, '2026-06-01');
-  assert.equal(writes.addData.weight, 5.5);
+  const growthAdd = writes.adds.find(add => add.collectionName === 'growth_records_v2');
+  assert.equal(growthAdd.data.date, '2026-06-01');
+  assert.equal(growthAdd.data.weight, 5.5);
 
   const growthUpdates = writes.updates.filter(update => update.collectionName === 'growth_records_v2');
   assert.equal(growthUpdates.find(update => update.docId === 'growth-carry').data.weight, 5.5);

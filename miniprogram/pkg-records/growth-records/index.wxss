@@ -1,5 +1,5 @@
 .growth-container {
-  padding: 20rpx 24rpx 60rpx;
+  padding: 20rpx 8rpx 60rpx;
   background: #fff5d6;
   min-height: 100vh;
   box-sizing: border-box;
@@ -25,7 +25,7 @@
 .chart-card {
   background: #fff;
   border-radius: 20rpx;
-  padding: 20rpx;
+  padding: 16rpx 10rpx 20rpx;
   box-shadow: 0 8rpx 20rpx rgba(255, 184, 0, 0.15);
 }
 

@@ -7,6 +7,8 @@ const feedingUtils = require('./feedingUtils');
 const uiUtils = require('./uiUtils');
 const dataUtils = require('./dataUtils');
 const growthUtils = require('./growthUtils');
+const growthChartUtils = require('./growthChartUtils');
+const growthCurvePointUtils = require('./growthCurvePointUtils');
 
 /**
  * 等待应用初始化完成
@@ -213,6 +215,8 @@ module.exports = {
 
   // 生长曲线工具
   growthUtils,
+  growthChartUtils,
+  growthCurvePointUtils,
   
   // 为了保持兼容性，也可以单独导出
   feedingUtils,
@@ -240,6 +244,8 @@ module.exports = {
 
   // 从growthUtils中导出的工具函数
   growth: growthUtils,
+  growthChart: growthChartUtils,
+  growthCurvePoint: growthCurvePointUtils,
   
   // 新增的通用工具函数
   handleError,

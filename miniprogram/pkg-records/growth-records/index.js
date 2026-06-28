@@ -6,6 +6,9 @@ const {
   handleError,
   growthUtils
 } = require('../../utils/index');
+const growthChartUtils = require('../../utils/growthChartUtils');
+const growthCurvePointUtils = require('../../utils/growthCurvePointUtils');
+const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 
 const standards = require('./_data/wst423-2022-0-36');
 
@@ -149,13 +152,7 @@ Page({
     const displayKeys = ['P3', 'P15', 'P50', 'P85', 'P97'];
     const monthLabels = Array.from({ length: maxMonth + 1 }, (_, i) => `${i}`);
 
-    const actualLength = new Array(maxMonth + 1).fill(null);
-    const actualWeight = new Array(maxMonth + 1).fill(null);
-    growthRecords.forEach(record => {
-      if (record.monthAge == null || record.monthAge > maxMonth || record.monthAge < 0) return;
-      if (record.length != null) actualLength[record.monthAge] = Number(record.length);
-      if (record.weight != null) actualWeight[record.monthAge] = Number(record.weight);
-    });
+    const actualSeries = growthChartUtils.buildActualMeasurementSeries(growthRecords, maxMonth);
 
     // 复合轴布局：体重(kg)和身长(cm)各自独立映射到全图高度
     // 体重值小(2-18)自然在下方，身长值大(45-105)自然在上方，中部重合
@@ -177,7 +174,8 @@ Page({
     });
     series.push({
       name: '身长实测',
-      data: actualLength,
+      data: actualSeries.lengthData,
+      points: actualSeries.lengthPoints,
       metric: 'length',
       lineWidth: 2.5,
       showDots: true,
@@ -198,7 +196,8 @@ Page({
     });
     series.push({
       name: '体重实测',
-      data: actualWeight,
+      data: actualSeries.weightData,
+      points: actualSeries.weightPoints,
       metric: 'weight',
       lineWidth: 2.5,
       showDots: true,
@@ -231,8 +230,23 @@ Page({
         // 左轴标签范围
         leftWeightMax: 10,     // 左轴体重标到10kg
         rightLengthMin: 85,    // 右轴身长从85cm起标
-        padding: { top: 30, right: 45, bottom: 30, left: 40 }
+        padding: { top: 30, right: 40, bottom: 30, left: 36 }
       }
+    };
+  },
+
+  getChartDateRange() {
+    const { babyInfo } = this.data;
+    if (!babyInfo.birthday) return null;
+    const birthday = new Date(`${babyInfo.birthday}T00:00:00`);
+    if (Number.isNaN(birthday.getTime())) return null;
+    const endDate = new Date(birthday);
+    endDate.setMonth(endDate.getMonth() + 36);
+    const today = new Date();
+    const effectiveEnd = endDate > today ? today : endDate;
+    return {
+      start: growthChartUtils.formatDateKey(birthday),
+      end: growthChartUtils.formatDateKey(effectiveEnd)
     };
   },
 
@@ -241,77 +255,42 @@ Page({
       const babyUid = getBabyUid();
       if (!babyUid) return;
       const db = wx.cloud.database();
-      const parseValue = (value) => {
-        if (value === '' || value === null || value === undefined) return null;
-        const parsed = Number(value);
-        return Number.isNaN(parsed) ? null : parsed;
+      const _ = db.command;
+      // growth_curve_points 是成长曲线索引表；页面只读曲线点，不再扫描 growth_records_v2 原始记录。
+      const where = {
+        babyUid,
+        status: 'active'
       };
+      const dateRange = this.getChartDateRange();
+      if (dateRange) {
+        where.date = _.gte(dateRange.start).and(_.lte(dateRange.end));
+      }
 
-      // 1. 从 growth_records 加载手动测量记录
-      const growthRes = await db.collection('growth_records')
-        .where({ babyUid })
-        .orderBy('recordDate', 'asc')
-        .get();
-      const manualRecords = (growthRes.data || []).map(record => ({
-        ...record,
-        weight: parseValue(record.weight),
-        length: parseValue(record.length),
-        head: parseValue(record.head)
-      }));
-
-      // 2. 从 growth_records_v2 分页加载全部每日体重（v2 升级后每日体重写入此集合，含历史回填）
-      const batchSize = 100;
-      let allDailyData = [];
+      // 小程序端云数据库单次 get 最多返回 20 条；用 20 分页，避免 limit(100) 被截断后误判已加载完。
+      const batchSize = 20;
+      let allPointData = [];
       let skip = 0;
       let hasMore = true;
       while (hasMore) {
-        const batch = await db.collection('growth_records_v2')
-          .where({ babyUid, status: 'active' })
+        const batch = await db.collection('growth_curve_points')
+          .where(where)
           .orderBy('date', 'asc')
           .skip(skip)
           .limit(batchSize)
           .get();
-        allDailyData = allDailyData.concat(batch.data || []);
+        allPointData = allPointData.concat(batch.data || []);
         hasMore = (batch.data || []).length === batchSize;
         skip += batchSize;
       }
-      const { babyInfo } = this.data;
-      const dailyWeightRecords = allDailyData
-        .filter(r => r.weight)
-        .map(r => {
-          const dateStr = this.formatDate(r.date);
-          const monthAge = babyInfo.birthday
-            ? growthUtils.calculateAgeMonths(babyInfo.birthday, dateStr)
-            : null;
-          return {
-            recordDate: r.date,
-            monthAge,
-            weight: parseValue(r.weight),
-            length: null,
-            head: null,
-            _fromDaily: true
-          };
-        });
 
-      // 3. 合并：同月龄优先手动记录（有身长），每日体重补充
-      const byMonth = {};
-      manualRecords.forEach(r => {
-        if (r.monthAge == null) return;
-        if (!byMonth[r.monthAge] || r.length != null) {
-          byMonth[r.monthAge] = r;
-        }
-      });
-      dailyWeightRecords.forEach(r => {
-        if (r.monthAge == null) return;
-        if (!byMonth[r.monthAge]) {
-          byMonth[r.monthAge] = r;
-        } else if (byMonth[r.monthAge].weight == null && r.weight != null) {
-          byMonth[r.monthAge].weight = r.weight;
-        }
+      const { babyInfo } = this.data;
+      const growthRecords = growthCurvePointUtils.normalizeGrowthCurvePointsForChart({
+        babyInfo,
+        points: allPointData
       });
 
       this.setData({
-        growthRecords: Object.values(byMonth)
+        growthRecords
       });
     } catch (error) {
       handleError(error, { title: '获取测量记录失败' });
@@ -407,10 +386,9 @@ Page({
       if (!babyUid) return;
       const monthAge = growthUtils.calculateAgeMonths(babyInfo.birthday, newMeasurement.date);
       const userInfo = await getUserInfo();
-      const recordDate = growthUtils.parseDateString(newMeasurement.date);
       const payload = {
         babyUid,
-        recordDate,
+        recordDate: growthUtils.parseDateString(newMeasurement.date),
         monthAge,
         weight: newMeasurement.weight ? Number(newMeasurement.weight) : null,
         length: newMeasurement.length ? Number(newMeasurement.length) : null,
@@ -420,8 +398,14 @@ Page({
         createdAt: new Date(),
         updatedAt: new Date()
       };
-      const db = wx.cloud.database();
-      await db.collection('growth_records').add({ data: payload });
+      await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, newMeasurement.date, {
+        weight: payload.weight || '',
+        height: payload.length || '',
+        headCircumference: payload.head || '',
+        notes: payload.notes,
+        source: 'growth_records_page',
+        openid: userInfo.openid || ''
+      });
       await this.updateBabyInfoFromMeasurement(payload);
       this.setData({
         newMeasurement: {

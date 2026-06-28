@@ -157,6 +157,9 @@ Component({
 
     getTooltipValues(dataIndex, chartInfo = {}, touchY = null) {
       const { series = [], colors = [], layout, panels } = chartInfo;
+      if (layout === 'compositeAxis') {
+        return this.getCompositeAxisTooltipValues(dataIndex, chartInfo);
+      }
       const values = [];
       let activePanelIndex = 0;
       if (layout === 'dualPanel' && Array.isArray(panels) && touchY !== null) {
@@ -174,7 +177,11 @@ Component({
         if (layout === 'dualPanel' && panelIndex !== activePanelIndex) {
           return;
         }
-        const value = s.data[dataIndex];
+        let value = Array.isArray(s.data) ? s.data[dataIndex] : undefined;
+        if ((value === null || value === undefined || isNaN(value)) && Array.isArray(s.points)) {
+          const matchedPoint = s.points.find(point => Math.abs(Number(point.x) - dataIndex) < 0.05);
+          value = matchedPoint ? matchedPoint.value : value;
+        }
         if (value !== null && value !== undefined && !isNaN(value)) {
           values.push({
             name: s.axisLabel ? `${this.getSeriesName(s, index)} (${s.axisLabel})` : this.getSeriesName(s, index),
@@ -184,6 +191,39 @@ Component({
         }
       });
 
+      return values;
+    },
+
+    formatTooltipNumber(value, unit = '') {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return value;
+      const formatted = Number.isInteger(num) ? `${num}` : `${Math.round(num * 10) / 10}`;
+      return unit ? `${formatted} ${unit}` : formatted;
+    },
+
+    getCompositeAxisTooltipValues(dataIndex, chartInfo = {}) {
+      const { series = [], colors = [] } = chartInfo;
+      const values = [];
+      const tolerance = 0.35;
+      series.forEach((s, index) => {
+        if (!s.showDots || !Array.isArray(s.points) || this.isSeriesHidden(s, index)) return;
+        const nearest = s.points
+          .map(point => ({
+            x: Number(point.x),
+            value: Number(point.value),
+            distance: Math.abs(Number(point.x) - dataIndex)
+          }))
+          .filter(point => Number.isFinite(point.x) && Number.isFinite(point.value))
+          .sort((left, right) => left.distance - right.distance)[0];
+        if (!nearest || nearest.distance > tolerance) return;
+        const metric = s.metric || '';
+        const unit = metric === 'weight' ? 'kg' : (metric === 'length' ? 'cm' : '');
+        values.push({
+          name: this.getSeriesName(s, index),
+          value: this.formatTooltipNumber(nearest.value, unit),
+          color: colors[index % colors.length]
+        });
+      });
       return values;
     },
 
@@ -235,12 +275,15 @@ Component({
       }
 
       this._selectedCrosshairIndex = dataIndex;
+      const tooltipDate = chartInfo.layout === 'compositeAxis'
+        ? `${dataIndex}月龄附近`
+        : xData[dataIndex];
       this.setData({
         tooltipVisible: showTooltip,
         tooltipX,
         tooltipY,
         tooltipData: {
-          date: xData[dataIndex],
+          date: tooltipDate,
           values
         },
         crosshairVisible: showCrosshair,
@@ -997,6 +1040,20 @@ Component({
 
       const xLen = xData.length;
       const xStep = xLen > 1 ? plotWidth / (xLen - 1) : plotWidth;
+      function resolveSeriesPoints(s) {
+        if (Array.isArray(s.points) && s.points.length > 0) {
+          return s.points
+            .filter(point => point.value !== null && point.value !== undefined)
+            .map(point => ({ x: Number(point.x), value: Number(point.value) }))
+            .filter(point => Number.isFinite(point.x) && Number.isFinite(point.value));
+        }
+        return (s.data || [])
+          .map((value, index) => ({ x: index, rawValue: value }))
+          .filter(point => point.rawValue !== null && point.rawValue !== undefined)
+          .map(point => ({ x: point.x, value: Number(point.rawValue) }))
+          .filter(point => Number.isFinite(point.value));
+      }
+      function pointToX(point) { return plotLeft + point.x * xStep; }
 
       // --- 水平网格线（每个有标签的步进位置画一条）---
       if (showGrid) {
@@ -1054,29 +1111,29 @@ Component({
         const metric = s.metric || 'length';
         const color = colors[sIdx % colors.length] || '#555';
         const lineWidth = s.lineWidth ?? 1;
+        const drawablePoints = resolveSeriesPoints(s);
+        if (drawablePoints.length === 0) return;
         if (lineWidth > 0) {
           ctx.strokeStyle = color;
           ctx.lineWidth = lineWidth;
           this.applySeriesLineStyle(ctx, s);
           ctx.beginPath();
           let started = false;
-          for (let i = 0; i < xLen; i++) {
-            const v = s.data[i];
-            if (v === null || v === undefined) { started = false; continue; }
-            const y = toY(v, metric);
-            if (!started) { ctx.moveTo(plotLeft + i * xStep, y); started = true; }
-            else ctx.lineTo(plotLeft + i * xStep, y);
+          for (let i = 0; i < drawablePoints.length; i++) {
+            const point = drawablePoints[i];
+            const y = toY(point.value, metric);
+            if (!started) { ctx.moveTo(pointToX(point), y); started = true; }
+            else ctx.lineTo(pointToX(point), y);
           }
           ctx.stroke();
           this.resetLineStyle(ctx);
         }
         if (s.showDots) {
           ctx.fillStyle = color;
-          for (let i = 0; i < xLen; i++) {
-            const v = s.data[i];
-            if (v === null || v === undefined) continue;
-            const y = toY(v, metric);
-            this.drawSeriesMarker(ctx, plotLeft + i * xStep, y, s);
+          for (let i = 0; i < drawablePoints.length; i++) {
+            const point = drawablePoints[i];
+            const y = toY(point.value, metric);
+            this.drawSeriesMarker(ctx, pointToX(point), y, s);
           }
         }
       });
@@ -1104,14 +1161,14 @@ Component({
       ctx.font = '10px sans-serif';
       ctx.fillStyle = weightColor;
       ctx.save();
-      ctx.translate(plotLeft - 28, weightToY((1 + leftWeightMax) / 2));
+      ctx.translate(plotLeft - 22, weightToY((1 + leftWeightMax) / 2));
       ctx.rotate(-Math.PI / 2);
       ctx.textAlign = 'center';
       ctx.fillText('kg', 0, 0);
       ctx.restore();
       ctx.fillStyle = lengthColor;
       ctx.save();
-      ctx.translate(plotLeft - 28, lengthToY(77));
+      ctx.translate(plotLeft - 22, lengthToY(77));
       ctx.rotate(-Math.PI / 2);
       ctx.textAlign = 'center';
       ctx.fillText('cm', 0, 0);
@@ -1138,14 +1195,14 @@ Component({
       ctx.font = '10px sans-serif';
       ctx.fillStyle = weightColor;
       ctx.save();
-      ctx.translate(plotRight + 28, weightToY(9.5));
+      ctx.translate(plotRight + 22, weightToY(9.5));
       ctx.rotate(Math.PI / 2);
       ctx.textAlign = 'center';
       ctx.fillText('kg', 0, 0);
       ctx.restore();
       ctx.fillStyle = lengthColor;
       ctx.save();
-      ctx.translate(plotRight + 28, lengthToY(97));
+      ctx.translate(plotRight + 22, lengthToY(97));
       ctx.rotate(Math.PI / 2);
       ctx.textAlign = 'center';
       ctx.fillText('cm', 0, 0);
@@ -1162,18 +1219,24 @@ Component({
         if (showTopAxis) ctx.fillText(xData[i], x, plotTop - 5);
       }
 
-      // --- 右端百分位标注 ---
+      // --- 百分位标注：放在曲线最高点附近的图表内部，避免挤占右侧坐标轴留白 ---
       ctx.font = '8px sans-serif';
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'right';
       const labelPositions = [];
       series.forEach((s, sIdx) => {
         const match = s.name.match(/P(\d+)$/);
         if (!match) return;
         const metric = s.metric || 'length';
-        const lastVal = s.data[xLen - 1];
-        if (lastVal === null || lastVal === undefined) return;
-        const y = toY(lastVal, metric);
-        labelPositions.push({ label: match[0], y, color: colors[sIdx % colors.length] || '#555', metric });
+        const drawablePoints = resolveSeriesPoints(s);
+        if (drawablePoints.length === 0) return;
+        const highestPoint = drawablePoints.reduce((best, point) => {
+          if (point.value > best.value) return point;
+          if (point.value === best.value && point.x > best.x) return point;
+          return best;
+        }, drawablePoints[0]);
+        const y = toY(highestPoint.value, metric);
+        const x = Math.min(plotRight - 6, Math.max(plotLeft + 24, pointToX(highestPoint) - 4));
+        labelPositions.push({ label: match[0], x, y, color: colors[sIdx % colors.length] || '#555', metric });
       });
       ['weight', 'length'].forEach(m => {
         const group = labelPositions.filter(lp => lp.metric === m);
@@ -1181,10 +1244,20 @@ Component({
         for (let i = 1; i < group.length; i++) {
           if (group[i].y - group[i - 1].y < 9) group[i].y = group[i - 1].y + 9;
         }
+        const overflow = group.length > 0 ? group[group.length - 1].y - (plotBottom - 6) : 0;
+        if (overflow > 0) {
+          group.forEach(lp => { lp.y -= overflow; });
+        }
+        group.forEach(lp => {
+          lp.y = Math.max(plotTop + 6, Math.min(plotBottom - 6, lp.y));
+        });
       });
       labelPositions.forEach(lp => {
+        const textWidth = ctx.measureText ? ctx.measureText(lp.label).width : 14;
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.fillRect(lp.x - textWidth - 3, lp.y - 6, textWidth + 6, 10);
         ctx.fillStyle = lp.color;
-        ctx.fillText(lp.label, plotRight + 38, lp.y + 3);
+        ctx.fillText(lp.label, lp.x, lp.y + 3);
       });
 
       // --- 存储交互信息 ---

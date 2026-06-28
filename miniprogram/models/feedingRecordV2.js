@@ -9,13 +9,16 @@ const {
 } = require('../utils/auditFields');
 const { recordHardDelete } = require('./auditLog');
 const DailySummaryV2Model = require('./dailySummaryV2');
+const { buildGrowthCurvePointsForRecord } = require('../utils/growthCurvePointUtils');
 
 const db = wx.cloud.database();
 const feedingRecordV2Collection = db.collection('feeding_records_v2');
 const growthRecordsV2Collection = db.collection('growth_records_v2');
+const growthCurvePointsCollection = db.collection('growth_curve_points');
 const legacyFeedingRecordCollection = db.collection('feeding_records');
 const babyInfoCollection = db.collection('baby_info');
 const CARRY_FORWARD_GROWTH_SOURCE = 'daily_record_v2_carry_forward';
+const GROWTH_CURVE_METRICS = ['weight', 'height'];
 
 function serverDate() {
   return db.serverDate();
@@ -117,6 +120,18 @@ function normalizeGrowthRecordSnapshot(record = {}, source = 'v2_growth_record')
     },
     source
   );
+}
+
+function getGrowthMetricValue(record = {}, metric) {
+  if (metric === 'weight') return record.weight;
+  if (metric === 'height') return record.height ?? record.length;
+  return undefined;
+}
+
+function hasGrowthMetricChanged(point = {}, previousRecord = {}) {
+  const previousValue = getGrowthMetricValue(previousRecord, point.metric);
+  if (!hasBasicInfoValue(previousValue)) return true;
+  return normalizeComparableValue(point.value) !== normalizeComparableValue(previousValue);
 }
 
 async function queryActiveGrowthRecord(babyUid, date) {
@@ -235,6 +250,132 @@ async function propagateGrowthFieldsForward({
       }
     });
     await markSummaryDirtySafe(babyUid, record.date);
+  }
+}
+
+async function queryGrowthCurvePoint(babyUid, sourceRecordId, metric) {
+  try {
+    const res = await growthCurvePointsCollection
+      .where({
+        babyUid,
+        sourceRecordId,
+        metric
+      })
+      .limit(1)
+      .get();
+    return (res.data || [])[0] || null;
+  } catch (error) {
+    if (isMissingCollectionError(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function archiveGrowthCurvePoint(pointId, timestamp, operatorOpenid = '') {
+  if (!pointId) return;
+  try {
+    await growthCurvePointsCollection.doc(pointId).update({
+      data: {
+        status: 'archived',
+        deletedAt: timestamp,
+        deletedBy: operatorOpenid,
+        ...buildUpdateAuditFields({
+          timestamp,
+          operatorOpenid
+        })
+      }
+    });
+  } catch (error) {
+    if (isMissingCollectionError(error)) {
+      console.warn('growth_curve_points 集合不存在，已跳过曲线点归档');
+      return;
+    }
+    throw error;
+  }
+}
+
+async function syncGrowthCurvePoints(record = {}, operatorOpenid = '', previousRecord = null) {
+  const sourceRecordId = record._id || record.id || '';
+  if (!record.babyUid || !sourceRecordId) return;
+
+  const timestamp = serverDate();
+  const pointsByMetric = new Map(
+    buildGrowthCurvePointsForRecord(record).map(point => [point.metric, point])
+  );
+
+  for (const metric of GROWTH_CURVE_METRICS) {
+    const point = pointsByMetric.get(metric) || null;
+    const existingPoint = await queryGrowthCurvePoint(record.babyUid, sourceRecordId, metric);
+    const shouldKeepPoint = point && hasGrowthMetricChanged(point, previousRecord || {});
+    if (!shouldKeepPoint) {
+      if (existingPoint?._id && (existingPoint.status || 'active') === 'active') {
+        await archiveGrowthCurvePoint(existingPoint._id, timestamp, operatorOpenid);
+      }
+      continue;
+    }
+
+    if (existingPoint?._id) {
+      try {
+        await growthCurvePointsCollection.doc(existingPoint._id).update({
+          data: {
+            ...point,
+            deletedAt: null,
+            deletedBy: '',
+            ...buildUpdateAuditFields({
+              timestamp,
+              operatorOpenid
+            })
+          }
+        });
+      } catch (error) {
+        if (isMissingCollectionError(error)) {
+          console.warn('growth_curve_points 集合不存在，已跳过曲线点同步');
+          return;
+        }
+        throw error;
+      }
+      continue;
+    }
+
+    try {
+      await growthCurvePointsCollection.add({
+        data: {
+          ...point,
+          ...buildCreateAuditFields({
+            timestamp,
+            operatorOpenid,
+            recordType: 'growth_curve_point',
+            schemaVersion: 1
+          })
+        }
+      });
+    } catch (error) {
+      if (isMissingCollectionError(error)) {
+        console.warn('growth_curve_points 集合不存在，已跳过曲线点同步');
+        return;
+      }
+      throw error;
+    }
+  }
+}
+
+async function resyncFutureGrowthCurvePoints({
+  babyUid,
+  date,
+  operatorOpenid = '',
+  currentRecord = null
+} = {}) {
+  if (!babyUid || !date) return;
+
+  const futureRecords = await queryFutureGrowthRecords(babyUid, date);
+  let previousRecord = currentRecord
+    || await queryActiveGrowthRecord(babyUid, date)
+    || await queryLatestPreviousGrowthRecord(babyUid, date);
+
+  for (const record of futureRecords) {
+    await syncGrowthCurvePoints(record, operatorOpenid, previousRecord || {});
+    previousRecord = record;
   }
 }
 
@@ -372,7 +513,8 @@ class FeedingRecordV2Model {
     const existing = await queryActiveGrowthRecord(babyUid, date);
     const timestamp = serverDate();
     const operatorOpenid = resolveOperatorOpenid(growthData);
-    const previousGrowthRecord = existing || await queryLatestPreviousGrowthRecord(babyUid, date);
+    const latestPreviousGrowthRecord = await queryLatestPreviousGrowthRecord(babyUid, date);
+    const previousGrowthRecord = existing || latestPreviousGrowthRecord;
     const payload = {
       weight: growthData.weight || '',
       height: growthData.height || growthData.length || '',
@@ -381,13 +523,15 @@ class FeedingRecordV2Model {
       changes: growthData.changes || '',
       ...buildGrowthCoefficientFields(growthData)
     };
+    const source = growthData.source || 'data_records_v2';
+    const shouldResyncFutureCurvePoints = source !== CARRY_FORWARD_GROWTH_SOURCE;
 
     if (existing?._id) {
       try {
         await growthRecordsV2Collection.doc(existing._id).update({
           data: {
             ...payload,
-            source: growthData.source || 'data_records_v2',
+            source,
             ...buildUpdateAuditFields({
               timestamp,
               operatorOpenid
@@ -400,6 +544,16 @@ class FeedingRecordV2Model {
         }
         throw error;
       }
+      const savedGrowthRecord = {
+        ...(existing || {}),
+        babyUid,
+        date,
+        ...payload,
+        _id: existing._id,
+        source,
+        status: existing.status || 'active'
+      };
+      await syncGrowthCurvePoints(savedGrowthRecord, operatorOpenid, latestPreviousGrowthRecord);
       await markSummaryDirtySafe(babyUid, date);
       await propagateGrowthFieldsForward({
         babyUid,
@@ -408,6 +562,14 @@ class FeedingRecordV2Model {
         nextValues: payload,
         operatorOpenid
       });
+      if (shouldResyncFutureCurvePoints) {
+        await resyncFutureGrowthCurvePoints({
+          babyUid,
+          date,
+          operatorOpenid,
+          currentRecord: savedGrowthRecord
+        });
+      }
       return { recordId: existing._id };
     }
 
@@ -419,7 +581,7 @@ class FeedingRecordV2Model {
           date,
           ...payload,
           schemaVersion: 1,
-          source: growthData.source || 'data_records_v2',
+          source,
           ...buildCreateAuditFields({
             timestamp,
             operatorOpenid,
@@ -434,6 +596,15 @@ class FeedingRecordV2Model {
       }
       throw error;
     }
+    const savedGrowthRecord = {
+      babyUid,
+      date,
+      ...payload,
+      _id: res._id,
+      source,
+      status: 'active'
+    };
+    await syncGrowthCurvePoints(savedGrowthRecord, operatorOpenid, latestPreviousGrowthRecord);
     await markSummaryDirtySafe(babyUid, date);
     await propagateGrowthFieldsForward({
       babyUid,
@@ -442,6 +613,14 @@ class FeedingRecordV2Model {
       nextValues: payload,
       operatorOpenid
     });
+    if (shouldResyncFutureCurvePoints) {
+      await resyncFutureGrowthCurvePoints({
+        babyUid,
+        date,
+        operatorOpenid,
+        currentRecord: savedGrowthRecord
+      });
+    }
     return { recordId: res._id };
   }
 
