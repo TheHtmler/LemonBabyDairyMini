@@ -1,0 +1,60 @@
+<view class="future-page">
+  <view class="hero">
+    <text class="hero-title">微信提醒</text>
+    <text class="hero-desc">给未来的奶、食物、用药逐条设置到点提醒。</text>
+    <text class="hero-tip">约 10 分钟内送达；提醒只发给授权本人，其他成员需各自授权。</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+
+  <view class="empty" wx:elif="{{!hasReminderItems}}">
+    <text class="empty-title">{{emptyText}}</text>
+    <text class="empty-desc">提前保存奶、食物或药物记录后，再来这里逐条设置提醒。</text>
+  </view>
+
+  <view wx:else>
+    <view class="category-tabs">
+      <view class="category-tab {{tab.active ? 'active' : ''}}" wx:for="{{reminderSections}}" wx:key="type" wx:for-item="tab" data-type="{{tab.type}}" catchtap="switchReminderTab">
+        <text>{{tab.label}}</text>
+        <text class="category-tab-count">{{tab.totalCount}}</text>
+      </view>
+    </view>
+
+    <view class="category-card" wx:if="{{activeReminderSection}}">
+      <view class="category-head">
+        <view class="category-title-block">
+          <text class="category-title">{{activeReminderSection.title}}</text>
+          <text class="category-summary">{{activeReminderSection.summaryText}}</text>
+        </view>
+      </view>
+      <text class="mode-hint">{{activeReminderSection.hint}}</text>
+
+      <view class="status-filters" wx:if="{{activeReminderSection.hasItems}}">
+        <view class="status-filter {{f.active ? 'active' : ''}}" wx:for="{{activeReminderSection.statusFilters}}" wx:key="key" wx:for-item="f" data-filter="{{f.key}}" catchtap="setStatusFilter">
+          <text>{{f.label}}</text>
+          <text class="status-filter-count">{{f.count}}</text>
+        </view>
+      </view>
+
+      <view class="category-empty" wx:if="{{!activeReminderSection.hasItems}}">暂无未来{{activeReminderSection.label}}记录</view>
+      <view class="category-empty" wx:elif="{{!activeReminderSection.hasVisibleItems}}">当前筛选下没有记录</view>
+      <view class="reminder-list" wx:else>
+        <view class="reminder-card" wx:for="{{activeReminderSection.visibleItems}}" wx:key="id">
+          <view class="reminder-head">
+            <text class="type-pill">{{item.typeLabel}}</text>
+            <text class="status-pill {{item.statusTone}}">{{item.statusLabel}}</text>
+          </view>
+          <text class="reminder-title">{{item.title}}</text>
+          <text class="reminder-time">{{item.timeText}}</text>
+          <text class="reminder-content">{{item.content}}</text>
+          <text class="reminder-note" wx:if="{{item.note}}">{{item.note}}</text>
+          <text class="reminder-error" wx:if="{{item.lastError}}">{{item.lastError}}</text>
+          <view class="action-row">
+            <view class="retry-btn" wx:if="{{item.canSubscribe}}" data-source-key="{{item.sourceKey}}" catchtap="subscribeReminder">订阅提醒</view>
+            <view class="retry-btn" wx:if="{{item.canRetry}}" data-id="{{item.reminderId}}" catchtap="retryReminder">重试发送</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

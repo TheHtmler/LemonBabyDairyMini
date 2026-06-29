@@ -21,6 +21,13 @@ const {
   saveNutritionTargetPreferences
 } = require('../../utils/nutritionTargetPreferences');
 const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
+const {
+  buildUpcomingReminderCandidates
+} = require('../../utils/upcomingReminderCandidates');
+const {
+  invalidateReminderSubscriptions,
+  rescheduleReminderSubscriptions
+} = require('../../utils/reminderSubscriptionPrompt');
 
 const app = getApp();
 
@@ -85,7 +92,6 @@ const TIMELINE_TABS = [
   { key: 'bowel', label: '大小便' }
 ];
 const TIMELINE_DISPLAY_LIMIT = 12;
-
 // 把 "HH:MM" 拼到「今天」得到一个 Date（用于打卡记录的 actualDateTime）
 function timeStrToToday(timeStr) {
   const now = new Date();
@@ -853,6 +859,11 @@ Page({
 
     try {
       await MedicationRecordModel.deleteRecord(recordId);
+      await invalidateReminderSubscriptions({
+        sourceKey: `medication:${recordId}`,
+        status: 'cancelled',
+        reason: 'record deleted'
+      });
       const babyUid = getBabyUid();
       if (babyUid) await DailySummaryV2Model.markDirty(babyUid, todayKey());
       wx.showToast({ title: `已撤销 ${name || ''}`, icon: 'none' });
@@ -921,16 +932,37 @@ Page({
     const newTime = e.detail.value;
     if (!recordId) return;
     const babyUid = getBabyUid();
+    const dateTime = timeStrToToday(newTime);
+    const existingRecord = (this._medTodayRecords || []).find((record) => record && record._id === recordId);
+    const medInfo = (this.data.medicationsList || []).find((med) => (
+      (med._id || med.id) === existingRecord?.medicationId
+    ));
+    const candidate = buildUpcomingReminderCandidates({
+      medicationRecords: [{
+        ...(existingRecord || {}),
+        _id: recordId,
+        medicationName: medInfo?.name || existingRecord?.medicationName || '药物',
+        dosage: medInfo?.dosage || existingRecord?.dosage || '',
+        unit: medInfo?.unit || existingRecord?.unit || '',
+        actualTime: newTime,
+        actualDateTime: dateTime
+      }]
+    }).medication;
     try {
       wx.showLoading({ title: '更新中...', mask: true });
       await MedicationRecordModel.updateRecord(recordId, {
         actualTime: newTime,
-        actualDateTime: timeStrToToday(newTime)
+        actualDateTime: dateTime
+      });
+      await rescheduleReminderSubscriptions({
+        sourceKey: `medication:${recordId}`,
+        candidate
       });
       if (babyUid) await DailySummaryV2Model.markDirty(babyUid, todayKey());
       await this.loadDashboard({ silent: true });
       this.refreshMedPanel();
       wx.hideLoading();
+      wx.showToast({ title: '已更新', icon: 'success' });
     } catch (error) {
       wx.hideLoading();
       console.error('修改打卡时间失败:', error);
@@ -953,6 +985,11 @@ Page({
         try {
           wx.showLoading({ title: '删除中...', mask: true });
           await MedicationRecordModel.deleteRecord(recordId);
+          await invalidateReminderSubscriptions({
+            sourceKey: `medication:${recordId}`,
+            status: 'cancelled',
+            reason: 'record deleted'
+          });
           if (babyUid) await DailySummaryV2Model.markDirty(babyUid, todayKey());
           await this.loadDashboard({ silent: true });
           this.refreshMedPanel();
@@ -1083,6 +1120,10 @@ Page({
   goToMedicationManage() {
     this.setData({ 'modals.medication': false });
     wx.navigateTo({ url: '/pkg-misc/medications/index' });
+  },
+
+  goToFutureReminders() {
+    wx.navigateTo({ url: '/pkg-misc/future-reminders/index' });
   },
 
   // === 导航 ===

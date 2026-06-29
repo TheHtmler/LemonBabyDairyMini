@@ -14,6 +14,12 @@ const {
   addSummaries,
   subtractSummaries
 } = require('../../utils/nutritionTargetPreview');
+const {
+  buildUpcomingReminderCandidates
+} = require('../../utils/upcomingReminderCandidates');
+const {
+  rescheduleReminderSubscriptions
+} = require('../../utils/reminderSubscriptionPrompt');
 
 const app = getApp();
 const MEAL_LABELS = ['早餐', '午餐', '晚餐', '加餐'];
@@ -1017,6 +1023,9 @@ Page({
       }
 
       const firstIntake = targetIntakes[0];
+      const originalMealTime = firstIntake.mealTime || firstIntake.recordedAt || '';
+      this._originalMealReminderSourceKey = mealBatchId ? `food:${mealBatchId}` : '';
+      this._originalMealReminderTimeKey = `${this.data.selectedDate} ${originalMealTime}`;
       const items = targetIntakes.map((intake, index) => {
         const catalogFood = this.getFoodById(intake.foodId);
         const snapshot = intake.foodSnapshot || {};
@@ -1069,7 +1078,7 @@ Page({
       this.setData({
         editRecordId: '',
         mealDraft: {
-          mealTime: firstIntake.mealTime || firstIntake.recordedAt || formatTime(new Date()),
+          mealTime: originalMealTime || formatTime(new Date()),
           mealLabel: firstIntake.mealLabel || getDefaultMealLabel(firstIntake.mealTime || firstIntake.recordedAt || ''),
           mealNote: firstIntake.mealNote || '',
           items
@@ -1182,13 +1191,33 @@ Page({
     wx.showLoading({ title: '保存中...', mask: true });
 
     try {
-      await FoodIntakeRecordModel.replaceMealBatch({
+      const saveResult = await FoodIntakeRecordModel.replaceMealBatch({
         babyUid,
         date: this.data.selectedDate,
         mealBatchId,
         records: mealIntakes,
         operatorOpenid: app.globalData.openid || wx.getStorageSync('openid') || ''
       });
+      const savedMealIntakes = mealIntakes.map((record, index) => ({
+        ...record,
+        _id: saveResult?.createdIds?.[index] || record._id,
+        date: this.data.selectedDate
+      }));
+      const nextMealTimeKey = `${this.data.selectedDate} ${this.data.mealDraft.mealTime || ''}`;
+      if (
+        this.data.mode === 'edit'
+        && this._originalMealReminderSourceKey
+        && this._originalMealReminderTimeKey
+        && nextMealTimeKey !== this._originalMealReminderTimeKey
+      ) {
+        const candidate = buildUpcomingReminderCandidates({
+          foodIntakeRecords: savedMealIntakes
+        }).food;
+        await rescheduleReminderSubscriptions({
+          sourceKey: this._originalMealReminderSourceKey,
+          candidate
+        });
+      }
 
       // 食物（天然蛋白来源之一）直接写库，需让当天 daily_summary_v2 失效，
       // 否则首页趋势/数据记录页的当日汇总会沿用旧缓存。
@@ -1199,8 +1228,8 @@ Page({
       }
 
       wx.hideLoading();
-      wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });
       await this.notifyPreviousPageRefresh();
+      wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });
       setTimeout(() => {
         wx.navigateBack();
       }, 300);

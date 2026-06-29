@@ -23,6 +23,12 @@ const {
   buildFormulaPowderComponent,
   buildNutritionSummary
 } = require('../../utils/feedingRecordV2Utils');
+const {
+  buildUpcomingReminderCandidates
+} = require('../../utils/upcomingReminderCandidates');
+const {
+  rescheduleReminderSubscriptions
+} = require('../../utils/reminderSubscriptionPrompt');
 
 const getNutritionProfileSettings = MilkNutritionProfileModel.getNutritionProfileSettings.bind(MilkNutritionProfileModel);
 const addFeedingRecordV2 = feedingRecordV2Model.addRecord.bind(feedingRecordV2Model);
@@ -862,9 +868,15 @@ Page({
       .filter((component) => component.kind === 'breast_milk' || component.kind === 'formula_powder')
       .map((component) => this.createEntryFromComponent(component));
     const basicInfo = record.basicInfoSnapshot || {};
+    const recordId = record._id || record.id || this.data.editingRecordId;
+    const originalDueAt = record.startDateTime
+      ? new Date(record.startDateTime)
+      : buildDateTime(record.date || this.data.selectedDate, record.startTime || this.data.startTime);
+    this._originalReminderSourceKey = recordId ? `milk:${recordId}` : '';
+    this._originalReminderDueAtMs = Number.isNaN(originalDueAt.getTime()) ? 0 : originalDueAt.getTime();
 
     this.setData({
-      editingRecordId: record._id || record.id || this.data.editingRecordId,
+      editingRecordId: recordId,
       startTime: record.startTime || this.data.startTime,
       endTime: record.endTime || '',
       notes: record.notes || '',
@@ -1042,8 +1054,25 @@ Page({
           return false;
         }
         await updateFeedingRecordV2(this.data.editingRecordId, payload);
+        payload._id = this.data.editingRecordId;
+        const nextDueAtMs = payload.startDateTime.getTime();
+        if (
+          this._originalReminderSourceKey
+          && this._originalReminderDueAtMs
+          && nextDueAtMs !== this._originalReminderDueAtMs
+        ) {
+          const candidate = buildUpcomingReminderCandidates({
+            milkRecords: [payload]
+          }).milk;
+          await rescheduleReminderSubscriptions({
+            wxApi,
+            sourceKey: this._originalReminderSourceKey,
+            candidate
+          });
+        }
       } else {
-        await addFeedingRecordV2(payload);
+        const addResult = await addFeedingRecordV2(payload);
+        payload._id = (addResult && (addResult._id || (addResult.result && addResult.result._id))) || '';
       }
       await markDailySummaryDirty(this.data.babyUid, this.data.selectedDate);
       await this.notifyPreviousPageRefresh();
