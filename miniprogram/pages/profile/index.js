@@ -2,6 +2,8 @@ const { isDeveloperOpenid } = require('../../config/developer');
 
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 const CREATOR_CANCEL_CONFIRM_TEXT = '确认注销';
+const AVATAR_SECURITY_RISK_MESSAGE = '头像含有违规内容，请更换后再试';
+const AVATAR_SECURITY_CHECK_FAILED_MESSAGE = '头像安全检测失败，请稍后重试';
 
 Page({
   data: {
@@ -132,6 +134,7 @@ Page({
     showAvatarCropper: false,
     avatarCropSrc: '',
     latestAvatarUrl: '',
+    lastSafeAvatarUrl: '',
     uploadingAvatar: false
   },
 
@@ -289,6 +292,15 @@ Page({
         filePath: tempFilePath,
       });
       if (result.fileID) {
+        try {
+          await this.verifyUploadedAvatarSafety(result.fileID);
+        } catch (error) {
+          if (wx.cloud.deleteFile) {
+            wx.cloud.deleteFile({ fileList: [result.fileID] }).catch(() => null);
+          }
+          throw error;
+        }
+
         // 先用本地临时路径让界面立即刷新
         this.setData({
           'userInfo.avatarUrl': tempFilePath,
@@ -368,7 +380,11 @@ Page({
           title: '头像已更新',
           icon: 'success',
         });
-        this.setData({ uploadingAvatar: false, latestAvatarUrl: avatarUrl });
+        this.setData({
+          uploadingAvatar: false,
+          latestAvatarUrl: avatarUrl,
+          lastSafeAvatarUrl: avatarUrl
+        });
         if (options.closeAfter) {
           this.hideAvatarCropper();
         }
@@ -376,16 +392,53 @@ Page({
         this.getBabyInfo(true);
       }
     } catch (error) {
+      const safeAvatarUrl = this.data.lastSafeAvatarUrl
+        || this.data.babyInfo.avatarUrl
+        || this.data.userInfo.avatarUrl
+        || this.data.defaultAvatarUrl;
+      const app = getApp();
+      app.globalData.userInfo = {
+        ...(app.globalData.userInfo || {}),
+        avatarUrl: safeAvatarUrl
+      };
+      app.globalData.babyInfo = {
+        ...(app.globalData.babyInfo || {}),
+        avatarUrl: safeAvatarUrl
+      };
       wx.hideLoading();
       wx.showToast({
-        title: '上传失败，请重试',
+        title: error.message || '上传失败，请重试',
         icon: 'none',
       });
-      this.setData({ uploadingAvatar: false });
+      this.setData({
+        'userInfo.avatarUrl': safeAvatarUrl,
+        'babyInfo.avatarUrl': safeAvatarUrl,
+        latestAvatarUrl: '',
+        uploadingAvatar: false
+      });
       if (options.closeAfter) {
         this.hideAvatarCropper();
       }
     }
+  },
+
+  async verifyUploadedAvatarSafety(avatarFileId) {
+    const res = await wx.cloud.callFunction({
+      name: 'checkAvatarSecurity',
+      data: {
+        avatarFileId
+      }
+    });
+    const result = res && res.result;
+    if (!result || !result.ok) {
+      const isRisk = result?.code === 'AVATAR_SECURITY_RISK';
+      const error = new Error(result?.message || (isRisk
+        ? AVATAR_SECURITY_RISK_MESSAGE
+        : AVATAR_SECURITY_CHECK_FAILED_MESSAGE));
+      error.code = isRisk ? 'AVATAR_SECURITY_RISK' : 'AVATAR_SECURITY_CHECK_FAILED';
+      throw error;
+    }
+    return true;
   },
   
   // 处理选择头像按钮点击
@@ -431,11 +484,15 @@ Page({
   onAvatarCropped(e) {
     const tempFilePath = e.detail.tempFilePath;
     const finish = (path) => {
+      const lastSafeAvatarUrl = this.data.babyInfo.avatarUrl
+        || this.data.userInfo.avatarUrl
+        || this.data.defaultAvatarUrl;
       // 本地先刷新头像
       this.setData({
         'userInfo.avatarUrl': path,
         'babyInfo.avatarUrl': path,
         latestAvatarUrl: path,
+        lastSafeAvatarUrl,
         uploadingAvatar: true
       });
       const app = getApp();

@@ -1,4 +1,6 @@
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
+const AVATAR_SECURITY_RISK_MESSAGE = '头像含有违规内容，请更换后再试';
+const AVATAR_SECURITY_CHECK_FAILED_MESSAGE = '头像安全检测失败，请稍后重试';
 
 Page({
   data: {
@@ -526,6 +528,9 @@ Page({
           avatarFileId = uploaded.avatarFileId;
           this.writeAvatarCache(babyUid, avatarUrl, avatarFileId);
         } catch (avatarErr) {
+          if (avatarErr && (avatarErr.code === 'AVATAR_SECURITY_RISK' || avatarErr.code === 'AVATAR_SECURITY_CHECK_FAILED')) {
+            throw avatarErr;
+          }
           console.warn('保存时上传头像失败，回退默认头像:', avatarErr);
           avatarUrl = this.data.defaultAvatarUrl;
           avatarFileId = '';
@@ -679,6 +684,13 @@ Page({
         errorMsg = '保存宝宝信息失败: 数据库集合不存在，请联系客服';
       } else if (error.message) {
         errorMsg = error.message;
+      }
+
+      if (error.code === 'AVATAR_SECURITY_RISK' || error.code === 'AVATAR_SECURITY_CHECK_FAILED') {
+        this.setData({
+          'babyInfo.avatarUrl': this.data.defaultAvatarUrl,
+          pendingAvatarPath: ''
+        });
       }
       
       wx.showToast({
@@ -905,11 +917,38 @@ Page({
     if (!result.fileID) {
       throw new Error('上传失败');
     }
+    try {
+      await this.verifyUploadedAvatarSafety(result.fileID);
+    } catch (error) {
+      if (wx.cloud.deleteFile) {
+        wx.cloud.deleteFile({ fileList: [result.fileID] }).catch(() => null);
+      }
+      throw error;
+    }
     const { fileList } = await wx.cloud.getTempFileURL({
       fileList: [{ fileID: result.fileID, maxAge: 604800 }],
       config: { env: cloudEnvId }
     });
     return { avatarUrl: fileList[0].tempFileURL, avatarFileId: result.fileID };
+  },
+
+  async verifyUploadedAvatarSafety(avatarFileId) {
+    const res = await wx.cloud.callFunction({
+      name: 'checkAvatarSecurity',
+      data: {
+        avatarFileId
+      }
+    });
+    const result = res && res.result;
+    if (!result || !result.ok) {
+      const isRisk = result?.code === 'AVATAR_SECURITY_RISK';
+      const error = new Error(result?.message || (isRisk
+        ? AVATAR_SECURITY_RISK_MESSAGE
+        : AVATAR_SECURITY_CHECK_FAILED_MESSAGE));
+      error.code = isRisk ? 'AVATAR_SECURITY_RISK' : 'AVATAR_SECURITY_CHECK_FAILED';
+      throw error;
+    }
+    return true;
   },
 
   // 写头像缓存键（让首页/我的页能立即拿到新头像）
@@ -990,7 +1029,7 @@ Page({
       console.error('上传头像失败:', error);
       wx.hideLoading();
       wx.showToast({
-        title: '上传失败，请重试',
+        title: error.message || '上传失败，请重试',
         icon: 'none',
       });
       this.setData({ uploadingAvatar: false });
