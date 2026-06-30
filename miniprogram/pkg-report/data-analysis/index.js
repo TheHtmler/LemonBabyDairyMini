@@ -28,6 +28,14 @@ const FAT_RATIO_POPUP_LINES = [
   '1-2岁: 30%-35%',
   '>6岁: 25%-30%'
 ];
+const MAX_CUSTOM_RANGE_DAYS = 31;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const RANGE_PRESETS = [
+  { key: 'last7', label: '近一周', days: 7 },
+  { key: 'last14', label: '近两周', days: 14 },
+  { key: 'last30', label: '近一个月', days: 30 }
+];
+const DEFAULT_RANGE_PRESET = 'last7';
 
 function roundNumber(value, precision = 2) {
   if (isNaN(value)) return 0;
@@ -39,6 +47,49 @@ function roundCalories(value) {
   const num = Number(value);
   if (isNaN(num)) return 0;
   return Math.round(num);
+}
+
+function formatDateKeyValue(date) {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateKey(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+function getInclusiveDayCount(startDate, endDate) {
+  const startUtc = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endUtc = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  return Math.floor((endUtc - startUtc) / ONE_DAY_MS) + 1;
+}
+
+function getRangePresetConfig(preset) {
+  return RANGE_PRESETS.find(item => item.key === preset) || RANGE_PRESETS[0];
+}
+
+function calculateRecentDateRange(days, referenceDate = new Date()) {
+  const safeDays = Math.max(1, Number(days) || 1);
+  const endDate = new Date(referenceDate);
+  endDate.setHours(23, 59, 59, 999);
+  const startDate = new Date(endDate);
+  startDate.setDate(endDate.getDate() - safeDays + 1);
+  startDate.setHours(0, 0, 0, 0);
+  return { startDate, endDate };
 }
 
 function calculateMacroEnergyRatios({ protein = 0, carbs = 0, fat = 0 } = {}) {
@@ -216,7 +267,109 @@ function dedupeIntakes(intakes = []) {
 
 function hasAnalysisContent(record = {}) {
   return (Array.isArray(record.feedings) && record.feedings.length > 0) ||
-    (Array.isArray(record.intakes) && record.intakes.length > 0);
+    (Array.isArray(record.intakes) && record.intakes.length > 0) ||
+    hasDailySummaryNutritionContent(record.dailySummaryV2);
+}
+
+function hasDailySummaryNutritionContent(summary = {}) {
+  const macro = summary.macroSummary || {};
+  const milk = summary.milk || {};
+  const food = summary.food || {};
+  const treatment = summary.treatment || {};
+  return [
+    macro.calories,
+    macro.protein,
+    macro.naturalProtein,
+    macro.specialProtein,
+    macro.carbs,
+    macro.fat,
+    milk.calories,
+    milk.naturalProtein,
+    milk.specialProtein,
+    food.calories,
+    food.naturalProtein,
+    food.specialProtein,
+    treatment.calories,
+    treatment.totalCalories,
+    treatment.protein,
+    treatment.carbs,
+    treatment.fat
+  ].some(value => Number(value) > 0);
+}
+
+function getTreatmentCalories(treatment = {}) {
+  return Number(treatment.calories ?? treatment.totalCalories) || 0;
+}
+
+function buildAnalysisSummaryFromDailySummary(summary = {}) {
+  if (!hasDailySummaryNutritionContent(summary)) {
+    return null;
+  }
+
+  const macro = summary.macroSummary || {};
+  const milk = summary.milk || {};
+  const food = summary.food || {};
+  const treatment = summary.treatment || {};
+  const milkNaturalProtein = Number(milk.naturalProtein) || 0;
+  const foodPremiumProtein = Number(food.premiumProtein) || 0;
+  const foodRegularProtein = Number(food.regularProtein) || 0;
+  const foodNaturalProtein = Number(food.naturalProtein) || 0;
+  const regularProtein = foodRegularProtein || Math.max(0, foodNaturalProtein - foodPremiumProtein);
+
+  return {
+    calories: roundCalories(Number(macro.calories) || (
+      (Number(milk.calories) || 0) + (Number(food.calories) || 0) + getTreatmentCalories(treatment)
+    )),
+    naturalProtein: roundNumber(Number(macro.naturalProtein) || (
+      milkNaturalProtein + foodNaturalProtein
+    ), 2),
+    specialProtein: roundNumber(Number(macro.specialProtein) || (
+      (Number(milk.specialProtein) || 0) + (Number(food.specialProtein) || 0)
+    ), 2),
+    premiumProtein: roundNumber(milkNaturalProtein + foodPremiumProtein, 2),
+    regularProtein: roundNumber(regularProtein, 2),
+    carbs: roundNumber(Number(macro.carbs) || (
+      (Number(milk.carbs) || 0) + (Number(food.carbs) || 0) + (Number(treatment.carbs) || 0)
+    ), 2),
+    fat: roundNumber(Number(macro.fat) || (
+      (Number(milk.fat) || 0) + (Number(food.fat) || 0) + (Number(treatment.fat) || 0)
+    ), 2),
+    milkCalories: roundCalories(Number(milk.calories) || 0),
+    foodCalories: roundCalories(Number(food.calories) || 0),
+    treatmentCalories: roundCalories(getTreatmentCalories(treatment)),
+    treatmentProtein: roundNumber(Number(treatment.protein) || 0, 2)
+  };
+}
+
+function isFreshDailySummary(summary = {}) {
+  return !!summary?.date && summary.isDirty !== true;
+}
+
+function normalizeAnalysisFoodIntake(record = {}) {
+  const nutrition = record.nutrition || {};
+  const protein = Number(nutrition.protein) || 0;
+  const proteinSource = record.proteinSource || record.foodSnapshot?.proteinSource || 'natural';
+  const naturalProtein = typeof nutrition.naturalProtein === 'number'
+    ? nutrition.naturalProtein
+    : (typeof record.naturalProtein === 'number' ? record.naturalProtein : (proteinSource === 'special' ? 0 : protein));
+  const specialProtein = typeof nutrition.specialProtein === 'number'
+    ? nutrition.specialProtein
+    : (typeof record.specialProtein === 'number' ? record.specialProtein : (proteinSource === 'special' ? protein : 0));
+
+  return {
+    ...record,
+    type: record.type || 'food',
+    nameSnapshot: record.nameSnapshot || record.foodName || record.foodSnapshot?.name || '食物记录',
+    proteinSource,
+    proteinQuality: record.proteinQuality || record.foodSnapshot?.proteinQuality || '',
+    naturalProtein,
+    specialProtein,
+    nutrition: {
+      ...nutrition,
+      naturalProtein,
+      specialProtein
+    }
+  };
 }
 
 function hasFoodSummaryContent(food = {}) {
@@ -283,7 +436,7 @@ function buildMilkSummaryFeeding(summary = {}) {
 
 function dailySummaryToAnalysisRecord(summary = {}, options = {}) {
   const food = summary.food || {};
-  const foodIntakes = hasFoodSummaryContent(food)
+  const foodIntakes = options.includeFoodSummary !== false && hasFoodSummaryContent(food)
     ? [{
       _id: `daily-summary-food-${summary.date || summary._id || ''}`,
       type: 'food',
@@ -347,6 +500,7 @@ function mergeDailyAnalysisRecord(existing, record = {}) {
     ...record,
     date: existing.date || record.date,
     basicInfo: mergeFilledFields(existing.basicInfo, record.basicInfo),
+    hasRawNutritionDetails: existing.hasRawNutritionDetails === true || record.hasRawNutritionDetails === true,
     feedings: [
       ...(Array.isArray(existing.feedings) ? existing.feedings : []),
       ...(Array.isArray(record.feedings) ? record.feedings : [])
@@ -510,18 +664,24 @@ function calculateMilkNutrition(feeding, nutritionSettings = {}) {
 
 Page({
   data: {
-    // 时间维度选择
-    timeDimension: 'week', // 'week' 或 'month'
-    selectedWeek: 0, // 0表示本周，-1表示上周
-    selectedMonth: 0, // 0表示本月，-1表示上月
+    // 日期范围选择
+    rangePreset: DEFAULT_RANGE_PRESET,
+    rangePresets: RANGE_PRESETS,
+    customRangeActive: false,
+    customRangeStartKey: '',
+    customRangeEndKey: '',
     
     // 日期范围显示
     dateRangeText: '',
     
     // 日期选择器
     showDatePicker: false,
+    datePickerMode: 'custom',
     pickerYear: new Date().getFullYear(),
     pickerMonth: new Date().getMonth() + 1,
+    pickerRangeStartKey: '',
+    pickerRangeEndKey: '',
+    todayDateKey: formatDateKeyValue(new Date()),
     months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     
     // 图表数据
@@ -688,8 +848,7 @@ Page({
     try {
       this.setData(isInitialLoad ? { loading: true } : { refreshing: true });
       
-      const { timeDimension, selectedWeek, selectedMonth } = this.data;
-      const { startDate, endDate } = this.calculateDateRange(timeDimension, selectedWeek, selectedMonth);
+      const { startDate, endDate } = this.calculateDateRange();
       
       // 更新日期范围文本
       this.updateDateRangeText(startDate, endDate);
@@ -729,7 +888,36 @@ Page({
   },
 
   // 计算日期范围
-  calculateDateRange(timeDimension, weekOffset, monthOffset) {
+  calculateDateRange(timeDimension, weekOffset = 0, monthOffset = 0) {
+    if (timeDimension === 'week' || timeDimension === 'month') {
+      return this.calculateLegacyDateRange(timeDimension, weekOffset, monthOffset);
+    }
+
+    const today = new Date();
+    let startDate;
+    let endDate;
+    if (this.data.customRangeActive) {
+      startDate = parseDateKey(this.data.customRangeStartKey);
+      endDate = parseDateKey(this.data.customRangeEndKey);
+    }
+
+    if (!startDate || !endDate) {
+      const preset = getRangePresetConfig(this.data.rangePreset || DEFAULT_RANGE_PRESET);
+      ({ startDate, endDate } = calculateRecentDateRange(preset.days, today));
+    }
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+    if (endDate > todayEnd) {
+      endDate = todayEnd;
+    }
+
+    return { startDate, endDate };
+  },
+
+  calculateLegacyDateRange(timeDimension, weekOffset = 0, monthOffset = 0) {
     const today = new Date();
     let startDate, endDate;
     
@@ -756,14 +944,6 @@ Page({
       // 结束日期为该月最后一天（无论是否当前月）
       endDate = new Date(year, month + 1, 0);
       endDate.setHours(23, 59, 59, 999);
-      
-      console.log('======== 月视图日期计算 ========');
-      console.log('今天:', today);
-      console.log('monthOffset:', monthOffset);
-      console.log('计算的年月:', year, '年', month + 1, '月');
-      console.log('startDate:', startDate);
-      console.log('endDate:', endDate);
-      console.log('月视图日期范围:', this.formatDateKey(startDate), '到', this.formatDateKey(endDate));
     }
 
     const todayEnd = new Date(today);
@@ -778,21 +958,9 @@ Page({
 
   // 更新日期范围文本
   updateDateRangeText(startDate, endDate) {
-    const { timeDimension } = this.data;
-    let dateRangeText = '';
-    
-    if (timeDimension === 'month') {
-      // 月维度：只显示年月，如"2025年10月"
-      dateRangeText = `${startDate.getFullYear()}年${startDate.getMonth() + 1}月`;
-    } else {
-      // 周维度：显示完整日期范围
-      const formatDate = (date) => {
-        return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-      };
-      dateRangeText = `${formatDate(startDate)} - ${formatDate(endDate)}`;
-    }
-    
-    this.setData({ dateRangeText });
+    this.setData({
+      dateRangeText: `${this.formatFullDate(startDate)} - ${this.formatFullDate(endDate)}`
+    });
   },
 
   // 从数据库获取喂养记录
@@ -822,13 +990,35 @@ Page({
       const startKey = this.formatDateKey(queryStartDate);
       const endKey = this.formatDateKey(queryEndDate);
       const summaryRecords = await DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, endKey, {
-        rebuildMissing: true
+        rebuildMissing: false
       });
-      const canUseSummaryMilkOnly = summaryRecords.every(summary => !summaryNeedsMilkRecordFallback(summary));
+      const dateKeys = this.generateDateList(queryStartDate, queryEndDate).map(date => this.formatDateKey(date));
+      const freshSummaryRecords = (summaryRecords || []).filter(isFreshDailySummary);
+      const allDateSet = new Set(dateKeys);
+      const rawRecords = await this.loadRawAnalysisRecordsForRange(babyUid, startKey, endKey, allDateSet);
+      const rawMilkDateSet = new Set();
+      const rawFoodDateSet = new Set();
+      rawRecords.forEach(record => {
+        const dateKey = normalizeDateKey(record.date);
+        if (Array.isArray(record.feedings) && record.feedings.length > 0) {
+          rawMilkDateSet.add(dateKey);
+        }
+        if (Array.isArray(record.intakes) && record.intakes.length > 0) {
+          rawFoodDateSet.add(dateKey);
+        }
+      });
 
       const mergedMap = new Map();
-      summaryRecords
-        .map(summary => dailySummaryToAnalysisRecord(summary, { includeMilkSummary: canUseSummaryMilkOnly }))
+      freshSummaryRecords
+        .map(summary => {
+          const dateKey = normalizeDateKey(summary.date);
+          const includeMilkSummary = !rawMilkDateSet.has(dateKey) && !summaryNeedsMilkRecordFallback(summary);
+          const includeFoodSummary = !rawFoodDateSet.has(dateKey);
+          return dailySummaryToAnalysisRecord(summary, {
+            includeMilkSummary,
+            includeFoodSummary
+          });
+        })
         .forEach(record => {
           if (!record) return;
           const key = normalizeDateKey(record.date);
@@ -838,14 +1028,11 @@ Page({
       
       console.log('分页查询完成，总共:', allData.length, '条');
 
-      // 新 summary 可直接提供奶量拆分；老 summary 缺字段时再回退读取 v2 明细。
-      if (!canUseSummaryMilkOnly) {
-        const v2MilkRecords = await this.loadV2MilkRecordsForRange(babyUid, startKey, endKey);
-        const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
-        v2MilkByDate.forEach((dailyRecord, dateKey) => {
-          mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), dailyRecord));
-        });
-      }
+      rawRecords.forEach(record => {
+        const dateKey = normalizeDateKey(record.date);
+        if (dateKey === 'unknown') return;
+        mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), record));
+      });
       allData = Array.from(mergedMap.values()).filter(hasAnalysisContent);
       
       // 在前端排序，兼容 Date 和 YYYY-MM-DD 字符串两种日期形态
@@ -904,6 +1091,9 @@ Page({
     try {
       const db = wx.cloud.database();
       const _ = db.command;
+      if (typeof db.collection !== 'function' || !_?.gte || !_?.lte) {
+        return [];
+      }
       const MAX_LIMIT = 20;
       let all = [];
       let skip = 0;
@@ -929,6 +1119,89 @@ Page({
       return all;
     } catch (error) {
       console.warn('加载 v2 喂奶记录失败，奶统计降级为旧数据:', error);
+      return [];
+    }
+  },
+
+  async loadFoodIntakeRecordsForRange(babyUid, startKey, endKey) {
+    if (!babyUid || !startKey || !endKey) {
+      return [];
+    }
+    try {
+      const db = wx.cloud.database();
+      const _ = db.command;
+      if (typeof db.collection !== 'function' || !_?.gte || !_?.lte) {
+        return [];
+      }
+      const MAX_LIMIT = 20;
+      let all = [];
+      let skip = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await db.collection('food_intake_records')
+          .where({
+            babyUid,
+            status: 'active',
+            date: _.gte(startKey).and(_.lte(endKey))
+          })
+          .orderBy('date', 'asc')
+          .skip(skip)
+          .limit(MAX_LIMIT)
+          .get();
+        const batch = res.data || [];
+        all = all.concat(batch);
+        skip += batch.length;
+        if (batch.length < MAX_LIMIT) {
+          hasMore = false;
+        }
+      }
+      return all.map(normalizeAnalysisFoodIntake);
+    } catch (error) {
+      console.warn('加载区间食物记录失败，食物统计将仅使用汇总数据:', error);
+      return [];
+    }
+  },
+
+  async loadRawAnalysisRecordsForRange(babyUid, startKey, endKey, targetDateSet = new Set()) {
+    if (!babyUid || !startKey || !endKey || targetDateSet.size === 0) {
+      return [];
+    }
+    try {
+      const [v2MilkRecords, foodIntakeRecords] = await Promise.all([
+        this.loadV2MilkRecordsForRange(babyUid, startKey, endKey),
+        this.loadFoodIntakeRecordsForRange(babyUid, startKey, endKey)
+      ]);
+
+      const mergedMap = new Map();
+      const v2MilkByDate = groupV2FeedingRecordsByDate(v2MilkRecords, babyUid);
+      v2MilkByDate.forEach((dailyRecord, dateKey) => {
+        if (!targetDateSet.has(dateKey)) return;
+        mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), {
+          ...dailyRecord,
+          hasRawNutritionDetails: true
+        }));
+      });
+
+      foodIntakeRecords.forEach(intake => {
+        const dateKey = normalizeDateKey(intake.date);
+        if (!targetDateSet.has(dateKey)) return;
+        const record = {
+          _id: `raw-food-${dateKey}`,
+          id: `raw-food-${dateKey}`,
+          babyUid,
+          date: dateKey,
+          basicInfo: {},
+          feedings: [],
+          intakes: [intake],
+          source: 'raw_range_fallback',
+          hasRawNutritionDetails: true
+        };
+        mergedMap.set(dateKey, mergeDailyAnalysisRecord(mergedMap.get(dateKey), record));
+      });
+
+      return Array.from(mergedMap.values());
+    } catch (error) {
+      console.warn('区间原始记录兜底加载失败，数据分析将仅使用已有汇总:', error);
       return [];
     }
   },
@@ -1228,8 +1501,9 @@ Page({
       
       const hasFeedings = record && record.feedings && record.feedings.length > 0;
       const hasIntakes = record && Array.isArray(record.intakes) && record.intakes.length > 0;
+      const hasDailySummaryNutrition = record && hasDailySummaryNutritionContent(record.dailySummaryV2);
 
-      if ((record && (hasFeedings || hasIntakes)) || hasTreatmentNutrition) {
+      if ((record && (hasFeedings || hasIntakes || hasDailySummaryNutrition)) || hasTreatmentNutrition) {
         const analysisRecord = record || {};
         // 计算当天的总量
         let dayNaturalMilk = 0;
@@ -1452,10 +1726,11 @@ Page({
 
   // 格式化日期作为键
   formatDateKey(date) {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return formatDateKeyValue(date);
+  },
+
+  formatFullDate(date) {
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   },
 
   // 格式化日期显示
@@ -1466,6 +1741,13 @@ Page({
   },
 
   calculateDailySummary(record, treatmentRecords = []) {
+    if (record.hasRawNutritionDetails !== true) {
+      const dailySummary = buildAnalysisSummaryFromDailySummary(record.dailySummaryV2);
+      if (dailySummary) {
+        return dailySummary;
+      }
+    }
+
     const nutritionSettings = this.data.nutritionSettings || {};
     const intakes = Array.isArray(record.intakes) ? record.intakes : [];
 
@@ -1655,6 +1937,23 @@ Page({
     });
   },
 
+  onRangePresetTap(e) {
+    const preset = e.currentTarget.dataset.preset;
+    if (!RANGE_PRESETS.some(item => item.key === preset)) {
+      return;
+    }
+    if (!this.data.customRangeActive && this.data.rangePreset === preset) {
+      return;
+    }
+    this.setData({
+      rangePreset: preset,
+      customRangeActive: false,
+      customRangeStartKey: '',
+      customRangeEndKey: ''
+    });
+    this.loadAnalysisData();
+  },
+
   // 切换时间维度
   onTimeDimensionChange(e) {
     const dimension = e.currentTarget.dataset.dimension;
@@ -1666,7 +1965,8 @@ Page({
     this.setData({
       timeDimension: dimension,
       selectedWeek: 0,
-      selectedMonth: 0
+      selectedMonth: 0,
+      customRangeActive: false
     });
     
     this.loadAnalysisData();
@@ -1678,6 +1978,12 @@ Page({
     
     if (timeDimension === 'week') {
       this.setData({ selectedWeek: selectedWeek - 1 });
+    } else if (this.data.customRangeActive) {
+      const anchorDate = parseDateKey(this.data.customRangeStartKey) || new Date();
+      this.setData({
+        selectedMonth: this.getMonthOffsetFromDate(anchorDate) - 1,
+        customRangeActive: false
+      });
     } else {
       this.setData({ selectedMonth: selectedMonth - 1 });
     }
@@ -1691,7 +1997,7 @@ Page({
     
     // 不能查看未来数据
     if ((timeDimension === 'week' && selectedWeek >= 0) ||
-        (timeDimension === 'month' && selectedMonth >= 0)) {
+        (timeDimension === 'month' && !this.data.customRangeActive && selectedMonth >= 0)) {
       wx.showToast({
         title: '已是最新数据',
         icon: 'none'
@@ -1701,6 +2007,20 @@ Page({
     
     if (timeDimension === 'week') {
       this.setData({ selectedWeek: selectedWeek + 1 });
+    } else if (this.data.customRangeActive) {
+      const anchorDate = parseDateKey(this.data.customRangeEndKey) || new Date();
+      const nextMonthOffset = this.getMonthOffsetFromDate(anchorDate) + 1;
+      if (nextMonthOffset > 0) {
+        wx.showToast({
+          title: '已是最新数据',
+          icon: 'none'
+        });
+        return;
+      }
+      this.setData({
+        selectedMonth: nextMonthOffset,
+        customRangeActive: false
+      });
     } else {
       this.setData({ selectedMonth: selectedMonth + 1 });
     }
@@ -1710,23 +2030,18 @@ Page({
 
   // 打开日期选择器（仅月视图）
   onDatePicker() {
-    const { timeDimension } = this.data;
-    
-    // 只在月视图下才打开选择器
-    if (timeDimension !== 'month') {
-      return;
-    }
-    
-    // 初始化选择器的年月为当前选择的月份
     const now = new Date();
-    const { selectedMonth } = this.data;
-    const targetDate = new Date(now);
-    targetDate.setMonth(now.getMonth() + selectedMonth);
+    const { customRangeActive } = this.data;
+    const { startDate, endDate } = this.calculateDateRange();
     
     this.setData({
       showDatePicker: true,
-      pickerYear: targetDate.getFullYear(),
-      pickerMonth: targetDate.getMonth() + 1
+      datePickerMode: 'custom',
+      pickerYear: now.getFullYear(),
+      pickerMonth: now.getMonth() + 1,
+      pickerRangeStartKey: customRangeActive ? this.data.customRangeStartKey : this.formatDateKey(startDate),
+      pickerRangeEndKey: customRangeActive ? this.data.customRangeEndKey : this.formatDateKey(endDate),
+      todayDateKey: this.formatDateKey(now)
     });
   },
 
@@ -1766,26 +2081,86 @@ Page({
     });
   },
 
+  onDatePickerModeChange(e) {
+    const mode = e.currentTarget.dataset.mode;
+    if (mode !== 'month' && mode !== 'custom') {
+      return;
+    }
+    this.setData({
+      datePickerMode: mode
+    });
+  },
+
+  onRangeStartChange(e) {
+    this.setData({
+      pickerRangeStartKey: e.detail.value
+    });
+  },
+
+  onRangeEndChange(e) {
+    this.setData({
+      pickerRangeEndKey: e.detail.value
+    });
+  },
+
+  getMonthOffsetFromDate(date) {
+    const now = new Date();
+    return (date.getFullYear() - now.getFullYear()) * 12 + (date.getMonth() - now.getMonth());
+  },
+
   // 确认日期选择
   onDatePickerConfirm() {
-    const { pickerYear, pickerMonth } = this.data;
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    
-    // 月视图：计算月份偏移
-    const selectedDate = new Date(pickerYear, pickerMonth - 1, 1);
-    const currentDate = new Date(currentYear, currentMonth - 1, 1);
-    
-    const monthDiff = (selectedDate.getFullYear() - currentDate.getFullYear()) * 12 
-                      + (selectedDate.getMonth() - currentDate.getMonth());
-    
+    this.confirmCustomRange();
+  },
+
+  confirmCustomRange() {
+    const { pickerRangeStartKey, pickerRangeEndKey } = this.data;
+    const startDate = parseDateKey(pickerRangeStartKey);
+    const endDate = parseDateKey(pickerRangeEndKey);
+    if (!startDate || !endDate) {
+      wx.showToast({
+        title: '请选择完整日期',
+        icon: 'none'
+      });
+      return;
+    }
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    if (startDate > endDate) {
+      wx.showToast({
+        title: '开始日期不能晚于结束日期',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    if (endDate > todayEnd) {
+      wx.showToast({
+        title: '不能选择未来日期',
+        icon: 'none'
+      });
+      return;
+    }
+
+    if (getInclusiveDayCount(startDate, endDate) > MAX_CUSTOM_RANGE_DAYS) {
+      wx.showToast({
+        title: '最多选择31天',
+        icon: 'none'
+      });
+      return;
+    }
+
     this.setData({
-      selectedMonth: monthDiff,
+      customRangeActive: true,
+      rangePreset: 'custom',
+      customRangeStartKey: this.formatDateKey(startDate),
+      customRangeEndKey: this.formatDateKey(endDate),
       showDatePicker: false
     });
-    
-    // 加载新数据
+
     this.loadAnalysisData();
   },
 
@@ -1797,7 +2172,8 @@ Page({
   },
 
   getChartXAxisLabelInterval() {
-    return this.data.timeDimension === 'month' ? 5 : 1;
+    const rangeDays = Number(this.data.statistics?.rangeDays) || 0;
+    return rangeDays > 14 ? 5 : 1;
   },
 
   // 初始化奶量统计图表

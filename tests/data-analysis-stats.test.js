@@ -617,6 +617,167 @@ test('data-analysis uses selected range date to show one fat energy reference', 
   assert.equal(instance.data.referenceRanges.fatEnergy, '1-2岁: 30%-35%');
 });
 
+test('data-analysis defaults to recent 7 days instead of natural week', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => {
+    const range = instance.calculateDateRange();
+
+    assert.equal(instance.formatDateKey(range.startDate), '2026-06-09');
+    assert.equal(instance.formatDateKey(range.endDate), '2026-06-15');
+  });
+});
+
+test('data-analysis applies recent range presets through date range state', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  let loadCalls = 0;
+  instance.loadAnalysisData = () => {
+    loadCalls++;
+  };
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => {
+    instance.onRangePresetTap({
+      currentTarget: {
+        dataset: {
+          preset: 'last14'
+        }
+      }
+    });
+
+    const range = instance.calculateDateRange();
+
+    assert.equal(instance.data.rangePreset, 'last14');
+    assert.equal(instance.data.customRangeActive, false);
+    assert.equal(instance.formatDateKey(range.startDate), '2026-06-02');
+    assert.equal(instance.formatDateKey(range.endDate), '2026-06-15');
+    assert.equal(loadCalls, 1);
+  });
+});
+
+test('data-analysis uses daily summary macro totals over merged fallback details', () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  const date = new Date('2026-03-20T00:00:00+08:00');
+
+  withMutedConsole(() => instance.processAnalysisData([
+    {
+      date,
+      basicInfo: { weight: 5 },
+      source: 'daily_summary_v2',
+      dailySummaryV2: {
+        date: '2026-03-20',
+        milk: {
+          calories: 80,
+          naturalProtein: 0.7,
+          specialProtein: 1.3,
+          carbs: 6,
+          fat: 3
+        },
+        food: {
+          calories: 20,
+          naturalProtein: 2,
+          specialProtein: 0,
+          premiumProtein: 0,
+          regularProtein: 2,
+          carbs: 2,
+          fat: 1
+        },
+        treatment: {
+          calories: 100,
+          protein: 0,
+          carbs: 25,
+          fat: 0
+        },
+        macroSummary: {
+          calories: 200,
+          protein: 4,
+          naturalProtein: 2.7,
+          specialProtein: 1.3,
+          carbs: 33,
+          fat: 4
+        }
+      },
+      feedings: [
+        {
+          isV2FeedingRecord: true,
+          naturalMilkVolume: 59,
+          specialMilkVolume: 61,
+          nutritionDisplay: {
+            calories: 999,
+            naturalProtein: 9,
+            specialProtein: 9,
+            carbs: 9,
+            fat: 9
+          }
+        }
+      ],
+      intakes: []
+    }
+  ], date, date));
+
+  assert.equal(instance.data.chartData.totalCalories[0], 200);
+  assert.equal(instance.data.chartData.totalProteinCoefficient[0], 0.8);
+  assert.equal(instance.data.statistics.avgMilkCalories, 80);
+  assert.equal(instance.data.statistics.avgFoodCalories, 20);
+  assert.equal(instance.data.statistics.avgTreatmentCalories, 100);
+});
+
+test('data-analysis prefers raw nutrition details over stale daily summary cache', () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  const date = new Date('2026-06-20T00:00:00+08:00');
+
+  withMutedConsole(() => instance.processAnalysisData([
+    {
+      date,
+      basicInfo: { weight: 5 },
+      source: 'daily_summary_v2',
+      hasRawNutritionDetails: true,
+      dailySummaryV2: {
+        date: '2026-06-20',
+        milk: {
+          totalVolume: 999,
+          naturalMilkVolume: 500,
+          specialMilkVolume: 499,
+          calories: 999,
+          naturalProtein: 9,
+          specialProtein: 9
+        },
+        macroSummary: {
+          calories: 999,
+          protein: 18,
+          naturalProtein: 9,
+          specialProtein: 9,
+          carbs: 90,
+          fat: 90
+        }
+      },
+      feedings: [
+        {
+          isV2FeedingRecord: true,
+          naturalMilkVolume: 60,
+          specialMilkVolume: 40,
+          nutritionDisplay: {
+            calories: 100,
+            naturalProtein: 0.66,
+            specialProtein: 0.79,
+            carbs: 6,
+            fat: 3
+          }
+        }
+      ],
+      intakes: []
+    }
+  ], date, date));
+
+  assert.equal(instance.data.chartData.milkVolumes[0], 100);
+  assert.equal(instance.data.chartData.totalCalories[0], 100);
+  assert.equal(instance.data.chartData.totalProteinCoefficient[0], 0.29);
+  assert.equal(instance.data.statistics.avgMilkCalories, 100);
+});
+
 test('data-analysis current period date ranges stop at today instead of future days', async () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
@@ -630,6 +791,112 @@ test('data-analysis current period date ranges stop at today instead of future d
     assert.equal(instance.formatDateKey(currentMonth.endDate), '2026-05-14');
     assert.equal(instance.formatDateKey(previousWeek.endDate), '2026-05-10');
   });
+});
+
+test('data-analysis uses custom date range when enabled', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page, {
+    customRangeActive: true,
+    customRangeStartKey: '2026-05-03',
+    customRangeEndKey: '2026-05-20'
+  });
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => {
+    const customRange = instance.calculateDateRange();
+    assert.equal(instance.formatDateKey(customRange.startDate), '2026-05-03');
+    assert.equal(instance.formatDateKey(customRange.endDate), '2026-05-20');
+
+    instance.updateDateRangeText(customRange.startDate, customRange.endDate);
+    assert.equal(instance.data.dateRangeText, '2026年5月3日 - 2026年5月20日');
+  });
+});
+
+test('data-analysis rejects custom date ranges longer than 31 days before loading', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page, {
+    timeDimension: 'month',
+    datePickerMode: 'custom',
+    pickerRangeStartKey: '2026-05-01',
+    pickerRangeEndKey: '2026-06-01',
+    showDatePicker: true
+  });
+  const toasts = [];
+  let loadCalls = 0;
+  instance.loadAnalysisData = () => {
+    loadCalls++;
+  };
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => withWxAndApp(
+    {
+      showToast(options) {
+        toasts.push(options);
+      }
+    },
+    { globalData: {} },
+    () => instance.onDatePickerConfirm()
+  ));
+
+  assert.equal(loadCalls, 0);
+  assert.equal(instance.data.customRangeActive, undefined);
+  assert.equal(toasts[0].title, '最多选择31天');
+});
+
+test('data-analysis confirms custom date range and loads once', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page, {
+    timeDimension: 'month',
+    datePickerMode: 'custom',
+    pickerRangeStartKey: '2026-05-10',
+    pickerRangeEndKey: '2026-06-09',
+    showDatePicker: true
+  });
+  let loadCalls = 0;
+  instance.loadAnalysisData = () => {
+    loadCalls++;
+  };
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => withWxAndApp(
+    {
+      showToast() {}
+    },
+    { globalData: {} },
+    () => instance.onDatePickerConfirm()
+  ));
+
+  assert.equal(loadCalls, 1);
+  assert.equal(instance.data.customRangeActive, true);
+  assert.equal(instance.data.customRangeStartKey, '2026-05-10');
+  assert.equal(instance.data.customRangeEndKey, '2026-06-09');
+  assert.equal(instance.data.showDatePicker, false);
+});
+
+test('data-analysis rejects incomplete custom range before loading', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page, {
+    datePickerMode: 'custom',
+    pickerRangeStartKey: '',
+    pickerRangeEndKey: '2026-06-10',
+    showDatePicker: true
+  });
+  const toasts = [];
+  let loadCalls = 0;
+  instance.loadAnalysisData = () => {
+    loadCalls++;
+  };
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => withWxAndApp(
+    {
+      showToast(options) {
+        toasts.push(options);
+      }
+    },
+    { globalData: {} },
+    () => instance.onDatePickerConfirm()
+  ));
+
+  assert.equal(loadCalls, 0);
+  assert.equal(toasts[0].title, '请选择完整日期');
+  assert.equal(instance.data.showDatePicker, true);
 });
 
 test('data-analysis keeps existing page visible during period refresh', async () => {
@@ -669,7 +936,9 @@ test('data-analysis redraws initialized charts after chartData changes', () => {
   const page = loadDataAnalysisPage();
   const drawnCharts = [];
   const instance = createPageInstance(page, {
-    timeDimension: 'month',
+    statistics: {
+      rangeDays: 31
+    },
     chartData: {
       dates: ['05-01', '05-02'],
       defaultCrosshairIndex: 1,
@@ -776,7 +1045,7 @@ test('data-analysis fetchFeedingRecords reads daily summaries through shared ser
         babyUid: 'baby_1',
         startDate: '2026-03-01',
         endDate: '2026-03-31',
-        options: { rebuildMissing: true }
+        options: { rebuildMissing: false }
       }]);
       return result;
     }))
@@ -890,4 +1159,255 @@ test('data-analysis uses daily_summary_v2 milk volume split without reading feed
   assert.equal(records[0].feedings[0].naturalMilkVolume, 59);
   assert.equal(records[0].feedings[0].specialMilkVolume, 61);
   assert.deepEqual(reads, []);
+});
+
+test('data-analysis fetchFeedingRecords reads raw details even when daily summary cache exists', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  const reads = [];
+  const summaryRecords = [
+    {
+      _id: 'stale-summary',
+      babyUid: 'baby_1',
+      date: '2026-06-20',
+      status: 'active',
+      isDirty: false,
+      basicInfo: { weight: 5 },
+      milk: {
+        totalVolume: 999,
+        naturalMilkVolume: 500,
+        specialMilkVolume: 499,
+        calories: 999,
+        naturalProtein: 9,
+        specialProtein: 9
+      },
+      macroSummary: {
+        calories: 999,
+        protein: 18,
+        naturalProtein: 9,
+        specialProtein: 9
+      }
+    }
+  ];
+  const dbMock = {
+    command: {
+      gte(value) {
+        return {
+          __op: 'gte',
+          value,
+          and(other) {
+            return { __op: 'and', conditions: [this, other] };
+          }
+        };
+      },
+      lte(value) {
+        return { __op: 'lte', value };
+      }
+    },
+    collection(name) {
+      const dataByCollection = {
+        feeding_records_v2: [{
+          _id: 'raw-milk',
+          babyUid: 'baby_1',
+          date: '2026-06-20',
+          status: 'active',
+          recordType: 'milk_feeding',
+          formulaComponents: [
+            {
+              kind: 'breast_milk',
+              volume: 60,
+              nutritionSnapshot: { calories: 67, protein: 1.1 }
+            },
+            {
+              kind: 'formula_powder',
+              proteinRole: 'special',
+              category: 'special_formula',
+              waterVolume: 40,
+              powderWeight: 6,
+              nutritionSnapshot: { calories: 480, protein: 13.1 }
+            }
+          ],
+          nutritionSummary: {
+            totalVolume: 100,
+            calories: 100,
+            protein: 1.45,
+            naturalProtein: 0.66,
+            specialProtein: 0.79,
+            carbs: 6,
+            fat: 3
+          }
+        }],
+        food_intake_records: []
+      };
+      return {
+        where() {
+          return this;
+        },
+        orderBy() {
+          return this;
+        },
+        skip() {
+          return this;
+        },
+        limit() {
+          return this;
+        },
+        get() {
+          reads.push(name);
+          return Promise.resolve({ data: dataByCollection[name] || [] });
+        }
+      };
+    }
+  };
+  const wxMock = {
+    getStorageSync() {
+      return 'baby_1';
+    },
+    showToast() {},
+    cloud: {
+      database() {
+        return dbMock;
+      }
+    }
+  };
+
+  const records = await withWxAndApp(
+    wxMock,
+    { globalData: { babyUid: 'baby_1' } },
+    () => withDailySummaryRangeStub(summaryRecords, () => withMutedConsole(() => instance.fetchFeedingRecords(
+      new Date('2026-06-20T00:00:00+08:00'),
+      new Date('2026-06-20T23:59:59+08:00')
+    )))
+  );
+
+  assert.deepEqual(reads, ['feeding_records_v2', 'food_intake_records']);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].hasRawNutritionDetails, true);
+  assert.equal(records[0].feedings.length, 1);
+  assert.equal(records[0].feedings[0].nutritionDisplay.calories, 100);
+});
+
+test('data-analysis batch reads raw records for missing daily summaries without rebuilding by day', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  const reads = [];
+  const dbMock = {
+    command: {
+      gte(value) {
+        return {
+          __op: 'gte',
+          value,
+          and(other) {
+            return {
+              __op: 'and',
+              conditions: [this, other]
+            };
+          }
+        };
+      },
+      lte(value) {
+        return {
+          __op: 'lte',
+          value
+        };
+      }
+    },
+    collection(name) {
+      const dataByCollection = {
+        feeding_records_v2: [{
+          _id: 'milk-1',
+          babyUid: 'baby_1',
+          date: '2026-03-21',
+          status: 'active',
+          recordType: 'milk_feeding',
+          startTime: '08:00',
+          formulaComponents: [{
+            kind: 'breast_milk',
+            volume: 60,
+            nutritionSnapshot: { calories: 67, protein: 1.1 }
+          }],
+          nutritionSummary: {
+            totalVolume: 60,
+            calories: 40,
+            protein: 0.66,
+            naturalProtein: 0.66,
+            specialProtein: 0
+          }
+        }],
+        food_intake_records: [{
+          _id: 'food-1',
+          babyUid: 'baby_1',
+          date: '2026-03-21',
+          status: 'active',
+          foodName: '苹果泥',
+          quantity: 20,
+          nutrition: {
+            calories: 10,
+            protein: 0.1,
+            naturalProtein: 0.1,
+            specialProtein: 0,
+            carbs: 2,
+            fat: 0
+          },
+          foodSnapshot: {
+            proteinQuality: 'regular'
+          }
+        }]
+      };
+      return {
+        where() {
+          return this;
+        },
+        orderBy() {
+          return this;
+        },
+        skip() {
+          return this;
+        },
+        limit() {
+          return this;
+        },
+        get() {
+          reads.push(name);
+          return Promise.resolve({ data: dataByCollection[name] || [] });
+        }
+      };
+    }
+  };
+  const wxMock = {
+    getStorageSync() {
+      return 'baby_1';
+    },
+    showToast() {},
+    cloud: {
+      database() {
+        return dbMock;
+      }
+    }
+  };
+
+  const records = await withWxAndApp(
+    wxMock,
+    { globalData: { babyUid: 'baby_1' } },
+    () => withDailySummaryRangeStub([], (calls) => withMutedConsole(async () => {
+      const result = await instance.fetchFeedingRecords(
+        new Date('2026-03-01T00:00:00+08:00'),
+        new Date('2026-03-31T23:59:59+08:00')
+      );
+      assert.deepEqual(calls, [{
+        babyUid: 'baby_1',
+        startDate: '2026-03-01',
+        endDate: '2026-03-31',
+        options: { rebuildMissing: false }
+      }]);
+      return result;
+    }))
+  );
+
+  assert.deepEqual(reads, ['feeding_records_v2', 'food_intake_records']);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].date, '2026-03-21');
+  assert.equal(records[0].feedings.length, 1);
+  assert.equal(records[0].intakes.length, 1);
+  assert.equal(records[0].intakes[0].naturalProtein, 0.1);
 });

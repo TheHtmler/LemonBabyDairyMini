@@ -22,14 +22,27 @@
 
 .crosshair-handle {
   position: absolute;
-  top: -8rpx;
+  bottom: -18rpx;
   left: 50%;
-  width: 14rpx;
-  height: 14rpx;
-  margin-left: -7rpx;
+  width: 28rpx;
+  height: 28rpx;
+  margin-left: -14rpx;
   border-radius: 50%;
   background: #ffb800;
-  box-shadow: 0 0 0 4rpx rgba(255, 184, 0, 0.2);
+  border: 4rpx solid #fff;
+  box-shadow: 0 0 0 8rpx rgba(255, 184, 0, 0.18), 0 8rpx 18rpx rgba(143, 103, 0, 0.18);
+}
+
+.crosshair-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54rpx;
+  height: 54rpx;
+  margin-left: -27rpx;
+  margin-top: -27rpx;
+  border-radius: 50%;
 }
 
 .tooltip {

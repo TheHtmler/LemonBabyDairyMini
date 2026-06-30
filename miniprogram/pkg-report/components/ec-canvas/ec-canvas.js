@@ -213,13 +213,8 @@ Component({
       const guideX = padding.left + xStep * dataIndex;
       const rectWidth = options.rectWidth || width || 0;
       const showTooltip = options.showTooltip !== false;
-      let tooltipX = options.touchX !== undefined ? options.touchX + 10 : guideX + 10;
-      let tooltipY = options.touchY !== undefined ? options.touchY - 60 : padding.top + tooltipTopOffset;
-
-      if (tooltipPlacement === 'top') {
-        tooltipX = guideX - tooltipWidth / 2;
-        tooltipY = padding.top + tooltipTopOffset;
-      }
+      let tooltipX = guideX - tooltipWidth / 2;
+      let tooltipY = padding.top + tooltipTopOffset;
 
       if (rectWidth && tooltipX + tooltipWidth > rectWidth) {
         tooltipX = rectWidth - tooltipWidth - 6;
@@ -227,10 +222,7 @@ Component({
       if (tooltipX < 6) {
         tooltipX = 6;
       }
-      if (tooltipPlacement !== 'top' && tooltipY < 10) {
-        tooltipY = options.touchY !== undefined ? options.touchY + 10 : padding.top + tooltipTopOffset;
-      }
-      if (tooltipPlacement === 'top' && tooltipY < 6) {
+      if (tooltipY < 6) {
         tooltipY = 6;
       }
 
@@ -1732,9 +1724,10 @@ Component({
             return;
           }
 
-          // 检查是否在图表区域内
+          // 底部手柄会略低于绘图区，允许用户在 X 轴附近拖动，减少手指遮挡 tooltip。
+          const bottomHandleTouchExtra = chartInfo.bottomHandleTouchExtra || 28;
           if (touchX < padding.left || touchX > padding.left + chartWidth ||
-              touchY < padding.top || touchY > padding.top + chartHeight) {
+              touchY < padding.top || touchY > padding.top + chartHeight + bottomHandleTouchExtra) {
             this.hideInteractionGuide();
             return;
           }

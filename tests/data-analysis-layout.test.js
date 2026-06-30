@@ -11,6 +11,14 @@ test('data-analysis page uses grouped dashboard layout', () => {
     require.resolve('../miniprogram/pkg-report/data-analysis/index.wxss'),
     'utf8'
   );
+  const chartJs = fs.readFileSync(
+    require.resolve('../miniprogram/pkg-report/components/ec-canvas/ec-canvas.js'),
+    'utf8'
+  );
+  const chartWxss = fs.readFileSync(
+    require.resolve('../miniprogram/pkg-report/components/ec-canvas/ec-canvas.wxss'),
+    'utf8'
+  );
 
   assert.match(wxml, /analysis-control-panel/);
   assert.match(wxml, /analysis-period-label/);
@@ -21,14 +29,23 @@ test('data-analysis page uses grouped dashboard layout', () => {
   assert.match(wxml, /\{\{statistics\.milkCalorieRatio\}\}%/);
   assert.match(wxml, /\{\{statistics\.foodCalorieRatio\}\}%/);
   assert.match(wxml, /\{\{statistics\.treatmentCalorieRatio\}\}%/);
-  assert.match(wxml, /period-nav-button/);
   assert.match(wxml, /stat-section-title">蛋白结构/);
   assert.match(wxml, /天然蛋白目标：\{\{referenceRanges\.naturalProteinCoefficient\}\}/);
   assert.match(wxml, /stat-section-title">营养供能比例/);
   assert.match(wxml, /\{\{referenceRanges\.proteinEnergy\}\}/);
   assert.match(wxml, /\{\{referenceRanges\.carbsEnergy\}\}/);
   assert.match(wxml, /\{\{referenceRanges\.fatEnergy\}\}/);
-  assert.match(wxml, /局部刷新/);
+  assert.match(wxml, /analysis-data-shell/);
+  assert.match(wxml, /analysis-refresh-overlay/);
+  assert.match(wxml, /刷新所选日期的数据/);
+  assert.match(wxml, /range-preset-list/);
+  assert.match(wxml, /近一周/);
+  assert.match(wxml, /近两周/);
+  assert.match(wxml, /近一个月/);
+  assert.match(wxml, /自定义/);
+  assert.match(wxml, /picker-hero/);
+  assert.match(wxml, /picker-mode-hint/);
+  assert.doesNotMatch(wxml, /◀|▶/);
   assert.match(wxml, /chart-card-meta/);
   assert.match(wxml, /chart-title">奶量趋势/);
   assert.match(wxml, /chart-title">蛋白摄入结构/);
@@ -53,22 +70,43 @@ test('data-analysis page uses grouped dashboard layout', () => {
   assert.doesNotMatch(wxml, /天然 \{\{statistics\.avgNaturalMilk\}\}ml/);
   assert.doesNotMatch(wxml, /特奶 \{\{statistics\.avgSpecialMilk\}\}ml/);
   assert.doesNotMatch(wxml, /dimension-selector/);
+  assert.doesNotMatch(wxml, /dimension-tabs/);
+  assert.doesNotMatch(wxml, /tab-item/);
   assert.doesNotMatch(wxml, /date-navigation/);
+  assert.doesNotMatch(wxml, /period-nav-button/);
+  assert.doesNotMatch(wxml, /周维度分析|月维度分析/);
+  assert.doesNotMatch(wxml, /range-status-pill/);
+  assert.doesNotMatch(wxml, /选择任意日期范围/);
+  assert.doesNotMatch(wxml, /picker-mode-tabs/);
+  assert.doesNotMatch(wxml, /picker-year-switcher/);
 
   assert.match(wxss, /\.content[\s\S]*width:\s*100%/);
   assert.match(wxss, /\.content[\s\S]*box-sizing:\s*border-box/);
   assert.match(wxss, /\.analysis-control-panel\s*\{/);
   assert.match(wxss, /\.analysis-period-label[\s\S]*white-space:\s*nowrap/);
+  assert.match(wxss, /\.range-preset-list\s*\{/);
+  assert.match(wxss, /\.range-preset-item\.active[\s\S]*linear-gradient/);
   assert.match(wxss, /\.stat-section\s*\{/);
   assert.match(wxss, /\.stat-summary-strip\s*\{/);
   assert.match(wxss, /\.calorie-source-card\s*\{/);
   assert.match(wxss, /\.calorie-source-bar\s*\{/);
   assert.match(wxss, /\.stat-range\s*\{/);
   assert.match(wxss, /\.period-nav-button\s*\{/);
-  assert.match(wxss, /\.refresh-indicator\s*\{/);
+  assert.match(wxss, /\.analysis-data-shell\s*\{/);
+  assert.match(wxss, /\.analysis-refresh-overlay\s*\{/);
+  assert.match(wxss, /\.picker-hero\s*\{/);
   assert.match(wxss, /\.stat-mini-grid\s*\{/);
   assert.match(wxss, /\.chart-card-meta\s*\{/);
   assert.match(wxss, /\.chart-axis-hint\s*\{/);
   assert.match(wxss, /\.chart-section[\s\S]*padding:\s*24rpx 18rpx 18rpx/);
   assert.match(wxss, /\.chart-header[\s\S]*margin-bottom:\s*12rpx/);
+
+  assert.match(chartWxss, /\.crosshair-handle[\s\S]*bottom:\s*-18rpx/);
+  assert.match(chartWxss, /\.crosshair-handle[\s\S]*width:\s*28rpx/);
+  assert.doesNotMatch(chartWxss, /\.crosshair-handle[\s\S]*top:\s*-8rpx/);
+  assert.match(chartJs, /bottomHandleTouchExtra/);
+  assert.match(chartJs, /let tooltipX = guideX - tooltipWidth \/ 2/);
+  assert.match(chartJs, /let tooltipY = padding\.top \+ tooltipTopOffset/);
+  assert.doesNotMatch(chartJs, /touchX !== undefined \? options\.touchX/);
+  assert.doesNotMatch(chartJs, /touchY !== undefined \? options\.touchY/);
 });
