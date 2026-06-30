@@ -1045,7 +1045,7 @@ test('data-analysis fetchFeedingRecords reads daily summaries through shared ser
         babyUid: 'baby_1',
         startDate: '2026-03-01',
         endDate: '2026-03-31',
-        options: { rebuildMissing: false }
+        options: { rebuildMissing: false, rebuildStaleSchema: true }
       }]);
       return result;
     }))
@@ -1398,7 +1398,7 @@ test('data-analysis batch reads raw records for missing daily summaries without 
         babyUid: 'baby_1',
         startDate: '2026-03-01',
         endDate: '2026-03-31',
-        options: { rebuildMissing: false }
+        options: { rebuildMissing: false, rebuildStaleSchema: true }
       }]);
       return result;
     }))

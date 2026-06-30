@@ -203,7 +203,7 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
     isDirty: false,
     basicInfo: { weight: '6.2' },
     milk: { calories: 100 },
-    food: { calories: 40 },
+    food: { calories: 40, premiumProtein: 0, regularProtein: 0 },
     treatment: { calories: 10 },
     macroSummary: { calories: 150, protein: 3 }
   };
@@ -351,6 +351,86 @@ test('getDailySummaryForDate rebuilds dirty summary before returning it', async 
     assert.deepEqual(modelCalls, ['milk', 'food', 'medication', 'treatment']);
     assert.equal(calls.updateCollection, 'daily_summary_v2');
     assert.equal(calls.updateDocId, 'summary-dirty');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummaryForDate rebuilds clean old food summary missing protein quality totals', async () => {
+  const oldSummary = {
+    _id: 'summary-old-food-quality',
+    babyUid: 'baby-1',
+    date: '2026-06-29',
+    status: 'active',
+    isDirty: false,
+    rev: 100,
+    basicInfo: { weight: '12.3' },
+    food: {
+      calories: 478,
+      protein: 8.69,
+      naturalProtein: 8.69,
+      specialProtein: 0
+    },
+    macroSummary: {
+      calories: 478,
+      protein: 8.69,
+      naturalProtein: 8.69,
+      specialProtein: 0,
+      carbs: 74.42,
+      fat: 16.26
+    },
+    recordCounts: { food: 23 }
+  };
+  const { db, calls } = createDbMock({
+    dailySummaryData: [oldSummary],
+    foodIntakeData: [
+      {
+        _id: 'pork-1',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        proteinQuality: 'premium',
+        nutrition: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 5
+        }
+      },
+      {
+        _id: 'rice-1',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        proteinQuality: 'regular',
+        nutrition: {
+          calories: 378,
+          protein: 7.08,
+          naturalProtein: 7.08,
+          specialProtein: 0,
+          carbs: 74.42,
+          fat: 11.26
+        }
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  models.FeedingRecordV2Model.getRecordsByDate = async () => [];
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const summary = await service.getDailySummaryForDate('baby-1', '2026-06-29');
+
+    assert.equal(summary._id, 'summary-old-food-quality');
+    assert.equal(summary.food.premiumProtein, 1.61);
+    assert.equal(summary.food.regularProtein, 7.08);
+    assert.equal(calls.updateCollection, 'daily_summary_v2');
+    assert.equal(calls.updateDocId, 'summary-old-food-quality');
+    assert.equal(calls.updateData.food.premiumProtein, 1.61);
+    assert.equal(calls.updateData.food.regularProtein, 7.08);
   } finally {
     restore();
   }
@@ -794,6 +874,100 @@ test('getDailyRecordV2 refreshes clean cache when legacy food changes the daily 
   }
 });
 
+test('getDailyRecordV2 refreshes clean old food summary missing protein quality totals', async () => {
+  const oldSummary = {
+    _id: 'summary-old-food-quality',
+    babyUid: 'baby-1',
+    date: '2026-06-29',
+    status: 'active',
+    isDirty: false,
+    rev: 100,
+    basicInfo: { weight: '12.3' },
+    milk: { calories: 0, protein: 0, naturalProtein: 0, specialProtein: 0 },
+    food: {
+      calories: 478,
+      protein: 8.69,
+      naturalProtein: 8.69,
+      specialProtein: 0,
+      carbs: 74.42,
+      fat: 16.26
+    },
+    macroSummary: {
+      calories: 478,
+      protein: 8.69,
+      naturalProtein: 8.69,
+      specialProtein: 0,
+      carbs: 74.42,
+      fat: 16.26
+    },
+    recordCounts: { milk: 0, food: 23, medication: 0, treatment: 0, bowel: 0 }
+  };
+  const { db, calls } = createDbMock({
+    dailySummaryData: [oldSummary],
+    foodIntakeData: [
+      {
+        _id: 'pork-1',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        foodSnapshot: { proteinQuality: 'premium' },
+        nutrition: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 5
+        }
+      },
+      {
+        _id: 'rice-1',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        proteinQuality: 'regular',
+        nutrition: {
+          calories: 378,
+          protein: 7.08,
+          naturalProtein: 7.08,
+          specialProtein: 0,
+          carbs: 74.42,
+          fat: 11.26
+        }
+      }
+    ],
+    growthRecordsV2Data: [{ _id: 'growth-1', babyUid: 'baby-1', date: '2026-06-29', status: 'active', weight: '12.3' }]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    modelCalls.push('milk');
+    return [];
+  };
+  models.FoodIntakeRecordModel.findByDate = async () => {
+    modelCalls.push('food');
+    return db.collection('food_intake_records')
+      .where({ babyUid: 'baby-1', date: '2026-06-29', status: 'active' })
+      .get()
+      .then(res => res.data || []);
+  };
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const dailyRecord = await service.getDailyRecordV2('baby-1', '2026-06-29');
+
+    assert.equal(dailyRecord.summary._id, 'summary-old-food-quality');
+    assert.equal(dailyRecord.summary.food.premiumProtein, 1.61);
+    assert.equal(dailyRecord.summary.food.regularProtein, 7.08);
+    assert.equal(calls.updateCollection, 'daily_summary_v2');
+    assert.equal(calls.updateDocId, 'summary-old-food-quality');
+    assert.deepEqual(modelCalls, ['milk', 'food']);
+  } finally {
+    restore();
+  }
+});
+
 test('getDailySummariesForRange rebuildMissing 补齐缺失天的汇总', async () => {
   const { db } = createDbMock({
     dailySummaryData: [
@@ -827,6 +1001,138 @@ test('getDailySummariesForRange rebuildMissing 补齐缺失天的汇总', async 
     assert.equal(byDate['2026-05-24']._id, 'summary-24'); // 已有且 fresh 的天保持原样
     assert.equal(byDate['2026-05-25'].macroSummary.calories, 70); // 缺失天按原始记录重建
     assert.equal(byDate['2026-05-25'].recordCounts.milk, 1);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange rebuildMissing refreshes old food summaries missing protein quality totals', async () => {
+  const { db } = createDbMock({
+    dailySummaryData: [
+      {
+        _id: 'summary-old-food-quality',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        isDirty: false,
+        food: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0
+        },
+        macroSummary: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 5
+        },
+        recordCounts: { milk: 0, food: 1, medication: 0, treatment: 0, bowel: 0 }
+      }
+    ],
+    foodIntakeData: [
+      {
+        _id: 'pork-1',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        proteinQuality: 'premium',
+        nutrition: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 5
+        }
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  models.FeedingRecordV2Model.getRecordsByDate = async () => [];
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-06-29', '2026-06-29', {
+      rebuildMissing: true
+    });
+
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0]._id, 'summary-old-food-quality');
+    assert.equal(summaries[0].food.premiumProtein, 1.61);
+    assert.equal(summaries[0].food.regularProtein, 0);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange rebuildStaleSchema refreshes old summaries without creating missing dates', async () => {
+  const { db } = createDbMock({
+    dailySummaryData: [
+      {
+        _id: 'summary-old-food-quality',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        isDirty: false,
+        food: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0
+        },
+        macroSummary: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 5
+        },
+        recordCounts: { milk: 0, food: 1, medication: 0, treatment: 0, bowel: 0 }
+      }
+      // 2026-06-30 缺失，但 rebuildMissing=false 时不应补空 summary。
+    ],
+    foodIntakeData: [
+      {
+        _id: 'pork-1',
+        babyUid: 'baby-1',
+        date: '2026-06-29',
+        status: 'active',
+        proteinQuality: 'premium',
+        nutrition: {
+          calories: 100,
+          protein: 1.61,
+          naturalProtein: 1.61,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 5
+        }
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  const rebuiltDates = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    rebuiltDates.push(date);
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-06-29', '2026-06-30', {
+      rebuildMissing: false,
+      rebuildStaleSchema: true
+    });
+
+    assert.deepEqual(rebuiltDates, ['2026-06-29']);
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0]._id, 'summary-old-food-quality');
+    assert.equal(summaries[0].food.premiumProtein, 1.61);
   } finally {
     restore();
   }

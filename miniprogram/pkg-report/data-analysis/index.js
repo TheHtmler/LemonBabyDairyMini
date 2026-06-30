@@ -990,7 +990,8 @@ Page({
       const startKey = this.formatDateKey(queryStartDate);
       const endKey = this.formatDateKey(queryEndDate);
       const summaryRecords = await DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, endKey, {
-        rebuildMissing: false
+        rebuildMissing: false,
+        rebuildStaleSchema: true
       });
       const dateKeys = this.generateDateList(queryStartDate, queryEndDate).map(date => this.formatDateKey(date));
       const freshSummaryRecords = (summaryRecords || []).filter(isFreshDailySummary);

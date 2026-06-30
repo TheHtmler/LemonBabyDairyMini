@@ -187,6 +187,18 @@ function shouldRefreshCachedBasicInfo(cachedSummary = {}, rebuiltSummary = {}) {
     > getBasicInfoCompleteness(cachedSummary.basicInfo);
 }
 
+function hasFoodProteinQualitySummary(summary = {}) {
+  const food = summary.food || {};
+  const hasFoodIntake = toNumber(summary.recordCounts?.food) > 0
+    || ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat', 'fiber']
+      .some((field) => toNumber(food[field]) > 0);
+  if (!hasFoodIntake) {
+    return true;
+  }
+  return Object.prototype.hasOwnProperty.call(food, 'premiumProtein')
+    && Object.prototype.hasOwnProperty.call(food, 'regularProtein');
+}
+
 function toNumber(value) {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
@@ -204,12 +216,16 @@ function hasRecordCountIncrease(cachedSummary = {}, rebuiltSummary = {}) {
 }
 
 function shouldRefreshCachedSummary(cachedSummary = {}, rebuiltSummary = {}) {
+  if (!hasFoodProteinQualitySummary(cachedSummary)) {
+    return true;
+  }
+
   if (shouldRefreshCachedBasicInfo(cachedSummary, rebuiltSummary)) {
     return true;
   }
 
   const macroFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat'];
-  const foodFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat', 'fiber'];
+  const foodFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'premiumProtein', 'regularProtein', 'carbs', 'fat', 'fiber'];
   const milkFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'totalVolume', 'totalPowderWeight'];
   const treatmentFields = ['calories', 'protein', 'carbs', 'fat'];
 
@@ -342,6 +358,7 @@ async function getDailyRecordV2(babyUid, date, options = {}) {
   if (
     cachedSummary &&
     cachedSummary.isDirty !== true &&
+    hasFoodProteinQualitySummary(cachedSummary) &&
     cachedEntry &&
     cachedSummary.rev != null &&
     cachedEntry.rev === cachedSummary.rev
@@ -387,7 +404,7 @@ async function getDailyRecordV2(babyUid, date, options = {}) {
 
 async function getDailySummaryForDate(babyUid, date, options = {}) {
   const cachedSummary = await DailySummaryV2Model.getByDate(babyUid, date);
-  if (cachedSummary && cachedSummary.isDirty !== true) {
+  if (cachedSummary && cachedSummary.isDirty !== true && hasFoodProteinQualitySummary(cachedSummary)) {
     return cachedSummary;
   }
 
@@ -462,13 +479,40 @@ function enumerateDateKeys(startDate, endDate) {
 // skipDates 用于排除“调用方另行实时处理”的日期（如首页的今天），避免与 getDailyRecordV2 并发重建产生重复文档。
 async function getDailySummariesForRange(babyUid, startDate, endDate, options = {}) {
   const summaries = await DailySummaryV2Model.getRange(babyUid, startDate, endDate);
-  if (options.rebuildMissing !== true) {
+  const skip = new Set(options.skipDates || []);
+  const staleSchemaDates = summaries
+    .filter((summary) => summary.isDirty !== true && !hasFoodProteinQualitySummary(summary))
+    .map((summary) => summary.date)
+    .filter((date) => date && !skip.has(date));
+
+  if (options.rebuildMissing !== true && options.rebuildStaleSchema !== true) {
     return summaries;
   }
 
-  const skip = new Set(options.skipDates || []);
+  if (options.rebuildMissing !== true) {
+    if (staleSchemaDates.length === 0) {
+      return summaries;
+    }
+    const targetSet = new Set(staleSchemaDates);
+    const kept = summaries.filter((summary) => !targetSet.has(summary.date));
+    const rebuilt = [];
+    for (const date of staleSchemaDates) {
+      try {
+        const { summary } = await rebuildDailySummaryForDate(babyUid, date);
+        if (summary) {
+          rebuilt.push(summary);
+        }
+      } catch (error) {
+        console.error('重建旧结构日汇总失败:', date, error);
+      }
+    }
+    return kept.concat(rebuilt);
+  }
+
   const freshDates = new Set(
-    summaries.filter((summary) => summary.isDirty !== true).map((summary) => summary.date)
+    summaries
+      .filter((summary) => summary.isDirty !== true && hasFoodProteinQualitySummary(summary))
+      .map((summary) => summary.date)
   );
   const targetDates = enumerateDateKeys(startDate, endDate)
     .filter((date) => !skip.has(date) && !freshDates.has(date));
