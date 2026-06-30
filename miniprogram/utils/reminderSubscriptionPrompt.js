@@ -177,7 +177,12 @@ async function saveSubscriptionRecord({ wxApi, candidate, babyUid, openid, templ
     if (openid && candidate.sourceKey) {
       try {
         const res = await db.collection('feeding_reminders')
-          .where({ sourceKey: candidate.sourceKey, openid })
+          .where({
+            type: 'feedingReminder',
+            babyUid,
+            sourceKey: candidate.sourceKey,
+            openid
+          })
           .update({
             data: {
               status: 'pending',
@@ -235,7 +240,7 @@ async function requestCandidateReminderSubscription({
     return false;
   }
 
-  await saveSubscriptionRecord({
+  const saved = await saveSubscriptionRecord({
     wxApi,
     candidate,
     babyUid,
@@ -243,7 +248,7 @@ async function requestCandidateReminderSubscription({
     templateId
   });
   showToast(wxApi, successText, 'success');
-  return true;
+  return saved;
 }
 
 module.exports = {

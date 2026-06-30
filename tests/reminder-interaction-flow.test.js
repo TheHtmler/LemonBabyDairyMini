@@ -16,6 +16,10 @@ test('home reminder card is a single minimal entry to the reminder center', () =
   assert.doesNotMatch(dailyFeedingWxml, /wx:for="\{\{upcomingReminderCards\}\}"/);
   assert.doesNotMatch(dailyFeeding, /upcomingReminderCards/);
   assert.doesNotMatch(dailyFeeding, /loadUpcomingReminderCandidates/);
+
+  // 提醒页的「用药」快捷入口会带标记切回首页，首页 onShow 需消费标记并自动打开用药弹窗。
+  assert.match(dailyFeeding, /pendingOpenMedicationModal/);
+  assert.match(dailyFeeding, /maybeOpenMedicationModalFromFlag/);
 });
 
 test('record save flows do not prompt subscription reminders inline', () => {
@@ -106,8 +110,8 @@ test('wechat reminder page lists future records per category for one-shot subscr
   assert.doesNotMatch(pageJs, /REMINDER_MODES/);
 
   assert.match(pageWxml, /微信提醒/);
-  // 提醒非实时发送：云函数每 10 分钟扫一次，需在文案中告知用户可能的延迟。
-  assert.match(pageWxml, /10\s*分钟内/);
+  // 提醒非实时发送：云函数每 5 分钟扫一次，需在文案中告知用户可能的延迟。
+  assert.match(pageWxml, /5\s*分钟内/);
   // 订阅消息按 openid 发：需告知提醒只发给授权本人，其他成员要各自授权。
   assert.match(pageWxml, /其他成员/);
   assert.match(pageWxml, /class="category-tabs"/);
@@ -119,6 +123,54 @@ test('wechat reminder page lists future records per category for one-shot subscr
   assert.match(pageWxml, /activeReminderSection/);
   assert.match(pageWxml, /catchtap="subscribeReminder"/);
   assert.match(pageWxml, /订阅提醒/);
+  // 订阅涉及授权 + 云端写入 + 刷新，需在按钮上给 loading 反馈，避免“点了没反应/卡住”。
+  assert.match(pageJs, /subscribingKey/);
+  assert.match(pageWxml, /subscribingKey/);
+  // 订阅成功后只本地更新这一条状态，不再整页重查云端（省调用、更快）。
+  const subBlock = pageJs.match(/async subscribeReminder\([\s\S]*?\n  \},/)[0];
+  assert.doesNotMatch(subBlock, /loadReminders/);
+  assert.match(pageJs, /applyLocalReminder/);
+  // 已订阅但未发送的提醒允许取消；取消同样只更新这一条，不能整页重查。
+  assert.match(pageJs, /cancellingKey/);
+  assert.match(pageJs, /canCancel/);
+  assert.match(pageJs, /cancelReminder/);
+  assert.match(pageWxml, /catchtap="cancelReminder"/);
+  assert.match(pageWxml, /取消订阅/);
+  assert.match(pageWxml, /cancellingKey/);
+  const cancelBlock = pageJs.match(/async cancelReminder\([\s\S]*?\n  \},/)[0];
+  assert.match(cancelBlock, /status:\s*'cancelled'/);
+  assert.match(cancelBlock, /sourceKey/);
+  assert.match(cancelBlock, /openid/);
+  assert.doesNotMatch(cancelBlock, /loadReminders/);
+  // 页面打开时如果有即将到点的 pending 提醒，前台安排本地 timer 到点主动触发云函数；
+  // 云端定时器仍作为离线兜底，前台触发后再刷新一次真实状态。
+  assert.match(pageJs, /scheduleForegroundReminderCheck/);
+  assert.match(pageJs, /clearForegroundReminderCheck/);
+  assert.match(pageJs, /runForegroundReminderCheck/);
+  assert.match(pageJs, /sendFeedingReminders/);
+  assert.match(pageJs, /MAX_FOREGROUND_TRIGGER_DELAY_MS/);
+  assert.match(pageJs, /setTimeout/);
+  assert.match(pageJs, /onHide\(\)/);
+  const foregroundBlock = pageJs.match(/async runForegroundReminderCheck\([\s\S]*?\n  \},/)[0];
+  assert.match(foregroundBlock, /callFunction/);
+  assert.match(foregroundBlock, /loadReminders\(\{\s*force:\s*true\s*\}\)/);
+  assert.doesNotMatch(foregroundBlock, /catch[\s\S]*scheduleForegroundReminderCheck/);
+
+  // 快捷添加：放在各分类 tab 内部，按当前 tab 动态决定要添加的记录类型。
+  assert.match(pageWxml, /catchtap="goAddRecord"/);
+  assert.match(pageWxml, /data-type="\{\{activeReminderType\}\}"/);
+  assert.doesNotMatch(pageWxml, /class="quick-add"/);
+  assert.match(pageJs, /goAddRecord/);
+  assert.match(pageJs, /milk-feeding-editor-v2/);
+  assert.match(pageJs, /meal-editor/);
+  // 从快捷添加编辑器返回时（再次 onShow）必须强制刷新，否则命中缓存看不到新记录。
+  assert.match(pageJs, /_hasLoadedOnce/);
+  const onShowBlock = pageJs.match(/onShow\(\)\s*\{[\s\S]*?\n  \},/);
+  assert.ok(onShowBlock, 'onShow should exist');
+  assert.match(onShowBlock[0], /force:\s*true/);
+  // 用药记录弹窗在首页 tab：带标记切回首页自动打开。
+  assert.match(pageJs, /pendingOpenMedicationModal/);
+  assert.match(pageJs, /switchTab/);
 
   assert.doesNotMatch(pageWxml, /<switch/);
   assert.doesNotMatch(pageWxml, /toggleAlwaysReminder/);

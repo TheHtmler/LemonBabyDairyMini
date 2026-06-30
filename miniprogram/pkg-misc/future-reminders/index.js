@@ -49,6 +49,8 @@ const STATUS_FILTERS = [
 ];
 // 同一页 onLoad + onShow 会连续触发；短时间内复用缓存，避免重复云查询。
 const RELOAD_TTL_MS = 30 * 1000;
+const FOREGROUND_TRIGGER_BUFFER_MS = 1000;
+const MAX_FOREGROUND_TRIGGER_DELAY_MS = 24 * 60 * 60 * 1000;
 
 function toDate(value) {
   if (!value) return null;
@@ -113,6 +115,7 @@ function buildReminderCenterItem(candidate = {}, reminders = [], now = new Date(
     reminderId: reminder?._id || '',
     lastError: reminder?.lastError || '',
     canSubscribe: !isActiveReminder,
+    canCancel: statusMeta.key === 'pending',
     canRetry: statusMeta.key === 'failed'
   };
 }
@@ -179,16 +182,32 @@ Page({
     reminderSections: [],
     activeReminderSection: null,
     hasReminderItems: false,
-    emptyText: '还没有未来记录可设置提醒',
-    statusLegend: '未提醒 · 已订阅 · 已发送 · 发送失败 · 已过期 · 已失效'
+    subscribingKey: '',
+    cancellingKey: ''
   },
 
   onLoad() {
+    this._hasLoadedOnce = false;
     this.loadReminders();
   },
 
   onShow() {
-    this.loadReminders();
+    // onLoad 已发起首次加载；首次 onShow 不重复查询（命中 TTL 缓存即可）。
+    // 之后每次返回本页（如从「快捷添加」编辑器返回）都强制刷新，确保看到新记录。
+    if (!this._hasLoadedOnce) {
+      this._hasLoadedOnce = true;
+      this.loadReminders();
+      return;
+    }
+    this.loadReminders({ force: true });
+  },
+
+  onHide() {
+    this.clearForegroundReminderCheck();
+  },
+
+  onUnload() {
+    this.clearForegroundReminderCheck();
   },
 
   async loadFutureRecordCandidates(babyUid) {
@@ -288,6 +307,7 @@ Page({
         activeReminderSection: buildActiveReminderSection(reminderSections, this.data.activeReminderType, this.data.statusFilter),
         hasReminderItems: false
       });
+      this.clearForegroundReminderCheck();
       return;
     }
 
@@ -318,6 +338,7 @@ Page({
         activeReminderSection: buildActiveReminderSection(reminderSections, this.data.activeReminderType, this.data.statusFilter),
         hasReminderItems: flatCandidates.length > 0
       });
+      this.scheduleForegroundReminderCheck();
     } catch (error) {
       console.error('加载未来提醒失败:', error);
       this.setData({ loading: false });
@@ -345,18 +366,144 @@ Page({
   },
 
   async subscribeReminder(e = {}) {
+    if (this.data.subscribingKey || this.data.cancellingKey) return;
     const sourceKey = e.currentTarget?.dataset?.sourceKey || '';
     const candidate = this._candidateBySourceKey?.[sourceKey];
     const babyUid = getBabyUid();
     if (!candidate || !babyUid) return;
 
-    const ok = await requestCandidateReminderSubscription({
-      candidate,
-      babyUid,
-      openid: this.getCurrentOpenid(),
-      successText: '提醒已订阅'
-    });
-    if (ok) await this.loadReminders({ force: true });
+    // 注意：setData 是同步调用，不会引入 await，requestSubscribeMessage 仍在本次
+    // 点击手势的同一调用栈内触发，不会破坏“user TAP gesture”要求。
+    this.setData({ subscribingKey: sourceKey });
+    try {
+      const saved = await requestCandidateReminderSubscription({
+        candidate,
+        babyUid,
+        openid: this.getCurrentOpenid(),
+        successText: '提醒已订阅'
+      });
+      // 订阅只影响这一条：直接用返回的记录本地更新并重建，不整页重查云端。
+      if (saved) this.applyLocalReminder(saved);
+    } finally {
+      this.setData({ subscribingKey: '' });
+    }
+  },
+
+  // 把刚订阅成功的提醒记录并入本地缓存（按 sourceKey+openid 去重），再本地重建分区。
+  applyLocalReminder(record = {}) {
+    if (!record.sourceKey) return;
+    const openid = record.openid || '';
+    const list = (this._lastReminderRecords || []).filter(
+      (item) => !(item.sourceKey === record.sourceKey && (item.openid || '') === openid)
+    );
+    list.push(record);
+    this._lastReminderRecords = list;
+    this.rebuildSectionsFromCache();
+    this.scheduleForegroundReminderCheck();
+  },
+
+  clearForegroundReminderCheck() {
+    if (this._foregroundReminderTimer) {
+      clearTimeout(this._foregroundReminderTimer);
+      this._foregroundReminderTimer = null;
+    }
+  },
+
+  scheduleForegroundReminderCheck() {
+    this.clearForegroundReminderCheck();
+    if (!wx.cloud) return;
+    const now = Date.now();
+    const next = (this._lastReminderRecords || [])
+      .filter((item) => item.status === 'pending' && item.used !== true)
+      .map((item) => ({ ...item, dueAtMs: toDate(item.dueAt)?.getTime() || 0 }))
+      .filter((item) => item.dueAtMs > 0)
+      .sort((a, b) => a.dueAtMs - b.dueAtMs)[0];
+    if (!next) return;
+    const delay = Math.max(0, next.dueAtMs - now + FOREGROUND_TRIGGER_BUFFER_MS);
+    if (delay > MAX_FOREGROUND_TRIGGER_DELAY_MS) return;
+    this._foregroundReminderTimer = setTimeout(() => {
+      this.runForegroundReminderCheck();
+    }, delay);
+  },
+
+  async runForegroundReminderCheck() {
+    if (!wx.cloud || this._foregroundReminderRunning) return;
+    this._foregroundReminderRunning = true;
+    try {
+      await wx.cloud.callFunction({
+        name: 'sendFeedingReminders',
+        data: { limit: 20, source: 'future-reminders-foreground' }
+      });
+      await this.loadReminders({ force: true });
+    } catch (error) {
+      console.warn('前台触发提醒检查失败，将等待定时器兜底:', error);
+    } finally {
+      this._foregroundReminderRunning = false;
+    }
+  },
+
+  async cancelReminder(e = {}) {
+    if (this.data.subscribingKey || this.data.cancellingKey) return;
+    const sourceKey = e.currentTarget?.dataset?.sourceKey || '';
+    const babyUid = getBabyUid();
+    const openid = this.getCurrentOpenid();
+    if (!sourceKey || !babyUid || !openid || !wx.cloud) return;
+
+    this.setData({ cancellingKey: sourceKey });
+    const now = new Date();
+    try {
+      await wx.cloud.database().collection('feeding_reminders')
+        .where({
+          type: 'feedingReminder',
+          babyUid,
+          openid,
+          sourceKey,
+          status: 'pending'
+        })
+        .update({
+          data: {
+            status: 'cancelled',
+            used: false,
+            invalidReason: 'userCancelled',
+            cancelledAt: now,
+            updatedAt: now
+          }
+        });
+      const current = (this._lastReminderRecords || []).find(
+        (item) => item.sourceKey === sourceKey && (item.openid || '') === openid
+      );
+      this.applyLocalReminder({
+        ...(current || {}),
+        sourceKey,
+        openid,
+        status: 'cancelled',
+        used: false,
+        invalidReason: 'userCancelled',
+        cancelledAt: now,
+        updatedAt: now
+      });
+      wx.showToast({ title: '已取消提醒', icon: 'success' });
+    } catch (error) {
+      console.error('取消未来提醒失败:', error);
+      wx.showToast({ title: '取消失败', icon: 'none' });
+    } finally {
+      this.setData({ cancellingKey: '' });
+    }
+  },
+
+  // 快捷添加未来记录：奶/食物有独立编辑页，直接跳；用药记录弹窗在首页 tab 内，
+  // 改为打标记 + 切回首页，由首页 onShow 消费标记自动弹出用药记录弹窗。
+  goAddRecord(e = {}) {
+    const type = e.currentTarget?.dataset?.type || '';
+    const date = todayKey();
+    if (type === 'milk') {
+      wx.navigateTo({ url: `/pkg-milk/milk-feeding-editor-v2/index?mode=create&source=daily&date=${date}` });
+    } else if (type === 'food') {
+      wx.navigateTo({ url: `/pkg-records/meal-editor/index?date=${date}&from=daily` });
+    } else if (type === 'medication') {
+      if (app && app.globalData) app.globalData.pendingOpenMedicationModal = true;
+      wx.switchTab({ url: '/pages/daily-feeding/index' });
+    }
   },
 
   async retryReminder(e = {}) {

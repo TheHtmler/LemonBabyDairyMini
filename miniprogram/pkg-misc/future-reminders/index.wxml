@@ -2,15 +2,10 @@
   <view class="hero">
     <text class="hero-title">微信提醒</text>
     <text class="hero-desc">给未来的奶、食物、用药逐条设置到点提醒。</text>
-    <text class="hero-tip">约 10 分钟内送达；提醒只发给授权本人，其他成员需各自授权。</text>
+    <text class="hero-tip">约 5 分钟内送达；提醒只发给授权本人，其他成员需各自授权。</text>
   </view>
 
   <view class="loading" wx:if="{{loading}}">加载中...</view>
-
-  <view class="empty" wx:elif="{{!hasReminderItems}}">
-    <text class="empty-title">{{emptyText}}</text>
-    <text class="empty-desc">提前保存奶、食物或药物记录后，再来这里逐条设置提醒。</text>
-  </view>
 
   <view wx:else>
     <view class="category-tabs">
@@ -26,6 +21,7 @@
           <text class="category-title">{{activeReminderSection.title}}</text>
           <text class="category-summary">{{activeReminderSection.summaryText}}</text>
         </view>
+        <view class="add-record-btn" data-type="{{activeReminderType}}" catchtap="goAddRecord">+ 添加{{activeReminderSection.label}}</view>
       </view>
       <text class="mode-hint">{{activeReminderSection.hint}}</text>
 
@@ -36,7 +32,10 @@
         </view>
       </view>
 
-      <view class="category-empty" wx:if="{{!activeReminderSection.hasItems}}">暂无未来{{activeReminderSection.label}}记录</view>
+      <view class="category-empty" wx:if="{{!activeReminderSection.hasItems}}">
+        <text>暂无未来{{activeReminderSection.label}}记录</text>
+        <text class="category-empty-tip">点右上角「+ 添加{{activeReminderSection.label}}」先保存未来记录</text>
+      </view>
       <view class="category-empty" wx:elif="{{!activeReminderSection.hasVisibleItems}}">当前筛选下没有记录</view>
       <view class="reminder-list" wx:else>
         <view class="reminder-card" wx:for="{{activeReminderSection.visibleItems}}" wx:key="id">
@@ -50,7 +49,8 @@
           <text class="reminder-note" wx:if="{{item.note}}">{{item.note}}</text>
           <text class="reminder-error" wx:if="{{item.lastError}}">{{item.lastError}}</text>
           <view class="action-row">
-            <view class="retry-btn" wx:if="{{item.canSubscribe}}" data-source-key="{{item.sourceKey}}" catchtap="subscribeReminder">订阅提醒</view>
+            <view class="retry-btn {{item.sourceKey === subscribingKey ? 'is-loading' : ''}}" wx:if="{{item.canSubscribe}}" data-source-key="{{item.sourceKey}}" catchtap="subscribeReminder">{{item.sourceKey === subscribingKey ? '订阅中…' : '订阅提醒'}}</view>
+            <view class="retry-btn cancel-btn {{item.sourceKey === cancellingKey ? 'is-loading' : ''}}" wx:if="{{item.canCancel}}" data-source-key="{{item.sourceKey}}" catchtap="cancelReminder">{{item.sourceKey === cancellingKey ? '取消中…' : '取消订阅'}}</view>
             <view class="retry-btn" wx:if="{{item.canRetry}}" data-id="{{item.reminderId}}" catchtap="retryReminder">重试发送</view>
           </view>
         </view>

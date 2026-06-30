@@ -41,31 +41,13 @@ page {
   color: #8A6200;
 }
 
-.loading,
-.empty {
+.loading {
   margin-top: 24rpx;
   padding: 48rpx 28rpx;
   border-radius: 24rpx;
   background: #FFFFFF;
   text-align: center;
   color: #A68A52;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.empty-title {
-  font-size: 30rpx;
-  font-weight: 900;
-  color: #8A6200;
-}
-
-.empty-desc {
-  font-size: 24rpx;
-  line-height: 1.5;
 }
 
 .category-tabs {
@@ -140,6 +122,21 @@ page {
   gap: 16rpx;
 }
 
+.add-record-btn {
+  flex-shrink: 0;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #FFE17A 0%, #FFC83D 100%);
+  color: #7A4E00;
+  font-size: 24rpx;
+  font-weight: 900;
+  box-shadow: 0 6rpx 14rpx rgba(255, 184, 0, 0.25);
+}
+
+.add-record-btn:active {
+  opacity: 0.85;
+}
+
 .category-title-block {
   min-width: 0;
   display: flex;
@@ -204,12 +201,21 @@ page {
 }
 
 .category-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
   padding: 24rpx;
   border-radius: 18rpx;
   background: #FFFDF5;
   color: #A68A52;
   font-size: 24rpx;
   text-align: center;
+}
+
+.category-empty-tip {
+  font-size: 22rpx;
+  color: #C2A35A;
 }
 
 .reminder-list {
@@ -303,4 +309,19 @@ page {
   background: linear-gradient(135deg, #FFB800, #FF8A00);
   font-size: 24rpx;
   font-weight: 900;
+}
+
+.retry-btn.is-loading {
+  opacity: 0.6;
+  background: linear-gradient(135deg, #FFD27A, #FFB35C);
+}
+
+.cancel-btn {
+  color: #8A6200;
+  background: #FFF4D6;
+  border: 2rpx solid rgba(255, 184, 0, 0.25);
+}
+
+.cancel-btn.is-loading {
+  background: #FFF8E8;
 }

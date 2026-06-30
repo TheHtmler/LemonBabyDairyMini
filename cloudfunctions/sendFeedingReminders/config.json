@@ -6,9 +6,9 @@
   },
   "triggers": [
     {
-      "name": "send-feeding-reminders-every-10-minutes",
+      "name": "send-feeding-reminders-every-5-minutes",
       "type": "timer",
-      "config": "0 */10 * * * * *"
+      "config": "0 */5 * * * * *"
     }
   ]
 }

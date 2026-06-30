@@ -213,7 +213,7 @@
     <view class="future-reminder-entry">
       <view class="future-reminder-text">
         <text class="card-title">微信提醒</text>
-        <text class="future-reminder-tip">给未来的奶、食物、用药设置到点提醒，约 10 分钟内送达</text>
+        <text class="future-reminder-tip">给未来的奶、食物、用药设置到点提醒，约 5 分钟内送达</text>
       </view>
       <text class="future-reminder-arrow">›</text>
     </view>

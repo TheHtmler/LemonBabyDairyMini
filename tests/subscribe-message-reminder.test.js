@@ -112,6 +112,11 @@ test('reminder center requests subscription before async duplicate check to keep
   const saveBlock = helper.match(/async function saveSubscriptionRecord\([\s\S]*?\n\}/)[0];
   assert.match(saveBlock, /\.update\(/);
   assert.match(saveBlock, /\.add\(/);
+  assert.match(saveBlock, /type:\s*'feedingReminder'/);
+  assert.match(saveBlock, /babyUid/);
+
+  // 订阅成功返回保存的提醒记录，便于调用方本地更新单条状态而非整页重查云端。
+  assert.match(afterRequest, /return saved/);
 });
 
 test('cloud function sends due feeding reminder subscription messages once', () => {
@@ -123,7 +128,7 @@ test('cloud function sends due feeding reminder subscription messages once', () 
   const source = fs.readFileSync(functionPath, 'utf8');
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.deepEqual(config.permissions.openapi, ['subscribeMessage.send']);
-  assert.equal(config.triggers[0].config, '0 */10 * * * * *', '定时器应为每10分钟，平衡及时性与调用次数');
+  assert.equal(config.triggers[0].config, '0 */5 * * * * *', '定时器应为每5分钟，平衡及时性与调用次数');
   assert.match(source, /collection\('feeding_reminders'\)/);
   assert.match(source, /cloud\.openapi\(\{\s*appid:\s*MINIPROGRAM_APPID\s*\}\)\.subscribeMessage\.send/);
   assert.match(source, /status:\s*'pending'/);

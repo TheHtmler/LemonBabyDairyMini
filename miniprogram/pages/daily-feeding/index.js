@@ -280,6 +280,22 @@ Page({
       await this.loadDashboard({ silent: true, rebuildTrend: false });
       this.loadDeferredDashboardParts();
     }
+    this.maybeOpenMedicationModalFromFlag();
+  },
+
+  // 消费提醒页「用药」快捷入口标记：切回首页后自动弹出记录用药弹窗。
+  // 用药列表随首页数据加载，故做短重试，等列表就绪再弹出，避免误判“未配置药物”。
+  maybeOpenMedicationModalFromFlag() {
+    if (!app.globalData || !app.globalData.pendingOpenMedicationModal) return;
+    app.globalData.pendingOpenMedicationModal = false;
+    const tryOpen = (retries) => {
+      if ((this.data.medicationsList || []).length || retries <= 0) {
+        this.openMedicationModal();
+        return;
+      }
+      this._openMedModalTimer = setTimeout(() => tryOpen(retries - 1), 200);
+    };
+    tryOpen(15);
   },
 
   // 消费“引导去配奶设置”标记：命中则压入配奶设置页并返回 true（本次 onShow 不再继续首页逻辑）
@@ -302,8 +318,8 @@ Page({
     }, 30);
   },
 
-  onHide() { this.hideMedUndo(); this.closeMedPanel(); },
-  onUnload() { this.hideMedUndo(); this.closeMedPanel(); },
+  onHide() { this.hideMedUndo(); this.closeMedPanel(); if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer); },
+  onUnload() { this.hideMedUndo(); this.closeMedPanel(); if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer); },
 
   async onPullDownRefresh() {
     try {
