@@ -186,6 +186,12 @@ class TreatmentRecordModel {
         .get();
       return { success: true, data: result.data || [] };
     } catch (error) {
+      const rateLimited = `${error?.errMsg || error?.message || ''}`.includes('-405015')
+        || `${error?.errMsg || error?.message || ''}`.includes('exceed max client request count');
+      if (rateLimited) {
+        console.warn('查询治疗记录触发云请求限流，请稍后再试:', error);
+        return { success: false, message: '云请求过于频繁，请稍后再试', data: [], rateLimited: true };
+      }
       console.error('查询治疗记录失败:', error);
       return { success: false, message: error.message || '查询失败', data: [] };
     }

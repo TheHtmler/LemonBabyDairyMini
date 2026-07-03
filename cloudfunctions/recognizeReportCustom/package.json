@@ -1,0 +1,11 @@
+{
+  "name": "recognizeReportCustom",
+  "version": "1.0.0",
+  "description": "检测报告拍照识别：云函数中转自建 OCR 服务",
+  "main": "index.js",
+  "dependencies": {
+    "form-data": "^4.0.2",
+    "jimp": "^0.22.12",
+    "wx-server-sdk": "~3.0.1"
+  }
+}

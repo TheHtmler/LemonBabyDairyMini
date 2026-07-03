@@ -95,6 +95,42 @@
   font-size: 24rpx;
 }
 
+.ocr-entry {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  border: 1rpx solid #f5e1a4;
+}
+
+.ocr-entry.recognizing {
+  opacity: 0.7;
+}
+
+.ocr-entry-icon {
+  font-size: 40rpx;
+}
+
+.ocr-entry-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.ocr-entry-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #8a6d1f;
+}
+
+.ocr-entry-desc {
+  font-size: 22rpx;
+  color: #a3894a;
+}
+
 .report-type-section,
 .indicator-list {
   margin-bottom: 24rpx;
@@ -166,6 +202,20 @@
 
 .indicator-row:first-child {
   border-top: none;
+}
+
+.indicator-row.pending-ocr {
+  background: #fffbf0;
+  box-shadow: inset 4rpx 0 0 #f0b429;
+}
+
+.ocr-pending-tag {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #92670f;
+  background: #ffe9a8;
+  border-radius: 999rpx;
+  padding: 2rpx 12rpx;
 }
 
 .indicator-row-top {

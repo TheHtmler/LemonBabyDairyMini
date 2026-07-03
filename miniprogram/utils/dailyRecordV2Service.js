@@ -472,6 +472,51 @@ function enumerateDateKeys(startDate, endDate) {
   return result;
 }
 
+const DEFAULT_MAX_REBUILD_DAYS = 14;
+const REBUILD_BATCH_DELAY_MS = 80;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isClientRequestRateLimited(error = {}) {
+  const message = `${error?.errMsg || error?.message || ''}`;
+  return message.includes('-405015') || message.includes('exceed max client request count');
+}
+
+async function rebuildDatesSafely(babyUid, dates = [], options = {}) {
+  const maxDays = Number.isFinite(options.maxRebuildDays) ? options.maxRebuildDays : DEFAULT_MAX_REBUILD_DAYS;
+  const delayMs = Number.isFinite(options.rebuildDelayMs) ? options.rebuildDelayMs : REBUILD_BATCH_DELAY_MS;
+  const datesToRebuild = dates.slice(0, Math.max(0, maxDays));
+
+  if (dates.length > datesToRebuild.length) {
+    console.warn(`[dailyRecordV2] 跳过 ${dates.length - datesToRebuild.length} 天汇总重建，避免云请求过载`);
+  }
+
+  const rebuilt = [];
+  for (let index = 0; index < datesToRebuild.length; index += 1) {
+    const date = datesToRebuild[index];
+    try {
+      const { summary } = await rebuildDailySummaryForDate(babyUid, date);
+      if (summary) {
+        rebuilt.push(summary);
+      }
+    } catch (error) {
+      console.error('重建当日汇总失败:', date, error);
+      if (isClientRequestRateLimited(error)) {
+        console.warn('[dailyRecordV2] 云请求频率受限，停止后续日期重建');
+        break;
+      }
+    }
+
+    if (delayMs > 0 && index < datesToRebuild.length - 1) {
+      await sleep(delayMs);
+    }
+  }
+
+  return rebuilt;
+}
+
 // 取范围内每日汇总。
 // 默认只读已存在的 daily_summary_v2 缓存（懒生成）。
 // rebuildMissing=true 时，对范围内“缺失或过期(isDirty)”的天按原始记录重建并补齐，
@@ -495,17 +540,7 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
     }
     const targetSet = new Set(staleSchemaDates);
     const kept = summaries.filter((summary) => !targetSet.has(summary.date));
-    const rebuilt = [];
-    for (const date of staleSchemaDates) {
-      try {
-        const { summary } = await rebuildDailySummaryForDate(babyUid, date);
-        if (summary) {
-          rebuilt.push(summary);
-        }
-      } catch (error) {
-        console.error('重建旧结构日汇总失败:', date, error);
-      }
-    }
+    const rebuilt = await rebuildDatesSafely(babyUid, staleSchemaDates, options);
     return kept.concat(rebuilt);
   }
 
@@ -522,18 +557,7 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
 
   const targetSet = new Set(targetDates);
   const kept = summaries.filter((summary) => !targetSet.has(summary.date));
-  const rebuilt = [];
-  for (const date of targetDates) {
-    try {
-      const { summary } = await rebuildDailySummaryForDate(babyUid, date);
-      if (summary) {
-        rebuilt.push(summary);
-      }
-    } catch (error) {
-      // 单天重建失败不应阻断整体趋势加载
-      console.error('重建当日汇总失败:', date, error);
-    }
-  }
+  const rebuilt = await rebuildDatesSafely(babyUid, targetDates, options);
 
   return kept.concat(rebuilt);
 }

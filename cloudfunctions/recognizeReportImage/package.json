@@ -1,0 +1,9 @@
+{
+  "name": "recognizeReportImage",
+  "version": "1.0.0",
+  "description": "检测报告拍照识别：调用微信云开发通用印刷体识别，返回原始文本块供小程序端解析指标",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}

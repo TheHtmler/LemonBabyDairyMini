@@ -49,7 +49,7 @@ test('analysis-report page reads and deletes reports through report repository',
   assert.match(js, /NutritionModel\.getNutritionSettings/);
   assert.match(js, /ReportRepository\.listReportsByBaby/);
   assert.match(js, /DailyRecordV2Service\.getDailySummariesForRange/);
-  assert.match(js, /rebuildMissing:\s*true/);
+  assert.match(js, /rebuildMissing:\s*false/);
   assert.match(js, /ReportRepository\.deleteReport/);
   assert.doesNotMatch(js, /loadV2MilkRecords/);
   assert.doesNotMatch(js, /feeding_records_v2/);

@@ -269,6 +269,19 @@ Page({
   },
 
   async loadReportData() {
+    if (this._loadReportDataPromise) {
+      return this._loadReportDataPromise;
+    }
+
+    this._loadReportDataPromise = this._loadReportDataInternal()
+      .finally(() => {
+        this._loadReportDataPromise = null;
+      });
+
+    return this._loadReportDataPromise;
+  },
+
+  async _loadReportDataInternal() {
     if (!this.data.babyInfo) {
       // 没有宝宝信息也要清掉 loading，避免永远停在“正在整理报告档案”转圈
       this.setData({ loading: false });
@@ -315,15 +328,28 @@ Page({
   // 与档案渲染解耦，避免分页拉取慢/卡住时让整页一直停在 loading。
   async loadFeedingWindow(babyUid, reports = this.data.reportsCache || []) {
     if (!babyUid) return;
+
+    const requestId = (this._feedingWindowRequestId || 0) + 1;
+    this._feedingWindowRequestId = requestId;
+
     try {
       const range = resolveFeedingWindowRange(reports);
       if (!range) {
-        this.setData({ feedingRecordsCache: [] });
+        if (this._feedingWindowRequestId === requestId) {
+          this.setData({ feedingRecordsCache: [] });
+        }
         return;
       }
+
+      // 趋势营养对照只读已有 daily_summary_v2，不在报告页后台批量重建缺失天，
+      // 否则两次报告间隔较大时会逐日查询治疗/喂养等原始记录，触发云请求限流（-405015）。
       const summaries = await DailyRecordV2Service.getDailySummariesForRange(babyUid, range.startDate, range.endDate, {
-        rebuildMissing: true
+        rebuildMissing: false
       });
+
+      if (this._feedingWindowRequestId !== requestId) {
+        return;
+      }
 
       const recordsByDate = new Map();
       (summaries || [])
