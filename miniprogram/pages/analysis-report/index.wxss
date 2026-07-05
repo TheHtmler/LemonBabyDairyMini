@@ -1,10 +1,30 @@
+page {
+  background: #fff4db;
+  min-height: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
 .container {
+  width: 100%;
   min-height: 100vh;
+  min-height: 100%;
   padding: 20rpx 24rpx calc(180rpx + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at top right, rgba(255, 217, 128, 0.28), transparent 34%),
     linear-gradient(180deg, #fffaf0 0%, #fff4db 100%);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.main-view {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .loading-card {
@@ -79,9 +99,12 @@
   opacity: 0.65;
 }
 
-.archive-list,
-.compare-panel {
+.compare-panel,
+.archive-panel {
+  flex: 1;
+  width: 100%;
   padding-bottom: 24rpx;
+  box-sizing: border-box;
 }
 
 .year-section {

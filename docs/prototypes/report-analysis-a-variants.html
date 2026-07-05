@@ -1,448 +1,1418 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>方案 A · 三套交互变体</title>
-  <style>
-    :root {
-      --bg: #fff9ee; --surface: #fff; --surface-2: #fffaf3;
-      --line: rgba(160,110,20,0.12); --text: #2a1c08; --text-2: #6b5430; --text-3: #a08960;
-      --accent: #f5a623; --accent-soft: #fff3d4; --up: #c0392b; --down: #2d8653;
-      --phone-w: 300px; --phone-h: 640px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-      background: linear-gradient(180deg, #fff8e7, #ffecc2);
-      color: var(--text); padding: 24px 16px 48px;
-    }
-    .doc-head { max-width: 1180px; margin: 0 auto 24px; text-align: center; }
-    .doc-head h1 { font-size: 22px; font-weight: 800; }
-    .doc-head p { margin-top: 8px; font-size: 13px; color: var(--text-3); max-width: 680px; margin-inline: auto; line-height: 1.55; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>方案 A · 三套交互变体</title>
+    <style>
+      :root {
+        --bg: #fff9ee;
+        --surface: #fff;
+        --surface-2: #fffaf3;
+        --line: rgba(160, 110, 20, 0.12);
+        --text: #2a1c08;
+        --text-2: #6b5430;
+        --text-3: #a08960;
+        --accent: #f5a623;
+        --accent-soft: #fff3d4;
+        --up: #c0392b;
+        --down: #2d8653;
+        --phone-w: 300px;
+        --phone-h: 640px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+        background: linear-gradient(180deg, #fff8e7, #ffecc2);
+        color: var(--text);
+        padding: 24px 16px 48px;
+      }
+      .doc-head {
+        max-width: 1180px;
+        margin: 0 auto 24px;
+        text-align: center;
+      }
+      .doc-head h1 {
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .doc-head p {
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--text-3);
+        max-width: 680px;
+        margin-inline: auto;
+        line-height: 1.55;
+      }
 
-    .base-note {
-      max-width: 1180px; margin: 0 auto 28px; padding: 12px 16px;
-      background: rgba(255,255,255,0.9); border-radius: 14px; border: 1px solid var(--line);
-      font-size: 12px; color: var(--text-2); line-height: 1.55;
-    }
-    .base-note strong { color: var(--text); }
+      .base-note {
+        max-width: 1180px;
+        margin: 0 auto 28px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--text-2);
+        line-height: 1.55;
+      }
+      .base-note strong {
+        color: var(--text);
+      }
 
-    .compare-table-wrap {
-      max-width: 1180px; margin: 0 auto 32px; overflow-x: auto;
-      background: rgba(255,255,255,0.88); border-radius: 16px; border: 1px solid var(--line);
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th, td { padding: 9px 11px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
-    th { background: var(--accent-soft); font-weight: 700; color: var(--text-2); }
-    td { color: var(--text-2); }
-    td:first-child, th:first-child { font-weight: 700; color: var(--text); white-space: nowrap; }
+      .compare-table-wrap {
+        max-width: 1180px;
+        margin: 0 auto 32px;
+        overflow-x: auto;
+        background: rgba(255, 255, 255, 0.88);
+        border-radius: 16px;
+        border: 1px solid var(--line);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+      th,
+      td {
+        padding: 9px 11px;
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      th {
+        background: var(--accent-soft);
+        font-weight: 700;
+        color: var(--text-2);
+      }
+      td {
+        color: var(--text-2);
+      }
+      td:first-child,
+      th:first-child {
+        font-weight: 700;
+        color: var(--text);
+        white-space: nowrap;
+      }
 
-    .variant { max-width: 1180px; margin: 0 auto 44px; }
-    .variant-head {
-      display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-start;
-      padding: 14px 16px; margin-bottom: 14px;
-      background: rgba(255,255,255,0.92); border-radius: 16px; border: 1px solid var(--line);
-    }
-    .badge { font-size: 10px; font-weight: 800; padding: 5px 9px; border-radius: 7px; background: var(--text); color: #fff; }
-    .variant.v2 .badge { background: #b57900; }
-    .variant.v3 .badge { background: #8b6914; }
-    .v-title { font-size: 17px; font-weight: 800; }
-    .v-desc { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.45; max-width: 520px; }
-    .v-when { margin-left: auto; font-size: 11px; color: var(--text-3); max-width: 200px; line-height: 1.5; }
+      .variant {
+        max-width: 1180px;
+        margin: 0 auto 44px;
+      }
+      .variant-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: flex-start;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 16px;
+        border: 1px solid var(--line);
+      }
+      .badge {
+        font-size: 10px;
+        font-weight: 800;
+        padding: 5px 9px;
+        border-radius: 7px;
+        background: var(--text);
+        color: #fff;
+      }
+      .variant.v2 .badge {
+        background: #b57900;
+      }
+      .variant.v3 .badge {
+        background: #8b6914;
+      }
+      .v-title {
+        font-size: 17px;
+        font-weight: 800;
+      }
+      .v-desc {
+        font-size: 12px;
+        color: var(--text-2);
+        margin-top: 3px;
+        line-height: 1.45;
+        max-width: 520px;
+      }
+      .v-when {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-3);
+        max-width: 200px;
+        line-height: 1.5;
+      }
 
-    .phones { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
-    .pcol { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .plabel { font-size: 10px; font-weight: 700; color: var(--text-2); text-align: center; max-width: 270px; line-height: 1.4; }
-    .arrow { font-size: 20px; color: var(--text-3); align-self: center; display: none; }
-    @media (min-width: 980px) { .phones.flow .arrow { display: block; } }
+      .phones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .pcol {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .plabel {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-2);
+        text-align: center;
+        max-width: 270px;
+        line-height: 1.4;
+      }
+      .arrow {
+        font-size: 20px;
+        color: var(--text-3);
+        align-self: center;
+        display: none;
+      }
+      @media (min-width: 980px) {
+        .phones.flow .arrow {
+          display: block;
+        }
+      }
 
-    .phone {
-      width: var(--phone-w); height: var(--phone-h); padding: 8px; border-radius: 34px; background: #111;
-      box-shadow: 0 16px 40px rgba(80,50,0,0.15); position: relative;
-    }
-    .phone::before {
-      content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-      width: 80px; height: 21px; background: #000; border-radius: 15px; z-index: 5;
-    }
-    .screen { height: 100%; border-radius: 26px; overflow: hidden; background: var(--bg); display: flex; flex-direction: column; }
-    .status { height: 38px; padding: 10px 13px 0; display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: var(--text-2); }
-    .body { flex: 1; padding: 0 10px 4px; display: flex; flex-direction: column; min-height: 0; }
-    .scroll { flex: 1; overflow-y: auto; min-height: 0; }
-    .scroll::-webkit-scrollbar { display: none; }
-    .tabbar { height: 46px; border-top: 1px solid var(--line); background: var(--surface); display: flex; }
-    .tabbar span { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 8px; color: var(--text-3); }
-    .tabbar span.on { color: #b57900; font-weight: 700; }
-    .tabbar i { font-style: normal; font-size: 13px; }
+      .phone {
+        width: var(--phone-w);
+        height: var(--phone-h);
+        padding: 8px;
+        border-radius: 34px;
+        background: #111;
+        box-shadow: 0 16px 40px rgba(80, 50, 0, 0.15);
+        position: relative;
+      }
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 21px;
+        background: #000;
+        border-radius: 15px;
+        z-index: 5;
+      }
+      .screen {
+        height: 100%;
+        border-radius: 26px;
+        overflow: hidden;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+      }
+      .status {
+        height: 38px;
+        padding: 10px 13px 0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-2);
+      }
+      .body {
+        flex: 1;
+        padding: 0 10px 4px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .scroll::-webkit-scrollbar {
+        display: none;
+      }
+      .tabbar {
+        height: 46px;
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+        display: flex;
+      }
+      .tabbar span {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: 8px;
+        color: var(--text-3);
+      }
+      .tabbar span.on {
+        color: #b57900;
+        font-weight: 700;
+      }
+      .tabbar i {
+        font-style: normal;
+        font-size: 13px;
+      }
 
-    .t1 { font-size: 19px; font-weight: 800; letter-spacing: -0.03em; }
-    .t2 { font-size: 14px; font-weight: 800; }
-    .cap { font-size: 8px; font-weight: 700; color: var(--text-3); letter-spacing: 0.07em; }
-    .row-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .btn-icon { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#ffd36a,#ffb830); line-height: 30px; text-align: center; font-size: 15px; }
+      .t1 {
+        font-size: 19px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+      .t2 {
+        font-size: 14px;
+        font-weight: 800;
+      }
+      .cap {
+        font-size: 8px;
+        font-weight: 700;
+        color: var(--text-3);
+        letter-spacing: 0.07em;
+      }
+      .row-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .btn-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #ffd36a, #ffb830);
+        line-height: 30px;
+        text-align: center;
+        font-size: 15px;
+      }
 
-    .seg { display: flex; padding: 3px; background: rgba(255,255,255,0.88); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
-    .seg b { flex: 1; text-align: center; padding: 5px 0; border-radius: 7px; font-size: 10px; font-weight: 600; color: var(--text-3); }
-    .seg b.on { background: linear-gradient(135deg,#ffd36a,#ffb830); color: var(--text); }
+      .seg {
+        display: flex;
+        padding: 3px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+      .seg b {
+        flex: 1;
+        text-align: center;
+        padding: 5px 0;
+        border-radius: 7px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-3);
+      }
+      .seg b.on {
+        background: linear-gradient(135deg, #ffd36a, #ffb830);
+        color: var(--text);
+      }
 
-    .pill-row { display: flex; gap: 4px; margin-bottom: 7px; }
-    .pill { padding: 3px 8px; border-radius: 999px; font-size: 9px; font-weight: 600; background: var(--surface); border: 1px solid var(--line); color: var(--text-2); }
-    .pill.on { background: var(--accent-soft); color: var(--text); }
+      .pill-row {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 7px;
+      }
+      .pill {
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 9px;
+        font-weight: 600;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--text-2);
+      }
+      .pill.on {
+        background: var(--accent-soft);
+        color: var(--text);
+      }
 
-    .report-item {
-      display: grid; grid-template-columns: 58px 1fr auto; gap: 7px; align-items: center;
-      padding: 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; margin-bottom: 5px;
-    }
-    .report-item.sel { border-color: rgba(245,166,35,0.5); box-shadow: 0 0 0 2px rgba(245,166,35,0.15); }
-    .mo { font-size: 9px; color: var(--text-3); font-weight: 600; }
-    .dy { font-size: 18px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
-    .tags i { font-style: normal; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; background: var(--surface-2); margin-right: 3px; }
-    .tags i.w { background: #fdecea; color: var(--up); }
-    .chk { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; }
-    .chk.on { background: var(--accent); border-color: var(--accent); }
-    .act-btn { font-size: 9px; font-weight: 700; color: #b57900; padding: 4px 7px; border-radius: 6px; background: var(--accent-soft); }
+      .report-item {
+        display: grid;
+        grid-template-columns: 58px 1fr auto;
+        gap: 7px;
+        align-items: center;
+        padding: 9px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        margin-bottom: 5px;
+      }
+      .report-item.sel {
+        border-color: rgba(245, 166, 35, 0.5);
+        box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.15);
+      }
+      .mo {
+        font-size: 9px;
+        color: var(--text-3);
+        font-weight: 600;
+      }
+      .dy {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+      .tags i {
+        font-style: normal;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        margin-right: 3px;
+      }
+      .tags i.w {
+        background: #fdecea;
+        color: var(--up);
+      }
+      .chk {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 2px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+      }
+      .chk.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .act-btn {
+        font-size: 9px;
+        font-weight: 700;
+        color: #b57900;
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: var(--accent-soft);
+      }
 
-    .sticky-vs {
-      position: sticky; top: 0; z-index: 2; padding: 8px 0 6px;
-      background: linear-gradient(180deg, var(--bg) 85%, transparent);
-    }
-    .vs-bar {
-      display: grid; grid-template-columns: 1fr auto 1fr; gap: 4px; align-items: center;
-      padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-    }
-    .vs-bar .side { text-align: center; }
-    .vs-bar .lbl { font-size: 7px; color: var(--text-3); font-weight: 700; }
-    .vs-bar .dt { font-size: 14px; font-weight: 800; }
-    .vs-bar .mid { font-size: 8px; font-weight: 800; color: #b57900; text-align: center; }
+      .sticky-vs {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 8px 0 6px;
+        background: linear-gradient(180deg, var(--bg) 85%, transparent);
+      }
+      .vs-bar {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 4px;
+        align-items: center;
+        padding: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .vs-bar .side {
+        text-align: center;
+      }
+      .vs-bar .lbl {
+        font-size: 7px;
+        color: var(--text-3);
+        font-weight: 700;
+      }
+      .vs-bar .dt {
+        font-size: 14px;
+        font-weight: 800;
+      }
+      .vs-bar .mid {
+        font-size: 8px;
+        font-weight: 800;
+        color: #b57900;
+        text-align: center;
+      }
 
-    .step { font-size: 8px; font-weight: 800; color: var(--text-3); margin: 6px 0 4px; letter-spacing: 0.06em; }
-    .pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
-    .pick { padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; text-align: center; }
-    .pick .lbl { font-size: 8px; color: var(--text-3); font-weight: 700; }
-    .pick .dt { font-size: 13px; font-weight: 800; margin-top: 2px; }
+      .step {
+        font-size: 8px;
+        font-weight: 800;
+        color: var(--text-3);
+        margin: 6px 0 4px;
+        letter-spacing: 0.06em;
+      }
+      .pickers {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .pick {
+        padding: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        text-align: center;
+      }
+      .pick .lbl {
+        font-size: 8px;
+        color: var(--text-3);
+        font-weight: 700;
+      }
+      .pick .dt {
+        font-size: 13px;
+        font-weight: 800;
+        margin-top: 2px;
+      }
 
-    .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
-    .chip { padding: 5px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; background: var(--surface); border: 1.5px solid var(--line); color: var(--text-2); }
-    .chip.on { background: var(--text); border-color: var(--text); color: #fff; }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      .chip {
+        padding: 5px 8px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--surface);
+        border: 1.5px solid var(--line);
+        color: var(--text-2);
+      }
+      .chip.on {
+        background: var(--text);
+        border-color: var(--text);
+        color: #fff;
+      }
 
-    .zone-divider { height: 1px; background: var(--line); margin: 8px 0; }
+      .zone-divider {
+        height: 1px;
+        background: var(--line);
+        margin: 8px 0;
+      }
 
-    .delta-hero { text-align: center; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 6px; }
-    .delta-hero .nm { font-size: 10px; font-weight: 700; color: var(--text-2); }
-    .delta-hero .dv { font-size: 28px; font-weight: 800; color: var(--up); letter-spacing: -0.04em; line-height: 1.1; }
+      .delta-hero {
+        text-align: center;
+        padding: 10px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        margin-bottom: 6px;
+      }
+      .delta-hero .nm {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-2);
+      }
+      .delta-hero .dv {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--up);
+        letter-spacing: -0.04em;
+        line-height: 1.1;
+      }
 
-    .cmp-row {
-      display: grid; grid-template-columns: 38px 1fr 1fr 40px; gap: 2px; align-items: center;
-      padding: 7px 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; margin-bottom: 4px; font-size: 10px;
-    }
-    .cmp-row .ab { font-weight: 800; }
-    .cmp-row .v { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-2); }
-    .cmp-row .v.n { color: var(--text); }
-    .cmp-row .c { text-align: right; font-weight: 800; }
-    .c.up { color: var(--up); } .c.dn { color: var(--down); }
+      .cmp-row {
+        display: grid;
+        grid-template-columns: 38px 1fr 1fr 40px;
+        gap: 2px;
+        align-items: center;
+        padding: 7px 9px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        margin-bottom: 4px;
+        font-size: 10px;
+      }
+      .cmp-row .ab {
+        font-weight: 800;
+      }
+      .cmp-row .v {
+        text-align: center;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-2);
+      }
+      .cmp-row .v.n {
+        color: var(--text);
+      }
+      .cmp-row .c {
+        text-align: right;
+        font-weight: 800;
+      }
+      .c.up {
+        color: var(--up);
+      }
+      .c.dn {
+        color: var(--down);
+      }
 
-    /* 区间条对比 */
-    .bar-compare { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 9px; margin-bottom: 5px; }
-    .bar-compare .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-    .bar-compare .ab { font-size: 12px; font-weight: 800; }
-    .bar-compare .chg { font-size: 10px; font-weight: 800; color: var(--up); }
-    .range-track {
-      height: 10px; border-radius: 5px; position: relative;
-      background: linear-gradient(90deg, #fdecea 0%, #e8f5ec 30%, #e8f5ec 70%, #fdecea 100%);
-      margin-bottom: 4px;
-    }
-    .range-track .dot { position: absolute; top: 50%; transform: translate(-50%,-50%); width: 11px; height: 11px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
-    .range-track .dot.a { left: 78%; background: var(--up); }
-    .range-track .dot.b { left: 62%; background: var(--up); opacity: 0.45; }
-    .bar-labels { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+      /* 区间条对比 */
+      .bar-compare {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 9px;
+        margin-bottom: 5px;
+      }
+      .bar-compare .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 6px;
+      }
+      .bar-compare .ab {
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .bar-compare .chg {
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--up);
+      }
+      .range-track {
+        height: 10px;
+        border-radius: 5px;
+        position: relative;
+        background: linear-gradient(
+          90deg,
+          #fdecea 0%,
+          #e8f5ec 30%,
+          #e8f5ec 70%,
+          #fdecea 100%
+        );
+        margin-bottom: 4px;
+      }
+      .range-track .dot {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      }
+      .range-track .dot.a {
+        left: 78%;
+        background: var(--up);
+      }
+      .range-track .dot.b {
+        left: 62%;
+        background: var(--up);
+        opacity: 0.45;
+      }
+      .bar-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
 
-    .diet-block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 5px; }
-    .diet-block .hd { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-bottom: 5px; }
-    .diet-block .hd small { font-size: 8px; color: var(--text-3); font-weight: 600; }
-    .trend-row { display: grid; grid-template-columns: 62px 1fr; gap: 4px; align-items: center; margin-bottom: 5px; }
-    .trend-row .lb { font-size: 7px; font-weight: 700; color: var(--text-2); line-height: 1.25; }
-    .trend-row .lb em { font-style: normal; font-size: 6px; color: var(--text-3); display: block; }
-    svg.ln { width: 100%; height: 24px; display: block; }
-    .xaxis { display: flex; justify-content: space-between; font-size: 6px; color: var(--text-3); }
+      .diet-block {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px;
+        margin-bottom: 5px;
+      }
+      .diet-block .hd {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 800;
+        margin-bottom: 5px;
+      }
+      .diet-block .hd small {
+        font-size: 8px;
+        color: var(--text-3);
+        font-weight: 600;
+      }
+      .trend-row {
+        display: grid;
+        grid-template-columns: 62px 1fr;
+        gap: 4px;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+      .trend-row .lb {
+        font-size: 7px;
+        font-weight: 700;
+        color: var(--text-2);
+        line-height: 1.25;
+      }
+      .trend-row .lb em {
+        font-style: normal;
+        font-size: 6px;
+        color: var(--text-3);
+        display: block;
+      }
+      svg.ln {
+        width: 100%;
+        height: 24px;
+        display: block;
+      }
+      .xaxis {
+        display: flex;
+        justify-content: space-between;
+        font-size: 6px;
+        color: var(--text-3);
+      }
 
-    .view-toggle { display: flex; gap: 4px; margin-bottom: 6px; }
-    .view-toggle span { flex: 1; text-align: center; padding: 5px; border-radius: 8px; font-size: 9px; font-weight: 700; background: var(--surface-2); color: var(--text-3); }
-    .view-toggle span.on { background: var(--text); color: #fff; }
+      .view-toggle {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+      .view-toggle span {
+        flex: 1;
+        text-align: center;
+        padding: 5px;
+        border-radius: 8px;
+        font-size: 9px;
+        font-weight: 700;
+        background: var(--surface-2);
+        color: var(--text-3);
+      }
+      .view-toggle span.on {
+        background: var(--text);
+        color: #fff;
+      }
 
-    .overlay-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 5px; }
-    .overlay-card .title { font-size: 10px; font-weight: 800; margin-bottom: 4px; }
-    .legend { display: flex; gap: 8px; margin-bottom: 4px; }
-    .legend i { font-style: normal; font-size: 7px; color: var(--text-3); display: flex; align-items: center; gap: 3px; }
-    .legend i::before { content: ""; width: 10px; height: 2px; border-radius: 1px; }
-    .legend i.orange::before { background: var(--accent); }
-    .legend i.green::before { background: var(--down); height: 2px; background: repeating-linear-gradient(90deg, var(--down) 0 3px, transparent 3px 5px); }
+      .overlay-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px;
+        margin-bottom: 5px;
+      }
+      .overlay-card .title {
+        font-size: 10px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .legend {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      .legend i {
+        font-style: normal;
+        font-size: 7px;
+        color: var(--text-3);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .legend i::before {
+        content: "";
+        width: 10px;
+        height: 2px;
+        border-radius: 1px;
+      }
+      .legend i.orange::before {
+        background: var(--accent);
+      }
+      .legend i.green::before {
+        background: var(--down);
+        height: 2px;
+        background: repeating-linear-gradient(
+          90deg,
+          var(--down) 0 3px,
+          transparent 3px 5px
+        );
+      }
 
-    .quick-banner {
-      padding: 10px; border-radius: 12px; margin-bottom: 8px;
-      background: linear-gradient(135deg, #fff 0%, #fff6e0 100%); border: 1px solid var(--line);
-    }
-    .quick-banner .top { display: flex; justify-content: space-between; align-items: center; }
-    .quick-banner .tag { font-size: 8px; font-weight: 800; color: #b57900; background: var(--accent-soft); padding: 3px 6px; border-radius: 4px; }
-    .expand-link { font-size: 9px; font-weight: 700; color: var(--text-3); text-align: center; padding: 8px; margin-top: 4px; }
+      .quick-banner {
+        padding: 10px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #fff 0%, #fff6e0 100%);
+        border: 1px solid var(--line);
+      }
+      .quick-banner .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .quick-banner .tag {
+        font-size: 8px;
+        font-weight: 800;
+        color: #b57900;
+        background: var(--accent-soft);
+        padding: 3px 6px;
+        border-radius: 4px;
+      }
+      .expand-link {
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--text-3);
+        text-align: center;
+        padding: 8px;
+        margin-top: 4px;
+      }
 
-    .coef-card { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 10px; margin-bottom: 6px; }
-    .coef-card .title { font-size: 11px; font-weight: 800; margin-bottom: 6px; }
-    svg.big { width: 100%; height: 44px; display: block; }
+      .coef-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        padding: 10px;
+        margin-bottom: 6px;
+      }
+      .coef-card .title {
+        font-size: 11px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+      svg.big {
+        width: 100%;
+        height: 44px;
+        display: block;
+      }
 
-    .float-bar {
-      margin-top: 6px; padding: 8px 10px; background: var(--text); border-radius: 11px;
-      display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 10px; font-weight: 700;
-    }
-    .float-bar button { border: 0; background: var(--accent); color: var(--text); padding: 5px 10px; border-radius: 7px; font-size: 9px; font-weight: 800; font-family: inherit; }
+      .float-bar {
+        margin-top: 6px;
+        padding: 8px 10px;
+        background: var(--text);
+        border-radius: 11px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .float-bar button {
+        border: 0;
+        background: var(--accent);
+        color: var(--text);
+        padding: 5px 10px;
+        border-radius: 7px;
+        font-size: 9px;
+        font-weight: 800;
+        font-family: inherit;
+      }
 
-    .collapse { padding: 8px; background: var(--surface-2); border: 1px dashed var(--line); border-radius: 10px; font-size: 9px; color: var(--text-3); text-align: center; font-weight: 600; }
-  </style>
-</head>
-<body>
-  <header class="doc-head">
-    <h1>方案 A · 三套交互变体</h1>
-    <p>统一骨架：<strong>档案 Tab + 对比 Tab</strong>，报告维度不丢。差异只在「怎么选报告、怎么呈现对比、饮食曲线怎么排」。</p>
-  </header>
+      .collapse {
+        padding: 8px;
+        background: var(--surface-2);
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        font-size: 9px;
+        color: var(--text-3);
+        text-align: center;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="doc-head">
+      <h1>方案 A · 三套交互变体</h1>
+      <p>
+        统一骨架：<strong>档案 Tab + 对比 Tab</strong
+        >，报告维度不丢。差异只在「怎么选报告、怎么呈现对比、饮食曲线怎么排」。
+      </p>
+    </header>
 
-  <div class="base-note">
-    <strong>共同不变：</strong>报告按日期卡片归档 · 同类报告对比 · 自选/默认两次化验 · 化验前 7 天展示
-    <strong>天然蛋白系数、特殊蛋白系数、热卡系数</strong> 日趋势（非均值）· 手动 + OCR 录入
-  </div>
-
-  <div class="compare-table-wrap">
-    <table>
-      <thead>
-        <tr><th>交互点</th><th>A1 一页流</th><th>A2 档案选人</th><th>A3 快速对比</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>怎么进对比</td><td>切对比 Tab，同页配置+看结果</td><td>档案点选 2 份 → 底部栏确认</td><td>打开即「最近 vs 上次」</td></tr>
-        <tr><td>选报告</td><td>顶部 Picker，改即刷新下方</td><td>档案勾选 A/B，对比 Tab 只读</td><td>默认锁定；展开可换</td></tr>
-        <tr><td>化验指标</td><td>Hero + 数字表</td><td>区间条（值在参考范围内）</td><td>Hero + 精简表</td></tr>
-        <tr><td>三系数趋势</td><td>两报告各一块，各 3 小线</td><td>同 A1 + 可切「分开/叠加」</td><td>每系数一张大卡叠加</td></tr>
-        <tr><td>心智负担</td><td>低，一屏走完</td><td>低，像「选文件再对比」</td><td>最低，老用户零步</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ===== A1 ===== -->
-  <section class="variant v1">
-    <div class="variant-head">
-      <span class="badge">A1</span>
-      <div>
-        <div class="v-title">一页流对比</div>
-        <div class="v-desc">对比 Tab 内：选报告 → 选指标 → 结果连续向下滚。顶部 VS 条 sticky，改选项下方即时更新。</div>
-      </div>
-      <div class="v-when">推荐默认实现 · 步骤最少 · 和 v2 原型最接近</div>
+    <div class="base-note">
+      <strong>共同不变：</strong>报告按日期卡片归档 · 同类报告对比 ·
+      自选/默认两次化验 · 化验前 7 天展示
+      <strong>天然蛋白系数、特殊蛋白系数、热卡系数</strong> 日趋势（非均值）·
+      手动 + OCR 录入
     </div>
-    <div class="phones flow">
-      <div class="pcol">
-        <div class="plabel">档案 Tab · 列表 + 录报告</div>
-        <div class="phone">
-          <div class="screen">
-            <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
-            <div class="body">
-              <div class="row-top"><div class="t1">报告</div><div class="btn-icon">＋</div></div>
-              <div class="seg"><b class="on">档案</b><b>对比</b></div>
-              <div class="pill-row"><span class="pill on">全部</span><span class="pill">血串联</span></div>
-              <div class="scroll">
-                <div class="report-item"><div><div class="mo">08月</div><div class="dy">10</div></div><div class="tags"><i class="w">C3 8.2</i><i>Val 72</i></div><span class="act-btn">详情</span></div>
-                <div class="report-item"><div><div class="mo">07月</div><div class="dy">08</div></div><div class="tags"><i class="w">C3 7.1</i></div><span class="act-btn">详情</span></div>
-              </div>
-            </div>
-            <div class="tabbar"><span><i>🍼</i>今日</span><span><i>📅</i>日历</span><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span></div>
+
+    <div class="compare-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>交互点</th>
+            <th>A1 一页流</th>
+            <th>A2 档案选人</th>
+            <th>A3 快速对比</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>怎么进对比</td>
+            <td>切对比 Tab，同页配置+看结果</td>
+            <td>档案点选 2 份 → 底部栏确认</td>
+            <td>打开即「最近 vs 上次」</td>
+          </tr>
+          <tr>
+            <td>选报告</td>
+            <td>顶部 Picker，改即刷新下方</td>
+            <td>档案勾选 A/B，对比 Tab 只读</td>
+            <td>默认锁定；展开可换</td>
+          </tr>
+          <tr>
+            <td>化验指标</td>
+            <td>Hero + 数字表</td>
+            <td>区间条（值在参考范围内）</td>
+            <td>Hero + 精简表</td>
+          </tr>
+          <tr>
+            <td>三系数趋势</td>
+            <td>两报告各一块，各 3 小线</td>
+            <td>同 A1 + 可切「分开/叠加」</td>
+            <td>每系数一张大卡叠加</td>
+          </tr>
+          <tr>
+            <td>心智负担</td>
+            <td>低，一屏走完</td>
+            <td>低，像「选文件再对比」</td>
+            <td>最低，老用户零步</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== A1 ===== -->
+    <section class="variant v1">
+      <div class="variant-head">
+        <span class="badge">A1</span>
+        <div>
+          <div class="v-title">一页流对比</div>
+          <div class="v-desc">
+            对比 Tab 内：选报告 → 选指标 → 结果连续向下滚。顶部 VS 条
+            sticky，改选项下方即时更新。
           </div>
         </div>
+        <div class="v-when">推荐默认实现 · 步骤最少 · 和 v2 原型最接近</div>
       </div>
-      <div class="arrow">→</div>
-      <div class="pcol">
-        <div class="plabel">对比 Tab · 配置与结果同页 · 系数分块 7 日线</div>
-        <div class="phone">
-          <div class="screen">
-            <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
-            <div class="body">
-              <div class="t1" style="margin-bottom:6px;">对比</div>
-              <div class="seg"><b>档案</b><b class="on">对比</b></div>
-              <div class="scroll">
-                <div class="sticky-vs">
-                  <div class="vs-bar">
-                    <div class="side"><div class="lbl">较新</div><div class="dt">08-10</div></div>
-                    <div class="mid">VS</div>
-                    <div class="side"><div class="lbl">较旧</div><div class="dt">07-08</div></div>
+      <div class="phones flow">
+        <div class="pcol">
+          <div class="plabel">档案 Tab · 列表 + 录报告</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
+              <div class="body">
+                <div class="row-top">
+                  <div class="t1">报告</div>
+                  <div class="btn-icon">＋</div>
+                </div>
+                <div class="seg"><b class="on">档案</b><b>对比</b></div>
+                <div class="pill-row">
+                  <span class="pill on">全部</span
+                  ><span class="pill">血串联</span>
+                </div>
+                <div class="scroll">
+                  <div class="report-item">
+                    <div>
+                      <div class="mo">08月</div>
+                      <div class="dy">10</div>
+                    </div>
+                    <div class="tags"><i class="w">C3 8.2</i><i>Val 72</i></div>
+                    <span class="act-btn">详情</span>
+                  </div>
+                  <div class="report-item">
+                    <div>
+                      <div class="mo">07月</div>
+                      <div class="dy">08</div>
+                    </div>
+                    <div class="tags"><i class="w">C3 7.1</i></div>
+                    <span class="act-btn">详情</span>
                   </div>
                 </div>
-                <div class="step">① 选报告</div>
-                <div class="pickers">
-                  <div class="pick"><div class="lbl">报告 A</div><div class="dt">08-10 ▾</div></div>
-                  <div class="pick"><div class="lbl">报告 B</div><div class="dt">07-08 ▾</div></div>
-                </div>
-                <div class="step">② 选指标</div>
-                <div class="chips">
-                  <span class="chip on">C3</span><span class="chip on">Val</span><span class="chip on">C0</span><span class="chip on">C3/C2</span><span class="chip">Met</span>
-                </div>
-                <div class="zone-divider"></div>
-                <div class="step">③ 结果</div>
-                <div class="delta-hero"><div class="nm">C3</div><div class="dv">+1.1 ↑</div></div>
-                <div class="cmp-row"><span class="ab">Val</span><span class="v n">72</span><span class="v">75</span><span class="c dn">-3</span></div>
-                <div class="cmp-row"><span class="ab">C3/C2</span><span class="v n">.38</span><span class="v">.32</span><span class="c up">+.06</span></div>
-                <div class="cap" style="margin:6px 0 4px;">化验前 7 天 · 系数日趋势</div>
-                <div class="diet-block">
-                  <div class="hd"><span>08-10</span><small>8.3–8.9</small></div>
-                  <div class="trend-row"><div class="lb">天然蛋白系数<em>g/kg/d</em></div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#f5a623" stroke-width="2" points="0,10 33,12 66,14 99,16 132,13 165,15 198,12"/></svg></div></div>
-                  <div class="trend-row"><div class="lb">特殊蛋白系数<em>g/kg/d</em></div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#6a9fd8" stroke-width="2" points="0,16 198,8"/></svg></div></div>
-                  <div class="trend-row"><div class="lb">热卡系数<em>kcal/kg/d</em></div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#8b7355" stroke-width="2" points="0,14 198,12"/></svg></div></div>
-                </div>
-                <div class="diet-block">
-                  <div class="hd"><span>07-08</span><small>7.1–7.7</small></div>
-                  <div class="trend-row"><div class="lb">天然蛋白系数<em>g/kg/d</em></div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#2d8653" stroke-width="2" points="0,6 198,10"/></svg></div></div>
-                  <div class="trend-row"><div class="lb">特殊蛋白系数<em>g/kg/d</em></div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#6a9fd8" stroke-width="2" points="0,18 198,20"/></svg></div></div>
-                  <div class="trend-row"><div class="lb">热卡系数<em>kcal/kg/d</em></div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#8b7355" stroke-width="2" points="0,12 198,14"/></svg></div></div>
-                </div>
+              </div>
+              <div class="tabbar">
+                <span><i>🍼</i>今日</span><span><i>📅</i>日历</span
+                ><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span>
               </div>
             </div>
-            <div class="tabbar"><span><i>🍼</i>今日</span><span><i>📅</i>日历</span><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span></div>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="pcol">
+          <div class="plabel">对比 Tab · 配置与结果同页 · 系数分块 7 日线</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
+              <div class="body">
+                <div class="t1" style="margin-bottom: 6px">对比</div>
+                <div class="seg"><b>档案</b><b class="on">对比</b></div>
+                <div class="scroll">
+                  <div class="sticky-vs">
+                    <div class="vs-bar">
+                      <div class="side">
+                        <div class="lbl">较新</div>
+                        <div class="dt">08-10</div>
+                      </div>
+                      <div class="mid">VS</div>
+                      <div class="side">
+                        <div class="lbl">较旧</div>
+                        <div class="dt">07-08</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="step">① 选报告</div>
+                  <div class="pickers">
+                    <div class="pick">
+                      <div class="lbl">报告 A</div>
+                      <div class="dt">08-10 ▾</div>
+                    </div>
+                    <div class="pick">
+                      <div class="lbl">报告 B</div>
+                      <div class="dt">07-08 ▾</div>
+                    </div>
+                  </div>
+                  <div class="step">② 选指标</div>
+                  <div class="chips">
+                    <span class="chip on">C3</span
+                    ><span class="chip on">Val</span
+                    ><span class="chip on">C0</span
+                    ><span class="chip on">C3/C2</span
+                    ><span class="chip">Met</span>
+                  </div>
+                  <div class="zone-divider"></div>
+                  <div class="step">③ 结果</div>
+                  <div class="delta-hero">
+                    <div class="nm">C3</div>
+                    <div class="dv">+1.1 ↑</div>
+                  </div>
+                  <div class="cmp-row">
+                    <span class="ab">Val</span><span class="v n">72</span
+                    ><span class="v">75</span><span class="c dn">-3</span>
+                  </div>
+                  <div class="cmp-row">
+                    <span class="ab">C3/C2</span><span class="v n">.38</span
+                    ><span class="v">.32</span><span class="c up">+.06</span>
+                  </div>
+                  <div class="cap" style="margin: 6px 0 4px">
+                    化验前 7 天 · 系数日趋势
+                  </div>
+                  <div class="diet-block">
+                    <div class="hd">
+                      <span>08-10</span><small>8.3–8.9</small>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">天然蛋白系数<em>g/kg/d</em></div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#f5a623"
+                            stroke-width="2"
+                            points="0,10 33,12 66,14 99,16 132,13 165,15 198,12"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">特殊蛋白系数<em>g/kg/d</em></div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#6a9fd8"
+                            stroke-width="2"
+                            points="0,16 198,8"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">热卡系数<em>kcal/kg/d</em></div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#8b7355"
+                            stroke-width="2"
+                            points="0,14 198,12"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="diet-block">
+                    <div class="hd">
+                      <span>07-08</span><small>7.1–7.7</small>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">天然蛋白系数<em>g/kg/d</em></div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#2d8653"
+                            stroke-width="2"
+                            points="0,6 198,10"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">特殊蛋白系数<em>g/kg/d</em></div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#6a9fd8"
+                            stroke-width="2"
+                            points="0,18 198,20"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">热卡系数<em>kcal/kg/d</em></div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#8b7355"
+                            stroke-width="2"
+                            points="0,12 198,14"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span><i>🍼</i>今日</span><span><i>📅</i>日历</span
+                ><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ===== A2 ===== -->
-  <section class="variant v2">
-    <div class="variant-head">
-      <span class="badge">A2</span>
-      <div>
-        <div class="v-title">档案点选 → 对比</div>
-        <div class="v-desc">在档案里勾选两份报告（像选照片），底部确认后进对比 Tab。指标用区间条；饮食可切换「分开 / 叠加」。</div>
+    <!-- ===== A2 ===== -->
+    <section class="variant v2">
+      <div class="variant-head">
+        <span class="badge">A2</span>
+        <div>
+          <div class="v-title">档案点选 → 对比</div>
+          <div class="v-desc">
+            在档案里勾选两份报告（像选照片），底部确认后进对比
+            Tab。指标用区间条；饮食可切换「分开 / 叠加」。
+          </div>
+        </div>
+        <div class="v-when">符合「先找报告再比」习惯 · 指标区间条更易读</div>
       </div>
-      <div class="v-when">符合「先找报告再比」习惯 · 指标区间条更易读</div>
-    </div>
-    <div class="phones flow">
-      <div class="pcol">
-        <div class="plabel">档案 Tab · 勾选 2 份 · 底部「开始对比」</div>
-        <div class="phone">
-          <div class="screen">
-            <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
-            <div class="body">
-              <div class="row-top"><div class="t1">报告</div><div class="btn-icon">＋</div></div>
-              <div class="seg"><b class="on">档案</b><b>对比</b></div>
-              <div class="cap" style="margin-bottom:6px;">已选 2 份 · 血串联</div>
-              <div class="scroll">
-                <div class="report-item sel"><div><div class="mo">08月</div><div class="dy">10</div></div><div class="tags"><i class="w">C3 8.2</i></div><div class="chk on">✓</div></div>
-                <div class="report-item sel"><div><div class="mo">07月</div><div class="dy">08</div></div><div class="tags"><i class="w">C3 7.1</i></div><div class="chk on">✓</div></div>
-                <div class="report-item"><div><div class="mo">06月</div><div class="dy">15</div></div><div class="tags"><i>C3 6.8</i></div><div class="chk"></div></div>
+      <div class="phones flow">
+        <div class="pcol">
+          <div class="plabel">档案 Tab · 勾选 2 份 · 底部「开始对比」</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
+              <div class="body">
+                <div class="row-top">
+                  <div class="t1">报告</div>
+                  <div class="btn-icon">＋</div>
+                </div>
+                <div class="seg"><b class="on">档案</b><b>对比</b></div>
+                <div class="cap" style="margin-bottom: 6px">
+                  已选 2 份 · 血串联
+                </div>
+                <div class="scroll">
+                  <div class="report-item sel">
+                    <div>
+                      <div class="mo">08月</div>
+                      <div class="dy">10</div>
+                    </div>
+                    <div class="tags"><i class="w">C3 8.2</i></div>
+                    <div class="chk on">✓</div>
+                  </div>
+                  <div class="report-item sel">
+                    <div>
+                      <div class="mo">07月</div>
+                      <div class="dy">08</div>
+                    </div>
+                    <div class="tags"><i class="w">C3 7.1</i></div>
+                    <div class="chk on">✓</div>
+                  </div>
+                  <div class="report-item">
+                    <div>
+                      <div class="mo">06月</div>
+                      <div class="dy">15</div>
+                    </div>
+                    <div class="tags"><i>C3 6.8</i></div>
+                    <div class="chk"></div>
+                  </div>
+                </div>
+                <div class="float-bar">
+                  <span>08-10 vs 07-08</span><button>开始对比</button>
+                </div>
               </div>
-              <div class="float-bar"><span>08-10 vs 07-08</span><button>开始对比</button></div>
+              <div class="tabbar">
+                <span><i>🍼</i>今日</span><span><i>📅</i>日历</span
+                ><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span>
+              </div>
             </div>
-            <div class="tabbar"><span><i>🍼</i>今日</span><span><i>📅</i>日历</span><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span></div>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="pcol">
+          <div class="plabel">对比 Tab · 区间条 + 饮食分开/叠加</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
+              <div class="body">
+                <div class="row-top">
+                  <div>
+                    <div class="cap">血串联</div>
+                    <div class="t2">08-10 vs 07-08</div>
+                  </div>
+                  <span class="act-btn">换报告</span>
+                </div>
+                <div class="seg"><b>档案</b><b class="on">对比</b></div>
+                <div class="scroll">
+                  <div class="bar-compare">
+                    <div class="head">
+                      <span class="ab">C3</span><span class="chg">+1.1 ↑</span>
+                    </div>
+                    <div class="range-track">
+                      <span class="dot b"></span><span class="dot a"></span>
+                    </div>
+                    <div class="bar-labels">
+                      <span>7.1 · 07-08</span><span>参考区</span
+                      ><span>8.2 · 08-10</span>
+                    </div>
+                  </div>
+                  <div class="bar-compare">
+                    <div class="head">
+                      <span class="ab">Val</span
+                      ><span class="chg" style="color: var(--down)">-3</span>
+                    </div>
+                    <div class="range-track">
+                      <span
+                        class="dot b"
+                        style="left: 55%; opacity: 1; background: var(--down)"
+                      ></span
+                      ><span
+                        class="dot a"
+                        style="left: 50%; background: var(--down)"
+                      ></span>
+                    </div>
+                    <div class="bar-labels">
+                      <span>75</span><span>45–120</span><span>72</span>
+                    </div>
+                  </div>
+                  <div class="cap" style="margin: 8px 0 4px">
+                    化验前 7 天 · 三系数
+                  </div>
+                  <div class="view-toggle">
+                    <span class="on">分开看</span><span>叠加看</span>
+                  </div>
+                  <div class="diet-block">
+                    <div class="hd">
+                      <span>08-10</span><small>8.3–8.9</small>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">天然蛋白系数</div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#f5a623"
+                            stroke-width="2"
+                            points="0,12 198,10"
+                          />
+                        </svg>
+                        <div class="xaxis">
+                          <span>3</span><span>5</span><span>7</span
+                          ><span>9</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="diet-block">
+                    <div class="hd">
+                      <span>07-08</span><small>7.1–7.7</small>
+                    </div>
+                    <div class="trend-row">
+                      <div class="lb">天然蛋白系数</div>
+                      <div>
+                        <svg class="ln" viewBox="0 0 200 24">
+                          <polyline
+                            fill="none"
+                            stroke="#2d8653"
+                            stroke-width="2"
+                            points="0,8 198,12"
+                          />
+                        </svg>
+                        <div class="xaxis">
+                          <span>1</span><span>3</span><span>5</span
+                          ><span>7</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span><i>🍼</i>今日</span><span><i>📅</i>日历</span
+                ><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="arrow">→</div>
-      <div class="pcol">
-        <div class="plabel">对比 Tab · 区间条 + 饮食分开/叠加</div>
-        <div class="phone">
-          <div class="screen">
-            <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
-            <div class="body">
-              <div class="row-top"><div><div class="cap">血串联</div><div class="t2">08-10 vs 07-08</div></div><span class="act-btn">换报告</span></div>
-              <div class="seg"><b>档案</b><b class="on">对比</b></div>
-              <div class="scroll">
-                <div class="bar-compare">
-                  <div class="head"><span class="ab">C3</span><span class="chg">+1.1 ↑</span></div>
-                  <div class="range-track"><span class="dot b"></span><span class="dot a"></span></div>
-                  <div class="bar-labels"><span>7.1 · 07-08</span><span>参考区</span><span>8.2 · 08-10</span></div>
-                </div>
-                <div class="bar-compare">
-                  <div class="head"><span class="ab">Val</span><span class="chg" style="color:var(--down);">-3</span></div>
-                  <div class="range-track"><span class="dot b" style="left:55%;opacity:1;background:var(--down);"></span><span class="dot a" style="left:50%;background:var(--down);"></span></div>
-                  <div class="bar-labels"><span>75</span><span>45–120</span><span>72</span></div>
-                </div>
-                <div class="cap" style="margin:8px 0 4px;">化验前 7 天 · 三系数</div>
-                <div class="view-toggle"><span class="on">分开看</span><span>叠加看</span></div>
-                <div class="diet-block">
-                  <div class="hd"><span>08-10</span><small>8.3–8.9</small></div>
-                  <div class="trend-row"><div class="lb">天然蛋白系数</div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#f5a623" stroke-width="2" points="0,12 198,10"/></svg><div class="xaxis"><span>3</span><span>5</span><span>7</span><span>9</span></div></div></div>
-                </div>
-                <div class="diet-block">
-                  <div class="hd"><span>07-08</span><small>7.1–7.7</small></div>
-                  <div class="trend-row"><div class="lb">天然蛋白系数</div><div><svg class="ln" viewBox="0 0 200 24"><polyline fill="none" stroke="#2d8653" stroke-width="2" points="0,8 198,12"/></svg><div class="xaxis"><span>1</span><span>3</span><span>5</span><span>7</span></div></div></div>
-                </div>
-              </div>
-            </div>
-            <div class="tabbar"><span><i>🍼</i>今日</span><span><i>📅</i>日历</span><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ===== A3 ===== -->
-  <section class="variant v3">
-    <div class="variant-head">
-      <span class="badge">A3</span>
-      <div>
-        <div class="v-title">快速对比 + 可展开自定义</div>
-        <div class="v-desc">对比 Tab 默认展示同类「最近一次 vs 上一次」。三系数各一张大卡叠加 7 日线。需比别的日期时，展开换报告/指标。</div>
+    <!-- ===== A3 ===== -->
+    <section class="variant v3">
+      <div class="variant-head">
+        <span class="badge">A3</span>
+        <div>
+          <div class="v-title">快速对比 + 可展开自定义</div>
+          <div class="v-desc">
+            对比 Tab 默认展示同类「最近一次 vs 上一次」。三系数各一张大卡叠加 7
+            日线。需比别的日期时，展开换报告/指标。
+          </div>
+        </div>
+        <div class="v-when">报告逐渐变多 · 80% 场景零配置 · 门诊前最快</div>
       </div>
-      <div class="v-when">报告逐渐变多 · 80% 场景零配置 · 门诊前最快</div>
-    </div>
-    <div class="phones flow">
-      <div class="pcol">
-        <div class="plabel">档案 Tab · 与 A1 相同</div>
-        <div class="phone">
-          <div class="screen">
-            <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
-            <div class="body">
-              <div class="row-top"><div class="t1">报告</div><div class="btn-icon">＋</div></div>
-              <div class="seg"><b class="on">档案</b><b>对比</b></div>
-              <div class="scroll">
-                <div class="report-item"><div><div class="mo">08月</div><div class="dy">10</div></div><div class="tags"><i class="w">C3 8.2</i></div><span class="act-btn">详情</span></div>
-                <div class="report-item"><div><div class="mo">07月</div><div class="dy">08</div></div><div class="tags"><i class="w">C3 7.1</i></div><span class="act-btn">详情</span></div>
+      <div class="phones flow">
+        <div class="pcol">
+          <div class="plabel">档案 Tab · 与 A1 相同</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
+              <div class="body">
+                <div class="row-top">
+                  <div class="t1">报告</div>
+                  <div class="btn-icon">＋</div>
+                </div>
+                <div class="seg"><b class="on">档案</b><b>对比</b></div>
+                <div class="scroll">
+                  <div class="report-item">
+                    <div>
+                      <div class="mo">08月</div>
+                      <div class="dy">10</div>
+                    </div>
+                    <div class="tags"><i class="w">C3 8.2</i></div>
+                    <span class="act-btn">详情</span>
+                  </div>
+                  <div class="report-item">
+                    <div>
+                      <div class="mo">07月</div>
+                      <div class="dy">08</div>
+                    </div>
+                    <div class="tags"><i class="w">C3 7.1</i></div>
+                    <span class="act-btn">详情</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span><i>🍼</i>今日</span><span><i>📅</i>日历</span
+                ><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span>
               </div>
             </div>
-            <div class="tabbar"><span><i>🍼</i>今日</span><span><i>📅</i>日历</span><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span></div>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="pcol">
+          <div class="plabel">对比 Tab · 默认最近两次 · 三系数大卡叠加</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
+              <div class="body">
+                <div class="t1" style="margin-bottom: 6px">对比</div>
+                <div class="seg"><b>档案</b><b class="on">对比</b></div>
+                <div class="pill-row">
+                  <span class="pill on">血串联</span
+                  ><span class="pill">尿串联</span>
+                </div>
+                <div class="scroll">
+                  <div class="quick-banner">
+                    <div class="top">
+                      <span class="tag">最近两次</span
+                      ><span style="font-size: 10px; font-weight: 800"
+                        >08-10 vs 07-08</span
+                      >
+                    </div>
+                  </div>
+                  <div class="delta-hero">
+                    <div class="nm">C3 较上次</div>
+                    <div class="dv">+1.1 ↑</div>
+                  </div>
+                  <div class="cmp-row">
+                    <span class="ab">Val</span><span class="v n">72</span
+                    ><span class="v">75</span><span class="c dn">-3</span>
+                  </div>
+                  <div class="cap" style="margin: 8px 0 4px">
+                    化验前 7 天 · 系数叠加
+                  </div>
+                  <div class="coef-card">
+                    <div class="title">天然蛋白系数</div>
+                    <div class="legend">
+                      <i class="orange">08-10 前</i
+                      ><i class="green">07-08 前</i>
+                    </div>
+                    <svg class="big" viewBox="0 0 280 44">
+                      <polyline
+                        fill="none"
+                        stroke="#f5a623"
+                        stroke-width="2.5"
+                        points="8,30 48,28 88,26 128,24 168,22 208,20 248,18 272,16"
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="#2d8653"
+                        stroke-width="2.5"
+                        stroke-dasharray="4 3"
+                        points="8,14 48,16 88,18 128,16 168,18 208,17 248,19 272,20"
+                      />
+                    </svg>
+                    <div class="xaxis">
+                      <span>1</span><span>2</span><span>3</span><span>4</span
+                      ><span>5</span><span>6</span><span>7</span>
+                    </div>
+                  </div>
+                  <div class="coef-card">
+                    <div class="title">特殊蛋白系数</div>
+                    <svg class="big" viewBox="0 0 280 36">
+                      <polyline
+                        fill="none"
+                        stroke="#6a9fd8"
+                        stroke-width="2"
+                        points="8,12 272,22"
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="#6a9fd8"
+                        stroke-width="2"
+                        stroke-dasharray="4 3"
+                        opacity="0.55"
+                        points="8,26 272,16"
+                      />
+                    </svg>
+                  </div>
+                  <div class="coef-card">
+                    <div class="title">热卡系数</div>
+                    <svg class="big" viewBox="0 0 280 36">
+                      <polyline
+                        fill="none"
+                        stroke="#8b7355"
+                        stroke-width="2"
+                        points="8,16 272,14"
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="#8b7355"
+                        stroke-width="2"
+                        stroke-dasharray="4 3"
+                        opacity="0.55"
+                        points="8,22 272,20"
+                      />
+                    </svg>
+                  </div>
+                  <div class="collapse">▾ 换报告 / 换指标</div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span><i>🍼</i>今日</span><span><i>📅</i>日历</span
+                ><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="arrow">→</div>
-      <div class="pcol">
-        <div class="plabel">对比 Tab · 默认最近两次 · 三系数大卡叠加</div>
-        <div class="phone">
-          <div class="screen">
-            <div class="status"><span>13:21</span><span>▮▮ 🔋</span></div>
-            <div class="body">
-              <div class="t1" style="margin-bottom:6px;">对比</div>
-              <div class="seg"><b>档案</b><b class="on">对比</b></div>
-              <div class="pill-row"><span class="pill on">血串联</span><span class="pill">尿串联</span></div>
-              <div class="scroll">
-                <div class="quick-banner">
-                  <div class="top"><span class="tag">最近两次</span><span style="font-size:10px;font-weight:800;">08-10 vs 07-08</span></div>
-                </div>
-                <div class="delta-hero"><div class="nm">C3 较上次</div><div class="dv">+1.1 ↑</div></div>
-                <div class="cmp-row"><span class="ab">Val</span><span class="v n">72</span><span class="v">75</span><span class="c dn">-3</span></div>
-                <div class="cap" style="margin:8px 0 4px;">化验前 7 天 · 系数叠加</div>
-                <div class="coef-card">
-                  <div class="title">天然蛋白系数</div>
-                  <div class="legend"><i class="orange">08-10 前</i><i class="green">07-08 前</i></div>
-                  <svg class="big" viewBox="0 0 280 44"><polyline fill="none" stroke="#f5a623" stroke-width="2.5" points="8,30 48,28 88,26 128,24 168,22 208,20 248,18 272,16"/><polyline fill="none" stroke="#2d8653" stroke-width="2.5" stroke-dasharray="4 3" points="8,14 48,16 88,18 128,16 168,18 208,17 248,19 272,20"/></svg>
-                  <div class="xaxis"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
-                </div>
-                <div class="coef-card">
-                  <div class="title">特殊蛋白系数</div>
-                  <svg class="big" viewBox="0 0 280 36"><polyline fill="none" stroke="#6a9fd8" stroke-width="2" points="8,12 272,22"/><polyline fill="none" stroke="#6a9fd8" stroke-width="2" stroke-dasharray="4 3" opacity="0.55" points="8,26 272,16"/></svg>
-                </div>
-                <div class="coef-card">
-                  <div class="title">热卡系数</div>
-                  <svg class="big" viewBox="0 0 280 36"><polyline fill="none" stroke="#8b7355" stroke-width="2" points="8,16 272,14"/><polyline fill="none" stroke="#8b7355" stroke-width="2" stroke-dasharray="4 3" opacity="0.55" points="8,22 272,20"/></svg>
-                </div>
-                <div class="collapse">▾ 换报告 / 换指标</div>
-              </div>
-            </div>
-            <div class="tabbar"><span><i>🍼</i>今日</span><span><i>📅</i>日历</span><span class="on"><i>🧪</i>报告</span><span><i>👤</i>我的</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-</body>
+    </section>
+  </body>
 </html>

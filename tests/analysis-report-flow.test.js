@@ -29,6 +29,7 @@ test('analysis-report page wires compare builders, lazy feeding load, and detail
 
   assert.match(js, /buildReportArchivePreview/);
   assert.match(js, /buildReportComparePreview/);
+  assert.match(js, /resolveCompareReportSelection/);
   assert.match(js, /resolveCompareNutritionWindows/);
   assert.match(js, /ensureCompareFeedingData/);
   assert.match(js, /REPORTS_CACHE_TTL_MS/);

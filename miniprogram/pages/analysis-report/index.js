@@ -3,10 +3,10 @@ const NutritionModel = require('../../models/nutrition');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const {
   buildReportArchivePreview,
-  buildReportComparePickerOptions,
   buildReportComparePreview,
   inferDefaultCompareReportType,
-  resolveCompareNutritionWindows
+  resolveCompareNutritionWindows,
+  resolveCompareReportSelection
 } = require('../../utils/reportWorkbench');
 
 const REPORTS_CACHE_TTL_MS = 60000;
@@ -91,7 +91,11 @@ Page({
       this.loadReportData({ force: true });
       return;
     }
-    this.loadReportData();
+    this.loadReportData().then(() => {
+      if (this.data.mainTab === MAIN_TABS.COMPARE) {
+        this.ensureCompareFeedingData();
+      }
+    });
   },
 
   onPullDownRefresh() {
@@ -305,9 +309,12 @@ Page({
     });
     const activeReportId = archive.selectedCompareReportId;
     const resolvedCompareType = inferDefaultCompareReportType(reports, compareReportType || filterType);
-    const compareOptions = buildReportComparePickerOptions(reports, resolvedCompareType);
-    const nextReportAId = compareReportAId || compareOptions[0]?.reportId || '';
-    const nextReportBId = compareReportBId || compareOptions[1]?.reportId || compareOptions[0]?.reportId || '';
+    const compareSelection = resolveCompareReportSelection(
+      reports,
+      resolvedCompareType,
+      compareReportAId,
+      compareReportBId
+    );
 
     this.setData({
       mainTab,
@@ -317,11 +324,11 @@ Page({
       archiveReportCards: archive.reportCards,
       archiveYearGroups: archive.reportYearGroups,
       compareReportType: resolvedCompareType,
-      compareReportOptions: compareOptions,
-      compareReportAId: nextReportAId,
-      compareReportBId: nextReportBId,
-      compareReportAIndex: findPickerIndex(compareOptions, nextReportAId),
-      compareReportBIndex: findPickerIndex(compareOptions, nextReportBId),
+      compareReportOptions: compareSelection.options,
+      compareReportAId: compareSelection.reportAId,
+      compareReportBId: compareSelection.reportBId,
+      compareReportAIndex: compareSelection.reportAIndex,
+      compareReportBIndex: compareSelection.reportBIndex,
       compareSelectedMetricKeys,
       loading: false
     }, () => {
@@ -345,10 +352,17 @@ Page({
       fallbackWeight
     } = this.data;
 
+    const compareSelection = resolveCompareReportSelection(
+      reportsCache || [],
+      compareReportType,
+      compareReportAId,
+      compareReportBId
+    );
+
     const currentCompareView = buildReportComparePreview({
       reportType: compareReportType,
-      reportAId: compareReportAId,
-      reportBId: compareReportBId,
+      reportAId: compareSelection.reportAId,
+      reportBId: compareSelection.reportBId,
       selectedMetricKeys: compareSelectedMetricKeys,
       reports: reportsCache || [],
       dailySummaries: dailySummariesCache || [],
@@ -356,12 +370,13 @@ Page({
       fallbackWeight
     });
 
-    const compareOptions = buildReportComparePickerOptions(reportsCache || [], compareReportType);
     this.setData({
       currentCompareView,
-      compareReportOptions: compareOptions,
-      compareReportAIndex: findPickerIndex(compareOptions, compareReportAId),
-      compareReportBIndex: findPickerIndex(compareOptions, compareReportBId)
+      compareReportOptions: compareSelection.options,
+      compareReportAId: compareSelection.reportAId,
+      compareReportBId: compareSelection.reportBId,
+      compareReportAIndex: compareSelection.reportAIndex,
+      compareReportBIndex: compareSelection.reportBIndex
     });
   },
 
@@ -391,14 +406,19 @@ Page({
     const reportType = e.currentTarget.dataset.type;
     if (!reportType || reportType === this.data.compareReportType) return;
 
-    const compareOptions = buildReportComparePickerOptions(this.data.reportsCache || [], reportType);
+    const compareSelection = resolveCompareReportSelection(
+      this.data.reportsCache || [],
+      reportType,
+      '',
+      ''
+    );
     this.setData({
       compareReportType: reportType,
-      compareReportOptions: compareOptions,
-      compareReportAId: compareOptions[0]?.reportId || '',
-      compareReportBId: compareOptions[1]?.reportId || compareOptions[0]?.reportId || '',
-      compareReportAIndex: 0,
-      compareReportBIndex: compareOptions.length > 1 ? 1 : 0
+      compareReportOptions: compareSelection.options,
+      compareReportAId: compareSelection.reportAId,
+      compareReportBId: compareSelection.reportBId,
+      compareReportAIndex: compareSelection.reportAIndex,
+      compareReportBIndex: compareSelection.reportBIndex
     }, () => {
       this.ensureCompareFeedingData();
     });

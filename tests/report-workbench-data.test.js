@@ -13,6 +13,7 @@ const {
   collectNutritionMetricsFromSummaries,
   resolveCompareFeedingDataRange,
   resolveCompareNutritionWindows,
+  resolveCompareReportSelection,
   resolveWeekBeforeReport
 } = require('../miniprogram/utils/reportWorkbench');
 
@@ -832,6 +833,63 @@ test('buildReportComparePreview rejects compare when only one same-type report e
   assert.equal(compare.canCompare, false);
   assert.equal(compare.reportCount, 1);
   assert.match(compare.summaryLines[0], /至少需要两份/);
+});
+
+test('resolveCompareReportSelection keeps picker ids distinct when report B id is stale', () => {
+  const reports = [
+    {
+      _id: 'blood-new',
+      reportType: 'blood_ms',
+      reportDate: new Date('2026-04-25T00:00:00+08:00'),
+      indicators: { c3: { value: '8.1', status: 'high' } }
+    },
+    {
+      _id: 'blood-old',
+      reportType: 'blood_ms',
+      reportDate: new Date('2026-01-10T00:00:00+08:00'),
+      indicators: { c3: { value: '6.2', status: 'normal' } }
+    }
+  ];
+
+  const selection = resolveCompareReportSelection(
+    reports,
+    'blood_ms',
+    'blood-new',
+    'missing-report-id'
+  );
+
+  assert.equal(selection.reportAId, 'blood-new');
+  assert.equal(selection.reportBId, 'blood-old');
+  assert.equal(selection.reportAIndex, 0);
+  assert.equal(selection.reportBIndex, 1);
+});
+
+test('buildReportComparePreview does not silently compare the same report when report B id is stale', () => {
+  const reports = [
+    {
+      _id: 'blood-new',
+      reportType: 'blood_ms',
+      reportDate: new Date('2026-04-25T00:00:00+08:00'),
+      indicators: { c3: { value: '8.1', status: 'high' } }
+    },
+    {
+      _id: 'blood-old',
+      reportType: 'blood_ms',
+      reportDate: new Date('2026-01-10T00:00:00+08:00'),
+      indicators: { c3: { value: '6.2', status: 'normal' } }
+    }
+  ];
+
+  const compare = buildReportComparePreview({
+    reportType: 'blood_ms',
+    reportAId: 'blood-new',
+    reportBId: 'missing-report-id',
+    reports
+  });
+
+  assert.equal(compare.canCompare, false);
+  assert.equal(compare.reportA.id, 'blood-new');
+  assert.equal(compare.reportB, null);
 });
 
 test('report workbench does not read persisted feeding record summary as nutrition source', () => {

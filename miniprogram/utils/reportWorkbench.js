@@ -1442,6 +1442,47 @@ function buildReportComparePickerOptions(reports = [], reportType = '') {
     }));
 }
 
+function resolveCompareReportSelection(reports = [], reportType = '', reportAId = '', reportBId = '') {
+  const options = buildReportComparePickerOptions(reports, reportType);
+  if (!options.length) {
+    return {
+      options,
+      reportAId: '',
+      reportBId: '',
+      reportAIndex: 0,
+      reportBIndex: 0
+    };
+  }
+
+  const findOptionIndex = (id) => options.findIndex((item) => item.reportId === id);
+
+  let reportAIndex = findOptionIndex(reportAId);
+  if (reportAIndex < 0) reportAIndex = 0;
+
+  let reportBIndex = findOptionIndex(reportBId);
+  if (options.length === 1) {
+    reportBIndex = 0;
+  } else if (reportBIndex < 0 || reportBIndex === reportAIndex) {
+    reportBIndex = options.findIndex((_, index) => index !== reportAIndex);
+    if (reportBIndex < 0) {
+      reportBIndex = reportAIndex === 0 ? 1 : 0;
+    }
+  }
+
+  return {
+    options,
+    reportAId: options[reportAIndex].reportId,
+    reportBId: options[reportBIndex].reportId,
+    reportAIndex,
+    reportBIndex
+  };
+}
+
+function findReportById(reports = [], selectedReportId = '') {
+  if (!selectedReportId) return null;
+  return reports.find((report) => getReportId(report) === selectedReportId) || null;
+}
+
 function inferDefaultCompareReportType(reports = [], preferredType = '') {
   if (preferredType && preferredType !== 'all') {
     return preferredType;
@@ -1468,8 +1509,8 @@ function buildReportComparePreview({
   fallbackWeight = 0
 } = {}) {
   const sameTypeReports = reports.filter((report) => report.reportType === reportType);
-  let reportA = reportAId ? pickSelectedReport(sameTypeReports, reportAId) : sameTypeReports[0];
-  let reportB = reportBId ? pickSelectedReport(sameTypeReports, reportBId) : sameTypeReports[1];
+  let reportA = reportAId ? findReportById(sameTypeReports, reportAId) : sameTypeReports[0] || null;
+  let reportB = reportBId ? findReportById(sameTypeReports, reportBId) : sameTypeReports[1] || null;
 
   if (!reportA || !reportB) {
     return {
@@ -1681,6 +1722,7 @@ module.exports = {
   buildReportTrendPreview,
   buildReportWorkbenchView,
   inferDefaultCompareReportType,
+  resolveCompareReportSelection,
   resolveFeedingDataRange,
   resolveCompareFeedingDataRange,
   resolveCompareNutritionWindows,
