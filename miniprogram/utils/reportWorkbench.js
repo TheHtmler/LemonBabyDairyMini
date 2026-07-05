@@ -1,4 +1,5 @@
 const ReportModel = require('../models/report');
+const { formatReportNumber } = require('./reportNumberFormat');
 const { calculator: feedingCalculator } = require('./feedingUtils');
 const {
   mergeTreatmentIntoMacroSummary,
@@ -859,17 +860,50 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
 
   const reportCards = filteredReports.map((report) => {
     const summary = ReportModel.getReportSummary(report);
+    const dateKey = toDateKey(report.reportDate);
+    const [year, month, day] = dateKey.split('-');
+    const metricConfigMap = getMetricConfigMap(report.reportType);
+    const keys = KEY_METRICS_BY_REPORT_TYPE[report.reportType] || [];
+    const keyTags = keys
+      .filter((key) => report.indicators?.[key]?.value !== undefined && report.indicators?.[key]?.value !== '')
+      .slice(0, 3)
+      .map((key) => {
+        const config = metricConfigMap[key] || {};
+        const value = formatCompactNumber(report.indicators[key].value, 2);
+        const abnormal = report.indicators[key].status === 'high' || report.indicators[key].status === 'low';
+        return {
+          key,
+          text: `${ReportModel.getIndicatorDisplayName(config) || key} ${value}`,
+          abnormal
+        };
+      });
     return {
       reportId: getReportId(report),
       reportType: report.reportType,
       reportTypeLabel: ReportModel.getReportTypeName(report.reportType),
-      formattedDate: toDateKey(report.reportDate),
+      formattedDate: dateKey,
+      formattedYear: year,
+      formattedMonth: `${Number(month)}月`,
+      formattedDay: String(Number(day)),
       abnormalCount: summary.abnormalCount,
       normalCount: summary.normalCount,
       totalCount: summary.totalCount,
-      statusText: summary.abnormalCount > 0 ? `${summary.abnormalCount} 项异常` : '本次无异常项',
-      keySummary: buildKeySummary(report)
+      statusText: summary.abnormalCount > 0 ? `${summary.abnormalCount} 项异常` : '无异常',
+      keySummary: buildKeySummary(report),
+      keyTags
     };
+  });
+
+  const reportYearGroups = [];
+  const yearGroupMap = new Map();
+  reportCards.forEach((card) => {
+    const year = card.formattedYear || '未知';
+    if (!yearGroupMap.has(year)) {
+      const group = { year, reports: [] };
+      yearGroupMap.set(year, group);
+      reportYearGroups.push(group);
+    }
+    yearGroupMap.get(year).reports.push(card);
   });
 
   const selectedCard = reportCards.find((item) => item.reportId === selectedCompareReportId) || reportCards[0] || null;
@@ -878,6 +912,7 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
     tabs,
     filterType,
     reportCards,
+    reportYearGroups,
     selectedCompareReportId: selectedCard?.reportId || ''
   };
 }
@@ -966,6 +1001,570 @@ function buildReportDetailPreview({ selectedReportId, reports = [] }) {
     keySummary: buildKeySummary(currentReport),
     keyIndicators: buildCompareCards(currentReport, null),
     indicatorGroups: buildDetailIndicatorGroups(currentReport)
+  };
+}
+
+function resolveWeekBeforeReport(reportDateKey) {
+  const endDate = addDays(reportDateKey, -1);
+  const startDate = addDays(reportDateKey, -7);
+  return { startDate, endDate };
+}
+
+function mergeDateRange(startDate, endDate, nextStart, nextEnd) {
+  if (!nextStart || !nextEnd) {
+    return { startDate, endDate };
+  }
+  if (!startDate || !endDate) {
+    return { startDate: nextStart, endDate: nextEnd };
+  }
+  return {
+    startDate: nextStart < startDate ? nextStart : startDate,
+    endDate: nextEnd > endDate ? nextEnd : endDate
+  };
+}
+
+function resolveFeedingDataRange(reports = []) {
+  const byType = (reports || []).reduce((map, report = {}) => {
+    const type = report.reportType || '';
+    const dateKey = toDateKey(report.reportDate);
+    if (!type || !dateKey) return map;
+    if (!map[type]) map[type] = [];
+    map[type].push({ ...report, dateKey });
+    return map;
+  }, {});
+
+  let startDate = '';
+  let endDate = '';
+  Object.values(byType).forEach((items) => {
+    const sorted = [...items].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+    sorted.forEach((report, index) => {
+      const previous = sorted[index - 1];
+      const intervalStart = previous ? addDays(previous.dateKey, 1) : addDays(report.dateKey, -7);
+      const intervalEnd = addDays(report.dateKey, -1);
+      if (intervalStart && intervalEnd && intervalEnd >= intervalStart) {
+        ({ startDate, endDate } = mergeDateRange(startDate, endDate, intervalStart, intervalEnd));
+      }
+      const weekBefore = resolveWeekBeforeReport(report.dateKey);
+      ({ startDate, endDate } = mergeDateRange(startDate, endDate, weekBefore.startDate, weekBefore.endDate));
+    });
+  });
+
+  return startDate && endDate ? { startDate, endDate } : null;
+}
+
+function resolveCompareFeedingDataRange(reports = [], reportAId = '', reportBId = '', reportType = '') {
+  const sameTypeReports = reportType
+    ? reports.filter((report) => report.reportType === reportType)
+    : reports.filter(Boolean);
+  const reportA = reportAId ? pickSelectedReport(sameTypeReports, reportAId) : null;
+  const reportB = reportBId ? pickSelectedReport(sameTypeReports, reportBId) : null;
+  if (!reportA || !reportB) return null;
+
+  const weekA = resolveWeekBeforeReport(toDateKey(reportA.reportDate));
+  const weekB = resolveWeekBeforeReport(toDateKey(reportB.reportDate));
+  let { startDate, endDate } = weekA;
+  ({ startDate, endDate } = mergeDateRange(startDate, endDate, weekB.startDate, weekB.endDate));
+  return startDate && endDate ? { startDate, endDate } : null;
+}
+
+function resolveCompareNutritionWindows(reports = [], reportAId = '', reportBId = '', reportType = '') {
+  const sameTypeReports = reportType
+    ? reports.filter((report) => report.reportType === reportType)
+    : reports.filter(Boolean);
+  const reportA = reportAId ? pickSelectedReport(sameTypeReports, reportAId) : null;
+  const reportB = reportBId ? pickSelectedReport(sameTypeReports, reportBId) : null;
+  if (!reportA || !reportB) return [];
+
+  const seen = new Set();
+  return [reportA, reportB]
+    .map((report) => resolveWeekBeforeReport(toDateKey(report.reportDate)))
+    .filter((window) => {
+      if (!window?.startDate || !window?.endDate) return false;
+      const key = `${window.startDate}_${window.endDate}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function collectNutritionMetricsForRange(feedingRecords = [], startDate, endDate, nutritionSettings = {}, fallbackWeight = 0) {
+  const feedingRecordsByDate = feedingRecords.reduce((map, record) => {
+    const key = toDateKey(record.date);
+    if (!key) return map;
+    if (!map[key]) map[key] = [];
+    map[key].push(record);
+    return map;
+  }, {});
+
+  return Object.keys(feedingRecordsByDate)
+    .filter((dateKey) => dateKey >= startDate && dateKey <= endDate)
+    .sort()
+    .map((dateKey) => mergeFeedingRecords(feedingRecordsByDate[dateKey], nutritionSettings))
+    .filter(Boolean)
+    .map((record) => buildDailyNutritionMetric(record, nutritionSettings, fallbackWeight));
+}
+
+function buildDailyNutritionMetricFromSummary(summary = {}, dateKey = '', effectiveWeight = 0) {
+  const macro = summary.macroSummary || {};
+  const milk = summary.milk || {};
+  const food = summary.food || {};
+  const counts = summary.recordCounts || {};
+  const hasIntake = Number(counts.milk || 0) + Number(counts.food || 0) > 0;
+  const dayWeight = Number(summary.basicInfo?.weight) || 0;
+  const weight = dayWeight > 0 ? dayWeight : Number(effectiveWeight) || 0;
+
+  if (!hasIntake && weight <= 0) {
+    return null;
+  }
+
+  const naturalProtein = Number(macro.naturalProtein)
+    || Number(milk.naturalProtein) + Number(food.naturalProtein)
+    || 0;
+  const specialProtein = Number(macro.specialProtein)
+    || Number(milk.specialProtein) + Number(food.specialProtein)
+    || 0;
+  const protein = Number(macro.protein) || naturalProtein + specialProtein;
+  const calories = Number(macro.calories)
+    || Number(milk.calories) + Number(food.calories) + Number(summary.treatment?.calories || 0)
+    || 0;
+
+  const toCoefficient = (value, precision = 2) => {
+    if (weight <= 0) return null;
+    if (Number(value) > 0) return roundNumber(Number(value) / weight, precision);
+    return hasIntake ? 0 : null;
+  };
+
+  return {
+    date: dateKey || toDateKey(summary.date),
+    weight,
+    calories,
+    carbs: Number(macro.carbs) || Number(milk.carbs) + Number(food.carbs) || 0,
+    fat: Number(macro.fat) || Number(milk.fat) + Number(food.fat) || 0,
+    naturalProteinCoefficient: toCoefficient(naturalProtein, 2),
+    specialProteinCoefficient: toCoefficient(specialProtein, 2),
+    totalProteinCoefficient: toCoefficient(protein, 2),
+    calorieCoefficient: toCoefficient(calories, 1)
+  };
+}
+
+function collectNutritionMetricsFromSummaries(summaries = [], startDate, endDate, fallbackWeight = 0) {
+  const sorted = (summaries || [])
+    .map((summary) => ({ summary, dateKey: toDateKey(summary.date) }))
+    .filter((item) => item.dateKey && item.dateKey >= startDate && item.dateKey <= endDate)
+    .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+  let carriedWeight = Number(fallbackWeight) || 0;
+
+  return sorted
+    .map(({ summary, dateKey }) => {
+      const dayWeight = Number(summary.basicInfo?.weight) || 0;
+      if (dayWeight > 0) {
+        carriedWeight = dayWeight;
+      }
+      return buildDailyNutritionMetricFromSummary(summary, dateKey, carriedWeight);
+    })
+    .filter(Boolean);
+}
+
+function formatShortDateRange(startDate, endDate) {
+  if (!startDate || !endDate) return '';
+  const formatPart = (dateKey) => {
+    const [, month, day] = String(dateKey).split('-');
+    return `${Number(month)}.${Number(day)}`;
+  };
+  return `${formatPart(startDate)}–${formatPart(endDate)}`;
+}
+
+function metricPrecisionForSeriesKey(key = '') {
+  return key === 'calorieCoefficient' ? 1 : 2;
+}
+
+function averageFromSeriesPoints(points = [], precision = 2) {
+  const values = (points || [])
+    .map((point) => point.raw)
+    .filter((value) => Number.isFinite(value));
+  if (!values.length) return '';
+  const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return formatCompactNumber(avg, precision);
+}
+
+function buildDailyCoefficientSeries(dailyMetrics = [], startDate, endDate) {
+  const dateKeys = [];
+  let cursor = startDate;
+  while (cursor && endDate && cursor <= endDate) {
+    dateKeys.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  const metricsByDate = (dailyMetrics || []).reduce((map, item) => {
+    if (item?.date) map[item.date] = item;
+    return map;
+  }, {});
+
+  const buildSeries = (metricKey, precision = 2) => {
+    const points = dateKeys.map((dateKey) => {
+      const metric = metricsByDate[dateKey];
+      const raw = Number(metric?.[metricKey]);
+      return {
+        date: dateKey,
+        label: String(Number(dateKey.slice(-2))),
+        raw: Number.isFinite(raw) ? raw : null,
+        value: Number.isFinite(raw) ? formatCompactNumber(raw, precision) : '--'
+      };
+    });
+    const values = points.map((point) => point.raw).filter((value) => Number.isFinite(value));
+    const min = values.length ? Math.min(...values) : 0;
+    const max = values.length ? Math.max(...values) : 1;
+    const span = max - min || 1;
+    return points.map((point) => ({
+      ...point,
+      missing: !Number.isFinite(point.raw),
+      heightRpx: Number.isFinite(point.raw)
+        ? Math.max(12, Math.round(((point.raw - min) / span) * 56 + 12))
+        : 8,
+      heightPercent: Number.isFinite(point.raw)
+        ? Math.round(((point.raw - min) / span) * 68 + 22)
+        : 10
+    }));
+  };
+
+  return [
+    {
+      key: 'naturalProteinCoefficient',
+      label: '天然蛋白系数',
+      unit: 'g/kg/d',
+      points: buildSeries('naturalProteinCoefficient', 2)
+    },
+    {
+      key: 'specialProteinCoefficient',
+      label: '特殊蛋白系数',
+      unit: 'g/kg/d',
+      points: buildSeries('specialProteinCoefficient', 2)
+    },
+    {
+      key: 'calorieCoefficient',
+      label: '热卡系数',
+      unit: 'kcal/kg/d',
+      points: buildSeries('calorieCoefficient', 1)
+    }
+  ];
+}
+
+function buildReportNutritionWindow(
+  report,
+  feedingRecords = [],
+  nutritionSettings = {},
+  fallbackWeight = 0,
+  dailySummaries = []
+) {
+  const dateKey = toDateKey(report.reportDate);
+  const { startDate, endDate } = resolveWeekBeforeReport(dateKey);
+  const metricFourLabel = report.reportType === ReportModel.REPORT_TYPES.BLOOD_MS ? '碳水' : '脂肪';
+  const metrics = Array.isArray(dailySummaries)
+    ? collectNutritionMetricsFromSummaries(dailySummaries, startDate, endDate, fallbackWeight)
+    : collectNutritionMetricsForRange(
+      feedingRecords,
+      startDate,
+      endDate,
+      nutritionSettings,
+      fallbackWeight
+    );
+  const summary = buildWindowSummary(metrics, startDate, endDate, '化验前 7 天', metricFourLabel);
+  const totalDays = daysBetweenInclusive(startDate, endDate);
+
+  return {
+    reportId: getReportId(report),
+    reportDate: dateKey,
+    fullDateRange: `${startDate} 至 ${endDate}`,
+    dateRangeShort: formatShortDateRange(startDate, endDate),
+    recordedDays: metrics.length,
+    totalDays,
+    coverageText: totalDays > 0 ? `${metrics.length}/${totalDays} 天` : '0/0 天',
+    coefficientSeries: buildDailyCoefficientSeries(metrics, startDate, endDate),
+    ...summary
+  };
+}
+
+function buildCompareHero(compareRows = []) {
+  const ranked = (compareRows || [])
+    .map((row) => {
+      const deltaText = String(row.delta || '').replace(/^\+/, '');
+      const deltaAbs = Number(deltaText);
+      return {
+        ...row,
+        deltaAbs: Number.isFinite(deltaAbs) ? Math.abs(deltaAbs) : 0
+      };
+    })
+    .filter((row) => row.deltaAbs > 0)
+    .sort((a, b) => b.deltaAbs - a.deltaAbs);
+  const top = ranked[0];
+  if (!top) return null;
+  return {
+    key: top.key,
+    name: top.abbr || top.name,
+    delta: top.delta,
+    direction: top.direction,
+    current: top.current,
+    previous: top.previous
+  };
+}
+
+function normalizeRangeValueToken(value = '', precision = 3) {
+  return formatReportNumber(value, precision);
+}
+
+function formatRangeText(minRange = '', maxRange = '') {
+  const min = normalizeRangeValueToken(minRange);
+  const max = normalizeRangeValueToken(maxRange);
+  if (min && max) return `${min}–${max}`;
+  if (min) return `≥${min}`;
+  if (max) return `≤${max}`;
+  return '';
+}
+
+function normalizeRangeKey(minRange = '', maxRange = '') {
+  return `${normalizeRangeValueToken(minRange)}|${normalizeRangeValueToken(maxRange)}`;
+}
+
+function rangesDiffer(minRangeA = '', maxRangeA = '', minRangeB = '', maxRangeB = '') {
+  const keyA = normalizeRangeKey(minRangeA, maxRangeA);
+  const keyB = normalizeRangeKey(minRangeB, maxRangeB);
+  if (!keyA.replace(/\|/g, '') && !keyB.replace(/\|/g, '')) return false;
+  return keyA !== keyB;
+}
+
+function buildNutritionCompareSeries(windowA = {}, windowB = {}) {
+  const seriesA = windowA.coefficientSeries || [];
+  const seriesB = windowB.coefficientSeries || [];
+  return seriesA.map((series, index) => {
+    const peer = seriesB[index] || {};
+    const precision = metricPrecisionForSeriesKey(series.key);
+    return {
+      key: series.key,
+      label: series.label,
+      unit: series.unit,
+      reportA: {
+        date: windowA.reportDate,
+        dateRangeShort: windowA.dateRangeShort,
+        coverageText: windowA.coverageText,
+        averageText: averageFromSeriesPoints(series.points, precision),
+        points: series.points || []
+      },
+      reportB: {
+        date: windowB.reportDate,
+        dateRangeShort: windowB.dateRangeShort,
+        coverageText: windowB.coverageText,
+        averageText: averageFromSeriesPoints(peer.points, precision),
+        points: peer.points || []
+      }
+    };
+  });
+}
+
+function buildCompareCardsForKeys(currentReport, previousReport, metricKeys = []) {
+  const metricConfigMap = getMetricConfigMap(currentReport.reportType);
+  return metricKeys
+    .filter((key) => currentReport.indicators?.[key] || previousReport?.indicators?.[key])
+    .map((key) => {
+      const config = metricConfigMap[key] || {};
+      const current = currentReport.indicators?.[key] || {};
+      const previous = previousReport?.indicators?.[key] || {};
+      const currentValue = current.value ?? '--';
+      const previousValue = previous.value ?? '--';
+      const currentNum = Number(currentValue);
+      const previousNum = Number(previousValue);
+      const direction = Number.isFinite(currentNum) && Number.isFinite(previousNum)
+        ? (currentNum === previousNum ? 'flat' : currentNum > previousNum ? 'up' : 'down')
+        : 'flat';
+      const name = config.name || ReportModel.getIndicatorDisplayName(config) || key;
+      const abbr = config.abbr || config.key || '';
+
+      return {
+        key,
+        name,
+        abbr: abbr && abbr !== name ? abbr : '',
+        current: formatCompactNumber(currentValue, 2),
+        previous: formatCompactNumber(previousValue, 2),
+        delta: formatDelta(currentValue, previousValue),
+        direction,
+        status: current.status || 'unknown',
+        unit: config.unit || '',
+        rangeA: formatRangeText(current.minRange, current.maxRange),
+        rangeB: formatRangeText(previous.minRange, previous.maxRange),
+        rangeMismatch: rangesDiffer(current.minRange, current.maxRange, previous.minRange, previous.maxRange)
+      };
+    });
+}
+
+function buildCompareMetricOptions(reportType, reportA, reportB, selectedMetricKeys = []) {
+  const primaryKeys = KEY_METRICS_BY_REPORT_TYPE[reportType] || [];
+  const configs = ReportModel.getIndicators(reportType);
+  const selectedSet = new Set(selectedMetricKeys);
+  const hasExplicitSelection = selectedMetricKeys.length > 0;
+
+  return configs.map((config) => {
+    const aValue = reportA?.indicators?.[config.key]?.value;
+    const bValue = reportB?.indicators?.[config.key]?.value;
+    const hasData = (aValue !== undefined && aValue !== '') || (bValue !== undefined && bValue !== '');
+    const isPrimary = primaryKeys.includes(config.key);
+    return {
+      key: config.key,
+      name: config.name || ReportModel.getIndicatorDisplayName(config) || config.key,
+      abbr: config.abbr || config.key,
+      isPrimary,
+      hasData,
+      selected: hasExplicitSelection ? selectedSet.has(config.key) : isPrimary
+    };
+  }).filter((item) => item.hasData || item.isPrimary);
+}
+
+function buildCompareSummary(compareRows = [], nutritionWindows = []) {
+  const compareText = compareRows
+    .map((row) => `${row.name}${row.direction === 'up' ? '上升' : row.direction === 'down' ? '下降' : '持平'}`)
+    .join('，');
+  const dietNotes = nutritionWindows.map((window) => {
+    const natural = window.metrics?.[0]?.value ?? '--';
+    return `${window.reportDate} 前一周天然蛋白系数 ${natural} g/kg/d`;
+  });
+  return [
+    compareText ? `指标变化：${compareText}。` : '请选择要对比的指标。',
+    ...dietNotes.map((note) => `${note}，可作为指标变化的营养背景参考。`)
+  ];
+}
+
+function buildReportComparePickerOptions(reports = [], reportType = '') {
+  return reports
+    .filter((report) => report.reportType === reportType)
+    .sort((a, b) => parseDateKey(toDateKey(b.reportDate)).getTime() - parseDateKey(toDateKey(a.reportDate)).getTime())
+    .map((report) => ({
+      reportId: getReportId(report),
+      label: `${toDateKey(report.reportDate)} · ${buildKeySummary(report)}`,
+      date: toDateKey(report.reportDate)
+    }));
+}
+
+function inferDefaultCompareReportType(reports = [], preferredType = '') {
+  if (preferredType && preferredType !== 'all') {
+    return preferredType;
+  }
+  const counts = reports.reduce((map, report) => {
+    const type = report.reportType || '';
+    if (!type) return map;
+    map[type] = (map[type] || 0) + 1;
+    return map;
+  }, {});
+  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return ranked[0]?.[0] || ReportModel.REPORT_TYPES.BLOOD_MS;
+}
+
+function buildReportComparePreview({
+  reportType = '',
+  reportAId = '',
+  reportBId = '',
+  selectedMetricKeys = [],
+  reports = [],
+  feedingRecords = [],
+  dailySummaries = [],
+  nutritionSettings = {},
+  fallbackWeight = 0
+} = {}) {
+  const sameTypeReports = reports.filter((report) => report.reportType === reportType);
+  let reportA = reportAId ? pickSelectedReport(sameTypeReports, reportAId) : sameTypeReports[0];
+  let reportB = reportBId ? pickSelectedReport(sameTypeReports, reportBId) : sameTypeReports[1];
+
+  if (!reportA || !reportB) {
+    return {
+      reportType,
+      reportTypeLabel: ReportModel.getReportTypeName(reportType),
+      canCompare: false,
+      reportCount: sameTypeReports.length,
+      reportA: reportA ? { id: getReportId(reportA), date: toDateKey(reportA.reportDate) } : null,
+      reportB: reportB ? { id: getReportId(reportB), date: toDateKey(reportB.reportDate) } : null,
+      compareRows: [],
+      metricOptions: [],
+      nutritionWindows: [],
+      summaryLines: ['至少需要两份同类报告才能开始对比。']
+    };
+  }
+
+  if (getReportId(reportA) === getReportId(reportB)) {
+    return {
+      reportType,
+      reportTypeLabel: ReportModel.getReportTypeName(reportType),
+      canCompare: false,
+      reportCount: sameTypeReports.length,
+      reportA: { id: getReportId(reportA), date: toDateKey(reportA.reportDate) },
+      reportB: { id: getReportId(reportB), date: toDateKey(reportB.reportDate) },
+      pickerReportA: { id: getReportId(reportA), date: toDateKey(reportA.reportDate) },
+      pickerReportB: { id: getReportId(reportB), date: toDateKey(reportB.reportDate) },
+      compareRows: [],
+      metricOptions: buildCompareMetricOptions(reportType, reportA, reportB, selectedMetricKeys),
+      nutritionWindows: [],
+      nutritionCompareSeries: [],
+      summaryLines: ['请选择两份不同的报告。']
+    };
+  }
+
+  const pickerReportA = reportA;
+  const pickerReportB = reportB;
+  const metricOptions = buildCompareMetricOptions(reportType, pickerReportA, pickerReportB, selectedMetricKeys);
+  const activeKeys = metricOptions.filter((item) => item.selected).map((item) => item.key);
+  const compareRows = buildCompareCardsForKeys(pickerReportA, pickerReportB, activeKeys);
+  const nutritionWindowA = buildReportNutritionWindow(
+    pickerReportA,
+    [],
+    nutritionSettings,
+    fallbackWeight,
+    dailySummaries
+  );
+  const nutritionWindowB = buildReportNutritionWindow(
+    pickerReportB,
+    [],
+    nutritionSettings,
+    fallbackWeight,
+    dailySummaries
+  );
+  const nutritionWindows = [nutritionWindowA, nutritionWindowB];
+  const nutritionCompareSeries = buildNutritionCompareSeries(nutritionWindowA, nutritionWindowB);
+  const hasRangeMismatch = compareRows.some((row) => row.rangeMismatch);
+  const hasNutritionData = nutritionCompareSeries.some((series) => (
+    (series.reportA.points || []).some((point) => !point.missing)
+    || (series.reportB.points || []).some((point) => !point.missing)
+  ));
+
+  return {
+    reportType,
+    reportTypeLabel: ReportModel.getReportTypeName(reportType),
+    canCompare: true,
+    reportCount: sameTypeReports.length,
+    reportA: {
+      id: getReportId(pickerReportA),
+      date: toDateKey(pickerReportA.reportDate)
+    },
+    reportB: {
+      id: getReportId(pickerReportB),
+      date: toDateKey(pickerReportB.reportDate)
+    },
+    pickerReportA: {
+      id: getReportId(pickerReportA),
+      date: toDateKey(pickerReportA.reportDate)
+    },
+    pickerReportB: {
+      id: getReportId(pickerReportB),
+      date: toDateKey(pickerReportB.reportDate)
+    },
+    compareRows,
+    hasRangeMismatch,
+    rangeMismatchText: hasRangeMismatch
+      ? '两份报告参考范围不一致，可能来自不同机构，对比时请注意参考区间差异。'
+      : '',
+    hasNutritionData,
+    nutritionEmptyText: hasNutritionData
+      ? ''
+      : '化验前 7 天暂无喂养记录，请先在「数据记录」补全对应日期后再对比。',
+    metricOptions,
+    nutritionWindows,
+    nutritionCompareSeries,
+    summaryLines: buildCompareSummary(compareRows, nutritionWindows)
   };
 }
 
@@ -1069,9 +1668,22 @@ function buildReportWorkbenchView({ selectedReportId, reports = [], feedingRecor
 }
 
 module.exports = {
+  KEY_METRICS_BY_REPORT_TYPE,
+  buildCompareHero,
+  buildNutritionCompareSeries,
+  buildDailyCoefficientSeries,
   buildReportArchivePreview,
+  buildReportComparePickerOptions,
+  buildReportComparePreview,
+  collectNutritionMetricsFromSummaries,
+  buildDailyNutritionMetricFromSummary,
   buildReportDetailPreview,
   buildReportTrendPreview,
   buildReportWorkbenchView,
+  inferDefaultCompareReportType,
+  resolveFeedingDataRange,
+  resolveCompareFeedingDataRange,
+  resolveCompareNutritionWindows,
+  resolveWeekBeforeReport,
   toDateKey
 };

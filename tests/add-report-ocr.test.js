@@ -2,6 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const ReportRepository = require('../miniprogram/models/reportRepository');
 
+function loadAddReportHelpers() {
+  loadAddReportPage();
+  return require('../miniprogram/pkg-report/add-report/index.js');
+}
+
 function loadAddReportPage() {
   const pagePath = require.resolve('../miniprogram/pkg-report/add-report/index.js');
   delete require.cache[pagePath];
@@ -26,8 +31,11 @@ function createInstance(page, dataOverrides = {}) {
       ...JSON.parse(JSON.stringify(page.data)),
       ...dataOverrides
     },
-    setData(update) {
+    setData(update, callback) {
       Object.assign(this.data, update);
+      if (typeof callback === 'function') {
+        callback();
+      }
     }
   };
 }
@@ -122,7 +130,7 @@ test('onIndicatorValueInput leaves ocrPendingKeys untouched for fields that were
   assert.deepEqual(instance.data.ocrPendingKeys, ['c3']);
 });
 
-test('onSaveReport asks for confirmation before saving when there are unresolved OCR pending keys', async () => {
+test('onSaveReport shows a save reminder when OCR items are still marked pending', async () => {
   const page = loadAddReportPage();
   const modalCalls = [];
   let saveCalls = 0;
@@ -152,11 +160,57 @@ test('onSaveReport asks for confirmation before saving when there are unresolved
     await page.onSaveReport.call(instance);
 
     assert.equal(modalCalls.length, 1);
-    assert.match(modalCalls[0].content, /1 项/);
+    assert.equal(modalCalls[0].title, '保存前请核对识别数据');
+    assert.match(modalCalls[0].content, /含 1 项拍照识别数据/);
+    assert.match(modalCalls[0].content, /不必逐项点确认/);
+    assert.match(modalCalls[0].content, /可直接继续保存/);
+    assert.equal(modalCalls[0].confirmText, '继续保存');
+    assert.equal(modalCalls[0].cancelText, '返回修改');
     assert.equal(saveCalls, 0);
   } finally {
     ReportRepository.saveReport = originalSaveReport;
   }
+});
+
+test('onConfirmOcrIndicator clears pending state without changing the recognized value', () => {
+  const page = loadAddReportPage();
+  global.wx = { showToast() {}, hideLoading() {} };
+
+  const instance = createInstance(page, {
+    ocrPendingKeys: ['c3', 'c0'],
+    indicatorData: {
+      c3: { value: '8.000', minRange: '0.500', maxRange: '5.000', ocrPending: true },
+      c0: { value: '20.000', minRange: '10.000', maxRange: '40.000', ocrPending: true }
+    }
+  });
+
+  page.onConfirmOcrIndicator.call(instance, {
+    currentTarget: { dataset: { indicator: 'c3' } }
+  });
+
+  assert.deepEqual(instance.data.ocrPendingKeys, ['c0']);
+  assert.equal(instance.data.indicatorData.c3.ocrPending, false);
+  assert.equal(instance.data.indicatorData.c3.value, '8.000');
+});
+
+test('buildOcrPendingSaveTip describes pending OCR count', () => {
+  const { buildOcrPendingSaveTip } = loadAddReportHelpers();
+
+  assert.match(buildOcrPendingSaveTip(3), /含 3 项拍照识别数据/);
+  assert.equal(buildOcrPendingSaveTip(0), '');
+});
+
+test('sanitizeIndicatorsForSave strips ocrPending and normalizes numeric fields', () => {
+  const { sanitizeIndicatorsForSave } = loadAddReportHelpers();
+  const sanitized = sanitizeIndicatorsForSave({
+    c3: { value: '8', minRange: '1.5', maxRange: '65', ocrPending: true }
+  });
+
+  assert.deepEqual(sanitized.c3, {
+    value: '8.000',
+    minRange: '1.500',
+    maxRange: '65.000'
+  });
 });
 
 test('onSaveReport saves immediately when there is nothing pending review', async () => {
@@ -214,7 +268,7 @@ test('onRecognizeReportPhoto walks choose->upload->recognize->apply and cleans u
     cloud: {
       uploadFile: async ({ cloudPath, filePath, config }) => {
         assert.equal(filePath, 'wxfile://tmp/report.jpg');
-        assert.match(cloudPath, /^report_ocr_temp\/baby-1_/);
+        assert.match(cloudPath, /^custom_ocr_temp\/baby-1_/);
         assert.deepEqual(config, { env: 'prod-test' });
         return { fileID: 'cloud://temp-file-id' };
       },
@@ -226,12 +280,13 @@ test('onRecognizeReportPhoto walks choose->upload->recognize->apply and cleans u
         assert.equal(data.babyUid, 'baby-1');
         assert.equal(data.imgUrl, undefined);
         assert.equal(data.imageBase64, undefined);
+        assert.equal(data.reportType, 'blood_ammonia');
+        assert.ok(String(data.ocrRequestId || '').startsWith('custom_ocr_'));
         return {
           result: {
             ok: true,
-            items: [
-              { text: '血氨', pos: { top: 10, left: 0, height: 20 } },
-              { text: '45.000', pos: { top: 10, left: 220, height: 20 } }
+            structuredItems: [
+              { name: '血氨', value: '45.000', refRange: '15-50', flag: 'normal' }
             ]
           }
         };
@@ -254,7 +309,7 @@ test('onRecognizeReportPhoto walks choose->upload->recognize->apply and cleans u
 
   await page.onRecognizeReportPhoto.call(instance);
 
-  assert.equal(calledFunctions[0], 'recognizeReportImage');
+  assert.equal(calledFunctions[0], 'recognizeReportCustom');
   assert.equal(instance.data.indicatorData.ammonia.value, '45.000');
   assert.deepEqual(instance.data.ocrPendingKeys, ['ammonia']);
   assert.equal(instance.data.ocrRecognizing, false);
@@ -304,60 +359,21 @@ test('onRecognizeReportPhoto compresses large photos before upload', async () =>
   assert.equal(compressedSrc, 'wxfile://tmp/report.jpg');
 });
 
-test('formatOcrQuotaHint describes baby daily and monthly used and remaining counts', () => {
-  const page = loadAddReportPage();
-  const instance = createInstance(page);
-
-  assert.equal(
-    page.formatOcrQuotaHint.call(instance, {
-      limits: { enabled: true },
-      babyDaily: { used: 2, limit: 5 },
-      babyMonthly: { used: 7, limit: 20 },
-      remaining: { babyDaily: 3, babyMonthly: 13 }
-    }),
-    '今日已识别 2 次，剩余 3 次；本月已识别 7 次，剩余 13 次'
-  );
-});
-
-test('formatOcrQuotaHint shows unlimited message when app quota is disabled', () => {
-  const page = loadAddReportPage();
-  const instance = createInstance(page);
-
-  assert.equal(
-    page.formatOcrQuotaHint.call(instance, { limits: { enabled: false } }),
-    '应用内不限次数；微信 OCR 约100次/天（全应用共享）'
-  );
-});
-
-test('getOcrFailureMessage distinguishes WeChat OCR quota from app quota', () => {
-  const page = loadAddReportPage();
-  const instance = createInstance(page);
-
-  assert.match(
-    page.getOcrFailureMessage.call(instance, {}, {
-      code: 'WECHAT_OCR_QUOTA_EXCEEDED',
-      message: '微信 OCR 今日共享额度已用完（约100次/天），请明天再试或手动填写',
-      debug: { wechatOcrCallCount: 3 }
-    }),
-    /微信 OCR/
-  );
-  assert.match(
-    page.getOcrFailureMessage.call(instance, {}, {
-      code: 'WECHAT_OCR_QUOTA_EXCEEDED',
-      message: '微信 OCR 今日共享额度已用完（约100次/天），请明天再试或手动填写',
-      debug: { wechatOcrCallCount: 3 }
-    }),
-    /本次消耗微信 OCR 3 次/
-  );
-});
-
-test('getOcrFailureMessage surfaces undeployed cloud function errors', () => {
+test('getOcrFailureMessage maps missing deploy, timeout and cloud result errors', () => {
   const page = loadAddReportPage();
   const instance = createInstance(page);
 
   assert.match(
     page.getOcrFailureMessage.call(instance, { errMsg: 'cloud.callFunction:fail -501000 FUNCTION_NOT_FOUND' }),
-    /未部署/
+    /recognizeReportCustom/
+  );
+  assert.match(
+    page.getOcrFailureMessage.call(instance, { message: '识别超时，请稍后重试或手动填写' }),
+    /识别超时/
+  );
+  assert.equal(
+    page.getOcrFailureMessage.call(instance, {}, { message: 'OCR 服务未就绪' }),
+    'OCR 服务未就绪'
   );
 });
 
@@ -413,6 +429,8 @@ test('performSaveReport runs when the user confirms the pending-review modal', a
     await confirmCallback({ confirm: true });
 
     assert.equal(saveCalls, 1);
+    assert.deepEqual(instance.data.ocrPendingKeys, []);
+    assert.equal(instance.data.indicatorData.ammonia.ocrPending, false);
   } finally {
     ReportRepository.saveReport = originalSaveReport;
   }

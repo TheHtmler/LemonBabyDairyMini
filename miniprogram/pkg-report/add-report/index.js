@@ -1,11 +1,48 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
-const { parseReportOcrResult } = require('../../utils/reportOcrParser');
+const { parseReportOcrResult, parseStructuredReportItems } = require('../../utils/reportOcrParser');
+const { formatReportNumber } = require('../../utils/reportNumberFormat');
 
-const REPORT_OCR_CLOUD_PATH_PREFIX = 'report_ocr_temp';
-const REPORT_OCR_MAX_BYTES = 1.4 * 1024 * 1024;
-const REPORT_OCR_TEMP_FILE_MAX_AGE = 600;
-const REPORT_OCR_CALL_TIMEOUT_MS = 25000;
+const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
+
+const CUSTOM_OCR_CLOUD_PATH_PREFIX = 'custom_ocr_temp';
+const CUSTOM_OCR_MAX_BYTES = 2 * 1024 * 1024;
+const CUSTOM_OCR_CALL_TIMEOUT_MS = 70000;
+
+function inferFileNameFromPath(filePath = '') {
+  const lower = `${filePath || ''}`.toLowerCase();
+  if (lower.endsWith('.png')) return 'report.png';
+  if (lower.endsWith('.webp')) return 'report.webp';
+  if (lower.endsWith('.jpeg')) return 'report.jpeg';
+  return 'report.jpg';
+}
+
+function mapOcrResultToIndicators({ structuredItems = [], items = [], reportType = '' } = {}) {
+  if (Array.isArray(structuredItems) && structuredItems.length > 0) {
+    return parseStructuredReportItems({ structuredItems, reportType });
+  }
+  return parseReportOcrResult({ items: items || [], reportType });
+}
+
+function buildOcrPendingSaveTip(pendingCount = 0) {
+  const count = Math.max(Number(pendingCount) || 0, 0);
+  if (count <= 0) return '';
+  return `含 ${count} 项拍照识别数据，请对照原报告确认后再保存`;
+}
+
+function sanitizeIndicatorsForSave(indicatorData = {}) {
+  return Object.keys(indicatorData).reduce((result, key) => {
+    const indicator = indicatorData[key] || {};
+    const { ocrPending, ...rest } = indicator;
+    result[key] = {
+      ...rest,
+      value: formatReportNumber(rest.value),
+      minRange: formatReportNumber(rest.minRange),
+      maxRange: formatReportNumber(rest.maxRange)
+    };
+    return result;
+  }, {});
+}
 
 Page({
   data: {
@@ -35,7 +72,7 @@ Page({
     // 拍照识别：已自动填入但用户还没核对过的指标 key 列表
     ocrPendingKeys: [],
     ocrRecognizing: false,
-    ocrQuotaHint: '',
+    ocrEntryHint: '拍下报告单自动填值，请逐项核对',
 
     // 页面状态
     loading: false,
@@ -88,8 +125,6 @@ Page({
         // 新建模式，初始化指标
         await this.initIndicators();
       }
-
-      this.fetchOcrQuotaHint();
 
     } catch (error) {
       console.error('初始化页面失败:', error);
@@ -237,12 +272,8 @@ Page({
   // 格式化数字为小数点后三位
   formatToThreeDecimalPlaces(value) {
     if (!value || value === '') return '';
-    
-    const num = parseFloat(value);
-    if (isNaN(num)) return value;
-    
-    // 保留小数点后三位
-    return num.toFixed(3);
+    const formatted = formatReportNumber(value);
+    return formatted || value;
   },
 
   // 验证是否为有效数字
@@ -277,6 +308,41 @@ Page({
     }
 
     this.setData(update);
+  },
+
+  clearOcrPendingReview(indicatorKeys = []) {
+    const keysToClear = Array.isArray(indicatorKeys) && indicatorKeys.length > 0
+      ? indicatorKeys
+      : [...this.data.ocrPendingKeys];
+
+    if (keysToClear.length === 0) {
+      return;
+    }
+
+    const indicatorData = { ...this.data.indicatorData };
+    keysToClear.forEach((key) => {
+      if (!indicatorData[key]) {
+        return;
+      }
+      indicatorData[key] = {
+        ...indicatorData[key],
+        ocrPending: false
+      };
+    });
+
+    this.setData({
+      indicatorData,
+      ocrPendingKeys: this.data.ocrPendingKeys.filter((key) => !keysToClear.includes(key))
+    });
+  },
+
+  onConfirmOcrIndicator(e) {
+    const indicator = e.currentTarget.dataset.indicator;
+    if (!indicator || !this.data.ocrPendingKeys.includes(indicator)) {
+      return;
+    }
+
+    this.clearOcrPendingReview([indicator]);
   },
 
   // 指标值失去焦点时验证和格式化
@@ -380,32 +446,36 @@ Page({
           if (!newIndicatorData.c3_c0) {
             newIndicatorData.c3_c0 = {};
           }
-          newIndicatorData.c3_c0.value = ratio.toString();
-          
+          if (!newIndicatorData.c3_c0.ocrPending) {
+            newIndicatorData.c3_c0.value = ratio.toString();
+          }
+
           this.setData({ indicatorData: newIndicatorData });
-          
+
           // 计算比值指标的状态
           this.calculateIndicatorStatus('c3_c0');
         }
       }
 
       // 计算 C3/C2
-      if (indicatorData.c3 && indicatorData.c2 && 
+      if (indicatorData.c3 && indicatorData.c2 &&
           indicatorData.c3.value && indicatorData.c2.value) {
         const ratio = ReportModel.calculateRatio(
-          indicatorData.c3.value, 
+          indicatorData.c3.value,
           indicatorData.c2.value
         );
-        
+
         if (ratio !== null) {
-          const newIndicatorData = { ...indicatorData };
+          const newIndicatorData = { ...this.data.indicatorData };
           if (!newIndicatorData.c3_c2) {
             newIndicatorData.c3_c2 = {};
           }
-          newIndicatorData.c3_c2.value = ratio.toString();
-          
+          if (!newIndicatorData.c3_c2.ocrPending) {
+            newIndicatorData.c3_c2.value = ratio.toString();
+          }
+
           this.setData({ indicatorData: newIndicatorData });
-          
+
           // 计算比值指标的状态
           this.calculateIndicatorStatus('c3_c2');
         }
@@ -443,15 +513,18 @@ Page({
     });
   },
 
-  // 只向云函数传 fileID 等短字段；图片走云存储，避免 callFunction 超 1MB，也避免 imgUrl+fileID 双路径重复消耗微信 OCR 额度
-  async buildRecognizeReportPayload({ fileID = '', cloudEnvId = '', babyUid = '' }) {
+  // 只向云函数传 fileID 等短字段，图片走云存储，避免 callFunction 超 512KB
+  async buildRecognizeReportPayload({ fileID = '', babyUid = '', reportType = '', ocrRequestId = '' }) {
     if (!fileID) {
       throw new Error('上传识别图片失败');
     }
 
     return {
       fileID,
-      babyUid: babyUid || this.data.babyInfo?.babyUid || ''
+      fileName: inferFileNameFromPath(fileID),
+      babyUid: babyUid || this.data.babyInfo?.babyUid || '',
+      reportType: reportType || this.data.selectedReportType,
+      ocrRequestId
     };
   },
 
@@ -483,13 +556,13 @@ Page({
     };
 
     try {
-      if (currentSize <= REPORT_OCR_MAX_BYTES) {
+      if (currentSize <= CUSTOM_OCR_MAX_BYTES) {
         return compressWithQuality(80);
       }
 
       for (const quality of [60, 45, 30, 20]) {
         await compressWithQuality(quality);
-        if (currentSize <= REPORT_OCR_MAX_BYTES) {
+        if (currentSize <= CUSTOM_OCR_MAX_BYTES) {
           return currentPath;
         }
       }
@@ -501,19 +574,8 @@ Page({
   },
 
   getOcrFailureMessage(error = {}, cloudResult = null) {
-    const usageSuffix = this.formatWeChatOcrUsageSuffix(cloudResult);
-
-    if (cloudResult?.code === 'WECHAT_OCR_QUOTA_EXCEEDED') {
-      return (cloudResult.message || '微信 OCR 今日共享额度已用完（约100次/天），请明天再试或手动填写') + usageSuffix;
-    }
-    if (cloudResult?.code === 'BABY_DAILY_QUOTA_EXCEEDED'
-      || cloudResult?.code === 'BABY_MONTHLY_QUOTA_EXCEEDED'
-      || cloudResult?.code === 'GLOBAL_QUOTA_EXCEEDED'
-      || cloudResult?.code === 'USER_QUOTA_EXCEEDED') {
-      return (cloudResult.message || '应用内识别次数已达上限') + usageSuffix;
-    }
     if (cloudResult?.message) {
-      return cloudResult.message + usageSuffix;
+      return cloudResult.message;
     }
 
     const errMsg = `${error?.errMsg || error?.message || ''}`;
@@ -521,61 +583,21 @@ Page({
       return '图片数据过大，请重新拍摄后再试';
     }
     if (errMsg.includes('FUNCTION_NOT_FOUND') || errMsg.includes('-501000')) {
-      return '识别服务未部署，请在开发者工具部署 recognizeReportImage';
+      return '识别服务未部署，请在开发者工具部署 recognizeReportCustom';
+    }
+    if (errMsg.includes('502') || errMsg.includes('OCR_GATEWAY_ERROR') || errMsg.includes('后端无响应')) {
+      return 'OCR 服务暂时不可用，请稍后再试';
+    }
+    if (errMsg.includes('OCR_BUSY') || errMsg.includes('繁忙')) {
+      return 'OCR 服务正在处理其他请求，请稍后再试';
+    }
+    if (errMsg.includes('识别超时') || errMsg.includes('timeout') || errMsg.includes('timed out')) {
+      return '识别超时，请稍后重试或手动填写';
     }
     if (errMsg.includes('cloud.callFunction:fail')) {
       return '调用识别服务失败，请检查云函数是否已部署';
     }
     return '识别失败，请重新拍摄后再试';
-  },
-
-  formatWeChatOcrUsageSuffix(cloudResult = null) {
-    const callCount = cloudResult?.meta?.wechatOcrCallCount ?? cloudResult?.debug?.wechatOcrCallCount;
-    if (!callCount) return '';
-    return `（本次消耗微信 OCR ${callCount} 次）`;
-  },
-
-  formatOcrQuotaHint(quota = null) {
-    if (!quota) return '';
-
-    if (quota.limits?.enabled === false) {
-      return '应用内不限次数；微信 OCR 约100次/天（全应用共享）';
-    }
-
-    const parts = [];
-    const { babyDaily, babyMonthly, remaining } = quota;
-
-    if (babyDaily?.limit > 0 && remaining?.babyDaily !== null && remaining?.babyDaily !== undefined) {
-      parts.push(`今日已识别 ${babyDaily.used} 次，剩余 ${remaining.babyDaily} 次`);
-    }
-    if (babyMonthly?.limit > 0 && remaining?.babyMonthly !== null && remaining?.babyMonthly !== undefined) {
-      parts.push(`本月已识别 ${babyMonthly.used} 次，剩余 ${remaining.babyMonthly} 次`);
-    }
-    return parts.join('；');
-  },
-
-  updateOcrQuotaHint(quota = null) {
-    this.setData({ ocrQuotaHint: this.formatOcrQuotaHint(quota) });
-  },
-
-  async fetchOcrQuotaHint() {
-    const babyUid = this.data.babyInfo?.babyUid || '';
-    if (!babyUid) return;
-
-    try {
-      const cloudEnvId = this.getCloudEnvId();
-      const response = await wx.cloud.callFunction({
-        name: 'recognizeReportImage',
-        data: { action: 'quota', babyUid },
-        ...this.getCloudCallConfig(cloudEnvId)
-      });
-      const result = response?.result;
-      if (result?.ok && result.quota) {
-        this.updateOcrQuotaHint(result.quota);
-      }
-    } catch (error) {
-      console.warn('[report-ocr] fetch quota failed', error);
-    }
   },
 
   reportOcrFeedback(title, extra = {}) {
@@ -594,7 +616,7 @@ Page({
 
   callRecognizeReportCloudFunction(payload, cloudEnvId = '') {
     const callPromise = wx.cloud.callFunction({
-      name: 'recognizeReportImage',
+      name: 'recognizeReportCustom',
       data: payload,
       ...this.getCloudCallConfig(cloudEnvId)
     });
@@ -602,13 +624,13 @@ Page({
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         reject(new Error('识别超时，请稍后重试或手动填写'));
-      }, REPORT_OCR_CALL_TIMEOUT_MS);
+      }, CUSTOM_OCR_CALL_TIMEOUT_MS);
     });
 
     return Promise.race([callPromise, timeoutPromise]);
   },
 
-  // 拍照识别：选图 -> 压缩 -> 上传临时文件 -> 云函数识别 -> 解析并填充表单
+  // 拍照识别：选图 -> 压缩 -> 上传 -> 自建 OCR 云函数 -> 解析并填充表单
   async onRecognizeReportPhoto() {
     if (this.data.ocrRecognizing) return;
 
@@ -635,31 +657,30 @@ Page({
     try {
       const uploadPath = await this.prepareOcrImagePath(tempFilePath, tempFile.size || 0);
       const cloudEnvId = this.getCloudEnvId();
-      const cloudPath = `${REPORT_OCR_CLOUD_PATH_PREFIX}/${this.data.babyInfo?.babyUid || 'unknown'}_${Date.now()}.jpg`;
+      const cloudPath = `${CUSTOM_OCR_CLOUD_PATH_PREFIX}/${this.data.babyInfo?.babyUid || 'unknown'}_${Date.now()}.jpg`;
       const uploadResult = await wx.cloud.uploadFile({
         cloudPath,
         filePath: uploadPath,
         ...this.getCloudCallConfig(cloudEnvId)
       });
       fileID = uploadResult.fileID || uploadResult.fileId || '';
-
+      const ocrRequestId = `custom_ocr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const recognizePayload = await this.buildRecognizeReportPayload({
         fileID,
-        cloudEnvId,
-        babyUid: this.data.babyInfo?.babyUid || ''
+        babyUid: this.data.babyInfo?.babyUid || '',
+        reportType: this.data.selectedReportType,
+        ocrRequestId
       });
-      const ocrRequestId = `ocr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      recognizePayload.ocrRequestId = ocrRequestId;
 
       console.warn('[report-ocr] invoke start', {
         ocrRequestId,
         fileID,
-        hasImgUrl: !!recognizePayload.imgUrl,
         reportType: this.data.selectedReportType
       });
 
       const cloudResponse = await this.callRecognizeReportCloudFunction(recognizePayload, cloudEnvId);
       const result = cloudResponse?.result;
+      const structuredCount = Array.isArray(result?.structuredItems) ? result.structuredItems.length : 0;
       const itemCount = Array.isArray(result?.items) ? result.items.length : 0;
       const sampleTexts = (result?.items || []).slice(0, 5).map((item) => item?.text).filter(Boolean);
 
@@ -668,19 +689,14 @@ Page({
         ok: result?.ok,
         code: result?.code,
         message: result?.message,
-        debug: result?.debug,
+        structuredCount,
         itemCount,
         sampleTexts,
-        wechatOcrCallCount: result?.meta?.wechatOcrCallCount ?? result?.debug?.wechatOcrCallCount,
-        attemptedPaths: result?.meta?.attemptedPaths ?? result?.debug?.attemptedPaths,
-        successfulPath: result?.meta?.successfulPath,
-        fileID,
-        hasImgUrl: !!recognizePayload.imgUrl
+        fileID
       });
 
       if (!result || result.ok !== true) {
         const message = this.getOcrFailureMessage({}, result);
-        this.updateOcrQuotaHint(result?.quota);
         this.reportOcrFeedback(message, {
           phase: 'cloud-function-failed',
           code: result?.code,
@@ -691,23 +707,24 @@ Page({
         return;
       }
 
-      const recognized = parseReportOcrResult({
+      const recognized = mapOcrResultToIndicators({
+        structuredItems: result.structuredItems || [],
         items: result.items || [],
         reportType: this.data.selectedReportType
       });
       const recognizedKeys = Object.keys(recognized);
       console.warn('[report-ocr] parsed indicators', {
         reportType: this.data.selectedReportType,
+        structuredCount,
         itemCount,
         recognizedKeyCount: recognizedKeys.length,
-        keys: recognizedKeys,
-        recognized
+        keys: recognizedKeys
       });
 
-      if (recognizedKeys.length === 0 && itemCount > 0) {
-        this.reportOcrFeedback(`识别到 ${itemCount} 段文字，但未匹配到指标`, {
+      if (recognizedKeys.length === 0 && (structuredCount > 0 || itemCount > 0)) {
+        this.reportOcrFeedback(`识别到 ${structuredCount || itemCount} 项，但未匹配到指标`, {
           phase: 'parse-no-match',
-          itemCount,
+          itemCount: structuredCount || itemCount,
           sampleTexts,
           duration: 4000
         });
@@ -715,11 +732,10 @@ Page({
       }
 
       this.applyOcrRecognitionResult(recognized, {
-        itemCount,
+        itemCount: structuredCount || itemCount,
         sampleTexts,
-        wechatOcrCallCount: result?.meta?.wechatOcrCallCount
+        structuredNames: (result.structuredItems || []).map((item) => item.name || item.label || item.indicatorKey || item.indicator_key || '')
       });
-      this.updateOcrQuotaHint(result.quota);
     } catch (error) {
       const message = this.getOcrFailureMessage(error);
       console.error('[report-ocr] recognize failed', error);
@@ -748,29 +764,72 @@ Page({
       this.reportOcrFeedback(message, {
         phase: itemCount > 0 ? 'parse-no-match' : 'parse-empty',
         itemCount,
-        sampleTexts: context.sampleTexts || []
+        sampleTexts: context.sampleTexts || [],
+        structuredNames: context.structuredNames || []
       });
       return;
     }
 
+    const validKeys = new Set(
+      (this.data.currentIndicators || []).length
+        ? this.data.currentIndicators.map((item) => item.key)
+        : ReportModel.getIndicators(this.data.selectedReportType).map((item) => item.key)
+    );
     const indicatorData = { ...this.data.indicatorData };
     const newlyFilledKeys = [];
 
     keys.forEach((key) => {
+      if (!validKeys.has(key)) return;
+
       const existing = indicatorData[key] || {};
       const recognizedItem = recognizedIndicators[key];
       const hasExistingValue = existing.value !== '' && existing.value !== undefined && existing.value !== null;
       if (hasExistingValue) return;
 
+      const recognizedMinRange = `${recognizedItem.minRange || ''}`.trim();
+      const recognizedMaxRange = `${recognizedItem.maxRange || ''}`.trim();
+      const isBloodRatio = this.data.selectedReportType === 'blood_ms'
+        && (key === 'c3_c0' || key === 'c3_c2');
+
       indicatorData[key] = {
         ...existing,
-        value: recognizedItem.value || '',
-        minRange: existing.minRange || recognizedItem.minRange || '',
-        maxRange: existing.maxRange || recognizedItem.maxRange || '',
+        value: formatReportNumber(recognizedItem.value || ''),
+        minRange: isBloodRatio
+          ? formatReportNumber(recognizedMinRange)
+          : formatReportNumber(recognizedMinRange || existing.minRange || ''),
+        maxRange: isBloodRatio
+          ? formatReportNumber(recognizedMaxRange)
+          : formatReportNumber(recognizedMaxRange || existing.maxRange || ''),
         ocrPending: true
       };
       newlyFilledKeys.push(key);
     });
+
+    if (this.data.selectedReportType === 'blood_ms') {
+      ['c3_c0', 'c3_c2'].forEach((ratioKey) => {
+        if (!indicatorData[ratioKey]) return;
+
+        const recognizedRatio = recognizedIndicators[ratioKey];
+        if (!recognizedRatio) {
+          indicatorData[ratioKey] = {
+            ...indicatorData[ratioKey],
+            minRange: '',
+            maxRange: ''
+          };
+          return;
+        }
+
+        const recognizedMinRange = `${recognizedRatio.minRange || ''}`.trim();
+        const recognizedMaxRange = `${recognizedRatio.maxRange || ''}`.trim();
+        if (!recognizedMinRange && !recognizedMaxRange) {
+          indicatorData[ratioKey] = {
+            ...indicatorData[ratioKey],
+            minRange: '',
+            maxRange: ''
+          };
+        }
+      });
+    }
 
     if (newlyFilledKeys.length === 0) {
       this.reportOcrFeedback('识别到的指标都已经有数值了', {
@@ -784,16 +843,13 @@ Page({
       indicatorData,
       ocrPendingKeys: [...new Set([...this.data.ocrPendingKeys, ...newlyFilledKeys])],
       hasUnsavedChanges: true
+    }, () => {
+      this.recalculateAllIndicators();
     });
 
-    this.recalculateAllIndicators();
-    const usageSuffix = context.wechatOcrCallCount
-      ? `（消耗微信 OCR ${context.wechatOcrCallCount} 次）`
-      : '';
-    this.reportOcrFeedback(`识别到 ${newlyFilledKeys.length} 项，请核对${usageSuffix}`, {
+    this.reportOcrFeedback(`识别到 ${newlyFilledKeys.length} 项，请核对`, {
       phase: 'apply-success',
-      newlyFilledKeys,
-      wechatOcrCallCount: context.wechatOcrCallCount
+      newlyFilledKeys
     });
   },
 
@@ -801,16 +857,24 @@ Page({
   async onSaveReport() {
     if (this.data.saving) return;
 
-    if (this.data.ocrPendingKeys.length > 0) {
-      const pendingCount = this.data.ocrPendingKeys.length;
+    const pendingCount = this.data.ocrPendingKeys.length;
+    if (pendingCount > 0) {
+      const tip = buildOcrPendingSaveTip(pendingCount);
       wx.showModal({
-        title: '还有识别结果未核对',
-        content: `还有 ${pendingCount} 项拍照识别的数值未核对，确定要保存吗？`,
-        confirmText: '确定保存',
-        success: (res) => {
-          if (res.confirm) {
-            this.performSaveReport();
+        title: '保存前请核对识别数据',
+        content: `${tip}。不必逐项点确认，对照原报告看一眼即可；如已核对，可直接继续保存。`,
+        confirmText: '继续保存',
+        cancelText: '返回修改',
+        success: async (res) => {
+          if (!res.confirm) {
+            wx.showToast({
+              title: '已取消保存',
+              icon: 'none'
+            });
+            return;
           }
+          this.clearOcrPendingReview();
+          await this.performSaveReport();
         }
       });
       return;
@@ -843,7 +907,7 @@ Page({
         babyUid: babyInfo.babyUid,
         reportDate: new Date(reportDate),
         reportType: selectedReportType,
-        indicators: indicatorData
+        indicators: sanitizeIndicatorsForSave(indicatorData)
       });
 
       wx.showToast({
@@ -851,9 +915,12 @@ Page({
         icon: 'success'
       });
 
+      wx.setStorageSync(ANALYSIS_REPORT_RELOAD_KEY, Date.now());
+
       this.setData({
         saving: false,
-        hasUnsavedChanges: false
+        hasUnsavedChanges: false,
+        ocrPendingKeys: []
       });
 
       // 延迟返回上一页
@@ -905,4 +972,9 @@ Page({
   getIndicatorStatusDisplay(status) {
     return ReportModel.getStatusDisplay(status);
   }
-}); 
+});
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports.buildOcrPendingSaveTip = buildOcrPendingSaveTip;
+  module.exports.sanitizeIndicatorsForSave = sanitizeIndicatorsForSave;
+}

@@ -5,9 +5,15 @@ const path = require('node:path');
 
 const {
   buildReportArchivePreview,
+  buildReportComparePreview,
   buildReportDetailPreview,
   buildReportTrendPreview,
-  buildReportWorkbenchView
+  buildReportWorkbenchView,
+  buildDailyCoefficientSeries,
+  collectNutritionMetricsFromSummaries,
+  resolveCompareFeedingDataRange,
+  resolveCompareNutritionWindows,
+  resolveWeekBeforeReport
 } = require('../miniprogram/utils/reportWorkbench');
 
 test('buildReportWorkbenchView compares same-type reports and summarizes nutrition window from feeding records', () => {
@@ -347,12 +353,41 @@ test('buildReportArchivePreview groups reports by type and exposes compare-ready
   assert.equal(archive.tabs.find((tab) => tab.key === 'urine_ms').count, 2);
   assert.equal(archive.tabs.find((tab) => tab.key === 'blood_ms').count, 1);
   assert.equal(archive.reportCards.length, 2);
+  assert.equal(archive.reportYearGroups.length, 1);
+  assert.equal(archive.reportYearGroups[0].year, '2026');
+  assert.equal(archive.reportYearGroups[0].reports.length, 2);
   assert.equal(archive.reportCards[0].reportId, 'urine-current');
   assert.equal(archive.reportCards[0].reportTypeLabel, '尿串联质谱');
   assert.equal(archive.reportCards[0].formattedDate, '2026-12-20');
   assert.equal(archive.reportCards[0].abnormalCount, 2);
   assert.match(archive.reportCards[0].keySummary, /甲基丙二酸/);
   assert.equal(archive.selectedCompareReportId, 'urine-current');
+});
+
+test('buildReportArchivePreview groups report cards by year within filtered type', () => {
+  const reports = [
+    {
+      _id: 'urine-2026',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-12-20T00:00:00+08:00'),
+      indicators: { methylmalonic_acid: { value: '120', status: 'high' } }
+    },
+    {
+      _id: 'urine-2025',
+      reportType: 'urine_ms',
+      reportDate: new Date('2025-11-20T00:00:00+08:00'),
+      indicators: { methylmalonic_acid: { value: '110', status: 'high' } }
+    }
+  ];
+
+  const archive = buildReportArchivePreview({
+    reports,
+    filterType: 'urine_ms'
+  });
+
+  assert.equal(archive.reportYearGroups.length, 2);
+  assert.equal(archive.reportYearGroups[0].year, '2026');
+  assert.equal(archive.reportYearGroups[1].year, '2025');
 });
 
 test('buildReportArchivePreview uses abbreviations for blood carnitine summary keys', () => {
@@ -522,6 +557,281 @@ test('buildReportTrendPreview uses explanatory overlay copy and explicit empty n
   assert.match(trend.nutritionWindows[0].note, /暂无喂养记录/);
   assert.equal(trend.nutritionWindows[1].badge, '暂无喂养记录');
   assert.match(trend.nutritionWindows[1].note, /暂无喂养记录/);
+});
+
+test('buildDailyCoefficientSeries builds seven-day sparkline points for three nutrition coefficients', () => {
+  const { startDate, endDate } = resolveWeekBeforeReport('2026-11-16');
+  const dailyMetrics = [
+    { date: '2026-11-09', naturalProteinCoefficient: 0.8, specialProteinCoefficient: 0.2, calorieCoefficient: 12 },
+    { date: '2026-11-11', naturalProteinCoefficient: 1.2, specialProteinCoefficient: 0.4, calorieCoefficient: 18 },
+    { date: '2026-11-14', naturalProteinCoefficient: 1.0, specialProteinCoefficient: 0.3, calorieCoefficient: 15 }
+  ];
+
+  const series = buildDailyCoefficientSeries(dailyMetrics, startDate, endDate);
+
+  assert.equal(startDate, '2026-11-09');
+  assert.equal(endDate, '2026-11-15');
+  assert.equal(series.length, 3);
+  assert.equal(series[0].key, 'naturalProteinCoefficient');
+  assert.equal(series[0].points.length, 7);
+  assert.equal(series[0].points[0].label, '9');
+  assert.equal(series[0].points[0].missing, false);
+  assert.equal(series[0].points[1].missing, true);
+  assert.equal(series[0].points[2].value, '1.2');
+  assert.equal(series[0].points[2].missing, false);
+  assert.ok(series[0].points[2].heightRpx >= 12);
+  assert.equal(series[2].unit, 'kcal/kg/d');
+});
+
+test('collectNutritionMetricsFromSummaries reads daily_summary_v2 macroSummary like the home trend', () => {
+  const metrics = collectNutritionMetricsFromSummaries([
+    {
+      date: '2026-04-20',
+      basicInfo: { weight: 5 },
+      recordCounts: { milk: 8, food: 0 },
+      macroSummary: {
+        naturalProtein: 6,
+        specialProtein: 2,
+        protein: 8,
+        calories: 600,
+        carbs: 40,
+        fat: 20
+      }
+    },
+    {
+      date: '2026-04-21',
+      basicInfo: {},
+      recordCounts: { milk: 7, food: 0 },
+      macroSummary: {
+        naturalProtein: 5.5,
+        specialProtein: 1.8,
+        protein: 7.3,
+        calories: 580,
+        carbs: 38,
+        fat: 18
+      }
+    }
+  ], '2026-04-18', '2026-04-24', 5);
+
+  assert.equal(metrics.length, 2);
+  assert.equal(metrics[0].naturalProteinCoefficient, 1.2);
+  assert.equal(metrics[1].naturalProteinCoefficient, 1.1);
+  assert.equal(metrics[1].calorieCoefficient, 116);
+});
+
+test('buildReportComparePreview uses daily summaries for week-before nutrition trends', () => {
+  const compare = buildReportComparePreview({
+    reportType: 'blood_ms',
+    reportAId: 'blood-a',
+    reportBId: 'blood-b',
+    selectedMetricKeys: ['c3'],
+    reports: [
+      {
+        _id: 'blood-a',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-04-25T00:00:00+08:00'),
+        indicators: { c3: { value: '8.000' } }
+      },
+      {
+        _id: 'blood-b',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-03-20T00:00:00+08:00'),
+        indicators: { c3: { value: '7.000' } }
+      }
+    ],
+    dailySummaries: [
+      {
+        date: '2026-04-20',
+        basicInfo: { weight: 5 },
+        recordCounts: { milk: 8, food: 0 },
+        macroSummary: { naturalProtein: 6, specialProtein: 2, protein: 8, calories: 600 }
+      },
+      {
+        date: '2026-04-22',
+        basicInfo: { weight: 5.1 },
+        recordCounts: { milk: 8, food: 0 },
+        macroSummary: { naturalProtein: 6.2, specialProtein: 2.1, protein: 8.3, calories: 610 }
+      }
+    ],
+    feedingRecords: [],
+    nutritionSettings: {},
+    fallbackWeight: 5
+  });
+
+  assert.equal(compare.hasNutritionData, true);
+  const naturalSeries = compare.nutritionCompareSeries.find((item) => item.key === 'naturalProteinCoefficient');
+  const reportAPoints = naturalSeries.reportA.points.filter((point) => !point.missing);
+  assert.equal(reportAPoints.length, 2);
+  assert.equal(reportAPoints[0].value, '1.2');
+  assert.equal(reportAPoints[1].value, '1.22');
+  assert.equal(naturalSeries.reportA.averageText, '1.21');
+});
+
+test('buildReportComparePreview compares two same-type reports and attaches week-before coefficient series', () => {
+  const reports = [
+    {
+      _id: 'urine-current',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-16T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '120', status: 'high', minRange: '0', maxRange: '100' },
+        methylcitric_acid_1: { value: '9', status: 'high' },
+        lactate: { value: '1.5', status: 'normal' }
+      }
+    },
+    {
+      _id: 'urine-previous',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-12T00:00:00+08:00'),
+      indicators: {
+        methylmalonic_acid: { value: '100', status: 'high', minRange: '0', maxRange: '90' },
+        methylcitric_acid_1: { value: '8', status: 'high' },
+        lactate: { value: '1.1', status: 'normal' }
+      }
+    }
+  ];
+
+  const dailySummaries = [
+    {
+      date: '2026-11-13',
+      basicInfo: { weight: 5 },
+      recordCounts: { milk: 0, food: 1 },
+      macroSummary: {
+        calories: 100,
+        protein: 2,
+        naturalProtein: 2,
+        specialProtein: 0,
+        carbs: 10,
+        fat: 5
+      }
+    }
+  ];
+
+  const compare = buildReportComparePreview({
+    reportType: 'urine_ms',
+    reportAId: 'urine-previous',
+    reportBId: 'urine-current',
+    reports,
+    dailySummaries,
+    nutritionSettings: {},
+    fallbackWeight: 5
+  });
+
+  assert.equal(compare.canCompare, true);
+  assert.equal(compare.reportA.id, 'urine-previous');
+  assert.equal(compare.reportB.id, 'urine-current');
+  assert.equal(compare.hasRangeMismatch, true);
+  assert.match(compare.rangeMismatchText, /不同机构/);
+  const mmaRow = compare.compareRows.find((row) => row.key === 'methylmalonic_acid');
+  assert.equal(mmaRow.name, '甲基丙二酸');
+  assert.equal(mmaRow.abbr, 'MMA');
+  assert.equal(mmaRow.current, '100');
+  assert.equal(mmaRow.previous, '120');
+  assert.equal(mmaRow.rangeMismatch, true);
+  assert.equal(compare.nutritionCompareSeries.length, 3);
+  assert.equal(compare.nutritionCompareSeries[0].reportA.date, '2026-11-12');
+  assert.equal(compare.nutritionCompareSeries[0].reportB.date, '2026-11-16');
+  assert.equal(compare.nutritionCompareSeries[0].reportA.points.length, 7);
+  assert.ok(compare.nutritionCompareSeries[0].reportB.points.some((point) => !point.missing && point.heightRpx >= 12));
+});
+
+test('buildReportComparePreview treats equivalent numeric ranges as matching despite formatting', () => {
+  const compare = buildReportComparePreview({
+    reportType: 'blood_ms',
+    reportAId: 'blood-a',
+    reportBId: 'blood-b',
+    selectedMetricKeys: ['c3'],
+    reports: [
+      {
+        _id: 'blood-a',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-01-01T00:00:00+08:00'),
+        indicators: {
+          c3: { value: '8.000', status: 'high', minRange: '1.500', maxRange: '65.000' }
+        }
+      },
+      {
+        _id: 'blood-b',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-01-02T00:00:00+08:00'),
+        indicators: {
+          c3: { value: '9.000', status: 'high', minRange: '1.5', maxRange: '65' }
+        }
+      }
+    ],
+    feedingRecords: [],
+    nutritionSettings: {},
+    fallbackWeight: 5
+  });
+
+  const c3Row = compare.compareRows.find((row) => row.key === 'c3');
+  assert.equal(c3Row.rangeMismatch, false);
+  assert.equal(c3Row.rangeA, '1.500–65.000');
+  assert.equal(c3Row.rangeB, '1.500–65.000');
+  assert.equal(compare.hasRangeMismatch, false);
+});
+
+test('resolveCompareFeedingDataRange only spans week-before windows for selected reports', () => {
+  const reports = [
+    {
+      _id: 'urine-current',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-16T00:00:00+08:00'),
+      indicators: {}
+    },
+    {
+      _id: 'urine-previous',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-10-01T00:00:00+08:00'),
+      indicators: {}
+    }
+  ];
+
+  const range = resolveCompareFeedingDataRange(reports, 'urine-current', 'urine-previous', 'urine_ms');
+  assert.equal(range.startDate, '2026-09-24');
+  assert.equal(range.endDate, '2026-11-15');
+});
+
+test('resolveCompareNutritionWindows loads only each report week-before window without merging the gap', () => {
+  const reports = [
+    {
+      _id: 'urine-current',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-11-16T00:00:00+08:00'),
+      indicators: {}
+    },
+    {
+      _id: 'urine-previous',
+      reportType: 'urine_ms',
+      reportDate: new Date('2026-10-01T00:00:00+08:00'),
+      indicators: {}
+    }
+  ];
+
+  const windows = resolveCompareNutritionWindows(reports, 'urine-current', 'urine-previous', 'urine_ms');
+
+  assert.deepEqual(windows, [
+    { startDate: '2026-11-09', endDate: '2026-11-15' },
+    { startDate: '2026-09-24', endDate: '2026-09-30' }
+  ]);
+});
+
+test('buildReportComparePreview rejects compare when only one same-type report exists', () => {
+  const compare = buildReportComparePreview({
+    reportType: 'blood_ms',
+    reports: [
+      {
+        _id: 'blood-current',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-12-20T00:00:00+08:00'),
+        indicators: { c3: { value: '8.1', status: 'high' } }
+      }
+    ]
+  });
+
+  assert.equal(compare.canCompare, false);
+  assert.equal(compare.reportCount, 1);
+  assert.match(compare.summaryLines[0], /至少需要两份/);
 });
 
 test('report workbench does not read persisted feeding record summary as nutrition source', () => {

@@ -42,6 +42,15 @@ function normalizeIndicatorMap(reportType = '', indicators = {}) {
     normalized.methylcitric_acid_1 = normalized.methylcitric_acid;
     delete normalized.methylcitric_acid;
   }
+  if (reportType === ReportModel.REPORT_TYPES.URINE_MS && normalized.hydroxybutyric_acid_2) {
+    if (!hasIndicatorValue(normalized.hydroxybutyric_acid)) {
+      normalized.hydroxybutyric_acid = normalized.hydroxybutyric_acid_2;
+    }
+    delete normalized.hydroxybutyric_acid_2;
+  }
+  if (reportType === ReportModel.REPORT_TYPES.URINE_MS && normalized.dihydroxybutyric_acid) {
+    delete normalized.dihydroxybutyric_acid;
+  }
   return normalized;
 }
 
@@ -134,6 +143,7 @@ function buildV2ReportDocument({
   reportType,
   indicators,
   reportId = '',
+  labName = '',
   createdAt = new Date(),
   updatedAt = new Date()
 }) {
@@ -150,6 +160,7 @@ function buildV2ReportDocument({
     reportDate: normalizedDate,
     reportType,
     reportTypeLabel: ReportModel.getReportTypeName(reportType),
+    ...(labName ? { labName: `${labName}`.trim() } : {}),
     indicators: normalizedIndicators,
     summary,
     archive,
@@ -267,6 +278,9 @@ async function getHistoricalRanges(babyUid, reportType) {
   if (!latestReport?.indicators) return {};
 
   return Object.keys(latestReport.indicators).reduce((ranges, indicatorKey) => {
+    if (indicatorKey === 'c3_c0' || indicatorKey === 'c3_c2') {
+      return ranges;
+    }
     const indicator = latestReport.indicators[indicatorKey];
     if (indicator?.minRange && indicator?.maxRange) {
       ranges[indicatorKey] = {

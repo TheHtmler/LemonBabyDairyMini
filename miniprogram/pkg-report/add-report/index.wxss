@@ -218,6 +218,10 @@
   padding: 2rpx 12rpx;
 }
 
+.ocr-pending-tag:active {
+  opacity: 0.72;
+}
+
 .indicator-row-top {
   margin-bottom: 14rpx;
 }

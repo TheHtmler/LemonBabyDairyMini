@@ -3,62 +3,61 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-test('analysis-report page uses archive, detail, and trend views instead of normal-rate overview', () => {
+test('analysis-report page uses archive/compare tabs and navigates to report detail page', () => {
   const wxml = fs.readFileSync(
     path.resolve(__dirname, '../miniprogram/pages/analysis-report/index.wxml'),
     'utf8'
   );
 
-  assert.match(wxml, /archive-view/);
-  assert.match(wxml, /detail-view/);
-  assert.match(wxml, /trend-view/);
-  assert.match(wxml, /primary-entry/);
-  assert.match(wxml, /trend-entry-inline/);
-  assert.match(wxml, /report-type-tabs/);
-  assert.match(wxml, /report-archive-list/);
-  assert.match(wxml, /archive-card-status-row/);
-  assert.doesNotMatch(wxml, /quick-actions/);
-  assert.doesNotMatch(wxml, /archive-card-footer/);
-  assert.doesNotMatch(wxml, /正常率/);
+  assert.match(wxml, /main-tabs/);
+  assert.match(wxml, /archive-panel/);
+  assert.match(wxml, /compare-panel/);
+  assert.match(wxml, /archiveYearGroups/);
+  assert.match(wxml, /nutritionCompareSeries/);
+  assert.match(wxml, /diet-empty-hint/);
+  assert.match(wxml, /fab/);
+  assert.doesNotMatch(wxml, /detail-view/);
+  assert.doesNotMatch(wxml, /page-title/);
+  assert.doesNotMatch(wxml, /去对比/);
 });
 
-test('analysis-report page wires report flow builders and navigation handlers', () => {
+test('analysis-report page wires compare builders, lazy feeding load, and detail navigation', () => {
   const js = fs.readFileSync(
     path.resolve(__dirname, '../miniprogram/pages/analysis-report/index.js'),
     'utf8'
   );
 
   assert.match(js, /buildReportArchivePreview/);
-  assert.match(js, /buildReportDetailPreview/);
-  assert.match(js, /buildReportTrendPreview/);
+  assert.match(js, /buildReportComparePreview/);
+  assert.match(js, /resolveCompareNutritionWindows/);
+  assert.match(js, /ensureCompareFeedingData/);
+  assert.match(js, /REPORTS_CACHE_TTL_MS/);
+  assert.match(js, /ANALYSIS_REPORT_RELOAD_KEY/);
+  assert.match(js, /pkg-report\/report-detail\/index/);
   assert.match(js, /openDetailView/);
-  assert.match(js, /openTrendView/);
-  assert.match(js, /goBackToArchive/);
-  assert.doesNotMatch(js, /calculateStatistics/);
+  assert.match(js, /refreshCompareView/);
+  assert.doesNotMatch(js, /buildReportDetailPreview/);
+  assert.doesNotMatch(js, /openCompareFromDetail/);
+  assert.doesNotMatch(js, /resolveFeedingDataRange/);
 });
 
-test('analysis-report page reads and deletes reports through report repository', () => {
+test('analysis-report page reads reports through report repository', () => {
   const js = fs.readFileSync(
     path.resolve(__dirname, '../miniprogram/pages/analysis-report/index.js'),
     'utf8'
   );
 
   assert.match(js, /require\('\.\.\/\.\.\/models\/reportRepository'\)/);
-  assert.match(js, /require\('\.\.\/\.\.\/models\/nutrition'\)/);
-  assert.match(js, /require\('\.\.\/\.\.\/utils\/dailyRecordV2Service'\)/);
-  assert.match(js, /NutritionModel\.getNutritionSettings/);
   assert.match(js, /ReportRepository\.listReportsByBaby/);
   assert.match(js, /DailyRecordV2Service\.getDailySummariesForRange/);
-  assert.match(js, /rebuildMissing:\s*false/);
-  assert.match(js, /ReportRepository\.deleteReport/);
-  assert.doesNotMatch(js, /loadV2MilkRecords/);
-  assert.doesNotMatch(js, /feeding_records_v2/);
-  assert.doesNotMatch(js, /collection\('daily_summary_v2'\)/);
-  assert.doesNotMatch(js, /collection\('feeding_records'\)/);
+  assert.match(js, /dailySummariesCache/);
+  assert.match(js, /rebuildMissing:\s*true/);
+  assert.doesNotMatch(js, /feedingRecordsCache/);
+  assert.doesNotMatch(js, /dailySummaryToFeedingWindowRecord/);
   assert.doesNotMatch(js, /collection\('baby_reports'\)/);
 });
 
-test('report-detail page exposes same-type trend entry', () => {
+test('report-detail page keeps edit action in header and removes compare trend entry', () => {
   const wxml = fs.readFileSync(
     path.resolve(__dirname, '../miniprogram/pkg-report/report-detail/index.wxml'),
     'utf8'
@@ -68,20 +67,30 @@ test('report-detail page exposes same-type trend entry', () => {
     'utf8'
   );
 
-  assert.match(wxml, /查看本类趋势/);
-  assert.match(wxml, /item\.displayName \|\| item\.name/);
-  assert.match(js, /onOpenSameTypeTrend/);
-  assert.match(js, /displayName:/);
+  assert.match(wxml, /onEditReport/);
+  assert.match(wxml, /header-actions/);
+  assert.doesNotMatch(wxml, /trend-entry/);
+  assert.doesNotMatch(wxml, /去对比/);
+  assert.doesNotMatch(wxml, /bottom-actions/);
+  assert.match(js, /ANALYSIS_REPORT_RELOAD_KEY/);
+  assert.doesNotMatch(js, /onOpenSameTypeTrend/);
 });
 
-test('report-detail page loads and deletes reports through report repository', () => {
+test('add-report page uses custom OCR cloud function instead of WeChat OCR', () => {
   const js = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/pkg-report/report-detail/index.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.js'),
+    'utf8'
+  );
+  const wxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxml'),
     'utf8'
   );
 
-  assert.match(js, /require\('\.\.\/\.\.\/models\/reportRepository'\)/);
-  assert.match(js, /ReportRepository\.getReportById/);
-  assert.match(js, /ReportRepository\.deleteReport/);
-  assert.doesNotMatch(js, /collection\('baby_reports'\)/);
+  assert.match(js, /recognizeReportCustom/);
+  assert.match(js, /parseStructuredReportItems/);
+  assert.match(js, /mapOcrResultToIndicators/);
+  assert.doesNotMatch(js, /recognizeReportImage/);
+  assert.doesNotMatch(js, /WECHAT_OCR/);
+  assert.doesNotMatch(js, /fetchOcrQuotaHint/);
+  assert.doesNotMatch(wxml, /微信 OCR/);
 });

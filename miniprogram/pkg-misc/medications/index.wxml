@@ -28,7 +28,7 @@
 
   <!-- 添加按钮 -->
   <view class="fab" bindtap="showAddModal">
-    <text class="fab-icon">+</text>
+    <view class="fab-icon">+</view>
   </view>
 
   <!-- 添加/编辑药物弹窗 -->

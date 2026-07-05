@@ -102,14 +102,6 @@ Page({
         description: '快速了解核心功能与流程'
       },
       {
-        id: 18,
-        name: '自建 OCR 实验',
-        icon: 'info',
-        path: '/pkg-misc/custom-ocr-demo/index',
-        description: '云函数中转自建 OCR 服务，不消耗微信 printedText 额度',
-        showForDeveloper: true
-      },
-      {
         id: 6,
         name: '数据标识说明',
         icon: 'info',

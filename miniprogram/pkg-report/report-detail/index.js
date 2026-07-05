@@ -1,6 +1,7 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
-const ANALYSIS_REPORT_FOCUS_KEY = 'analysis_report_focus';
+
+const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
 
 Page({
   data: {
@@ -160,6 +161,7 @@ Page({
       this.setData({ deleting: true });
 
       await ReportRepository.deleteReport(this.data.reportId);
+      wx.setStorageSync(ANALYSIS_REPORT_RELOAD_KEY, Date.now());
 
       wx.showToast({
         title: '删除成功',
@@ -235,28 +237,7 @@ Page({
   },
 
   // 查看历史趋势（预留功能）
-  onViewTrend: function (e) {
-    const indicatorKey = e.currentTarget.dataset.indicator;
-    wx.showToast({
-      title: '趋势功能开发中',
-      icon: 'none'
-    });
-  },
-
-  onOpenSameTypeTrend: function () {
-    if (!this.data.reportData) return;
-
-    wx.setStorageSync(ANALYSIS_REPORT_FOCUS_KEY, {
-      reportType: this.data.reportData.reportType,
-      reportId: this.data.reportId,
-      previewMode: 'trend',
-      createdAt: Date.now()
-    });
-
-    wx.switchTab({
-      url: '/pages/analysis-report/index'
-    });
-  },
+  onViewTrend: function () {},
 
   // 复制报告数据
   onCopyReport: function () {

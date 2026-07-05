@@ -50,8 +50,7 @@
         "personal-info/index",
         "emergency-support/index",
         "emergency-card/index",
-        "about/index",
-        "custom-ocr-demo/index"
+        "about/index"
       ]
     }
   ],

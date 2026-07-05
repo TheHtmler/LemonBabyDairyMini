@@ -18,6 +18,28 @@ test('buildOcrHttpError maps 401 to unauthorized', () => {
   assert.match(error.message, /API Key/);
 });
 
+test('buildOcrHttpError maps 403 to unauthorized', () => {
+  const error = buildOcrHttpError(403, '{"detail":"missing api key"}', { detail: 'missing api key' });
+  assert.equal(error.code, 'OCR_UNAUTHORIZED');
+});
+
+test('buildOcrHttpError maps 413 to image too large', () => {
+  const error = buildOcrHttpError(413, '{"detail":"payload too large"}', { detail: 'payload too large' });
+  assert.equal(error.code, 'IMAGE_TOO_LARGE');
+});
+
+test('buildOcrHttpError maps 429 to busy', () => {
+  const error = buildOcrHttpError(429, '{"detail":"busy"}', { detail: 'busy' });
+  assert.equal(error.code, 'OCR_BUSY');
+});
+
+test('buildOcrHttpError maps 502 html to gateway error without html body', () => {
+  const error = buildOcrHttpError(502, '<html><title>502 Bad Gateway</title></html>', null);
+  assert.equal(error.code, 'OCR_GATEWAY_ERROR');
+  assert.match(error.message, /502/);
+  assert.doesNotMatch(error.message, /<html>/);
+});
+
 test('buildOcrHttpError keeps json detail in message', () => {
   const error = buildOcrHttpError(422, '{"detail":"unsupported image"}', { detail: 'unsupported image' });
   assert.equal(error.code, 'OCR_HTTP_ERROR');

@@ -1,6 +1,6 @@
-const MAX_EDGE_PX = 1400;
-const JPEG_QUALITY = 72;
-const SKIP_PREPROCESS_BYTES = 350 * 1024;
+const MAX_EDGE_PX = 2400;
+const JPEG_QUALITY = 88;
+const OCR_MAX_BYTES = 2 * 1024 * 1024;
 
 let jimpModule = null;
 
@@ -20,12 +20,20 @@ function loadJimp() {
 async function preprocessImageForOcr(buffer) {
   const originalBytes = buffer?.length || 0;
   if (!originalBytes) {
-    return { buffer, preprocessMs: 0, resized: false, originalBytes: 0, outputBytes: 0 };
+    return { buffer, preprocessMs: 0, resized: false, skipped: true, originalBytes: 0, outputBytes: 0 };
   }
 
+  // 与 curl 直传保持一致：2MB 以内且边长合理时不再二次压缩，避免 OCR 文字劣化
   const Jimp = loadJimp();
   if (!Jimp) {
-    return { buffer, preprocessMs: 0, resized: false, originalBytes, outputBytes: originalBytes };
+    return {
+      buffer,
+      preprocessMs: 0,
+      resized: false,
+      skipped: true,
+      originalBytes,
+      outputBytes: originalBytes
+    };
   }
 
   const startedAt = Date.now();
@@ -36,13 +44,14 @@ async function preprocessImageForOcr(buffer) {
     const height = image.bitmap.height;
     const maxEdge = Math.max(width, height);
     const needsResize = maxEdge > MAX_EDGE_PX;
-    const needsReencode = originalBytes > SKIP_PREPROCESS_BYTES;
+    const needsReencode = originalBytes > OCR_MAX_BYTES;
 
     if (!needsResize && !needsReencode) {
       return {
         buffer,
         preprocessMs: Date.now() - startedAt,
         resized: false,
+        skipped: true,
         originalBytes,
         outputBytes: originalBytes,
         width,
@@ -59,7 +68,8 @@ async function preprocessImageForOcr(buffer) {
     return {
       buffer: outputBuffer,
       preprocessMs: Date.now() - startedAt,
-      resized: needsResize || outputBuffer.length < originalBytes,
+      resized: true,
+      skipped: false,
       originalBytes,
       outputBytes: outputBuffer.length,
       width: image.bitmap.width,
@@ -74,6 +84,7 @@ async function preprocessImageForOcr(buffer) {
       buffer,
       preprocessMs: Date.now() - startedAt,
       resized: false,
+      skipped: true,
       originalBytes,
       outputBytes: originalBytes,
       preprocessError: error?.message || String(error)
@@ -84,5 +95,6 @@ async function preprocessImageForOcr(buffer) {
 module.exports = {
   MAX_EDGE_PX,
   JPEG_QUALITY,
+  OCR_MAX_BYTES,
   preprocessImageForOcr
 };

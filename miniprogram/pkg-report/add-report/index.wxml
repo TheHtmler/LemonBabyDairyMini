@@ -22,7 +22,7 @@
       <text class="ocr-entry-icon">📷</text>
       <view class="ocr-entry-copy">
         <text class="ocr-entry-title">{{ocrRecognizing ? '识别中…' : '拍照识别填指标'}}</text>
-        <text class="ocr-entry-desc">{{ocrQuotaHint || '拍下报告单自动填值，请逐项核对（微信 OCR 约100次/天共享）'}}</text>
+        <text class="ocr-entry-desc">{{ocrEntryHint}}</text>
       </view>
     </view>
 
@@ -58,7 +58,12 @@
               <text class="indicator-name">{{indicator.name}}</text>
               <text class="indicator-abbr">{{indicator.abbr}}</text>
               <text wx:if="{{!indicator.optional && !indicator.isRatio}}" class="required-mark">*</text>
-              <text wx:if="{{indicatorData[indicator.key].ocrPending}}" class="ocr-pending-tag">识别待核对</text>
+              <text
+                wx:if="{{indicatorData[indicator.key].ocrPending}}"
+                class="ocr-pending-tag"
+                catchtap="onConfirmOcrIndicator"
+                data-indicator="{{indicator.key}}"
+              >识别待核对</text>
             </view>
           </view>
         </view>

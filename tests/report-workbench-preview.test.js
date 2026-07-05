@@ -20,6 +20,11 @@ function loadProfilePage() {
   return pageConfig;
 }
 
+function getMiscPackagePages(appConfig) {
+  const miscPackage = (appConfig.subPackages || []).find((item) => item.root === 'pkg-misc');
+  return miscPackage ? miscPackage.pages : [];
+}
+
 test('app.json keeps analysis-report and excludes removed report workbench preview page', () => {
   const appConfig = JSON.parse(
     fs.readFileSync(
@@ -44,4 +49,21 @@ test('profile menu does not expose removed report workbench preview entry', () =
 
   assert.equal(previewItem, undefined);
   assert.equal(oldPreviewItem, undefined);
+});
+
+test('app.json and profile menu exclude removed custom OCR demo page', () => {
+  const appConfig = JSON.parse(
+    fs.readFileSync(
+      path.resolve(__dirname, '../miniprogram/app.json'),
+      'utf8'
+    )
+  );
+  const page = loadProfilePage();
+  const miscPages = getMiscPackagePages(appConfig);
+  const demoItem = page.data.menuList.find(
+    (item) => item.path === '/pkg-misc/custom-ocr-demo/index'
+  );
+
+  assert.ok(!miscPages.includes('custom-ocr-demo/index'));
+  assert.equal(demoItem, undefined);
 });

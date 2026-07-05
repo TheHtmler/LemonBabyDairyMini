@@ -10,6 +10,7 @@ class ReportModel {
 
   // 血串联质谱指标配置
   static BLOOD_MS_INDICATORS = [
+    { key: 'arginine', name: '精氨酸', unit: '', abbr: 'Arg' },
     { key: 'iso_leu', name: '异亮氨酸/亮氨酸', unit: '', abbr: 'Iso/Leu' },
     { key: 'met', name: '蛋氨酸/甲硫氨酸', unit: '', abbr: 'Met' },
     { key: 'val', name: '缬氨酸', unit: '', abbr: 'Val' },

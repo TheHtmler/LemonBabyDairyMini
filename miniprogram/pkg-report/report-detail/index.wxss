@@ -1,12 +1,12 @@
-/* pages/report-detail/index.wxss */
-
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #F5F7FA 0%, #F8FAFC 100%);
-  padding-bottom: 140rpx; /* 给底部按钮留空间 */
+  padding: 24rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at top right, rgba(255, 217, 128, 0.28), transparent 34%),
+    linear-gradient(180deg, #fffaf0 0%, #fff4db 100%);
+  box-sizing: border-box;
 }
 
-/* 加载状态 */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -18,8 +18,8 @@
 .loading-spinner {
   width: 60rpx;
   height: 60rpx;
-  border: 4rpx solid #E0E0E0;
-  border-top: 4rpx solid #2196F3;
+  border: 4rpx solid rgba(201, 136, 23, 0.15);
+  border-top: 4rpx solid #c98817;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -31,375 +31,245 @@
 
 .loading-text {
   font-size: 28rpx;
-  color: #999;
+  color: #8d7449;
   margin-top: 20rpx;
 }
 
-/* 主要内容 */
 .content {
-  padding: 30rpx;
-  width: 90%;
+  width: 100%;
 }
 
-/* 报告头部 */
 .report-header {
-  background: linear-gradient(135deg, #FFFFFF 0%, #FEFEFE 100%);
-  border-radius: 25rpx;
-  padding: 30rpx;
-  margin-bottom: 30rpx;
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.08);
-  border: 1rpx solid rgba(33, 150, 243, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.report-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4rpx;
-  background: linear-gradient(90deg, #2196F3, #4CAF50, #FF9800);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid rgba(201, 136, 23, 0.12);
+  box-shadow: 0 8rpx 24rpx rgba(201, 136, 23, 0.08);
 }
 
 .header-main {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 25rpx;
+  gap: 16rpx;
 }
 
 .report-title {
   display: flex;
   flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
 }
 
 .title-text {
   font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 8rpx;
+  font-weight: 700;
+  color: #2c1d09;
 }
 
-.date-text {
-  font-size: 26rpx;
-  color: #666;
+.date-text,
+.lab-text {
+  font-size: 24rpx;
+  color: #8d7449;
 }
 
 .header-actions {
-  display: flex;
-  gap: 10rpx;
+  flex-shrink: 0;
 }
 
 .action-btn {
-  width: 60rpx;
-  height: 60rpx;
-  background: #F5F5F5;
-  border-radius: 50%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.action-btn:active {
-  background: #E0E0E0;
-  transform: scale(0.95);
+  gap: 8rpx;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
+  box-shadow: 0 6rpx 16rpx rgba(201, 136, 23, 0.18);
 }
 
 .action-icon {
-  font-size: 28rpx;
-}
-
-/* 报告摘要 */
-.report-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25rpx;
-  padding: 20rpx;
-  background: #F8F9FA;
-  border-radius: 20rpx;
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.summary-number {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5rpx;
-}
-
-.summary-number.normal {
-  color: #4CAF50;
-}
-
-.summary-number.abnormal {
-  color: #F44336;
-}
-
-.summary-number.rate {
-  color: #2196F3;
-}
-
-.summary-label {
   font-size: 24rpx;
-  color: #666;
 }
 
-.summary-divider {
-  width: 1rpx;
-  height: 40rpx;
-  background: #E0E0E0;
-  margin: 0 15rpx;
+.action-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #2c1d09;
 }
 
-/* 整体状态 */
-.overall-status {
-  text-align: center;
-  padding: 15rpx 25rpx;
-  border-radius: 25rpx;
-  font-size: 26rpx;
+.status-banner {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
   font-weight: 600;
 }
 
-.overall-status.normal {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-  border: 1rpx solid rgba(76, 175, 80, 0.2);
+.status-banner.normal {
+  background: rgba(76, 175, 80, 0.12);
+  color: #2e7d32;
 }
 
-.overall-status.abnormal {
+.status-banner.abnormal {
   background: rgba(244, 67, 54, 0.1);
-  color: #F44336;
-  border: 1rpx solid rgba(244, 67, 54, 0.2);
-}
-
-.trend-entry {
-  margin-top: 18rpx;
-  display: inline-flex;
-  padding: 12rpx 18rpx;
-  border-radius: 999rpx;
-  background: #fff4d1;
-  color: #8f6200;
-}
-
-.trend-entry-text {
-  font-size: 24rpx;
-  font-weight: 600;
-}
-
-/* 指标详情区域 */
-.indicators-section {
-  margin-bottom: 30rpx;
+  color: #c62828;
 }
 
 .section-title {
   display: block;
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 20rpx;
-  padding-left: 15rpx;
-  border-left: 4rpx solid #2196F3;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #5f3d00;
+  margin-bottom: 16rpx;
+}
+
+.indicators-section {
+  margin-bottom: 24rpx;
 }
 
 .indicators-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .indicator-item {
-  background: white;
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 20rpx;
-  padding: 25rpx;
-  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.06);
-  border: 1rpx solid #F0F0F0;
+  padding: 24rpx;
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
 }
 
-/* 指标头部 */
 .indicator-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20rpx;
-  padding-bottom: 15rpx;
-  border-bottom: 1rpx solid #F5F5F5;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
 }
 
 .indicator-info {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  flex: 1;
+  min-width: 0;
 }
 
 .indicator-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #2c1d09;
 }
 
 .indicator-abbr {
-  font-size: 24rpx;
-  color: #666;
+  font-size: 22rpx;
+  color: #8d7449;
 }
 
-/* 状态标识 */
 .status-badge {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 10rpx 16rpx;
-  border-radius: 25rpx;
-  font-size: 24rpx;
+  flex-shrink: 0;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
   font-weight: 600;
 }
 
 .status-badge.normal {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-  border: 1rpx solid rgba(76, 175, 80, 0.2);
+  background: rgba(76, 175, 80, 0.12);
+  color: #2e7d32;
 }
 
-.status-badge.high {
-  background: rgba(244, 67, 54, 0.1);
-  color: #F44336;
-  border: 1rpx solid rgba(244, 67, 54, 0.2);
-}
-
+.status-badge.high,
 .status-badge.low {
-  background: rgba(255, 152, 0, 0.1);
-  color: #FF9800;
-  border: 1rpx solid rgba(255, 152, 0, 0.2);
-}
-
-.status-badge.unknown {
-  background: rgba(158, 158, 158, 0.1);
-  color: #9E9E9E;
-  border: 1rpx solid rgba(158, 158, 158, 0.2);
+  background: rgba(244, 67, 54, 0.1);
+  color: #c62828;
 }
 
 .status-badge.empty {
-  background: rgba(158, 158, 158, 0.05);
-  color: #999;
-  border: 1rpx solid rgba(158, 158, 158, 0.1);
+  background: rgba(141, 116, 73, 0.1);
+  color: #8d7449;
 }
 
-.status-icon {
-  font-size: 20rpx;
-  font-weight: bold;
-}
-
-/* 指标数值 */
 .indicator-values {
-  margin-bottom: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
 
 .value-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-  margin-bottom: 10rpx;
-  padding: 12rpx 15rpx;
-  background: #F8F9FA;
-  border-radius: 12rpx;
-}
-
-.value-row.main-value {
-  background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 100%);
-  border: 1rpx solid rgba(33, 150, 243, 0.2);
-}
-
-.value-row.optimal {
-  background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
-  border: 1rpx solid rgba(76, 175, 80, 0.2);
+  min-height: 44rpx;
 }
 
 .value-label {
-  font-size: 26rpx;
-  color: #666;
-  font-weight: 500;
+  width: 152rpx;
+  flex-shrink: 0;
+  font-size: 24rpx;
+  line-height: 44rpx;
+  color: #8d7449;
+}
+
+.value-value {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6rpx;
+  line-height: 44rpx;
 }
 
 .value-text {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #333;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #2c1d09;
+  text-align: right;
 }
 
-.value-text.normal {
-  color: #4CAF50;
-}
-
-.value-text.high {
-  color: #F44336;
-}
-
+.value-text.high,
 .value-text.low {
-  color: #FF9800;
-}
-
-.value-text.optimal {
-  color: #4CAF50;
+  color: #c62828;
 }
 
 .value-text.empty {
-  color: #999;
-  font-style: italic;
-}
-
-/* 趋势按钮 */
-.indicator-actions {
-  text-align: center;
-}
-
-.trend-btn {
-  background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 100%);
-  color: #2196F3;
-  border: 1rpx solid rgba(33, 150, 243, 0.2);
-  border-radius: 20rpx;
-  padding: 15rpx 30rpx;
-  font-size: 24rpx;
-  transition: all 0.3s ease;
-}
-
-.trend-btn:active {
-  background: rgba(33, 150, 243, 0.1);
-  transform: scale(0.98);
-}
-
-.trend-text {
-  font-size: 24rpx;
+  color: #b5a48a;
   font-weight: 500;
 }
 
-/* 报告信息区域 */
+.value-unit {
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.value-text.optimal,
+.value-row.optimal .value-label {
+  color: #6b5430;
+}
+
 .report-info-section {
-  margin-bottom: 30rpx;
+  margin-bottom: 24rpx;
 }
 
 .info-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 20rpx;
-  padding: 25rpx;
-  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.06);
-  border: 1rpx solid #F0F0F0;
+  padding: 8rpx 24rpx;
+  border: 1rpx solid rgba(201, 136, 23, 0.1);
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15rpx 0;
-  border-bottom: 1rpx solid #F5F5F5;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid rgba(201, 136, 23, 0.08);
 }
 
 .info-row:last-child {
@@ -407,107 +277,44 @@
 }
 
 .info-label {
-  font-size: 26rpx;
-  color: #666;
-  font-weight: 500;
+  font-size: 24rpx;
+  color: #8d7449;
 }
 
 .info-value {
-  font-size: 26rpx;
-  color: #333;
-  font-weight: 400;
-  word-break: break-all;
-  text-align: right;
-  max-width: 400rpx;
+  font-size: 24rpx;
+  color: #2c1d09;
+  font-weight: 600;
 }
 
-/* 底部操作按钮 */
-.bottom-actions {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  padding: 20rpx 40rpx;
-  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.1);
-  border-top: 1rpx solid #E0E0E0;
+.secondary-actions {
   display: flex;
-  gap: 20rpx;
-  z-index: 1000;
+  gap: 16rpx;
 }
 
-.action-button {
+.secondary-btn {
   flex: 1;
+  margin: 0;
+  padding: 0;
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 18rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.92);
+  color: #5f3d00;
+  border: 1rpx solid rgba(201, 136, 23, 0.16);
+}
+
+.secondary-btn.danger {
+  color: #c62828;
+  border-color: rgba(244, 67, 54, 0.18);
+}
+
+.secondary-btn[disabled] {
+  opacity: 0.6;
+}
+
+.secondary-btn::after {
   border: none;
-  border-radius: 25rpx;
-  padding: 25rpx;
-  font-size: 30rpx;
-  font-weight: bold;
-  transition: all 0.3s ease;
 }
-
-.action-button.edit {
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-  color: white;
-  box-shadow: 0 4rpx 15rpx rgba(33, 150, 243, 0.3);
-}
-
-.action-button.edit:active {
-  transform: translateY(2rpx);
-  box-shadow: 0 2rpx 8rpx rgba(33, 150, 243, 0.4);
-}
-
-.action-button.delete {
-  background: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
-  color: white;
-  box-shadow: 0 4rpx 15rpx rgba(244, 67, 54, 0.3);
-}
-
-.action-button.delete:active {
-  transform: translateY(2rpx);
-  box-shadow: 0 2rpx 8rpx rgba(244, 67, 54, 0.4);
-}
-
-.action-button[disabled] {
-  background: linear-gradient(135deg, #BDBDBD 0%, #9E9E9E 100%);
-  box-shadow: none;
-  transform: none;
-}
-
-.btn-text {
-  font-size: 30rpx;
-  font-weight: bold;
-}
-
-/* 响应式设计 */
-@media (max-width: 375px) {
-  .header-main {
-    flex-direction: column;
-    gap: 15rpx;
-  }
-  
-  .header-actions {
-    align-self: flex-end;
-  }
-  
-  .report-summary {
-    flex-wrap: wrap;
-    gap: 15rpx;
-  }
-  
-  .summary-item {
-    min-width: 120rpx;
-  }
-  
-  .indicator-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10rpx;
-  }
-  
-  .value-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5rpx;
-  }
-} 

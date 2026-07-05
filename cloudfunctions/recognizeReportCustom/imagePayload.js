@@ -28,7 +28,7 @@ async function resolveImageBuffer(cloud, event = {}) {
     }
     return {
       buffer,
-      fileName: inferFileName(fileID),
+      fileName: event.fileName || inferFileName(fileID),
       source: 'fileID',
       downloadMs: Date.now() - downloadStartedAt
     };
