@@ -112,6 +112,9 @@ return parts.map(({ label, value }) => `${label} ${formatTwoDecimals(value)}g`).
 function buildStatValue(value, unit) {
 return `${normalizeValue(value)} ${unit}`;
 }
+function buildProteinStatValue(value) {
+return `${formatTwoDecimals(value)} g`;
+}
 function roundDisplayNumber(value, precision = 2) {
 const num = Number(value || 0);
 const rounded = Number(num.toFixed(precision));
@@ -375,7 +378,7 @@ infoTitle: '目标热卡系数（kcal/kg/d）',
 infoLines: buildCalorieGoalInfoLines(input.calorieGoalPerKgRange, input.calorieGoalPerKgRangeLines)
 },
 {
-...createMetric('总蛋白', input.proteinSummaryDisplay?.total || 0, 'g'),
+...createMetric('总蛋白', formatTwoDecimals(input.proteinSummaryDisplay?.total || 0), 'g'),
 detail: buildProteinBreakdownLine([
 { label: '天然', value: input.proteinSummaryDisplay?.natural || 0 },
 { label: '特殊', value: input.proteinSummaryDisplay?.special || 0 }
@@ -402,14 +405,14 @@ infoLines: buildVolumeInfoLines([
 nutritionStrip: [
 {
 label: '天然蛋白',
-value: normalizeValue(input.proteinSummaryDisplay?.natural || 0),
+value: formatTwoDecimals(input.proteinSummaryDisplay?.natural || 0),
 unit: 'g',
 source: buildProteinBreakdownLine([
 { label: '奶', value: naturalMilkProtein },
 { label: '食物', value: naturalFoodProtein }
 ]),
 premiumRatio: input.proteinSummaryDisplay?.premiumRatio || 0,
-premiumValue: normalizeValue(input.proteinSummaryDisplay?.premium || 0),
+premiumValue: formatTwoDecimals(input.proteinSummaryDisplay?.premium || 0),
 detailLabel: '天然蛋白系数',
 detailValue: buildCoefficientParts(input.naturalProteinCoefficient).value,
 detailUnit: buildCoefficientParts(input.naturalProteinCoefficient).unit,
@@ -417,7 +420,7 @@ detail: input.naturalProteinCoefficient ? `${input.naturalProteinCoefficient} g/
 },
 {
 label: '特殊蛋白',
-value: normalizeValue(input.proteinSummaryDisplay?.special || 0),
+value: formatTwoDecimals(input.proteinSummaryDisplay?.special || 0),
 unit: 'g',
 source: buildProteinBreakdownLine([
 { label: '特奶', value: specialMilkProtein },
@@ -439,7 +442,7 @@ componentRows: milkComponentRows,
 meta: `${feedingRecordCount}条记录${milkComponentRows.length > 0 ? ` · ${milkComponentRows.length}类奶品` : ''}`
 } : {}),
 summaryText: useComponentMilkSection
-? `奶量 ${normalizeValue(input.totalMilk || totalMilkVolume)}ml · 热量 ${roundDisplayNumber(componentCalories)}kcal · 蛋白 ${roundDisplayNumber(componentProtein)}g`
+? `奶量 ${normalizeValue(input.totalMilk || totalMilkVolume)}ml · 热量 ${roundDisplayNumber(componentCalories)}kcal · 蛋白 ${formatTwoDecimals(componentProtein)}g`
 : `${normalMilkColumnLabel} ${normalizeValue(normalMilk.volume || 0)}ml ${normalizeValue(normalMilk.calories || 0)}kcal ${formatTwoDecimals(normalMilk.protein || 0)}g蛋白 · 特奶 ${normalizeValue(specialMilk.volume || 0)}ml ${normalizeValue(specialMilk.calories || 0)}kcal ${formatTwoDecimals(specialMilk.protein || 0)}g蛋白`,
 columns: [
 {
@@ -447,7 +450,7 @@ label: normalMilkColumnLabel,
 stats: [
 { label: '体积', value: buildStatValue(normalMilk.volume || 0, 'ml') },
 { label: '热量', value: buildStatValue(normalMilk.calories || 0, 'kcal') },
-{ label: '蛋白', value: buildStatValue(normalMilk.protein || 0, 'g') },
+{ label: '蛋白', value: buildProteinStatValue(normalMilk.protein || 0) },
 { label: '蛋白系数', value: buildCoefficientValue(normalMilk.coefficient) },
 { label: '碳水', value: buildStatValue(normalMilk.carbs || 0, 'g') },
 { label: '脂肪', value: buildStatValue(normalMilk.fat || 0, 'g') }
@@ -458,7 +461,7 @@ label: '特奶',
 stats: [
 { label: '体积', value: buildStatValue(specialMilk.volume || 0, 'ml') },
 { label: '热量', value: buildStatValue(specialMilk.calories || 0, 'kcal') },
-{ label: '蛋白', value: buildStatValue(specialMilk.protein || 0, 'g') },
+{ label: '蛋白', value: buildProteinStatValue(specialMilk.protein || 0) },
 { label: '蛋白系数', value: buildCoefficientValue(specialMilk.coefficient) },
 { label: '碳水', value: buildStatValue(specialMilk.carbs || 0, 'g') },
 { label: '脂肪', value: buildStatValue(specialMilk.fat || 0, 'g') }
@@ -470,10 +473,10 @@ stats: [
 label: '食物',
 type: 'stats',
 meta: `${normalizeValue(foodOverview.count || 0)}条记录`,
-summaryText: `热量 ${normalizeValue(foodOverview.totalCalories || 0)} kcal · 蛋白 ${normalizeValue(getFoodProtein(foodOverview))} g`,
+summaryText: `热量 ${normalizeValue(foodOverview.totalCalories || 0)} kcal · 蛋白 ${formatTwoDecimals(getFoodProtein(foodOverview))} g`,
 stats: buildNonZeroStats([
 { label: '热量', value: buildStatValue(foodOverview.totalCalories || 0, 'kcal') },
-{ label: '蛋白', value: buildStatValue(getFoodProtein(foodOverview), 'g') },
+{ label: '蛋白', value: buildProteinStatValue(getFoodProtein(foodOverview)) },
 { label: '液体', value: buildStatValue(roundDisplayInteger(foodFluidVolume), 'ml') },
 { label: '碳水', value: buildStatValue(foodOverview.carbs || 0, 'g') },
 { label: '脂肪', value: buildStatValue(foodFat, 'g') }
@@ -486,7 +489,7 @@ meta: `${normalizeValue(treatmentOverview.count || 0)}条记录`,
 summaryText: `热量 ${normalizeValue(treatmentOverview.totalCalories || 0)} kcal · 碳水 ${normalizeValue(treatmentOverview.carbs || 0)} g`,
 stats: buildNonZeroStats([
 { label: '热量', value: buildStatValue(treatmentOverview.totalCalories || 0, 'kcal') },
-{ label: '蛋白', value: buildStatValue(treatmentOverview.protein || 0, 'g') },
+{ label: '蛋白', value: buildProteinStatValue(treatmentOverview.protein || 0) },
 { label: '碳水', value: buildStatValue(treatmentOverview.carbs || 0, 'g') },
 { label: '脂肪', value: buildStatValue(treatmentFat, 'g') }
 ])
