@@ -74,6 +74,8 @@ test('feeding-record-item uses v2 milk summary badges and rounds displayed calor
   assert.deepEqual(instance.data.milkSummaryItems.map((item) => item.badge), ['母', '普', '特', '能']);
   assert.equal(instance.data.milkSummaryText, '');
   assert.equal(instance.data.metricItems[0].text, '热量 148 kcal');
+  assert.equal(instance.data.metricItems[3].text, '天然蛋白 1.16 g');
+  assert.equal(instance.data.metricItems[4].text, '特殊蛋白 1.76 g');
 });
 
 test('feeding-record-item hides zero-value milk entries in the summary line', () => {

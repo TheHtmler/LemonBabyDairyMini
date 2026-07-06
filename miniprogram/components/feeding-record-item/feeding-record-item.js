@@ -16,6 +16,10 @@ function formatCalories(value) {
   return Math.round(normalizeNumber(value));
 }
 
+function formatProteinText(value) {
+  return normalizeNumber(value).toFixed(2);
+}
+
 function normalizeMilkSummaryItems(items) {
   if (!Array.isArray(items)) {
     return [];
@@ -126,10 +130,10 @@ Component({
       const naturalProtein = Number(nutrition.naturalProtein) || 0;
       const specialProtein = Number(nutrition.specialProtein) || 0;
       if (naturalProtein > 0) {
-        metricItems.push({ text: `天然蛋白 ${naturalProtein} g` });
+        metricItems.push({ text: `天然蛋白 ${formatProteinText(naturalProtein)} g` });
       }
       if (specialProtein > 0) {
-        metricItems.push({ text: `特殊蛋白 ${specialProtein} g` });
+        metricItems.push({ text: `特殊蛋白 ${formatProteinText(specialProtein)} g` });
       }
 
       this.setData({

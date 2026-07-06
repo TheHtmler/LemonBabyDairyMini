@@ -183,38 +183,38 @@ fat: Number(nutrition.fat || 0) * factor
 function buildProteinBreakdownText(row = {}) {
 const parts = [];
 if (row.naturalProtein > 0) {
-parts.push(`天然${roundDisplayNumber(row.naturalProtein)}g`);
+parts.push(`天然${formatTwoDecimals(row.naturalProtein)}g`);
 }
 if (row.specialProtein > 0) {
-parts.push(`特殊${roundDisplayNumber(row.specialProtein)}g`);
+parts.push(`特殊${formatTwoDecimals(row.specialProtein)}g`);
 }
 if (parts.length) return parts.join('/');
 if (row.hasZeroProtein) return '无蛋白热量';
 const fallbackLabel = row.proteinRole === 'special' ? '特殊' : '天然';
-return `${fallbackLabel}${roundDisplayNumber(row.protein)}g`;
+return `${fallbackLabel}${formatTwoDecimals(row.protein)}g`;
 }
 function buildProteinMetricText(row = {}) {
 if (row.naturalProtein > 0 && row.specialProtein <= 0) {
 return {
 label: '天然蛋白',
-value: `${roundDisplayNumber(row.naturalProtein)}g`
+value: `${formatTwoDecimals(row.naturalProtein)}g`
 };
 }
 if (row.specialProtein > 0 && row.naturalProtein <= 0) {
 return {
 label: '特殊蛋白',
-value: `${roundDisplayNumber(row.specialProtein)}g`
+value: `${formatTwoDecimals(row.specialProtein)}g`
 };
 }
 if (row.protein > 0) {
 return {
 label: '蛋白',
-value: `${roundDisplayNumber(row.protein)}g`
+value: `${formatTwoDecimals(row.protein)}g`
 };
 }
 return {
 label: '蛋白',
-value: '0g'
+value: '0.00g'
 };
 }
 function buildMilkComponentRows(feedings = []) {
@@ -265,7 +265,7 @@ return Array.from(rowMap.values()).map((row) => {
 const isZeroProtein = row.proteinRole === 'none';
 const isSpecial = row.proteinRole === 'special';
 const proteinRoleText = isZeroProtein ? '无蛋白热量' : (isSpecial ? '特殊' : '天然');
-const proteinValueText = isZeroProtein ? '' : `${roundDisplayNumber(row.protein)}g`;
+const proteinValueText = isZeroProtein ? '' : `${formatTwoDecimals(row.protein)}g`;
 const proteinBreakdownText = buildProteinBreakdownText(row);
 const proteinMetricText = buildProteinMetricText(row);
 return {

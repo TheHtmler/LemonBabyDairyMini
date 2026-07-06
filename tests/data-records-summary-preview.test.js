@@ -87,7 +87,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
     },
     {
       label: '总蛋白',
-      value: '18.6',
+      value: '18.60',
       unit: 'g',
       detail: '天然 8.30g · 特殊 4.10g'
     },
@@ -102,8 +102,8 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
     }
   ]);
   assert.deepEqual(preview.nutritionStrip, [
-    { label: '天然蛋白', value: '8.3', unit: 'g', source: '奶 5.10g · 食物 3.20g', premiumRatio: 77, premiumValue: '6.4', detailLabel: '天然蛋白系数', detailValue: '1.2', detailUnit: 'g/kg/d', detail: '1.2 g/kg/d' },
-    { label: '特殊蛋白', value: '4.1', unit: 'g', source: '特奶 4.10g', detailLabel: '特殊蛋白系数', detailValue: '0.8', detailUnit: 'g/kg/d', detail: '0.8 g/kg/d' }
+    { label: '天然蛋白', value: '8.30', unit: 'g', source: '奶 5.10g · 食物 3.20g', premiumRatio: 77, premiumValue: '6.40', detailLabel: '天然蛋白系数', detailValue: '1.2', detailUnit: 'g/kg/d', detail: '1.2 g/kg/d' },
+    { label: '特殊蛋白', value: '4.10', unit: 'g', source: '特奶 4.10g', detailLabel: '特殊蛋白系数', detailValue: '0.8', detailUnit: 'g/kg/d', detail: '0.8 g/kg/d' }
   ]);
   assert.deepEqual(preview.sourceSections, [
     {
@@ -116,7 +116,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
           stats: [
             { label: '体积', value: '420 ml' },
             { label: '热量', value: '260 kcal' },
-            { label: '蛋白', value: '5.1 g' },
+            { label: '蛋白', value: '5.10 g' },
             { label: '蛋白系数', value: '— g/kg/d' },
             { label: '碳水', value: '0 g' },
             { label: '脂肪', value: '0 g' }
@@ -127,7 +127,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
           stats: [
             { label: '体积', value: '300 ml' },
             { label: '热量', value: '180 kcal' },
-            { label: '蛋白', value: '4.8 g' },
+            { label: '蛋白', value: '4.80 g' },
             { label: '蛋白系数', value: '— g/kg/d' },
             { label: '碳水', value: '0 g' },
             { label: '脂肪', value: '0 g' }
@@ -139,10 +139,10 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       label: '食物',
       type: 'stats',
       meta: '2条记录',
-      summaryText: '热量 160 kcal · 蛋白 6.2 g',
+      summaryText: '热量 160 kcal · 蛋白 6.20 g',
       stats: [
         { label: '热量', value: '160 kcal' },
-        { label: '蛋白', value: '6.2 g' },
+        { label: '蛋白', value: '6.20 g' },
         { label: '液体', value: '45 ml' },
         { label: '碳水', value: '18 g' }
       ]

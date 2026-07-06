@@ -350,8 +350,8 @@ test('calorie mode reports the resulting natural and special protein coefficient
   assert.ok(page.data.result.proteinEstimate);
   assert.equal(page.data.result.proteinEstimate.naturalCoefText, '1');
   assert.equal(page.data.result.proteinEstimate.specialCoefText, '5');
-  assert.equal(page.data.result.proteinEstimate.naturalText, '5 g');
-  assert.equal(page.data.result.proteinEstimate.specialText, '25 g');
+  assert.equal(page.data.result.proteinEstimate.naturalText, '5.00 g');
+  assert.equal(page.data.result.proteinEstimate.specialText, '25.00 g');
   // 热量模式不反推热量系数（热量系数本身是输入）
   assert.equal(page.data.result.calorieEstimate, null);
 });
@@ -516,7 +516,7 @@ test('detail cards expose a milk/food/treatment breakdown of consumed intake', (
   const naturalCard = cards.find((card) => card.key === 'natural');
   // 天然蛋白来自奶(3) + 食物(2)，无治疗蛋白，所以只列奶/食物
   assert.equal(naturalCard.consumedText, '5g');
-  assert.equal(naturalCard.consumedBreakdownText, '奶 3g · 食物 2g');
+  assert.equal(naturalCard.consumedBreakdownText, '奶 3.00g · 食物 2.00g');
 });
 
 test('calorie breakdown surfaces milk, food and treatment together', () => {
@@ -571,11 +571,11 @@ test('intake breakdown lists calories and protein per source for food and treatm
   const milk = breakdown.find((item) => item.label === '奶');
 
   assert.equal(milk.caloriesText, '70 kcal');
-  assert.equal(milk.proteinText, '1.8 g');
+  assert.equal(milk.proteinText, '1.80 g');
   assert.equal(food.caloriesText, '30 kcal');
-  assert.equal(food.proteinText, '2 g');
+  assert.equal(food.proteinText, '2.00 g');
   assert.equal(treatment.caloriesText, '50 kcal');
-  assert.equal(treatment.proteinText, '0.5 g');
+  assert.equal(treatment.proteinText, '0.50 g');
 });
 
 test('intake breakdown omits sources with no calories and no protein', () => {

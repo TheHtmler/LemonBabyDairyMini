@@ -87,6 +87,10 @@ function roundValue(value, precision = 2) {
   return Math.round((num + Number.EPSILON) * multiplier) / multiplier;
 }
 
+function formatProteinText(value) {
+  return roundValue(value, 2).toFixed(2);
+}
+
 function formatInputValue(value) {
   const num = Number(value);
   return Number.isFinite(num) && num > 0 ? `${roundValue(num)}` : '';
@@ -627,8 +631,8 @@ Page({
     return {
       naturalCoefText: `${roundValue(totalNatural / weight, 2)}`,
       specialCoefText: `${roundValue(totalSpecial / weight, 2)}`,
-      naturalText: `${roundValue(totalNatural)} g`,
-      specialText: `${roundValue(totalSpecial)} g`
+      naturalText: `${formatProteinText(totalNatural)} g`,
+      specialText: `${formatProteinText(totalSpecial)} g`
     };
   },
 
@@ -750,7 +754,7 @@ Page({
     const parts = sources
       .map(([label, macro]) => [label, toPositiveNumber(macro && macro[field])])
       .filter(([, value]) => value > 0)
-      .map(([label, value]) => `${label} ${roundValue(value)}${unit}`);
+      .map(([label, value]) => `${label} ${unit === 'g' ? formatProteinText(value) : roundValue(value)}${unit}`);
     return parts.length > 1 ? parts.join(' · ') : '';
   },
 
@@ -775,7 +779,7 @@ Page({
       .map((item) => ({
         label: item.label,
         caloriesText: `${roundValue(item.calories)} kcal`,
-        proteinText: `${roundValue(item.protein)} g`
+        proteinText: `${formatProteinText(item.protein)} g`
       }));
   },
 
