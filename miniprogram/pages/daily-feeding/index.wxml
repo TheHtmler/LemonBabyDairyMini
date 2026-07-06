@@ -84,22 +84,22 @@
         <view class="macro-stat">
           <text class="ms-k">天然蛋白</text>
           <view class="ms-right">
-            <text class="ms-v nat">{{nutrition.naturalProtein || 0}}<text class="ms-u">g</text></text>
-            <text class="ms-c">{{nutrition.naturalProteinPerKg || 0}} g/kg</text>
+            <text class="ms-v nat">{{nutrition.naturalProteinText || '0.00'}}<text class="ms-u">g</text></text>
+            <text class="ms-c">{{nutrition.naturalProteinPerKgText || '0.00'}} g/kg</text>
           </view>
         </view>
         <view class="macro-stat">
           <text class="ms-k">特殊蛋白</text>
           <view class="ms-right">
-            <text class="ms-v spe">{{nutrition.specialProtein || 0}}<text class="ms-u">g</text></text>
-            <text class="ms-c">{{nutrition.specialProteinPerKg || 0}} g/kg</text>
+            <text class="ms-v spe">{{nutrition.specialProteinText || '0.00'}}<text class="ms-u">g</text></text>
+            <text class="ms-c">{{nutrition.specialProteinPerKgText || '0.00'}} g/kg</text>
           </view>
         </view>
         <view class="macro-stat">
           <text class="ms-k">总蛋白</text>
           <view class="ms-right">
-            <text class="ms-v tot">{{nutrition.totalProtein || 0}}<text class="ms-u">g</text></text>
-            <text class="ms-c">{{nutrition.totalProteinPerKg || 0}} g/kg</text>
+            <text class="ms-v tot">{{nutrition.totalProteinText || '0.00'}}<text class="ms-u">g</text></text>
+            <text class="ms-c">{{nutrition.totalProteinPerKgText || '0.00'}} g/kg</text>
           </view>
         </view>
       </view>

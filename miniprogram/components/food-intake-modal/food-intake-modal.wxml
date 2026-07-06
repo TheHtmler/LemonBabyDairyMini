@@ -76,7 +76,7 @@
                 <text>热量</text>
               </view>
               <view class="nutrition-item">
-                <text>{{foodExperiment.nutritionPreview.protein || 0}} g</text>
+                <text>{{foodExperiment.nutritionPreview.proteinText || '0.00'}} g</text>
                 <text>蛋白质</text>
               </view>
               <view class="nutrition-item">
@@ -95,7 +95,7 @@
               </view>
               <view class="preview-row">
                 <text>蛋白</text>
-                <text>{{foodExperiment.nutritionPreview.protein || 0}} g</text>
+                <text>{{foodExperiment.nutritionPreview.proteinText || '0.00'}} g</text>
               </view>
               <view class="preview-row">
                 <text>碳水</text>

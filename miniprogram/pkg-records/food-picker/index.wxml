@@ -192,7 +192,7 @@
         <view class="quantity-preview {{item.nutritionPreview ? '' : 'empty'}}">
           <block wx:if="{{item.nutritionPreview}}">
             <text>{{item.nutritionPreview.calories || 0}} kcal</text>
-            <text>蛋白 {{item.nutritionPreview.protein || 0}} g</text>
+            <text>蛋白 {{item.nutritionPreview.proteinText || '0.00'}} g</text>
           </block>
           <text wx:else>输入份量后计算蛋白</text>
         </view>

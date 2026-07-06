@@ -68,6 +68,21 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function formatProteinText(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0.00';
+  }
+  return roundNumber(num, 2).toFixed(2);
+}
+
+function withProteinNutritionDisplay(nutrition = {}) {
+  return {
+    ...nutrition,
+    proteinText: formatProteinText(nutrition.protein)
+  };
+}
+
 function readFoodSelectionIds(value) {
   if (Array.isArray(value)) {
     return value.map(item => (typeof item === 'string' ? item : item?._id)).filter(Boolean);
@@ -250,6 +265,7 @@ function createEmptyMealSummary() {
   return {
     calories: 0,
     protein: 0,
+    proteinText: '0.00',
     carbs: 0,
     fat: 0,
     fiber: 0,
@@ -272,6 +288,7 @@ function calculateMealSummary(items = []) {
   return {
     calories: roundCalories(summary.calories),
     protein: roundNumber(summary.protein, 2),
+    proteinText: formatProteinText(summary.protein),
     carbs: roundNumber(summary.carbs, 2),
     fat: roundNumber(summary.fat, 2),
     fiber: roundNumber(summary.fiber, 2),
@@ -809,6 +826,7 @@ Page({
       nutrition: {
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
+        proteinText: formatProteinText(nutrition.protein),
         carbs: roundNumber(Number(nutrition.carbs) || 0, 2),
         fat: roundNumber(Number(nutrition.fat) || 0, 2),
         fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
@@ -941,7 +959,7 @@ Page({
         food: target.food,
         quantity: String(target.quantity),
         unit: target.unit || 'g',
-        nutritionPreview: target.nutrition || null
+        nutritionPreview: target.nutrition ? withProteinNutritionDisplay(target.nutrition) : null
       }
     }, () => {
       this.refreshDraftTargetPreview();
@@ -1055,7 +1073,7 @@ Page({
           category: intake.category || fallbackFood.category,
           unit: intake.unit || fallbackFood.baseUnit || 'g',
           quantity: Number(intake.quantity) || 0,
-          nutrition: intake.nutrition || {},
+          nutrition: withProteinNutritionDisplay(intake.nutrition || {}),
           proteinSource: snapshot.proteinSource || intake.proteinSource || fallbackFood.proteinSource || 'natural',
           proteinQuality: intake.proteinQuality || (catalogFood?.proteinQuality) || '',
           libraryScope,
@@ -1135,7 +1153,12 @@ Page({
       createdBy: item.createdBy || app.globalData.openid || wx.getStorageSync('openid') || '',
       foodName: item.nameSnapshot || item.food?.name || '',
       nutrition: {
-        ...(item.nutrition || {}),
+        calories: item.nutrition?.calories || 0,
+        protein: item.nutrition?.protein || 0,
+        carbs: item.nutrition?.carbs || 0,
+        fat: item.nutrition?.fat || 0,
+        fiber: item.nutrition?.fiber || 0,
+        sodium: item.nutrition?.sodium || 0,
         naturalProtein: item.naturalProtein || item.nutrition?.naturalProtein || 0,
         specialProtein: item.specialProtein || item.nutrition?.specialProtein || 0
       }

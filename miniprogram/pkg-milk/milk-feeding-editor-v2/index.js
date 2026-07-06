@@ -90,6 +90,23 @@ function formatLinkedInput(value) {
   return `${rounded}`;
 }
 
+function formatProteinText(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0.00';
+  }
+  return (Math.round((num + Number.EPSILON) * 100) / 100).toFixed(2);
+}
+
+function withProteinDisplay(summary = {}) {
+  return {
+    ...summary,
+    proteinText: formatProteinText(summary.protein),
+    naturalProteinText: formatProteinText(summary.naturalProtein),
+    specialProteinText: formatProteinText(summary.specialProtein)
+  };
+}
+
 function calculatePowderFromWater(waterVolume, ratio = {}) {
   const waterNum = Number(waterVolume);
   const powder = Number(ratio.powder);
@@ -915,7 +932,7 @@ Page({
 
   refreshNutritionPreview() {
     const components = this.buildCurrentComponents();
-    const nutritionPreview = buildNutritionSummary(components);
+    const nutritionPreview = withProteinDisplay(buildNutritionSummary(components));
     const targetContext = this.data.targetContext || {};
     const previousSummary = this.getEditingPreviousSummary();
     const targetPreview = buildEntryTargetPreview({

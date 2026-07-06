@@ -118,7 +118,7 @@
       </view>
       <view class="summary-chip">
         <text class="summary-chip-label">蛋白</text>
-        <text class="summary-chip-value">{{summary.protein}} g</text>
+        <text class="summary-chip-value">{{summary.proteinText || '0.00'}} g</text>
       </view>
       <view class="summary-chip">
         <text class="summary-chip-label">脂肪</text>

@@ -221,7 +221,7 @@
                   </view>
                   <view class="meal-group-summary-item">
                     <text class="meal-group-summary-label">蛋白：</text>
-                    <text class="meal-group-summary-value">{{item.summary.protein}} g</text>
+                    <text class="meal-group-summary-value">{{item.summary.proteinText || '0.00'}} g</text>
                   </view>
                   <view class="meal-group-summary-item">
                     <text class="meal-group-summary-label">碳水：</text>
@@ -563,7 +563,7 @@
             <text>热量</text>
           </view>
           <view class="nutrition-item">
-            <text>{{newFoodIntake.nutritionPreview.protein}} g</text>
+            <text>{{newFoodIntake.nutritionPreview.proteinText || '0.00'}} g</text>
             <text>蛋白质</text>
           </view>
           <view class="nutrition-item">

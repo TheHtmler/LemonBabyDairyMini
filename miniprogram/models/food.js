@@ -155,6 +155,7 @@ class FoodModel {
       return {
         calories: 0,
         protein: 0,
+        proteinText: '0.00',
         carbs: 0,
         fat: 0,
         fiber: 0,
@@ -174,6 +175,7 @@ class FoodModel {
       fiber: this._roundNumber((perUnit.fiber || 0) * factor, 2),
       sodium: this._roundNumber((perUnit.sodium || 0) * factor, 2)
     };
+    result.proteinText = this._formatProteinText(result.protein);
 
     return result;
   }
@@ -378,6 +380,10 @@ class FoodModel {
     if (isNaN(num)) return 0;
     const multiplier = Math.pow(10, precision);
     return Math.round(num * multiplier) / multiplier;
+  }
+
+  _formatProteinText(num) {
+    return this._roundNumber(num, 2).toFixed(2);
   }
 
   _normalizeNutritionBasis(food = {}) {

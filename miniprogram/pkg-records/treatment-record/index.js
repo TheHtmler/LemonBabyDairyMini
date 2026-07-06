@@ -47,6 +47,21 @@ function normalizeNumericInput(value) {
   return String(value).replace(/[^\d.]/g, '');
 }
 
+function formatProteinText(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0.00';
+  }
+  return (Math.round((num + Number.EPSILON) * 100) / 100).toFixed(2);
+}
+
+function withProteinDisplay(summary = {}) {
+  return {
+    ...summary,
+    proteinText: formatProteinText(summary.protein)
+  };
+}
+
 function normalizeGroupForForm(group = {}, index = 0) {
   const baseGroup = createTreatmentGroup(index, 'dextrose_10');
   const items = Array.isArray(group.items) && group.items.length > 0
@@ -89,7 +104,7 @@ Page({
       notes: '',
       groups: []
     },
-    summary: calculateTreatmentRecordSummary([]),
+    summary: withProteinDisplay(calculateTreatmentRecordSummary([])),
     originalTreatmentSummary: normalizeSummary(),
     targetContext: {
       currentSummary: normalizeSummary(),
@@ -123,7 +138,7 @@ Page({
         notes: '',
         groups
       },
-      summary: calculateTreatmentRecordSummary(groups)
+      summary: withProteinDisplay(calculateTreatmentRecordSummary(groups))
     }, () => {
       this.refreshTargetPreview();
     });
@@ -183,7 +198,7 @@ Page({
           notes: record.notes || '',
           groups
         },
-        summary: calculateTreatmentRecordSummary(groups),
+        summary: withProteinDisplay(calculateTreatmentRecordSummary(groups)),
         originalTreatmentSummary: summarizeTreatmentGroups(groups)
       }, () => {
         this.refreshTargetPreview();
@@ -205,7 +220,7 @@ Page({
         ...nextForm,
         groups: safeGroups
       },
-      summary: calculateTreatmentRecordSummary(safeGroups)
+      summary: withProteinDisplay(calculateTreatmentRecordSummary(safeGroups))
     }, () => {
       this.refreshTargetPreview();
     });

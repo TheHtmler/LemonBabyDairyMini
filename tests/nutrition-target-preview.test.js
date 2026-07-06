@@ -39,14 +39,16 @@ test('buildEntryTargetPreview computes after-save protein status and subtracts p
   assert.equal(natural.actual, 5.4);
   assert.equal(natural.target, 4.8);
   assert.equal(natural.status, 'over');
-  assert.equal(natural.badgeText, '超出 0.6g');
-  assert.equal(natural.draftText, '本次 +1.4g');
+  assert.equal(natural.valueText, '5.40');
+  assert.equal(natural.targetText, '4.80g');
+  assert.equal(natural.badgeText, '超出 0.60g');
+  assert.equal(natural.draftText, '本次 +1.40g');
   assert.equal(natural.actionText, '仍然保存');
 
   assert.equal(special.actual, 1.2);
   assert.equal(special.target, 3.2);
   assert.equal(special.status, 'ok');
-  assert.equal(special.badgeText, '还差 2g');
+  assert.equal(special.badgeText, '还差 2.00g');
   assert.equal(preview.hasOverProtein, true);
 });
 

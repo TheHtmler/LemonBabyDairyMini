@@ -27,7 +27,7 @@
           </view>
         </view>
         <view class="nutrient-row">
-          <text class="nutrient-row-text">蛋白 {{feedingData.normalProtein || 0}} g</text>
+          <text class="nutrient-row-text">蛋白 {{feedingData.normalProteinText || '0.00'}} g</text>
           <text class="nutrient-row-text">热量 {{feedingData.normalCalories || 0}} kcal</text>
         </view>
         <view class="nutrient-row" wx:if="{{feedingData.naturalMilkType === 'formula'}}">
@@ -44,7 +44,7 @@
           </view>
         </view>
         <view class="nutrient-row">
-          <text class="nutrient-row-text">蛋白 {{feedingData.specialProtein || 0}} g</text>
+          <text class="nutrient-row-text">蛋白 {{feedingData.specialProteinText || '0.00'}} g</text>
           <text class="nutrient-row-text">热量 {{feedingData.specialCalories || 0}} kcal</text>
         </view>
         <view class="nutrient-row">

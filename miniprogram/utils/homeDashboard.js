@@ -29,6 +29,14 @@ function round(value, precision = 2) {
   return Math.round((num + Number.EPSILON) * multiplier) / multiplier;
 }
 
+function formatFixed(value, precision = 2) {
+  return round(value, precision).toFixed(precision);
+}
+
+function formatUnitValue(value, unit) {
+  return unit === 'kcal' ? `${round(value, 0)}` : formatFixed(value, 2);
+}
+
 function clampPercent(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 0) {
@@ -379,16 +387,20 @@ function buildGoalProgressMeta(goal) {
 }
 
 function buildTargetRow(key, label, goal, unit, tone = '') {
-  const remaining = Math.max(0, round(goal.target - goal.actual, unit === 'kcal' ? 0 : 1));
-  const overAmount = Math.max(0, round(goal.actual - goal.target, unit === 'kcal' ? 0 : 1));
+  const precision = unit === 'kcal' ? 0 : 2;
+  const remaining = Math.max(0, round(goal.target - goal.actual, precision));
+  const overAmount = Math.max(0, round(goal.actual - goal.target, precision));
   const meta = buildGoalProgressMeta(goal);
+  const actualText = formatUnitValue(goal.actual, unit);
+  const targetText = formatUnitValue(goal.target, unit);
+  const remainingAmountText = formatUnitValue(goal.over ? overAmount : remaining, unit);
   return {
     key,
     label,
     tone,
-    valueText: `${goal.actual}${unit}`,
-    targetText: goal.hasTarget ? `${goal.target}${unit}` : '',
-    remainingText: goal.hasTarget ? `${goal.over ? overAmount : remaining}${unit}` : '',
+    valueText: `${actualText}${unit}`,
+    targetText: goal.hasTarget ? `${targetText}${unit}` : '',
+    remainingText: goal.hasTarget ? `${remainingAmountText}${unit}` : '',
     remainingLabel: meta.remainingLabel,
     pctText: goal.hasTarget ? `${goal.pct}%` : '',
     status: meta.status,
@@ -396,7 +408,7 @@ function buildTargetRow(key, label, goal, unit, tone = '') {
     helperText: meta.helperText,
     overPct: meta.overPct,
     ringClass: meta.ringClass,
-    subText: goal.hasTarget ? `${goal.actual}/${goal.target}${unit}` : `${goal.actual}${unit}`,
+    subText: goal.hasTarget ? `${actualText}/${targetText}${unit}` : `${actualText}${unit}`,
     pct: goal.pct,
     barPct: goal.barPct,
     hasTarget: goal.hasTarget,
@@ -428,9 +440,9 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
   const proteinActual = toNumber(macroSummary.naturalProtein, 0) + toNumber(macroSummary.specialProtein, 0);
 
   const protein = {
-    total: buildGoal(proteinActual, naturalTarget + specialTarget, 1),
-    natural: buildGoal(toNumber(macroSummary.naturalProtein, 0), naturalTarget, 1),
-    special: buildGoal(toNumber(macroSummary.specialProtein, 0), specialTarget, 1),
+    total: buildGoal(proteinActual, naturalTarget + specialTarget, 2),
+    natural: buildGoal(toNumber(macroSummary.naturalProtein, 0), naturalTarget, 2),
+    special: buildGoal(toNumber(macroSummary.specialProtein, 0), specialTarget, 2),
     hasTarget: configuredModes.protein
   };
   const calorie = {
@@ -461,10 +473,10 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
       ...activeMeta,
       label: mode === 'protein' ? '总蛋白' : '热量',
       unit: mode === 'protein' ? 'g' : 'kcal',
-      valueText: `${activeGoal.actual}${mode === 'protein' ? 'g' : 'kcal'}`,
-      targetText: `${activeGoal.target}${mode === 'protein' ? 'g' : 'kcal'}`,
-      actualText: `已摄入 ${activeGoal.actual}${mode === 'protein' ? 'g' : 'kcal'}`,
-      goalText: `目标 ${activeGoal.target}${mode === 'protein' ? 'g' : 'kcal'}`
+      valueText: `${formatUnitValue(activeGoal.actual, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
+      targetText: `${formatUnitValue(activeGoal.target, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
+      actualText: `已摄入 ${formatUnitValue(activeGoal.actual, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
+      goalText: `目标 ${formatUnitValue(activeGoal.target, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`
     } : null,
     protein,
     calorie,
@@ -475,7 +487,7 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
 
 /**
  * 构建今日营养「实际摄入」概览（暂不做目标/达成率，仅展示实际值）
- * 热量取整；蛋白保留 1 位小数；各系数 = 对应摄入量 / 体重（无体重则为 0）。
+ * 热量取整；蛋白保留 2 位小数；各系数 = 对应摄入量 / 体重（无体重则为 0）。
  * 蛋白系数保留 2 位（量级如 1.20 g/kg），热量系数取整（如 151 kcal/kg）。
  */
 function buildNutritionSummary({ macroSummary = {}, weight = 0 } = {}) {
@@ -488,12 +500,18 @@ function buildNutritionSummary({ macroSummary = {}, weight = 0 } = {}) {
   return {
     calories: round(calories, 0),
     caloriesPerKg: perKg(calories, 0),
-    naturalProtein: round(naturalProtein, 1),
+    naturalProtein: round(naturalProtein, 2),
+    naturalProteinText: formatFixed(naturalProtein, 2),
     naturalProteinPerKg: perKg(naturalProtein, 2),
-    specialProtein: round(specialProtein, 1),
+    naturalProteinPerKgText: formatFixed(perKg(naturalProtein, 2), 2),
+    specialProtein: round(specialProtein, 2),
+    specialProteinText: formatFixed(specialProtein, 2),
     specialProteinPerKg: perKg(specialProtein, 2),
-    totalProtein: round(totalProtein, 1),
+    specialProteinPerKgText: formatFixed(perKg(specialProtein, 2), 2),
+    totalProtein: round(totalProtein, 2),
+    totalProteinText: formatFixed(totalProtein, 2),
     totalProteinPerKg: perKg(totalProtein, 2),
+    totalProteinPerKgText: formatFixed(perKg(totalProtein, 2), 2),
     weight: w
   };
 }
@@ -818,10 +836,10 @@ function formatNutritionParts({ calories = 0, naturalProtein = 0, specialProtein
     parts.push(`热量 ${round(calories, 0)}kcal`);
   }
   if (toNumber(naturalProtein, 0) > 0) {
-    parts.push(`天然蛋白 ${round(naturalProtein, 1)}g`);
+    parts.push(`天然蛋白 ${formatFixed(naturalProtein, 2)}g`);
   }
   if (toNumber(specialProtein, 0) > 0) {
-    parts.push(`特殊蛋白 ${round(specialProtein, 1)}g`);
+    parts.push(`特殊蛋白 ${formatFixed(specialProtein, 2)}g`);
   }
   return parts;
 }

@@ -52,7 +52,7 @@
         <text class="meal-summary-label">总热量 kcal</text>
       </view>
       <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.protein || 0}}</text>
+        <text class="meal-summary-value">{{mealSummary.proteinText || '0.00'}}</text>
         <text class="meal-summary-label">总蛋白 g</text>
       </view>
       <view class="meal-summary-item">
@@ -70,7 +70,7 @@
     <view class="meal-item" wx:for="{{mealDraft.items}}" wx:key="localId">
       <view class="meal-item-main">
         <text class="meal-item-name">{{item.nameSnapshot}}</text>
-        <text class="meal-item-meta">{{item.quantity}}{{item.unit}} · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.protein || 0}} g</text>
+        <text class="meal-item-meta">{{item.quantity}}{{item.unit}} · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}} g</text>
         <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g · 纤维 {{item.nutrition.fiber || 0}} g</text>
       </view>
       <view class="meal-item-actions">
@@ -148,7 +148,7 @@
         </view>
         <view class="batch-preview" wx:if="{{item.nutritionPreview}}">
           <text>{{item.nutritionPreview.calories || 0}} kcal</text>
-          <text>蛋白 {{item.nutritionPreview.protein || 0}} g</text>
+          <text>蛋白 {{item.nutritionPreview.proteinText || '0.00'}} g</text>
         </view>
       </view>
       <view class="batch-actions">
@@ -187,7 +187,7 @@
           <text class="preview-label">kcal</text>
         </view>
         <view class="preview-item">
-          <text class="preview-value">{{currentFoodDraft.nutritionPreview.protein || 0}}</text>
+          <text class="preview-value">{{currentFoodDraft.nutritionPreview.proteinText || '0.00'}}</text>
           <text class="preview-label">蛋白</text>
         </view>
         <view class="preview-item">

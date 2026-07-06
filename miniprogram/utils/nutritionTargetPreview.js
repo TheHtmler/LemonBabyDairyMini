@@ -15,10 +15,13 @@ function roundValue(value, precision = 2) {
   return Math.round((num + Number.EPSILON) * multiplier) / multiplier;
 }
 
+function formatFixed(value, precision = 2) {
+  return roundValue(value, precision).toFixed(precision);
+}
+
 function formatAmount(value, unit) {
-  const precision = unit === 'kcal' ? 0 : 1;
-  const rounded = roundValue(value, precision);
-  return `${rounded}${unit}`;
+  const precision = unit === 'kcal' ? 0 : 2;
+  return `${formatFixed(value, precision)}${unit}`;
 }
 
 function normalizeSummary(summary = {}) {
@@ -60,7 +63,7 @@ function subtractSummaries(left = {}, right = {}) {
 
 function buildGoalRow({ key, label, tone, actual, draft, target, unit = 'g' }) {
   const hasTarget = target > 0;
-  const precision = unit === 'kcal' ? 0 : 1;
+  const precision = unit === 'kcal' ? 0 : 2;
   const actualValue = roundValue(actual, precision);
   const draftValue = roundValue(draft, precision);
   const targetValue = roundValue(target, precision);
@@ -89,8 +92,8 @@ function buildGoalRow({ key, label, tone, actual, draft, target, unit = 'g' }) {
     status,
     hasTarget,
     badgeText,
-    valueText: `${actualValue}`,
-    targetText: hasTarget ? `${targetValue}${unit}` : '',
+    valueText: formatFixed(actualValue, precision),
+    targetText: hasTarget ? `${formatFixed(targetValue, precision)}${unit}` : '',
     draftText: `本次 +${formatAmount(draftValue, unit)}`,
     actionText: overAmount > 0 ? '仍然保存' : '保存'
   };

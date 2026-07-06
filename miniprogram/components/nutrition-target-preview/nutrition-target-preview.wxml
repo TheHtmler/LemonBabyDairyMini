@@ -27,7 +27,7 @@
         <text class="target-preview-badge {{item.status}}">{{item.badgeText}}</text>
       </view>
       <view class="target-preview-value-row">
-        <text class="target-preview-value">{{item.actual}}</text>
+        <text class="target-preview-value">{{item.valueText}}</text>
         <text class="target-preview-target" wx:if="{{item.hasTarget}}">/ {{item.targetText}}</text>
       </view>
       <view class="target-preview-meta">

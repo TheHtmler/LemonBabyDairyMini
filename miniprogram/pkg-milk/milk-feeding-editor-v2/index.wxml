@@ -158,9 +158,9 @@
         </view>
       </view>
       <view class="detail-preview-grid">
-        <text>天然蛋白 {{nutritionPreview.naturalProtein || 0}}g</text>
-        <text>特殊蛋白 {{nutritionPreview.specialProtein || 0}}g</text>
-        <text>总蛋白 {{nutritionPreview.protein || 0}}g</text>
+        <text>天然蛋白 {{nutritionPreview.naturalProteinText || '0.00'}}g</text>
+        <text>特殊蛋白 {{nutritionPreview.specialProteinText || '0.00'}}g</text>
+        <text>总蛋白 {{nutritionPreview.proteinText || '0.00'}}g</text>
         <text>碳水 {{nutritionPreview.carbs || 0}}g</text>
         <text>脂肪 {{nutritionPreview.fat || 0}}g</text>
       </view>

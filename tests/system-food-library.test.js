@@ -235,6 +235,7 @@ test('FoodModel returns system foods for a baby and calculates from nutrition ba
     assert.deepEqual(FoodModel.calculateNutrition(foods[0], 50), {
       calories: 169,
       protein: 5.95,
+      proteinText: '5.95',
       carbs: 37.6,
       fat: 0.65,
       fiber: 5.4,

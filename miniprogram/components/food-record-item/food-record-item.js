@@ -17,6 +17,14 @@ Component({
     }
   },
   methods: {
+    formatProteinText(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return '0.00';
+      }
+      return (Math.round((num + Number.EPSILON) * 100) / 100).toFixed(2);
+    },
+
     updateDisplay(record) {
       const timeText = record.recordedAt || record.time || '--:--';
       const nameText = record.nameSnapshot || record.name || '';
@@ -26,7 +34,7 @@ Component({
 
       const metricItems = [
         `热量 ${nutrition.calories || 0} kcal`,
-        `蛋白 ${nutrition.protein || 0} g`,
+        `蛋白 ${this.formatProteinText(nutrition.protein)} g`,
         `碳水 ${nutrition.carbs || 0} g`,
         `脂肪 ${nutrition.fat || 0} g`,
         `膳纤 ${nutrition.fiber || 0} g`,

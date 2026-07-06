@@ -73,6 +73,21 @@ function roundCalories(value) {
   return Math.round(num);
 }
 
+function formatProteinText(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0.00';
+  }
+  return roundNumber(num, 2).toFixed(2);
+}
+
+function withProteinNutritionDisplay(nutrition = {}) {
+  return {
+    ...nutrition,
+    proteinText: formatProteinText(nutrition.protein)
+  };
+}
+
 function createEmptyBowelStats() {
   return {
     stool: 0,
@@ -839,6 +854,7 @@ function buildMealSourceDisplayGroups(items = []) {
     summary: {
       calories: roundCalories(group.summary.calories),
       protein: roundNumber(group.summary.protein, 2),
+      proteinText: formatProteinText(group.summary.protein),
       carbs: roundNumber(group.summary.carbs, 2),
       fat: roundNumber(group.summary.fat, 2)
     }
@@ -945,6 +961,7 @@ function groupFoodIntakesByMeal(intakes = []) {
         summary: {
           calories: roundCalories(group.summary.calories),
           protein: roundNumber(group.summary.protein, 2),
+          proteinText: formatProteinText(group.summary.protein),
           carbs: roundNumber(group.summary.carbs, 2),
           fat: roundNumber(group.summary.fat, 2)
         },
@@ -2348,7 +2365,7 @@ function createDataRecordsPageConfig(options = {}) {
         food: selectedFood,
         quantity: target.quantity,
         unit: target.unit || this._getFoodUnit(selectedFood),
-        nutritionPreview: target.nutrition || null,
+        nutritionPreview: target.nutrition ? withProteinNutritionDisplay(target.nutrition) : null,
         recordTime: recordTime,
         notes: target.notes || ''
       },
@@ -4270,8 +4287,10 @@ function createDataRecordsPageConfig(options = {}) {
       ...record,
       startTime: record.startTime || record.formattedStartTime || '',
       normalProtein: nutrition.naturalProtein || 0,
+      normalProteinText: formatProteinText(nutrition.naturalProtein),
       normalCalories: nutrition.naturalCalories || 0,
       specialProtein: nutrition.specialProtein || 0,
+      specialProteinText: formatProteinText(nutrition.specialProtein),
       specialCalories: nutrition.specialCalories || 0,
       formulaPowderWeight,
       specialPowderWeight,
