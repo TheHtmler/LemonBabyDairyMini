@@ -30,6 +30,23 @@ const REPORT_TYPE_FILTERS = [
   { key: ReportModel.REPORT_TYPES.BLOOD_AMMONIA, label: '血氨' }
 ];
 
+function getIndicatorStatusMeta(status = 'unknown') {
+  const metaMap = {
+    high: { text: '偏高', className: 'high' },
+    low: { text: '偏低', className: 'low' },
+    normal: { text: '正常', className: 'normal' },
+    unknown: { text: '未判定', className: 'unknown' }
+  };
+  return metaMap[status] || metaMap.unknown;
+}
+
+function formatDirectionChangeText(direction = 'flat', delta = '') {
+  const normalizedDelta = String(delta || '').replace(/^[+-]/, '');
+  if (direction === 'up') return `上升 ${normalizedDelta}`;
+  if (direction === 'down') return `下降 ${normalizedDelta}`;
+  return '持平';
+}
+
 function roundNumber(value, precision = 2) {
   const num = Number(value);
   if (Number.isNaN(num)) return 0;
@@ -889,6 +906,7 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
       normalCount: summary.normalCount,
       totalCount: summary.totalCount,
       statusText: summary.abnormalCount > 0 ? `${summary.abnormalCount} 项异常` : '无异常',
+      statusClass: summary.abnormalCount > 0 ? 'warn' : 'ok',
       keySummary: buildKeySummary(report),
       keyTags
     };
@@ -1188,6 +1206,14 @@ function averageFromSeriesPoints(points = [], precision = 2) {
   return formatCompactNumber(avg, precision);
 }
 
+function averageNumberFromSeriesPoints(points = []) {
+  const values = (points || [])
+    .map((point) => point.raw)
+    .filter((value) => Number.isFinite(value));
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 function buildDailyCoefficientSeries(dailyMetrics = [], startDate, endDate) {
   const dateKeys = [];
   let cursor = startDate;
@@ -1360,6 +1386,26 @@ function buildNutritionCompareSeries(windowA = {}, windowB = {}) {
   });
 }
 
+function buildDietCompareSummaryLines(nutritionCompareSeries = []) {
+  return (nutritionCompareSeries || []).map((series) => {
+    const precision = metricPrecisionForSeriesKey(series.key);
+    const avgA = averageNumberFromSeriesPoints(series.reportA?.points || []);
+    const avgB = averageNumberFromSeriesPoints(series.reportB?.points || []);
+    const leftText = Number.isFinite(avgA) ? formatCompactNumber(avgA, precision) : '--';
+    const rightText = Number.isFinite(avgB) ? formatCompactNumber(avgB, precision) : '--';
+
+    if (!Number.isFinite(avgA) || !Number.isFinite(avgB)) {
+      return `${series.label}：${leftText} → ${rightText}，数据不足。`;
+    }
+
+    const delta = avgA - avgB;
+    const change = Math.abs(delta) < Number.EPSILON
+      ? '持平'
+      : `${delta > 0 ? '下降' : '上升'} ${formatCompactNumber(Math.abs(delta), precision)} ${series.unit}`;
+    return `${series.label}：${leftText} → ${rightText}，${change}`;
+  });
+}
+
 function buildCompareCardsForKeys(currentReport, previousReport, metricKeys = []) {
   const metricConfigMap = getMetricConfigMap(currentReport.reportType);
   return metricKeys
@@ -1373,10 +1419,13 @@ function buildCompareCardsForKeys(currentReport, previousReport, metricKeys = []
       const currentNum = Number(currentValue);
       const previousNum = Number(previousValue);
       const direction = Number.isFinite(currentNum) && Number.isFinite(previousNum)
-        ? (currentNum === previousNum ? 'flat' : currentNum > previousNum ? 'up' : 'down')
+        ? (currentNum === previousNum ? 'flat' : currentNum > previousNum ? 'down' : 'up')
         : 'flat';
       const name = config.name || ReportModel.getIndicatorDisplayName(config) || key;
       const abbr = config.abbr || config.key || '';
+      const currentStatus = getIndicatorStatusMeta(current.status || 'unknown');
+      const previousStatus = getIndicatorStatusMeta(previous.status || 'unknown');
+      const delta = formatDelta(currentValue, previousValue);
 
       return {
         key,
@@ -1384,9 +1433,15 @@ function buildCompareCardsForKeys(currentReport, previousReport, metricKeys = []
         abbr: abbr && abbr !== name ? abbr : '',
         current: formatCompactNumber(currentValue, 2),
         previous: formatCompactNumber(previousValue, 2),
-        delta: formatDelta(currentValue, previousValue),
+        delta,
+        changeText: formatDirectionChangeText(direction, delta),
         direction,
         status: current.status || 'unknown',
+        statusText: currentStatus.text,
+        statusClass: currentStatus.className,
+        previousStatus: previous.status || 'unknown',
+        previousStatusText: previousStatus.text,
+        previousStatusClass: previousStatus.className,
         unit: config.unit || '',
         rangeA: formatRangeText(current.minRange, current.maxRange),
         rangeB: formatRangeText(previous.minRange, previous.maxRange),
@@ -1412,22 +1467,17 @@ function buildCompareMetricOptions(reportType, reportA, reportB, selectedMetricK
       abbr: config.abbr || config.key,
       isPrimary,
       hasData,
-      selected: hasExplicitSelection ? selectedSet.has(config.key) : isPrimary
+      selected: hasExplicitSelection ? selectedSet.has(config.key) : hasData
     };
-  }).filter((item) => item.hasData || item.isPrimary);
+  }).filter((item) => item.hasData);
 }
 
-function buildCompareSummary(compareRows = [], nutritionWindows = []) {
+function buildCompareSummary(compareRows = []) {
   const compareText = compareRows
     .map((row) => `${row.name}${row.direction === 'up' ? '上升' : row.direction === 'down' ? '下降' : '持平'}`)
     .join('，');
-  const dietNotes = nutritionWindows.map((window) => {
-    const natural = window.metrics?.[0]?.value ?? '--';
-    return `${window.reportDate} 前一周天然蛋白系数 ${natural} g/kg/d`;
-  });
   return [
-    compareText ? `指标变化：${compareText}。` : '请选择要对比的指标。',
-    ...dietNotes.map((note) => `${note}，可作为指标变化的营养背景参考。`)
+    compareText ? `指标变化：${compareText}。` : '请选择要对比的指标。'
   ];
 }
 
@@ -1506,7 +1556,8 @@ function buildReportComparePreview({
   feedingRecords = [],
   dailySummaries = [],
   nutritionSettings = {},
-  fallbackWeight = 0
+  fallbackWeight = 0,
+  includeNutrition = true
 } = {}) {
   const sameTypeReports = reports.filter((report) => report.reportType === reportType);
   let reportA = reportAId ? findReportById(sameTypeReports, reportAId) : sameTypeReports[0] || null;
@@ -1550,22 +1601,26 @@ function buildReportComparePreview({
   const metricOptions = buildCompareMetricOptions(reportType, pickerReportA, pickerReportB, selectedMetricKeys);
   const activeKeys = metricOptions.filter((item) => item.selected).map((item) => item.key);
   const compareRows = buildCompareCardsForKeys(pickerReportA, pickerReportB, activeKeys);
-  const nutritionWindowA = buildReportNutritionWindow(
-    pickerReportA,
-    [],
-    nutritionSettings,
-    fallbackWeight,
-    dailySummaries
-  );
-  const nutritionWindowB = buildReportNutritionWindow(
-    pickerReportB,
-    [],
-    nutritionSettings,
-    fallbackWeight,
-    dailySummaries
-  );
-  const nutritionWindows = [nutritionWindowA, nutritionWindowB];
-  const nutritionCompareSeries = buildNutritionCompareSeries(nutritionWindowA, nutritionWindowB);
+  const nutritionWindowA = includeNutrition
+    ? buildReportNutritionWindow(
+      pickerReportA,
+      [],
+      nutritionSettings,
+      fallbackWeight,
+      dailySummaries
+    )
+    : null;
+  const nutritionWindowB = includeNutrition
+    ? buildReportNutritionWindow(
+      pickerReportB,
+      [],
+      nutritionSettings,
+      fallbackWeight,
+      dailySummaries
+    )
+    : null;
+  const nutritionWindows = includeNutrition ? [nutritionWindowA, nutritionWindowB] : [];
+  const nutritionCompareSeries = includeNutrition ? buildNutritionCompareSeries(nutritionWindowA, nutritionWindowB) : [];
   const hasRangeMismatch = compareRows.some((row) => row.rangeMismatch);
   const hasNutritionData = nutritionCompareSeries.some((series) => (
     (series.reportA.points || []).some((point) => !point.missing)
@@ -1605,7 +1660,8 @@ function buildReportComparePreview({
     metricOptions,
     nutritionWindows,
     nutritionCompareSeries,
-    summaryLines: buildCompareSummary(compareRows, nutritionWindows)
+    dietSummaryLines: buildDietCompareSummaryLines(nutritionCompareSeries),
+    summaryLines: buildCompareSummary(compareRows)
   };
 }
 

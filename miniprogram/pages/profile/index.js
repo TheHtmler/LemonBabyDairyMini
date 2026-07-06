@@ -88,6 +88,14 @@ Page({
         showForDeveloper: true
       },
       {
+        id: 18,
+        name: 'OCR 入口配置',
+        icon: 'info',
+        path: '/pkg-misc/ocr-access-settings/index',
+        description: '配置拍照识别白名单或全量开放',
+        showForDeveloper: true
+      },
+      {
         id: 14,
         name: '应急支持',
         icon: 'info',

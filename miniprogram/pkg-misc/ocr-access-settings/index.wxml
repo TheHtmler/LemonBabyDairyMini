@@ -1,0 +1,65 @@
+<view class="ocr-access-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="hero-card">
+      <text class="hero-title">OCR 入口配置</text>
+      <text class="hero-subtitle">控制创建报告页的拍照识别入口。保存后立即生效，云函数也会按同一配置拒绝未授权调用。</text>
+      <view class="meta-row">
+        <text>当前 OpenID</text>
+        <text class="meta-value">{{currentOpenid || '--'}}</text>
+      </view>
+      <view class="meta-row">
+        <text>最近保存</text>
+        <text class="meta-value">{{updatedAtText}}</text>
+      </view>
+    </view>
+
+    <view class="config-card">
+      <text class="section-title">开放范围</text>
+      <view class="scope-row">
+        <view class="scope-chip {{scope === 'whitelist' ? 'active' : ''}}" data-scope="whitelist" bindtap="onScopeTap">
+          <text class="scope-name">白名单</text>
+          <text class="scope-desc">仅列表中的 OpenID 可使用</text>
+        </view>
+        <view class="scope-chip {{scope === 'all' ? 'active' : ''}}" data-scope="all" bindtap="onScopeTap">
+          <text class="scope-name">All</text>
+          <text class="scope-desc">全量开放给所有用户</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="config-card">
+      <view class="section-head">
+        <text class="section-title">OpenID 白名单</text>
+        <text class="link-action" bindtap="onAddCurrentOpenid">加入当前 OpenID</text>
+      </view>
+      <textarea
+        class="openid-textarea"
+        value="{{allowOpenidsText}}"
+        placeholder="每行一个 OpenID，也支持逗号或空格分隔"
+        maxlength="-1"
+        bindinput="onOpenidsInput"
+      />
+      <text class="field-hint">切到 All 时仍会保留这里的名单，方便以后再切回白名单。</text>
+    </view>
+
+    <view class="config-card">
+      <text class="section-title">未开放提示</text>
+      <textarea
+        class="message-textarea"
+        value="{{message}}"
+        placeholder="未授权用户看到的提示"
+        maxlength="60"
+        bindinput="onMessageInput"
+      />
+    </view>
+
+    <button class="save-button" bindtap="onSaveConfig" loading="{{saving}}" disabled="{{saving || loading}}">
+      {{saving ? '保存中...' : '保存配置'}}
+    </button>
+  </view>
+
+  <view wx:else class="empty-card">
+    <text class="empty-title">无权限访问</text>
+    <text class="empty-subtitle">该配置仅开发者可见。</text>
+  </view>
+</view>

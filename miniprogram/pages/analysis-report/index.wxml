@@ -6,7 +6,7 @@
   <view wx:else class="main-view">
     <view class="main-tabs">
       <view class="main-tab {{mainTab === 'archive' ? 'active' : ''}}" data-tab="archive" bindtap="switchMainTab">
-        <text>档案</text>
+        <text>报告</text>
       </view>
       <view class="main-tab {{mainTab === 'compare' ? 'active' : ''}}" data-tab="compare" bindtap="switchMainTab">
         <text>对比</text>
@@ -52,7 +52,7 @@
                 <text wx:for="{{report.keyTags}}" wx:key="key" wx:for-item="tag" class="metric-tag {{tag.abnormal ? 'warn' : ''}}">{{tag.text}}</text>
               </view>
             </view>
-            <view class="status-dot {{report.abnormalCount > 0 ? 'warn' : 'ok'}}"></view>
+            <text class="report-status {{report.statusClass}}">{{report.statusText}}</text>
           </view>
         </view>
       </view>
@@ -117,8 +117,9 @@
         </view>
 
         <view class="result-divider"></view>
-        <text class="step-label">③ 结果</text>
-
+        <view wx:if="{{currentCompareView.summaryLines && currentCompareView.summaryLines.length}}" class="compare-summary-card">
+          <text wx:for="{{currentCompareView.summaryLines}}" wx:key="*this" class="compare-summary-line">{{item}}</text>
+        </view>
         <view wx:if="{{currentCompareView.hasRangeMismatch}}" class="range-mismatch-banner">
           <text>{{currentCompareView.rangeMismatchText}}</text>
         </view>
@@ -138,63 +139,89 @@
               <text class="cmp-name">{{item.name}}</text>
               <text wx:if="{{item.abbr}}" class="cmp-abbr-sub">{{item.abbr}}</text>
             </view>
-            <text class="cmp-chg {{item.direction === 'up' ? 'up' : item.direction === 'down' ? 'down' : ''}}">{{item.delta}}</text>
+            <text class="cmp-chg {{item.direction === 'up' ? 'up' : item.direction === 'down' ? 'down' : ''}}">{{item.changeText}}</text>
           </view>
           <view class="cmp-values">
             <view class="cmp-side">
-              <text class="cmp-side-val">{{item.current}}</text>
+              <view class="cmp-value-line">
+                <text class="cmp-side-val">{{item.current}}</text>
+                <text wx:if="{{item.unit}}" class="cmp-unit">{{item.unit}}</text>
+              </view>
+              <text class="cmp-status {{item.statusClass}}">{{item.statusText}}</text>
               <text wx:if="{{item.rangeA}}" class="cmp-side-range">参考 {{item.rangeA}}</text>
             </view>
             <view class="cmp-side">
-              <text class="cmp-side-val">{{item.previous}}</text>
+              <view class="cmp-value-line">
+                <text class="cmp-side-val">{{item.previous}}</text>
+                <text wx:if="{{item.unit}}" class="cmp-unit">{{item.unit}}</text>
+              </view>
+              <text class="cmp-status {{item.previousStatusClass}}">{{item.previousStatusText}}</text>
               <text wx:if="{{item.rangeB}}" class="cmp-side-range">参考 {{item.rangeB}}</text>
             </view>
           </view>
           <text wx:if="{{item.rangeMismatch}}" class="cmp-range-warn">该指标参考范围不一致</text>
         </view>
 
-        <text class="step-label diet-label">化验前 7 天 · 系数日趋势</text>
-        <view wx:if="{{!currentCompareView.hasNutritionData}}" class="diet-empty-hint">
-          <text>{{currentCompareView.nutritionEmptyText}}</text>
-        </view>
-        <view wx:for="{{currentCompareView.nutritionCompareSeries}}" wx:key="key" class="trend-compare-block">
-          <view class="trend-compare-head">
-            <text class="trend-compare-title">{{item.label}}</text>
-            <text class="trend-compare-unit">{{item.unit}}</text>
+        <view wx:if="{{!compareDietVisible}}" class="diet-entry-card" bindtap="showCompareDiet">
+          <view class="diet-entry-copy">
+            <text class="diet-entry-title">对比饮食背景</text>
+            <text class="diet-entry-desc">点击后加载两份报告化验前 7 天的喂养系数</text>
           </view>
-          <view class="trend-compare-row">
-            <view class="trend-side">
-              <view class="trend-side-meta-row">
-                <text class="trend-side-meta">{{item.reportA.dateRangeShort}} · {{item.reportA.coverageText}}</text>
-                <text wx:if="{{item.reportA.averageText}}" class="trend-side-avg">平均值: {{item.reportA.averageText}}</text>
+          <text class="diet-entry-action">查看</text>
+        </view>
+        <block wx:else>
+          <text class="step-label diet-label">化验前 7 天 · 系数日趋势</text>
+          <view wx:if="{{compareDietLoading}}" class="diet-empty-hint">
+            <text>正在加载饮食对比...</text>
+          </view>
+          <block wx:else>
+            <view wx:if="{{!currentCompareView.hasNutritionData}}" class="diet-empty-hint">
+              <text>{{currentCompareView.nutritionEmptyText}}</text>
+            </view>
+            <view wx:if="{{currentCompareView.hasNutritionData && currentCompareView.dietSummaryLines && currentCompareView.dietSummaryLines.length}}" class="diet-summary-card">
+              <text class="diet-summary-title">平均值对比</text>
+              <text wx:for="{{currentCompareView.dietSummaryLines}}" wx:key="*this" class="diet-summary-line">{{item}}</text>
+            </view>
+            <view wx:for="{{currentCompareView.nutritionCompareSeries}}" wx:key="key" class="trend-compare-block">
+              <view class="trend-compare-head">
+                <text class="trend-compare-title">{{item.label}}</text>
+                <text class="trend-compare-unit">{{item.unit}}</text>
               </view>
-              <view class="sparkline">
-                <view wx:for="{{item.reportA.points}}" wx:key="date" wx:for-item="point" class="spark-col">
-                  <view class="spark-bar-wrap">
-                    <text wx:if="{{!point.missing}}" class="spark-val">{{point.value}}</text>
-                    <view class="spark-bar {{point.missing ? 'missing' : ''}}" style="height: {{point.heightRpx || 8}}rpx;"></view>
+              <view class="trend-compare-row">
+                <view class="trend-side">
+                  <view class="trend-side-meta-row">
+                    <text class="trend-side-meta">{{item.reportA.dateRangeShort}} · {{item.reportA.coverageText}}</text>
+                    <text wx:if="{{item.reportA.averageText}}" class="trend-side-avg">平均值: {{item.reportA.averageText}}</text>
                   </view>
-                  <text class="spark-x">{{point.label}}</text>
+                  <view class="sparkline">
+                    <view wx:for="{{item.reportA.points}}" wx:key="date" wx:for-item="point" class="spark-col">
+                      <view class="spark-bar-wrap">
+                        <text wx:if="{{!point.missing}}" class="spark-val">{{point.value}}</text>
+                        <view class="spark-bar {{point.missing ? 'missing' : ''}}" style="height: {{point.heightRpx || 8}}rpx;"></view>
+                      </view>
+                      <text class="spark-x">{{point.label}}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="trend-side">
+                  <view class="trend-side-meta-row">
+                    <text class="trend-side-meta">{{item.reportB.dateRangeShort}} · {{item.reportB.coverageText}}</text>
+                    <text wx:if="{{item.reportB.averageText}}" class="trend-side-avg alt">平均值: {{item.reportB.averageText}}</text>
+                  </view>
+                  <view class="sparkline">
+                    <view wx:for="{{item.reportB.points}}" wx:key="date" wx:for-item="point" class="spark-col">
+                      <view class="spark-bar-wrap">
+                        <text wx:if="{{!point.missing}}" class="spark-val alt">{{point.value}}</text>
+                        <view class="spark-bar alt {{point.missing ? 'missing' : ''}}" style="height: {{point.heightRpx || 8}}rpx;"></view>
+                      </view>
+                      <text class="spark-x">{{point.label}}</text>
+                    </view>
+                  </view>
                 </view>
               </view>
             </view>
-            <view class="trend-side">
-              <view class="trend-side-meta-row">
-                <text class="trend-side-meta">{{item.reportB.dateRangeShort}} · {{item.reportB.coverageText}}</text>
-                <text wx:if="{{item.reportB.averageText}}" class="trend-side-avg alt">平均值: {{item.reportB.averageText}}</text>
-              </view>
-              <view class="sparkline">
-                <view wx:for="{{item.reportB.points}}" wx:key="date" wx:for-item="point" class="spark-col">
-                  <view class="spark-bar-wrap">
-                    <text wx:if="{{!point.missing}}" class="spark-val alt">{{point.value}}</text>
-                    <view class="spark-bar alt {{point.missing ? 'missing' : ''}}" style="height: {{point.heightRpx || 8}}rpx;"></view>
-                  </view>
-                  <text class="spark-x">{{point.label}}</text>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
+          </block>
+        </block>
         </block>
       </block>
     </view>

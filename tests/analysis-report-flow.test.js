@@ -13,12 +13,28 @@ test('analysis-report page uses archive/compare tabs and navigates to report det
   assert.match(wxml, /archive-panel/);
   assert.match(wxml, /compare-panel/);
   assert.match(wxml, /archiveYearGroups/);
+  assert.match(wxml, /report-status/);
+  assert.match(wxml, /compare-summary-card/);
+  assert.match(wxml, /diet-entry-card/);
+  assert.match(wxml, /diet-summary-card/);
+  assert.match(wxml, /dietSummaryLines/);
+  assert.match(wxml, /item\.changeText/);
   assert.match(wxml, /nutritionCompareSeries/);
   assert.match(wxml, /diet-empty-hint/);
   assert.match(wxml, /fab/);
   assert.doesNotMatch(wxml, /detail-view/);
   assert.doesNotMatch(wxml, /page-title/);
   assert.doesNotMatch(wxml, /去对比/);
+});
+
+test('analysis-report compare layout reserves bottom space and sticks dates to top', () => {
+  const wxss = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pages/analysis-report/index.wxss'),
+    'utf8'
+  );
+
+  assert.match(wxss, /\.compare-panel\s*\{[\s\S]*padding-bottom:\s*220rpx/);
+  assert.match(wxss, /\.compare-date-sticky\s*\{[\s\S]*top:\s*12rpx/);
 });
 
 test('analysis-report page wires compare builders, lazy feeding load, and detail navigation', () => {
@@ -32,6 +48,8 @@ test('analysis-report page wires compare builders, lazy feeding load, and detail
   assert.match(js, /resolveCompareReportSelection/);
   assert.match(js, /resolveCompareNutritionWindows/);
   assert.match(js, /ensureCompareFeedingData/);
+  assert.match(js, /showCompareDiet/);
+  assert.match(js, /includeNutrition:\s*this\.data\.compareDietVisible/);
   assert.match(js, /REPORTS_CACHE_TTL_MS/);
   assert.match(js, /ANALYSIS_REPORT_RELOAD_KEY/);
   assert.match(js, /pkg-report\/report-detail\/index/);

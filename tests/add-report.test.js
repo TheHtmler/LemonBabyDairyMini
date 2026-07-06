@@ -101,6 +101,22 @@ test('add-report page uses compact grouped layout for indicator entry', () => {
   assert.doesNotMatch(js, /collapsedGroups/);
 });
 
+test('add-report OCR entry is gated by cloud access check', () => {
+  const wxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxml'),
+    'utf8'
+  );
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.js'),
+    'utf8'
+  );
+
+  assert.match(wxml, /wx:if="\{\{ocrAllowed\}\}"/);
+  assert.match(js, /ocrAllowed:\s*false/);
+  assert.match(js, /action:\s*'checkAccess'/);
+  assert.match(js, /OCR_NOT_ALLOWED/);
+});
+
 test('add-report auto-calculates c3 ratios on blur even before base indicator ranges are filled', () => {
   const page = loadAddReportPage();
   global.wx = {

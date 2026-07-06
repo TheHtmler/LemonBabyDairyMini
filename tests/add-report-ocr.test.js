@@ -301,6 +301,7 @@ test('onRecognizeReportPhoto walks choose->upload->recognize->apply and cleans u
   const instance = createInstance(page, {
     selectedReportType: 'blood_ammonia',
     babyInfo: { babyUid: 'baby-1' },
+    ocrAllowed: true,
     ocrPendingKeys: [],
     indicatorData: {
       ammonia: { value: '', minRange: '', maxRange: '' }
@@ -352,6 +353,7 @@ test('onRecognizeReportPhoto compresses large photos before upload', async () =>
   const instance = createInstance(page, {
     selectedReportType: 'blood_ammonia',
     babyInfo: { babyUid: 'baby-1' },
+    ocrAllowed: true,
     indicatorData: { ammonia: { value: '', minRange: '', maxRange: '' } }
   });
 
@@ -386,6 +388,7 @@ test('onRecognizeReportPhoto silently returns when the user cancels media select
   };
 
   const instance = createInstance(page, {
+    ocrAllowed: true,
     ocrPendingKeys: [],
     indicatorData: {}
   });

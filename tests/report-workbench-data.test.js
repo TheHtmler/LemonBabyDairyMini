@@ -666,6 +666,52 @@ test('buildReportComparePreview uses daily summaries for week-before nutrition t
   assert.equal(reportAPoints[0].value, '1.2');
   assert.equal(reportAPoints[1].value, '1.22');
   assert.equal(naturalSeries.reportA.averageText, '1.21');
+  assert.equal(compare.summaryLines.length, 1);
+  assert.equal(compare.dietSummaryLines.length, 3);
+  assert.match(compare.dietSummaryLines[0], /天然蛋白系数/);
+  assert.match(compare.dietSummaryLines[0], /→/);
+});
+
+test('buildReportComparePreview can skip nutrition trends for lazy loading', () => {
+  const compare = buildReportComparePreview({
+    reportType: 'blood_ms',
+    reportAId: 'blood-a',
+    reportBId: 'blood-b',
+    selectedMetricKeys: ['c3'],
+    reports: [
+      {
+        _id: 'blood-a',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-04-25T00:00:00+08:00'),
+        indicators: { c3: { value: '8.000', status: 'high' } }
+      },
+      {
+        _id: 'blood-b',
+        reportType: 'blood_ms',
+        reportDate: new Date('2026-03-20T00:00:00+08:00'),
+        indicators: { c3: { value: '7.000', status: 'normal' } }
+      }
+    ],
+    dailySummaries: [
+      {
+        date: '2026-04-20',
+        basicInfo: { weight: 5 },
+        recordCounts: { milk: 8, food: 0 },
+        macroSummary: { naturalProtein: 6, specialProtein: 2, protein: 8, calories: 600 }
+      }
+    ],
+    includeNutrition: false
+  });
+
+  assert.equal(compare.canCompare, true);
+  assert.equal(compare.hasNutritionData, false);
+  assert.equal(compare.nutritionCompareSeries.length, 0);
+  assert.equal(compare.nutritionWindows.length, 0);
+  assert.equal(compare.dietSummaryLines.length, 0);
+  assert.equal(compare.summaryLines.length, 1);
+  assert.equal(compare.compareRows[0].statusText, '偏高');
+  assert.equal(compare.compareRows[0].previousStatusText, '正常');
+  assert.equal(compare.compareRows[0].changeText, '下降 1');
 });
 
 test('buildReportComparePreview compares two same-type reports and attaches week-before coefficient series', () => {
@@ -721,6 +767,8 @@ test('buildReportComparePreview compares two same-type reports and attaches week
   assert.equal(compare.canCompare, true);
   assert.equal(compare.reportA.id, 'urine-previous');
   assert.equal(compare.reportB.id, 'urine-current');
+  assert.equal(compare.metricOptions.filter((item) => item.selected).length, 3);
+  assert.equal(compare.compareRows.length, 3);
   assert.equal(compare.hasRangeMismatch, true);
   assert.match(compare.rangeMismatchText, /不同机构/);
   const mmaRow = compare.compareRows.find((row) => row.key === 'methylmalonic_acid');
@@ -728,8 +776,15 @@ test('buildReportComparePreview compares two same-type reports and attaches week
   assert.equal(mmaRow.abbr, 'MMA');
   assert.equal(mmaRow.current, '100');
   assert.equal(mmaRow.previous, '120');
+  assert.equal(mmaRow.changeText, '上升 20');
   assert.equal(mmaRow.rangeMismatch, true);
+  assert.equal(mmaRow.statusText, '偏高');
+  assert.equal(mmaRow.previousStatusText, '偏高');
   assert.equal(compare.nutritionCompareSeries.length, 3);
+  assert.equal(compare.dietSummaryLines.length, 3);
+  assert.match(compare.dietSummaryLines[0], /天然蛋白系数/);
+  assert.match(compare.dietSummaryLines[1], /特殊蛋白系数/);
+  assert.match(compare.dietSummaryLines[2], /热卡系数/);
   assert.equal(compare.nutritionCompareSeries[0].reportA.date, '2026-11-12');
   assert.equal(compare.nutritionCompareSeries[0].reportB.date, '2026-11-16');
   assert.equal(compare.nutritionCompareSeries[0].reportA.points.length, 7);

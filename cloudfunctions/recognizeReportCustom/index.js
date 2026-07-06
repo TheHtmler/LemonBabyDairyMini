@@ -7,8 +7,12 @@ const { OCR_MODES, resolveOcrEndpoint, resolveHealthUrl, inferContentType } = re
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
+const db = cloud.database();
+const FEATURE_FLAG_COLLECTION = 'feature_flags';
+const REPORT_OCR_ACCESS_KEY = 'report_ocr_access';
 const MISSING_FILE_MESSAGE = '缺少识别图片';
 const MISSING_CONFIG_MESSAGE = '未配置 CUSTOM_OCR_API_KEY 云函数环境变量';
+const OCR_ACCESS_DENIED_MESSAGE = '拍照识别功能调试中，暂未对当前用户开放';
 
 function getCustomOcrConfig(event = {}) {
   return resolveOcrEndpoint(process.env, event.mode);
@@ -16,6 +20,53 @@ function getCustomOcrConfig(event = {}) {
 
 function hasImagePayload(event = {}) {
   return Boolean(event.fileID || event.avatarFileId || event.imageBase64);
+}
+
+function normalizeOpenid(value = '') {
+  return String(value || '').trim();
+}
+
+function normalizeOpenids(openids = []) {
+  const source = Array.isArray(openids)
+    ? openids
+    : String(openids || '').split(/[\n,，\s]+/);
+  return Array.from(new Set(source.map(normalizeOpenid).filter(Boolean)));
+}
+
+function normalizeScope(scope = '') {
+  return scope === 'all' ? 'all' : 'whitelist';
+}
+
+function normalizeReportOcrAccess(config = {}) {
+  return {
+    scope: normalizeScope(config.scope),
+    allowOpenids: normalizeOpenids(config.allowOpenids),
+    message: String(config.message || OCR_ACCESS_DENIED_MESSAGE).trim() || OCR_ACCESS_DENIED_MESSAGE
+  };
+}
+
+async function getReportOcrAccessConfig() {
+  try {
+    const res = await db.collection(FEATURE_FLAG_COLLECTION)
+      .where({ key: REPORT_OCR_ACCESS_KEY })
+      .limit(1)
+      .get();
+    return normalizeReportOcrAccess(res.data?.[0] || {});
+  } catch (error) {
+    console.warn('[recognizeReportCustom] access config missing', error);
+    return normalizeReportOcrAccess({});
+  }
+}
+
+async function resolveReportOcrAccess(openid = '') {
+  const config = await getReportOcrAccessConfig();
+  const normalizedOpenid = normalizeOpenid(openid);
+  const allowed = config.scope === 'all' || config.allowOpenids.includes(normalizedOpenid);
+  return {
+    allowed,
+    scope: config.scope,
+    message: allowed ? '' : config.message
+  };
 }
 
 function resolveUserMessage(error = {}) {
@@ -38,9 +89,21 @@ function resolveUserMessage(error = {}) {
 }
 
 exports.main = async (event = {}) => {
+  const { OPENID } = cloud.getWXContext();
   const ocrConfig = getCustomOcrConfig(event);
   const { url, apiKey, mode, urlMigrated, rawCustomUrl } = ocrConfig;
   const healthUrl = resolveHealthUrl(process.env);
+
+  if (event.action === 'checkAccess') {
+    const access = await resolveReportOcrAccess(OPENID);
+    return {
+      ok: true,
+      action: 'checkAccess',
+      allowed: access.allowed,
+      scope: access.scope,
+      message: access.message || ''
+    };
+  }
 
   if (event.action === 'probe') {
     const startedAt = Date.now();
@@ -102,6 +165,15 @@ exports.main = async (event = {}) => {
     rawCustomUrl: rawCustomUrl || undefined,
     hasApiKey: Boolean(apiKey)
   });
+
+  const access = await resolveReportOcrAccess(OPENID);
+  if (!access.allowed) {
+    return {
+      ok: false,
+      code: 'OCR_NOT_ALLOWED',
+      message: access.message || OCR_ACCESS_DENIED_MESSAGE
+    };
+  }
 
   if (!hasImagePayload(event)) {
     return { ok: false, code: 'MISSING_FILE', message: MISSING_FILE_MESSAGE };

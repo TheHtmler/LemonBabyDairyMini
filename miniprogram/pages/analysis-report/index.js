@@ -77,6 +77,8 @@ Page({
     compareReportBIndex: 1,
     compareReportOptions: [],
     compareSelectedMetricKeys: [],
+    compareDietVisible: false,
+    compareDietLoading: false,
     currentCompareView: null
   },
 
@@ -92,7 +94,7 @@ Page({
       return;
     }
     this.loadReportData().then(() => {
-      if (this.data.mainTab === MAIN_TABS.COMPARE) {
+      if (this.data.mainTab === MAIN_TABS.COMPARE && this.data.compareDietVisible) {
         this.ensureCompareFeedingData();
       }
     });
@@ -244,11 +246,13 @@ Page({
       this._dailySummaryCacheKey = cacheKey;
       this._dailySummaryCacheLoaded = true;
       this.setData({
-        dailySummariesCache: Array.from(summaryMap.values())
+        dailySummariesCache: Array.from(summaryMap.values()),
+        compareDietLoading: false
       });
       this.refreshCompareView();
     } catch (error) {
       console.warn('加载对比用 daily summary 失败:', error);
+      this.setData({ compareDietLoading: false });
     }
   },
 
@@ -279,17 +283,32 @@ Page({
       this.data.compareReportType
     );
     if (windows.length === 0) {
-      this.setData({ dailySummariesCache: [] }, () => this.refreshCompareView());
+      this.setData({
+        dailySummariesCache: [],
+        compareDietVisible: true,
+        compareDietLoading: false
+      }, () => this.refreshCompareView());
       return;
     }
 
     const cacheKey = windows.map((window) => `${window.startDate}_${window.endDate}`).join('|');
     if (this._dailySummaryCacheKey === cacheKey && this._dailySummaryCacheLoaded) {
-      this.refreshCompareView();
+      this.setData({
+        compareDietVisible: true,
+        compareDietLoading: false
+      }, () => this.refreshCompareView());
       return;
     }
 
-    this.loadCompareDailySummaries(babyUid, windows, cacheKey);
+    this._dailySummaryCacheLoaded = false;
+    this.setData({
+      dailySummariesCache: [],
+      compareDietVisible: true,
+      compareDietLoading: true
+    }, () => {
+      this.refreshCompareView();
+      this.loadCompareDailySummaries(babyUid, windows, cacheKey);
+    });
   },
 
   refreshAnalysisState({
@@ -332,7 +351,7 @@ Page({
       compareSelectedMetricKeys,
       loading: false
     }, () => {
-      if (mainTab === MAIN_TABS.COMPARE) {
+      if (mainTab === MAIN_TABS.COMPARE && this.data.compareDietVisible) {
         this.ensureCompareFeedingData();
       } else {
         this.refreshCompareView();
@@ -367,7 +386,8 @@ Page({
       reports: reportsCache || [],
       dailySummaries: dailySummariesCache || [],
       nutritionSettings: nutritionSettings || {},
-      fallbackWeight
+      fallbackWeight,
+      includeNutrition: this.data.compareDietVisible && !this.data.compareDietLoading
     });
 
     this.setData({
@@ -385,8 +405,10 @@ Page({
     if (!mainTab || mainTab === this.data.mainTab) return;
 
     this.setData({ mainTab });
-    if (mainTab === MAIN_TABS.COMPARE) {
+    if (mainTab === MAIN_TABS.COMPARE && this.data.compareDietVisible) {
       this.ensureCompareFeedingData();
+    } else if (mainTab === MAIN_TABS.COMPARE) {
+      this.refreshCompareView();
     }
   },
 
@@ -420,7 +442,7 @@ Page({
       compareReportAIndex: compareSelection.reportAIndex,
       compareReportBIndex: compareSelection.reportBIndex
     }, () => {
-      this.ensureCompareFeedingData();
+      this.refreshCompareAfterSelectionChange();
     });
   },
 
@@ -442,7 +464,7 @@ Page({
       compareReportBId: nextBId,
       compareReportBIndex: findPickerIndex(options, nextBId)
     }, () => {
-      this.ensureCompareFeedingData();
+      this.refreshCompareAfterSelectionChange();
     });
   },
 
@@ -464,7 +486,7 @@ Page({
       compareReportAId: nextAId,
       compareReportAIndex: findPickerIndex(options, nextAId)
     }, () => {
-      this.ensureCompareFeedingData();
+      this.refreshCompareAfterSelectionChange();
     });
   },
 
@@ -486,8 +508,21 @@ Page({
       compareReportAIndex: compareReportBIndex,
       compareReportBIndex: compareReportAIndex
     }, () => {
-      this.ensureCompareFeedingData();
+      this.refreshCompareAfterSelectionChange();
     });
+  },
+
+  refreshCompareAfterSelectionChange() {
+    if (this.data.compareDietVisible) {
+      this.ensureCompareFeedingData();
+      return;
+    }
+    this.refreshCompareView();
+  },
+
+  showCompareDiet() {
+    if (this.data.compareDietLoading) return;
+    this.ensureCompareFeedingData();
   },
 
   toggleCompareMetric(e) {

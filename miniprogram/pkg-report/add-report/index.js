@@ -72,6 +72,9 @@ Page({
     // 拍照识别：已自动填入但用户还没核对过的指标 key 列表
     ocrPendingKeys: [],
     ocrRecognizing: false,
+    ocrAllowed: false,
+    ocrAccessChecked: false,
+    ocrAccessMessage: '拍照识别功能调试中，仅对白名单用户开放',
     ocrEntryHint: '拍下报告单自动填值，请逐项核对',
 
     // 页面状态
@@ -117,6 +120,8 @@ Page({
         babyInfo: babyInfo,
         reportDate: this.getCurrentDate()
       });
+
+      await this.loadOcrAccess();
 
       // 如果是编辑模式，加载报告数据
       if (this.data.mode === 'edit' && this.data.reportId) {
@@ -503,6 +508,33 @@ Page({
     return cloudEnvId ? { config: { env: cloudEnvId } } : {};
   },
 
+  async loadOcrAccess() {
+    try {
+      const cloudEnvId = this.getCloudEnvId();
+      const response = await wx.cloud.callFunction({
+        name: 'recognizeReportCustom',
+        data: {
+          action: 'checkAccess',
+          babyUid: this.data.babyInfo?.babyUid || ''
+        },
+        ...this.getCloudCallConfig(cloudEnvId)
+      });
+      const result = response?.result || {};
+      const allowed = result.ok === true && result.allowed === true;
+      this.setData({
+        ocrAllowed: allowed,
+        ocrAccessChecked: true,
+        ocrAccessMessage: result.message || this.data.ocrAccessMessage
+      });
+    } catch (error) {
+      console.warn('[report-ocr] access check failed', error);
+      this.setData({
+        ocrAllowed: false,
+        ocrAccessChecked: true
+      });
+    }
+  },
+
   getLocalFileSize(filePath) {
     return new Promise((resolve, reject) => {
       wx.getFileSystemManager().getFileInfo({
@@ -591,6 +623,9 @@ Page({
     if (errMsg.includes('OCR_BUSY') || errMsg.includes('繁忙')) {
       return 'OCR 服务正在处理其他请求，请稍后再试';
     }
+    if (errMsg.includes('OCR_NOT_ALLOWED')) {
+      return '拍照识别功能调试中，暂未对当前用户开放';
+    }
     if (errMsg.includes('识别超时') || errMsg.includes('timeout') || errMsg.includes('timed out')) {
       return '识别超时，请稍后重试或手动填写';
     }
@@ -633,6 +668,13 @@ Page({
   // 拍照识别：选图 -> 压缩 -> 上传 -> 自建 OCR 云函数 -> 解析并填充表单
   async onRecognizeReportPhoto() {
     if (this.data.ocrRecognizing) return;
+    if (!this.data.ocrAllowed) {
+      wx.showToast({
+        title: this.data.ocrAccessMessage || '拍照识别功能暂未开放',
+        icon: 'none'
+      });
+      return;
+    }
 
     let media;
     try {

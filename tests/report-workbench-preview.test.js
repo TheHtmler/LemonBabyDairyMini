@@ -67,3 +67,20 @@ test('app.json and profile menu exclude removed custom OCR demo page', () => {
   assert.ok(!miscPages.includes('custom-ocr-demo/index'));
   assert.equal(demoItem, undefined);
 });
+
+test('developer profile menu exposes OCR access settings page', () => {
+  const appConfig = JSON.parse(
+    fs.readFileSync(
+      path.resolve(__dirname, '../miniprogram/app.json'),
+      'utf8'
+    )
+  );
+  const page = loadProfilePage();
+  const miscPages = getMiscPackagePages(appConfig);
+  const settingsItem = page.data.menuList.find(
+    (item) => item.path === '/pkg-misc/ocr-access-settings/index'
+  );
+
+  assert.ok(miscPages.includes('ocr-access-settings/index'));
+  assert.equal(settingsItem?.showForDeveloper, true);
+});
