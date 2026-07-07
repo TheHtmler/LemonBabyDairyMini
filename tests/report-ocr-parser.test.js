@@ -74,6 +74,26 @@ test('parseReportOcrResult matches blood_ms indicators by Chinese name and abbre
   assert.equal(result.c3_c2, undefined);
 });
 
+test('parseReportOcrResult ignores VAL/PHE and keeps valine row with OCR Va1 typo', () => {
+  const result = parseReportOcrResult({
+    reportType: 'blood_ms',
+    items: [
+      { text: 'VAL/PHE', pos: { top: 10, left: 20, height: 20 } },
+      { text: '0.120', pos: { top: 10, left: 220, height: 20 } },
+      { text: '缬氨酸(Va1)', pos: { top: 60, left: 20, height: 20 } },
+      { text: '80.000', pos: { top: 60, left: 220, height: 20 } },
+      { text: '60.000-250.000', pos: { top: 60, left: 320, height: 20 } }
+    ]
+  });
+
+  assert.deepEqual(result.val, {
+    value: '80.000',
+    minRange: '60.000',
+    maxRange: '250.000',
+    sourceText: '缬氨酸(Va1) 80.000 60.000-250.000'
+  });
+});
+
 test('parseStructuredReportItems maps blood_ms arginine as first amino marker', () => {
   const result = parseStructuredReportItems({
     reportType: 'blood_ms',
@@ -291,6 +311,19 @@ test('parseStructuredReportItems resolves indicator_key and label fields from cu
 
   assert.equal(urineMs.methylmalonic_acid.value, '120');
   assert.equal(urineMs.methylcitric_acid_1.value, '9');
+});
+
+test('parseStructuredReportItems treats Va1 as OCR typo for valine abbreviation', () => {
+  const result = parseStructuredReportItems({
+    reportType: 'blood_ms',
+    structuredItems: [
+      { indicator_key: 'Va1', value: '80.000', ref_range: '60.000-250.000' }
+    ]
+  });
+
+  assert.equal(result.val.value, '80.000');
+  assert.equal(result.val.minRange, '60.000');
+  assert.equal(result.val.maxRange, '250.000');
 });
 
 test('parseStructuredReportItems maps 3-羟基丁酸-2 to hydroxybutyric_acid and ignores 3,4-二羟基丁酸', () => {

@@ -54,9 +54,11 @@ function findAliasMatch(normalizedLine, alias) {
       const after = normalizedLine[match.index + match[0].length];
       const beforeOk = !before || !/[a-z0-9]/i.test(before);
       const afterOk = !after || !/[a-z0-9]/i.test(after);
-      const ratioGuardOk = !isBareCarnitineAbbrev(alias)
+      const slashGuardOk = alias.includes('/')
         || !isCarnitineAbbrevInsideRatio(normalizedLine, match.index, match[0].length);
-      if (beforeOk && afterOk && ratioGuardOk) {
+      const ratioGuardOk = !isBareCarnitineAbbrev(alias)
+        || slashGuardOk;
+      if (beforeOk && afterOk && slashGuardOk && ratioGuardOk) {
         return { index: match.index, length: match[0].length };
       }
       match = regex.exec(normalizedLine);

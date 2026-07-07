@@ -12,7 +12,7 @@ const CHINESE_TYPO_REPLACEMENTS = [
 const EXTRA_ALIASES = {
   iso_leu: ['iso/leu', 'ile/leu', '异亮氨酸/亮氨酸', '异亮氨酸', '亮氨酸'],
   met: ['met', '蛋氨酸', '甲硫氨酸', '蛋氨酸/甲硫氨酸'],
-  val: ['val', '缬氨酸'],
+  val: ['val', 'va1', '缬氨酸'],
   thr: ['thr', '苏氨酸'],
   arginine: ['精氨酸', 'arginine', 'arg'],
   c0: ['游离肉碱(c0)', '游离肉碱'],
@@ -66,6 +66,7 @@ const LEGACY_INDICATOR_KEY_ALIASES = {
   ile_leu: 'iso_leu',
   'ile/leu': 'iso_leu',
   'iso/leu': 'iso_leu',
+  va1: 'val',
   hco3std: 'hco3',
   hco3_std: 'hco3',
   arg: 'arginine'
