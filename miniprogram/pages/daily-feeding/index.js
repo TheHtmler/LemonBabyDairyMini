@@ -33,6 +33,7 @@ const app = getApp();
 
 const TREND_DAYS = 7;
 const HOME_BOOT_MIN_DURATION = 800;
+const HOME_DASHBOARD_ONSHOW_TTL_MS = 15 * 1000;
 
 // 近7天趋势可切换的指标（数据均来自 daily_summary_v2）
 // 蛋白拆成 总/天然/特殊 三个独立单柱 tab，保证每天数值都标得清楚；
@@ -259,6 +260,9 @@ Page({
   onLoad() {
     this.rangeSummaries = [];
     this._ready = false;
+    this._lastDashboardLoadAt = 0;
+    this._lastDashboardDate = '';
+    this._lastDashboardBabyUid = '';
     this._skipHomeBoot = this.consumeSkipHomeBootFlag();
     this.setData({
       todayDate: todayKey(),
@@ -277,10 +281,54 @@ Page({
     // 每次进入/返回首页都重播入场动画（CSS 动画需先卸下再挂上才会重新执行）
     this.replayEntrance();
     if (this._ready) {
-      await this.loadDashboard({ silent: true, rebuildTrend: false });
-      this.loadDeferredDashboardParts();
+      await this.refreshDashboardOnShow();
     }
     this.maybeOpenMedicationModalFromFlag();
+  },
+
+  getHomeDashboardDirtyFlag() {
+    return app.globalData && app.globalData.homeDashboardDirty;
+  },
+
+  hasPendingHomeDashboardDirty(babyUid) {
+    const dirty = this.getHomeDashboardDirtyFlag();
+    if (!dirty) return false;
+    if (dirty === true) return true;
+    if (!dirty.babyUid) return true;
+    return dirty.babyUid === babyUid;
+  },
+
+  clearHomeDashboardDirtyFlag(babyUid, loadStartedAt = Date.now()) {
+    if (!app.globalData || !app.globalData.homeDashboardDirty) return;
+    const dirty = app.globalData.homeDashboardDirty;
+    if (dirty?.babyUid && babyUid && dirty.babyUid !== babyUid) return;
+    // 如果加载过程中又发生了本机写入，保留脏标记，下一次 onShow 继续强刷。
+    if (dirty?.markedAt && dirty.markedAt > loadStartedAt) return;
+    app.globalData.homeDashboardDirty = null;
+  },
+
+  shouldRefreshDashboardOnShow() {
+    const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
+    const today = todayKey();
+    if (!this._lastDashboardLoadAt) return true;
+    if (this._lastDashboardDate !== today) return true;
+    if (this._lastDashboardBabyUid !== babyUid) return true;
+    if (this.hasPendingHomeDashboardDirty(babyUid)) return true;
+    if (app.globalData?.pendingOpenMedicationModal && !(this.data.medicationsList || []).length) return true;
+    return Date.now() - this._lastDashboardLoadAt >= HOME_DASHBOARD_ONSHOW_TTL_MS;
+  },
+
+  async refreshDashboardOnShow() {
+    if (!this.shouldRefreshDashboardOnShow()) return;
+    await this.loadDashboard({ silent: true, rebuildTrend: false });
+    this.loadDeferredDashboardParts();
+  },
+
+  markDashboardCacheFresh(babyUid, date, loadStartedAt = Date.now()) {
+    this._lastDashboardLoadAt = Date.now();
+    this._lastDashboardDate = date;
+    this._lastDashboardBabyUid = babyUid || '';
+    this.clearHomeDashboardDirtyFlag(babyUid, loadStartedAt);
   },
 
   // 消费提醒页「用药」快捷入口标记：切回首页后自动弹出记录用药弹窗。
@@ -416,6 +464,7 @@ Page({
   // === 核心：加载看板数据 ===
   async loadDashboard(options = {}) {
     const { silent, rebuildTrend = true } = options;
+    const loadStartedAt = Date.now();
     try {
       if (!silent) wx.showLoading({ title: '加载中...' });
 
@@ -426,6 +475,9 @@ Page({
       }
 
       const today = todayKey();
+      if (this.data.todayDate !== today) {
+        this.setData({ todayDate: today });
+      }
       // 趋势窗口不含今天（T-1~T-7），故往前多取一天到 T-7。
       const startKey = shiftDateKey(today, -TREND_DAYS);
       const medsPromise = MedicationModel.getMedications();
@@ -461,6 +513,7 @@ Page({
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
       await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, today });
+      this.markDashboardCacheFresh(babyUid, today, loadStartedAt);
 
       if (!silent) wx.hideLoading();
     } catch (error) {

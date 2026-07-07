@@ -54,6 +54,21 @@ function writeNutritionTargetPreferences(babyUid, preferences = {}, wxOverride =
   }
 }
 
+function markHomeDashboardDirty(babyUid) {
+  try {
+    if (typeof getApp !== 'function') return;
+    const app = getApp();
+    if (!app || !app.globalData) return;
+    app.globalData.homeDashboardDirty = {
+      babyUid,
+      reason: 'nutritionTargetPreferences',
+      markedAt: Date.now()
+    };
+  } catch (error) {
+    // 非页面上下文或测试环境没有 getApp 时不需要标记。
+  }
+}
+
 async function readCloudNutritionTargetPreferences(babyUid, wxOverride = null) {
   const wxApi = wxOverride || getWxApi();
   if (!babyUid || !wxApi?.cloud?.database) return {};
@@ -105,6 +120,7 @@ async function saveNutritionTargetPreferences(babyUid, preferences = {}, wxOverr
   if (!cloudSaved) {
     writeNutritionTargetPreferences(babyUid, normalized, wxApi);
   }
+  markHomeDashboardDirty(babyUid);
   return cloudSaved;
 }
 

@@ -436,7 +436,10 @@ Page({
       return;
     }
     if (typeof prevPage.fetchDailyRecords === 'function') {
-      await prevPage.fetchDailyRecords(this.data.dateKey, { silent: true });
+      await prevPage.fetchDailyRecords(this.data.dateKey, {
+        silent: true,
+        skipNextOnShowRefresh: true
+      });
       return;
     }
     if (prevPage.route === 'pages/daily-feeding/index' && typeof prevPage.loadTodayData === 'function') {

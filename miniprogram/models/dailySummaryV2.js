@@ -18,6 +18,21 @@ function stripDocumentFields(data = {}) {
   return nextData;
 }
 
+function markHomeDashboardDirty(babyUid, date) {
+  try {
+    if (typeof getApp !== 'function') return;
+    const app = getApp();
+    if (!app || !app.globalData) return;
+    app.globalData.homeDashboardDirty = {
+      babyUid,
+      date,
+      markedAt: Date.now()
+    };
+  } catch (error) {
+    // 测试环境或非页面上下文可能没有 getApp，忽略即可。
+  }
+}
+
 async function getByDate(babyUid, date) {
   const res = await dailySummaryCollection
     .where({
@@ -82,6 +97,8 @@ async function upsertSummary(summary = {}) {
 }
 
 async function markDirty(babyUid, date) {
+  markHomeDashboardDirty(babyUid, date);
+
   const query = dailySummaryCollection.where({
     babyUid,
     date,

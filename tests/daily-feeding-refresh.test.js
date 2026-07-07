@@ -26,9 +26,22 @@ test('meal-editor and treatment-record notify daily-feeding page to reload after
 
   [mealEditor, treatmentRecord, milkFeedingEditorV2].forEach((source) => {
     assert.match(source, /typeof prevPage\.fetchDailyRecords === 'function'/);
-    assert.match(source, /await prevPage\.fetchDailyRecords\([^,]+,\s*\{\s*silent:\s*true\s*\}\)/);
+    assert.match(source, /await prevPage\.fetchDailyRecords\([^,]+,\s*\{[\s\S]*silent:\s*true[\s\S]*skipNextOnShowRefresh:\s*true[\s\S]*\}\)/);
     assert.doesNotMatch(source, /prevPage\.route === 'pages\/data-records-v2\/index'/);
   });
+});
+
+test('data records skips the onShow refresh after child editor already refreshed parent', () => {
+  const dataRecords = fs.readFileSync('miniprogram/pages/data-records-v2/index.js', 'utf8');
+  const onShowBlock = dataRecords.match(/onShow: async function\(\) \{[\s\S]*?\n  \},\n\n  consumeSkipNextOnShowRefresh/)[0];
+  const fetchBlock = dataRecords.match(/async fetchDailyRecords\(dateStr, options = \{\}\) \{[\s\S]*?\n  \},\n\n  \/\/ 强制刷新数据/)[0];
+
+  assert.match(onShowBlock, /this\.consumeSkipNextOnShowRefresh\(this\.data\.selectedDate\)/);
+  assert.match(dataRecords, /consumeSkipNextOnShowRefresh\(dateStr\)/);
+  assert.match(dataRecords, /markSkipNextOnShowRefresh\(dateStr,\s*options = \{\}\)/);
+  assert.match(dataRecords, /options\.skipNextOnShowRefresh === true/);
+  assert.match(fetchBlock, /this\.markSkipNextOnShowRefresh\(dateStr,\s*options\);[\s\S]*return/);
+  assert.match(fetchBlock, /this\.markSkipNextOnShowRefresh\(dateStr,\s*options\);[\s\S]*\} catch \(error\)/);
 });
 
 test('daily feeding page counts food progress by meal records instead of food items', () => {
@@ -113,6 +126,38 @@ test('daily feeding uses themed first-paint loading and defers trend rebuild', (
   assertPngHasAlpha('miniprogram/images/milk-lemon-loading.png');
   assert.equal(fs.existsSync('miniprogram/images/milk-lemon-loading.svg'), false);
   assert.doesNotMatch(dailyFeedingWxss, /milk-lemon-loading\.svg/);
+});
+
+test('daily feeding skips passive onShow refresh within short fresh window', () => {
+  const dailyFeeding = fs.readFileSync('miniprogram/pages/daily-feeding/index.js', 'utf8');
+  const onShowBlock = dailyFeeding.match(/async onShow\(\) \{[\s\S]*?\n  \},\n\n  getHomeDashboardDirtyFlag/)[0];
+  const shouldRefreshBlock = dailyFeeding.match(/shouldRefreshDashboardOnShow\(\) \{[\s\S]*?\n  \},\n\n  async refreshDashboardOnShow/)[0];
+  const loadDashboardBlock = dailyFeeding.match(/async loadDashboard\(options = \{\}\) \{[\s\S]*?\n  \},\n\n  async loadDeferredDashboardParts/)[0];
+
+  assert.match(dailyFeeding, /HOME_DASHBOARD_ONSHOW_TTL_MS\s*=\s*15 \* 1000/);
+  assert.match(onShowBlock, /await this\.refreshDashboardOnShow\(\)/);
+  assert.doesNotMatch(onShowBlock, /await this\.loadDashboard\(\{ silent: true, rebuildTrend: false \}\)/);
+  assert.match(shouldRefreshBlock, /!this\._lastDashboardLoadAt/);
+  assert.match(shouldRefreshBlock, /this\._lastDashboardDate !== today/);
+  assert.match(shouldRefreshBlock, /this\._lastDashboardBabyUid !== babyUid/);
+  assert.match(shouldRefreshBlock, /this\.hasPendingHomeDashboardDirty\(babyUid\)/);
+  assert.match(shouldRefreshBlock, /Date\.now\(\) - this\._lastDashboardLoadAt >= HOME_DASHBOARD_ONSHOW_TTL_MS/);
+  assert.match(loadDashboardBlock, /const loadStartedAt = Date\.now\(\)/);
+  assert.match(loadDashboardBlock, /this\.markDashboardCacheFresh\(babyUid,\s*today,\s*loadStartedAt\)/);
+});
+
+test('current-device data changes mark home dashboard dirty before returning home', () => {
+  const dailySummaryV2 = fs.readFileSync('miniprogram/models/dailySummaryV2.js', 'utf8');
+  const nutritionTargetPreferences = fs.readFileSync('miniprogram/utils/nutritionTargetPreferences.js', 'utf8');
+  const medicationsPage = fs.readFileSync('miniprogram/pkg-misc/medications/index.js', 'utf8');
+
+  assert.match(dailySummaryV2, /function markHomeDashboardDirty\(babyUid,\s*date\)/);
+  assert.match(dailySummaryV2, /async function markDirty\(babyUid,\s*date\) \{[\s\S]*markHomeDashboardDirty\(babyUid,\s*date\)/);
+  assert.match(nutritionTargetPreferences, /reason:\s*'nutritionTargetPreferences'/);
+  assert.match(nutritionTargetPreferences, /markHomeDashboardDirty\(babyUid\);[\s\S]*return cloudSaved/);
+  assert.match(medicationsPage, /reason:\s*'medications'/);
+  assert.match(medicationsPage, /markHomeDashboardDirty\(babyUid\);[\s\S]*this\.hideModal\(\)/);
+  assert.match(medicationsPage, /doc\(id\)\.remove\(\);[\s\S]*markHomeDashboardDirty\(babyUid\)/);
 });
 
 test('daily feeding medication checklist uses raw medication history before deferred summaries', () => {

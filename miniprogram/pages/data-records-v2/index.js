@@ -2690,6 +2690,9 @@ function createDataRecordsPageConfig(options = {}) {
     if (!this.data.selectedDate) {
       return;
     }
+    if (this.consumeSkipNextOnShowRefresh(this.data.selectedDate)) {
+      return;
+    }
     if (!this.data.babyInfo) {
       await this.getBabyInfo();
     }
@@ -2697,6 +2700,19 @@ function createDataRecordsPageConfig(options = {}) {
       await this.loadNutritionSettings();
     }
     this.fetchDailyRecords(this.data.selectedDate);
+  },
+
+  consumeSkipNextOnShowRefresh(dateStr) {
+    if (!this._skipNextOnShowRefreshForDate) return false;
+    const shouldSkip = this._skipNextOnShowRefreshForDate === dateStr;
+    this._skipNextOnShowRefreshForDate = '';
+    return shouldSkip;
+  },
+
+  markSkipNextOnShowRefresh(dateStr, options = {}) {
+    if (options.skipNextOnShowRefresh === true) {
+      this._skipNextOnShowRefreshForDate = dateStr;
+    }
   },
 
   onShareAppMessage() {
@@ -3894,6 +3910,7 @@ function createDataRecordsPageConfig(options = {}) {
         const summary = await DailyRecordV2Service.getDailySummaryForDate(babyUid, dateStr);
         this.applyV2DailySummary(summary, dateStr);
         await this.loadActiveTabDetails(dateStr, babyUid, { force: true });
+        this.markSkipNextOnShowRefresh(dateStr, options);
         return;
       }
 
@@ -4080,6 +4097,7 @@ function createDataRecordsPageConfig(options = {}) {
         this.processBowelData(bowelRecordsToSet);
         this.processFeedingData([], []);
       }
+      this.markSkipNextOnShowRefresh(dateStr, options);
       
     } catch (error) {
       console.error('获取当日记录失败:', error);

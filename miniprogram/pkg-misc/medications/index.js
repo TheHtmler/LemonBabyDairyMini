@@ -1,5 +1,19 @@
 const MedicationModel = require('../../models/medication');
 
+function markHomeDashboardDirty(babyUid) {
+  try {
+    const app = getApp();
+    if (!app || !app.globalData) return;
+    app.globalData.homeDashboardDirty = {
+      babyUid,
+      reason: 'medications',
+      markedAt: Date.now()
+    };
+  } catch (error) {
+    // 页面销毁或测试环境没有 app 时忽略。
+  }
+}
+
 Page({
   data: {
     medications: [],
@@ -292,6 +306,7 @@ Page({
           data: medicationData
         });
       }
+      markHomeDashboardDirty(babyUid);
 
       this.hideModal();
       // 先刷新列表，再提示成功
@@ -346,6 +361,7 @@ Page({
       }
       
       await db.collection('medications').doc(id).remove();
+      markHomeDashboardDirty(babyUid);
       
       wx.hideLoading();
       wx.showToast({
