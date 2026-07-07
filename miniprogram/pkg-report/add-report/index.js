@@ -1,13 +1,30 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
 const { parseReportOcrResult, parseStructuredReportItems } = require('../../utils/reportOcrParser');
-const { formatReportNumber } = require('../../utils/reportNumberFormat');
 
 const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
 
 const CUSTOM_OCR_CLOUD_PATH_PREFIX = 'custom_ocr_temp';
 const CUSTOM_OCR_MAX_BYTES = 2 * 1024 * 1024;
 const CUSTOM_OCR_CALL_TIMEOUT_MS = 70000;
+
+function normalizeSignedNumberText(value = '') {
+  const trimmed = `${value ?? ''}`.trim();
+  const parenMatch = trimmed.match(/^\((-?\d+(?:\.\d+)?)\)$/);
+  return parenMatch ? parenMatch[1] : trimmed;
+}
+
+function formatReportNumber(value, precision = 3) {
+  const text = normalizeSignedNumberText(value);
+  if (!text) return '';
+
+  const num = Number(text);
+  if (!Number.isFinite(num)) {
+    return text;
+  }
+
+  return num.toFixed(precision);
+}
 
 function inferFileNameFromPath(filePath = '') {
   const lower = `${filePath || ''}`.toLowerCase();

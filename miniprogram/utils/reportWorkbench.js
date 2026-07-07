@@ -1,5 +1,4 @@
 const ReportModel = require('../models/report');
-const { formatReportNumber } = require('./reportNumberFormat');
 const { calculator: feedingCalculator } = require('./feedingUtils');
 const {
   mergeTreatmentIntoMacroSummary,
@@ -29,6 +28,24 @@ const REPORT_TYPE_FILTERS = [
   { key: ReportModel.REPORT_TYPES.BLOOD_GAS, label: '血气' },
   { key: ReportModel.REPORT_TYPES.BLOOD_AMMONIA, label: '血氨' }
 ];
+
+function normalizeSignedNumberText(value = '') {
+  const trimmed = `${value ?? ''}`.trim();
+  const parenMatch = trimmed.match(/^\((-?\d+(?:\.\d+)?)\)$/);
+  return parenMatch ? parenMatch[1] : trimmed;
+}
+
+function formatReportNumber(value, precision = 3) {
+  const text = normalizeSignedNumberText(value);
+  if (!text) return '';
+
+  const num = Number(text);
+  if (!Number.isFinite(num)) {
+    return text;
+  }
+
+  return num.toFixed(precision);
+}
 
 function getIndicatorStatusMeta(status = 'unknown') {
   const metaMap = {
