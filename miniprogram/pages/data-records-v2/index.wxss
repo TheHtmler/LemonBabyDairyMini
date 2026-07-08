@@ -2293,25 +2293,39 @@
 .food-option-main {
   width: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
 }
 
 .food-option-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 22rpx;
   color: #333;
 }
 
 .food-option-source {
+  align-self: center;
+  flex-shrink: 0;
   margin-left: 8rpx;
   padding: 3rpx 10rpx;
   border-radius: 999rpx;
-  background: #fff5d9;
-  color: #c47b00;
+  background: #fff1cf;
+  color: #b97800;
   font-size: 18rpx;
+  line-height: 1;
+}
+
+.food-option-source.mine {
+  background: #e5f6ec;
+  color: #2e9e5b;
 }
 
 .food-option-tag {
+  margin-left: auto;
+  flex-shrink: 0;
   font-size: 18rpx;
   color: #999;
 }

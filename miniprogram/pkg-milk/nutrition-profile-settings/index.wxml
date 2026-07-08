@@ -1,3 +1,4 @@
+<page-meta page-style="{{showPowderModal ? 'overflow: hidden;' : ''}}" />
 <view class="container">
   <view class="tabs">
     <view class="tab-item {{activeView === 'mother' ? 'active' : ''}}" bindtap="showMotherSettings">

@@ -1,4 +1,5 @@
 <!-- pages/data-analysis/index.wxml -->
+<page-meta page-style="{{showDatePicker ? 'overflow: hidden;' : ''}}" />
 <view class="container">
   <!-- 加载状态 -->
   <view wx:if="{{loading && !hasLoadedAnalysis}}" class="loading-container">

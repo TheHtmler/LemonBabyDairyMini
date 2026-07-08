@@ -1,3 +1,4 @@
+<page-meta page-style="{{showAddMilkPanel ? 'overflow: hidden;' : ''}}" />
 <view class="page v2-page focused-feeding-page">
   <view class="feeding-hero">
     <view class="feeding-summary-strip">

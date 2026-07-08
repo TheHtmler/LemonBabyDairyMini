@@ -43,17 +43,6 @@
     </view>
   </view>
 
-  <view class="target-preview-total" wx:if="{{showProtein && preview.hasProteinTarget && preview.totalProtein}}">
-    <view class="target-preview-total-main">
-      <text class="target-preview-total-label">今日总蛋白</text>
-      <text class="target-preview-total-detail">{{preview.totalProtein.detailText}}</text>
-    </view>
-    <text class="target-preview-total-value">{{preview.totalProtein.totalText}}</text>
-  </view>
-  <view class="target-preview-note" wx:if="{{showProtein && preview.hasProteinTarget && preview.proteinScopeNote}}">
-    {{preview.proteinScopeNote}}
-  </view>
-
   <view class="target-preview-empty" wx:if="{{showProtein && !preview.hasProteinTarget}}">
     <view class="target-preview-empty-copy">
       <text>{{emptyText}}</text>

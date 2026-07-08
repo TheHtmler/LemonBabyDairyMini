@@ -5,18 +5,28 @@ const CREATOR_CANCEL_CONFIRM_TEXT = '确认注销';
 const AVATAR_SECURITY_RISK_MESSAGE = '头像含有违规内容，请更换后再试';
 const AVATAR_SECURITY_CHECK_FAILED_MESSAGE = '头像安全检测失败，请稍后重试';
 
-Page({
-  data: {
-    userInfo: {},
-    babyInfo: {}, // 添加宝宝信息
-    isLoggedIn: true,  // 默认设置为已登录
-    isEditingProfile: false,
-    tempNickName: '',
-    userRole: '', // 用户角色
-    isDeveloper: false,
-    showInviteCode: false, // 是否显示邀请码（创建者可见）
-    inviteCode: '', // 邀请码
-    menuList: [
+function canShowMenuItem(item = {}, context = {}) {
+  const { userRole = '', isDeveloper = false } = context;
+  if (item.showForCreator && userRole !== 'creator') return false;
+  if (item.showForParticipant && userRole !== 'participant') return false;
+  if (item.showForDeveloper && !isDeveloper) return false;
+  return true;
+}
+
+function buildVisibleMenuGroups(menuGroups = [], context = {}) {
+  return menuGroups
+    .map((group) => ({
+      ...group,
+      items: (group.items || []).filter((item) => canShowMenuItem(item, context))
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+const MENU_GROUPS = [
+  {
+    id: 'account',
+    title: '账号与宝宝',
+    items: [
       {
         id: 1,
         name: '宝宝信息',
@@ -30,6 +40,20 @@ Page({
         path: '/pkg-misc/personal-info/index',
         description: '查看身份、展示名称与账号状态'
       },
+      {
+        id: 16,
+        name: '成员管理',
+        icon: 'participant',
+        path: '/pkg-misc/member-management/index',
+        description: '邀请、备注或解除参与者',
+        showForCreator: true
+      }
+    ]
+  },
+  {
+    id: 'feeding',
+    title: '喂养管理',
+    items: [
       {
         id: 2,
         name: '配奶管理',
@@ -49,7 +73,13 @@ Page({
         name: '药物管理',
         icon: 'medicine',
         path: '/pkg-misc/medications/index'
-      },
+      }
+    ]
+  },
+  {
+    id: 'records',
+    title: '数据与成长',
+    items: [
       {
         id: 4,
         name: '数据分析',
@@ -63,14 +93,19 @@ Page({
         icon: 'growth',
         path: '/pkg-records/growth-records/index',
         description: '身高体重曲线与成长里程碑'
-      },
+      }
+    ]
+  },
+  {
+    id: 'support',
+    title: '帮助与社区',
+    items: [
       {
-        id: 16,
-        name: '成员管理',
-        icon: 'participant',
-        path: '/pkg-misc/member-management/index',
-        description: '邀请、备注或解除参与者',
-        showForCreator: true
+        id: 14,
+        name: '应急支持',
+        icon: 'info',
+        path: '/pkg-misc/emergency-support/index',
+        description: '查看急救卡与补液热量计算'
       },
       {
         id: 12,
@@ -80,35 +115,18 @@ Page({
         description: '告诉我们问题、建议或想增加的功能'
       },
       {
-        id: 13,
-        name: '反馈列表',
+        id: 20,
+        name: '加群讨论',
         icon: 'info',
-        path: '/pkg-misc/feedback-list/index',
-        description: '查看用户提交的反馈并标记处理状态',
-        showForDeveloper: true
-      },
-      {
-        id: 18,
-        name: 'OCR 入口配置',
-        icon: 'info',
-        path: '/pkg-misc/ocr-access-settings/index',
-        description: '配置拍照识别白名单或全量开放',
-        showForDeveloper: true
-      },
-      {
-        id: 14,
-        name: '应急支持',
-        icon: 'info',
-        path: '/pkg-misc/emergency-support/index',
-        description: '查看急救卡与补液热量计算'
-      },
-      {
-        id: 11,
-        name: '新手指南',
-        icon: 'info',
-        path: '/pages/onboarding/index',
-        description: '快速了解核心功能与流程'
-      },
+        path: '/pkg-misc/group-discussion/index',
+        description: '扫码加入用户群，交流使用心得'
+      }
+    ]
+  },
+  {
+    id: 'about',
+    title: '关于',
+    items: [
       {
         id: 6,
         name: '数据标识说明',
@@ -120,7 +138,35 @@ Page({
         name: '关于我们',
         icon: 'info',
         path: '/pkg-misc/about/index'
+      }
+    ]
+  },
+  {
+    id: 'developer',
+    title: '开发者',
+    items: [
+      {
+        id: 13,
+        name: '反馈列表',
+        icon: 'info',
+        path: '/pkg-misc/feedback-list/index',
+        description: '查看用户提交的反馈并标记处理状态',
+        showForDeveloper: true
       },
+      {
+        id: 18,
+        name: '配置',
+        icon: 'setting',
+        path: '/pkg-misc/developer-config/index',
+        description: '公告、OCR 白名单等开发者配置',
+        showForDeveloper: true
+      }
+    ]
+  },
+  {
+    id: 'account-action',
+    title: '账号操作',
+    items: [
       {
         id: 8,
         name: '注销账号',
@@ -137,7 +183,23 @@ Page({
         description: '解除你的参与者身份，不影响历史记录',
         showForParticipant: true
       }
-    ],
+    ]
+  }
+];
+
+Page({
+  data: {
+    userInfo: {},
+    babyInfo: {}, // 添加宝宝信息
+    isLoggedIn: true,  // 默认设置为已登录
+    isEditingProfile: false,
+    tempNickName: '',
+    userRole: '', // 用户角色
+    isDeveloper: false,
+    showInviteCode: false, // 是否显示邀请码（创建者可见）
+    inviteCode: '', // 邀请码
+    menuGroups: MENU_GROUPS,
+    visibleMenuGroups: [],
     defaultAvatarUrl: '/images/LemonLogo.png',
     showAvatarCropper: false,
     avatarCropSrc: '',
@@ -153,8 +215,6 @@ Page({
     });
 
     this.refreshIdentityState();
-
-    // 获取宝宝信息
     this.getBabyInfo();
   },
 
@@ -168,9 +228,11 @@ Page({
     const app = getApp();
     const userRole = app.globalData.userRole || wx.getStorageSync('user_role') || '';
     const openid = app.globalData.openid || wx.getStorageSync('openid') || '';
+    const isDeveloper = isDeveloperOpenid(openid);
     this.setData({
       userRole,
-      isDeveloper: isDeveloperOpenid(openid)
+      isDeveloper,
+      visibleMenuGroups: buildVisibleMenuGroups(this.data.menuGroups, { userRole, isDeveloper })
     });
     return { app, userRole, openid };
   },

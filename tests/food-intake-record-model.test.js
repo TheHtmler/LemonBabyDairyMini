@@ -20,9 +20,16 @@ function createDbMock(overrides = {}) {
   };
 
   function matchesWhere(record = {}, whereInput = {}) {
-    return Object.entries(whereInput || {}).every(([key, expected]) => (
-      readPathValue(record, key) === expected
-    ));
+    return Object.entries(whereInput || {}).every(([key, expected]) => {
+      const actual = readPathValue(record, key);
+      if (expected && expected.__op === 'gte') {
+        return actual >= expected.value;
+      }
+      if (expected && expected.__op === 'lte') {
+        return actual <= expected.value;
+      }
+      return actual === expected;
+    });
   }
 
   function queryFor(collectionName, whereInput = {}) {
@@ -72,6 +79,26 @@ function createDbMock(overrides = {}) {
   }
 
   const db = {
+    command: {
+      gte(value) {
+        return {
+          __op: 'gte',
+          value,
+          and(next) {
+            return next;
+          }
+        };
+      },
+      lte(value) {
+        return {
+          __op: 'lte',
+          value,
+          and(next) {
+            return next;
+          }
+        };
+      }
+    },
     serverDate() {
       return '__server_date__';
     },
@@ -159,6 +186,30 @@ test('findByDate returns all active records for a busy food day', async () => {
 
   assert.equal(records.length, 25);
   assert.equal(writes.reads.length > 1, true);
+});
+
+test('findRecentFoodIntakes queries the recent 14-day window and dedupes foods', async () => {
+  const { db, writes } = createDbMock({
+    foodIntakeRecords: [
+      { _id: 'old-food', babyUid: 'baby-1', date: '2026-06-24', status: 'active', foodId: 'old', foodName: '旧食物' },
+      { _id: 'rice-old', babyUid: 'baby-1', date: '2026-06-25', status: 'active', foodId: 'rice', foodName: '米粉', recordedAt: '08:00' },
+      { _id: 'rice-new', babyUid: 'baby-1', date: '2026-07-08', status: 'active', foodId: 'rice', foodName: '米粉', recordedAt: '09:00' },
+      { _id: 'apple', babyUid: 'baby-1', date: '2026-07-07', status: 'active', foodId: 'apple', foodName: '苹果泥', recordedAt: '10:00' },
+      { _id: 'deleted', babyUid: 'baby-1', date: '2026-07-08', status: 'deleted', foodId: 'banana', foodName: '香蕉泥' }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  const records = await model.findRecentFoodIntakes('baby-1', {
+    now: new Date('2026-07-08T12:00:00+08:00'),
+    limit: 10,
+    fetchLimit: 120
+  });
+
+  assert.equal(writes.reads[0].where.date.__op, 'gte');
+  assert.equal(writes.reads[0].where.date.value, '2026-06-25');
+  assert.equal(writes.reads[0].limit, 120);
+  assert.deepEqual(records.map(item => item.foodId), ['rice', 'apple']);
 });
 
 test('softDeleteFoodIntake marks one record deleted without hard remove', async () => {
@@ -284,7 +335,10 @@ test('findRecentFoodIntakes keeps the newest active record for each food', async
   });
   const model = loadFreshModel(db);
 
-  const records = await model.findRecentFoodIntakes('baby-1', { limit: 2 });
+  const records = await model.findRecentFoodIntakes('baby-1', {
+    limit: 2,
+    now: new Date('2026-06-15T12:00:00+08:00')
+  });
 
   assert.deepEqual(records.map(item => item._id), ['rice-new', 'apple']);
 }
@@ -299,10 +353,14 @@ test('findRecentFoodIntakes includes legacy active records without status', asyn
   });
   const model = loadFreshModel(db);
 
-  const records = await model.findRecentFoodIntakes('baby-1', { limit: 5 });
+  const records = await model.findRecentFoodIntakes('baby-1', {
+    limit: 5,
+    now: new Date('2026-06-15T12:00:00+08:00')
+  });
 
   assert.deepEqual(records.map(item => item._id), ['legacy-rice']);
-  assert.deepEqual(writes.reads[0].where, { babyUid: 'baby-1' });
+  assert.equal(writes.reads[0].where.babyUid, 'baby-1');
+  assert.equal(writes.reads[0].where.date.__op, 'gte');
 });
 
 test('findRecentFoodIntakes fetches recent dates before limiting time-only meal records', async () => {
@@ -336,7 +394,11 @@ test('findRecentFoodIntakes fetches recent dates before limiting time-only meal 
   });
   const model = loadFreshModel(db);
 
-  const records = await model.findRecentFoodIntakes('baby-1', { limit: 1, fetchLimit: 60 });
+  const records = await model.findRecentFoodIntakes('baby-1', {
+    limit: 1,
+    fetchLimit: 60,
+    now: new Date('2026-06-17T12:00:00+08:00')
+  });
 
   assert.equal(writes.reads[0].orderBy.field, 'date');
   assert.deepEqual(records.map(item => item._id), ['today-system-food']);

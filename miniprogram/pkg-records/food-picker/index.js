@@ -14,6 +14,8 @@ const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
 const FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY = 'meal_food_picker_last_library_scope';
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 const MAX_RECENT_FOODS = 10;
+const RECENT_FOOD_DAYS = 14;
+const RECENT_FOOD_FETCH_LIMIT = 120;
 const RECENT_CATEGORY = 'recent';
 const FOOD_VIRTUAL_ROW_HEIGHT_RPX = 190;
 const FOOD_VIRTUAL_BUFFER = 6;
@@ -448,8 +450,9 @@ Page({
     }
     try {
       const recentRecords = await FoodIntakeRecordModel.findRecentFoodIntakes(babyUid, {
-        limit: MAX_RECENT_FOODS * 2,
-        fetchLimit: 60
+        days: RECENT_FOOD_DAYS,
+        limit: RECENT_FOOD_FETCH_LIMIT,
+        fetchLimit: RECENT_FOOD_FETCH_LIMIT
       });
       const recentByScope = {
         mine: [],

@@ -1,4 +1,4 @@
-.ocr-access-page {
+.group-qrcode-settings-page {
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
@@ -62,14 +62,6 @@
   padding: 24rpx;
 }
 
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 14rpx;
-}
-
 .section-title {
   display: block;
   margin-bottom: 14rpx;
@@ -78,69 +70,47 @@
   color: #5f3900;
 }
 
-.section-head .section-title {
-  margin-bottom: 0;
+.image-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
 }
 
-.link-action {
-  flex-shrink: 0;
-  font-size: 22rpx;
-  font-weight: 700;
-  color: #c98817;
-}
-
-.scope-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14rpx;
-}
-
-.scope-chip {
-  padding: 18rpx;
-  border-radius: 20rpx;
-  border: 2rpx solid rgba(201, 136, 23, 0.14);
-  background: #fffaf0;
-}
-
-.scope-chip.active {
-  border-color: #ffb800;
-  background: #fff0c2;
-}
-
-.scope-name {
-  display: block;
-  font-size: 26rpx;
-  font-weight: 800;
-  color: #2c1d09;
-}
-
-.scope-desc {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 20rpx;
-  line-height: 1.4;
-  color: #8d7449;
-}
-
-.openid-textarea,
-.message-textarea {
-  width: 100%;
-  padding: 18rpx;
+.upload-button,
+.clear-button {
+  flex: 1;
+  height: 72rpx;
+  line-height: 72rpx;
   border-radius: 18rpx;
-  border: 2rpx solid rgba(201, 136, 23, 0.14);
-  background: #fffaf0;
-  box-sizing: border-box;
-  font-size: 23rpx;
-  line-height: 1.5;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.upload-button {
+  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
   color: #2c1d09;
 }
 
-.openid-textarea {
-  min-height: 260rpx;
+.clear-button {
+  background: #fff4f2;
+  color: #d93026;
+  border: 2rpx solid rgba(217, 48, 38, 0.16);
 }
 
-.message-textarea {
-  min-height: 120rpx;
+.preview-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx;
+  border-radius: 18rpx;
+  background: #fffaf0;
+  border: 2rpx solid rgba(201, 136, 23, 0.14);
+}
+
+.qr-preview {
+  width: 360rpx;
+  border-radius: 16rpx;
 }
 
 .field-hint {
@@ -149,6 +119,7 @@
   font-size: 21rpx;
   line-height: 1.5;
   color: #8d7449;
+  text-align: center;
 }
 
 .save-section {

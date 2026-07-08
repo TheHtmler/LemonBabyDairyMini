@@ -25,6 +25,10 @@ function loadProfilePage() {
   return pageConfig;
 }
 
+function getProfileMenuItems(page) {
+  return (page.data.menuGroups || []).flatMap((group) => group.items || []);
+}
+
 test('app.json registers nutrition profile settings page and drops the legacy page', () => {
   const appConfig = JSON.parse(fs.readFileSync('miniprogram/app.json', 'utf8'));
 
@@ -34,8 +38,8 @@ test('app.json registers nutrition profile settings page and drops the legacy pa
 
 test('profile menu switches 配奶管理 to nutrition profile settings without exposing v2 wording', () => {
   const page = loadProfilePage();
-  const legacyItem = page.data.menuList.find((item) => item.path === '/pkg-milk/nutrition-settings/index');
-  const nutritionItem = page.data.menuList.find((item) => item.path === '/pkg-milk/nutrition-profile-settings/index');
+  const legacyItem = getProfileMenuItems(page).find((item) => item.path === '/pkg-milk/nutrition-settings/index');
+  const nutritionItem = getProfileMenuItems(page).find((item) => item.path === '/pkg-milk/nutrition-profile-settings/index');
 
   assert.equal(legacyItem, undefined);
   assert.ok(nutritionItem);

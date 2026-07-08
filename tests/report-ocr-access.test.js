@@ -17,6 +17,19 @@ test('featureFlagManager stores report OCR access with whitelist and all scopes'
   assert.match(js, /isDeveloperOpenid/);
 });
 
+test('featureFlagManager stores home release notice config', () => {
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../cloudfunctions/featureFlagManager/index.js'),
+    'utf8'
+  );
+
+  assert.match(js, /HOME_RELEASE_NOTICE_KEY\s*=\s*'home_release_notice'/);
+  assert.match(js, /getHomeReleaseNotice/);
+  assert.match(js, /updateHomeReleaseNotice/);
+  assert.match(js, /action === 'getHomeReleaseNotice'/);
+  assert.match(js, /action === 'updateHomeReleaseNotice'/);
+});
+
 test('recognizeReportCustom checks OCR access before recognition', () => {
   const js = fs.readFileSync(
     path.resolve(__dirname, '../cloudfunctions/recognizeReportCustom/index.js'),
@@ -49,4 +62,52 @@ test('OCR access settings page is wired to featureFlagManager', () => {
   assert.match(wxml, /data-scope="whitelist"/);
   assert.match(wxml, /data-scope="all"/);
   assert.match(wxml, /allowOpenidsText/);
+});
+
+test('notice settings page is wired to featureFlagManager', () => {
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-misc/notice-settings/index.js'),
+    'utf8'
+  );
+  const wxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-misc/notice-settings/index.wxml'),
+    'utf8'
+  );
+
+  assert.match(js, /featureFlagManager/);
+  assert.match(js, /require\('\.\.\/\.\.\/config\/developer'\)/);
+  assert.match(js, /getHomeReleaseNoticeConfig/);
+  assert.match(js, /updateHomeReleaseNotice/);
+  assert.match(wxml, /公告内容/);
+  assert.match(wxml, /显示公告/);
+});
+
+test('developer config hub links notice and OCR settings pages', () => {
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-misc/developer-config/index.js'),
+    'utf8'
+  );
+  const wxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-misc/developer-config/index.wxml'),
+    'utf8'
+  );
+
+  assert.match(js, /require\('\.\.\/\.\.\/config\/developer'\)/);
+  assert.match(js, /notice-settings\/index/);
+  assert.match(js, /ocr-access-settings\/index/);
+  assert.match(js, /首页公告配置/);
+  assert.match(js, /OCR 白名单配置/);
+  assert.match(wxml, /configItems/);
+});
+
+test('daily feeding page loads release notice from cloud', () => {
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pages/daily-feeding/index.js'),
+    'utf8'
+  );
+
+  assert.match(js, /loadReleaseNotice/);
+  assert.match(js, /getHomeReleaseNotice/);
+  assert.match(js, /releaseNoticeVisible/);
+  assert.match(js, /releaseNoticeText/);
 });

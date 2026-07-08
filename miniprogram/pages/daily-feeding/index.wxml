@@ -1,3 +1,4 @@
+<page-meta page-style="{{showWeightModal || showHeightModal || medPanel.visible || targetSettingsModalVisible || modals.medication ? 'overflow: hidden;' : ''}}" />
 <view class="home {{animReady ? 'anim-on' : ''}} {{homeDataReady ? 'data-ready' : 'data-pending'}}">
   <view class="home-boot-mask" wx:if="{{isHomeBooting}}">
     <view class="home-boot-card">

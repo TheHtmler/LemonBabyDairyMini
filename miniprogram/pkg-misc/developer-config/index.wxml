@@ -1,0 +1,29 @@
+<view class="developer-config-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="hero-card">
+      <text class="hero-title">配置</text>
+      <text class="hero-subtitle">开发者运营与实验功能入口。选择下方项目进入对应配置页，保存后立即生效。</text>
+    </view>
+
+    <view class="config-list">
+      <view
+        class="config-item"
+        wx:for="{{configItems}}"
+        wx:key="id"
+        data-path="{{item.path}}"
+        bindtap="onItemTap"
+      >
+        <view class="config-copy">
+          <text class="config-name">{{item.name}}</text>
+          <text class="config-desc">{{item.description}}</text>
+        </view>
+        <image class="config-arrow" src="/images/icons/arrow-right.svg" mode="aspectFit" />
+      </view>
+    </view>
+  </view>
+
+  <view wx:elif="{{!loading}}" class="empty-card">
+    <text class="empty-title">无权限访问</text>
+    <text class="empty-subtitle">该入口仅开发者可见。</text>
+  </view>
+</view>

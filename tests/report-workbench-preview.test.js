@@ -20,6 +20,10 @@ function loadProfilePage() {
   return pageConfig;
 }
 
+function getProfileMenuItems(page) {
+  return (page.data.menuGroups || []).flatMap((group) => group.items || []);
+}
+
 function getMiscPackagePages(appConfig) {
   const miscPackage = (appConfig.subPackages || []).find((item) => item.root === 'pkg-misc');
   return miscPackage ? miscPackage.pages : [];
@@ -40,10 +44,10 @@ test('app.json keeps analysis-report and excludes removed report workbench previ
 
 test('profile menu does not expose removed report workbench preview entry', () => {
   const page = loadProfilePage();
-  const previewItem = page.data.menuList.find(
+  const previewItem = getProfileMenuItems(page).find(
     (item) => item.path === '/pages/report-workbench-preview/index'
   );
-  const oldPreviewItem = page.data.menuList.find(
+  const oldPreviewItem = getProfileMenuItems(page).find(
     (item) => item.path === '/pages/summary-preview/index'
   );
 
@@ -60,7 +64,7 @@ test('app.json and profile menu exclude removed custom OCR demo page', () => {
   );
   const page = loadProfilePage();
   const miscPages = getMiscPackagePages(appConfig);
-  const demoItem = page.data.menuList.find(
+  const demoItem = getProfileMenuItems(page).find(
     (item) => item.path === '/pkg-misc/custom-ocr-demo/index'
   );
 
@@ -68,7 +72,7 @@ test('app.json and profile menu exclude removed custom OCR demo page', () => {
   assert.equal(demoItem, undefined);
 });
 
-test('developer profile menu exposes OCR access settings page', () => {
+test('developer profile menu exposes unified developer config hub', () => {
   const appConfig = JSON.parse(
     fs.readFileSync(
       path.resolve(__dirname, '../miniprogram/app.json'),
@@ -77,10 +81,18 @@ test('developer profile menu exposes OCR access settings page', () => {
   );
   const page = loadProfilePage();
   const miscPages = getMiscPackagePages(appConfig);
-  const settingsItem = page.data.menuList.find(
+  const hubItem = getProfileMenuItems(page).find(
+    (item) => item.path === '/pkg-misc/developer-config/index'
+  );
+  const ocrItem = getProfileMenuItems(page).find(
     (item) => item.path === '/pkg-misc/ocr-access-settings/index'
   );
+  const noticeItem = getProfileMenuItems(page).find(
+    (item) => item.path === '/pkg-misc/notice-settings/index'
+  );
 
-  assert.ok(miscPages.includes('ocr-access-settings/index'));
-  assert.equal(settingsItem?.showForDeveloper, true);
+  assert.ok(miscPages.includes('developer-config/index'));
+  assert.equal(hubItem?.showForDeveloper, true);
+  assert.equal(ocrItem, undefined);
+  assert.equal(noticeItem, undefined);
 });

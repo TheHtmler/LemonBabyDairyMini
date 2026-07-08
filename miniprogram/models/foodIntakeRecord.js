@@ -1,6 +1,8 @@
 const db = wx.cloud.database();
 const foodIntakeCollection = db.collection('food_intake_records');
 const DB_READ_BATCH_SIZE = 20;
+const DEFAULT_RECENT_FOOD_DAYS = 14;
+const DEFAULT_RECENT_FOOD_FETCH_LIMIT = 120;
 const {
   buildCreateAuditFields,
   buildUpdateAuditFields,
@@ -188,6 +190,23 @@ function normalizeTimeOnly(value = '') {
   const minutes = String(Number(parts[1]) || 0).padStart(2, '0');
   const seconds = String(Number(parts[2]) || 0).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
+}
+
+function formatDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function resolveRecentStartDate(days = DEFAULT_RECENT_FOOD_DAYS, now = new Date()) {
+  const windowDays = Math.max(1, Number(days) || DEFAULT_RECENT_FOOD_DAYS);
+  const date = now instanceof Date ? new Date(now.getTime()) : new Date(now);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  date.setDate(date.getDate() - (windowDays - 1));
+  return formatDateKey(date);
 }
 
 function recordUpdatedTimestamp(record = {}) {
@@ -389,12 +408,18 @@ async function findMigratedLegacyIntake(options = {}) {
 }
 
 async function findRecentFoodIntakes(babyUid, options = {}) {
-  const fetchLimit = Number(options.fetchLimit) || Math.max(Number(options.limit) || 20, 20);
+  const recentDays = Number(options.days) || DEFAULT_RECENT_FOOD_DAYS;
+  const fetchLimit = Number(options.fetchLimit) || Math.max(Number(options.limit) || DEFAULT_RECENT_FOOD_FETCH_LIMIT, 20);
   const outputLimit = Number(options.limit) || 20;
+  const startDate = options.startDate || resolveRecentStartDate(recentDays, options.now || new Date());
+  const where = {
+    babyUid
+  };
+  if (startDate && db.command?.gte) {
+    where.date = db.command.gte(startDate);
+  }
   const res = await foodIntakeCollection
-    .where({
-      babyUid
-    })
+    .where(where)
     .orderBy('date', 'desc')
     .limit(fetchLimit)
     .get();
@@ -402,6 +427,7 @@ async function findRecentFoodIntakes(babyUid, options = {}) {
   const recent = [];
   (res.data || [])
     .filter((record) => record.status !== 'deleted')
+    .filter((record) => !startDate || !record.date || record.date >= startDate)
     .sort((left, right) => String(recordUpdatedTimestamp(right)).localeCompare(String(recordUpdatedTimestamp(left))))
     .forEach((record) => {
       const key = recentFoodKey(record);

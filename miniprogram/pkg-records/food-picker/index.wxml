@@ -1,3 +1,4 @@
+<page-meta page-style="{{quantityDrawerVisible || cartExpanded ? 'overflow: hidden;' : ''}}" />
 <view class="page">
   <view class="top-panel">
     <view class="library-tabs">
@@ -172,10 +173,10 @@
         wx:for-index="draftIndex"
       >
         <view class="quantity-draft-header">
-          <view class="quantity-draft-main">
+          <view class="quantity-draft-title-row">
             <text class="quantity-draft-name">{{item.name}}</text>
+            <text class="quantity-draft-source {{item.sourceLabel === '我的' ? 'mine' : ''}}">{{item.sourceLabel}}</text>
           </view>
-          <text class="quantity-draft-source">{{item.sourceLabel}}</text>
         </view>
         <view class="quantity-input-row">
           <text class="quantity-input-label">份量</text>

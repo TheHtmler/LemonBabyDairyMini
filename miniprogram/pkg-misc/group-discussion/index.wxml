@@ -1,0 +1,26 @@
+<view class="group-discussion-page">
+  <view class="hero-card">
+    <text class="hero-title">加群讨论</text>
+    <text class="hero-subtitle">扫码加入用户群，交流使用心得、获取功能更新与喂养记录经验。</text>
+  </view>
+
+  <view class="section-card" wx:if="{{loading}}">
+    <text class="state-text">群二维码加载中...</text>
+  </view>
+
+  <view class="section-card qr-card" wx:elif="{{groupQrUrl}}">
+    <view class="section-header">
+      <text class="section-title">用户群二维码</text>
+      <text class="section-meta">长按识别或点击放大</text>
+    </view>
+    <view class="qr-body" bindtap="previewQrCode">
+      <image class="qr-image" src="{{groupQrUrl}}" mode="widthFix" show-menu-by-longpress />
+      <text class="qr-tip">如无法识别，可保存图片后使用微信扫一扫</text>
+    </view>
+  </view>
+
+  <view class="section-card empty-card" wx:else>
+    <text class="state-title">暂未配置群二维码</text>
+    <text class="state-text">管理员配置后会在这里展示，方便大家扫码入群。</text>
+  </view>
+</view>

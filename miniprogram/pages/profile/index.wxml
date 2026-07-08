@@ -18,21 +18,29 @@
   </view>
 
   <!-- 菜单列表 -->
-  <view class="menu-container">
-        <view class="menu-item {{item.action === 'share' ? 'share-item' : ''}}" 
-          wx:for="{{menuList}}" 
-          wx:key="id" 
-          wx:if="{{(!item.showForCreator || (item.showForCreator && userRole === 'creator')) && (!item.showForParticipant || (item.showForParticipant && userRole === 'participant')) && (!item.showForDeveloper || (item.showForDeveloper && isDeveloper))}}"
-          data-item="{{item}}" 
-          bindtap="handleMenuClick">
-          <view class="menu-content">
-            <view class="menu-name">{{item.name}}</view>
-            <view class="menu-desc" wx:if="{{item.description}}">{{item.description}}</view>
-          </view>
-          <view class="menu-arrow">
-            <image src="/images/icons/arrow-right.svg" mode="aspectFit"></image>
-          </view>
+  <view class="menu-sections">
+    <view class="menu-container" wx:for="{{visibleMenuGroups}}" wx:key="id">
+      <view class="menu-section-header">
+        <view class="menu-section-accent"></view>
+        <text class="menu-section-title">{{item.title}}</text>
+      </view>
+      <view
+        class="menu-item {{menuItem.action === 'share' ? 'share-item' : ''}}"
+        wx:for="{{item.items}}"
+        wx:for-item="menuItem"
+        wx:key="id"
+        data-item="{{menuItem}}"
+        bindtap="handleMenuClick"
+      >
+        <view class="menu-content">
+          <view class="menu-name">{{menuItem.name}}</view>
+          <view class="menu-desc" wx:if="{{menuItem.description}}">{{menuItem.description}}</view>
         </view>
+        <view class="menu-arrow">
+          <image src="/images/icons/arrow-right.svg" mode="aspectFit"></image>
+        </view>
+      </view>
+    </view>
   </view>
 
   <!-- 版本信息 -->

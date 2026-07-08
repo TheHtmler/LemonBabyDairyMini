@@ -53,9 +53,11 @@
       />
     </view>
 
-    <button class="save-button" bindtap="onSaveConfig" loading="{{saving}}" disabled="{{saving || loading}}">
-      {{saving ? '保存中...' : '保存配置'}}
-    </button>
+    <view class="save-section">
+      <button class="save-button" bindtap="onSaveConfig" loading="{{saving}}" disabled="{{saving || loading}}">
+        {{saving ? '保存中...' : '保存配置'}}
+      </button>
+    </view>
   </view>
 
   <view wx:else class="empty-card">

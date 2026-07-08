@@ -32,7 +32,7 @@
                   data-id="{{item._id}}" bindtap="handleOptionTap">
               <view class="food-option-main">
                 <text class="food-option-name">{{item.name}}</text>
-                <text class="food-option-source">{{item.sourceLabel}}</text>
+                <text class="food-option-source {{item.sourceLabel === '我的' ? 'mine' : ''}}">{{item.sourceLabel}}</text>
                 <view class="food-option-add {{selectedFoodId === item._id ? 'active' : ''}}">✓</view>
               </view>
               <text class="food-option-sub" wx:if="{{item.aliasText}}">{{item.aliasText}}</text>

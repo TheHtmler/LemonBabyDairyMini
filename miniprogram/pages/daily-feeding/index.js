@@ -34,6 +34,7 @@ const app = getApp();
 const TREND_DAYS = 7;
 const HOME_BOOT_MIN_DURATION = 800;
 const HOME_DASHBOARD_ONSHOW_TTL_MS = 15 * 1000;
+const DEFAULT_RELEASE_NOTICE_TEXT = '看板已升级：聚焦今日营养达成、喂养进度与用药打卡，明细请到「数据记录」查看。';
 
 // 近7天趋势可切换的指标（数据均来自 daily_summary_v2）
 // 蛋白拆成 总/天然/特殊 三个独立单柱 tab，保证每天数值都标得清楚；
@@ -246,7 +247,7 @@ Page({
 
     // 公告
     releaseNoticeVisible: true,
-    releaseNoticeText: '看板已升级：聚焦今日营养达成、喂养进度与用药打卡，明细请到「数据记录」查看。',
+    releaseNoticeText: DEFAULT_RELEASE_NOTICE_TEXT,
 
     // 入场动画开关（每次 onShow 重置以重播）
     animReady: false,
@@ -283,6 +284,7 @@ Page({
     if (this._ready) {
       await this.refreshDashboardOnShow();
     }
+    this.loadReleaseNotice();
     this.maybeOpenMedicationModalFromFlag();
   },
 
@@ -408,7 +410,10 @@ Page({
 
       this.setData({ app, homeLoadingText: '宝宝记录准备中...' });
       await this.initBabyInfoCache();
-      await this.loadDashboard({ silent: true, rebuildTrend: false });
+      await Promise.all([
+        this.loadDashboard({ silent: true, rebuildTrend: false }),
+        this.loadReleaseNotice()
+      ]);
       this._ready = true;
       await this.finishHomeBoot(bootStartedAt, { skipMinDuration: skipHomeBoot });
       this.loadDeferredDashboardParts();
@@ -424,6 +429,23 @@ Page({
       app.globalData.skipHomeBootOnce = false;
     }
     return shouldSkip;
+  },
+
+  async loadReleaseNotice() {
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'featureFlagManager',
+        data: { action: 'getHomeReleaseNotice' }
+      });
+      const notice = res?.result?.notice;
+      if (!res?.result?.ok || !notice) return;
+      this.setData({
+        releaseNoticeVisible: notice.visible !== false,
+        releaseNoticeText: notice.text || DEFAULT_RELEASE_NOTICE_TEXT
+      });
+    } catch (error) {
+      console.warn('[daily-feeding] loadReleaseNotice failed', error);
+    }
   },
 
   async finishHomeBoot(bootStartedAt, options = {}) {

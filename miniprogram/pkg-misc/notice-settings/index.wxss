@@ -1,4 +1,4 @@
-.ocr-access-page {
+.notice-settings-page {
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
@@ -62,14 +62,6 @@
   padding: 24rpx;
 }
 
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 14rpx;
-}
-
 .section-title {
   display: block;
   margin-bottom: 14rpx;
@@ -78,51 +70,17 @@
   color: #5f3900;
 }
 
-.section-head .section-title {
-  margin-bottom: 0;
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
 }
 
-.link-action {
-  flex-shrink: 0;
-  font-size: 22rpx;
-  font-weight: 700;
-  color: #c98817;
+.switch-copy .section-title {
+  margin-bottom: 6rpx;
 }
 
-.scope-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14rpx;
-}
-
-.scope-chip {
-  padding: 18rpx;
-  border-radius: 20rpx;
-  border: 2rpx solid rgba(201, 136, 23, 0.14);
-  background: #fffaf0;
-}
-
-.scope-chip.active {
-  border-color: #ffb800;
-  background: #fff0c2;
-}
-
-.scope-name {
-  display: block;
-  font-size: 26rpx;
-  font-weight: 800;
-  color: #2c1d09;
-}
-
-.scope-desc {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 20rpx;
-  line-height: 1.4;
-  color: #8d7449;
-}
-
-.openid-textarea,
 .message-textarea {
   width: 100%;
   padding: 18rpx;
@@ -133,14 +91,7 @@
   font-size: 23rpx;
   line-height: 1.5;
   color: #2c1d09;
-}
-
-.openid-textarea {
-  min-height: 260rpx;
-}
-
-.message-textarea {
-  min-height: 120rpx;
+  min-height: 160rpx;
 }
 
 .field-hint {

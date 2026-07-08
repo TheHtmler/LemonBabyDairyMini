@@ -1,3 +1,4 @@
+<page-meta page-style="{{showAddModal ? 'overflow: hidden;' : ''}}" />
 <view class="container">
   <view class="food-data-disclaimer">
     <text class="disclaimer-title">免责声明</text>
@@ -59,95 +60,103 @@
       </block>
     </scroll-view>
 
-    <scroll-view
-      class="food-panel"
-      scroll-y
-      scroll-top="{{foodPanelScrollTop}}"
-      enhanced
-      show-scrollbar="{{false}}"
-      bindscroll="onFoodPanelScroll"
-      bindscrolltolower="loadMoreActiveFoods"
-    >
-      <view class="food-panel-header">
-        <text class="food-panel-title">{{activeCategory}}</text>
-        <text class="food-panel-count">共 {{activeFoodTotal}} 种</text>
-      </view>
-      <block wx:for="{{activeFoods}}" wx:key="_id">
-        <view class="food-item">
-          <view class="food-card-head">
-            <view class="food-info">
-              <view class="food-title-row">
-                <text class="food-title">{{item.name}}</text>
-                <text class="food-tag system" wx:if="{{item.isSystem}}">系统预设</text>
-                <text class="food-tag snapshot" wx:elif="{{item.isSystemSnapshot}}">系统修订</text>
-                <text class="food-tag custom" wx:else>自定义</text>
+    <view class="food-panel-column">
+      <scroll-view
+        class="food-panel"
+        scroll-y
+        scroll-top="{{foodPanelScrollTop}}"
+        enhanced
+        show-scrollbar="{{false}}"
+        bindscroll="onFoodPanelScroll"
+        bindscrolltolower="loadMoreActiveFoods"
+      >
+        <view class="food-panel-content {{babyUid && activeLibraryScope === 'mine' ? 'with-fab' : ''}}">
+          <view class="food-panel-header">
+            <text class="food-panel-title">{{activeCategory}}</text>
+            <text class="food-panel-count">共 {{activeFoodTotal}} 种</text>
+          </view>
+          <block wx:for="{{activeFoods}}" wx:key="_id">
+            <view class="food-item">
+              <view class="food-card-head">
+                <view class="food-info">
+                  <view class="food-title-row">
+                    <text class="food-title">{{item.name}}</text>
+                    <text class="food-tag system" wx:if="{{item.isSystem}}">系统预设</text>
+                    <text class="food-tag snapshot" wx:elif="{{item.isSystemSnapshot}}">系统修订</text>
+                    <text class="food-tag custom" wx:else>自定义</text>
+                  </view>
+                  <view class="food-meta-row">
+                    <text class="food-path">{{item.categoryLevel2 || item.category}}</text>
+                    <text class="food-basis">每 {{item.baseQuantity}}{{item.baseUnit}}</text>
+                  </view>
+                </view>
+                <image
+                  class="food-list-image"
+                  wx:if="{{item.showListImage}}"
+                  src="{{item.displayImage}}"
+                  mode="aspectFill"
+                  data-url="{{item.displayImage}}"
+                  bindtap="previewFoodImage"
+                />
               </view>
-              <view class="food-meta-row">
-                <text class="food-path">{{item.categoryLevel2 || item.category}}</text>
-                <text class="food-basis">每 {{item.baseQuantity}}{{item.baseUnit}}</text>
+              <view class="food-nutrition">
+                <view class="nutrition-item highlight calories">
+                  <text class="label">热量</text>
+                  <text class="value">{{item.nutritionPerUnit.calories || 0}}kcal</text>
+                </view>
+                <view class="nutrition-item highlight protein">
+                  <text class="label">蛋白</text>
+                  <text class="value">{{item.nutritionPerUnit.protein || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">碳水</text>
+                  <text class="value">{{item.nutritionPerUnit.carbs || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">脂肪</text>
+                  <text class="value">{{item.nutritionPerUnit.fat || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">膳纤</text>
+                  <text class="value">{{item.nutritionPerUnit.fiber || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">钠</text>
+                  <text class="value">{{item.nutritionPerUnit.sodium || 0}}mg</text>
+                </view>
+              </view>
+              <view class="food-actions">
+                <button
+                  class="action-btn edit"
+                  size="mini"
+                  data-id="{{item._id}}"
+                  bindtap="showEditModal"
+                  type="default"
+                >
+                  {{item.isSystem ? '另存为我的' : '编辑'}}
+                </button>
+                <button
+                  wx:if="{{!item.isSystem}}"
+                  class="action-btn delete"
+                  size="mini"
+                  data-id="{{item._id}}"
+                  data-name="{{item.name}}"
+                  bindtap="onDeleteFood"
+                  type="warn"
+                >
+                  删除
+                </button>
               </view>
             </view>
-            <image
-              class="food-list-image"
-              wx:if="{{item.showListImage}}"
-              src="{{item.displayImage}}"
-              mode="aspectFill"
-              data-url="{{item.displayImage}}"
-              bindtap="previewFoodImage"
-            />
-          </view>
-          <view class="food-nutrition">
-            <view class="nutrition-item highlight calories">
-              <text class="label">热量</text>
-              <text class="value">{{item.nutritionPerUnit.calories || 0}}kcal</text>
-            </view>
-            <view class="nutrition-item highlight protein">
-              <text class="label">蛋白</text>
-              <text class="value">{{item.nutritionPerUnit.protein || 0}}g</text>
-            </view>
-            <view class="nutrition-item">
-              <text class="label">碳水</text>
-              <text class="value">{{item.nutritionPerUnit.carbs || 0}}g</text>
-            </view>
-            <view class="nutrition-item">
-              <text class="label">脂肪</text>
-              <text class="value">{{item.nutritionPerUnit.fat || 0}}g</text>
-            </view>
-            <view class="nutrition-item">
-              <text class="label">膳纤</text>
-              <text class="value">{{item.nutritionPerUnit.fiber || 0}}g</text>
-            </view>
-            <view class="nutrition-item">
-              <text class="label">钠</text>
-              <text class="value">{{item.nutritionPerUnit.sodium || 0}}mg</text>
-            </view>
-          </view>
-          <view class="food-actions">
-            <button
-              class="action-btn edit"
-              size="mini"
-              data-id="{{item._id}}"
-              bindtap="showEditModal"
-              type="default"
-            >
-              {{item.isSystem ? '另存为我的' : '编辑'}}
-            </button>
-            <button
-              wx:if="{{!item.isSystem}}"
-              class="action-btn delete"
-              size="mini"
-              data-id="{{item._id}}"
-              data-name="{{item.name}}"
-              bindtap="onDeleteFood"
-              type="warn"
-            >
-              删除
-            </button>
-          </view>
+          </block>
+          <view class="food-load-more" wx:if="{{hasMoreActiveFoods}}">继续下滑加载更多食物</view>
         </view>
-      </block>
-      <view class="food-load-more" wx:if="{{hasMoreActiveFoods}}">继续下滑加载更多食物</view>
-    </scroll-view>
+      </scroll-view>
+
+      <view class="add-btn add-btn-panel" wx:if="{{babyUid && activeLibraryScope === 'mine'}}" bindtap="showAddModal">
+        <text class="add-icon">+</text>
+      </view>
+    </view>
   </view>
 
   <view class="empty" wx:if="{{!loading && groupedFoods.length === 0}}">
@@ -155,7 +164,7 @@
     <text wx:else>还没有可用的食物，请点击下方按钮添加</text>
   </view>
 
-  <view class="add-btn" wx:if="{{babyUid && activeLibraryScope === 'mine'}}" bindtap="showAddModal">
+  <view class="add-btn add-btn-page" wx:if="{{babyUid && activeLibraryScope === 'mine' && !loading && groupedFoods.length === 0}}" bindtap="showAddModal">
     <text class="add-icon">+</text>
   </view>
 

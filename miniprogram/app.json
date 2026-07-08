@@ -6,8 +6,7 @@
     "pages/data-records-v2/index",
     "pages/analysis-report/index",
     "pages/profile/index",
-    "pages/meal-editor-v2/index",
-    "pages/onboarding/index"
+    "pages/meal-editor-v2/index"
   ],
   "subPackages": [
     {
@@ -45,6 +44,10 @@
         "feedback/index",
         "feedback-list/index",
         "ocr-access-settings/index",
+        "notice-settings/index",
+        "developer-config/index",
+        "group-discussion/index",
+        "group-qrcode-settings/index",
         "share-data/index",
         "member-management/index",
         "future-reminders/index",

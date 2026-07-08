@@ -1,0 +1,108 @@
+.developer-config-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(255, 226, 122, 0.35), transparent 26%),
+    linear-gradient(180deg, #fff7dc 0%, #fff2c8 100%);
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.hero-card,
+.config-list,
+.empty-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.08);
+}
+
+.hero-card {
+  padding: 26rpx 24rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #5f3900;
+}
+
+.hero-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: rgba(95, 57, 0, 0.76);
+}
+
+.config-list {
+  overflow: hidden;
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 28rpx 24rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.1);
+}
+
+.config-item:last-child {
+  border-bottom: none;
+}
+
+.config-item:active {
+  background: rgba(255, 240, 194, 0.45);
+}
+
+.config-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.config-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #2c1d09;
+}
+
+.config-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #8d7449;
+}
+
+.config-arrow {
+  flex-shrink: 0;
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.55;
+}
+
+.empty-card {
+  padding: 64rpx 28rpx;
+  text-align: center;
+}
+
+.empty-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #5f3900;
+}
+
+.empty-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #8a7c60;
+}

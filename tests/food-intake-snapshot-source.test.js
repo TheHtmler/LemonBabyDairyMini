@@ -27,6 +27,8 @@ test('food intake modal and meal editor show food source labels to avoid ambigui
 
   assert.match(modalWxml, /food-option-source/);
   assert.match(mealEditorWxml, /food-option-source/);
+  assert.match(mealEditorWxml, /\{\{item\.sourceLabel\}\}/);
+  assert.match(mealEditorWxml, /\{\{currentFoodDraft\.food\.sourceLabel\}\}/);
 });
 
 test('food intake record model normalizes v2 snapshot nutrition basis fields', () => {

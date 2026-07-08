@@ -724,20 +724,20 @@
 }
 
 .quantity-draft-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16rpx;
   margin-bottom: 16rpx;
 }
 
-.quantity-draft-main {
-  flex: 1;
+.quantity-draft-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  width: 100%;
   min-width: 0;
 }
 
 .quantity-draft-name {
-  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 28rpx;
   color: #333333;
   font-weight: 700;
@@ -747,13 +747,19 @@
 }
 
 .quantity-draft-source {
+  align-self: center;
   flex-shrink: 0;
   padding: 4rpx 12rpx;
   border-radius: 999rpx;
-  background: #ffffff;
-  color: #C78200;
+  background: #fff1cf;
+  color: #b97800;
   font-size: 20rpx;
   line-height: 1;
+}
+
+.quantity-draft-source.mine {
+  background: #e5f6ec;
+  color: #2e9e5b;
 }
 
 .quantity-input-row {

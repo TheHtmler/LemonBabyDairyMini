@@ -28,16 +28,6 @@ function formatPercentText(value) {
   return `${formatFixed(value, 1)}%`;
 }
 
-function buildTotalProteinInfo(summary = {}) {
-  const naturalProtein = toNumber(summary.naturalProtein);
-  const specialProtein = toNumber(summary.specialProtein);
-  const totalProtein = toNumber(summary.protein, naturalProtein + specialProtein) || naturalProtein + specialProtein;
-  return {
-    totalText: formatAmount(totalProtein, 'g'),
-    detailText: `天然 ${formatAmount(naturalProtein, 'g')} + 特殊 ${formatAmount(specialProtein, 'g')}`
-  };
-}
-
 function normalizeSummary(summary = {}) {
   return {
     calories: roundValue(toNumber(summary.calories), 2),
@@ -187,8 +177,6 @@ function buildEntryTargetPreview({
     previousSummary: normalizeSummary(previousSummary),
     afterSaveSummary: afterSave,
     proteinRows,
-    totalProtein: buildTotalProteinInfo(afterSave),
-    proteinScopeNote: '目标按天然/特殊分别对比，今日总蛋白仅作合计参考。',
     calorieNote: buildCalorieNote({
       actual: afterSave.calories,
       draft: draft.calories,

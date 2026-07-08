@@ -1,0 +1,42 @@
+<view class="group-qrcode-settings-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="hero-card">
+      <text class="hero-title">群二维码配置</text>
+      <text class="hero-subtitle">上传用户群二维码后，「加群讨论」页面会展示最新图片。保存后立即对所有用户生效。</text>
+      <view class="meta-row">
+        <text>最近保存</text>
+        <text class="meta-value">{{updatedAtText}}</text>
+      </view>
+      <view class="meta-row" wx:if="{{updatedByText}}">
+        <text>最近操作</text>
+        <text class="meta-value">{{updatedByText}}</text>
+      </view>
+    </view>
+
+    <view class="config-card">
+      <text class="section-title">群二维码图片</text>
+      <view class="image-actions">
+        <view class="upload-button" bindtap="chooseImage">
+          {{uploading ? '上传中...' : (previewUrl ? '重新上传' : '本地上传')}}
+        </view>
+        <view class="clear-button" wx:if="{{previewUrl}}" bindtap="onClearConfig">清空</view>
+      </view>
+      <view class="preview-box" wx:if="{{previewUrl}}" bindtap="previewImage">
+        <image class="qr-preview" src="{{previewUrl}}" mode="widthFix" />
+        <text class="field-hint">点击可预览大图</text>
+      </view>
+      <text class="field-hint" wx:else>建议上传清晰的微信群二维码图片，支持相册或拍照上传。</text>
+    </view>
+
+    <view class="save-section">
+      <button class="save-button" bindtap="onSaveConfig" loading="{{saving}}" disabled="{{saving || loading || uploading}}">
+        {{saving ? '保存中...' : '保存配置'}}
+      </button>
+    </view>
+  </view>
+
+  <view wx:else class="empty-card">
+    <text class="empty-title">无权限访问</text>
+    <text class="empty-subtitle">该配置仅开发者可见。</text>
+  </view>
+</view>
