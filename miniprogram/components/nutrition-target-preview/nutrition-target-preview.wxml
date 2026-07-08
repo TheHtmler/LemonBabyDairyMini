@@ -22,17 +22,20 @@
       <view class="target-preview-label-row">
         <view class="target-preview-label">
           <text class="target-preview-dot"></text>
-          <text>{{item.label}}</text>
+          <text>{{item.displayLabel || item.label}}</text>
         </view>
         <text class="target-preview-badge {{item.status}}">{{item.badgeText}}</text>
       </view>
       <view class="target-preview-value-row">
-        <text class="target-preview-value">{{item.valueText}}</text>
-        <text class="target-preview-target" wx:if="{{item.hasTarget}}">/ {{item.targetText}}</text>
+        <text class="target-preview-value">{{item.valueWithUnitText || item.valueText}}</text>
+        <view class="target-preview-target" wx:if="{{item.hasTarget}}">
+          <text class="target-preview-target-label">目标</text>
+          <text class="target-preview-target-value">{{item.targetText}}</text>
+        </view>
       </view>
       <view class="target-preview-meta">
         <text>{{item.draftText}}</text>
-        <text wx:if="{{item.hasTarget}}">{{item.pct}}%</text>
+        <text wx:if="{{item.hasTarget}}">{{item.pctText}}</text>
       </view>
       <view class="target-preview-bar" wx:if="{{item.hasTarget}}">
         <view class="target-preview-bar-inner" style="width: {{item.barPct}}%;"></view>
@@ -40,14 +43,25 @@
     </view>
   </view>
 
-  <view class="target-preview-empty" wx:elif="{{showProtein && !preview.hasProteinTarget}}">
+  <view class="target-preview-total" wx:if="{{showProtein && preview.hasProteinTarget && preview.totalProtein}}">
+    <view class="target-preview-total-main">
+      <text class="target-preview-total-label">今日总蛋白</text>
+      <text class="target-preview-total-detail">{{preview.totalProtein.detailText}}</text>
+    </view>
+    <text class="target-preview-total-value">{{preview.totalProtein.totalText}}</text>
+  </view>
+  <view class="target-preview-note" wx:if="{{showProtein && preview.hasProteinTarget && preview.proteinScopeNote}}">
+    {{preview.proteinScopeNote}}
+  </view>
+
+  <view class="target-preview-empty" wx:if="{{showProtein && !preview.hasProteinTarget}}">
     <view class="target-preview-empty-copy">
       <text>{{emptyText}}</text>
     </view>
     <view class="target-preview-empty-action" bindtap="handleSetupTap" hover-class="press-soft" hover-stay-time="60">{{setupText}}</view>
   </view>
 
-  <view class="target-preview-empty" wx:elif="{{showCalorie && !showProtein && (!preview.calorieNote || !preview.calorieNote.visible)}}">
+  <view class="target-preview-empty" wx:if="{{showCalorie && !showProtein && (!preview.calorieNote || !preview.calorieNote.visible)}}">
     <view class="target-preview-empty-copy">
       <text>{{emptyText}}</text>
     </view>

@@ -41,8 +41,9 @@ test('buildEntryTargetPreview computes after-save protein status and subtracts p
   assert.equal(natural.status, 'over');
   assert.equal(natural.valueText, '5.40');
   assert.equal(natural.targetText, '4.80g');
+  assert.equal(natural.pctText, '112.5%');
   assert.equal(natural.badgeText, '超出 0.60g');
-  assert.equal(natural.draftText, '本次 +1.40g');
+  assert.equal(natural.draftText, '本次增加 +1.40g');
   assert.equal(natural.actionText, '仍然保存');
 
   assert.equal(special.actual, 1.2);
@@ -209,7 +210,7 @@ test('nutrition target preview keeps a modify entry when a target is displayed',
   assert.match(wxml, /class="target-preview-action"[\s\S]*bindtap="handleSetupTap"/);
   assert.match(wxml, /\{\{actionText\}\}/);
   assert.match(wxml, /showSetupAction && \(\(showProtein && preview\.hasProteinTarget\) \|\| \(showCalorie && preview\.calorieNote && preview\.calorieNote\.visible\)\)/);
-  assert.match(wxml, /wx:elif="\{\{showCalorie && !showProtein && \(!preview\.calorieNote \|\| !preview\.calorieNote\.visible\)\}\}"/);
+  assert.match(wxml, /wx:if="\{\{showCalorie && !showProtein && \(!preview\.calorieNote \|\| !preview\.calorieNote\.visible\)\}\}"/);
   assert.match(wxss, /\.target-preview-action\s*\{/);
   assert.match(wxss, /color:\s*#D99700/);
   assert.match(treatmentWxml, /setup-mode="calorie"/);

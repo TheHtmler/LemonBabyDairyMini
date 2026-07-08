@@ -24,6 +24,20 @@ function formatAmount(value, unit) {
   return `${formatFixed(value, precision)}${unit}`;
 }
 
+function formatPercentText(value) {
+  return `${formatFixed(value, 1)}%`;
+}
+
+function buildTotalProteinInfo(summary = {}) {
+  const naturalProtein = toNumber(summary.naturalProtein);
+  const specialProtein = toNumber(summary.specialProtein);
+  const totalProtein = toNumber(summary.protein, naturalProtein + specialProtein) || naturalProtein + specialProtein;
+  return {
+    totalText: formatAmount(totalProtein, 'g'),
+    detailText: `天然 ${formatAmount(naturalProtein, 'g')} + 特殊 ${formatAmount(specialProtein, 'g')}`
+  };
+}
+
 function normalizeSummary(summary = {}) {
   return {
     calories: roundValue(toNumber(summary.calories), 2),
@@ -61,7 +75,7 @@ function subtractSummaries(left = {}, right = {}) {
   });
 }
 
-function buildGoalRow({ key, label, tone, actual, draft, target, unit = 'g' }) {
+function buildGoalRow({ key, label, displayLabel, tone, actual, draft, target, unit = 'g' }) {
   const hasTarget = target > 0;
   const precision = unit === 'kcal' ? 0 : 2;
   const actualValue = roundValue(actual, precision);
@@ -69,7 +83,7 @@ function buildGoalRow({ key, label, tone, actual, draft, target, unit = 'g' }) {
   const targetValue = roundValue(target, precision);
   const remaining = hasTarget ? Math.max(0, roundValue(targetValue - actualValue, precision)) : 0;
   const overAmount = hasTarget ? Math.max(0, roundValue(actualValue - targetValue, precision)) : 0;
-  const pct = hasTarget && targetValue > 0 ? Math.round((actualValue / targetValue) * 100) : 0;
+  const pct = hasTarget && targetValue > 0 ? roundValue((actualValue / targetValue) * 100, 1) : 0;
   const status = !hasTarget
     ? 'unset'
     : (overAmount > 0 ? 'over' : (pct >= 90 ? 'warn' : 'ok'));
@@ -80,6 +94,7 @@ function buildGoalRow({ key, label, tone, actual, draft, target, unit = 'g' }) {
   return {
     key,
     label,
+    displayLabel: displayLabel || label,
     tone,
     unit,
     actual: actualValue,
@@ -93,8 +108,10 @@ function buildGoalRow({ key, label, tone, actual, draft, target, unit = 'g' }) {
     hasTarget,
     badgeText,
     valueText: formatFixed(actualValue, precision),
+    valueWithUnitText: formatAmount(actualValue, unit),
+    pctText: formatPercentText(pct),
     targetText: hasTarget ? `${formatFixed(targetValue, precision)}${unit}` : '',
-    draftText: `本次 +${formatAmount(draftValue, unit)}`,
+    draftText: `本次增加 +${formatAmount(draftValue, unit)}`,
     actionText: overAmount > 0 ? '仍然保存' : '保存'
   };
 }
@@ -144,6 +161,7 @@ function buildEntryTargetPreview({
     buildGoalRow({
       key: 'naturalProtein',
       label: '天然蛋白',
+      displayLabel: '今日天然蛋白',
       tone: 'nat',
       actual: afterSave.naturalProtein,
       draft: draft.naturalProtein,
@@ -153,6 +171,7 @@ function buildEntryTargetPreview({
     buildGoalRow({
       key: 'specialProtein',
       label: '特殊蛋白',
+      displayLabel: '今日特殊蛋白',
       tone: 'spe',
       actual: afterSave.specialProtein,
       draft: draft.specialProtein,
@@ -168,6 +187,8 @@ function buildEntryTargetPreview({
     previousSummary: normalizeSummary(previousSummary),
     afterSaveSummary: afterSave,
     proteinRows,
+    totalProtein: buildTotalProteinInfo(afterSave),
+    proteinScopeNote: '目标按天然/特殊分别对比，今日总蛋白仅作合计参考。',
     calorieNote: buildCalorieNote({
       actual: afterSave.calories,
       draft: draft.calories,

@@ -42,7 +42,11 @@ function clampPercent(value) {
   if (!Number.isFinite(num) || num < 0) {
     return 0;
   }
-  return Math.round(num);
+  return round(num, 1);
+}
+
+function formatPercentText(value) {
+  return `${formatFixed(value, 1)}%`;
 }
 
 function parseDateKey(dateKey) {
@@ -351,10 +355,10 @@ function buildGoalProgressMeta(goal) {
     const overPct = Math.max(0, goal.pct - 100);
     return {
       status: 'over',
-      statusText: `超出 ${overPct}%`,
+      statusText: `超出 ${formatPercentText(overPct)}`,
       helperText: '已超过今日目标，后续记录注意控制',
       remainingLabel: '超出',
-      overflowText: `超出 ${overPct}%`,
+      overflowText: `超出 ${formatPercentText(overPct)}`,
       ringPct: 100,
       overPct: Math.min(100, overPct),
       ringClass: 'over'
@@ -376,7 +380,7 @@ function buildGoalProgressMeta(goal) {
 
   return {
     status: 'pending',
-    statusText: `还差 ${100 - goal.pct}%`,
+    statusText: `还差 ${formatPercentText(100 - goal.pct)}`,
     helperText: '距离今日目标还有一点点',
     remainingLabel: '还差',
     overflowText: '',
@@ -402,7 +406,7 @@ function buildTargetRow(key, label, goal, unit, tone = '') {
     targetText: goal.hasTarget ? `${targetText}${unit}` : '',
     remainingText: goal.hasTarget ? `${remainingAmountText}${unit}` : '',
     remainingLabel: meta.remainingLabel,
-    pctText: goal.hasTarget ? `${goal.pct}%` : '',
+    pctText: goal.hasTarget ? formatPercentText(goal.pct) : '',
     status: meta.status,
     statusText: meta.statusText,
     helperText: meta.helperText,
@@ -473,6 +477,7 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
       ...activeMeta,
       label: mode === 'protein' ? '总蛋白' : '热量',
       unit: mode === 'protein' ? 'g' : 'kcal',
+      pctText: formatPercentText(activeGoal.pct),
       valueText: `${formatUnitValue(activeGoal.actual, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
       targetText: `${formatUnitValue(activeGoal.target, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
       actualText: `已摄入 ${formatUnitValue(activeGoal.actual, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,

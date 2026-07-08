@@ -397,12 +397,12 @@ page {
 .nutri-row {
   display: flex;
   align-items: center;
-  gap: 28rpx;
+  gap: 24rpx;
 }
 .ring {
   flex: 0 0 auto;
-  width: 176rpx;
-  height: 176rpx;
+  width: 184rpx;
+  height: 184rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -416,10 +416,10 @@ page {
   100% { transform: scale(1); opacity: 1; }
 }
 .ring-hole {
-  width: 132rpx;
-  height: 132rpx;
+  width: 140rpx;
+  height: 140rpx;
   box-sizing: border-box;
-  padding-top: 14rpx;
+  padding-top: 8rpx;
   background: #fff;
   border-radius: 50%;
   display: flex;
@@ -432,6 +432,14 @@ page {
   font-weight: 800;
   color: #F59E0B;
   line-height: 1;
+}
+.target-pct-text {
+  max-width: 124rpx;
+  font-size: 34rpx;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: -1rpx;
 }
 .ring-unit {
   font-size: 18rpx;
@@ -451,11 +459,11 @@ page {
   margin-top: 2rpx;
 }
 .ring-col {
-  flex: 0 0 auto;
+  flex: 0 0 184rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12rpx;
+  gap: 8rpx;
 }
 .ring-cap {
   font-size: 20rpx;
@@ -527,6 +535,16 @@ page {
   margin-top: 2rpx;
   padding: 2rpx 10rpx;
   border-radius: 999rpx;
+}
+.ring-status-below {
+  max-width: 184rpx;
+  box-sizing: border-box;
+  margin-top: 0;
+  padding: 5rpx 14rpx;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ring-status.pending {
   color: #B07D00;

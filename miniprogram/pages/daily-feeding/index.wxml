@@ -74,11 +74,11 @@
         </view>
         <view class="ring target-ring {{nutritionTarget.activeGoal.ringClass}}" wx:else style="background: conic-gradient(from 180deg, #FF7A1A 0% {{nutritionTarget.activeGoal.overPct}}%, transparent {{nutritionTarget.activeGoal.overPct}}% 100%), conic-gradient(from 180deg, #FFB800 0% {{nutritionTarget.activeGoal.ringPct}}%, #F7EDD4 {{nutritionTarget.activeGoal.ringPct}}% 100%);">
           <view class="ring-hole">
-            <text class="ring-big">{{nutritionTarget.activeGoal.pct || 0}}%</text>
+            <text class="ring-big target-pct-text">{{nutritionTarget.activeGoal.pctText || '0.0%'}}</text>
             <text class="ring-unit">{{nutritionTarget.activeGoal.label}}</text>
-            <text class="ring-status {{nutritionTarget.activeGoal.status}}">{{nutritionTarget.activeGoal.statusText}}</text>
           </view>
         </view>
+        <text class="ring-status ring-status-below {{nutritionTarget.activeGoal.status}}" wx:if="{{nutritionTarget.hasAnyTarget}}">{{nutritionTarget.activeGoal.statusText}}</text>
       </view>
       <view class="macro-list" wx:if="{{!nutritionTarget.hasAnyTarget}}">
         <view class="macro-stat">

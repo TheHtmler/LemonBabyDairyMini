@@ -1,10 +1,12 @@
 .target-preview {
   margin-bottom: 16rpx;
-  padding: 22rpx;
-  border-radius: 24rpx;
-  background: linear-gradient(180deg, #fffef9 0%, #fff6dc 100%);
-  border: 1rpx solid rgba(255, 184, 0, 0.24);
-  box-shadow: 0 12rpx 26rpx rgba(255, 184, 0, 0.11);
+  padding: 20rpx;
+  border-radius: 28rpx;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 218, 118, 0.28), transparent 34%),
+    linear-gradient(180deg, #fffdf7 0%, #fff6df 100%);
+  border: 1rpx solid rgba(219, 171, 75, 0.18);
+  box-shadow: 0 12rpx 26rpx rgba(123, 84, 23, 0.08);
   box-sizing: border-box;
 }
 
@@ -46,21 +48,29 @@
 .target-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .target-preview-item {
-  padding: 18rpx;
-  border-radius: 20rpx;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1rpx solid rgba(193, 139, 40, 0.14);
+  padding: 16rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1rpx solid rgba(193, 139, 40, 0.1);
   box-sizing: border-box;
   overflow: hidden;
 }
 
+.target-preview-item.nat {
+  background: linear-gradient(145deg, rgba(255, 247, 218, 0.96), rgba(255, 255, 255, 0.88));
+}
+
+.target-preview-item.spe {
+  background: linear-gradient(145deg, rgba(234, 244, 255, 0.96), rgba(255, 255, 255, 0.88));
+}
+
 .target-preview-item.over {
-  background: #fff2f0;
-  border-color: rgba(232, 93, 85, 0.28);
+  background: linear-gradient(145deg, #fff1ee, rgba(255, 255, 255, 0.9));
+  border-color: rgba(232, 93, 85, 0.2);
 }
 
 .target-preview-label-row {
@@ -96,46 +106,71 @@
   flex-shrink: 0;
   min-height: 30rpx;
   padding: 0 10rpx;
-  border-radius: 6rpx;
-  color: #ffffff;
+  border-radius: 999rpx;
   font-size: 18rpx;
   line-height: 30rpx;
   font-weight: 700;
 }
 
 .target-preview-badge.ok {
-  background: #41a66b;
+  background: rgba(65, 166, 107, 0.12);
+  color: #2f8a56;
 }
 
 .target-preview-badge.warn {
-  background: #d98918;
+  background: rgba(217, 137, 24, 0.14);
+  color: #b46e0c;
 }
 
 .target-preview-badge.over {
-  background: #e85d55;
+  background: rgba(232, 93, 85, 0.13);
+  color: #cf4c45;
 }
 
 .target-preview-badge.unset {
-  background: #b9a77d;
+  background: rgba(185, 167, 125, 0.18);
+  color: #8f7845;
 }
 
 .target-preview-value-row {
   display: flex;
-  align-items: baseline;
-  gap: 6rpx;
-  margin-top: 14rpx;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10rpx;
+  margin-top: 16rpx;
 }
 
 .target-preview-value {
-  font-size: 40rpx;
+  min-width: 0;
+  font-size: 38rpx;
   line-height: 1;
   font-weight: 800;
   color: #211603;
 }
 
 .target-preview-target {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2rpx;
+  padding: 7rpx 10rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1rpx solid rgba(141, 115, 68, 0.08);
+}
+
+.target-preview-target-label {
+  color: #a89162;
+  font-size: 16rpx;
+  line-height: 1;
+}
+
+.target-preview-target-value {
+  color: #6b4e16;
   font-size: 20rpx;
-  color: #8d7344;
+  line-height: 1;
+  font-weight: 800;
 }
 
 .target-preview-meta {
@@ -172,6 +207,54 @@
 
 .target-preview-item.over .target-preview-bar-inner {
   background: #e85d55;
+}
+
+.target-preview-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 14rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1rpx solid rgba(193, 139, 40, 0.09);
+}
+
+.target-preview-total-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.target-preview-total-label {
+  color: #72551a;
+  font-size: 20rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.target-preview-total-detail {
+  color: #9a855d;
+  font-size: 18rpx;
+  line-height: 1.3;
+}
+
+.target-preview-total-value {
+  flex-shrink: 0;
+  color: #3f2a03;
+  font-size: 28rpx;
+  line-height: 1;
+  font-weight: 800;
+  text-align: right;
+}
+
+.target-preview-note {
+  margin-top: 8rpx;
+  color: #9a855d;
+  font-size: 17rpx;
+  line-height: 1.4;
 }
 
 .target-preview-empty {

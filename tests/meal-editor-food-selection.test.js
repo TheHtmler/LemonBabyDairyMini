@@ -835,7 +835,7 @@ test('food picker quantity drawer previews protein target without category subti
     assert.equal(picker.data.quantityDrawerVisible, true);
     assert.equal(picker.data.quantityDrafts[0].category, undefined);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].actual, 3);
-    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].targetText, '5g');
+    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].targetText, '5.00g');
     assert.equal(picker.data.quantityTargetPreview.calorieNote.visible, true);
     assert.match(picker.data.quantityTargetPreview.calorieNote.text, /热量|kcal|还差/);
 
@@ -843,7 +843,7 @@ test('food picker quantity drawer previews protein target without category subti
 
     assert.equal(picker.data.quantityDrafts[0].quantity, '50');
     assert.equal(picker.data.quantityDrafts[0].nutritionPreview.protein, 5.95);
-    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].actual, 9);
+    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].actual, 8.95);
     assert.equal(picker.data.quantityTargetPreview.proteinRows[0].status, 'over');
     assert.match(picker.data.quantityTargetPreview.calorieNote.text, /本次 \+169 kcal/);
   } finally {
@@ -948,13 +948,13 @@ test('legacy batch quantity drawer shows protein target at the top', () => {
 
     assert.equal(meal.data.drawerVisible, true);
     assert.equal(meal.data.batchTargetPreview.proteinRows[0].actual, 3);
-    assert.equal(meal.data.batchTargetPreview.proteinRows[0].targetText, '5g');
+    assert.equal(meal.data.batchTargetPreview.proteinRows[0].targetText, '5.00g');
     assert.equal(meal.data.batchTargetPreview.calorieNote.visible, true);
 
     meal.onBatchQuantityInput({ currentTarget: { dataset: { index: 0 } }, detail: { value: '50' } });
 
     assert.equal(meal.data.batchFoodDrafts[0].nutritionPreview.protein, 5.95);
-    assert.equal(meal.data.batchTargetPreview.proteinRows[0].actual, 9);
+    assert.equal(meal.data.batchTargetPreview.proteinRows[0].actual, 8.95);
     assert.equal(meal.data.batchTargetPreview.proteinRows[0].status, 'over');
     assert.match(meal.data.batchTargetPreview.calorieNote.text, /本次 \+169 kcal/);
   } finally {
@@ -1101,7 +1101,7 @@ test('meal editor refreshes target preferences after returning from target setup
       specialProteinCoefficient: '0.7',
       calorieCoefficient: '110'
     });
-    assert.equal(meal.data.mealTargetPreview.proteinRows[0].targetText, '7g');
+    assert.equal(meal.data.mealTargetPreview.proteinRows[0].targetText, '7.00g');
     assert.equal(meal.data.mealTargetPreview.hasProteinTarget, true);
   } finally {
     restoreWx();
@@ -1142,7 +1142,7 @@ test('food picker refreshes quantity target preferences after returning from tar
       specialProteinCoefficient: '0.6',
       calorieCoefficient: '100'
     });
-    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].targetText, '6.5g');
+    assert.equal(picker.data.quantityTargetPreview.proteinRows[0].targetText, '6.50g');
     assert.equal(picker.data.quantityTargetPreview.hasProteinTarget, true);
   } finally {
     restoreWx();
