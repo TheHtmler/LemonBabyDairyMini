@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>柠檬宝宝 · 奶粉管理原型</title>
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --panel: #ffffff;
+    --line: #e8dfce;
+    --line-strong: #d8cab4;
+    --ink: #252525;
+    --muted: #68645d;
+    --faint: #9a9285;
+    --lemon: #ffbd2e;
+    --lemon-soft: #fff4cf;
+    --green: #2f9d71;
+    --green-soft: #e8f6ef;
+    --blue: #3478d9;
+    --blue-soft: #eaf2ff;
+    --rose: #d95757;
+    --rose-soft: #fff0ef;
+    --violet: #7656c9;
+    --violet-soft: #f0ecff;
+    --surface: #fbfaf7;
+    --shadow: 0 18px 46px rgba(80, 67, 44, 0.18);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+
+  .board {
+    width: 1220px;
+    margin: 0 auto;
+    padding: 34px 30px 46px;
+  }
+
+  .board-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 28px;
+  }
+
+  .board-title {
+    max-width: 760px;
+  }
+
+  .eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: #8a6a12;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .board-title p {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .decision {
+    width: 380px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .decision-title {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .decision-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .dot {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--lemon);
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .shot {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .shot-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 50px;
+    padding: 0 4px;
+  }
+
+  .shot-label h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.3;
+    letter-spacing: 0;
+  }
+
+  .shot-label span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .phone {
+    width: 360px;
+    height: 740px;
+    margin: 0 auto;
+    padding: 10px;
+    border-radius: 32px;
+    background: #101010;
+    box-shadow: var(--shadow);
+  }
+
+  .screen {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #f7f4ed;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 34px;
+    padding: 0 20px;
+    color: #3d392f;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .nav {
+    display: grid;
+    grid-template-columns: 32px 1fr 32px;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line);
+    background: #fffdf8;
+  }
+
+  .nav-title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  .icon-button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #4f4635;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 12px;
+  }
+
+  .scroll {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ede6d8;
+  }
+
+  .tab {
+    min-width: 0;
+    padding: 8px 2px;
+    border-radius: 6px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .tab.active {
+    background: #ffffff;
+    color: var(--ink);
+    box-shadow: 0 1px 4px rgba(80, 67, 44, 0.10);
+  }
+
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .summary-item {
+    padding: 10px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .summary-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .summary-label {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 16px 0 8px;
+  }
+
+  .section-head:first-child {
+    margin-top: 0;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .section-action {
+    color: #8a6a12;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #ead59a;
+    border-radius: 8px;
+    background: #fff7dc;
+    color: #655123;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .notice-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--lemon);
+    color: #5d4400;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .powder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .powder-card {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .powder-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .powder-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .powder-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 7px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 3px 7px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .badge.regular {
+    background: var(--green-soft);
+    color: var(--green);
+    border-color: #bfe8d4;
+  }
+
+  .badge.special {
+    background: var(--violet-soft);
+    color: var(--violet);
+    border-color: #d8ccff;
+  }
+
+  .badge.energy {
+    background: var(--blue-soft);
+    color: var(--blue);
+    border-color: #c8dcff;
+  }
+
+  .badge.system {
+    background: var(--lemon-soft);
+    color: #8a6a12;
+    border-color: #ead59a;
+  }
+
+  .badge.custom {
+    background: #f1f0ea;
+    color: #625b4f;
+    border-color: #ddd5c8;
+  }
+
+  .badge.changed {
+    background: var(--rose-soft);
+    color: var(--rose);
+    border-color: #ffd1cc;
+  }
+
+  .powder-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .small-icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .small-icon.danger {
+    color: var(--rose);
+    background: var(--rose-soft);
+    border-color: #ffd1cc;
+  }
+
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    margin-top: 11px;
+  }
+
+  .metric {
+    min-width: 0;
+    padding: 8px 6px;
+    border-radius: 7px;
+    background: #f7f4ee;
+  }
+
+  .metric-value {
+    display: block;
+    overflow: hidden;
+    color: #302b22;
+    font-size: 12px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .metric-label {
+    display: block;
+    margin-top: 2px;
+    color: var(--faint);
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .primary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .button.primary {
+    background: #ffbd2e;
+    color: #4a3600;
+  }
+
+  .button.secondary {
+    border: 1px solid var(--line-strong);
+    background: #ffffff;
+    color: #3d392f;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .filter {
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #ffffff;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .filter.active {
+    border-color: #e1b74a;
+    background: var(--lemon-soft);
+    color: #7c5a00;
+  }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    margin-bottom: 10px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--faint);
+    font-size: 13px;
+  }
+
+  .library-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .library-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .library-main {
+    min-width: 0;
+  }
+
+  .library-desc {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .add-pill {
+    min-width: 62px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--lemon);
+    color: #4a3600;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .add-pill.added {
+    border: 1px solid #bfe8d4;
+    background: var(--green-soft);
+    color: var(--green);
+  }
+
+  .bottom-sheet {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 11px 12px 14px;
+    border-top: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
+    background: #ffffff;
+    box-shadow: 0 -16px 34px rgba(80, 67, 44, 0.16);
+  }
+
+  .sheet-grabber {
+    width: 42px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 4px;
+    background: #d8d2c8;
+  }
+
+  .sheet-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .sheet-title {
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .sheet-sub {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .field {
+    min-height: 58px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .field.wide {
+    grid-column: 1 / -1;
+  }
+
+  .field-label {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .field-value {
+    display: block;
+    margin-top: 7px;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .role-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin: 10px 0 12px;
+  }
+
+  .role {
+    padding: 8px 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .role.active {
+    border-color: #bfe8d4;
+    background: var(--green-soft);
+    color: var(--green);
+  }
+
+  .footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .group-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .group {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .group-count {
+    color: var(--faint);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .compact-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee7dc;
+  }
+
+  .compact-row:last-child {
+    border-bottom: none;
+  }
+
+  .compact-name {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .compact-meta {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .empty-callout {
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px dashed #d6c79c;
+    border-radius: 8px;
+    background: #fffbef;
+    text-align: center;
+  }
+
+  .empty-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .empty-desc {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <main class="board">
+    <header class="board-head">
+      <div class="board-title">
+        <span class="eyebrow">LemonBaby · 奶粉管理</span>
+        <h1>从“配奶参数”升级成“系统奶粉库 + 我的奶粉”</h1>
+        <p>下面是三个关键状态：日常管理、从系统库添加、编辑系统导入后的个人快照。重点是让用户先看懂“当前宝宝能选哪些奶粉”，再进入参数细节。</p>
+      </div>
+      <div class="decision">
+        <div class="decision-title">设计取向</div>
+        <div class="decision-row"><span class="dot"></span><span>系统预设只作为模板，添加后复制到宝宝档案，避免后续系统更新影响历史计算。</span></div>
+        <div class="decision-row"><span class="dot"></span><span>页面文案使用“预设 / 参数快照”，不做“推荐奶粉”表达。</span></div>
+      </div>
+    </header>
+
+    <section class="stage">
+      <article class="shot">
+        <div class="shot-label">
+          <div>
+            <h2>方案 A · 我的奶粉优先</h2>
+            <span>适合日常使用，最少认知负担</span>
+          </div>
+        </div>
+        <div class="phone" id="shot-a">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>100%</span></div>
+            <div class="nav">
+              <div class="icon-button">‹</div>
+              <div class="nav-title">奶粉管理</div>
+              <div class="icon-button">＋</div>
+            </div>
+            <div class="content">
+              <div class="scroll">
+                <div class="tabs">
+                  <div class="tab active">我的奶粉</div>
+                  <div class="tab">系统库</div>
+                  <div class="tab">母乳参数</div>
+                </div>
+
+                <div class="summary-strip">
+                  <div class="summary-item">
+                    <span class="summary-value">4</span>
+                    <span class="summary-label">可选奶粉</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-value">2</span>
+                    <span class="summary-label">系统预设</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-value">1</span>
+                    <span class="summary-label">已修改</span>
+                  </div>
+                </div>
+
+                <div class="primary-row">
+                  <div class="button primary"><span>＋</span><span>从系统库添加</span></div>
+                  <div class="button secondary"><span>✎</span><span>自定义奶粉</span></div>
+                </div>
+
+                <div class="notice">
+                  <span class="notice-mark">i</span>
+                  <span>喂奶录入和奶量规划只会使用“我的奶粉”。系统库添加后会保存为当前宝宝的参数快照。</span>
+                </div>
+
+                <div class="section-head">
+                  <div class="section-title">当前使用</div>
+                  <div class="section-action">排序</div>
+                </div>
+
+                <div class="powder-list">
+                  <div class="powder-card">
+                    <div class="powder-top">
+                      <div>
+                        <span class="powder-name">普通配方粉 A</span>
+                        <div class="powder-meta">
+                          <span class="badge regular">普奶</span>
+                          <span class="badge system">系统预设</span>
+                        </div>
+                      </div>
+                      <div class="powder-actions">
+                        <div class="small-icon">✎</div>
+                        <div class="small-icon danger">×</div>
+                      </div>
+                    </div>
+                    <div class="metric-row">
+                      <div class="metric"><span class="metric-value">10.6g</span><span class="metric-label">蛋白</span></div>
+                      <div class="metric"><span class="metric-value">505</span><span class="metric-label">热量</span></div>
+                      <div class="metric"><span class="metric-value">26g</span><span class="metric-label">脂肪</span></div>
+                      <div class="metric"><span class="metric-value">4.5:30</span><span class="metric-label">冲配比</span></div>
+                    </div>
+                  </div>
+
+                  <div class="powder-card">
+                    <div class="powder-top">
+                      <div>
+                        <span class="powder-name">特殊配方粉 B</span>
+                        <div class="powder-meta">
+                          <span class="badge special">特奶</span>
+                          <span class="badge system">系统预设</span>
+                          <span class="badge changed">已修改</span>
+                        </div>
+                      </div>
+                      <div class="powder-actions">
+                        <div class="small-icon">✎</div>
+                        <div class="small-icon danger">×</div>
+                      </div>
+                    </div>
+                    <div class="metric-row">
+                      <div class="metric"><span class="metric-value">13.2g</span><span class="metric-label">特殊蛋白</span></div>
+                      <div class="metric"><span class="metric-value">480</span><span class="metric-label">热量</span></div>
+                      <div class="metric"><span class="metric-value">22g</span><span class="metric-label">脂肪</span></div>
+                      <div class="metric"><span class="metric-value">6:40</span><span class="metric-label">冲配比</span></div>
+                    </div>
+                  </div>
+
+                  <div class="powder-card">
+                    <div class="powder-top">
+                      <div>
+                        <span class="powder-name">无蛋白能量粉</span>
+                        <div class="powder-meta">
+                          <span class="badge energy">能量粉</span>
+                          <span class="badge custom">自定义</span>
+                        </div>
+                      </div>
+                      <div class="powder-actions">
+                        <div class="small-icon">✎</div>
+                        <div class="small-icon danger">×</div>
+                      </div>
+                    </div>
+                    <div class="metric-row">
+                      <div class="metric"><span class="metric-value">0g</span><span class="metric-label">蛋白</span></div>
+                      <div class="metric"><span class="metric-value">410</span><span class="metric-label">热量</span></div>
+                      <div class="metric"><span class="metric-value">0g</span><span class="metric-label">脂肪</span></div>
+                      <div class="metric"><span class="metric-value">3:20</span><span class="metric-label">冲配比</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="shot">
+        <div class="shot-label">
+          <div>
+            <h2>方案 B · 系统库挑选</h2>
+            <span>强调筛选和“已添加”状态</span>
+          </div>
+        </div>
+        <div class="phone" id="shot-b">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>100%</span></div>
+            <div class="nav">
+              <div class="icon-button">‹</div>
+              <div class="nav-title">系统奶粉库</div>
+              <div class="icon-button">?</div>
+            </div>
+            <div class="content">
+              <div class="scroll">
+                <div class="search"><span>⌕</span><span>搜索奶粉名称、分类或用途</span></div>
+                <div class="filter-row">
+                  <div class="filter active">全部</div>
+                  <div class="filter">普通配方粉</div>
+                  <div class="filter">特殊配方粉</div>
+                  <div class="filter">能量补充</div>
+                </div>
+
+                <div class="notice">
+                  <span class="notice-mark">i</span>
+                  <span>系统库是录入模板。添加前请核对包装标识，添加后可在“我的奶粉”里修改。</span>
+                </div>
+
+                <div class="section-head">
+                  <div class="section-title">常用预设</div>
+                  <div class="section-action">按分类</div>
+                </div>
+
+                <div class="library-list">
+                  <div class="library-card">
+                    <div class="library-main">
+                      <span class="powder-name">普通配方粉 A</span>
+                      <div class="powder-meta">
+                        <span class="badge regular">普奶</span>
+                        <span class="badge system">系统预设</span>
+                      </div>
+                      <div class="library-desc">蛋白 10.6g/100g · 热量 505kcal/100g · 冲配比 4.5g:30ml</div>
+                    </div>
+                    <div class="add-pill added">已添加</div>
+                  </div>
+
+                  <div class="library-card">
+                    <div class="library-main">
+                      <span class="powder-name">普通配方粉 B</span>
+                      <div class="powder-meta">
+                        <span class="badge regular">普奶</span>
+                        <span class="badge system">系统预设</span>
+                      </div>
+                      <div class="library-desc">蛋白 11.0g/100g · 热量 500kcal/100g · 冲配比 4.4g:30ml</div>
+                    </div>
+                    <div class="add-pill">添加</div>
+                  </div>
+
+                  <div class="library-card">
+                    <div class="library-main">
+                      <span class="powder-name">特殊配方粉 B</span>
+                      <div class="powder-meta">
+                        <span class="badge special">特奶</span>
+                        <span class="badge system">系统预设</span>
+                      </div>
+                      <div class="library-desc">特殊蛋白 13.0g/100g · 热量 480kcal/100g · 冲配比 6g:40ml</div>
+                    </div>
+                    <div class="add-pill">添加</div>
+                  </div>
+
+                  <div class="library-card">
+                    <div class="library-main">
+                      <span class="powder-name">无蛋白能量粉 C</span>
+                      <div class="powder-meta">
+                        <span class="badge energy">能量粉</span>
+                        <span class="badge system">系统预设</span>
+                      </div>
+                      <div class="library-desc">蛋白 0g/100g · 热量 410kcal/100g · 不计入蛋白目标</div>
+                    </div>
+                    <div class="add-pill">添加</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottom-sheet">
+              <div class="sheet-grabber"></div>
+              <div class="sheet-head">
+                <div>
+                  <span class="sheet-title">添加“特殊配方粉 B”</span>
+                  <span class="sheet-sub">将复制一份参数快照到当前宝宝的奶粉档案。</span>
+                </div>
+                <span class="badge special">特奶</span>
+              </div>
+              <div class="form-grid">
+                <div class="field"><span class="field-label">蛋白角色</span><span class="field-value">特殊蛋白</span></div>
+                <div class="field"><span class="field-label">冲配比</span><span class="field-value">6g : 40ml</span></div>
+              </div>
+              <div class="footer">
+                <div class="button secondary">查看详情</div>
+                <div class="button primary">添加到我的奶粉</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="shot">
+        <div class="shot-label">
+          <div>
+            <h2>方案 C · 分组管理 + 编辑</h2>
+            <span>适合奶粉数量较多的家庭</span>
+          </div>
+        </div>
+        <div class="phone" id="shot-c">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>100%</span></div>
+            <div class="nav">
+              <div class="icon-button">‹</div>
+              <div class="nav-title">奶粉管理</div>
+              <div class="icon-button">＋</div>
+            </div>
+            <div class="content">
+              <div class="scroll">
+                <div class="tabs">
+                  <div class="tab active">分组</div>
+                  <div class="tab">系统库</div>
+                  <div class="tab">母乳参数</div>
+                </div>
+
+                <div class="group-grid">
+                  <div class="group">
+                    <div class="group-head">
+                      <div class="group-title"><span class="badge regular">普奶</span><span>普通配方粉</span></div>
+                      <div class="group-count">2 个</div>
+                    </div>
+                    <div class="compact-row">
+                      <div><span class="compact-name">普通配方粉 A</span><span class="compact-meta">系统预设 · 蛋白 10.6g · 4.5g:30ml</span></div>
+                      <div class="small-icon">✎</div>
+                    </div>
+                    <div class="compact-row">
+                      <div><span class="compact-name">普通配方粉 D</span><span class="compact-meta">自定义 · 蛋白 9.8g · 5g:35ml</span></div>
+                      <div class="small-icon">✎</div>
+                    </div>
+                  </div>
+
+                  <div class="group">
+                    <div class="group-head">
+                      <div class="group-title"><span class="badge special">特奶</span><span>特殊配方粉</span></div>
+                      <div class="group-count">1 个</div>
+                    </div>
+                    <div class="compact-row">
+                      <div><span class="compact-name">特殊配方粉 B</span><span class="compact-meta">系统预设 · 已修改 · 特殊蛋白</span></div>
+                      <div class="small-icon">✎</div>
+                    </div>
+                  </div>
+
+                  <div class="group">
+                    <div class="group-head">
+                      <div class="group-title"><span class="badge energy">能量</span><span>能量补充粉</span></div>
+                      <div class="group-count">1 个</div>
+                    </div>
+                    <div class="compact-row">
+                      <div><span class="compact-name">无蛋白能量粉</span><span class="compact-meta">自定义 · 不计入蛋白 · 热量 410kcal</span></div>
+                      <div class="small-icon">✎</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="empty-callout">
+                  <span class="empty-title">新奶粉先从系统库找一找</span>
+                  <span class="empty-desc">找不到时再自定义添加，能减少手工录入错误。</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottom-sheet">
+              <div class="sheet-grabber"></div>
+              <div class="sheet-head">
+                <div>
+                  <span class="sheet-title">编辑特殊配方粉 B</span>
+                  <span class="sheet-sub">这是一份宝宝自己的参数快照，修改不会影响系统库。</span>
+                </div>
+                <span class="badge changed">已修改</span>
+              </div>
+
+              <div class="role-row">
+                <div class="role">天然蛋白</div>
+                <div class="role active">特殊蛋白</div>
+                <div class="role">不计蛋白</div>
+              </div>
+
+              <div class="form-grid">
+                <div class="field wide"><span class="field-label">名称</span><span class="field-value">特殊配方粉 B</span></div>
+                <div class="field"><span class="field-label">蛋白 g/100g</span><span class="field-value">13.2</span></div>
+                <div class="field"><span class="field-label">热量 kcal/100g</span><span class="field-value">480</span></div>
+                <div class="field"><span class="field-label">粉量 g</span><span class="field-value">6</span></div>
+                <div class="field"><span class="field-label">水量 ml</span><span class="field-value">40</span></div>
+              </div>
+
+              <div class="footer">
+                <div class="button secondary">恢复系统参数</div>
+                <div class="button primary">保存</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
