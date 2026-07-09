@@ -83,21 +83,22 @@
                     <text class="food-title">{{item.name}}</text>
                     <text class="food-tag system" wx:if="{{item.isSystem}}">系统预设</text>
                     <text class="food-tag snapshot" wx:elif="{{item.isSystemSnapshot}}">系统修订</text>
-                    <text class="food-tag custom" wx:else>自定义</text>
+                    <text class="food-tag custom" wx:else>我的</text>
                   </view>
                   <view class="food-meta-row">
                     <text class="food-path">{{item.categoryLevel2 || item.category}}</text>
                     <text class="food-basis">每 {{item.baseQuantity}}{{item.baseUnit}}</text>
                   </view>
                 </view>
-                <image
-                  class="food-list-image"
-                  wx:if="{{item.showListImage}}"
-                  src="{{item.displayImage}}"
-                  mode="aspectFill"
-                  data-url="{{item.displayImage}}"
-                  bindtap="previewFoodImage"
-                />
+                <view class="food-list-image-slot" wx:if="{{item.showImageSlot}}">
+                  <image
+                    class="food-list-image"
+                    src="{{item.displayImage || foodPlaceholderImage}}"
+                    mode="aspectFill"
+                    data-url="{{item.displayImage || foodPlaceholderImage}}"
+                    bindtap="previewFoodImage"
+                  />
+                </view>
               </view>
               <view class="food-nutrition">
                 <view class="nutrition-item highlight calories">
@@ -133,7 +134,7 @@
                   bindtap="showEditModal"
                   type="default"
                 >
-                  {{item.isSystem ? '另存为我的' : '编辑'}}
+                  {{item.isSystem ? '加入我的食物' : '编辑'}}
                 </button>
                 <button
                   wx:if="{{!item.isSystem}}"
@@ -172,8 +173,8 @@
     <view class="modal-mask" bindtap="hideAddModal"></view>
     <view class="modal-content">
       <view class="modal-header">
-        <text class="modal-title">{{editingFoodIsSystemSource ? '另存为我的食物' : (editingFoodId ? '编辑食物' : '添加食物')}}</text>
-        <text class="modal-subtitle">{{editingFoodIsSystemSource ? '保存后会生成一份我的食物，不会改动系统预设' : '先完善基础信息，再补充营养和展示信息'}}</text>
+        <text class="modal-title">{{editingFoodIsSystemSource ? '加入我的食物' : (editingFoodId ? '编辑食物' : '添加食物')}}</text>
+        <text class="modal-subtitle">{{editingFoodIsSystemSource ? '可根据包装说明调整成分后再保存到我的食物库' : (editingFoodId ? '修改后会同步更新我的食物库' : '先完善基础信息，再补充营养和展示信息')}}</text>
       </view>
       <view class="modal-body">
         <view class="form-section">
@@ -357,7 +358,7 @@
       </view>
       <view class="modal-footer">
         <button class="btn cancel" bindtap="hideAddModal">取消</button>
-        <button class="btn confirm" bindtap="saveFood">保存</button>
+        <button class="btn confirm" bindtap="saveFood">{{editingFoodIsSystemSource ? '加入我的食物' : '保存'}}</button>
       </view>
     </view>
   </view>

@@ -43,11 +43,13 @@ function loadV2Page(options = {}) {
   const profilePath = require.resolve('../miniprogram/models/nutritionProfile.js');
   const modelPath = require.resolve('../miniprogram/models/feedingRecordV2.js');
   const dailySummaryPath = require.resolve('../miniprogram/models/dailySummaryV2.js');
+  const powderCatalogPath = require.resolve('../miniprogram/models/powderCatalog.js');
   const utilsPath = require.resolve('../miniprogram/utils/index.js');
   delete require.cache[pagePath];
   delete require.cache[profilePath];
   delete require.cache[modelPath];
   delete require.cache[dailySummaryPath];
+  delete require.cache[powderCatalogPath];
   delete require.cache[utilsPath];
 
   const calls = {
@@ -125,6 +127,7 @@ function loadV2Page(options = {}) {
   const profileModel = require(profilePath);
   const feedingRecordV2Model = require(modelPath);
   const dailySummaryV2Model = require(dailySummaryPath);
+  const powderCatalogModel = require(powderCatalogPath);
   const utilsModule = require(utilsPath);
   const previousGetNutritionProfileSettings = profileModel.getNutritionProfileSettings;
   const previousAddRecord = feedingRecordV2Model.addRecord;
@@ -133,6 +136,7 @@ function loadV2Page(options = {}) {
   const previousResolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot;
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousGetRecentRecord = feedingRecordV2Model.getRecentRecord;
+  const previousGetSystemPowders = powderCatalogModel.getSystemPowders;
   const previousGetBabyUid = utilsModule.getBabyUid;
 
   profileModel.getNutritionProfileSettings = options.getNutritionProfileSettings || (async () => ({
@@ -164,6 +168,7 @@ function loadV2Page(options = {}) {
   }));
   feedingRecordV2Model.getRecordsByDate = options.getRecordsByDate || (async () => []);
   feedingRecordV2Model.getRecentRecord = options.getRecentRecord || (async () => null);
+  powderCatalogModel.getSystemPowders = options.getSystemPowders || (async () => []);
   utilsModule.getBabyUid = options.getBabyUid || (() => 'baby-1');
 
   let pageConfig = null;
@@ -180,6 +185,7 @@ function loadV2Page(options = {}) {
   feedingRecordV2Model.resolveBasicInfoSnapshot = previousResolveBasicInfoSnapshot;
   feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
   feedingRecordV2Model.getRecentRecord = previousGetRecentRecord;
+  powderCatalogModel.getSystemPowders = previousGetSystemPowders;
   utilsModule.getBabyUid = previousGetBabyUid;
   global.Page = previousPage;
   global.wx = previousWx;
@@ -378,13 +384,13 @@ test('add milk dialog exposes a guide entry at the top-right under the close but
   assert.doesNotMatch(wxml, /class="add-milk-manage"/);
 });
 
-test('goToManagePowders opens nutrition profile settings on the powders view', () => {
+test('goToManagePowders opens the powder-management page', () => {
   const { pageConfig, calls } = loadV2Page();
   const page = createPageInstance(pageConfig);
 
   page.goToManagePowders();
 
-  assert.equal(calls.navigatedUrl, '/pkg-milk/nutrition-profile-settings/index?view=powders');
+  assert.equal(calls.navigatedUrl, '/pkg-milk/powder-management/index');
   assert.equal(page._pendingPowderRefresh, true);
 });
 
@@ -1063,4 +1069,205 @@ test('onLoad does not fetch the latest previous v2 record as create-mode default
   assert.equal(page.data.recentDefaultsLoaded, false);
   assert.equal(page.data.recentDefaultText, '');
   assert.equal(page.data.milkEntries.length, 0);
+});
+
+test('onLoad merges system powders as selectable formula powders with source metadata', async () => {
+  const { pageConfig } = loadV2Page({
+    getNutritionProfileSettings: async () => ({
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      formulaPowders: [
+        {
+          id: 'mine-regular',
+          name: '我的普奶',
+          status: 'active',
+          category: 'regular_formula',
+          proteinRole: 'natural',
+          nutritionPer100g: { protein: 10, calories: 500 },
+          mixRatio: { powder: 5, water: 30 }
+        }
+      ]
+    }),
+    getSystemPowders: async () => [
+      {
+        powderCode: 'SF_SPECIAL_1',
+        name: '系统特奶',
+        category: 'special_formula',
+        proteinRole: 'special',
+        nutritionPer100g: { protein: 12, calories: 400 },
+        mixRatio: { powder: 13.5, water: 90 }
+      }
+    ]
+  });
+  const page = createPageInstance(pageConfig);
+
+  await page.onLoad({ date: '2026-05-20' });
+
+  assert.equal(page.data.formulaPowders.length, 2);
+  const mine = page.data.formulaPowders.find((powder) => powder.id === 'mine-regular');
+  const system = page.data.formulaPowders.find((powder) => powder.id === 'SF_SPECIAL_1');
+  assert.equal(mine.sourceType, 'user');
+  assert.equal(system.sourceType, 'system');
+  assert.equal(system.sourcePowderCode, 'SF_SPECIAL_1');
+});
+
+test('system powders already copied into my library are not duplicated', async () => {
+  const { pageConfig } = loadV2Page({
+    getNutritionProfileSettings: async () => ({
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      formulaPowders: [
+        {
+          id: 'mine-copied',
+          name: '已加入的特奶',
+          status: 'active',
+          category: 'special_formula',
+          proteinRole: 'special',
+          sourceSystemPowderId: 'SF_SPECIAL_1',
+          nutritionPer100g: { protein: 12, calories: 400 },
+          mixRatio: { powder: 13.5, water: 90 }
+        }
+      ]
+    }),
+    getSystemPowders: async () => [
+      {
+        powderCode: 'SF_SPECIAL_1',
+        name: '系统特奶',
+        category: 'special_formula',
+        proteinRole: 'special',
+        nutritionPer100g: { protein: 12, calories: 400 },
+        mixRatio: { powder: 13.5, water: 90 }
+      }
+    ]
+  });
+  const page = createPageInstance(pageConfig);
+
+  await page.onLoad({ date: '2026-05-20' });
+
+  assert.equal(page.data.formulaPowders.length, 1);
+  assert.equal(page.data.formulaPowders[0].id, 'mine-copied');
+  assert.equal(page.data.formulaPowders[0].sourcePowderCode, 'SF_SPECIAL_1');
+});
+
+test('add milk dialog splits mine and system powders into library tabs like food picker', () => {
+  const { pageConfig } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    formulaPowders: [
+      {
+        id: 'mine-regular',
+        name: '我的普奶',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        categoryBadgeClass: 'regular',
+        proteinRole: 'natural',
+        sourceType: 'user',
+        nutritionPer100g: { protein: 10, calories: 500 },
+        mixRatio: { powder: 5, water: 30 }
+      },
+      {
+        id: 'SF_SPECIAL_1',
+        name: '系统特奶',
+        category: 'special_formula',
+        categoryShortLabel: '特',
+        categoryBadgeClass: 'special',
+        proteinRole: 'special',
+        sourceType: 'system',
+        sourcePowderCode: 'SF_SPECIAL_1',
+        nutritionPer100g: { protein: 12, calories: 400 },
+        mixRatio: { powder: 13.5, water: 90 }
+      }
+    ]
+  });
+
+  page.openAddMilkPanel();
+
+  // 默认在「我的奶粉」Tab：母乳 + 我的奶粉，不含系统奶粉
+  assert.equal(page.data.addMilkActiveScope, 'mine');
+  assert.deepEqual(
+    page.data.addMilkOptions.map((option) => option.key),
+    ['breast_milk', 'powder:mine-regular']
+  );
+
+  page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'system' } } });
+
+  // 「系统奶粉」Tab：只有系统奶粉，无母乳
+  assert.equal(page.data.addMilkActiveScope, 'system');
+  assert.deepEqual(
+    page.data.addMilkOptions.map((option) => option.key),
+    ['powder:SF_SPECIAL_1']
+  );
+
+  // 系统 Tab 中选中后，切回我的 Tab 再切回来，选中状态保持
+  page.toggleAddMilkOption({ currentTarget: { dataset: { key: 'powder:SF_SPECIAL_1' } } });
+  assert.equal(page.data.milkEntries.length, 1);
+  assert.equal(page.data.milkEntries[0].powderId, 'SF_SPECIAL_1');
+
+  page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'mine' } } });
+  page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'system' } } });
+  assert.equal(page.data.addMilkOptions[0].selected, true);
+});
+
+test('selected milk entry rows show a mine/system source tag like food items', () => {
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxss', 'utf8');
+
+  assert.match(wxml, /entry-source-tag/);
+  assert.match(wxml, /sourceType === 'system' \? '系统' : '我的'/);
+  assert.match(wxss, /\.entry-source-tag\s*\{/);
+  assert.match(wxss, /\.entry-source-tag\.mine\s*\{/);
+});
+
+test('saving a system powder feeding records its source provenance in the snapshot', async () => {
+  const { pageConfig, calls } = loadV2Page({
+    getSystemPowders: async () => [
+      {
+        powderCode: 'SF_SPECIAL_1',
+        name: '系统特奶',
+        category: 'special_formula',
+        proteinRole: 'special',
+        nutritionPer100g: { protein: 12, calories: 400, carbs: 50, fat: 20, fiber: 0 },
+        mixRatio: { powder: 13.5, water: 90 }
+      }
+    ]
+  });
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    selectedDate: '2026-05-20',
+    startTime: '08:30',
+    endTime: '',
+    weight: '5.2',
+    height: '58',
+    calorieCoefficientInput: '100',
+    nutritionSettings: {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67
+    }
+  });
+
+  await page.reloadFormulaPowders();
+
+  const systemPowder = page.data.formulaPowders.find((powder) => powder.id === 'SF_SPECIAL_1');
+  assert.ok(systemPowder, 'system powder should be selectable after reload');
+
+  page.setData({
+    milkEntries: [
+      {
+        localId: 'system-1',
+        kind: 'formula_powder',
+        powderId: 'SF_SPECIAL_1',
+        waterVolume: 90,
+        powderWeight: 13.5,
+        ratioMode: 'standard',
+        powderPickerIndex: page.data.formulaPowders.findIndex((powder) => powder.id === 'SF_SPECIAL_1')
+      }
+    ]
+  });
+
+  await page.saveFeedingRecord();
+
+  assert.ok(calls.saved, 'record should be saved');
+  const component = calls.saved.formulaComponents[0];
+  assert.equal(component.kind, 'formula_powder');
+  assert.equal(component.sourceType, 'system');
+  assert.equal(component.sourcePowderCode, 'SF_SPECIAL_1');
 });

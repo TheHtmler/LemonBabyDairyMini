@@ -353,8 +353,8 @@ Page({
     if (!app.globalData.pendingNutritionSetup) return false;
     app.globalData.pendingNutritionSetup = false;
     wx.navigateTo({
-      url: '/pkg-milk/nutrition-profile-settings/index?fromSetup=true',
-      fail: (err) => console.error('打开配奶设置页失败:', err)
+      url: '/pkg-milk/powder-management/index?editBreastMilk=1',
+      fail: (err) => console.error('打开奶粉管理页失败:', err)
     });
     return true;
   },

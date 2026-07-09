@@ -93,6 +93,12 @@ function buildFormulaPowderComponent(profile = {}, draft = {}) {
     : calculateStandardPowderWeight(draft.waterVolume, mixRatio);
   const categoryMeta = POWDER_CATEGORY_META[profile.category] || {};
 
+  const sourceType = profile.sourceType || (profile.source === 'system' ? 'system' : 'user');
+  const sourcePowderCode = profile.sourcePowderCode
+    || profile.sourceSystemPowderId
+    || (sourceType === 'system' ? (profile.powderCode || profile.id || '') : '')
+    || '';
+
   return {
     kind: 'formula_powder',
     powderId: profile.id || '',
@@ -102,6 +108,8 @@ function buildFormulaPowderComponent(profile = {}, draft = {}) {
     categoryBadgeClass: categoryMeta.badgeClass || '',
     categoryBadgeStyle: buildCategoryBadgeStyle(categoryMeta),
     proteinRole: profile.proteinRole || PROTEIN_ROLES.NATURAL,
+    sourceType,
+    sourcePowderCode,
     waterVolume: roundValue(draft.waterVolume),
     powderWeight: roundValue(powderWeight),
     ratioMode,

@@ -328,8 +328,8 @@
       <view class="me" bindtap="navigateToMilkGoalPlanner" hover-class="press-pop" hover-stay-time="60">
         <view class="me-ic">🥛</view><text class="me-nm">配奶规划</text>
       </view>
-      <view class="me" data-url="/pkg-milk/nutrition-profile-settings/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">⚙️</view><text class="me-nm">配奶管理</text>
+      <view class="me" data-url="/pkg-milk/powder-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+        <view class="me-ic">⚙️</view><text class="me-nm">奶粉管理</text>
       </view>
       <view class="me" data-url="/pkg-milk/food-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
         <view class="me-ic">🍽️</view><text class="me-nm">食物库</text>

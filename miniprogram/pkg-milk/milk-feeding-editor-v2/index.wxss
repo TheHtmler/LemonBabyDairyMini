@@ -801,6 +801,22 @@
   font-size: 24rpx;
 }
 
+/* 来源标签样式与食物选择保持一致：系统黄底、我的绿底 */
+.entry-source-tag {
+  flex-shrink: 0;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #fff1cf;
+  color: #b97800;
+  font-size: 20rpx;
+  line-height: 1;
+}
+
+.entry-source-tag.mine {
+  background: #e5f6ec;
+  color: #2e9e5b;
+}
+
 .add-milk-button {
   display: inline-flex;
   align-items: center;
@@ -912,6 +928,38 @@
   font-size: 18rpx;
   line-height: 1.4;
   color: #8d7344;
+}
+
+.add-milk-library-tabs {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+  padding: 6rpx;
+  border-radius: 18rpx;
+  background: rgba(214, 173, 92, 0.12);
+}
+
+.add-milk-library-tab {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 14rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #8a7c60;
+}
+
+.add-milk-library-tab.active {
+  background: #ffffff;
+  color: #5f3900;
+  box-shadow: 0 4rpx 10rpx rgba(214, 173, 92, 0.24);
+}
+
+.add-milk-options-empty {
+  padding: 48rpx 16rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #8a7c60;
 }
 
 .add-milk-options {

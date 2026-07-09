@@ -13,8 +13,8 @@ test('baby info setup guides new creators to nutrition profile settings v2', () 
   assert.match(source, /wx\.switchTab\(\{\s*url:\s*'\/pages\/daily-feeding\/index'/);
   assert.doesNotMatch(source, /url:\s*`\/pkg-milk\/nutrition-profile-settings\/index\?fromSetup=true`/);
 
-  // 首页消费标记后压入配奶设置页（fromSetup=true）。
+  // 首页消费标记后压入奶粉管理页并直接打开母乳编辑（editBreastMilk=1）。
   assert.match(homeSource, /pendingNutritionSetup/);
-  assert.match(homeSource, /url:\s*'\/pkg-milk\/nutrition-profile-settings\/index\?fromSetup=true'/);
+  assert.match(homeSource, /url:\s*'\/pkg-milk\/powder-management\/index\?editBreastMilk=1'/);
   assert.doesNotMatch(homeSource, /url:\s*`\/pages\/nutrition-settings\/index\?fromSetup=true`/);
 });

@@ -1,0 +1,9 @@
+{
+  "name": "systemPowderManager",
+  "version": "1.0.0",
+  "description": "开发者管理系统奶粉库（powder_catalog 增删改查与版本刷新）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

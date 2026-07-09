@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "2026.07.09",
+  "items": [
+    {
+      "powderCode": "SF_NAN_AMINOMIX_1",
+      "name": "纽迪希亚 Anamix Infant 1段",
+      "category": "special_formula",
+      "brand": "纽迪希亚",
+      "stage": "1段",
+      "image": "",
+      "nutritionPer100g": { "protein": 13.1, "calories": 505, "fat": 26, "carbs": 55, "fiber": 0 },
+      "mixRatio": { "powder": 13.5, "water": 90 },
+      "alias": ["Anamix", "特护1段", "纽迪希亚特护"],
+      "description": "MMA 常用特殊配方粉，按特殊蛋白计算"
+    }
+  ]
+}

@@ -65,6 +65,8 @@ test('buildFormulaPowderComponent saves formula profile, mix ratio, and category
     categoryBadgeClass: 'regular',
     categoryBadgeStyle: 'background: #EAF7D8; color: #5F8A1F; border-color: rgba(95, 138, 31, 0.24);',
     proteinRole: 'natural',
+    sourceType: 'user',
+    sourcePowderCode: '',
     waterVolume: 30,
     powderWeight: 4.5,
     ratioMode: 'standard',

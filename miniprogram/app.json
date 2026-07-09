@@ -25,7 +25,8 @@
         "milk-feeding-editor-v2/index",
         "milk-goal-planner-v2/index",
         "nutrition-profile-settings/index",
-        "food-management/index"
+        "food-management/index",
+        "powder-management/index"
       ]
     },
     {
@@ -45,6 +46,7 @@
         "feedback-list/index",
         "ocr-access-settings/index",
         "notice-settings/index",
+        "system-powder-settings/index",
         "developer-config/index",
         "group-discussion/index",
         "group-qrcode-settings/index",

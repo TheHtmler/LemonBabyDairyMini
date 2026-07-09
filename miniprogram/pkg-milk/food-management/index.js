@@ -204,8 +204,9 @@ Page({
             baseUnit: food.nutritionBasis?.unit || food.baseUnit || 'g',
             baseQuantity: Number(food.nutritionBasis?.quantity || food.baseQuantity) || 100,
             image: food.image || '',
-            displayImage: listImage,
+            displayImage: listImage || FOOD_PLACEHOLDER_IMAGE,
             showListImage: !food.isSystem && !!listImage,
+            showImageSlot: (food.libraryScope || (food.isSystem ? 'system' : 'mine')) === 'mine',
             nutritionPerUnit: food.nutritionPerBasis || food.nutritionPerUnit || {
               calories: 0,
               protein: 0,
@@ -1047,7 +1048,7 @@ Page({
 
       wx.hideLoading();
       wx.showToast({
-        title: editingId ? (this.data.editingFoodIsSystemSource ? '已保存到我的食物库' : '更新成功') : '添加成功',
+        title: editingId ? (this.data.editingFoodIsSystemSource ? '已加入我的食物' : '更新成功') : '添加成功',
         icon: 'success'
       });
 

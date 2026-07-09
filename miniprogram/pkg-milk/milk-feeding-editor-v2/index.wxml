@@ -45,6 +45,7 @@
               <view class="powder-picker-line">
                 <text wx:if="{{formulaPowders[item.powderPickerIndex]}}" class="category-badge {{formulaPowders[item.powderPickerIndex].categoryBadgeClass}}" style="{{formulaPowders[item.powderPickerIndex].categoryBadgeStyle}}">{{formulaPowders[item.powderPickerIndex].categoryShortLabel}}</text>
                 <text class="picker-text">{{formulaPowders[item.powderPickerIndex].name || item.powderSnapshot.name || '选择奶粉'}}</text>
+                <text wx:if="{{formulaPowders[item.powderPickerIndex]}}" class="entry-source-tag {{formulaPowders[item.powderPickerIndex].sourceType === 'system' ? '' : 'mine'}}">{{formulaPowders[item.powderPickerIndex].sourceType === 'system' ? '系统' : '我的'}}</text>
               </view>
             </picker>
           </view>
@@ -112,6 +113,20 @@
           <view class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">×</view>
           <view class="add-milk-dialog-manage" bindtap="goToManagePowders">去配奶粉</view>
         </view>
+      </view>
+      <view class="add-milk-library-tabs">
+        <view
+          wx:for="{{addMilkLibraryTabs}}"
+          wx:key="scope"
+          class="add-milk-library-tab {{addMilkActiveScope === item.scope ? 'active' : ''}}"
+          data-scope="{{item.scope}}"
+          bindtap="switchAddMilkScope"
+        >
+          {{item.label}}
+        </view>
+      </view>
+      <view class="add-milk-options-empty" wx:if="{{addMilkOptions.length === 0}}">
+        <text>{{addMilkActiveScope === 'system' ? '暂无系统奶粉' : '还没有奶粉，点右上角「去配奶粉」添加'}}</text>
       </view>
       <view class="add-milk-options">
         <view
