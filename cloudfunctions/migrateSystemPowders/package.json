@@ -1,0 +1,12 @@
+{
+  "name": "migrateSystemPowders",
+  "version": "1.0.0",
+  "description": "Import/seed system powder catalog from systemPowders.json into cloud database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"no tests\""
+  },
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}

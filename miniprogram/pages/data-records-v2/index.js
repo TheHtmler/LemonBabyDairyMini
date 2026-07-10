@@ -4607,11 +4607,11 @@ function createDataRecordsPageConfig(options = {}) {
         : '';
     if (!path) return;
     if (type === 'formula' && !this.isFormulaSettingsComplete()) {
-      this.promptNutritionSetup(true, '请先在“配奶管理”中填写普奶冲配参数，再记录普奶数据。');
+      this.promptNutritionSetup(true, '请先在“奶粉管理”中填写普奶冲配参数，再记录普奶数据。');
       return;
     }
     if (type === 'breast' && !this.isBreastSettingsComplete()) {
-      this.promptNutritionSetup(true, '请先在“配奶管理”中填写母乳蛋白浓度，再记录母乳数据。');
+      this.promptNutritionSetup(true, '请先在“奶粉管理”中填写母乳蛋白浓度，再记录母乳数据。');
       return;
     }
     this.setData({
@@ -6612,7 +6612,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   navigateToNutritionSettings() {
     wx.navigateTo({
-      url: '/pkg-milk/nutrition-profile-settings/index'
+      url: '/pkg-milk/powder-management/index'
     });
   },
 
@@ -6667,17 +6667,17 @@ function createDataRecordsPageConfig(options = {}) {
 
     if (naturalMilkType === 'formula') {
       if (!this.isFormulaSettingsComplete(settings)) {
-        this.promptNutritionSetup(true, '请先在“配奶管理”中填写普奶冲配参数，再记录普奶数据。');
+        this.promptNutritionSetup(true, '请先在“奶粉管理”中填写普奶冲配参数，再记录普奶数据。');
         return false;
       }
     } else if (!this.isBreastSettingsComplete(settings)) {
-      this.promptNutritionSetup(true, '请先在“配奶管理”中填写母乳蛋白浓度，再记录母乳数据。');
+      this.promptNutritionSetup(true, '请先在“奶粉管理”中填写母乳蛋白浓度，再记录母乳数据。');
       return false;
     }
 
     const specialMilkVolume = this.getSpecialMilkVolumeFromFeeding(feeding);
     if (specialMilkVolume > 0 && !this.isSpecialSettingsComplete(settings)) {
-      this.promptNutritionSetup(true, '请先在“配奶管理”中填写特奶冲配参数，再记录特奶数据。');
+      this.promptNutritionSetup(true, '请先在“奶粉管理”中填写特奶冲配参数，再记录特奶数据。');
       return false;
     }
 
@@ -6691,8 +6691,8 @@ function createDataRecordsPageConfig(options = {}) {
     }
     this.setData({ promptingNutrition: true, hasShownNutritionPrompt: true });
     wx.showModal({
-      title: '完善配奶设置',
-      content: customMessage || '请先在“配奶管理”中补充配奶参数，再记录喂奶数据。',
+      title: '完善奶粉设置',
+      content: customMessage || '请先在“奶粉管理”中补充配奶参数，再记录喂奶数据。',
       confirmText: '去设置',
       cancelText: '稍后再说',
       success: (res) => {

@@ -1,0 +1,151 @@
+<view class="powder-settings-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="hero-card">
+      <text class="hero-title">系统奶粉库管理</text>
+      <text class="hero-subtitle">此处的奶粉会出现在所有用户的「系统奶粉」库中。保存或删除后会自动刷新索引版本，客户端下次进入即同步。</text>
+      <view class="meta-row">
+        <text>当前版本</text>
+        <text class="meta-value">{{metaVersion || '尚未生成'}}</text>
+      </view>
+      <view class="meta-row">
+        <text>生效条目</text>
+        <text class="meta-value">{{metaTotal}} 款</text>
+      </view>
+    </view>
+
+    <view class="loading-card" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+
+    <block wx:if="{{!loading}}">
+      <view class="empty-list-card" wx:if="{{items.length === 0}}">
+        <text>系统奶粉库还是空的，点击下方按钮新增第一款奶粉。</text>
+      </view>
+
+      <view class="powder-card {{item.inactive ? 'inactive' : ''}}" wx:for="{{items}}" wx:key="_id">
+        <view class="powder-head">
+          <view class="powder-title-wrap">
+            <text class="powder-name">{{item.name}}</text>
+            <text class="powder-code">{{item.powderCode}}</text>
+          </view>
+          <text class="powder-category">{{item.categoryLabel}}</text>
+        </view>
+        <view class="powder-meta">
+          <text>{{item.nutritionText}}</text>
+          <text>冲配比 {{item.mixRatioText}}</text>
+        </view>
+        <view class="powder-actions">
+          <button class="mini-btn edit" size="mini" data-id="{{item._id}}" bindtap="showEditEditor">编辑</button>
+          <button class="mini-btn delete" size="mini" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="deletePowder">删除</button>
+        </view>
+      </view>
+
+      <view class="save-section">
+        <button class="save-button" bindtap="showAddEditor">+ 新增系统奶粉</button>
+      </view>
+    </block>
+  </view>
+
+  <view wx:else class="empty-card">
+    <text class="empty-title">无权限访问</text>
+    <text class="empty-subtitle">该配置仅开发者可见。</text>
+  </view>
+
+  <view class="modal" wx:if="{{showEditor}}">
+    <view class="modal-mask" bindtap="hideEditor"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">{{editorTitle}}</text>
+        <text class="modal-subtitle">保存后所有用户的「系统奶粉」库即可看到该条目</text>
+      </view>
+
+      <scroll-view class="modal-body" scroll-y>
+        <view class="form-item">
+          <text class="form-label required">名称</text>
+          <input class="form-input" value="{{draft.name}}" data-field="name" bindinput="onDraftInput" placeholder="例如 纽迪希亚 Anamix Infant 1段" />
+        </view>
+        <view class="form-item" wx:if="{{draft.id}}">
+          <text class="form-label">编码</text>
+          <view class="form-input readonly">{{draft.powderCode}}</view>
+        </view>
+        <view class="form-item">
+          <text class="form-label required">分类</text>
+          <picker mode="selector" range="{{categoryOptions}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange">
+            <view class="form-picker">{{categoryOptions[categoryIndex].label}}</view>
+          </picker>
+        </view>
+        <view class="form-item">
+          <text class="form-label">品牌</text>
+          <input class="form-input" value="{{draft.brand}}" data-field="brand" bindinput="onDraftInput" placeholder="例如 纽迪希亚" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">段位</text>
+          <input class="form-input" value="{{draft.stage}}" data-field="stage" bindinput="onDraftInput" placeholder="例如 1段" />
+        </view>
+        <view class="form-item image-item">
+          <text class="form-label">图片</text>
+          <view class="image-uploader">
+            <block wx:if="{{imagePreviewUrl}}">
+              <image class="image-preview" src="{{imagePreviewUrl}}" mode="aspectFill" bindtap="previewPowderImage" />
+              <view class="image-actions">
+                <text class="image-action" bindtap="choosePowderImage">更换</text>
+                <text class="image-action remove" bindtap="removePowderImage">移除</text>
+              </view>
+            </block>
+            <view wx:else class="image-picker" bindtap="choosePowderImage">
+              <text class="image-picker-icon">+</text>
+              <text class="image-picker-text">{{uploading ? '上传中...' : '上传包装图'}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="form-group-title">营养参数（每 100g）</view>
+        <view class="form-item">
+          <text class="form-label required">蛋白 (g)</text>
+          <input class="form-input" type="digit" value="{{draft.nutritionPer100g.protein}}" data-field="nutritionPer100g.protein" bindinput="onDraftInput" placeholder="例如 13.1" />
+        </view>
+        <view class="form-item">
+          <text class="form-label required">热量 (kcal)</text>
+          <input class="form-input" type="digit" value="{{draft.nutritionPer100g.calories}}" data-field="nutritionPer100g.calories" bindinput="onDraftInput" placeholder="例如 505" />
+        </view>
+        <view class="form-item">
+          <text class="form-label required">脂肪 (g)</text>
+          <input class="form-input" type="digit" value="{{draft.nutritionPer100g.fat}}" data-field="nutritionPer100g.fat" bindinput="onDraftInput" placeholder="例如 26" />
+        </view>
+        <view class="form-item">
+          <text class="form-label required">碳水 (g)</text>
+          <input class="form-input" type="digit" value="{{draft.nutritionPer100g.carbs}}" data-field="nutritionPer100g.carbs" bindinput="onDraftInput" placeholder="例如 55" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">纤维 (g)</text>
+          <input class="form-input" type="digit" value="{{draft.nutritionPer100g.fiber}}" data-field="nutritionPer100g.fiber" bindinput="onDraftInput" placeholder="例如 0" />
+        </view>
+
+        <view class="form-group-title">冲配比</view>
+        <view class="form-item">
+          <text class="form-label required">粉量 (g)</text>
+          <input class="form-input" type="digit" value="{{draft.mixRatio.powder}}" data-field="mixRatio.powder" bindinput="onDraftInput" placeholder="例如 13.5" />
+        </view>
+        <view class="form-item">
+          <text class="form-label required">水量 (ml)</text>
+          <input class="form-input" type="digit" value="{{draft.mixRatio.water}}" data-field="mixRatio.water" bindinput="onDraftInput" placeholder="例如 90" />
+        </view>
+
+        <view class="form-group-title">其它</view>
+        <view class="form-item">
+          <text class="form-label">别名</text>
+          <input class="form-input" value="{{draft.aliasText}}" data-field="aliasText" bindinput="onDraftInput" placeholder="用顿号分隔，例如 Anamix、特护1段" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">说明</text>
+          <input class="form-input" value="{{draft.description}}" data-field="description" bindinput="onDraftInput" placeholder="备注信息，用户不可见" />
+        </view>
+      </scroll-view>
+
+      <view class="modal-footer">
+        <button class="btn cancel" bindtap="hideEditor">取消</button>
+        <button class="btn confirm" loading="{{saving}}" disabled="{{saving}}" bindtap="saveDraft">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

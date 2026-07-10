@@ -45,6 +45,7 @@
               <view class="powder-picker-line">
                 <text wx:if="{{formulaPowders[item.powderPickerIndex]}}" class="category-badge {{formulaPowders[item.powderPickerIndex].categoryBadgeClass}}" style="{{formulaPowders[item.powderPickerIndex].categoryBadgeStyle}}">{{formulaPowders[item.powderPickerIndex].categoryShortLabel}}</text>
                 <text class="picker-text">{{formulaPowders[item.powderPickerIndex].name || item.powderSnapshot.name || '选择奶粉'}}</text>
+                <text wx:if="{{formulaPowders[item.powderPickerIndex]}}" class="entry-source-tag {{formulaPowders[item.powderPickerIndex].sourceType === 'system' ? '' : 'mine'}}">{{formulaPowders[item.powderPickerIndex].sourceType === 'system' ? '系统' : '我的'}}</text>
               </view>
             </picker>
           </view>
@@ -113,24 +114,100 @@
           <view class="add-milk-dialog-manage" bindtap="goToManagePowders">去配奶粉</view>
         </view>
       </view>
-      <view class="add-milk-options">
+      <view class="add-milk-library-tabs">
         <view
-          wx:for="{{addMilkOptions}}"
-          wx:key="key"
-          class="add-milk-option {{item.selected ? 'selected' : ''}}"
-          data-key="{{item.key}}"
-          data-index="{{index}}"
-          bindtap="toggleAddMilkOption"
+          wx:for="{{addMilkLibraryTabs}}"
+          wx:key="scope"
+          class="add-milk-library-tab {{addMilkActiveScope === item.scope ? 'active' : ''}}"
+          data-scope="{{item.scope}}"
+          bindtap="switchAddMilkScope"
         >
-          <view class="add-milk-option-source add-milk-option-source-{{index}}">
-            <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
-            <view class="add-milk-option-copy">
-              <text class="add-milk-option-title">{{item.label}}</text>
-              <text class="add-milk-option-subtitle">{{item.subLabel}}</text>
+          {{item.label}}
+        </view>
+      </view>
+      <view class="add-milk-picker-layout">
+        <scroll-view class="add-milk-category-sidebar" scroll-y enhanced show-scrollbar="{{false}}">
+          <view
+            wx:for="{{addMilkCategories}}"
+            wx:key="value"
+            class="add-milk-category-nav-item {{addMilkActiveCategory === item.value ? 'active' : ''}}"
+            data-category="{{item.value}}"
+            bindtap="switchAddMilkCategory"
+          >
+            <text class="add-milk-category-nav-label">{{item.label}}</text>
+          </view>
+          <view class="add-milk-category-empty" wx:if="{{addMilkCategories.length === 0}}">暂无分类</view>
+        </scroll-view>
+        <scroll-view class="add-milk-options-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+          <view class="add-milk-options-empty" wx:if="{{addMilkOptions.length === 0}}">
+            <text>{{addMilkActiveScope === 'system' ? '暂无系统奶粉' : '还没有奶粉，点右上角「去配奶粉」添加'}}</text>
+          </view>
+          <view class="add-milk-options">
+            <view
+              wx:for="{{addMilkOptions}}"
+              wx:key="key"
+              class="add-milk-option {{item.selected ? 'selected' : ''}}"
+              data-key="{{item.key}}"
+              data-index="{{index}}"
+              bindtap="toggleAddMilkOption"
+            >
+              <view class="add-milk-option-source add-milk-option-source-{{index}}">
+                <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
+                <image
+                  wx:if="{{item.displayImage}}"
+                  class="add-milk-option-image"
+                  src="{{item.displayImage}}"
+                  mode="aspectFill"
+                  lazy-load="{{true}}"
+                  data-url="{{item.displayImage}}"
+                  catchtap="previewAddMilkImage"
+                />
+                <view class="add-milk-option-copy">
+                  <text class="add-milk-option-title">{{item.label}}</text>
+                  <text class="add-milk-option-subtitle">{{item.subLabel}}</text>
+                </view>
+              </view>
+              <view class="add-milk-option-add {{item.selected ? 'active' : ''}}">{{item.selected ? '✓' : '+'}}</view>
             </view>
           </view>
-          <text class="add-milk-check">{{item.selected ? '已选' : '选择'}}</text>
+        </scroll-view>
+      </view>
+      <view class="add-milk-cart-detail-mask" wx:if="{{addMilkCartExpanded && addMilkCart.length > 0}}" catchtap="collapseAddMilkCart"></view>
+      <view class="add-milk-cart-detail {{addMilkCartExpanded && addMilkCart.length > 0 ? 'visible' : ''}}">
+        <view class="add-milk-cart-detail-header">
+          <text class="add-milk-cart-detail-title">已选的奶</text>
+          <text class="add-milk-cart-detail-count">{{addMilkCart.length}} 种</text>
         </view>
+        <scroll-view class="add-milk-cart-detail-list" scroll-y enhanced show-scrollbar="{{false}}">
+          <view class="add-milk-cart-detail-item" wx:for="{{addMilkCart}}" wx:key="key">
+            <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
+            <image
+              wx:if="{{item.displayImage}}"
+              class="add-milk-cart-detail-image"
+              src="{{item.displayImage}}"
+              mode="aspectFill"
+              data-url="{{item.displayImage}}"
+              catchtap="previewAddMilkImage"
+            />
+            <text class="add-milk-cart-detail-name">{{item.label}}</text>
+            <view class="add-milk-cart-detail-remove" data-key="{{item.key}}" catchtap="removeAddMilkCartItem">移除</view>
+          </view>
+        </scroll-view>
+      </view>
+      <view class="add-milk-cart-bar">
+        <view class="add-milk-cart-main" bindtap="toggleAddMilkCartExpanded">
+          <view class="add-milk-cart-anchor">
+            <text class="add-milk-cart-icon">🍼</text>
+            <text class="add-milk-cart-badge" wx:if="{{addMilkCart.length > 0}}">{{addMilkCart.length}}</text>
+          </view>
+          <view class="add-milk-cart-copy">
+            <text class="add-milk-cart-title" wx:if="{{addMilkCart.length > 0}}">已选 {{addMilkCart.length}} 种奶</text>
+            <text class="add-milk-cart-title" wx:else>已选的奶</text>
+            <text class="add-milk-cart-subtitle" wx:if="{{addMilkCart.length > 0}}">{{addMilkCartExpanded ? '收起明细' : '点击查看明细'}}</text>
+            <text class="add-milk-cart-subtitle" wx:else>点奶右侧的 + 添加到这里</text>
+          </view>
+        </view>
+        <view class="add-milk-cart-confirm" catchtap="confirmAddMilkPanel">确定</view>
       </view>
     </view>
   </view>

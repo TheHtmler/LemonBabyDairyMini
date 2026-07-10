@@ -55,11 +55,11 @@ const MENU_GROUPS = [
     title: '喂养管理',
     items: [
       {
-        id: 2,
-        name: '配奶管理',
+        id: 10,
+        name: '奶粉管理',
         icon: 'setting',
-        path: '/pkg-milk/nutrition-profile-settings/index',
-        description: '维护母乳参数、奶粉档案和能量补充粉'
+        path: '/pkg-milk/powder-management/index',
+        description: '维护母乳参数、我的奶粉与系统奶粉'
       },
       {
         id: 9,

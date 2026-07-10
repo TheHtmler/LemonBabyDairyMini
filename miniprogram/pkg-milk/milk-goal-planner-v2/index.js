@@ -302,14 +302,14 @@ Page({
     }
   },
 
-  // 选奶弹窗内的引导入口：新用户没配过奶粉时分组无可选项，这里跳到配奶设置页去添加奶粉。
+  // 选奶弹窗内的引导入口：新用户没配过奶粉时分组无可选项，这里跳到奶粉管理去添加奶粉。
   goToManagePowders() {
     this._pendingPowderRefresh = true;
     wxApi.navigateTo({
-      url: '/pkg-milk/nutrition-profile-settings/index?view=powders',
+      url: '/pkg-milk/powder-management/index',
       fail: (err) => {
         this._pendingPowderRefresh = false;
-        console.error('打开配奶设置页失败：', err);
+        console.error('打开奶粉管理页失败：', err);
       }
     });
   },

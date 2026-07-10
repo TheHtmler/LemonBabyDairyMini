@@ -19,6 +19,12 @@ const CONFIG_ITEMS = [
     name: '群二维码配置',
     description: '上传并更新加群讨论页展示的用户群二维码',
     path: '/pkg-misc/group-qrcode-settings/index'
+  },
+  {
+    id: 'system-powder',
+    name: '系统奶粉库管理',
+    description: '新增、编辑或下架所有用户可见的系统奶粉',
+    path: '/pkg-misc/system-powder-settings/index'
   }
 ];
 

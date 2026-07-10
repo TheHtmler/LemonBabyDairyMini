@@ -1,4 +1,5 @@
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
+const PowderCatalogModel = require('../../models/powderCatalog');
 const feedingRecordV2Model = require('../../models/feedingRecordV2');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
@@ -13,11 +14,21 @@ const {
 } = require('../../utils/nutritionTargetPreview');
 const {
   BREAST_MILK_TAG_META,
+  POWDER_CATEGORIES,
   POWDER_CATEGORY_META,
+  POWDER_CATEGORY_ORDER,
   POWDER_STATUSES,
   buildCategoryBadgeStyle,
   sortFormulaPowdersByCategory
 } = require('../../utils/formulaPowderUtils');
+
+// 选奶弹窗侧栏用短标签：全称（如“普通配方粉”）在窄侧栏里选中加粗后会折行错乱
+const ADD_MILK_CATEGORY_LABELS = {
+  [POWDER_CATEGORIES.BREAST_MILK]: '母乳',
+  [POWDER_CATEGORIES.REGULAR_FORMULA]: '普奶',
+  [POWDER_CATEGORIES.SPECIAL_FORMULA]: '特奶',
+  [POWDER_CATEGORIES.ENERGY_SUPPLEMENT]: '能量粉'
+};
 const {
   buildBreastMilkComponent,
   buildFormulaPowderComponent,
@@ -31,6 +42,11 @@ const {
 } = require('../../utils/reminderSubscriptionPrompt');
 
 const getNutritionProfileSettings = MilkNutritionProfileModel.getNutritionProfileSettings.bind(MilkNutritionProfileModel);
+const getSystemPowders = PowderCatalogModel.getSystemPowders.bind(PowderCatalogModel);
+// 测试桩可能没有该方法，兜底为原样返回
+const resolvePowderImageUrls = typeof PowderCatalogModel.resolvePowderImageUrls === 'function'
+  ? PowderCatalogModel.resolvePowderImageUrls.bind(PowderCatalogModel)
+  : async (powders) => powders;
 const addFeedingRecordV2 = feedingRecordV2Model.addRecord.bind(feedingRecordV2Model);
 const updateFeedingRecordV2 = feedingRecordV2Model.updateRecord.bind(feedingRecordV2Model);
 const markDailySummaryDirty = DailySummaryV2Model.markDirty.bind(DailySummaryV2Model);
@@ -152,6 +168,57 @@ function enrichPowder(powder = {}) {
   };
 }
 
+// 我的奶粉：来自 milk_nutrition_profiles.formulaPowders，标记来源便于录入快照写 sourceType。
+function enrichMinePowder(powder = {}) {
+  return {
+    ...enrichPowder(powder),
+    sourceType: 'user',
+    sourcePowderCode: powder.sourceSystemPowderId || ''
+  };
+}
+
+// 系统奶粉：来自云端 powder_catalog，映射成可选奶粉结构并标记 sourceType=system。
+function enrichSystemPowder(powder = {}) {
+  const powderCode = powder.powderCode || powder._id || powder.id || '';
+  return {
+    ...enrichPowder({
+      id: powderCode,
+      name: powder.name || '未命名奶粉',
+      category: powder.category || '',
+      proteinRole: powder.proteinRole || 'natural',
+      image: powder.image || '',
+      nutritionPer100g: powder.nutritionPer100g || {},
+      mixRatio: powder.mixRatio || {},
+      status: POWDER_STATUSES.ACTIVE
+    }),
+    sourceType: 'system',
+    sourcePowderCode: powderCode,
+    libraryScope: 'system'
+  };
+}
+
+// 云存储图片（cloud://）需换临时链接后才能展示，其余地址直接用
+function getPowderDisplayImage(powder = {}) {
+  if (powder.imageUrl) {
+    return powder.imageUrl;
+  }
+  const image = (powder.image || '').toString().trim();
+  return image.startsWith('cloud://') ? '' : image;
+}
+
+// 合并我的+系统奶粉：已加入我的奶粉的系统项（sourceSystemPowderId 命中）不再重复展示。
+function mergeSelectablePowders(minePowders = [], systemPowders = []) {
+  const usedSystemCodes = new Set(
+    (minePowders || [])
+      .map((powder) => powder.sourcePowderCode || powder.sourceSystemPowderId)
+      .filter(Boolean)
+  );
+  const dedupedSystem = (systemPowders || []).filter(
+    (powder) => !usedSystemCodes.has(powder.sourcePowderCode)
+  );
+  return sortFormulaPowdersByCategory([...(minePowders || []), ...dedupedSystem]);
+}
+
 function createFormulaEntry(powder = {}, overrides = {}) {
   return {
     localId: overrides.localId || `formula_${powder.id || 'unknown'}_${Date.now()}`,
@@ -176,15 +243,19 @@ function createBreastEntry(overrides = {}) {
 }
 
 function createPowderFromComponent(component = {}) {
-  return enrichPowder({
-    id: component.powderId || '',
-    name: component.powderName || '历史奶粉',
-    category: component.category || '',
-    proteinRole: component.proteinRole || 'natural',
-    nutritionPer100g: component.nutritionSnapshot || {},
-    mixRatio: component.mixRatioSnapshot || {},
-    status: POWDER_STATUSES.ACTIVE
-  });
+  return {
+    ...enrichPowder({
+      id: component.powderId || '',
+      name: component.powderName || '历史奶粉',
+      category: component.category || '',
+      proteinRole: component.proteinRole || 'natural',
+      nutritionPer100g: component.nutritionSnapshot || {},
+      mixRatio: component.mixRatioSnapshot || {},
+      status: POWDER_STATUSES.ACTIVE
+    }),
+    sourceType: component.sourceType || 'user',
+    sourcePowderCode: component.sourcePowderCode || ''
+  };
 }
 
 function canLoadDailyTargetContext(wxLike = wxApi) {
@@ -234,6 +305,15 @@ Page({
     },
     showAddMilkPanel: false,
     addMilkOptions: [],
+    addMilkCart: [],
+    addMilkCartExpanded: false,
+    addMilkLibraryTabs: [
+      { scope: 'mine', label: '我的奶粉' },
+      { scope: 'system', label: '系统奶粉' }
+    ],
+    addMilkActiveScope: 'mine',
+    addMilkCategories: [],
+    addMilkActiveCategory: '',
     flyMilkAnimation: {
       active: false,
       badge: '',
@@ -288,7 +368,7 @@ Page({
     }
 
     try {
-      const [settings, basicInfo, records] = await Promise.all([
+      const [settings, basicInfo, records, systemPowders] = await Promise.all([
         getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
         resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
           includeFallbacks: false,
@@ -296,16 +376,19 @@ Page({
           // 当天成长记录可能只有身高体重、缺蛋白系数，补齐历史系数，避免存下缺系数的喂奶快照。
           carryForwardMissing: true
         }),
-        getV2RecordsByDate(this.data.babyUid, this.data.selectedDate)
+        getV2RecordsByDate(this.data.babyUid, this.data.selectedDate),
+        this.loadSystemSelectablePowders()
       ]);
       const targetContext = await this.loadTargetContext(basicInfo || {}, records || []);
-      const formulaPowders = ((settings && settings.formulaPowders) || [])
+      const minePowders = ((settings && settings.formulaPowders) || [])
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
-        .map(enrichPowder);
+        .map(enrichMinePowder);
+
+      const formulaPowders = await resolvePowderImageUrls(mergeSelectablePowders(minePowders, systemPowders));
 
       this.setData({
         nutritionSettings: settings || {},
-        formulaPowders: sortFormulaPowdersByCategory(formulaPowders),
+        formulaPowders,
         existingRecords: records || [],
         targetContext,
         weight: toInputValue(basicInfo?.weight),
@@ -455,35 +538,54 @@ Page({
     });
   },
 
-  // 选奶弹窗内的引导入口：新手没配过奶粉时只有“母乳”，这里跳到配奶设置页的奶粉管理去添加奶粉。
+  // 选奶弹窗内的引导入口：新手没配过奶粉时只有“母乳”，这里跳到奶粉管理去添加奶粉。
   goToManagePowders() {
     this._pendingPowderRefresh = true;
     wxApi.navigateTo({
-      url: '/pkg-milk/nutrition-profile-settings/index?view=powders',
+      url: '/pkg-milk/powder-management/index',
       fail: (err) => {
         this._pendingPowderRefresh = false;
-        console.error('打开配奶设置页失败：', err);
+        console.error('打开奶粉管理页失败：', err);
       }
     });
+  },
+
+  // 加载系统奶粉（云端 powder_catalog）作为可选奶粉；失败/为空时返回空数组，页面照常展示我的奶粉。
+  async loadSystemSelectablePowders() {
+    try {
+      const items = await getSystemPowders();
+      return (items || []).map(enrichSystemPowder);
+    } catch (error) {
+      console.warn('加载系统奶粉失败：', error);
+      return [];
+    }
   },
 
   // 仅刷新奶粉档案与依赖它的视图，不动 milkEntries（本次已录入的奶）。
   async reloadFormulaPowders() {
     if (!this.data.babyUid) return;
     try {
-      const settings = await getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false });
-      const formulaPowders = sortFormulaPowdersByCategory(
-        ((settings && settings.formulaPowders) || [])
-          .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
-          .map(enrichPowder)
-      );
+      const [settings, systemPowders] = await Promise.all([
+        getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
+        this.loadSystemSelectablePowders()
+      ]);
+      const minePowders = ((settings && settings.formulaPowders) || [])
+        .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
+        .map(enrichMinePowder);
+      const formulaPowders = await resolvePowderImageUrls(mergeSelectablePowders(minePowders, systemPowders));
       this.setData({
         nutritionSettings: settings || this.data.nutritionSettings,
         formulaPowders,
         milkEntries: this.normalizeMilkEntries(this.data.milkEntries || [])
       }, () => {
         if (this.data.showAddMilkPanel) {
-          this.setData({ addMilkOptions: this.buildAddMilkOptions() });
+          const categories = this.buildAddMilkCategories();
+          const activeCategory = this.getNextAddMilkCategory(categories, this.data.addMilkActiveCategory);
+          this.setData({
+            addMilkCategories: categories,
+            addMilkActiveCategory: activeCategory,
+            addMilkOptions: this.buildAddMilkOptions(this.data.addMilkActiveScope, activeCategory)
+          });
         }
         this.refreshNutritionPreview();
       });
@@ -492,11 +594,55 @@ Page({
     }
   },
 
-  isAddMilkOptionSelected(option = {}, entries = this.data.milkEntries || []) {
+  // 选项的选中态跟随弹窗内购物车，点「确定」才同步到奶单
+  isAddMilkOptionSelected(option = {}, cart = this.data.addMilkCart || []) {
     if (option.kind === 'breast_milk') {
-      return (entries || []).some((entry) => entry.kind === 'breast_milk');
+      return (cart || []).some((item) => item.kind === 'breast_milk');
     }
-    return (entries || []).some((entry) => entry.kind === 'formula_powder' && entry.powderId === option.powderId);
+    return (cart || []).some((item) => item.kind === 'formula_powder' && item.powderId === option.powderId);
+  },
+
+  buildAddMilkCartItem(option = {}) {
+    return {
+      key: option.key,
+      kind: option.kind,
+      powderId: option.powderId || '',
+      label: option.label || (option.kind === 'breast_milk' ? '母乳' : '未命名奶粉'),
+      displayImage: option.displayImage || '',
+      categoryShortLabel: option.categoryShortLabel || '奶',
+      categoryBadgeClass: option.categoryBadgeClass || '',
+      categoryBadgeStyle: option.categoryBadgeStyle || ''
+    };
+  },
+
+  // 打开弹窗时把已有奶单还原成购物车，保证取消勾选=从奶单移除
+  buildAddMilkCartFromEntries(entries = this.data.milkEntries || []) {
+    const powders = this.data.formulaPowders || [];
+    return (entries || []).map((entry) => {
+      if (entry.kind === 'breast_milk') {
+        return {
+          key: 'breast_milk',
+          kind: 'breast_milk',
+          powderId: '',
+          label: '母乳',
+          displayImage: '',
+          categoryShortLabel: '母',
+          categoryBadgeClass: 'breast',
+          categoryBadgeStyle: buildCategoryBadgeStyle(BREAST_MILK_TAG_META)
+        };
+      }
+      const powder = powders.find((item) => item.id === entry.powderId) || {};
+      return {
+        key: `powder:${entry.powderId}`,
+        kind: 'formula_powder',
+        powderId: entry.powderId,
+        label: powder.name || '历史奶粉',
+        displayImage: getPowderDisplayImage(powder),
+        categoryShortLabel: powder.categoryShortLabel || '奶',
+        categoryBadgeClass: powder.categoryBadgeClass || '',
+        categoryBadgeStyle: powder.categoryBadgeStyle || ''
+      };
+    });
   },
 
   isEntryForAddMilkOption(entry = {}, option = {}) {
@@ -517,35 +663,125 @@ Page({
     return createFormulaEntry(powder, { powderPickerIndex, justAdded: true });
   },
 
-  buildAddMilkOptions() {
-    const options = [
-      {
+  // 选项副标题展示关键营养指标（蛋白/热量），母乳按 100ml、奶粉按 100g
+  buildAddMilkNutritionLabel(nutrition = {}, unitLabel = '100g') {
+    const protein = Number(nutrition.protein);
+    const calories = Number(nutrition.calories);
+    if (!Number.isFinite(protein) && !Number.isFinite(calories)) {
+      return '';
+    }
+    const parts = [];
+    if (Number.isFinite(protein)) {
+      parts.push(`蛋白 ${protein}g`);
+    }
+    if (Number.isFinite(calories)) {
+      parts.push(`热量 ${calories}kcal`);
+    }
+    return `${unitLabel}：${parts.join('  ')}`;
+  },
+
+  // 按 Tab 分库展示：我的奶粉（含母乳）/ 系统奶粉，Tab 内再按分类筛选，交互与食物选择一致。
+  buildScopedAddMilkOptions(scope = this.data.addMilkActiveScope) {
+    const isSystemScope = scope === 'system';
+    const scopedPowders = (this.data.formulaPowders || []).filter((powder) => (
+      isSystemScope
+        ? powder.sourceType === 'system'
+        : powder.sourceType !== 'system'
+    ));
+    const settings = this.data.nutritionSettings || {};
+    const breastMilkLabel = this.buildAddMilkNutritionLabel({
+      protein: settings.natural_milk_protein,
+      calories: settings.natural_milk_calories
+    }, '100ml');
+
+    return [
+      ...(isSystemScope ? [] : [{
         key: 'breast_milk',
         kind: 'breast_milk',
+        category: POWDER_CATEGORIES.BREAST_MILK,
         label: '母乳',
-        subLabel: '记录母乳体积',
+        subLabel: breastMilkLabel || '记录母乳体积',
         categoryShortLabel: '母',
         categoryBadgeClass: 'breast',
         categoryBadgeStyle: buildCategoryBadgeStyle(BREAST_MILK_TAG_META),
         selected: false
-      },
-      ...sortFormulaPowdersByCategory(this.data.formulaPowders || []).map((powder) => ({
+      }]),
+      ...sortFormulaPowdersByCategory(scopedPowders).map((powder) => ({
         key: `powder:${powder.id}`,
         kind: 'formula_powder',
         powderId: powder.id,
+        category: powder.category || '',
+        sourceType: powder.sourceType || 'user',
+        sourcePowderCode: powder.sourcePowderCode || powder.sourceSystemPowderId || '',
+        scopeLabel: isSystemScope ? '系统' : '我的',
         label: powder.name || '未命名奶粉',
-        subLabel: `${powder.categoryShortLabel || '奶'}类奶粉`,
+        subLabel: this.buildAddMilkNutritionLabel(powder.nutritionPer100g || {}, '100g')
+          || `${powder.categoryShortLabel || '奶'}类奶粉`,
+        displayImage: getPowderDisplayImage(powder),
         categoryShortLabel: powder.categoryShortLabel || '奶',
         categoryBadgeClass: powder.categoryBadgeClass || '',
         categoryBadgeStyle: powder.categoryBadgeStyle || '',
         selected: false
       }))
     ];
+  },
 
-    return options.map((option) => ({
+  // 侧栏首项固定为「全部」：喂奶常需跨分类同时选母乳+特奶，默认全量展示少一步点击。
+  buildAddMilkCategories(scope = this.data.addMilkActiveScope) {
+    const presentCategories = new Set(
+      this.buildScopedAddMilkOptions(scope).map((option) => option.category).filter(Boolean)
+    );
+    const categories = POWDER_CATEGORY_ORDER
+      .filter((category) => presentCategories.has(category))
+      .map((category) => ({
+        value: category,
+        label: ADD_MILK_CATEGORY_LABELS[category] || (POWDER_CATEGORY_META[category] || {}).label || category
+      }));
+    if (categories.length === 0) {
+      return [];
+    }
+    return [{ value: 'all', label: '全部' }, ...categories];
+  },
+
+  getNextAddMilkCategory(categories = [], preferredCategory = '') {
+    if (preferredCategory && categories.some((item) => item.value === preferredCategory)) {
+      return preferredCategory;
+    }
+    return categories.length > 0 ? categories[0].value : '';
+  },
+
+  buildAddMilkOptions(scope = this.data.addMilkActiveScope, category = this.data.addMilkActiveCategory, cart = this.data.addMilkCart) {
+    const options = this.buildScopedAddMilkOptions(scope);
+    const filtered = category && category !== 'all'
+      ? options.filter((option) => option.category === category)
+      : options;
+
+    return filtered.map((option) => ({
       ...option,
-      selected: this.isAddMilkOptionSelected(option)
+      selected: this.isAddMilkOptionSelected(option, cart)
     }));
+  },
+
+  switchAddMilkScope(e) {
+    const { scope } = e.currentTarget.dataset || {};
+    if (!scope || scope === this.data.addMilkActiveScope) return;
+    const categories = this.buildAddMilkCategories(scope);
+    const activeCategory = this.getNextAddMilkCategory(categories, '');
+    this.setData({
+      addMilkActiveScope: scope,
+      addMilkActiveCategory: activeCategory,
+      addMilkCategories: categories,
+      addMilkOptions: this.buildAddMilkOptions(scope, activeCategory)
+    });
+  },
+
+  switchAddMilkCategory(e) {
+    const { category } = e.currentTarget.dataset || {};
+    if (!category || category === this.data.addMilkActiveCategory) return;
+    this.setData({
+      addMilkActiveCategory: category,
+      addMilkOptions: this.buildAddMilkOptions(this.data.addMilkActiveScope, category)
+    });
   },
 
   addMilkEntry() {
@@ -554,28 +790,39 @@ Page({
 
   openAddMilkPanel() {
     dismissKeyboard();
+    const categories = this.buildAddMilkCategories('mine');
+    const activeCategory = this.getNextAddMilkCategory(categories, '');
+    const cart = this.buildAddMilkCartFromEntries();
     this.setData({
       showAddMilkPanel: true,
-      addMilkOptions: this.buildAddMilkOptions()
+      addMilkActiveScope: 'mine',
+      addMilkActiveCategory: activeCategory,
+      addMilkCategories: categories,
+      addMilkCart: cart,
+      addMilkCartExpanded: false,
+      addMilkOptions: this.buildAddMilkOptions('mine', activeCategory, cart)
     }, dismissKeyboard);
   },
 
-  buildFlyMilkStyle(flight = {}, moving = false) {
+  buildFlyMilkStyle(flight = {}, moving = false, options = {}) {
     const fromX = Number.isFinite(Number(flight.fromX)) ? Number(flight.fromX) : 0;
     const fromY = Number.isFinite(Number(flight.fromY)) ? Number(flight.fromY) : 0;
     const toX = Number.isFinite(Number(flight.toX)) ? Number(flight.toX) : fromX;
     const toY = Number.isFinite(Number(flight.toY)) ? Number(flight.toY) : fromY;
     const dx = moving ? Math.round(toX - fromX) : 0;
     const dy = moving ? Math.round(toY - fromY) : 0;
-    const opacity = moving ? 0 : 1;
+    const scale = moving ? 0.4 : 1;
+    // hidden：测量起点前先占位不显示，避免从兜底坐标跳到实际坐标的闪动
+    const opacity = options.hidden ? 0 : (moving ? 0 : 1);
+    // 减速滑入目标并同步缩小、渐隐，比匀加速冲刺后瞬间消失更顺滑
     const transition = moving
-      ? 'transform 760ms cubic-bezier(0.55, 0, 1, 0.45), opacity 260ms ease-out 500ms'
+      ? 'transform 620ms cubic-bezier(0.2, 0.72, 0.3, 1), opacity 320ms ease-out 280ms'
       : 'none';
 
     return [
       `left: ${Math.round(fromX)}px`,
       `top: ${Math.round(fromY)}px`,
-      `transform: translate3d(${dx}px, ${dy}px, 0)`,
+      `transform: translate3d(${dx}px, ${dy}px, 0) scale(${scale})`,
       `opacity: ${opacity}`,
       `transition: ${transition}`
     ].join('; ');
@@ -583,12 +830,12 @@ Page({
 
   getFallbackFlight(touch = {}) {
     const fromX = Number.isFinite(Number(touch.clientX)) ? Number(touch.clientX) : 180;
-    const fromY = Number.isFinite(Number(touch.clientY)) ? Number(touch.clientY) : 520;
+    const fromY = Number.isFinite(Number(touch.clientY)) ? Number(touch.clientY) : 400;
     return {
       fromX,
       fromY,
-      toX: 24,
-      toY: 220
+      toX: 40,
+      toY: 620
     };
   },
 
@@ -607,7 +854,7 @@ Page({
       scopedQuery.select(`.add-milk-option-source-${optionIndex}`).boundingClientRect((rect) => {
         sourceRect = rect;
       });
-      scopedQuery.select('.milk-entry-list-anchor').boundingClientRect((rect) => {
+      scopedQuery.select('.add-milk-cart-anchor').boundingClientRect((rect) => {
         targetRect = rect;
       });
       scopedQuery.exec(() => {
@@ -626,6 +873,7 @@ Page({
     });
   },
 
+  // 点 +/✓ 只进出弹窗底部购物车，点「确定」才把购物车同步到奶单
   toggleAddMilkOption(e) {
     const key = e.currentTarget.dataset.key;
     if (!key) return;
@@ -635,47 +883,108 @@ Page({
     if (!option) return;
 
     if (option.selected) {
-      const nextEntries = (this.data.milkEntries || []).filter((entry) => !this.isEntryForAddMilkOption(entry, option));
-      this.setData({
-        milkEntries: nextEntries,
-        addMilkOptions: (this.data.addMilkOptions || []).map((item) => (
-          item.key === key ? { ...item, selected: false } : item
-        ))
-      }, () => {
-        dismissKeyboard();
-        this.refreshNutritionPreview();
-      });
+      this.removeFromAddMilkCart(key);
       return;
     }
 
-    const nextEntry = this.createEntryFromAddMilkOption(option);
-    if (!nextEntry) return;
-
+    const cart = [
+      ...(this.data.addMilkCart || []),
+      this.buildAddMilkCartItem(option)
+    ];
     this.setData({
-      milkEntries: [
-        ...(this.data.milkEntries || []),
-        nextEntry
-      ],
+      addMilkCart: cart,
       addMilkOptions: (this.data.addMilkOptions || []).map((item) => (
         item.key === key ? { ...item, selected: true } : item
       ))
     }, () => {
       dismissKeyboard();
       this.playAddMilkAnimation(option, optionIndex, touch);
+    });
+  },
+
+  removeFromAddMilkCart(key) {
+    if (!key) return;
+    const cart = (this.data.addMilkCart || []).filter((item) => item.key !== key);
+    this.setData({
+      addMilkCart: cart,
+      // 清空后明细没有内容可看，自动收起
+      addMilkCartExpanded: cart.length > 0 ? this.data.addMilkCartExpanded : false,
+      addMilkOptions: (this.data.addMilkOptions || []).map((item) => (
+        item.key === key ? { ...item, selected: false } : item
+      ))
+    }, dismissKeyboard);
+  },
+
+  removeAddMilkCartItem(e) {
+    const { key } = e.currentTarget.dataset || {};
+    this.removeFromAddMilkCart(key);
+  },
+
+  previewAddMilkImage(e) {
+    const { url } = e.currentTarget.dataset || {};
+    if (!url || typeof wxApi.previewImage !== 'function') return;
+    wxApi.previewImage({
+      urls: [url],
+      current: url
+    });
+  },
+
+  toggleAddMilkCartExpanded() {
+    if ((this.data.addMilkCart || []).length === 0) {
+      this.setData({ addMilkCartExpanded: false });
+      return;
+    }
+    this.setData({ addMilkCartExpanded: !this.data.addMilkCartExpanded });
+  },
+
+  collapseAddMilkCart() {
+    this.setData({ addMilkCartExpanded: false });
+  },
+
+  // 确定：购物车与奶单做差量同步，已有条目保留录入值，新增条目带入场动画
+  confirmAddMilkPanel() {
+    const cart = this.data.addMilkCart || [];
+    const currentEntries = this.data.milkEntries || [];
+
+    const keptEntries = currentEntries.filter((entry) => (
+      cart.some((item) => this.isEntryForAddMilkOption(entry, item))
+    ));
+    const newEntries = cart
+      .filter((item) => !currentEntries.some((entry) => this.isEntryForAddMilkOption(entry, item)))
+      .map((item) => this.createEntryFromAddMilkOption(item))
+      .filter(Boolean);
+
+    this.setData({
+      milkEntries: [...keptEntries, ...newEntries],
+      showAddMilkPanel: false,
+      addMilkOptions: [],
+      addMilkCart: [],
+      addMilkCartExpanded: false
+    }, () => {
+      dismissKeyboard();
       this.refreshNutritionPreview();
     });
+
+    const timer = setTimeout(() => {
+      this.setData({
+        milkEntries: (this.data.milkEntries || []).map((entry) => ({ ...entry, justAdded: false }))
+      });
+    }, 600);
+    if (timer && typeof timer.unref === 'function') {
+      timer.unref();
+    }
   },
 
   playAddMilkAnimation(option = {}, optionIndex = 0, touch = {}) {
     const fallbackFlight = this.getFallbackFlight(touch);
-    const startStyle = this.buildFlyMilkStyle(fallbackFlight, false);
+    // 先隐藏占位，等测到真实起点再显示，避免幽灵从兜底坐标跳位
     this.setData({
       flyMilkAnimation: {
         active: true,
         badge: option.categoryShortLabel || '奶',
         label: option.label || '奶',
         count: 1,
-        style: startStyle
+        style: this.buildFlyMilkStyle(fallbackFlight, false, { hidden: true })
       }
     });
 
@@ -698,7 +1007,7 @@ Page({
 
     const timer = setTimeout(() => {
       this.clearAddMilkAnimation();
-    }, 900);
+    }, 760);
     if (timer && typeof timer.unref === 'function') {
       timer.unref();
     }
@@ -723,7 +1032,9 @@ Page({
   cancelAddMilkPanel() {
     this.setData({
       showAddMilkPanel: false,
-      addMilkOptions: []
+      addMilkOptions: [],
+      addMilkCart: [],
+      addMilkCartExpanded: false
     });
   },
 

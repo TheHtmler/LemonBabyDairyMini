@@ -36,14 +36,15 @@ test('app.json registers nutrition profile settings page and drops the legacy pa
   assert.ok(!appConfigHasPage(appConfig, 'pkg-milk/nutrition-settings/index'));
 });
 
-test('profile menu switches 配奶管理 to nutrition profile settings without exposing v2 wording', () => {
+test('profile menu replaces 配奶管理 with 奶粉管理 pointing at powder-management', () => {
   const page = loadProfilePage();
-  const legacyItem = getProfileMenuItems(page).find((item) => item.path === '/pkg-milk/nutrition-settings/index');
-  const nutritionItem = getProfileMenuItems(page).find((item) => item.path === '/pkg-milk/nutrition-profile-settings/index');
+  const menuItems = getProfileMenuItems(page);
+  const legacyItem = menuItems.find((item) => item.path === '/pkg-milk/nutrition-profile-settings/index');
+  const powderItem = menuItems.find((item) => item.path === '/pkg-milk/powder-management/index');
 
   assert.equal(legacyItem, undefined);
-  assert.ok(nutritionItem);
-  assert.equal(nutritionItem.name, '配奶管理');
-  assert.doesNotMatch(nutritionItem.name, /v2/i);
-  assert.match(nutritionItem.description, /配方粉|奶粉|档案/);
+  assert.ok(powderItem);
+  assert.equal(powderItem.name, '奶粉管理');
+  assert.doesNotMatch(powderItem.name, /v2/i);
+  assert.match(powderItem.description, /母乳|奶粉/);
 });

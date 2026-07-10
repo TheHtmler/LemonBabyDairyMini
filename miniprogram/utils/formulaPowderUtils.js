@@ -1,18 +1,21 @@
 const MILK_CATEGORY_TAG_CONFIG = require('../config/milkCategoryTags');
 
 const POWDER_CATEGORIES = {
+  BREAST_MILK: 'breast_milk',
   REGULAR_FORMULA: 'regular_formula',
   SPECIAL_FORMULA: 'special_formula',
   ENERGY_SUPPLEMENT: 'energy_supplement'
 };
 
 const POWDER_CATEGORY_META = {
+  [POWDER_CATEGORIES.BREAST_MILK]: MILK_CATEGORY_TAG_CONFIG.breast_milk,
   [POWDER_CATEGORIES.REGULAR_FORMULA]: MILK_CATEGORY_TAG_CONFIG[POWDER_CATEGORIES.REGULAR_FORMULA],
   [POWDER_CATEGORIES.SPECIAL_FORMULA]: MILK_CATEGORY_TAG_CONFIG[POWDER_CATEGORIES.SPECIAL_FORMULA],
   [POWDER_CATEGORIES.ENERGY_SUPPLEMENT]: MILK_CATEGORY_TAG_CONFIG[POWDER_CATEGORIES.ENERGY_SUPPLEMENT]
 };
 
 const POWDER_CATEGORY_ORDER = [
+  POWDER_CATEGORIES.BREAST_MILK,
   POWDER_CATEGORIES.REGULAR_FORMULA,
   POWDER_CATEGORIES.SPECIAL_FORMULA,
   POWDER_CATEGORIES.ENERGY_SUPPLEMENT
@@ -133,6 +136,7 @@ function normalizeFormulaPowders(powders = []) {
         mixRatio: normalizeMixRatio(powder.mixRatio),
         status,
         source: powder.source || 'user',
+        sourceSystemPowderId: powder.sourceSystemPowderId || '',
         createdAt: powder.createdAt || null,
         updatedAt: powder.updatedAt || null,
         deletedAt: status === POWDER_STATUSES.ARCHIVED ? (powder.deletedAt || null) : null
@@ -454,5 +458,8 @@ module.exports = {
   normalizeMixingPlans,
   calculatePowderNutrition,
   calculateMixingPlanPreview,
-  createFormulaComponentsFromLegacyFeeding
+  createFormulaComponentsFromLegacyFeeding,
+  getDefaultProteinRole,
+  normalizeNutritionPer100g,
+  normalizeMixRatio
 };

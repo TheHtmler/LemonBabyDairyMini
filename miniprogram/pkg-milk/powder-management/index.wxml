@@ -1,0 +1,357 @@
+<page-meta page-style="{{showAddModal ? 'overflow: hidden;' : ''}}" />
+<view class="container">
+  <view class="powder-data-disclaimer">
+    <text class="disclaimer-title">免责声明</text>
+    <text class="disclaimer-text">系统奶粉数据来自公开营养资料，仅供参考；实际使用前请结合包装标识、医嘱或检测结果校准成分。</text>
+    <text class="disclaimer-text disclaimer-tip">提示：奶粉配方可能随版本迭代调整，请对照实际购买的奶粉包装核对成分信息，以实物标注为准。</text>
+  </view>
+
+  <view class="search-bar" wx:if="{{!loading && (groupedPowders.length > 0 || searchQuery)}}">
+    <view class="library-tabs">
+      <view
+        class="library-tab {{activeLibraryScope === item.scope ? 'active' : ''}}"
+        wx:for="{{libraryTabs}}"
+        wx:key="scope"
+        data-scope="{{item.scope}}"
+        bindtap="switchLibraryScope"
+      >
+        {{item.label}}
+      </view>
+    </view>
+    <view class="search-input-wrap">
+      <text class="search-icon">搜索</text>
+      <input
+        class="search-input"
+        placeholder="支持模糊搜索奶粉名、品牌或别名"
+        value="{{searchQuery}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{searchQuery}}" bindtap="clearSearch">清空</text>
+    </view>
+    <view class="search-summary">
+      <text>共 {{filteredPowderCount}} 款奶粉</text>
+      <text wx:if="{{searchQuery}}">已按关键词筛选</text>
+    </view>
+  </view>
+
+  <view class="search-bar search-bar-tabs-only" wx:elif="{{!loading}}">
+    <view class="library-tabs">
+      <view
+        class="library-tab {{activeLibraryScope === item.scope ? 'active' : ''}}"
+        wx:for="{{libraryTabs}}"
+        wx:key="scope"
+        data-scope="{{item.scope}}"
+        bindtap="switchLibraryScope"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text class="loading-title">加载中...</text>
+  </view>
+
+  <view class="food-layout" wx:if="{{!loading && groupedPowders.length > 0}}">
+    <scroll-view
+      class="category-sidebar"
+      scroll-y
+      enhanced
+      show-scrollbar="{{false}}"
+    >
+      <block wx:for="{{groupedPowders}}" wx:key="category">
+        <view
+          id="{{item.navId}}"
+          class="category-nav-item {{activeCategory === item.category ? 'active' : ''}}"
+          data-category="{{item.category}}"
+          bindtap="switchCategory"
+        >
+          <text class="category-nav-name">{{item.categoryLabel}}</text>
+          <text class="category-nav-count">{{item.items.length}}</text>
+        </view>
+      </block>
+    </scroll-view>
+
+    <view class="food-panel-column">
+      <scroll-view
+        class="food-panel"
+        scroll-y
+        scroll-top="{{powderPanelScrollTop}}"
+        enhanced
+        show-scrollbar="{{false}}"
+        bindscrolltolower="loadMoreActivePowders"
+      >
+        <view class="food-panel-content {{babyUid && activeLibraryScope === 'mine' ? 'with-fab' : ''}}">
+          <view class="food-panel-header">
+            <text class="food-panel-title">{{activeCategoryLabel}}</text>
+            <text class="food-panel-count">共 {{activePowderTotal}} 款</text>
+          </view>
+
+          <block wx:for="{{activePowders}}" wx:key="_id">
+            <view class="food-item">
+              <view class="food-card-head">
+                <view class="food-info">
+                  <view class="food-title-row">
+                    <text class="food-title">{{item.name}}</text>
+                    <text class="food-tag breast" wx:if="{{item.isVirtualBreastMilk}}">固定</text>
+                    <text class="food-tag system" wx:elif="{{activeLibraryScope === 'system'}}">系统预设</text>
+                    <text class="food-tag custom" wx:else>我的</text>
+                  </view>
+                  <view class="food-meta-row">
+                    <text class="food-path">{{item.metaPath}}</text>
+                    <text class="food-basis">每 {{item.nutritionBasisQuantity || 100}}{{item.nutritionBasisUnit || 'g'}}</text>
+                  </view>
+                </view>
+                <view class="food-list-image-slot" wx:if="{{item.showImageSlot}}">
+                  <image
+                    class="food-list-image"
+                    src="{{item.displayImage || powderPlaceholderImage}}"
+                    mode="aspectFill"
+                    data-url="{{item.displayImage || powderPlaceholderImage}}"
+                    bindtap="previewPowderImage"
+                  />
+                </view>
+              </view>
+
+              <view class="food-nutrition">
+                <view class="nutrition-item highlight calories">
+                  <text class="label">热量</text>
+                  <text class="value">{{item.nutritionPer100g.calories || 0}}kcal</text>
+                </view>
+                <view class="nutrition-item highlight protein">
+                  <text class="label">蛋白</text>
+                  <text class="value">{{item.nutritionPer100g.protein || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">碳水</text>
+                  <text class="value">{{item.nutritionPer100g.carbs || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">脂肪</text>
+                  <text class="value">{{item.nutritionPer100g.fat || 0}}g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="label">纤维</text>
+                  <text class="value">{{item.nutritionPer100g.fiber || 0}}g</text>
+                </view>
+              </view>
+              <view class="food-nutrition mix-ratio-row" wx:if="{{item.showMixRatio !== false}}">
+                <view class="nutrition-item mix-ratio">
+                  <text class="label">冲配比</text>
+                  <text class="value">{{item.mixRatioText}}</text>
+                </view>
+              </view>
+
+              <view class="food-actions">
+                <block wx:if="{{activeLibraryScope === 'system'}}">
+                  <button
+                    class="action-btn edit"
+                    size="mini"
+                    data-id="{{item.powderCode || item._id}}"
+                    data-name="{{item.name}}"
+                    bindtap="showSystemSaveModal"
+                    type="default"
+                  >
+                    加入我的奶粉
+                  </button>
+                </block>
+                <block wx:elif="{{item.isVirtualBreastMilk}}">
+                  <button
+                    class="action-btn edit"
+                    size="mini"
+                    data-id="{{item.powderId || item._id}}"
+                    bindtap="showEditModal"
+                    type="default"
+                  >
+                    编辑
+                  </button>
+                </block>
+                <block wx:else>
+                  <button
+                    class="action-btn edit"
+                    size="mini"
+                    data-id="{{item.powderId || item._id}}"
+                    bindtap="showEditModal"
+                    type="default"
+                  >
+                    编辑
+                  </button>
+                  <button
+                    class="action-btn delete"
+                    size="mini"
+                    data-id="{{item.powderId || item._id}}"
+                    data-name="{{item.name}}"
+                    bindtap="deletePowder"
+                    type="warn"
+                  >
+                    删除
+                  </button>
+                </block>
+              </view>
+            </view>
+          </block>
+
+          <view class="food-load-more" wx:if="{{hasMoreActivePowders}}">继续下滑加载更多奶粉</view>
+        </view>
+      </scroll-view>
+
+      <view class="add-btn add-btn-panel" wx:if="{{babyUid && activeLibraryScope === 'mine'}}" bindtap="showAddModal">
+        <text class="add-icon">+</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{!loading && groupedPowders.length === 0}}">
+    <text wx:if="{{searchQuery}}">没有匹配的奶粉，换个关键词试试</text>
+    <text wx:elif="{{activeLibraryScope === 'mine'}}">还没有奶粉，请点击下方按钮添加</text>
+    <text wx:else>当前分类下没有匹配的奶粉</text>
+  </view>
+
+  <view class="add-btn add-btn-page" wx:if="{{babyUid && activeLibraryScope === 'mine' && !loading && groupedPowders.length === 0}}" bindtap="showAddModal">
+    <text class="add-icon">+</text>
+  </view>
+
+  <view class="modal" wx:if="{{showAddModal}}">
+    <view class="modal-mask" bindtap="hideAddModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">{{editingBreastMilk ? '编辑母乳' : (editingPowderIsSystemSource ? '加入我的奶粉' : (powderDraft.id && !editingBreastMilk ? '编辑奶粉' : '添加奶粉'))}}</text>
+        <text class="modal-subtitle">{{editingBreastMilk ? '调整每 100ml 营养参数，保存后同步到宝宝的营养档案' : (editingPowderIsSystemSource ? '可根据包装说明调整营养参数后再保存到我的奶粉' : '填写基础信息、营养参数和冲配比，保存后会加入我的奶粉')}}</text>
+      </view>
+
+      <form bindsubmit="savePowderDraft">
+        <scroll-view class="modal-body" scroll-y="true">
+          <view class="form-section" wx:if="{{!editingBreastMilk}}">
+            <view class="form-section-header">
+              <text class="form-section-title">基础信息</text>
+              <text class="form-section-subtitle">选择分类并填写奶粉名称</text>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">分类</text>
+              <view class="form-control form-control-stack">
+                <picker mode="selector" range="{{powderTypeOptions}}" range-key="label" value="{{powderTypeIndex}}" bindchange="onPowderTypePickerChange">
+                  <view class="picker-display category-picker-display">
+                    <text>{{powderTypeLabel}}</text>
+                    <text class="picker-arrow">›</text>
+                  </view>
+                </picker>
+                <text class="field-hint">{{powderTypeDesc}}</text>
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">名称</text>
+              <view class="form-control">
+                <input class="input" name="name" value="{{powderDraft.name}}" placeholder="例如 纽迪希亚特护" />
+              </view>
+            </view>
+          </view>
+
+          <view class="form-section" wx:else>
+            <view class="form-section-header">
+              <text class="form-section-title">基础信息</text>
+              <text class="form-section-subtitle">母乳为固定条目，仅维护营养参数</text>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">分类</text>
+              <view class="form-control">
+                <view class="picker-display category-picker-display readonly">
+                  <text>{{powderTypeLabel}}</text>
+                </view>
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">名称</text>
+              <view class="form-control">
+                <view class="input readonly-text">母乳</view>
+              </view>
+            </view>
+          </view>
+
+          <view class="form-section">
+            <view class="form-section-header">
+              <text class="form-section-title">营养参数</text>
+              <text class="form-section-subtitle">{{editingBreastMilk ? '每 100ml' : '每 100g 奶粉'}}</text>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">蛋白 (g)</text>
+              <view class="form-control">
+                <input class="input" type="digit" name="protein" value="{{powderDraft.nutritionPer100g.protein}}" placeholder="例如 13.1" />
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">热量 (kcal)</text>
+              <view class="form-control form-control-stack">
+                <input class="input" type="digit" name="calories" value="{{powderDraft.nutritionPer100g.calories}}" placeholder="例如 505" />
+                <view class="energy-convert-row">
+                  <input
+                    class="input energy-kj-input"
+                    type="digit"
+                    placeholder="输入包装标注的 kJ"
+                    value="{{energyKjInput}}"
+                    bindinput="onEnergyKjInput"
+                  />
+                  <view class="energy-convert-button" bindtap="applyKjToKcal">换算</view>
+                </view>
+                <text class="field-hint">1 kcal = 4.184 kJ，换算后会直接填入上方热量</text>
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">脂肪 (g)</text>
+              <view class="form-control">
+                <input class="input" type="digit" name="fat" value="{{powderDraft.nutritionPer100g.fat}}" placeholder="例如 26" />
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">碳水 (g)</text>
+              <view class="form-control">
+                <input class="input" type="digit" name="carbs" value="{{powderDraft.nutritionPer100g.carbs}}" placeholder="例如 55" />
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">膳食纤维 (g)</text>
+              <view class="form-control">
+                <input class="input" type="digit" name="fiber" value="{{powderDraft.nutritionPer100g.fiber}}" placeholder="例如 0" />
+              </view>
+            </view>
+          </view>
+
+          <view class="form-section" wx:if="{{!editingBreastMilk}}">
+            <view class="form-section-header">
+              <text class="form-section-title">冲配比</text>
+              <text class="form-section-subtitle">粉量与水量按包装说明填写</text>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">粉量 (g)</text>
+              <view class="form-control">
+                <input class="input" type="digit" name="ratioPowder" value="{{powderDraft.mixRatio.powder}}" placeholder="例如 13.5" />
+              </view>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">水量 (ml)</text>
+              <view class="form-control">
+                <input class="input" type="digit" name="ratioWater" value="{{powderDraft.mixRatio.water}}" placeholder="例如 90" />
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="modal-footer">
+          <button class="btn cancel" catchtap="hideAddModal">取消</button>
+          <button class="btn confirm" form-type="submit">{{editingPowderIsSystemSource ? '加入我的奶粉' : ((powderDraft.id || editingBreastMilk) ? '保存修改' : '添加奶粉')}}</button>
+        </view>
+      </form>
+    </view>
+  </view>
+</view>

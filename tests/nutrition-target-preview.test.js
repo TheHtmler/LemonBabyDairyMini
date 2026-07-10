@@ -280,9 +280,10 @@ test('milk feeding add panel still adds concrete milk powder options for multipl
   const js = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.js', 'utf8');
   const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
 
-  assert.match(js, /\.\.\.sortFormulaPowdersByCategory\(this\.data\.formulaPowders \|\| \[\]\)\.map\(\(powder\) => \(\{/);
+  assert.match(js, /\.\.\.sortFormulaPowdersByCategory\(scopedPowders\)\.map\(\(powder\) => \(\{/);
   assert.match(js, /key:\s*`powder:\$\{powder\.id\}`/);
   assert.match(js, /powderId:\s*powder\.id/);
+  assert.match(js, /sourceType:\s*powder\.sourceType \|\| 'user'/);
   assert.match(js, /label:\s*powder\.name \|\| '未命名奶粉'/);
   assert.match(wxml, /class="add-milk-option-title">\{\{item\.label\}\}/);
   assert.match(wxml, /class="add-milk-option-subtitle">\{\{item\.subLabel\}\}/);
