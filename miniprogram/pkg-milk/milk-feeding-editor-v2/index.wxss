@@ -852,10 +852,14 @@
 }
 
 .add-milk-dialog-panel {
+  position: relative;
   width: 100%;
   max-width: 720rpx;
-  max-height: 84vh;
-  overflow-y: auto;
+  /* 固定高度：切 Tab / 分类时选项数量变化不再引起面板高度跳动 */
+  height: 76vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 24rpx 22rpx 28rpx;
   border-radius: 28rpx;
   background: linear-gradient(180deg, #fffdf7 0%, #fff7e7 100%);
@@ -869,6 +873,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16rpx;
+  flex-shrink: 0;
   margin-bottom: 18rpx;
 }
 
@@ -933,6 +938,7 @@
 .add-milk-library-tabs {
   display: flex;
   gap: 12rpx;
+  flex-shrink: 0;
   margin-bottom: 16rpx;
   padding: 6rpx;
   border-radius: 18rpx;
@@ -953,6 +959,68 @@
   background: #ffffff;
   color: #5f3900;
   box-shadow: 0 4rpx 10rpx rgba(214, 173, 92, 0.24);
+}
+
+/* 库 Tab 下方左右分栏：左分类侧栏 + 右选项列表，布局与食物选择页一致 */
+.add-milk-picker-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 14rpx;
+}
+
+.add-milk-category-sidebar {
+  width: 168rpx;
+  flex-shrink: 0;
+  height: 100%;
+  background: #FFF7E3;
+  border-radius: 20rpx;
+  padding: 12rpx 0;
+  box-sizing: border-box;
+}
+
+.add-milk-category-nav-item {
+  position: relative;
+  padding: 18rpx 12rpx 18rpx 22rpx;
+  color: #8A7C60;
+  font-size: 24rpx;
+  line-height: 1.35;
+}
+
+.add-milk-category-nav-item.active {
+  background: #ffffff;
+  color: #8A4B00;
+  font-weight: 700;
+}
+
+.add-milk-category-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 16rpx;
+  bottom: 16rpx;
+  width: 8rpx;
+  border-radius: 0 999rpx 999rpx 0;
+  background: #FFB800;
+}
+
+.add-milk-category-nav-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-milk-category-empty {
+  padding: 24rpx 16rpx;
+  color: #A08E73;
+  font-size: 23rpx;
+}
+
+.add-milk-options-scroll {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
 }
 
 .add-milk-options-empty {
@@ -991,6 +1059,23 @@
   border-color: rgba(214, 173, 92, 0.28);
 }
 
+.add-milk-option-image {
+  flex-shrink: 0;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 14rpx;
+  background: #fff7e3;
+  border: 1rpx solid rgba(214, 173, 92, 0.18);
+}
+
+.add-milk-option-image {
+  flex-shrink: 0;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 14rpx;
+  background: #f6efdd;
+}
+
 .add-milk-option-copy {
   flex: 1;
   min-width: 0;
@@ -1005,14 +1090,208 @@
   font-weight: 600;
 }
 
-.add-milk-option-subtitle,
-.add-milk-check {
+.add-milk-option-subtitle {
   font-size: 18rpx;
   color: #8d7344;
 }
 
-.add-milk-check {
+.add-milk-option-add {
   flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #f6efdd;
+  color: #8d7344;
+  font-size: 36rpx;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-milk-option-add.active {
+  background: #FFB800;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+/* 弹窗底部购物车条：加号选中的奶先进这里，点「确定」同步到奶单 */
+.add-milk-cart-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 16rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 20rpx;
+  background: #2C261A;
+  box-shadow: 0 8rpx 20rpx rgba(60, 42, 12, 0.22);
+}
+
+.add-milk-cart-anchor {
+  position: relative;
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(255, 213, 106, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-milk-cart-icon {
+  font-size: 34rpx;
+  line-height: 1;
+}
+
+.add-milk-cart-badge {
+  position: absolute;
+  right: -6rpx;
+  top: -8rpx;
+  min-width: 30rpx;
+  height: 30rpx;
+  line-height: 30rpx;
+  padding: 0 6rpx;
+  border-radius: 999rpx;
+  background: #FF6B57;
+  color: #ffffff;
+  font-size: 20rpx;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.add-milk-cart-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.add-milk-cart-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.add-milk-cart-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffe9b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-milk-cart-subtitle {
+  font-size: 20rpx;
+  color: rgba(255, 233, 184, 0.62);
+}
+
+/* 点购物车展开的已选明细，浮在购物车条上方，交互与食物选择页一致 */
+.add-milk-cart-detail-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: 28rpx;
+  background: rgba(55, 40, 17, 0.18);
+}
+
+.add-milk-cart-detail {
+  position: absolute;
+  left: 22rpx;
+  right: 22rpx;
+  bottom: 136rpx;
+  z-index: 5;
+  max-height: 52%;
+  display: none;
+  flex-direction: column;
+  padding: 20rpx 20rpx 12rpx;
+  border-radius: 22rpx;
+  background: #fffdf7;
+  box-shadow: 0 12rpx 30rpx rgba(70, 49, 16, 0.2);
+  box-sizing: border-box;
+}
+
+.add-milk-cart-detail.visible {
+  display: flex;
+}
+
+.add-milk-cart-detail-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.add-milk-cart-detail-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #5f3900;
+}
+
+.add-milk-cart-detail-count {
+  font-size: 22rpx;
+  color: #8a7c60;
+}
+
+.add-milk-cart-detail-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.add-milk-cart-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 14rpx 4rpx;
+  border-bottom: 1rpx solid rgba(214, 173, 92, 0.14);
+}
+
+.add-milk-cart-detail-item:last-child {
+  border-bottom: none;
+}
+
+.add-milk-cart-detail-image {
+  flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 12rpx;
+  background: #f6efdd;
+}
+
+.add-milk-cart-detail-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: #402d0d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-milk-cart-detail-remove {
+  flex-shrink: 0;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 107, 87, 0.12);
+  color: #d9553f;
+  font-size: 22rpx;
+}
+
+.add-milk-cart-confirm {
+  flex-shrink: 0;
+  padding: 14rpx 34rpx;
+  border-radius: 999rpx;
+  background: #FFB800;
+  color: #3d2c00;
+  font-size: 26rpx;
+  font-weight: 700;
 }
 
 @keyframes addMilkDialogIn {
@@ -1030,7 +1309,8 @@
   position: fixed;
   z-index: 70;
   pointer-events: none;
-  will-change: transform;
+  transform-origin: left top;
+  will-change: transform, opacity;
 }
 
 .milk-fly-content {

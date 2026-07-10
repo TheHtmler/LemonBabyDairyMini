@@ -65,7 +65,8 @@ function loadV2Page(options = {}) {
   const previousPage = global.Page;
   const previousWx = global.wx;
   const previousGetApp = global.getApp;
-  global.wx = {
+  // 页面模块在 require 时以 const wxApi = wx 捕获该对象，返回引用便于用例追加 API 桩
+  const wxStub = {
     cloud: {
       database() {
         return {
@@ -118,6 +119,7 @@ function loadV2Page(options = {}) {
       calls.navigationBack += 1;
     }
   };
+  global.wx = wxStub;
   global.getApp = () => ({
     globalData: {
       babyUid: 'baby-1'
@@ -137,6 +139,7 @@ function loadV2Page(options = {}) {
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousGetRecentRecord = feedingRecordV2Model.getRecentRecord;
   const previousGetSystemPowders = powderCatalogModel.getSystemPowders;
+  const previousResolvePowderImageUrls = powderCatalogModel.resolvePowderImageUrls;
   const previousGetBabyUid = utilsModule.getBabyUid;
 
   profileModel.getNutritionProfileSettings = options.getNutritionProfileSettings || (async () => ({
@@ -169,6 +172,7 @@ function loadV2Page(options = {}) {
   feedingRecordV2Model.getRecordsByDate = options.getRecordsByDate || (async () => []);
   feedingRecordV2Model.getRecentRecord = options.getRecentRecord || (async () => null);
   powderCatalogModel.getSystemPowders = options.getSystemPowders || (async () => []);
+  powderCatalogModel.resolvePowderImageUrls = options.resolvePowderImageUrls || (async (powders) => powders);
   utilsModule.getBabyUid = options.getBabyUid || (() => 'baby-1');
 
   let pageConfig = null;
@@ -186,12 +190,13 @@ function loadV2Page(options = {}) {
   feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
   feedingRecordV2Model.getRecentRecord = previousGetRecentRecord;
   powderCatalogModel.getSystemPowders = previousGetSystemPowders;
+  powderCatalogModel.resolvePowderImageUrls = previousResolvePowderImageUrls;
   utilsModule.getBabyUid = previousGetBabyUid;
   global.Page = previousPage;
   global.wx = previousWx;
   global.getApp = previousGetApp;
 
-  return { pageConfig, calls };
+  return { pageConfig, calls, wxStub };
 }
 
 test('milk feeding v2 page renders v1-style editor with a unified optional component list', () => {
@@ -509,6 +514,12 @@ test('fly milk animation style starts at the selected option and translates dire
   const { pageConfig } = loadV2Page();
   const page = createPageInstance(pageConfig);
 
+  const hiddenStyle = page.buildFlyMilkStyle({
+    fromX: 24,
+    fromY: 120,
+    toX: 224,
+    toY: 40
+  }, false, { hidden: true });
   const startStyle = page.buildFlyMilkStyle({
     fromX: 24,
     fromY: 120,
@@ -522,18 +533,21 @@ test('fly milk animation style starts at the selected option and translates dire
     toY: 40
   }, true);
 
+  // 测量真实起点前的占位帧不可见，避免从兜底坐标跳位闪动
+  assert.match(hiddenStyle, /opacity:\s*0/);
+  assert.match(hiddenStyle, /transition:\s*none/);
   assert.match(startStyle, /left:\s*24px/);
   assert.match(startStyle, /top:\s*120px/);
   assert.match(startStyle, /transition:\s*none/);
   assert.match(startStyle, /opacity:\s*1/);
-  assert.match(startStyle, /translate3d\(0px,\s*0px,\s*0\)/);
-  assert.match(movingStyle, /translate3d\(200px,\s*-80px,\s*0\)/);
+  assert.match(startStyle, /translate3d\(0px,\s*0px,\s*0\) scale\(1\)/);
+  assert.match(movingStyle, /translate3d\(200px,\s*-80px,\s*0\) scale\(0\.4\)/);
   assert.match(movingStyle, /opacity:\s*0/);
-  assert.match(movingStyle, /transition:\s*transform 760ms cubic-bezier\(0\.55,\s*0,\s*1,\s*0\.45\), opacity 260ms ease-out 500ms/);
-  assert.doesNotMatch(movingStyle, /scale\(/);
+  // 减速曲线滑入 + 途中渐隐，飞行更顺滑
+  assert.match(movingStyle, /transition:\s*transform 620ms cubic-bezier\(0\.2,\s*0\.72,\s*0\.3,\s*1\), opacity 320ms ease-out 280ms/);
 });
 
-test('addMilkEntry opens the add milk dialog and immediately adds the selected formula powder', () => {
+test('addMilkEntry opens the add milk dialog and confirms cart items into milk entries', () => {
   const { pageConfig } = loadV2Page();
   const page = createPageInstance(pageConfig, {
     formulaPowders: [
@@ -569,6 +583,22 @@ test('addMilkEntry opens the add milk dialog and immediately adds the selected f
     }
   });
 
+  // 点 + 只进购物车，奶单不动，同时播放飞入动画
+  assert.equal(page.data.milkEntries.length, 0);
+  assert.deepEqual(page.data.addMilkCart.map((item) => item.key), ['powder:regular-a']);
+  assert.equal(page.data.addMilkOptions[1].selected, true);
+  assert.equal(page.data.showAddMilkPanel, true);
+  assert.equal(page.data.flyMilkAnimation.active, true);
+  assert.equal(page.data.flyMilkAnimation.badge, '普');
+  assert.equal(page.data.flyMilkAnimation.label, '普奶 A');
+
+  page.confirmAddMilkPanel();
+
+  assert.equal(page.data.showAddMilkPanel, false);
+  assert.equal(page.data.milkEntries.length, 1);
+  assert.equal(page.data.milkEntries[0].powderId, 'regular-a');
+  assert.deepEqual(page.data.addMilkCart, []);
+
   page.onMilkEntryInput({
     currentTarget: {
       dataset: {
@@ -581,18 +611,11 @@ test('addMilkEntry opens the add milk dialog and immediately adds the selected f
     }
   });
 
-  assert.equal(page.data.milkEntries.length, 1);
-  assert.equal(page.data.milkEntries[0].powderId, 'regular-a');
-  assert.equal(page.data.addMilkOptions[1].selected, true);
-  assert.equal(page.data.showAddMilkPanel, true);
-  assert.equal(page.data.flyMilkAnimation.active, true);
-  assert.equal(page.data.flyMilkAnimation.badge, '普');
-  assert.equal(page.data.flyMilkAnimation.label, '普奶 A');
   assert.equal(page.data.nutritionPreview.calories, 25);
   assert.equal(page.data.nutritionPreview.naturalProtein, 0.5);
 });
 
-test('addMilkEntry toggles milk choices directly in the dialog when there are multiple choices', () => {
+test('addMilkEntry toggles milk choices in the dialog cart when there are multiple choices', () => {
   const { pageConfig } = loadV2Page();
   const page = createPageInstance(pageConfig, {
     formulaPowders: [
@@ -646,14 +669,16 @@ test('addMilkEntry toggles milk choices directly in the dialog when there are mu
   });
 
   assert.equal(page.data.showAddMilkPanel, true);
-  assert.equal(page.data.milkEntries.length, 2);
-  assert.equal(page.data.milkEntries[0].kind, 'breast_milk');
-  assert.equal(page.data.milkEntries[1].powderId, 'energy-a');
+  assert.deepEqual(
+    page.data.addMilkCart.map((item) => item.key),
+    ['breast_milk', 'powder:energy-a']
+  );
+  assert.equal(page.data.milkEntries.length, 0);
   assert.equal(page.data.flyMilkAnimation.active, true);
   assert.equal(page.data.flyMilkAnimation.badge, '能');
   assert.equal(page.data.flyMilkAnimation.label, '能量粉');
-  assert.equal(page.data.milkEntries[0].justAdded, true);
 
+  // 再点一次 = 从购物车移除
   page.toggleAddMilkOption({
     currentTarget: {
       dataset: {
@@ -662,9 +687,14 @@ test('addMilkEntry toggles milk choices directly in the dialog when there are mu
     }
   });
 
+  assert.deepEqual(page.data.addMilkCart.map((item) => item.key), ['powder:energy-a']);
+  assert.equal(page.data.addMilkOptions[0].selected, false);
+
+  page.confirmAddMilkPanel();
+
   assert.equal(page.data.milkEntries.length, 1);
   assert.equal(page.data.milkEntries[0].powderId, 'energy-a');
-  assert.equal(page.data.addMilkOptions[0].selected, false);
+  assert.equal(page.data.milkEntries[0].justAdded, true);
 });
 
 test('add milk dialog orders formula choices by category', () => {
@@ -733,6 +763,7 @@ test('breast milk is optional and only contributes when added as a row', () => {
       }
     }
   });
+  page.confirmAddMilkPanel();
   page.onBreastMilkEntryInput({
     currentTarget: {
       dataset: {
@@ -1197,14 +1228,325 @@ test('add milk dialog splits mine and system powders into library tabs like food
     ['powder:SF_SPECIAL_1']
   );
 
-  // 系统 Tab 中选中后，切回我的 Tab 再切回来，选中状态保持
+  // 系统 Tab 中加入购物车后，切回我的 Tab 再切回来，选中状态保持
   page.toggleAddMilkOption({ currentTarget: { dataset: { key: 'powder:SF_SPECIAL_1' } } });
-  assert.equal(page.data.milkEntries.length, 1);
-  assert.equal(page.data.milkEntries[0].powderId, 'SF_SPECIAL_1');
+  assert.deepEqual(page.data.addMilkCart.map((item) => item.key), ['powder:SF_SPECIAL_1']);
 
   page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'mine' } } });
   page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'system' } } });
   assert.equal(page.data.addMilkOptions[0].selected, true);
+
+  page.confirmAddMilkPanel();
+  assert.equal(page.data.milkEntries.length, 1);
+  assert.equal(page.data.milkEntries[0].powderId, 'SF_SPECIAL_1');
+});
+
+test('add milk dialog filters options by category sidebar within each tab', () => {
+  const { pageConfig } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    formulaPowders: [
+      {
+        id: 'mine-regular',
+        name: '我的普奶',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        proteinRole: 'natural',
+        sourceType: 'user',
+        nutritionPer100g: { protein: 10, calories: 500 },
+        mixRatio: { powder: 5, water: 30 }
+      },
+      {
+        id: 'mine-energy',
+        name: '我的能量粉',
+        category: 'energy_supplement',
+        categoryShortLabel: '能',
+        proteinRole: 'none',
+        sourceType: 'user',
+        nutritionPer100g: { protein: 0, calories: 300 },
+        mixRatio: { powder: 3, water: 20 }
+      },
+      {
+        id: 'SF_SPECIAL_1',
+        name: '系统特奶',
+        category: 'special_formula',
+        categoryShortLabel: '特',
+        proteinRole: 'special',
+        sourceType: 'system',
+        sourcePowderCode: 'SF_SPECIAL_1',
+        nutritionPer100g: { protein: 12, calories: 400 },
+        mixRatio: { powder: 13.5, water: 90 }
+      }
+    ]
+  });
+
+  page.openAddMilkPanel();
+
+  // 我的 Tab：侧栏为「全部 + 母乳/普奶/能量粉」，默认选中全部
+  assert.deepEqual(
+    page.data.addMilkCategories.map((item) => item.value),
+    ['all', 'breast_milk', 'regular_formula', 'energy_supplement']
+  );
+  // 窄侧栏用短标签，避免全称折行导致样式错乱
+  assert.deepEqual(
+    page.data.addMilkCategories.map((item) => item.label),
+    ['全部', '母乳', '普奶', '能量粉']
+  );
+  assert.equal(page.data.addMilkActiveCategory, 'all');
+
+  page.switchAddMilkCategory({ currentTarget: { dataset: { category: 'regular_formula' } } });
+  assert.deepEqual(
+    page.data.addMilkOptions.map((option) => option.key),
+    ['powder:mine-regular']
+  );
+
+  // 切库时分类复位为全部，侧栏按新库重建
+  page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'system' } } });
+  assert.equal(page.data.addMilkActiveCategory, 'all');
+  assert.deepEqual(
+    page.data.addMilkCategories.map((item) => item.value),
+    ['all', 'special_formula']
+  );
+  assert.deepEqual(
+    page.data.addMilkOptions.map((option) => option.key),
+    ['powder:SF_SPECIAL_1']
+  );
+});
+
+test('add milk dialog renders a category sidebar layout like the food picker', () => {
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxss', 'utf8');
+
+  assert.match(wxml, /add-milk-picker-layout/);
+  assert.match(wxml, /add-milk-category-sidebar/);
+  assert.match(wxml, /add-milk-category-nav-item/);
+  assert.match(wxml, /bindtap="switchAddMilkCategory"/);
+  assert.match(wxss, /\.add-milk-category-sidebar/);
+  assert.match(wxss, /\.add-milk-category-nav-item\.active/);
+});
+
+test('add milk dialog renders a bottom cart bar with expandable detail like the food picker', () => {
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxss', 'utf8');
+
+  // 选项行用 +/✓ 圆钮，不再是「选择/已选」文字
+  assert.match(wxml, /add-milk-option-add/);
+  assert.doesNotMatch(wxml, /add-milk-check/);
+  // 底部购物车条：图标计数 + 「点击查看明细」文案 + 确定按钮，不再平铺带 × 的名称
+  assert.match(wxml, /add-milk-cart-bar/);
+  assert.match(wxml, /add-milk-cart-anchor/);
+  assert.match(wxml, /add-milk-cart-badge/);
+  assert.match(wxml, /bindtap="toggleAddMilkCartExpanded"/);
+  assert.match(wxml, /点击查看明细/);
+  assert.match(wxml, /收起明细/);
+  assert.doesNotMatch(wxml, /add-milk-cart-chip/);
+  // 展开的明细面板：列表 + 移除按钮 + 蒙层收起
+  assert.match(wxml, /add-milk-cart-detail/);
+  assert.match(wxml, /catchtap="removeAddMilkCartItem"/);
+  assert.match(wxml, /catchtap="collapseAddMilkCart"/);
+  assert.match(wxml, /catchtap="confirmAddMilkPanel"/);
+  assert.match(wxss, /\.add-milk-cart-bar/);
+  assert.match(wxss, /\.add-milk-option-add\.active/);
+  assert.match(wxss, /\.add-milk-cart-confirm/);
+  assert.match(wxss, /\.add-milk-cart-detail\.visible/);
+});
+
+test('add milk options show protein and calorie metrics like food options', () => {
+  const { pageConfig } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    nutritionSettings: {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67
+    },
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶 A',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        categoryBadgeClass: 'regular',
+        proteinRole: 'natural',
+        nutritionPer100g: { protein: 10, calories: 500 },
+        mixRatio: { powder: 5, water: 30 }
+      }
+    ]
+  });
+
+  page.openAddMilkPanel();
+
+  const breastOption = page.data.addMilkOptions.find((option) => option.key === 'breast_milk');
+  const powderOption = page.data.addMilkOptions.find((option) => option.key === 'powder:regular-a');
+  assert.equal(breastOption.subLabel, '100ml：蛋白 1.1g  热量 67kcal');
+  assert.equal(powderOption.subLabel, '100g：蛋白 10g  热量 500kcal');
+
+  // 没有营养数据时回退到原来的描述文案
+  const fallbackPage = createPageInstance(pageConfig, {
+    formulaPowders: [
+      {
+        id: 'no-nutrition',
+        name: '无数据奶粉',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        proteinRole: 'natural',
+        mixRatio: { powder: 5, water: 30 }
+      }
+    ]
+  });
+  fallbackPage.openAddMilkPanel();
+  const fallbackBreast = fallbackPage.data.addMilkOptions.find((option) => option.key === 'breast_milk');
+  const fallbackPowder = fallbackPage.data.addMilkOptions.find((option) => option.key === 'powder:no-nutrition');
+  assert.equal(fallbackBreast.subLabel, '记录母乳体积');
+  assert.equal(fallbackPowder.subLabel, '普类奶粉');
+});
+
+test('add milk options show powder images resolved from cloud storage', async () => {
+  const { pageConfig } = loadV2Page({
+    getNutritionProfileSettings: async () => ({
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67,
+      formulaPowders: [
+        {
+          id: 'mine-a',
+          name: '我的普奶',
+          category: 'regular_formula',
+          proteinRole: 'natural',
+          status: 'active',
+          image: 'https://cdn.example.com/mine-a.png',
+          nutritionPer100g: { protein: 10, calories: 500 },
+          mixRatio: { powder: 5, water: 30 }
+        }
+      ]
+    }),
+    getSystemPowders: async () => ([
+      {
+        powderCode: 'SF_1',
+        name: '系统特奶',
+        category: 'special_formula',
+        proteinRole: 'special',
+        image: 'cloud://env/powder/sf-1.png',
+        nutritionPer100g: { protein: 12, calories: 400 },
+        mixRatio: { powder: 13.5, water: 90 }
+      }
+    ]),
+    // 模拟云文件换临时链接
+    resolvePowderImageUrls: async (powders) => powders.map((powder) => ({
+      ...powder,
+      imageUrl: (powder.image || '').startsWith('cloud://')
+        ? 'https://tmp.example.com/sf-1.png'
+        : ''
+    }))
+  });
+  const page = createPageInstance(pageConfig);
+
+  await page.onLoad({ date: '2026-05-20' });
+  page.openAddMilkPanel();
+
+  const mineOption = page.data.addMilkOptions.find((option) => option.key === 'powder:mine-a');
+  assert.equal(mineOption.displayImage, 'https://cdn.example.com/mine-a.png');
+
+  page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'system' } } });
+  const systemOption = page.data.addMilkOptions.find((option) => option.key === 'powder:SF_1');
+  assert.equal(systemOption.displayImage, 'https://tmp.example.com/sf-1.png');
+
+  // 母乳没有图片，仍走分类角标
+  page.switchAddMilkScope({ currentTarget: { dataset: { scope: 'mine' } } });
+  const breastOption = page.data.addMilkOptions.find((option) => option.key === 'breast_milk');
+  assert.equal(breastOption.displayImage, undefined);
+
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  assert.match(wxml, /add-milk-option-image/);
+  assert.match(wxml, /wx:if="\{\{item\.displayImage\}\}"/);
+});
+
+test('add milk options and cart items show powder images with badge fallback', () => {
+  const { pageConfig, wxStub } = loadV2Page();
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  const wxss = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxss', 'utf8');
+
+  // 分类角标（普/特/能/母）始终显示，有图时在角标旁追加图片
+  assert.match(wxml, /add-milk-option-image/);
+  assert.match(wxml, /add-milk-cart-detail-image/);
+  assert.doesNotMatch(wxml, /<text wx:else class="category-badge/);
+  // 图片可点击放大预览（catchtap 防止触发选中/移除）
+  assert.match(wxml, /catchtap="previewAddMilkImage"/);
+  assert.match(wxss, /\.add-milk-option-image/);
+  assert.match(wxss, /\.add-milk-cart-detail-image/);
+
+  const page = createPageInstance(pageConfig, {
+    formulaPowders: [
+      {
+        id: 'with-image',
+        name: '带图奶粉',
+        category: 'special_formula',
+        categoryShortLabel: '特',
+        proteinRole: 'special',
+        imageUrl: 'https://cdn.example.com/powder.png',
+        nutritionPer100g: { protein: 12, calories: 400 },
+        mixRatio: { powder: 13.5, water: 90 }
+      },
+      {
+        id: 'no-image',
+        name: '无图奶粉',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        proteinRole: 'natural',
+        nutritionPer100g: { protein: 10, calories: 500 },
+        mixRatio: { powder: 5, water: 30 }
+      }
+    ]
+  });
+
+  page.openAddMilkPanel();
+  const withImage = page.data.addMilkOptions.find((option) => option.key === 'powder:with-image');
+  const noImage = page.data.addMilkOptions.find((option) => option.key === 'powder:no-image');
+  assert.equal(withImage.displayImage, 'https://cdn.example.com/powder.png');
+  assert.equal(noImage.displayImage, '');
+
+  // 加入购物车后明细条目也带图
+  page.toggleAddMilkOption({ currentTarget: { dataset: { key: 'powder:with-image' } } });
+  assert.equal(page.data.addMilkCart[0].displayImage, 'https://cdn.example.com/powder.png');
+
+  // 点图片调起全屏预览
+  const previewCalls = [];
+  wxStub.previewImage = (options) => previewCalls.push(options);
+  page.previewAddMilkImage({ currentTarget: { dataset: { url: 'https://cdn.example.com/powder.png' } } });
+  delete wxStub.previewImage;
+  assert.equal(previewCalls.length, 1);
+  assert.deepEqual(previewCalls[0].urls, ['https://cdn.example.com/powder.png']);
+  assert.equal(previewCalls[0].current, 'https://cdn.example.com/powder.png');
+});
+
+test('add milk cart detail expands on tap and collapses when emptied', () => {
+  const { pageConfig } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶 A',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        categoryBadgeClass: 'regular',
+        proteinRole: 'natural',
+        nutritionPer100g: { protein: 10, calories: 500 },
+        mixRatio: { powder: 5, water: 30 }
+      }
+    ]
+  });
+
+  page.openAddMilkPanel();
+  assert.equal(page.data.addMilkCartExpanded, false);
+
+  // 购物车为空时点购物车不展开
+  page.toggleAddMilkCartExpanded();
+  assert.equal(page.data.addMilkCartExpanded, false);
+
+  page.toggleAddMilkOption({ currentTarget: { dataset: { key: 'powder:regular-a' } } });
+  page.toggleAddMilkCartExpanded();
+  assert.equal(page.data.addMilkCartExpanded, true);
+
+  // 明细里移除最后一项后自动收起
+  page.removeAddMilkCartItem({ currentTarget: { dataset: { key: 'powder:regular-a' } } });
+  assert.deepEqual(page.data.addMilkCart, []);
+  assert.equal(page.data.addMilkCartExpanded, false);
 });
 
 test('selected milk entry rows show a mine/system source tag like food items', () => {
