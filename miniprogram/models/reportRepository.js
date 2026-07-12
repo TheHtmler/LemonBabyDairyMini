@@ -8,14 +8,16 @@ const COLLECTIONS = {
 const ARCHIVE_KEY_INDICATORS = {
   [ReportModel.REPORT_TYPES.URINE_MS]: ['methylmalonic_acid', 'methylcitric_acid_1', 'hydroxypropionic_acid'],
   [ReportModel.REPORT_TYPES.BLOOD_MS]: ['c3', 'c3_c2', 'met'],
-  [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be'],
+  [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be', 'lactate'],
+  [ReportModel.REPORT_TYPES.BLOOD_CBC]: ['hgb', 'plt', 'wbc'],
   [ReportModel.REPORT_TYPES.BLOOD_AMMONIA]: ['ammonia']
 };
 
 const TREND_METRIC_KEYS = {
   [ReportModel.REPORT_TYPES.URINE_MS]: ['methylmalonic_acid', 'methylcitric_acid_1', 'methylcitric_acid_2', 'hydroxypropionic_acid', 'hydroxybutyric_acid', 'lactate'],
   [ReportModel.REPORT_TYPES.BLOOD_MS]: ['c3', 'c3_c2', 'c3_c0', 'c0', 'iso_leu', 'met'],
-  [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be'],
+  [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be', 'lactate'],
+  [ReportModel.REPORT_TYPES.BLOOD_CBC]: ['hgb', 'plt', 'wbc'],
   [ReportModel.REPORT_TYPES.BLOOD_AMMONIA]: ['ammonia']
 };
 

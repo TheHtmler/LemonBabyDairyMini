@@ -40,6 +40,7 @@ const COMPARE_TYPE_TABS = [
   { key: 'blood_ms', label: '血串联' },
   { key: 'urine_ms', label: '尿串联' },
   { key: 'blood_gas', label: '血气' },
+  { key: 'blood_cbc', label: '血常规' },
   { key: 'blood_ammonia', label: '血氨' }
 ];
 

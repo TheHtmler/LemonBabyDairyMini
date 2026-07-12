@@ -413,6 +413,60 @@ test('parseStructuredReportItems maps BE(B) and parenthesised negative ref range
   assert.equal(result.be.maxRange, '3');
 });
 
+test('parseStructuredReportItems maps Xinhua-style blood gas panel items', () => {
+  const result = parseStructuredReportItems({
+    reportType: 'blood_gas',
+    structuredItems: [
+      { name: 'Ca++', value: '1.12', ref_range: '1.12-1.32' },
+      { name: 'pCO2', value: '22.10', ref_range: '35-45' },
+      { name: 'pH', value: '7.50', ref_range: '7.35-7.45' },
+      { name: 'pO2', value: '130.00', ref_range: '80-100' },
+      { name: 'BEecf', value: '-5.80', ref_range: '' },
+      { name: 'Cl-', value: '108.0', ref_range: '95-105' },
+      { name: 'Hct', value: '40.10', ref_range: '37-43' },
+      { name: '钾', value: '4.10', ref_range: '3.5-5.1' },
+      { name: '钠', value: '138.0', ref_range: '130-150' },
+      { name: 'Glu', value: '5.30', ref_range: '3.89-5.83' },
+      { name: 'Lac', value: '2.00', ref_range: '0.5-1.6' },
+      { name: 'ctHb', value: '13.10', ref_range: '12-17.5' },
+      { name: 'BE(B)', value: '-3.90', ref_range: '(-3)-3' },
+      { name: 'HCO3std', value: '21.20', ref_range: '22-26' }
+    ]
+  });
+
+  assert.equal(result.calcium.value, '1.12');
+  assert.equal(result.pco2.value, '22.10');
+  assert.equal(result.ph.value, '7.50');
+  assert.equal(result.po2.value, '130.00');
+  assert.equal(result.beecf.value, '-5.80');
+  assert.equal(result.chloride.value, '108.0');
+  assert.equal(result.hct.value, '40.10');
+  assert.equal(result.potassium.value, '4.10');
+  assert.equal(result.sodium.value, '138.0');
+  assert.equal(result.glucose.value, '5.30');
+  assert.equal(result.lactate.value, '2.00');
+  assert.equal(result.cthb.value, '13.10');
+  assert.equal(result.be.value, '-3.90');
+  assert.equal(result.hco3.value, '21.20');
+});
+
+test('parseStructuredReportItems maps common blood cbc items', () => {
+  const result = parseStructuredReportItems({
+    reportType: 'blood_cbc',
+    structuredItems: [
+      { name: '血红蛋白', value: '110', ref_range: '110-160' },
+      { name: 'PLT', value: '180', ref_range: '100-300' },
+      { name: 'WBC', value: '8.5', ref_range: '4-12' },
+      { name: '中性粒细胞绝对值', value: '1.2', ref_range: '1.5-8' }
+    ]
+  });
+
+  assert.equal(result.hgb.value, '110');
+  assert.equal(result.plt.value, '180');
+  assert.equal(result.wbc.value, '8.5');
+  assert.equal(result.neut_abs.value, '1.2');
+});
+
 test('parseStructuredReportItems parses BE range when adapter min/max are empty strings', () => {
   const result = parseStructuredReportItems({
     reportType: 'blood_gas',

@@ -16,7 +16,8 @@ const SPECIAL_MILK_KCAL = 0.70;
 const KEY_METRICS_BY_REPORT_TYPE = {
   [ReportModel.REPORT_TYPES.URINE_MS]: ['methylmalonic_acid', 'methylcitric_acid_1', 'methylcitric_acid_2', 'lactate', 'hydroxypropionic_acid', 'hydroxybutyric_acid'],
   [ReportModel.REPORT_TYPES.BLOOD_MS]: ['c3', 'c3_c2', 'c3_c0', 'c0'],
-  [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be'],
+  [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be', 'lactate'],
+  [ReportModel.REPORT_TYPES.BLOOD_CBC]: ['hgb', 'plt', 'wbc'],
   [ReportModel.REPORT_TYPES.BLOOD_AMMONIA]: ['ammonia']
 };
 
@@ -26,6 +27,7 @@ const REPORT_TYPE_FILTERS = [
   { key: ReportModel.REPORT_TYPES.BLOOD_MS, label: '血串联' },
   { key: ReportModel.REPORT_TYPES.URINE_MS, label: '尿串联' },
   { key: ReportModel.REPORT_TYPES.BLOOD_GAS, label: '血气' },
+  { key: ReportModel.REPORT_TYPES.BLOOD_CBC, label: '血常规' },
   { key: ReportModel.REPORT_TYPES.BLOOD_AMMONIA, label: '血氨' }
 ];
 
@@ -831,14 +833,55 @@ function splitIndicatorGroups(reportType, indicatorConfigs = []) {
       {
         key: 'acid-base',
         title: '酸碱相关指标',
-        hint: '优先看 pH、HCO3-、BE 的变化。',
-        configs: indicatorConfigs.filter((item) => ['ph', 'hco3', 'be'].includes(item.key))
+        hint: '优先看 pH、HCO3-、BE(B) 的变化。',
+        configs: indicatorConfigs.filter((item) => ['ph', 'hco3', 'be', 'beecf'].includes(item.key))
       },
       {
         key: 'gas-pressure',
         title: '气体分压指标',
         hint: '补充查看二氧化碳和氧分压。',
         configs: indicatorConfigs.filter((item) => ['pco2', 'po2'].includes(item.key))
+      },
+      {
+        key: 'metabolism',
+        title: '代谢相关指标',
+        hint: '失代偿或感染时重点看乳酸和血糖。',
+        configs: indicatorConfigs.filter((item) => ['lactate', 'glucose'].includes(item.key))
+      },
+      {
+        key: 'electrolytes',
+        title: '电解质指标',
+        hint: '用于评估电解质平衡及阴离子间隙。',
+        configs: indicatorConfigs.filter((item) => ['sodium', 'potassium', 'chloride', 'calcium'].includes(item.key))
+      },
+      {
+        key: 'blood-cells',
+        title: '血细胞指标',
+        hint: '血气仪附带检测，可按报告单选填。',
+        configs: indicatorConfigs.filter((item) => ['hct', 'cthb'].includes(item.key))
+      }
+    ].filter((group) => group.configs.length);
+  }
+
+  if (reportType === ReportModel.REPORT_TYPES.BLOOD_CBC) {
+    return [
+      {
+        key: 'cbc-core',
+        title: '核心指标',
+        hint: '',
+        configs: indicatorConfigs.filter((item) => ['hgb', 'plt'].includes(item.key))
+      },
+      {
+        key: 'cbc-wbc',
+        title: '白细胞相关',
+        hint: '',
+        configs: indicatorConfigs.filter((item) => ['wbc', 'neut_abs', 'neut_pct', 'lym_pct'].includes(item.key))
+      },
+      {
+        key: 'cbc-rbc',
+        title: '红细胞相关',
+        hint: '',
+        configs: indicatorConfigs.filter((item) => ['hct', 'mcv'].includes(item.key))
       }
     ].filter((group) => group.configs.length);
   }

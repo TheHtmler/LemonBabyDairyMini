@@ -1,6 +1,7 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
 const { parseReportOcrResult, parseStructuredReportItems } = require('../../utils/reportOcrParser');
+const { sanitizeSignedDecimalInput } = require('../../utils/reportNumberFormat');
 
 const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
 
@@ -77,6 +78,7 @@ Page({
       { key: 'blood_ms', name: '血串联质谱', icon: '🩸' },
       { key: 'urine_ms', name: '尿串联质谱', icon: '🧪' },
       { key: 'blood_gas', name: '血气分析', icon: '💨' },
+      { key: 'blood_cbc', name: '血常规', icon: '🩺' },
       { key: 'blood_ammonia', name: '血氨检测', icon: '⚡' }
     ],
     
@@ -310,7 +312,7 @@ Page({
   // 指标值输入
   onIndicatorValueInput: function (e) {
     const { indicator, field } = e.currentTarget.dataset;
-    const value = e.detail.value;
+    const value = sanitizeSignedDecimalInput(e.detail.value);
     
     const indicatorData = { ...this.data.indicatorData };
     if (!indicatorData[indicator]) {

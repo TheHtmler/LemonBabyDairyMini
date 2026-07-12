@@ -73,7 +73,7 @@
             <text class="compact-label">检测值</text>
             <input
               class="compact-input"
-              type="digit"
+              type="text"
               placeholder="数值"
               value="{{indicatorData[indicator.key].value}}"
               data-indicator="{{indicator.key}}"
@@ -88,7 +88,7 @@
               <text class="compact-label">最小值</text>
               <input
                 class="compact-input"
-                type="digit"
+                type="text"
                 placeholder="{{indicatorData[indicator.key].minRange ? '已填' : '最小'}}"
                 value="{{indicatorData[indicator.key].minRange}}"
                 data-indicator="{{indicator.key}}"
@@ -101,7 +101,7 @@
               <text class="compact-label">最大值</text>
               <input
                 class="compact-input"
-                type="digit"
+                type="text"
                 placeholder="{{indicatorData[indicator.key].maxRange ? '已填' : '最大'}}"
                 value="{{indicatorData[indicator.key].maxRange}}"
                 data-indicator="{{indicator.key}}"

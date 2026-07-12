@@ -101,6 +101,22 @@ test('add-report page uses compact grouped layout for indicator entry', () => {
   assert.doesNotMatch(js, /collapsedGroups/);
 });
 
+test('add-report indicator inputs use text keyboard to allow negative values on all devices', () => {
+  const wxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxml'),
+    'utf8'
+  );
+  const js = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.js'),
+    'utf8'
+  );
+
+  assert.doesNotMatch(wxml, /type="digit"/);
+  assert.doesNotMatch(wxml, /type="number"/);
+  assert.match(wxml, /type="text"/);
+  assert.match(js, /sanitizeSignedDecimalInput/);
+});
+
 test('add-report OCR entry is gated by cloud access check', () => {
   const wxml = fs.readFileSync(
     path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxml'),
@@ -155,4 +171,105 @@ test('add-report auto-calculates c3 ratios on blur even before base indicator ra
 
   assert.equal(instance.data.indicatorData.c3_c0.value, '0.4');
   assert.equal(instance.data.indicatorData.c3_c2.value, '0.364');
+});
+
+test('add-report accepts negative blood gas reference ranges on blur', () => {
+  const page = loadAddReportPage();
+  global.wx = {
+    showToast() {}
+  };
+
+  const instance = {
+    ...page,
+    data: {
+      ...JSON.parse(JSON.stringify(page.data)),
+      selectedReportType: 'blood_gas',
+      indicatorData: {
+        be: { value: '', minRange: '', maxRange: '' }
+      }
+    },
+    setData(update) {
+      Object.assign(this.data, update);
+    }
+  };
+
+  page.onIndicatorValueBlur.call(instance, {
+    currentTarget: {
+      dataset: {
+        indicator: 'be',
+        field: 'minRange'
+      }
+    },
+    detail: {
+      value: '-3'
+    }
+  });
+
+  assert.equal(instance.data.indicatorData.be.minRange, '-3.000');
+});
+
+test('add-report accepts negative blood gas detection values on blur', () => {
+  const page = loadAddReportPage();
+  global.wx = {
+    showToast() {}
+  };
+
+  const instance = {
+    ...page,
+    data: {
+      ...JSON.parse(JSON.stringify(page.data)),
+      selectedReportType: 'blood_gas',
+      indicatorData: {
+        be: { value: '', minRange: '-3.000', maxRange: '3.000' }
+      }
+    },
+    setData(update) {
+      Object.assign(this.data, update);
+    }
+  };
+
+  page.onIndicatorValueBlur.call(instance, {
+    currentTarget: {
+      dataset: {
+        indicator: 'be',
+        field: 'value'
+      }
+    },
+    detail: {
+      value: '-2.5'
+    }
+  });
+
+  assert.equal(instance.data.indicatorData.be.value, '-2.500');
+});
+
+test('add-report sanitizes indicator input while typing negative decimals', () => {
+  const page = loadAddReportPage();
+  const instance = {
+    ...page,
+    data: {
+      ...JSON.parse(JSON.stringify(page.data)),
+      indicatorData: {
+        be: { value: '', minRange: '', maxRange: '' }
+      },
+      ocrPendingKeys: []
+    },
+    setData(update) {
+      Object.assign(this.data, update);
+    }
+  };
+
+  page.onIndicatorValueInput.call(instance, {
+    currentTarget: {
+      dataset: {
+        indicator: 'be',
+        field: 'minRange'
+      }
+    },
+    detail: {
+      value: '-3.5abc'
+    }
+  });
+
+  assert.equal(instance.data.indicatorData.be.minRange, '-3.5');
 });

@@ -5,6 +5,7 @@ class ReportModel {
     BLOOD_MS: 'blood_ms',        // 血串联质谱
     URINE_MS: 'urine_ms',        // 尿串联质谱
     BLOOD_GAS: 'blood_gas',      // 血气
+    BLOOD_CBC: 'blood_cbc',      // 血常规
     BLOOD_AMMONIA: 'blood_ammonia' // 血氨
   };
 
@@ -32,13 +33,34 @@ class ReportModel {
     { key: 'lactate', name: '乳酸', unit: '', abbr: 'Lac' }
   ];
 
-  // 血气指标配置（待补充）
+  // 血气指标：仅 pH / HCO3- / BE(B) 必填，其余按报告单上有则填
   static BLOOD_GAS_INDICATORS = [
     { key: 'ph', name: 'pH值', unit: '', abbr: 'pH' },
-    { key: 'pco2', name: '二氧化碳分压', unit: '', abbr: 'PCO2' },
-    { key: 'po2', name: '氧分压', unit: '', abbr: 'PO2' },
-    { key: 'hco3', name: '碳酸氢根', unit: '', abbr: 'HCO3-' },
-    { key: 'be', name: '剩余碱', unit: '', abbr: 'BE' }
+    { key: 'hco3', name: '标准碳酸氢根', unit: '', abbr: 'HCO3std' },
+    { key: 'be', name: '剩余碱 BE(B)', unit: '', abbr: 'BE(B)' },
+    { key: 'pco2', name: '二氧化碳分压', unit: '', abbr: 'pCO2', optional: true },
+    { key: 'po2', name: '氧分压', unit: '', abbr: 'pO2', optional: true },
+    { key: 'beecf', name: '细胞外液剩余碱', unit: '', abbr: 'BEecf', optional: true },
+    { key: 'lactate', name: '乳酸', unit: '', abbr: 'Lac', optional: true },
+    { key: 'glucose', name: '葡萄糖', unit: '', abbr: 'Glu', optional: true },
+    { key: 'sodium', name: '钠', unit: '', abbr: 'Na+', optional: true },
+    { key: 'potassium', name: '钾', unit: '', abbr: 'K+', optional: true },
+    { key: 'chloride', name: '氯', unit: '', abbr: 'Cl-', optional: true },
+    { key: 'calcium', name: '离子钙', unit: '', abbr: 'Ca++', optional: true },
+    { key: 'hct', name: '红细胞压积', unit: '', abbr: 'Hct', optional: true },
+    { key: 'cthb', name: '总血红蛋白', unit: '', abbr: 'ctHb', optional: true }
+  ];
+
+  // 血常规：仅血红蛋白、血小板必填
+  static BLOOD_CBC_INDICATORS = [
+    { key: 'hgb', name: '血红蛋白', unit: '', abbr: 'HGB' },
+    { key: 'plt', name: '血小板', unit: '', abbr: 'PLT' },
+    { key: 'wbc', name: '白细胞', unit: '', abbr: 'WBC', optional: true },
+    { key: 'neut_abs', name: '中性粒细胞绝对值', unit: '', abbr: 'NEUT#', optional: true },
+    { key: 'neut_pct', name: '中性粒细胞百分比', unit: '', abbr: 'NEUT%', optional: true },
+    { key: 'hct', name: '红细胞压积', unit: '', abbr: 'Hct', optional: true },
+    { key: 'lym_pct', name: '淋巴细胞百分比', unit: '', abbr: 'LYM%', optional: true },
+    { key: 'mcv', name: '平均红细胞体积', unit: '', abbr: 'MCV', optional: true }
   ];
 
   // 血氨指标配置（待补充）
@@ -55,6 +77,8 @@ class ReportModel {
         return this.URINE_MS_INDICATORS;
       case this.REPORT_TYPES.BLOOD_GAS:
         return this.BLOOD_GAS_INDICATORS;
+      case this.REPORT_TYPES.BLOOD_CBC:
+        return this.BLOOD_CBC_INDICATORS;
       case this.REPORT_TYPES.BLOOD_AMMONIA:
         return this.BLOOD_AMMONIA_INDICATORS;
       default:
@@ -141,6 +165,7 @@ class ReportModel {
       [this.REPORT_TYPES.BLOOD_MS]: '血串联质谱',
       [this.REPORT_TYPES.URINE_MS]: '尿串联质谱',
       [this.REPORT_TYPES.BLOOD_GAS]: '血气分析',
+      [this.REPORT_TYPES.BLOOD_CBC]: '血常规',
       [this.REPORT_TYPES.BLOOD_AMMONIA]: '血氨检测'
     };
     return typeNames[reportType] || '未知报告';
@@ -192,7 +217,8 @@ class ReportModel {
       }
 
       if (!indicator.isRatio || indicator.allowRangeInput) {
-        if (!data.minRange || !data.maxRange) {
+        const missingRange = !data.minRange || !data.maxRange;
+        if (missingRange && !indicator.optional) {
           errors.push(`${indicator.name} 需要设置参考范围`);
         }
       }
