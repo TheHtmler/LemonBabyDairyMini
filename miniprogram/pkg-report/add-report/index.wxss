@@ -250,6 +250,7 @@
   display: grid;
   grid-template-columns: 2.1fr 1fr 1fr;
   gap: 8rpx;
+  align-items: end;
 }
 
 .compact-input-grid.value-only {
@@ -259,6 +260,8 @@
 .compact-cell {
   min-width: 0;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .compact-cell.value-cell {
@@ -267,20 +270,24 @@
 
 .compact-label-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8rpx;
+  min-height: 28rpx;
   margin-bottom: 6rpx;
+  box-sizing: border-box;
 }
 
 .compact-label {
   display: block;
   font-size: 18rpx;
+  line-height: 28rpx;
   color: #8a95a5;
 }
 
 .value-unit {
   flex-shrink: 0;
   font-size: 18rpx;
+  line-height: 28rpx;
   font-weight: 500;
   color: #7b8798;
 }

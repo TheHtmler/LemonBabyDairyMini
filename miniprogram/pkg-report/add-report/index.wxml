@@ -76,7 +76,9 @@
 
           <block wx:if="{{!indicator.isRatio || indicator.allowRangeInput}}">
             <view class="compact-cell">
-              <text class="compact-label">最小值</text>
+              <view class="compact-label-row">
+                <text class="compact-label">最小值</text>
+              </view>
               <input
                 class="compact-input"
                 type="text"
@@ -89,7 +91,9 @@
               />
             </view>
             <view class="compact-cell">
-              <text class="compact-label">最大值</text>
+              <view class="compact-label-row">
+                <text class="compact-label">最大值</text>
+              </view>
               <input
                 class="compact-input"
                 type="text"
