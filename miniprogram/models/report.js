@@ -6,7 +6,8 @@ class ReportModel {
     URINE_MS: 'urine_ms',        // 尿串联质谱
     BLOOD_GAS: 'blood_gas',      // 血气
     BLOOD_CBC: 'blood_cbc',      // 血常规
-    BLOOD_AMMONIA: 'blood_ammonia' // 血氨
+    BLOOD_AMMONIA: 'blood_ammonia', // 血氨
+    BLOOD_BIOCHEM: 'blood_biochem'  // 大生化
   };
 
   // 血串联质谱指标配置
@@ -68,6 +69,38 @@ class ReportModel {
     { key: 'ammonia', name: '血氨', unit: '', abbr: 'NH3' }
   ];
 
+  // 大生化指标配置：全部可选，至少填写一项
+  static BLOOD_BIOCHEM_INDICATORS = [
+    { key: 'tp', name: '总蛋白', unit: 'g/L', abbr: 'TP', optional: true },
+    { key: 'alb', name: '白蛋白', unit: 'g/L', abbr: 'ALB', optional: true },
+    { key: 'alt', name: '丙氨酸氨基转移酶', unit: 'U/L', abbr: 'ALT', optional: true },
+    { key: 'ast', name: '天门冬氨酸氨基转移酶', unit: 'U/L', abbr: 'AST', optional: true },
+    { key: 'alp', name: '碱性磷酸酶', unit: 'U/L', abbr: 'ALP', optional: true },
+    { key: 'ggt', name: '谷氨酰转肽酶', unit: 'U/L', abbr: 'GGT', optional: true },
+    { key: 'dbil', name: '直接胆红素', unit: 'μmol/L', abbr: 'DBil', optional: true },
+    { key: 'tbil', name: '总胆红素', unit: 'μmol/L', abbr: 'TBil', optional: true },
+    { key: 'crea', name: '肌酐', unit: 'μmol/L', abbr: 'CREA', optional: true },
+    { key: 'tba', name: '总胆汁酸', unit: 'μmol/L', abbr: 'TBA', optional: true },
+    { key: 'ua', name: '尿酸', unit: 'μmol/L', abbr: 'UA', optional: true },
+    { key: 'tc', name: '总胆固醇', unit: 'mmol/L', abbr: 'TC', optional: true },
+    { key: 'tg', name: '甘油三酯', unit: 'mmol/L', abbr: 'TG', optional: true },
+    { key: 'ldl', name: '低密度脂蛋白', unit: 'mmol/L', abbr: 'LDL', optional: true },
+    { key: 'hdl', name: '高密度脂蛋白', unit: 'mmol/L', abbr: 'HDL', optional: true },
+    { key: 'glu', name: '空腹血糖', unit: 'mmol/L', abbr: 'Glu', optional: true },
+    { key: 'bun', name: '尿素氮', unit: 'mmol/L', abbr: 'BUN', optional: true },
+    { key: 'egfr', name: '肾小球滤过率', unit: 'ml/min', abbr: 'eGFR', optional: true },
+    { key: 'cysc', name: '胱抑素C', unit: 'mg/L', abbr: 'CysC', optional: true },
+    { key: 'na', name: '钠', unit: 'mmol/L', abbr: 'Na', optional: true },
+    { key: 'k', name: '钾', unit: 'mmol/L', abbr: 'K', optional: true },
+    { key: 'mg', name: '镁', unit: 'mmol/L', abbr: 'Mg', optional: true },
+    { key: 'ca', name: '钙', unit: 'mmol/L', abbr: 'Ca', optional: true },
+    { key: 'cl', name: '氯', unit: 'mmol/L', abbr: 'Cl', optional: true },
+    { key: 'ck', name: '肌酸激酶', unit: 'U/L', abbr: 'CK', optional: true },
+    { key: 'ck_mb', name: '肌酸激酶同工酶', unit: 'U/L', abbr: 'CK-MB', optional: true },
+    { key: 'ctni', name: '肌钙蛋白', unit: 'ng/mL', abbr: 'cTnI', optional: true },
+    { key: 'co2', name: '二氧化碳', unit: 'mmol/L', abbr: 'CO₂', optional: true }
+  ];
+
   // 获取指标配置
   static getIndicators(reportType) {
     switch (reportType) {
@@ -81,6 +114,8 @@ class ReportModel {
         return this.BLOOD_CBC_INDICATORS;
       case this.REPORT_TYPES.BLOOD_AMMONIA:
         return this.BLOOD_AMMONIA_INDICATORS;
+      case this.REPORT_TYPES.BLOOD_BIOCHEM:
+        return this.BLOOD_BIOCHEM_INDICATORS;
       default:
         return [];
     }
@@ -166,7 +201,8 @@ class ReportModel {
       [this.REPORT_TYPES.URINE_MS]: '尿串联质谱',
       [this.REPORT_TYPES.BLOOD_GAS]: '血气分析',
       [this.REPORT_TYPES.BLOOD_CBC]: '血常规',
-      [this.REPORT_TYPES.BLOOD_AMMONIA]: '血氨检测'
+      [this.REPORT_TYPES.BLOOD_AMMONIA]: '血氨检测',
+      [this.REPORT_TYPES.BLOOD_BIOCHEM]: '大生化'
     };
     return typeNames[reportType] || '未知报告';
   }
@@ -223,6 +259,16 @@ class ReportModel {
         }
       }
     });
+
+    if (reportType === this.REPORT_TYPES.BLOOD_BIOCHEM) {
+      const hasAnyValue = requiredIndicators.some((indicator) => {
+        const data = indicators[indicator.key];
+        return data && data.value && String(data.value).trim() !== '';
+      });
+      if (!hasAnyValue) {
+        errors.push('请至少填写一项大生化指标');
+      }
+    }
 
     return {
       isValid: errors.length === 0,
