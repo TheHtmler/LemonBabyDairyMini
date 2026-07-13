@@ -44,3 +44,25 @@ test('analysis-report add flow opens type picker or navigates by context', () =>
   assert.match(wxml, /onSelectReportType|data-type/);
   assert.match(wxss, /z-index:\s*(?:1000|9999)/);
 });
+
+test('countFilledIndicators only counts current indicator keys with non-empty value', () => {
+  const { countFilledIndicators } = require('../miniprogram/utils/reportFilledCount');
+  const current = [{ key: 'alt' }, { key: 'ast' }];
+  const data = { alt: { value: '32' }, ast: { value: '  ' }, crea: { value: '99' } };
+  assert.equal(countFilledIndicators(current, data), 1);
+});
+
+test('add-report shows unit and filled progress wiring', () => {
+  const js = read('miniprogram/pkg-report/add-report/index.js');
+  const wxml = read('miniprogram/pkg-report/add-report/index.wxml');
+  assert.match(js, /filledCount/);
+  assert.match(js, /totalCount/);
+  assert.match(js, /refreshFilledCount/);
+  assert.match(js, /async initIndicators[\s\S]*refreshFilledCount/);
+  assert.match(js, /async switchReportType[\s\S]*refreshFilledCount/);
+  assert.match(js, /loadReportData[\s\S]*refreshFilledCount/);
+  assert.match(js, /onIndicatorValueInput[\s\S]*refreshFilledCount|refreshFilledCount[\s\S]*onIndicatorValueInput/);
+  assert.match(wxml, /filledCount/);
+  assert.match(wxml, /totalCount/);
+  assert.match(wxml, /indicator\.unit/);
+});

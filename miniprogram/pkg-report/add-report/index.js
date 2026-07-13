@@ -3,6 +3,7 @@ const ReportRepository = require('../../models/reportRepository');
 const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
 const { parseReportOcrResult, parseStructuredReportItems } = require('../../utils/reportOcrParser');
 const { sanitizeSignedDecimalInput } = require('../../utils/reportNumberFormat');
+const { countFilledIndicators } = require('../../utils/reportFilledCount');
 
 const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
 
@@ -95,7 +96,11 @@ Page({
     // 页面状态
     loading: false,
     saving: false,
-    hasUnsavedChanges: false
+    hasUnsavedChanges: false,
+
+    // 已填进度
+    filledCount: 0,
+    totalCount: 0
   },
 
   onLoad: function (options) {
@@ -175,6 +180,7 @@ Page({
 
       // 初始化指标配置
       await this.initIndicators();
+      this.refreshFilledCount();
 
     } catch (error) {
       console.error('加载报告数据失败:', error);
@@ -246,6 +252,7 @@ Page({
 
     // 重新计算所有指标状态
     this.recalculateAllIndicators();
+    this.refreshFilledCount();
   },
 
   // 日期选择
@@ -289,6 +296,7 @@ Page({
     this.refreshOcrEntryVisible();
     
     await this.initIndicators();
+    this.refreshFilledCount();
   },
 
   // 格式化数字为小数点后三位
@@ -330,6 +338,10 @@ Page({
     }
 
     this.setData(update);
+
+    if (field === 'value') {
+      this.refreshFilledCount();
+    }
   },
 
   clearOcrPendingReview(indicatorKeys = []) {
@@ -391,6 +403,9 @@ Page({
         this.setData({
           indicatorData: indicatorData
         });
+        if (field === 'value') {
+          this.refreshFilledCount();
+        }
         return;
       }
       
@@ -407,6 +422,9 @@ Page({
       this.setData({
         indicatorData: indicatorData
       });
+      if (field === 'value') {
+        this.refreshFilledCount();
+      }
     }
 
     // 重新计算该指标状态
@@ -473,6 +491,7 @@ Page({
           }
 
           this.setData({ indicatorData: newIndicatorData });
+          this.refreshFilledCount();
 
           // 计算比值指标的状态
           this.calculateIndicatorStatus('c3_c0');
@@ -497,6 +516,7 @@ Page({
           }
 
           this.setData({ indicatorData: newIndicatorData });
+          this.refreshFilledCount();
 
           // 计算比值指标的状态
           this.calculateIndicatorStatus('c3_c2');
@@ -531,6 +551,14 @@ Page({
     if (this.data.ocrEntryVisible !== visible) {
       this.setData({ ocrEntryVisible: visible });
     }
+  },
+
+  refreshFilledCount() {
+    const currentIndicators = this.data.currentIndicators || [];
+    const filledCount = countFilledIndicators(currentIndicators, this.data.indicatorData || {});
+    const totalCount = currentIndicators.length;
+    if (this.data.filledCount === filledCount && this.data.totalCount === totalCount) return;
+    this.setData({ filledCount, totalCount });
   },
 
   async loadOcrAccess() {
@@ -914,6 +942,7 @@ Page({
       hasUnsavedChanges: true
     }, () => {
       this.recalculateAllIndicators();
+      this.refreshFilledCount();
     });
 
     this.reportOcrFeedback(`识别到 ${newlyFilledKeys.length} 项，请核对`, {

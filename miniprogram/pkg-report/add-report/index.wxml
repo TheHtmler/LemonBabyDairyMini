@@ -45,6 +45,10 @@
       </scroll-view>
     </view>
 
+    <view class="filled-progress">
+      <text>已填 {{filledCount}} / 共 {{totalCount}}</text>
+    </view>
+
     <view class="indicator-list">
       <view
         wx:for="{{currentIndicators}}"
@@ -71,16 +75,19 @@
         <view class="compact-input-grid {{(!indicator.isRatio || indicator.allowRangeInput) ? '' : 'value-only'}}">
           <view class="compact-cell value-cell">
             <text class="compact-label">检测值</text>
-            <input
-              class="compact-input"
-              type="text"
-              placeholder="数值"
-              value="{{indicatorData[indicator.key].value}}"
-              data-indicator="{{indicator.key}}"
-              data-field="value"
-              bindinput="onIndicatorValueInput"
-              bindblur="onIndicatorValueBlur"
-            />
+            <view class="value-input-row">
+              <input
+                class="compact-input"
+                type="text"
+                placeholder="数值"
+                value="{{indicatorData[indicator.key].value}}"
+                data-indicator="{{indicator.key}}"
+                data-field="value"
+                bindinput="onIndicatorValueInput"
+                bindblur="onIndicatorValueBlur"
+              />
+              <text wx:if="{{indicator.unit}}" class="value-unit">{{indicator.unit}}</text>
+            </view>
           </view>
 
           <block wx:if="{{!indicator.isRatio || indicator.allowRangeInput}}">
