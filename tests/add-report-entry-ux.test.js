@@ -62,7 +62,10 @@ test('add-report shows unit and filled progress wiring', () => {
   assert.match(js, /async switchReportType[\s\S]*refreshFilledCount/);
   assert.match(js, /loadReportData[\s\S]*refreshFilledCount/);
   assert.match(js, /onIndicatorValueInput[\s\S]*refreshFilledCount|refreshFilledCount[\s\S]*onIndicatorValueInput/);
+  assert.match(js, /loading:\s*true/);
+  assert.match(js, /await this\.initIndicators\(\);\s*\n\s*this\.setData\(\{\s*loading:\s*false/);
   assert.match(wxml, /filledCount/);
   assert.match(wxml, /totalCount/);
-  assert.match(wxml, /indicator\.unit/);
+  assert.match(wxml, /compact-label-row[\s\S]*indicator\.unit/);
+  assert.doesNotMatch(wxml, /value-input-row/);
 });

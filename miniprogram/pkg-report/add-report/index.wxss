@@ -283,29 +283,24 @@
   width: 100%;
 }
 
-.value-input-row {
+.compact-label-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8rpx;
-}
-
-.value-input-row .compact-input {
-  flex: 1;
-  min-width: 0;
-}
-
-.value-unit {
-  flex-shrink: 0;
-  font-size: 22rpx;
-  font-weight: 500;
-  color: #7b8798;
+  margin-bottom: 6rpx;
 }
 
 .compact-label {
   display: block;
-  margin-bottom: 6rpx;
   font-size: 18rpx;
   color: #8a95a5;
+}
+
+.value-unit {
+  flex-shrink: 0;
+  font-size: 18rpx;
+  font-weight: 500;
+  color: #7b8798;
 }
 
 .compact-input {

@@ -93,8 +93,8 @@ Page({
     ocrAccessMessage: '拍照识别功能调试中，仅对白名单用户开放',
     ocrEntryHint: '拍下报告单自动填值，请逐项核对',
 
-    // 页面状态
-    loading: false,
+    // 页面状态：默认 loading，避免指标异步就绪前空白闪一下
+    loading: true,
     saving: false,
     hasUnsavedChanges: false,
 
@@ -120,11 +120,14 @@ Page({
   // 初始化页面
   async initPage() {
     try {
+      this.setData({ loading: true });
+
       // 获取宝宝信息
       const app = getApp();
       const babyInfo = app.globalData.babyInfo;
       
       if (!babyInfo || !babyInfo.babyUid) {
+        this.setData({ loading: false });
         wx.showModal({
           title: '提示',
           content: '请先完善宝宝信息',
@@ -147,12 +150,14 @@ Page({
       if (this.data.mode === 'edit' && this.data.reportId) {
         await this.loadReportData();
       } else {
-        // 新建模式，初始化指标
+        // 新建模式，初始化指标后再关 loading
         await this.initIndicators();
+        this.setData({ loading: false });
       }
 
     } catch (error) {
       console.error('初始化页面失败:', error);
+      this.setData({ loading: false });
       wx.showToast({
         title: '初始化失败',
         icon: 'none'
@@ -173,14 +178,14 @@ Page({
       this.setData({
         reportDate: ReportModel.formatDate(reportData.reportDate),
         selectedReportType: reportData.reportType,
-        indicatorData: reportData.indicators || {},
-        loading: false
+        indicatorData: reportData.indicators || {}
       });
       this.refreshOcrEntryVisible();
 
-      // 初始化指标配置
+      // 初始化指标配置完成后再关 loading，避免表单空闪
       await this.initIndicators();
       this.refreshFilledCount();
+      this.setData({ loading: false });
 
     } catch (error) {
       console.error('加载报告数据失败:', error);
@@ -291,12 +296,17 @@ Page({
       selectedReportType: reportType,
       indicatorData: {},
       ocrPendingKeys: [],
-      hasUnsavedChanges: false
+      hasUnsavedChanges: false,
+      loading: true
     });
     this.refreshOcrEntryVisible();
     
-    await this.initIndicators();
-    this.refreshFilledCount();
+    try {
+      await this.initIndicators();
+      this.refreshFilledCount();
+    } finally {
+      this.setData({ loading: false });
+    }
   },
 
   // 格式化数字为小数点后三位
