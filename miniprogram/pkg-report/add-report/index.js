@@ -1,5 +1,6 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
+const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
 const { parseReportOcrResult, parseStructuredReportItems } = require('../../utils/reportOcrParser');
 const { sanitizeSignedDecimalInput } = require('../../utils/reportNumberFormat');
 
@@ -74,14 +75,7 @@ Page({
     selectedReportType: 'blood_ms',
     
     // 报告类型配置
-    reportTypes: [
-      { key: 'blood_ms', name: '血串联质谱', icon: '🩸' },
-      { key: 'urine_ms', name: '尿串联质谱', icon: '🧪' },
-      { key: 'blood_gas', name: '血气分析', icon: '💨' },
-      { key: 'blood_cbc', name: '血常规', icon: '🩺' },
-      { key: 'blood_biochem', name: '大生化', icon: '🧬' },
-      { key: 'blood_ammonia', name: '血氨检测', icon: '⚡' }
-    ],
+    reportTypes: REPORT_ENTRY_TYPES,
     
     // 当前指标配置
     currentIndicators: [],
