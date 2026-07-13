@@ -7,15 +7,18 @@
 
   <view wx:else class="content">
     <view class="report-meta-bar">
-      <view class="meta-card">
-        <text class="meta-label">检测日期</text>
-        <picker mode="date" value="{{reportDate}}" bindchange="onDateChange" class="meta-picker">
+      <picker mode="date" value="{{reportDate}}" bindchange="onDateChange" class="meta-picker">
+        <view class="meta-card meta-card--tappable">
+          <text class="meta-label">检测日期</text>
           <view class="meta-picker-content">
             <text class="meta-value">{{reportDate || '请选择日期'}}</text>
-            <text class="meta-icon">📅</text>
+            <view class="meta-picker-action">
+              <text class="meta-picker-hint">点击修改</text>
+              <text class="meta-chevron">›</text>
+            </view>
           </view>
-        </picker>
-      </view>
+        </view>
+      </picker>
     </view>
 
     <view wx:if="{{ocrEntryVisible}}" class="ocr-entry {{ocrRecognizing ? 'recognizing' : ''}}" bindtap="onRecognizeReportPhoto">
@@ -24,25 +27,6 @@
         <text class="ocr-entry-title">{{ocrRecognizing ? '识别中…' : '拍照识别填指标'}}</text>
         <text class="ocr-entry-desc">{{ocrEntryHint}}</text>
       </view>
-    </view>
-
-    <view class="report-type-section">
-      <view class="section-header">
-        <text class="section-title">报告类型</text>
-      </view>
-      <scroll-view class="type-scroll" scroll-x="true" show-scrollbar="false">
-        <view
-          wx:for="{{reportTypes}}"
-          wx:key="key"
-          wx:for-item="type"
-          class="type-chip {{selectedReportType === type.key ? 'active' : ''}}"
-          bindtap="onReportTypeChange"
-          data-type="{{type.key}}"
-        >
-          <text class="type-chip-icon">{{type.icon}}</text>
-          <text class="type-chip-name">{{type.name}}</text>
-        </view>
-      </scroll-view>
     </view>
 
     <view class="filled-progress">

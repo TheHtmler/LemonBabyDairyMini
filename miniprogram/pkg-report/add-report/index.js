@@ -113,8 +113,19 @@ Page({
       reportId: reportId,
       selectedReportType
     });
+    this.refreshNavigationTitle();
 
     this.initPage();
+  },
+
+  refreshNavigationTitle() {
+    const typeName = ReportModel.getReportTypeName(this.data.selectedReportType);
+    const title = this.data.mode === 'edit'
+      ? `编辑${typeName}`
+      : (typeName && typeName !== '未知报告' ? typeName : '检测报告');
+    if (typeof wx !== 'undefined' && typeof wx.setNavigationBarTitle === 'function') {
+      wx.setNavigationBarTitle({ title });
+    }
   },
 
   // 初始化页面
@@ -180,6 +191,7 @@ Page({
         selectedReportType: reportData.reportType,
         indicatorData: reportData.indicators || {}
       });
+      this.refreshNavigationTitle();
       this.refreshOcrEntryVisible();
 
       // 初始化指标配置完成后再关 loading，避免表单空闪
@@ -290,7 +302,7 @@ Page({
     }
   },
 
-  // 执行报告类型切换
+  // 执行报告类型切换（页内类型入口已移除，保留方法供兼容调用）
   async switchReportType(reportType) {
     this.setData({
       selectedReportType: reportType,
@@ -299,6 +311,7 @@ Page({
       hasUnsavedChanges: false,
       loading: true
     });
+    this.refreshNavigationTitle();
     this.refreshOcrEntryVisible();
     
     try {

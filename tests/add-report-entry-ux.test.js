@@ -52,6 +52,18 @@ test('countFilledIndicators only counts current indicator keys with non-empty va
   assert.equal(countFilledIndicators(current, data), 1);
 });
 
+test('add-report uses navigation title for selected type without in-page type chips', () => {
+  const js = read('miniprogram/pkg-report/add-report/index.js');
+  const wxml = read('miniprogram/pkg-report/add-report/index.wxml');
+  assert.match(js, /refreshNavigationTitle/);
+  assert.match(js, /setNavigationBarTitle/);
+  assert.match(js, /getReportTypeName/);
+  assert.doesNotMatch(wxml, /report-type-section/);
+  assert.doesNotMatch(wxml, /type-chip/);
+  assert.match(wxml, /meta-card--tappable/);
+  assert.match(wxml, /点击修改/);
+});
+
 test('add-report shows unit and filled progress wiring', () => {
   const js = read('miniprogram/pkg-report/add-report/index.js');
   const wxml = read('miniprogram/pkg-report/add-report/index.wxml');

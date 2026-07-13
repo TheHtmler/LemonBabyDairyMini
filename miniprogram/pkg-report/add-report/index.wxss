@@ -57,6 +57,16 @@
   box-shadow: 0 4rpx 12rpx rgba(31, 45, 61, 0.04);
 }
 
+.meta-card--tappable {
+  border-color: #c9d7f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+}
+
+.meta-card--tappable:active {
+  background: #eef4ff;
+  border-color: #9db7e8;
+}
+
 .meta-label {
   display: block;
   font-size: 22rpx;
@@ -66,9 +76,9 @@
 
 .meta-value {
   display: block;
-  font-size: 28rpx;
+  font-size: 32rpx;
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 700;
   color: #1f2d3d;
 }
 
@@ -88,11 +98,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 54rpx;
+  min-height: 56rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 12rpx;
+  background: #eef4ff;
+  border: 1rpx dashed #9db7e8;
+  box-sizing: border-box;
 }
 
-.meta-icon {
-  font-size: 24rpx;
+.meta-picker-action {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  flex-shrink: 0;
+}
+
+.meta-picker-hint {
+  font-size: 22rpx;
+  color: #2f6fed;
+  font-weight: 600;
+}
+
+.meta-chevron {
+  font-size: 34rpx;
+  line-height: 1;
+  color: #2f6fed;
+  font-weight: 300;
 }
 
 .ocr-entry {
@@ -131,57 +162,8 @@
   color: #a3894a;
 }
 
-.report-type-section,
 .indicator-list {
   margin-bottom: 24rpx;
-}
-
-.section-header {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-bottom: 14rpx;
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #1f2d3d;
-}
-
-.type-scroll {
-  width: 100%;
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-
-.type-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10rpx;
-  margin-right: 12rpx;
-  padding: 14rpx 18rpx;
-  border-radius: 999rpx;
-  background: #ffffff;
-  border: 1rpx solid #dde4ee;
-  color: #516072;
-}
-
-.type-chip.active {
-  background: #2f6fed;
-  border-color: #2f6fed;
-  color: #ffffff;
-  box-shadow: 0 8rpx 18rpx rgba(47, 111, 237, 0.24);
-}
-
-.type-chip-icon {
-  font-size: 24rpx;
-}
-
-.type-chip-name {
-  font-size: 24rpx;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .filled-progress {
