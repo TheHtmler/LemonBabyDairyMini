@@ -322,8 +322,10 @@ Page({
 
   async refreshDashboardOnShow() {
     if (!this.shouldRefreshDashboardOnShow()) return;
+    const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
+    const shouldRebuildTrend = this.hasPendingHomeDashboardDirty(babyUid);
     await this.loadDashboard({ silent: true, rebuildTrend: false });
-    this.loadDeferredDashboardParts();
+    this.loadDeferredDashboardParts({ rebuildMissing: shouldRebuildTrend });
   },
 
   markDashboardCacheFresh(babyUid, date, loadStartedAt = Date.now()) {
@@ -373,7 +375,8 @@ Page({
 
   async onPullDownRefresh() {
     try {
-      await this.loadDashboard({ silent: true });
+      // rebuildTrend:true 已带 rebuildMissing，下拉一次即可刷新趋势
+      await this.loadDashboard({ silent: true, rebuildTrend: true });
     } finally {
       wx.stopPullDownRefresh();
     }
@@ -416,7 +419,7 @@ Page({
       ]);
       this._ready = true;
       await this.finishHomeBoot(bootStartedAt, { skipMinDuration: skipHomeBoot });
-      this.loadDeferredDashboardParts();
+      this.loadDeferredDashboardParts({ rebuildMissing: true });
     } catch (error) {
       await this.finishHomeBoot(bootStartedAt, { skipMinDuration: skipHomeBoot });
       handleError(error, { title: '页面初始化失败' });
@@ -544,17 +547,20 @@ Page({
     }
   },
 
-  async loadDeferredDashboardParts(today = todayKey()) {
+  async loadDeferredDashboardParts(options = {}) {
     if (this._trendRefreshPromise) return this._trendRefreshPromise;
 
     const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
     if (!babyUid) return Promise.resolve();
 
-    const startKey = shiftDateKey(today, -TREND_DAYS);
+    // 普通 onShow 只读 daily_summary_v2 区间；首进 / 下拉 / dirty 才 rebuildMissing。
+    const rebuildMissing = options.rebuildMissing === true;
+    const startKey = shiftDateKey(todayKey(), -TREND_DAYS);
+    const today = todayKey();
     this.setData({ trendLoading: true });
 
     this._trendRefreshPromise = DailyRecordV2Service.getDailySummariesForRange(babyUid, startKey, today, {
-      rebuildMissing: true,
+      rebuildMissing,
       skipDates: [today]
     })
       .then((rangeSummaries) => {

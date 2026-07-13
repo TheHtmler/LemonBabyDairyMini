@@ -250,9 +250,17 @@ Page({
   },
 
   async onShow() {
-    if (this.data.powders.length > 0) {
-      await this.loadPowders({ keepScope: true });
+    // 列表已加载时，返回本页不强制重载；避免重复 getTempFileURL。
+    // 子页保存后可通过 powdersDirty 触发刷新。
+    if (this.data.powders.length > 0 && !this._powdersDirty) {
+      return;
     }
+    this._powdersDirty = false;
+    await this.loadPowders({ keepScope: this.data.powders.length > 0 });
+  },
+
+  markPowdersDirty() {
+    this._powdersDirty = true;
   },
 
   async loadPowders(options = {}) {
@@ -263,8 +271,11 @@ Page({
       this.setData({ babyUid: babyUid || '' });
 
       const { systemPowders, userPowders } = await PowderCatalogModel.getAvailablePowders(babyUid);
-      const resolvedSystem = await PowderCatalogModel.resolvePowderImageUrls(systemPowders || []);
-      const resolvedUser = await PowderCatalogModel.resolvePowderImageUrls(userPowders || []);
+      // 合并后一次换链，配合 cloudTempUrlCache 命中则接近 0 次存储调用
+      const resolvedAll = await PowderCatalogModel.resolvePowderImageUrls([
+        ...(systemPowders || []),
+        ...(userPowders || [])
+      ]);
       let breastMilkSettings = {};
       if (babyUid) {
         try {
@@ -273,7 +284,7 @@ Page({
           console.warn('加载母乳参数失败，使用默认值:', error);
         }
       }
-      const powders = [...resolvedSystem, ...resolvedUser].map(enrichPowderItem);
+      const powders = resolvedAll.map(enrichPowderItem);
 
       this.applyPowderList(powders, { ...options, breastMilkSettings });
     } catch (error) {

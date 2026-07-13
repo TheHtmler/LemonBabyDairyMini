@@ -100,34 +100,18 @@ class FoodModel {
 
   async resolveFoodImageUrls(foods = []) {
     const list = Array.isArray(foods) ? foods : [];
-    const fileIds = Array.from(
-      new Set(
-        list
-          .map(food => (food?.image || '').toString().trim())
-          .filter(image => image.startsWith('cloud://'))
-      )
-    );
+    const fileIds = list
+      .map(food => (food?.image || '').toString().trim())
+      .filter(image => image.startsWith('cloud://'));
 
     if (!fileIds.length) {
       return list;
     }
 
-    const imageUrlMap = new Map();
-    const chunkSize = 50;
-
+    const { resolveCloudTempUrls } = require('../utils/cloudTempUrlCache');
+    let imageUrlMap = new Map();
     try {
-      for (let i = 0; i < fileIds.length; i += chunkSize) {
-        const chunk = fileIds.slice(i, i + chunkSize);
-        const { fileList } = await wx.cloud.getTempFileURL({
-          fileList: chunk.map(fileID => ({ fileID, maxAge: 604800 }))
-        });
-
-        (fileList || []).forEach(item => {
-          if (item?.fileID && item.tempFileURL) {
-            imageUrlMap.set(item.fileID, item.tempFileURL);
-          }
-        });
-      }
+      imageUrlMap = await resolveCloudTempUrls(fileIds);
     } catch (error) {
       console.warn('解析食物图片临时地址失败:', error);
       return list;

@@ -1,3 +1,5 @@
+const { resolveCloudTempUrls } = require('./cloudTempUrlCache');
+
 const GROUP_QRCODE_KEY = 'group_qrcode';
 
 async function resolveGroupQrcodeUrl(fileId = '') {
@@ -6,10 +8,8 @@ async function resolveGroupQrcodeUrl(fileId = '') {
     return '';
   }
 
-  const { fileList } = await wx.cloud.getTempFileURL({
-    fileList: [{ fileID: normalizedFileId, maxAge: 604800 }]
-  });
-  return fileList?.[0]?.tempFileURL || '';
+  const urlMap = await resolveCloudTempUrls([normalizedFileId]);
+  return urlMap.get(normalizedFileId) || '';
 }
 
 async function loadGroupQrcode(options = {}) {

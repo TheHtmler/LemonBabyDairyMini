@@ -377,7 +377,11 @@ Page({
     if (hasFoodPickerSelection) {
       return;
     }
-    await this.loadFoodCatalog();
+    // 仅从食物管理返回（可能新增/改图）时重载目录；普通 onShow 不换链不读库
+    if (this._foodCatalogDirty) {
+      this._foodCatalogDirty = false;
+      await this.loadFoodCatalog();
+    }
   },
 
   async loadTargetContext() {
@@ -607,6 +611,7 @@ Page({
   },
 
   navigateToFoodManagement() {
+    this._foodCatalogDirty = true;
     wx.navigateTo({
       url: '/pkg-milk/food-management/index?openAdd=1&from=meal-editor'
     });
