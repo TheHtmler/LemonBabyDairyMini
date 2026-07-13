@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-07-13-blood-biochem-report-design.md`
 
+**Branch:** 在 `feat/blood-biochem-report`（或从当前非 `main` 工作分支）实施；勿在 `main` 直接提交。
+
 ---
 
 ## File map
@@ -45,11 +47,39 @@ test('blood biochem exposes 28 optional indicators and display name', () => {
   assert.equal(ReportModel.getReportTypeName(ReportModel.REPORT_TYPES.BLOOD_BIOCHEM), '大生化');
   assert.equal(indicators.length, 28);
   assert.ok(indicators.every((item) => item.optional === true));
-  assert.deepEqual(indicators.map((item) => item.key), [
-    'tp', 'alb', 'alt', 'ast', 'alp', 'ggt', 'dbil', 'tbil', 'crea', 'tba',
-    'ua', 'tc', 'tg', 'ldl', 'hdl', 'glu', 'bun', 'egfr', 'cysc', 'na',
-    'k', 'mg', 'ca', 'cl', 'ck', 'ck_mb', 'ctni', 'co2'
-  ]);
+  assert.deepEqual(
+    indicators.map(({ key, name, unit, abbr }) => ({ key, name, unit, abbr })),
+    [
+      { key: 'tp', name: '总蛋白', unit: 'g/L', abbr: 'TP' },
+      { key: 'alb', name: '白蛋白', unit: 'g/L', abbr: 'ALB' },
+      { key: 'alt', name: '丙氨酸氨基转移酶', unit: 'U/L', abbr: 'ALT' },
+      { key: 'ast', name: '天门冬氨酸氨基转移酶', unit: 'U/L', abbr: 'AST' },
+      { key: 'alp', name: '碱性磷酸酶', unit: 'U/L', abbr: 'ALP' },
+      { key: 'ggt', name: '谷氨酰转肽酶', unit: 'U/L', abbr: 'GGT' },
+      { key: 'dbil', name: '直接胆红素', unit: 'μmol/L', abbr: 'DBil' },
+      { key: 'tbil', name: '总胆红素', unit: 'μmol/L', abbr: 'TBil' },
+      { key: 'crea', name: '肌酐', unit: 'μmol/L', abbr: 'CREA' },
+      { key: 'tba', name: '总胆汁酸', unit: 'μmol/L', abbr: 'TBA' },
+      { key: 'ua', name: '尿酸', unit: 'μmol/L', abbr: 'UA' },
+      { key: 'tc', name: '总胆固醇', unit: 'mmol/L', abbr: 'TC' },
+      { key: 'tg', name: '甘油三酯', unit: 'mmol/L', abbr: 'TG' },
+      { key: 'ldl', name: '低密度脂蛋白', unit: 'mmol/L', abbr: 'LDL' },
+      { key: 'hdl', name: '高密度脂蛋白', unit: 'mmol/L', abbr: 'HDL' },
+      { key: 'glu', name: '空腹血糖', unit: 'mmol/L', abbr: 'Glu' },
+      { key: 'bun', name: '尿素氮', unit: 'mmol/L', abbr: 'BUN' },
+      { key: 'egfr', name: '肾小球滤过率', unit: 'ml/min', abbr: 'eGFR' },
+      { key: 'cysc', name: '胱抑素C', unit: 'mg/L', abbr: 'CysC' },
+      { key: 'na', name: '钠', unit: 'mmol/L', abbr: 'Na' },
+      { key: 'k', name: '钾', unit: 'mmol/L', abbr: 'K' },
+      { key: 'mg', name: '镁', unit: 'mmol/L', abbr: 'Mg' },
+      { key: 'ca', name: '钙', unit: 'mmol/L', abbr: 'Ca' },
+      { key: 'cl', name: '氯', unit: 'mmol/L', abbr: 'Cl' },
+      { key: 'ck', name: '肌酸激酶', unit: 'U/L', abbr: 'CK' },
+      { key: 'ck_mb', name: '肌酸激酶同工酶', unit: 'U/L', abbr: 'CK-MB' },
+      { key: 'ctni', name: '肌钙蛋白', unit: 'ng/mL', abbr: 'cTnI' },
+      { key: 'co2', name: '二氧化碳', unit: 'mmol/L', abbr: 'CO₂' }
+    ]
+  );
 });
 
 test('validateReportData rejects empty blood biochem report', () => {
@@ -189,10 +219,10 @@ git commit -m "feat: 大生化接入档案摘要与对比筛选"
 ```js
 assert.match(wxml, /wx:if="\{\{ocrEntryVisible\}\}"/);
 assert.match(js, /ocrEntryVisible/);
-assert.match(js, /blood_biochem/);
+assert.match(js, /ocrAllowed[\s\S]*selectedReportType\s*!==\s*'blood_biochem'/);
+assert.match(js, /action:\s*'checkAccess'/);
+assert.match(js, /OCR_NOT_ALLOWED/);
 ```
-
-（保留 `checkAccess` / `OCR_NOT_ALLOWED` 等既有断言。）
 
 2. 在 `tests/blood-biochem-report.test.js` 追加：
 
@@ -201,8 +231,9 @@ test('add-report lists blood biochem and hides OCR for that type', () => {
   const js = read('miniprogram/pkg-report/add-report/index.js');
   const wxml = read('miniprogram/pkg-report/add-report/index.wxml');
   assert.match(js, /key:\s*'blood_biochem'[\s\S]*name:\s*'大生化'/);
-  assert.match(js, /ocrEntryVisible\s*=/);
-  assert.match(js, /blood_biochem/);
+  assert.match(js, /refreshOcrEntryVisible/);
+  assert.match(js, /ocrAllowed[\s\S]*selectedReportType\s*!==\s*'blood_biochem'/);
+  assert.match(js, /async switchReportType\(reportType\)[\s\S]*refreshOcrEntryVisible/);
   assert.match(wxml, /ocrEntryVisible/);
 });
 ```
@@ -237,7 +268,10 @@ refreshOcrEntryVisible() {
 }
 ```
 
-4. 在 `loadOcrAccess` 的 `setData` 之后、`onReportTypeChange` 切换类型并 `setData` 之后、`loadReportData` 设好 `selectedReportType` 之后调用 `this.refreshOcrEntryVisible()`（编辑进入大生化也要隐藏）。
+4. 调用点（**不要**挂在 `onReportTypeChange` 末尾——未保存确认时类型尚未切换）：
+   - `loadOcrAccess` 每次 `setData`（成功/失败）之后
+   - `switchReportType` 在 `setData({ selectedReportType... })` 之后（`initIndicators` 前后均可，建议紧跟 `setData`）
+   - `loadReportData` 设好 `selectedReportType` 之后（编辑进入大生化也要隐藏）
 
 5. `index.wxml`：`wx:if="{{ocrAllowed}}"` → `wx:if="{{ocrEntryVisible}}"`
 
@@ -286,6 +320,7 @@ Expected: PASS（或仅与本功能无关的既有失败——若出现，记录
 - [ ] 只填 ALT 可保存；全空不可保存
 - [ ] 大生化无 OCR 入口；切到血串联后白名单用户仍可看到 OCR（若本机有权限）
 - [ ] 分析页筛选/对比有「大生化」；档案摘要优先 ALT/AST 等已填项
+- [ ] 详情 / 编辑 / 删除行为与其他报告类型一致
 
 - [ ] **Step 3: Final commit if any fixes**
 
