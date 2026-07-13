@@ -18,6 +18,7 @@ const KEY_METRICS_BY_REPORT_TYPE = {
   [ReportModel.REPORT_TYPES.BLOOD_MS]: ['c3', 'c3_c2', 'c3_c0', 'c0'],
   [ReportModel.REPORT_TYPES.BLOOD_GAS]: ['ph', 'hco3', 'be', 'lactate'],
   [ReportModel.REPORT_TYPES.BLOOD_CBC]: ['hgb', 'plt', 'wbc'],
+  [ReportModel.REPORT_TYPES.BLOOD_BIOCHEM]: ['alt', 'ast', 'crea', 'k', 'glu'],
   [ReportModel.REPORT_TYPES.BLOOD_AMMONIA]: ['ammonia']
 };
 
@@ -28,6 +29,7 @@ const REPORT_TYPE_FILTERS = [
   { key: ReportModel.REPORT_TYPES.URINE_MS, label: '尿串联' },
   { key: ReportModel.REPORT_TYPES.BLOOD_GAS, label: '血气' },
   { key: ReportModel.REPORT_TYPES.BLOOD_CBC, label: '血常规' },
+  { key: ReportModel.REPORT_TYPES.BLOOD_BIOCHEM, label: '大生化' },
   { key: ReportModel.REPORT_TYPES.BLOOD_AMMONIA, label: '血氨' }
 ];
 
