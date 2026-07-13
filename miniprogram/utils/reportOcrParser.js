@@ -160,13 +160,40 @@ function resolveStructuredIndicatorKey(item = {}, reportType = '') {
   return '';
 }
 
+function sanitizeRangeFieldToken(token = '') {
+  const trimmed = `${token ?? ''}`.trim();
+  if (!trimmed || isClinicalOnlyRangeText(trimmed)) return '';
+  const normalized = normalizeCompareOps(trimmed);
+  // 单字段不等式交给 parseRefRange / buildInequalityRange，不直接当数字上下限
+  if (/^(<=|>=|<|>)/.test(normalized)) return '';
+  return trimmed;
+}
+
 function buildStructuredItemRanges(item = {}) {
-  const parsedFromRef = parseRefRange(item.refRange || item.ref_range || '');
-  const minRange = `${item.minRange ?? ''}`.trim();
-  const maxRange = `${item.maxRange ?? ''}`.trim();
+  const refRaw = `${item.refRange || item.ref_range || ''}`.trim();
+  const parsedFromRef = parseRefRange(refRaw);
+
+  const rawMin = `${item.minRange ?? ''}`.trim();
+  const rawMax = `${item.maxRange ?? ''}`.trim();
+  const minIneq = findInequalityToken(rawMin);
+  const maxIneq = findInequalityToken(rawMax);
+  if (minIneq || maxIneq) {
+    const fromField = parseRefRange(minIneq ? rawMin : rawMax);
+    if (fromField.minRange || fromField.maxRange) {
+      return fromField;
+    }
+  }
+
+  const minRange = sanitizeRangeFieldToken(item.minRange);
+  const maxRange = sanitizeRangeFieldToken(item.maxRange);
 
   if (minRange && maxRange) {
     return { minRange, maxRange };
+  }
+
+  // 「请结合临床」等：不填范围
+  if (isClinicalOnlyRangeText(refRaw) && !parsedFromRef.minRange && !parsedFromRef.maxRange) {
+    return { minRange: '', maxRange: '' };
   }
 
   return {
@@ -179,9 +206,10 @@ function assignStructuredIndicatorResult(result, matchedKeys, key, item, value, 
   if (!key || matchedKeys.has(key)) return false;
 
   const ranges = buildStructuredItemRanges(item);
+  const normalizedValue = normalizeDetectionValue(value) || `${value ?? ''}`.trim();
   matchedKeys.add(key);
   result[key] = {
-    value,
+    value: normalizedValue,
     minRange: ranges.minRange,
     maxRange: ranges.maxRange,
     sourceText: name || resolveStructuredItemName(item),
@@ -238,11 +266,68 @@ function groupOcrItemsIntoLines(items = []) {
 const SIGNED_NUMBER_PATTERN = '(\\(-?\\d+(?:\\.\\d+)?\\)|-?\\d+(?:\\.\\d+)?)';
 const RANGE_PATTERN = new RegExp(`${SIGNED_NUMBER_PATTERN}\\s*[-~]\\s*${SIGNED_NUMBER_PATTERN}`);
 const NUMBER_PATTERN = /-?\d+(?:\.\d+)?/;
+const INEQUALITY_TOKEN_PATTERN = /(<=|>=|<|>)\s*(-?\d+(?:\.\d+)?)/;
+const CLINICAL_RANGE_PATTERN = /请结合临床|结合临床|见备注|参考说明|暂无参考|无参考范围/;
+
+function normalizeCompareOps(text = '') {
+  return String(text || '')
+    .replace(/≤|≦/g, '<=')
+    .replace(/≥|≧/g, '>=')
+    .replace(/＜/g, '<')
+    .replace(/＞/g, '>');
+}
 
 function normalizeSignedNumberToken(token = '') {
   const trimmed = `${token || ''}`.trim();
   const parenMatch = trimmed.match(/^\((-?\d+(?:\.\d+)?)\)$/);
   return parenMatch ? parenMatch[1] : trimmed;
+}
+
+function isClinicalOnlyRangeText(text = '') {
+  const trimmed = `${text || ''}`.trim();
+  if (!trimmed) return true;
+  if (CLINICAL_RANGE_PATTERN.test(trimmed)) {
+    const stripped = stripClinicalRangePhrases(trimmed).trim();
+    if (!stripped || !/\d/.test(stripped)) return true;
+  }
+  // 无数字且非不等式时，视为非数值范围（如「—」「见报告」）
+  if (!/\d/.test(trimmed) && !/[<>≤≥＜＞]/.test(trimmed)) return true;
+  return false;
+}
+
+function buildInequalityRange(op = '', numberText = '') {
+  const num = `${numberText || ''}`.trim();
+  if (!num) return null;
+  if (op === '<' || op === '<=') {
+    return { minRange: '0', maxRange: num };
+  }
+  if (op === '>' || op === '>=') {
+    return { minRange: num, maxRange: '' };
+  }
+  return null;
+}
+
+function findInequalityToken(text = '') {
+  const normalized = normalizeCompareOps(text);
+  const match = normalized.match(INEQUALITY_TOKEN_PATTERN);
+  if (!match) return null;
+  return {
+    op: match[1],
+    number: match[2],
+    index: match.index,
+    length: match[0].length,
+    raw: match[0]
+  };
+}
+
+// 检测值：`<0.5` / `≤0.5` → 取检出限数字 `0.5`
+function normalizeDetectionValue(raw = '') {
+  const text = normalizeCompareOps(`${raw ?? ''}`.trim());
+  if (!text) return '';
+  const leading = text.match(/^(<=|>=|<|>)\s*(-?\d+(?:\.\d+)?)/);
+  if (leading) return leading[2];
+  const num = text.match(NUMBER_PATTERN);
+  return num ? num[0] : '';
 }
 
 function parseSignedRange(text = '') {
@@ -257,23 +342,84 @@ function parseSignedRange(text = '') {
   };
 }
 
+function stripClinicalRangePhrases(text = '') {
+  return String(text || '').replace(CLINICAL_RANGE_PATTERN, ' ');
+}
+
 function parseNumbersFromLine(rawText = '') {
-  const text = String(rawText || '')
+  let text = normalizeCompareOps(String(rawText || ''))
     .replace(/[（]/g, '(')
     .replace(/[）]/g, ')')
     .replace(/[～]/g, '~')
     .replace(/~/g, '-')
     .replace(/[，,]/g, ' ');
 
-  const rangeMatch = parseSignedRange(text);
+  text = stripClinicalRangePhrases(text);
+
   let minRange = '';
   let maxRange = '';
   let remaining = text;
 
+  const rangeMatch = parseSignedRange(text);
   if (rangeMatch) {
     minRange = rangeMatch.minRange;
     maxRange = rangeMatch.maxRange;
     remaining = text.slice(0, rangeMatch.index) + text.slice(rangeMatch.index + rangeMatch.length);
+  } else {
+    // 单边范围：先看「普通检测值 + 不等式范围」，如 `0.8 <10`
+    const ineqTokens = [];
+    const ineqRegex = new RegExp(INEQUALITY_TOKEN_PATTERN.source, 'g');
+    let ineqMatch = ineqRegex.exec(text);
+    while (ineqMatch) {
+      ineqTokens.push({
+        op: ineqMatch[1],
+        number: ineqMatch[2],
+        index: ineqMatch.index,
+        length: ineqMatch[0].length
+      });
+      ineqMatch = ineqRegex.exec(text);
+    }
+
+    if (ineqTokens.length >= 2) {
+      // `<0.5 <10` → 值取检出限，范围取第二个不等式
+      const valueToken = ineqTokens[0];
+      const rangeToken = ineqTokens[1];
+      const range = buildInequalityRange(rangeToken.op, rangeToken.number);
+      return {
+        value: valueToken.number,
+        minRange: range ? range.minRange : '',
+        maxRange: range ? range.maxRange : ''
+      };
+    }
+
+    if (ineqTokens.length === 1) {
+      const token = ineqTokens[0];
+      const withoutIneq = text.slice(0, token.index) + text.slice(token.index + token.length);
+      const bareValue = withoutIneq.match(NUMBER_PATTERN);
+      if (bareValue) {
+        const range = buildInequalityRange(token.op, token.number);
+        return {
+          value: bareValue[0],
+          minRange: range ? range.minRange : '',
+          maxRange: range ? range.maxRange : ''
+        };
+      }
+      // 仅有 `<0.5`：视为检测值（取阈值），不填范围
+      return {
+        value: token.number,
+        minRange: '',
+        maxRange: ''
+      };
+    }
+  }
+
+  const leadingIneq = remaining.match(/^\s*(<=|>=|<|>)\s*(-?\d+(?:\.\d+)?)/);
+  if (leadingIneq) {
+    return {
+      value: leadingIneq[2],
+      minRange,
+      maxRange
+    };
   }
 
   const valueMatch = remaining.match(NUMBER_PATTERN);
@@ -366,14 +512,25 @@ function parseReportOcrResult({ items = [], reportType = '' } = {}) {
 }
 
 function parseRefRange(refRange = '') {
-  const text = `${refRange || ''}`.trim();
-  if (!text) {
+  const raw = `${refRange || ''}`.trim();
+  if (!raw) {
     return { minRange: '', maxRange: '' };
   }
 
-  const rangeMatch = parseSignedRange(text.replace(/[～~–—]/g, '-'));
+  const text = normalizeCompareOps(stripClinicalRangePhrases(raw).replace(/[～~–—]/g, '-')).trim();
+  if (!text || (!/\d/.test(text) && !/[<>]/.test(text))) {
+    return { minRange: '', maxRange: '' };
+  }
+
+  const rangeMatch = parseSignedRange(text);
   if (rangeMatch) {
     return { minRange: rangeMatch.minRange, maxRange: rangeMatch.maxRange };
+  }
+
+  const ineq = findInequalityToken(text);
+  if (ineq) {
+    const built = buildInequalityRange(ineq.op, ineq.number);
+    if (built) return built;
   }
 
   return { minRange: '', maxRange: '' };
@@ -442,5 +599,6 @@ module.exports = {
   parseStructuredReportItems,
   resolveStructuredItemName,
   resolveStructuredIndicatorKey,
-  buildAliasesForKey
+  buildAliasesForKey,
+  normalizeDetectionValue
 };

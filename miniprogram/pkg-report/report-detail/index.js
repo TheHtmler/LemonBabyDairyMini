@@ -140,6 +140,8 @@ Page({
 
   // 删除报告
   onDeleteReport: function () {
+    if (this.data.deleting) return;
+
     wx.showModal({
       title: '确认删除',
       content: '删除后无法恢复，确定要删除这个报告吗？',

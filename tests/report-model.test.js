@@ -114,3 +114,33 @@ test('validateReportData accepts partial blood biochem with one value and no ran
   });
   assert.equal(result.isValid, true);
 });
+
+test('blood cbc crp exposes 24 optional indicators and display name', () => {
+  const indicators = ReportModel.getIndicators(ReportModel.REPORT_TYPES.BLOOD_CBC_CRP);
+  assert.equal(ReportModel.REPORT_TYPES.BLOOD_CBC_CRP, 'blood_cbc_crp');
+  assert.equal(ReportModel.getReportTypeName(ReportModel.REPORT_TYPES.BLOOD_CBC_CRP), '血五分类CRP');
+  assert.equal(indicators.length, 24);
+  assert.ok(indicators.every((item) => item.optional === true));
+  assert.deepEqual(
+    indicators.map(({ key }) => key),
+    [
+      'crp', 'wbc', 'neut_pct', 'lym_pct', 'mono_pct', 'eos_pct', 'baso_pct',
+      'neut_abs', 'mono_abs', 'lym_abs', 'eos_abs', 'baso_abs',
+      'rbc', 'hgb', 'hct', 'mcv', 'mch', 'mchc', 'rdw_cv', 'rdw_sd',
+      'plt', 'mpv', 'pct', 'pdw'
+    ]
+  );
+});
+
+test('validateReportData rejects empty blood cbc crp report', () => {
+  const result = ReportModel.validateReportData(ReportModel.REPORT_TYPES.BLOOD_CBC_CRP, {});
+  assert.equal(result.isValid, false);
+  assert.match(result.errors.join(' '), /血五分类CRP/);
+});
+
+test('validateReportData accepts partial blood cbc crp with one value and no ranges', () => {
+  const result = ReportModel.validateReportData(ReportModel.REPORT_TYPES.BLOOD_CBC_CRP, {
+    crp: { value: '0.5', minRange: '', maxRange: '' }
+  });
+  assert.equal(result.isValid, true);
+});

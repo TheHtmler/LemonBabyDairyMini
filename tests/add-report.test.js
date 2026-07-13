@@ -274,3 +274,18 @@ test('add-report sanitizes indicator input while typing negative decimals', () =
 
   assert.equal(instance.data.indicatorData.be.minRange, '-3.5');
 });
+
+test('report-detail exposes delete entry in header and footer', () => {
+  const detailWxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/report-detail/index.wxml'),
+    'utf8'
+  );
+  const addWxml = fs.readFileSync(
+    path.resolve(__dirname, '../miniprogram/pkg-report/add-report/index.wxml'),
+    'utf8'
+  );
+
+  assert.match(detailWxml, /action-btn danger[\s\S]*onDeleteReport/);
+  assert.match(detailWxml, /删除报告/);
+  assert.doesNotMatch(addWxml, /onDeleteReport|删除此报告/);
+});

@@ -42,6 +42,7 @@ const COMPARE_TYPE_TABS = [
   { key: 'urine_ms', label: '尿串联' },
   { key: 'blood_gas', label: '血气' },
   { key: 'blood_cbc', label: '血常规' },
+  { key: 'blood_cbc_crp', label: '血五分类CRP' },
   { key: 'blood_biochem', label: '大生化' },
   { key: 'blood_ammonia', label: '血氨' }
 ];

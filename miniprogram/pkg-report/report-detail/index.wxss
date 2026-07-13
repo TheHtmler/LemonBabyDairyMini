@@ -76,6 +76,9 @@
 
 .header-actions {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
 }
 
 .action-btn {
@@ -86,6 +89,16 @@
   border-radius: 999rpx;
   background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
   box-shadow: 0 6rpx 16rpx rgba(201, 136, 23, 0.18);
+}
+
+.action-btn.danger {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1rpx solid rgba(198, 40, 40, 0.22);
+  box-shadow: none;
+}
+
+.action-btn.danger .action-label {
+  color: #c62828;
 }
 
 .action-icon {

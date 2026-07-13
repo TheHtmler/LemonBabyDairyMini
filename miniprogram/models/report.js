@@ -7,7 +7,8 @@ class ReportModel {
     BLOOD_GAS: 'blood_gas',      // 血气
     BLOOD_CBC: 'blood_cbc',      // 血常规
     BLOOD_AMMONIA: 'blood_ammonia', // 血氨
-    BLOOD_BIOCHEM: 'blood_biochem'  // 大生化
+    BLOOD_BIOCHEM: 'blood_biochem',  // 大生化
+    BLOOD_CBC_CRP: 'blood_cbc_crp'   // 血五分类CRP
   };
 
   // 血串联质谱指标配置
@@ -101,6 +102,34 @@ class ReportModel {
     { key: 'co2', name: '二氧化碳', unit: 'mmol/L', abbr: 'CO₂', optional: true }
   ];
 
+  // 血五分类 + CRP：全部可选，保存时至少填一项
+  static BLOOD_CBC_CRP_INDICATORS = [
+    { key: 'crp', name: 'CRP', unit: 'mg/L', abbr: 'CRP', optional: true },
+    { key: 'wbc', name: '白细胞计数', unit: '10^9/L', abbr: 'WBC', optional: true },
+    { key: 'neut_pct', name: '中性粒细胞%', unit: '%', abbr: 'NEUT%', optional: true },
+    { key: 'lym_pct', name: '淋巴细胞%', unit: '%', abbr: 'LYM%', optional: true },
+    { key: 'mono_pct', name: '单核细胞%', unit: '%', abbr: 'MONO%', optional: true },
+    { key: 'eos_pct', name: '嗜酸粒细胞%', unit: '%', abbr: 'EOS%', optional: true },
+    { key: 'baso_pct', name: '嗜碱粒细胞%', unit: '%', abbr: 'BASO%', optional: true },
+    { key: 'neut_abs', name: '中性粒细胞绝对值', unit: '10^9/L', abbr: 'NEUT#', optional: true },
+    { key: 'mono_abs', name: '单核细胞绝对值', unit: '10^9/L', abbr: 'MONO#', optional: true },
+    { key: 'lym_abs', name: '淋巴细胞绝对值', unit: '10^9/L', abbr: 'LYM#', optional: true },
+    { key: 'eos_abs', name: '嗜酸粒细胞绝对值', unit: '10^9/L', abbr: 'EOS#', optional: true },
+    { key: 'baso_abs', name: '嗜碱粒细胞绝对值', unit: '10^9/L', abbr: 'BASO#', optional: true },
+    { key: 'rbc', name: '红细胞计数', unit: '10^12/L', abbr: 'RBC', optional: true },
+    { key: 'hgb', name: '血红蛋白', unit: 'g/L', abbr: 'HGB', optional: true },
+    { key: 'hct', name: '红细胞压积', unit: '%', abbr: 'HCT', optional: true },
+    { key: 'mcv', name: '平均红细胞体积', unit: 'fL', abbr: 'MCV', optional: true },
+    { key: 'mch', name: '平均血红蛋白量', unit: 'pg', abbr: 'MCH', optional: true },
+    { key: 'mchc', name: '平均血红蛋白浓度', unit: 'g/L', abbr: 'MCHC', optional: true },
+    { key: 'rdw_cv', name: '红细胞分布宽度(CV)', unit: '%', abbr: 'RDW-CV', optional: true },
+    { key: 'rdw_sd', name: '红细胞分布宽度(SD)', unit: 'fL', abbr: 'RDW-SD', optional: true },
+    { key: 'plt', name: '血小板计数', unit: '10^9/L', abbr: 'PLT', optional: true },
+    { key: 'mpv', name: '平均血小板体积', unit: 'fL', abbr: 'MPV', optional: true },
+    { key: 'pct', name: '血小板压积', unit: '%', abbr: 'PCT', optional: true },
+    { key: 'pdw', name: '血小板分布宽度', unit: 'fL', abbr: 'PDW', optional: true }
+  ];
+
   // 获取指标配置
   static getIndicators(reportType) {
     switch (reportType) {
@@ -116,6 +145,8 @@ class ReportModel {
         return this.BLOOD_AMMONIA_INDICATORS;
       case this.REPORT_TYPES.BLOOD_BIOCHEM:
         return this.BLOOD_BIOCHEM_INDICATORS;
+      case this.REPORT_TYPES.BLOOD_CBC_CRP:
+        return this.BLOOD_CBC_CRP_INDICATORS;
       default:
         return [];
     }
@@ -202,7 +233,8 @@ class ReportModel {
       [this.REPORT_TYPES.BLOOD_GAS]: '血气分析',
       [this.REPORT_TYPES.BLOOD_CBC]: '血常规',
       [this.REPORT_TYPES.BLOOD_AMMONIA]: '血氨检测',
-      [this.REPORT_TYPES.BLOOD_BIOCHEM]: '大生化'
+      [this.REPORT_TYPES.BLOOD_BIOCHEM]: '大生化',
+      [this.REPORT_TYPES.BLOOD_CBC_CRP]: '血五分类CRP'
     };
     return typeNames[reportType] || '未知报告';
   }
@@ -260,13 +292,19 @@ class ReportModel {
       }
     });
 
-    if (reportType === this.REPORT_TYPES.BLOOD_BIOCHEM) {
+    if (
+      reportType === this.REPORT_TYPES.BLOOD_BIOCHEM
+      || reportType === this.REPORT_TYPES.BLOOD_CBC_CRP
+    ) {
       const hasAnyValue = requiredIndicators.some((indicator) => {
         const data = indicators[indicator.key];
         return data && data.value && String(data.value).trim() !== '';
       });
       if (!hasAnyValue) {
-        errors.push('请至少填写一项大生化指标');
+        const typeLabel = reportType === this.REPORT_TYPES.BLOOD_CBC_CRP
+          ? '血五分类CRP'
+          : '大生化';
+        errors.push(`请至少填写一项${typeLabel}指标`);
       }
     }
 

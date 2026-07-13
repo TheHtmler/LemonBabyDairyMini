@@ -467,6 +467,29 @@ test('parseStructuredReportItems maps common blood cbc items', () => {
   assert.equal(result.neut_abs.value, '1.2');
 });
 
+test('parseStructuredReportItems maps blood cbc crp items including CRP', () => {
+  const result = parseStructuredReportItems({
+    reportType: 'blood_cbc_crp',
+    structuredItems: [
+      { name: 'C反应蛋白', value: '0.8', ref_range: '0-8' },
+      { name: 'WBC', value: '9.2', ref_range: '4-12' },
+      { name: '中性粒细胞%', value: '45.0', ref_range: '30-70' },
+      { name: '血红蛋白', value: '118', ref_range: '110-160' },
+      { name: 'PLT', value: '210', ref_range: '100-300' },
+      { name: 'RDW-CV', value: '13.2', ref_range: '11-15' },
+      { name: '单核细胞绝对值', value: '0.4', ref_range: '0.1-0.8' }
+    ]
+  });
+
+  assert.equal(result.crp.value, '0.8');
+  assert.equal(result.wbc.value, '9.2');
+  assert.equal(result.neut_pct.value, '45.0');
+  assert.equal(result.hgb.value, '118');
+  assert.equal(result.plt.value, '210');
+  assert.equal(result.rdw_cv.value, '13.2');
+  assert.equal(result.mono_abs.value, '0.4');
+});
+
 test('parseStructuredReportItems parses BE range when adapter min/max are empty strings', () => {
   const result = parseStructuredReportItems({
     reportType: 'blood_gas',
@@ -491,8 +514,47 @@ test('parseNumbersFromLine parses parenthesised negative reference range', () =>
   assert.deepEqual(result, { value: '1.2', minRange: '-3', maxRange: '3' });
 });
 
-test('parseRefRange parses parenthesised negative reference range', () => {
-  assert.deepEqual(parseRefRange('(-3)-3'), { minRange: '-3', maxRange: '3' });
+test('parseNumbersFromLine maps inequality detection value to threshold number', () => {
+  assert.deepEqual(parseNumbersFromLine('<0.5'), { value: '0.5', minRange: '', maxRange: '' });
+  assert.deepEqual(parseNumbersFromLine('≤0.5'), { value: '0.5', minRange: '', maxRange: '' });
+});
+
+test('parseNumbersFromLine maps upper-bound-only range to 0-max', () => {
+  assert.deepEqual(parseNumbersFromLine('0.8 <10'), { value: '0.8', minRange: '0', maxRange: '10' });
+  assert.deepEqual(parseNumbersFromLine('<0.5 <10'), { value: '0.5', minRange: '0', maxRange: '10' });
+  assert.deepEqual(parseNumbersFromLine('<0.5 0-8'), { value: '0.5', minRange: '0', maxRange: '8' });
+});
+
+test('parseNumbersFromLine keeps value and clears clinical-only range text', () => {
+  assert.deepEqual(parseNumbersFromLine('42.20 请结合临床'), {
+    value: '42.20',
+    minRange: '',
+    maxRange: ''
+  });
+});
+
+test('parseRefRange maps inequality and ignores clinical-only text', () => {
+  assert.deepEqual(parseRefRange('<10'), { minRange: '0', maxRange: '10' });
+  assert.deepEqual(parseRefRange('≤10'), { minRange: '0', maxRange: '10' });
+  assert.deepEqual(parseRefRange('>100'), { minRange: '100', maxRange: '' });
+  assert.deepEqual(parseRefRange('请结合临床'), { minRange: '', maxRange: '' });
+});
+
+test('parseStructuredReportItems maps CRP inequality value/range and clinical-only RDW-SD', () => {
+  const result = parseStructuredReportItems({
+    reportType: 'blood_cbc_crp',
+    structuredItems: [
+      { name: 'C反应蛋白', value: '<0.5', ref_range: '<10' },
+      { name: '红细胞分布宽度(SD)', value: '42.20', ref_range: '请结合临床' }
+    ]
+  });
+
+  assert.equal(result.crp.value, '0.5');
+  assert.equal(result.crp.minRange, '0');
+  assert.equal(result.crp.maxRange, '10');
+  assert.equal(result.rdw_sd.value, '42.20');
+  assert.equal(result.rdw_sd.minRange, '');
+  assert.equal(result.rdw_sd.maxRange, '');
 });
 
 test('parseReportOcrResult maps 3-羟基丁酸-2 to hydroxybutyric_acid on OCR lines', () => {
