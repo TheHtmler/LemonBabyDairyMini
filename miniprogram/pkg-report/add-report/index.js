@@ -79,6 +79,7 @@ Page({
       { key: 'urine_ms', name: '尿串联质谱', icon: '🧪' },
       { key: 'blood_gas', name: '血气分析', icon: '💨' },
       { key: 'blood_cbc', name: '血常规', icon: '🩺' },
+      { key: 'blood_biochem', name: '大生化', icon: '🧬' },
       { key: 'blood_ammonia', name: '血氨检测', icon: '⚡' }
     ],
     
@@ -92,6 +93,7 @@ Page({
     ocrPendingKeys: [],
     ocrRecognizing: false,
     ocrAllowed: false,
+    ocrEntryVisible: false,
     ocrAccessChecked: false,
     ocrAccessMessage: '拍照识别功能调试中，仅对白名单用户开放',
     ocrEntryHint: '拍下报告单自动填值，请逐项核对',
@@ -175,6 +177,7 @@ Page({
         indicatorData: reportData.indicators || {},
         loading: false
       });
+      this.refreshOcrEntryVisible();
 
       // 初始化指标配置
       await this.initIndicators();
@@ -289,6 +292,7 @@ Page({
       ocrPendingKeys: [],
       hasUnsavedChanges: false
     });
+    this.refreshOcrEntryVisible();
     
     await this.initIndicators();
   },
@@ -527,6 +531,14 @@ Page({
     return cloudEnvId ? { config: { env: cloudEnvId } } : {};
   },
 
+  refreshOcrEntryVisible() {
+    const visible = !!this.data.ocrAllowed
+      && this.data.selectedReportType !== 'blood_biochem';
+    if (this.data.ocrEntryVisible !== visible) {
+      this.setData({ ocrEntryVisible: visible });
+    }
+  },
+
   async loadOcrAccess() {
     try {
       const cloudEnvId = this.getCloudEnvId();
@@ -545,12 +557,14 @@ Page({
         ocrAccessChecked: true,
         ocrAccessMessage: result.message || this.data.ocrAccessMessage
       });
+      this.refreshOcrEntryVisible();
     } catch (error) {
       console.warn('[report-ocr] access check failed', error);
       this.setData({
         ocrAllowed: false,
         ocrAccessChecked: true
       });
+      this.refreshOcrEntryVisible();
     }
   },
 

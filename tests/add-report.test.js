@@ -127,8 +127,9 @@ test('add-report OCR entry is gated by cloud access check', () => {
     'utf8'
   );
 
-  assert.match(wxml, /wx:if="\{\{ocrAllowed\}\}"/);
-  assert.match(js, /ocrAllowed:\s*false/);
+  assert.match(wxml, /wx:if="\{\{ocrEntryVisible\}\}"/);
+  assert.match(js, /ocrEntryVisible/);
+  assert.match(js, /ocrAllowed[\s\S]*selectedReportType\s*!==\s*'blood_biochem'/);
   assert.match(js, /action:\s*'checkAccess'/);
   assert.match(js, /OCR_NOT_ALLOWED/);
 });
