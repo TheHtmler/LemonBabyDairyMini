@@ -1,6 +1,7 @@
 const ReportRepository = require('../../models/reportRepository');
 const NutritionModel = require('../../models/nutrition');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
+const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
 const {
   buildReportArchivePreview,
   buildReportComparePreview,
@@ -81,7 +82,9 @@ Page({
     compareSelectedMetricKeys: [],
     compareDietVisible: false,
     compareDietLoading: false,
-    currentCompareView: null
+    currentCompareView: null,
+    typePickerVisible: false,
+    reportEntryTypes: REPORT_ENTRY_TYPES
   },
 
   onLoad() {
@@ -554,11 +557,36 @@ Page({
   },
 
   onAddReport() {
-    const typeQuery = this.data.selectedFilterType && this.data.selectedFilterType !== 'all'
-      ? `&type=${this.data.selectedFilterType}`
-      : '';
+    if (this.data.mainTab === MAIN_TABS.COMPARE) {
+      this.navigateToAddReport(this.data.compareReportType);
+      return;
+    }
+    const filterType = this.data.selectedFilterType;
+    if (filterType && filterType !== 'all') {
+      this.navigateToAddReport(filterType);
+      return;
+    }
+    this.setData({ typePickerVisible: true });
+  },
+
+  navigateToAddReport(typeKey) {
+    const type = typeKey ? `&type=${typeKey}` : '';
     wx.navigateTo({
-      url: `/pkg-report/add-report/index?mode=add${typeQuery}`
+      url: `/pkg-report/add-report/index?mode=add${type}`
     });
-  }
+  },
+
+  onCloseTypePicker() {
+    this.setData({ typePickerVisible: false });
+  },
+
+  onSelectReportType(e) {
+    const typeKey = e.currentTarget.dataset.type;
+    this.setData({ typePickerVisible: false });
+    this.navigateToAddReport(typeKey);
+  },
+
+  stopPropagation() {},
+
+  preventScroll() {}
 });

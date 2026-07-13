@@ -26,3 +26,21 @@ test('add-report uses shared REPORT_ENTRY_TYPES', () => {
   assert.match(js, /REPORT_ENTRY_TYPES/);
   assert.doesNotMatch(js, /reportTypes:\s*\[\s*\{\s*key:\s*'blood_ms'/);
 });
+
+test('analysis-report add flow opens type picker or navigates by context', () => {
+  const js = read('miniprogram/pages/analysis-report/index.js');
+  const wxml = read('miniprogram/pages/analysis-report/index.wxml');
+  const wxss = read('miniprogram/pages/analysis-report/index.wxss');
+
+  assert.match(js, /constants\/reportTypes|REPORT_ENTRY_TYPES/);
+  assert.match(js, /typePickerVisible/);
+  assert.match(js, /navigateToAddReport/);
+  assert.match(js, /mainTab\s*===\s*MAIN_TABS\.COMPARE|mainTab\s*===\s*['"]compare['"]/);
+  assert.match(js, /compareReportType/);
+  assert.match(js, /selectedFilterType[\s\S]*!==\s*['"]all['"]/);
+  assert.match(js, /onCloseTypePicker|typePickerVisible:\s*false/);
+  assert.match(js, /onSelectReportType/);
+  assert.match(wxml, /typePickerVisible/);
+  assert.match(wxml, /onSelectReportType|data-type/);
+  assert.match(wxss, /z-index:\s*(?:1000|9999)/);
+});

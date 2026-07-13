@@ -230,4 +230,28 @@
   <view wx:if="{{!loading}}" class="fab" bindtap="onAddReport">
     <view class="fab-icon">+</view>
   </view>
+
+  <view wx:if="{{typePickerVisible}}" class="report-type-mask" bindtap="onCloseTypePicker" catchtouchmove="preventScroll">
+    <view class="report-type-sheet" catchtap="stopPropagation">
+      <view class="report-type-handle"></view>
+      <view class="report-type-header">
+        <text class="report-type-title">选择报告类型</text>
+      </view>
+      <view class="report-type-list">
+        <view
+          wx:for="{{reportEntryTypes}}"
+          wx:key="key"
+          class="report-type-item"
+          data-type="{{item.key}}"
+          bindtap="onSelectReportType"
+        >
+          <text class="report-type-icon">{{item.icon}}</text>
+          <text class="report-type-name">{{item.name}}</text>
+        </view>
+      </view>
+      <view class="report-type-footer">
+        <button class="report-type-cancel" bindtap="onCloseTypePicker">取消</button>
+      </view>
+    </view>
+  </view>
 </view>

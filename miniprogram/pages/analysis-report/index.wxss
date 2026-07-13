@@ -801,3 +801,98 @@ page {
   font-size: 14rpx;
   color: #8d7449;
 }
+
+.report-type-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+}
+
+.report-type-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fffaf0;
+  border-radius: 32rpx 32rpx 0 0;
+  z-index: 1000;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -8rpx 32rpx rgba(201, 136, 23, 0.12);
+}
+
+.report-type-handle {
+  width: 64rpx;
+  height: 8rpx;
+  margin: 16rpx auto 0;
+  background: rgba(201, 136, 23, 0.2);
+  border-radius: 4rpx;
+}
+
+.report-type-header {
+  padding: 20rpx 32rpx 12rpx;
+  text-align: center;
+}
+
+.report-type-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #2c1d09;
+}
+
+.report-type-list {
+  padding: 8rpx 24rpx 16rpx;
+  overflow-y: auto;
+}
+
+.report-type-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 20rpx;
+  margin-bottom: 10rpx;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1rpx solid rgba(201, 136, 23, 0.12);
+  border-radius: 20rpx;
+}
+
+.report-type-item:active {
+  background: #fff0c2;
+}
+
+.report-type-icon {
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.report-type-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #2c1d09;
+}
+
+.report-type-footer {
+  padding: 12rpx 24rpx 24rpx;
+}
+
+.report-type-cancel {
+  width: 100%;
+  padding: 20rpx 0;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1rpx solid rgba(201, 136, 23, 0.18);
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #8d7449;
+  line-height: 1.2;
+}
+
+.report-type-cancel::after {
+  border: none;
+}
