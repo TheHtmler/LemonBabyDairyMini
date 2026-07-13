@@ -19,7 +19,9 @@ test('repository and workbench register blood_biochem key metrics', () => {
 test('add-report lists blood biochem and hides OCR for that type', () => {
   const js = read('miniprogram/pkg-report/add-report/index.js');
   const wxml = read('miniprogram/pkg-report/add-report/index.wxml');
-  assert.match(js, /key:\s*'blood_biochem'[\s\S]*name:\s*'大生化'/);
+  const reportTypes = read('miniprogram/constants/reportTypes.js');
+  assert.match(reportTypes, /key:\s*'blood_biochem'[\s\S]*name:\s*'大生化'/);
+  assert.match(js, /constants\/reportTypes|REPORT_ENTRY_TYPES/);
   assert.match(js, /refreshOcrEntryVisible/);
   assert.match(js, /ocrAllowed[\s\S]*selectedReportType\s*!==\s*'blood_biochem'/);
   assert.match(js, /async switchReportType\(reportType\)[\s\S]*refreshOcrEntryVisible/);
