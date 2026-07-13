@@ -144,35 +144,68 @@
     </view>
   </view>
 
-  <!-- 快捷记录（前置到营养卡下方，保证首屏可见） -->
+  <!-- 快捷入口（两排横向滚动） -->
   <view class="card">
-    <view class="card-head"><text class="card-title">快捷记录</text></view>
-    <view class="qgrid">
-      <view class="qa" bindtap="navigateToMilkFeedingEditor" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic milk">🍼</view><text class="qa-nm">记一顿奶</text>
-      </view>
-      <view class="qa" bindtap="navigateToMealEditor" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic food">🥣</view><text class="qa-nm">加食物</text>
-      </view>
-      <view class="qa" bindtap="openMedicationModal" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic med">💊</view><text class="qa-nm">喂药</text>
-      </view>
-      <view class="qa" bindtap="navigateToTreatmentRecord" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic treat">🩺</view><text class="qa-nm">治疗</text>
-      </view>
-      <view class="qa" bindtap="navigateToBowelRecord" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic bowel">💩</view><text class="qa-nm">记尿布</text>
-      </view>
-      <view class="qa" bindtap="openWeightModal" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic weight">⚖️</view><text class="qa-nm">量体重</text>
-      </view>
-      <view class="qa" bindtap="openHeightModal" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic height">📏</view><text class="qa-nm">量身高</text>
-      </view>
-      <view class="qa" bindtap="goToReport" hover-class="press-pop" hover-stay-time="60">
-        <view class="qa-ic report">📊</view><text class="qa-nm">检测报告</text>
-      </view>
+    <view class="card-head">
+      <text class="card-title">快捷记录</text>
+      <text class="qscroll-hint">右滑查看更多 ›</text>
     </view>
+    <scroll-view class="qscroll" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="qgrid">
+        <view class="qrow">
+          <view class="qa" bindtap="navigateToMilkFeedingEditor" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic milk">🍼</view><text class="qa-nm">记一顿奶</text>
+          </view>
+          <view class="qa" bindtap="navigateToMealEditor" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic food">🥣</view><text class="qa-nm">加食物</text>
+          </view>
+          <view class="qa" bindtap="openMedicationModal" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic med">💊</view><text class="qa-nm">喂药</text>
+          </view>
+          <view class="qa" bindtap="navigateToTreatmentRecord" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic treat">🩺</view><text class="qa-nm">治疗</text>
+          </view>
+          <view class="qa" bindtap="navigateToBowelRecord" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic bowel">💩</view><text class="qa-nm">记尿布</text>
+          </view>
+          <view class="qa" data-url="/pkg-milk/powder-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic powder">⚙️</view><text class="qa-nm">奶粉管理</text>
+          </view>
+          <view class="qa" data-url="/pkg-milk/food-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic foods">🍽️</view><text class="qa-nm">食物管理</text>
+          </view>
+          <view class="qa" data-url="/pkg-misc/medications/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic medcfg">💊</view><text class="qa-nm">药物配置</text>
+          </view>
+          <view class="qa" data-url="/pkg-records/growth-records/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic growth">📈</view><text class="qa-nm">成长曲线</text>
+          </view>
+        </view>
+        <view class="qrow">
+          <view class="qa" bindtap="navigateToDayMarkRecord" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic mark">📌</view><text class="qa-nm">记备忘</text>
+          </view>
+          <view class="qa" bindtap="openWeightModal" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic weight">⚖️</view><text class="qa-nm">量体重</text>
+          </view>
+          <view class="qa" bindtap="openHeightModal" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic height">📏</view><text class="qa-nm">量身高</text>
+          </view>
+          <view class="qa" bindtap="goToFutureReminders" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic remind">⏰</view><text class="qa-nm">微信提醒</text>
+          </view>
+          <view class="qa" bindtap="goToReport" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic report">📊</view><text class="qa-nm">检测报告</text>
+          </view>
+          <view class="qa" data-url="/pkg-misc/emergency-support/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic emergency">🆘</view><text class="qa-nm">紧急支持</text>
+          </view>
+          <view class="qa" wx:if="{{isCreator}}" data-url="/pkg-misc/member-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic member">👪</view><text class="qa-nm">成员管理</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 
   <!-- 今日喂养进度 -->
@@ -206,17 +239,6 @@
         </view>
       </view>
       <view class="calc-btn" catchtap="navigateToMilkGoalPlanner" hover-class="press-soft" hover-stay-time="60">算补奶 ›</view>
-    </view>
-  </view>
-
-  <!-- 未来提醒 -->
-  <view class="card future-reminder" catchtap="goToFutureReminders" hover-class="press-soft" hover-stay-time="60">
-    <view class="future-reminder-entry">
-      <view class="future-reminder-text">
-        <text class="card-title">微信提醒</text>
-        <text class="future-reminder-tip">给未来的奶、食物、用药设置到点提醒，约 5 分钟内送达</text>
-      </view>
-      <text class="future-reminder-arrow">›</text>
     </view>
   </view>
 
@@ -311,37 +333,6 @@
         <text class="tf-n">{{item.n}}<text class="tf-u">{{item.u}}</text></text>
         <text class="tf-c" wx:if="{{item.coefRow}}">{{item.c}}<text class="tf-cu" wx:if="{{item.c}}"> {{item.cu}}</text></text>
         <text class="tf-l">{{item.l}}</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- 更多功能 -->
-  <view class="card">
-    <view class="card-head"><text class="card-title">更多</text></view>
-    <view class="more-grid">
-      <view class="me" data-url="/pkg-records/growth-records/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">📈</view><text class="me-nm">成长曲线</text>
-      </view>
-      <view class="me" bindtap="goToReport" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">🧪</view><text class="me-nm">检测报告</text>
-      </view>
-      <view class="me" bindtap="navigateToMilkGoalPlanner" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">🥛</view><text class="me-nm">配奶规划</text>
-      </view>
-      <view class="me" data-url="/pkg-milk/powder-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">⚙️</view><text class="me-nm">奶粉管理</text>
-      </view>
-      <view class="me" data-url="/pkg-milk/food-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">🍽️</view><text class="me-nm">食物库</text>
-      </view>
-      <view class="me" data-url="/pkg-misc/medications/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">💊</view><text class="me-nm">用药管理</text>
-      </view>
-      <view class="me" data-url="/pkg-misc/emergency-support/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">🆘</view><text class="me-nm">应急支持</text>
-      </view>
-      <view wx:if="{{isCreator}}" class="me" data-url="/pkg-misc/member-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-        <view class="me-ic">👪</view><text class="me-nm">成员协作</text>
       </view>
     </view>
   </view>

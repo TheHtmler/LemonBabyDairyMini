@@ -35,6 +35,17 @@ const { createDailyRecordFromV2 } = require('../../utils/dataRecordsV2Adapter');
 const { calculator: feedingCalculator } = require('../../utils/feedingUtils');
 // 通用工具
 const { getBabyUid, waitForAppInitialization, checkUserPermission } = require('../../utils/index');
+const DayCalendarMarkModel = require('../../models/dayCalendarMark');
+const DAY_MARK_PRESETS = require('../../constants/dayMarkPresets');
+const DAY_MARK_COLORS = require('../../constants/dayMarkColors');
+const DAY_MARK_DEFAULT_COLOR = '#8E8E93';
+const {
+  attachMarksToCalendarDays,
+  attachMarksToDateList,
+  buildCalendarMarksMap,
+  formatDayMarkForDisplay,
+  getColorName
+} = require('../../utils/dayCalendarMarkUtils');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -1481,6 +1492,22 @@ function createDataRecordsPageConfig(options = {}) {
     calendarMonth: new Date().getMonth() + 1,
     calendarDays: [],
     copyCalendarContext: null,
+    dayMarkPresets: DAY_MARK_PRESETS,
+    dayMarkColors: DAY_MARK_COLORS,
+    dayMarks: [],
+    showDayMarksSheet: false,
+    showDayMarkForm: false,
+    dayMarkFormMode: 'add',
+    editingDayMarkId: '',
+    dayMarkForm: {
+      label: '',
+      presetKey: '',
+      color: '',
+      note: '',
+      time: ''
+    },
+    dayMarkFormPreviewText: '',
+    dayMarkCanSave: false,
     isSelectedToday: true,
     // 滚动相关
     currentDateId: '',
@@ -2679,10 +2706,12 @@ function createDataRecordsPageConfig(options = {}) {
       }
       // 复用初始化期间的全屏 loading，等数据真正加载完成再关闭（silent 避免重复开关 loading）
       await this.fetchDailyRecords(formattedDate, { silent: true });
+      await this.refreshDayMarkIndicators();
     } catch (error) {
       console.error('data-records 初始化失败:', error);
     } finally {
       wx.hideLoading();
+      this.maybeOpenDayMarkFormFromFlag();
     }
   },
 
@@ -2691,6 +2720,7 @@ function createDataRecordsPageConfig(options = {}) {
       return;
     }
     if (this.consumeSkipNextOnShowRefresh(this.data.selectedDate)) {
+      this.maybeOpenDayMarkFormFromFlag();
       return;
     }
     if (!this.data.babyInfo) {
@@ -2699,7 +2729,24 @@ function createDataRecordsPageConfig(options = {}) {
     if (!this.isV2RecordsSource()) {
       await this.loadNutritionSettings();
     }
-    this.fetchDailyRecords(this.data.selectedDate);
+    await this.fetchDailyRecords(this.data.selectedDate);
+    this.maybeOpenDayMarkFormFromFlag();
+  },
+
+  maybeOpenDayMarkFormFromFlag() {
+    const app = getApp();
+    if (!app.globalData || !app.globalData.pendingOpenDayMarkForm) return;
+    app.globalData.pendingOpenDayMarkForm = false;
+    const tryOpen = (retries) => {
+      if (this.data.selectedDate && this.getDayMarkBabyUid()) {
+        this.openDayMarkForm();
+        return;
+      }
+      if (retries <= 0) return;
+      if (this._openDayMarkFormTimer) clearTimeout(this._openDayMarkFormTimer);
+      this._openDayMarkFormTimer = setTimeout(() => tryOpen(retries - 1), 200);
+    };
+    tryOpen(15);
   },
 
   consumeSkipNextOnShowRefresh(dateStr) {
@@ -2753,6 +2800,7 @@ function createDataRecordsPageConfig(options = {}) {
     }
     
     this.setData({ dateList });
+    this.refreshDayMarkIndicators(undefined, dateList);
     const selectedIndex = futureRangeLength - dayOffsetFromToday;
     if (selectedDateKey > getFuturePrerecordEndDateKey(today)) {
       return 0;
@@ -2808,6 +2856,8 @@ function createDataRecordsPageConfig(options = {}) {
       calendarYear: year,
       calendarMonth: month,
       calendarDays
+    }, () => {
+      this.refreshCalendarDayMarks(calendarDays);
     });
   },
 
@@ -3265,6 +3315,233 @@ function createDataRecordsPageConfig(options = {}) {
     }
     
     this.initCalendar(year, month);
+  },
+
+  getDayMarkBabyUid() {
+    return getBabyUid();
+  },
+
+  createEmptyDayMarkForm() {
+    return {
+      label: '',
+      presetKey: 'custom',
+      color: DAY_MARK_DEFAULT_COLOR,
+      note: '',
+      time: ''
+    };
+  },
+
+  updateDayMarkFormPreview(form = {}) {
+    const label = String(form.label || '').trim();
+    const colorName = getColorName(form.color || '');
+    const preview = label ? `${label}${colorName ? ` · ${colorName}` : ''}` : '';
+    this.setData({
+      dayMarkFormPreviewText: preview,
+      dayMarkCanSave: !!(label && form.color)
+    });
+  },
+
+  async loadDayMarksForDate(dateStr) {
+    const babyUid = this.getDayMarkBabyUid();
+    const date = dateStr || this.data.selectedDate;
+    if (!babyUid || !date) {
+      this.setData({ dayMarks: [] });
+      return [];
+    }
+
+    const records = await DayCalendarMarkModel.findByDate(babyUid, date);
+    const dayMarks = records.map((record) => formatDayMarkForDisplay(record));
+    this.setData({
+      dayMarks
+    });
+    return records;
+  },
+
+  async refreshDayMarkIndicators(calendarDaysInput, dateListInput) {
+    const babyUid = this.getDayMarkBabyUid();
+    const calendarDays = calendarDaysInput || this.data.calendarDays || [];
+    const dateList = dateListInput || this.data.dateList || [];
+    if (!babyUid) return;
+
+    const dateKeys = [...new Set([
+      ...calendarDays.map((day) => day.date),
+      ...dateList.map((item) => item.date)
+    ])].filter(Boolean).sort();
+
+    if (!dateKeys.length) return;
+
+    const records = await DayCalendarMarkModel.findByDateRange(
+      babyUid,
+      dateKeys[0],
+      dateKeys[dateKeys.length - 1]
+    );
+    const marksMap = buildCalendarMarksMap(records);
+    this.setData({
+      calendarDays: attachMarksToCalendarDays(calendarDays, marksMap),
+      dateList: attachMarksToDateList(dateList, marksMap)
+    });
+  },
+
+  async refreshCalendarDayMarks(calendarDaysInput) {
+    await this.refreshDayMarkIndicators(calendarDaysInput);
+  },
+
+  openDayMarksSheet() {
+    this.setData({ showDayMarksSheet: true });
+  },
+
+  closeDayMarksSheet() {
+    this.setData({ showDayMarksSheet: false });
+  },
+
+  openDayMarkForm(e) {
+    const id = e?.currentTarget?.dataset?.id || '';
+    if (id) {
+      const target = (this.data.dayMarks || []).find((item) => item.id === id);
+      if (!target) return;
+      const presetKey = target.presetKey || 'custom';
+      const form = {
+        label: target.label,
+        presetKey,
+        color: target.color,
+        note: target.note,
+        time: target.time
+      };
+      this.setData({
+        showDayMarkForm: true,
+        dayMarkFormMode: 'edit',
+        editingDayMarkId: id,
+        dayMarkForm: form
+      });
+      this.updateDayMarkFormPreview(form);
+      return;
+    }
+
+    const form = this.createEmptyDayMarkForm();
+    this.setData({
+      showDayMarkForm: true,
+      dayMarkFormMode: 'add',
+      editingDayMarkId: '',
+      dayMarkForm: form
+    });
+    this.updateDayMarkFormPreview(form);
+  },
+
+  closeDayMarkForm() {
+    this.setData({
+      showDayMarkForm: false,
+      editingDayMarkId: '',
+      dayMarkForm: this.createEmptyDayMarkForm(),
+      dayMarkFormPreviewText: '',
+      dayMarkCanSave: false
+    });
+  },
+
+  onDayMarkPresetTap(e) {
+    const { key, label } = e.currentTarget.dataset;
+    const form = {
+      ...this.data.dayMarkForm,
+      label: key === 'custom' ? '' : (label || ''),
+      presetKey: key === 'custom' ? 'custom' : (key || '')
+    };
+    this.setData({ dayMarkForm: form });
+    this.updateDayMarkFormPreview(form);
+  },
+
+  onDayMarkLabelInput(e) {
+    const form = {
+      ...this.data.dayMarkForm,
+      label: e.detail.value || '',
+      presetKey: 'custom'
+    };
+    this.setData({ dayMarkForm: form });
+    this.updateDayMarkFormPreview(form);
+  },
+
+  onDayMarkColorTap(e) {
+    const form = {
+      ...this.data.dayMarkForm,
+      color: e.currentTarget.dataset.color || ''
+    };
+    this.setData({ dayMarkForm: form });
+    this.updateDayMarkFormPreview(form);
+  },
+
+  onDayMarkNoteInput(e) {
+    this.setData({
+      'dayMarkForm.note': e.detail.value || ''
+    });
+  },
+
+  onDayMarkTimeChange(e) {
+    this.setData({
+      'dayMarkForm.time': e.detail.value || ''
+    });
+  },
+
+  onDayMarkTimeClear() {
+    this.setData({
+      'dayMarkForm.time': ''
+    });
+  },
+
+  async saveDayMark() {
+    if (!this.data.dayMarkCanSave) {
+      wx.showToast({ title: '请填写记录事件并选择颜色', icon: 'none' });
+      return;
+    }
+
+    const babyUid = this.getDayMarkBabyUid();
+    const payload = {
+      ...this.data.dayMarkForm,
+      presetKey: this.data.dayMarkForm.presetKey === 'custom' ? '' : this.data.dayMarkForm.presetKey,
+      date: this.data.selectedDate
+    };
+
+    wx.showLoading({ title: '保存中...' });
+    let result;
+    if (this.data.dayMarkFormMode === 'edit' && this.data.editingDayMarkId) {
+      result = await DayCalendarMarkModel.update(this.data.editingDayMarkId, babyUid, payload);
+    } else {
+      result = await DayCalendarMarkModel.create(babyUid, payload);
+    }
+    wx.hideLoading();
+
+    if (!result.success) {
+      wx.showToast({ title: result.message || '保存失败', icon: 'none' });
+      return;
+    }
+
+    wx.showToast({ title: '已保存', icon: 'success' });
+    this.closeDayMarkForm();
+    await this.loadDayMarksForDate(this.data.selectedDate);
+    await this.refreshCalendarDayMarks();
+    this.openDayMarksSheet();
+  },
+
+  async deleteDayMark(e) {
+    const id = e?.currentTarget?.dataset?.id || this.data.editingDayMarkId;
+    if (!id) return;
+
+    wx.showModal({
+      title: '删除备忘',
+      content: '确定删除这条备忘吗？',
+      success: async (res) => {
+        if (!res.confirm) return;
+        wx.showLoading({ title: '删除中...' });
+        const result = await DayCalendarMarkModel.remove(id, this.getDayMarkBabyUid());
+        wx.hideLoading();
+        if (!result.success) {
+          wx.showToast({ title: result.message || '删除失败', icon: 'none' });
+          return;
+        }
+        wx.showToast({ title: '已删除', icon: 'success' });
+        this.closeDayMarkForm();
+        await this.loadDayMarksForDate(this.data.selectedDate);
+        await this.refreshCalendarDayMarks();
+        this.setData({ showDayMarksSheet: true });
+      }
+    });
   },
 
   selectCalendarDay: function(e) {
@@ -4111,6 +4388,7 @@ function createDataRecordsPageConfig(options = {}) {
         isDataLoading: false
       });
     } finally {
+      await this.loadDayMarksForDate(dateStr);
       if (!silent) {
         wx.hideLoading();
       }

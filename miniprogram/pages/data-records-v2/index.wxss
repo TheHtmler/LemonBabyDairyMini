@@ -17,7 +17,7 @@
   margin-bottom: 16rpx;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   border-radius: 16rpx;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   z-index: 10;
   background-color: #FFFFFF;
@@ -48,8 +48,9 @@
   width: 100vw;
   background-color: #FFFFFF;
   border-radius: 16rpx;
-  padding: 14rpx 0;
+  padding: 14rpx 0 18rpx;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 /* 增强日期横向滑动区域 */
@@ -71,14 +72,15 @@
   display: inline-block;
   vertical-align: middle;
   width: 96rpx;
-  height: 124rpx;
+  min-height: 128rpx;
   margin: 0 6rpx;
-  padding: 10rpx 8rpx;
+  padding: 10rpx 8rpx 8rpx;
   border-radius: 16rpx;
   background-color: #F9F9F9;
   box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   text-align: center;
+  border: 2rpx solid transparent;
 }
 
 .date-item.today {
@@ -92,12 +94,11 @@
 
 .date-item.selected {
   background-color: #FFF0B8;
-  transform: scale(1.05);
+  border-color: rgba(255, 184, 0, 0.45);
   box-shadow: 0 2px 8px rgba(255, 184, 0, 0.2);
 }
 
 .date-item:active {
-  transform: scale(0.95);
   background-color: #f5f5f5;
 }
 
@@ -119,7 +120,24 @@
   display: block;
   font-size: 20rpx;
   color: #999;
-  margin-bottom: 4rpx;
+  margin-bottom: 2rpx;
+}
+
+.date-item-mark-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6rpx;
+  margin-top: 6rpx;
+  min-height: 12rpx;
+}
+
+.date-item-mark-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1rpx rgba(0, 0, 0, 0.06);
 }
 
 .selected .weekday,
@@ -140,7 +158,7 @@
   top: 50%;
   transform: translateY(-50%);
   width: 70rpx;
-  height: 124rpx;
+  height: 128rpx;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -1541,12 +1559,15 @@
 
 .calendar-day {
   width: 14.28%;
-  height: 70rpx;
+  min-height: 88rpx;
+  height: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 2rpx;
+  padding: 4rpx 0 8rpx;
+  box-sizing: border-box;
   font-size: 28rpx;
   color: #333;
   position: relative;
@@ -1556,11 +1577,19 @@
   color: #CCCCCC;
 }
 
-.calendar-day.active {
+.calendar-day.active .calendar-day-number,
+.calendar-day.active .calendar-today-label {
   background-color: #FFE7A0;
   border-radius: 50%;
   color: #FFB800;
   font-weight: bold;
+}
+
+.calendar-day.active {
+  background: transparent;
+  border-radius: 0;
+  color: inherit;
+  font-weight: inherit;
 }
 
 .calendar-day.date-today {
@@ -1570,6 +1599,11 @@
 
 .calendar-day-number {
   line-height: 1;
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .calendar-today-label {
@@ -1577,6 +1611,11 @@
   line-height: 1;
   color: #FF9800;
   font-weight: 700;
+  min-width: 44rpx;
+  min-height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .calendar-footer {
@@ -2868,9 +2907,10 @@
 .metric-info-overlay{position:fixed;inset:0;z-index:40}
 .summary-card-main{padding:28rpx;border-radius:32rpx;background:#FFF9E6;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1rpx solid rgba(255,184,0,0.18)}
 .summary-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24rpx}
+.summary-header-main{flex:1;min-width:0}
 .summary-title{display:block;font-size:40rpx;line-height:1.2;font-weight:700;color:#333333}
-.summary-date{display:block;margin-top:10rpx;font-size:24rpx;color:#666666}
-.hero-badges{display:flex;gap:12rpx;flex-wrap:wrap;justify-content:flex-end}
+.summary-mark-link{margin-top:10rpx}
+.hero-badges{display:flex;gap:12rpx;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
 .hero-badge{min-width:132rpx;padding:14rpx 18rpx;border-radius:20rpx;background:#FFFFFF}
 .hero-badge-head{display:flex;align-items:center;justify-content:space-between;gap:10rpx}
 .hero-badge-label{display:block;font-size:20rpx;color:#999999}
@@ -2979,3 +3019,449 @@
 .basic-info-modal-btn.secondary{background:#F5F5F5;color:#666666}
 .basic-info-modal-btn.primary{background:#FFB800;color:#FFFFFF}
 .basic-info-modal-btn.disabled{opacity:.55}
+
+.day-marks-summary-card {
+  display: none;
+}
+
+.summary-mark-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 184, 0, 0.1);
+  border: 1rpx solid rgba(245, 166, 35, 0.22);
+}
+
+.summary-mark-link-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #A56A00;
+  line-height: 1.2;
+}
+
+.summary-mark-link-count {
+  min-width: 28rpx;
+  height: 28rpx;
+  line-height: 28rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  background: #F5A623;
+  color: #FFFFFF;
+  font-size: 18rpx;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.summary-mark-link-arrow {
+  font-size: 24rpx;
+  line-height: 1;
+  color: #F5A623;
+  font-weight: 300;
+}
+
+.summary-mark-btn {
+  display: none;
+}
+
+.summary-mark-entry {
+  display: none;
+}
+
+.summary-mark-entry-text {
+  display: none;
+}
+
+.day-marks-empty {
+  display: none;
+}
+
+.calendar-mark-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2rpx;
+  width: 100%;
+  margin-top: 2rpx;
+  padding: 0 2rpx;
+  box-sizing: border-box;
+}
+
+.calendar-mark-row {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  width: 100%;
+  min-width: 0;
+}
+
+.calendar-mark-dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calendar-mark-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 18rpx;
+  line-height: 1.2;
+  color: #666666;
+}
+
+.day-mark-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(20, 14, 4, 0.42);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.day-mark-sheet,
+.day-mark-form-sheet {
+  background: #FFFFFF;
+  border-radius: 28rpx 28rpx 0 0;
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.12);
+}
+
+.day-mark-form-sheet {
+  height: 72vh;
+  max-height: 72vh;
+}
+
+.day-mark-sheet-handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: rgba(0, 0, 0, 0.12);
+  margin: 16rpx auto 8rpx;
+}
+
+.day-mark-sheet-head,
+.day-mark-form-head {
+  padding: 8rpx 32rpx 20rpx;
+  border-bottom: 1rpx solid #EEEEEE;
+}
+
+.day-mark-sheet-title,
+.day-mark-form-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.day-mark-sheet-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.day-mark-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.day-mark-form-close {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: #999;
+}
+
+.day-mark-list {
+  flex: 1;
+  min-height: 0;
+  max-height: 46vh;
+  padding: 20rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.day-mark-form-body {
+  flex: 1;
+  min-height: 0;
+  height: 0;
+  padding: 20rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.day-mark-card {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  border-radius: 20rpx;
+  background: #FFFDF5;
+  border: 1rpx solid rgba(255, 184, 0, 0.14);
+  align-items: stretch;
+}
+
+.day-mark-stripe {
+  width: 8rpx;
+  border-radius: 4rpx;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.day-mark-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.day-mark-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.day-mark-card-title-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.day-mark-card-label {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.day-mark-card-time {
+  font-size: 24rpx;
+  color: #666;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.day-mark-card-note {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #888;
+  line-height: 1.5;
+}
+
+.day-mark-card-delete {
+  flex-shrink: 0;
+  padding: 8rpx 12rpx;
+  font-size: 22rpx;
+  color: #E85D4C;
+  font-weight: 600;
+}
+
+.day-mark-list-empty {
+  padding: 40rpx 0;
+  text-align: center;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.day-mark-add-btn {
+  margin: 8rpx 32rpx 32rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  border: 2rpx dashed rgba(245, 166, 35, 0.45);
+  background: #FFF8E1;
+  color: #F5A623;
+  font-size: 28rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.day-mark-field {
+  margin-bottom: 28rpx;
+}
+
+.day-mark-field-label {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+
+.day-mark-field-label.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.day-mark-field-label .required {
+  font-size: 22rpx;
+  color: #E85D4C;
+}
+
+.day-mark-field-label .optional {
+  font-size: 22rpx;
+  font-weight: 500;
+  color: #999;
+}
+
+.day-mark-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.day-mark-chip {
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  border: 1rpx solid #E8E8E8;
+  background: #FAFAFA;
+  color: #666;
+  line-height: 1.4;
+}
+
+.day-mark-chip.selected {
+  border-color: #F5A623;
+  background: #FFF8E1;
+  color: #333;
+}
+
+.day-mark-chip.custom {
+  border-style: dashed;
+}
+
+.day-mark-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid #E8E8E8;
+  background: #FAFAFA;
+  box-sizing: border-box;
+  font-size: 28rpx;
+}
+
+.day-mark-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.day-mark-color {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  border: 4rpx solid transparent;
+  box-sizing: border-box;
+}
+
+.day-mark-color.selected {
+  border-color: #333;
+  box-shadow: 0 0 0 4rpx #FFFFFF, 0 0 0 8rpx #333;
+}
+
+.day-mark-color-preview {
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background: #FAFAFA;
+  border: 1rpx solid #EEEEEE;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.day-mark-color-preview-dot {
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 50%;
+}
+
+.day-mark-time-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  width: 100%;
+}
+
+.day-mark-time-picker-wrap {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+
+.day-mark-time-picker {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 24rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid #E8E8E8;
+  background: #FAFAFA;
+  font-size: 28rpx;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.day-mark-time-clear {
+  font-size: 26rpx;
+  color: #F5A623;
+}
+
+.day-mark-form-actions {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding: 12rpx 32rpx calc(12rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  border-top: 1rpx solid #EEEEEE;
+  background: #FFFFFF;
+}
+
+.day-mark-save-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #FFB800 0%, #FFD54F 100%);
+  color: #333;
+  font-size: 30rpx;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.day-mark-save-btn.disabled {
+  opacity: 0.45;
+}
+
+.day-mark-delete-btn {
+  width: 100%;
+  height: 72rpx;
+  line-height: 72rpx;
+  margin-top: 12rpx;
+  border-radius: 20rpx;
+  background: #FFF5F5;
+  color: #E85D4C;
+  font-size: 26rpx;
+  text-align: center;
+  box-sizing: border-box;
+}

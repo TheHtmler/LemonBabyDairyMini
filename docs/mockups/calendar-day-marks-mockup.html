@@ -1,0 +1,1694 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>日历日标记 · 数据记录页 · 效果图</title>
+    <style>
+      :root {
+        --bg: #fff8e1;
+        --surface: #ffffff;
+        --surface-2: #fffdf5;
+        --line: rgba(180, 130, 20, 0.14);
+        --text: #2a1c08;
+        --text-2: #6b5430;
+        --text-3: #a08960;
+        --lemon: #ffd54f;
+        --lemon-deep: #f5a623;
+        --lemon-soft: #fff3c4;
+        --lemon-glow: rgba(255, 213, 79, 0.35);
+        --medical: #4a90d9;
+        --symptom: #e85d4c;
+        --treatment: #7b61d8;
+        --other: #5cb8a8;
+        --mark-c1: #4a90d9;
+        --mark-c2: #e85d4c;
+        --mark-c3: #7b61d8;
+        --mark-c4: #5cb8a8;
+        --mark-c5: #f5a623;
+        --mark-c6: #ff6b9d;
+        --mark-c7: #34c759;
+        --mark-c8: #8e8e93;
+        --phone-w: 320px;
+        --phone-h: 692px;
+        --radius: 14px;
+        --radius-sm: 10px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system,
+          BlinkMacSystemFont,
+          "PingFang SC",
+          "Hiragino Sans GB",
+          "Noto Sans SC",
+          "Microsoft YaHei",
+          sans-serif;
+        background: linear-gradient(165deg, #fff8e1 0%, #fff3c4 45%, #ffe9a8 100%);
+        color: var(--text);
+        padding: 32px 20px 48px;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      .page {
+        max-width: 480px;
+        margin: 0 auto;
+      }
+
+      .doc-head {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+
+      .doc-head .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-bottom: 12px;
+        box-shadow: 0 4px 16px rgba(120, 80, 0, 0.06);
+      }
+
+      .doc-head .badge svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .doc-head h1 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+      }
+
+      .doc-head p {
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--text-3);
+        line-height: 1.55;
+      }
+
+      .state-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 18px;
+        padding: 4px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        backdrop-filter: blur(8px);
+      }
+
+      .state-tab {
+        flex: 1;
+        border: none;
+        background: transparent;
+        padding: 10px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-3);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        line-height: 1.35;
+      }
+
+      .state-tab span {
+        display: block;
+        font-size: 10px;
+        font-weight: 500;
+        margin-top: 2px;
+        opacity: 0.85;
+      }
+
+      .state-tab.active {
+        background: linear-gradient(135deg, var(--lemon) 0%, #ffca28 100%);
+        color: var(--text);
+        box-shadow: 0 4px 14px var(--lemon-glow);
+      }
+
+      .phone-wrap {
+        position: relative;
+      }
+
+      .phone {
+        width: var(--phone-w);
+        height: var(--phone-h);
+        margin: 0 auto;
+        padding: 9px;
+        border-radius: 40px;
+        background: linear-gradient(145deg, #2a2a2a 0%, #111 100%);
+        box-shadow:
+          0 28px 60px rgba(80, 50, 0, 0.22),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        position: relative;
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 11px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 92px;
+        height: 26px;
+        background: #000;
+        border-radius: 20px;
+        z-index: 20;
+      }
+
+      .phone::after {
+        content: "";
+        position: absolute;
+        right: -2px;
+        top: 148px;
+        width: 3px;
+        height: 56px;
+        background: #333;
+        border-radius: 0 2px 2px 0;
+      }
+
+      .screen {
+        height: 100%;
+        border-radius: 32px;
+        overflow: hidden;
+        background: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      .status {
+        height: 44px;
+        padding: 14px 20px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        flex-shrink: 0;
+        z-index: 2;
+      }
+
+      .status-icons {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+
+      .status-icons svg {
+        display: block;
+      }
+
+      .app-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        position: relative;
+      }
+
+      .page-content {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .date-bar {
+        flex-shrink: 0;
+        background: var(--surface);
+        margin: 0 10px 8px;
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        padding: 10px 0;
+        position: relative;
+      }
+
+      .date-scroll {
+        display: flex;
+        gap: 6px;
+        padding: 0 52px 0 10px;
+        overflow: hidden;
+      }
+
+      .date-pill {
+        flex-shrink: 0;
+        width: 46px;
+        padding: 8px 4px;
+        border-radius: 12px;
+        background: #f9f9f9;
+        text-align: center;
+      }
+
+      .date-pill .wk {
+        display: block;
+        font-size: 9px;
+        color: var(--text-3);
+      }
+
+      .date-pill .dy {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.1;
+      }
+
+      .date-pill .mo {
+        display: block;
+        font-size: 9px;
+        color: var(--text-3);
+      }
+
+      .date-pill.selected {
+        background: linear-gradient(135deg, #ffb800 0%, #ffd700 100%);
+        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.35);
+      }
+
+      .date-pill.selected .wk,
+      .date-pill.selected .dy,
+      .date-pill.selected .mo {
+        color: #fff;
+      }
+
+      .date-more {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(90deg, transparent, #fff 35%);
+        border-radius: 0 var(--radius) var(--radius) 0;
+      }
+
+      .date-more-inner {
+        width: 32px;
+        height: 56px;
+        border-radius: 10px;
+        background: var(--lemon-soft);
+        border: 1px solid rgba(245, 166, 35, 0.25);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--lemon-deep);
+        line-height: 1.2;
+      }
+
+      .records-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 10px 8px;
+        min-height: 0;
+      }
+
+      .records-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .summary-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .summary-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .summary-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .summary-date {
+        display: block;
+        font-size: 11px;
+        color: var(--text-3);
+        margin-top: 2px;
+      }
+
+      .hero-badges {
+        display: flex;
+        gap: 8px;
+      }
+
+      .hero-badge {
+        background: var(--lemon-soft);
+        border-radius: 10px;
+        padding: 6px 10px;
+        text-align: center;
+        min-width: 58px;
+      }
+
+      .hero-badge-label {
+        display: block;
+        font-size: 9px;
+        color: var(--text-3);
+      }
+
+      .hero-badge-value {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .metric-item {
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        border: 1px solid var(--line);
+      }
+
+      .metric-label {
+        font-size: 10px;
+        color: var(--text-3);
+      }
+
+      .metric-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+        margin-top: 4px;
+      }
+
+      .metric-unit {
+        font-size: 10px;
+        color: var(--text-3);
+        margin-left: 2px;
+      }
+
+      .section-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .section-title .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--lemon);
+      }
+
+      .feed-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .feed-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .feed-time {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--lemon-deep);
+        min-width: 38px;
+      }
+
+      .feed-info {
+        flex: 1;
+      }
+
+      .feed-name {
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .feed-detail {
+        font-size: 10px;
+        color: var(--text-3);
+        margin-top: 2px;
+      }
+
+      .tabbar {
+        flex-shrink: 0;
+        height: 52px;
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+        display: flex;
+        z-index: 2;
+      }
+
+      .tab-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        font-size: 9px;
+        color: var(--text-3);
+      }
+
+      .tab-item svg {
+        width: 20px;
+        height: 20px;
+        opacity: 0.55;
+      }
+
+      .tab-item.active {
+        color: var(--lemon-deep);
+        font-weight: 600;
+      }
+
+      .tab-item.active svg {
+        opacity: 1;
+      }
+
+      /* Overlay layers */
+      .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        flex-direction: column;
+      }
+
+      .overlay.visible {
+        display: flex;
+      }
+
+      .dim {
+        flex: 1;
+        background: rgba(20, 14, 4, 0.42);
+        backdrop-filter: blur(2px);
+      }
+
+      /* Calendar sheet */
+      .calendar-sheet {
+        background: var(--surface);
+        border-radius: 20px 20px 0 0;
+        padding: 16px 16px 20px;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+        animation: slideUp 0.32s ease;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(24px);
+          opacity: 0.6;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .sheet-handle {
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(0, 0, 0, 0.12);
+        margin: 0 auto 14px;
+      }
+
+      .cal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .cal-nav {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-2);
+        font-size: 14px;
+      }
+
+      .cal-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+
+      .cal-weekdays span {
+        text-align: center;
+        font-size: 10px;
+        color: var(--text-3);
+        font-weight: 600;
+      }
+
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+      }
+
+      .cal-day {
+        aspect-ratio: 1;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        position: relative;
+        cursor: default;
+      }
+
+      .cal-day.muted {
+        color: #ccc;
+        font-weight: 500;
+      }
+
+      .cal-day.today {
+        background: var(--lemon-soft);
+        border: 1.5px solid var(--lemon);
+      }
+
+      .cal-day.selected {
+        background: linear-gradient(135deg, #ffb800 0%, #ffd700 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px var(--lemon-glow);
+      }
+
+      .cal-dots {
+        display: flex;
+        gap: 2px;
+        margin-top: 3px;
+        height: 5px;
+      }
+
+      .cal-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+      }
+
+      .cal-day.selected .cal-dot {
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+      }
+
+      /* Day events half-sheet */
+      .events-sheet {
+        background: var(--surface);
+        border-radius: 20px 20px 0 0;
+        padding: 0 0 12px;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.14);
+        max-height: 58%;
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.32s ease;
+      }
+
+      .events-head {
+        padding: 12px 16px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .events-date {
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      .events-sub {
+        font-size: 11px;
+        color: var(--text-3);
+        margin-top: 2px;
+      }
+
+      .events-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 16px;
+        min-height: 0;
+      }
+
+      .events-list::-webkit-scrollbar {
+        display: none;
+      }
+
+      .event-card {
+        display: flex;
+        gap: 10px;
+        padding: 12px;
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        margin-bottom: 8px;
+      }
+
+      .event-stripe {
+        width: 4px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+
+      .event-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .event-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .event-cat {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-3);
+      }
+
+      .event-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+
+      .event-meta {
+        font-size: 11px;
+        color: var(--text-3);
+        margin-top: 4px;
+        line-height: 1.45;
+      }
+
+      .event-time {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-2);
+        white-space: nowrap;
+      }
+
+      .add-mark-btn {
+        margin: 4px 16px 0;
+        padding: 12px;
+        border-radius: var(--radius-sm);
+        border: 1.5px dashed rgba(245, 166, 35, 0.5);
+        background: var(--lemon-soft);
+        color: var(--lemon-deep);
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: default;
+      }
+
+      /* Add form sheet */
+      .form-sheet {
+        background: var(--surface);
+        border-radius: 20px 20px 0 0;
+        padding: 0 0 16px;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.14);
+        max-height: 72%;
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.32s ease;
+      }
+
+      .form-head {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .form-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .form-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: var(--text-3);
+      }
+
+      .form-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 16px;
+        min-height: 0;
+      }
+
+      .form-body::-webkit-scrollbar {
+        display: none;
+      }
+
+      .chip-group {
+        margin-bottom: 14px;
+      }
+
+      .chip-group-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-2);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .chip-group-label .hint {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--text-3);
+      }
+
+      .chip-group-label .required {
+        font-size: 10px;
+        font-weight: 600;
+        color: #e85d4c;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1.5px solid var(--line);
+        background: var(--surface-2);
+        color: var(--text-2);
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .chip.selected {
+        border-color: var(--lemon-deep);
+        background: var(--lemon-soft);
+        color: var(--text);
+        box-shadow: 0 2px 8px var(--lemon-glow);
+      }
+
+      .chip.custom {
+        border-style: dashed;
+      }
+
+      /* Color picker */
+      .color-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .color-swatch {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 2.5px solid transparent;
+        cursor: pointer;
+        position: relative;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: inset 0 -2px 6px rgba(0, 0, 0, 0.08);
+      }
+
+      .color-swatch:hover {
+        transform: scale(1.06);
+      }
+
+      .color-swatch.selected {
+        border-color: var(--text);
+        box-shadow:
+          0 0 0 2px #fff,
+          0 0 0 4px var(--text),
+          inset 0 -2px 6px rgba(0, 0, 0, 0.08);
+        transform: scale(1.08);
+      }
+
+      .color-swatch.selected::after {
+        content: "✓";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      }
+
+      .color-preview-bar {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+
+      .color-preview-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      }
+
+      .marks-summary-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--line);
+      }
+
+      .marks-summary-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .marks-summary-title {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .marks-summary-link {
+        font-size: 11px;
+        color: var(--lemon-deep);
+        font-weight: 600;
+      }
+
+      .marks-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .mark-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px 4px 6px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .mark-pill-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .form-field {
+        margin-bottom: 14px;
+      }
+
+      .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .form-label .opt {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--text-3);
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        font-size: 13px;
+        color: var(--text);
+        font-family: inherit;
+      }
+
+      .form-input::placeholder {
+        color: #c4b49a;
+      }
+
+      .time-picker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .time-picker svg {
+        color: var(--lemon-deep);
+      }
+
+      .save-btn {
+        margin: 0 16px;
+        padding: 13px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: linear-gradient(135deg, #ffb800 0%, #ffd54f 100%);
+        color: var(--text);
+        font-size: 15px;
+        font-weight: 700;
+        box-shadow: 0 6px 18px var(--lemon-glow);
+        font-family: inherit;
+      }
+
+      .save-btn.disabled {
+        opacity: 0.45;
+        box-shadow: none;
+      }
+
+      .save-hint {
+        margin: 8px 16px 0;
+        font-size: 10px;
+        color: var(--text-3);
+        text-align: center;
+      }
+
+      /* Legend */
+      .legend {
+        margin-top: 24px;
+        padding: 16px 18px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        backdrop-filter: blur(8px);
+      }
+
+      .legend h3 {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--text);
+      }
+
+      .legend-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .legend-note {
+        margin-top: 12px;
+        font-size: 11px;
+        color: var(--text-3);
+        line-height: 1.5;
+        padding-top: 10px;
+        border-top: 1px dashed var(--line);
+      }
+
+      .state-label {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="doc-head">
+        <div class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" stroke-linecap="round" />
+          </svg>
+          柠檬宝宝 · 数据记录
+        </div>
+        <h1>日历日标记 · 交互效果图</h1>
+        <p>常用预置标签快速选名，每条标记必须自选颜色；点击上方标签切换三种界面状态。</p>
+      </header>
+
+      <div class="state-tabs" role="tablist">
+        <button class="state-tab active" data-state="a" role="tab" aria-selected="true">
+          状态 A
+          <span>月历浮层</span>
+        </button>
+        <button class="state-tab" data-state="b" role="tab" aria-selected="false">
+          状态 B
+          <span>当日事件</span>
+        </button>
+        <button class="state-tab" data-state="c" role="tab" aria-selected="false">
+          状态 C
+          <span>添加标记</span>
+        </button>
+      </div>
+
+      <p class="state-label" id="stateLabel">月历选日浮层已展开 · 2026 年 7 月</p>
+
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="status">
+              <span>23:34</span>
+              <div class="status-icons">
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+                  <rect x="0" y="8" width="3" height="4" rx="0.5" opacity="0.35" />
+                  <rect x="4" y="5" width="3" height="7" rx="0.5" opacity="0.55" />
+                  <rect x="8" y="2" width="3" height="10" rx="0.5" opacity="0.75" />
+                  <rect x="12" y="0" width="3" height="12" rx="0.5" />
+                </svg>
+                <svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor">
+                  <path
+                    d="M7 2.5C4.5 2.5 2.3 3.8 1 6c1.3 2.2 3.5 3.5 6 3.5s4.7-1.3 6-3.5C11.7 3.8 9.5 2.5 7 2.5z"
+                    opacity="0.3"
+                  />
+                  <circle cx="7" cy="6" r="2.2" />
+                </svg>
+                <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <rect x="0.6" y="0.6" width="18" height="9.8" rx="2.2" />
+                  <rect x="2" y="2" width="13" height="7" rx="1.2" fill="currentColor" stroke="none" />
+                  <path d="M20 4v3" stroke-linecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="app-body">
+              <div class="page-content">
+                <div class="date-bar">
+                  <div class="date-scroll">
+                    <div class="date-pill">
+                      <span class="wk">五</span>
+                      <span class="dy">10</span>
+                      <span class="mo">7月</span>
+                    </div>
+                    <div class="date-pill">
+                      <span class="wk">六</span>
+                      <span class="dy">11</span>
+                      <span class="mo">7月</span>
+                    </div>
+                    <div class="date-pill selected">
+                      <span class="wk">日</span>
+                      <span class="dy">12</span>
+                      <span class="mo">7月</span>
+                    </div>
+                    <div class="date-pill">
+                      <span class="wk">一</span>
+                      <span class="dy">13</span>
+                      <span class="mo">7月</span>
+                    </div>
+                    <div class="date-pill">
+                      <span class="wk">二</span>
+                      <span class="dy">14</span>
+                      <span class="mo">7月</span>
+                    </div>
+                  </div>
+                  <div class="date-more">
+                    <div class="date-more-inner">
+                      <span>更</span>
+                      <span>多</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="records-scroll">
+                  <div class="marks-summary-card">
+                    <div class="marks-summary-head">
+                      <span class="marks-summary-title">当日标记</span>
+                      <span class="marks-summary-link">管理 ›</span>
+                    </div>
+                    <div class="marks-pills">
+                      <span class="mark-pill"><span class="mark-pill-dot" style="background:#4A90D9"></span>住院</span>
+                      <span class="mark-pill"><span class="mark-pill-dot" style="background:#E85D4C"></span>呕吐</span>
+                      <span class="mark-pill"><span class="mark-pill-dot" style="background:#E85D4C"></span>呕吐</span>
+                    </div>
+                  </div>
+
+                  <div class="summary-card">
+                    <div class="summary-head">
+                      <div>
+                        <div class="summary-title">当日汇总数据</div>
+                        <span class="summary-date">2026 年 7 月 12 日 · 周日</span>
+                      </div>
+                      <div class="hero-badges">
+                        <div class="hero-badge">
+                          <span class="hero-badge-label">体重</span>
+                          <span class="hero-badge-value">4.35kg</span>
+                        </div>
+                        <div class="hero-badge">
+                          <span class="hero-badge-label">日龄</span>
+                          <span class="hero-badge-value">86天</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="metric-grid">
+                      <div class="metric-item">
+                        <div class="metric-label">天然蛋白</div>
+                        <div>
+                          <span class="metric-value">5.2</span>
+                          <span class="metric-unit">g</span>
+                        </div>
+                      </div>
+                      <div class="metric-item">
+                        <div class="metric-label">特奶蛋白</div>
+                        <div>
+                          <span class="metric-value">3.8</span>
+                          <span class="metric-unit">g</span>
+                        </div>
+                      </div>
+                      <div class="metric-item">
+                        <div class="metric-label">总奶量</div>
+                        <div>
+                          <span class="metric-value">820</span>
+                          <span class="metric-unit">ml</span>
+                        </div>
+                      </div>
+                      <div class="metric-item">
+                        <div class="metric-label">喂养顿数</div>
+                        <div>
+                          <span class="metric-value">7</span>
+                          <span class="metric-unit">顿</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="section-card">
+                    <div class="section-title">
+                      <span class="dot"></span>
+                      喂奶记录
+                    </div>
+                    <div class="feed-row">
+                      <span class="feed-time">06:30</span>
+                      <div class="feed-info">
+                        <div class="feed-name">第 1 顿 · 混合奶</div>
+                        <div class="feed-detail">母乳 58ml + 特奶 62ml · 共 120ml</div>
+                      </div>
+                    </div>
+                    <div class="feed-row">
+                      <span class="feed-time">09:45</span>
+                      <div class="feed-info">
+                        <div class="feed-name">第 2 顿 · 混合奶</div>
+                        <div class="feed-detail">母乳 59ml + 特奶 61ml · 共 120ml</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="section-card">
+                    <div class="section-title">
+                      <span class="dot"></span>
+                      用药记录
+                    </div>
+                    <div class="feed-row">
+                      <span class="feed-time">08:00</span>
+                      <div class="feed-info">
+                        <div class="feed-name">左卡尼丁</div>
+                        <div class="feed-detail">1.5 ml · 已完成</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <nav class="tabbar" aria-label="底部导航">
+                <div class="tab-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M12 3l9 7v11H3V10l9-7z" stroke-linejoin="round" />
+                  </svg>
+                  今日记录
+                </div>
+                <div class="tab-item active">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <rect x="4" y="4" width="16" height="16" rx="3" />
+                    <path d="M8 10h8M8 14h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                  数据记录
+                </div>
+                <div class="tab-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M4 18V6M10 18V10M16 18V14M22 18V4" stroke-linecap="round" />
+                  </svg>
+                  报告分析
+                </div>
+                <div class="tab-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M5 20c0-4 3.5-6 7-6s7 2 7 6" stroke-linecap="round" />
+                  </svg>
+                  我的
+                </div>
+              </nav>
+
+              <!-- State A: Calendar overlay -->
+              <div class="overlay visible" id="overlayA" data-state="a">
+                <div class="dim"></div>
+                <div class="calendar-sheet">
+                  <div class="sheet-handle"></div>
+                  <div class="cal-header">
+                    <div class="cal-nav">‹</div>
+                    <div class="cal-title">2026 年 7 月</div>
+                    <div class="cal-nav">›</div>
+                  </div>
+                  <div class="cal-weekdays">
+                    <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                  </div>
+                  <div class="cal-grid">
+                    <div class="cal-day muted">29</div>
+                    <div class="cal-day muted">30</div>
+                    <div class="cal-day">
+                      1
+                      <div class="cal-dots"><span class="cal-dot" style="background:#5CB8A8"></span></div>
+                    </div>
+                    <div class="cal-day">2</div>
+                    <div class="cal-day">
+                      3
+                      <div class="cal-dots"><span class="cal-dot" style="background:#4A90D9"></span></div>
+                    </div>
+                    <div class="cal-day">4</div>
+                    <div class="cal-day">
+                      5
+                      <div class="cal-dots">
+                        <span class="cal-dot" style="background:#E85D4C"></span>
+                        <span class="cal-dot" style="background:#7B61D8"></span>
+                      </div>
+                    </div>
+                    <div class="cal-day">6</div>
+                    <div class="cal-day">7</div>
+                    <div class="cal-day">
+                      8
+                      <div class="cal-dots"><span class="cal-dot" style="background:#4A90D9"></span><span class="cal-dot" style="background:#F5A623"></span></div>
+                    </div>
+                    <div class="cal-day">9</div>
+                    <div class="cal-day today">10</div>
+                    <div class="cal-day">11</div>
+                    <div class="cal-day selected">
+                      12
+                      <div class="cal-dots">
+                        <span class="cal-dot" style="background:#4A90D9"></span>
+                        <span class="cal-dot" style="background:#E85D4C"></span>
+                        <span class="cal-dot" style="background:#E85D4C"></span>
+                      </div>
+                    </div>
+                    <div class="cal-day">13</div>
+                    <div class="cal-day">
+                      14
+                      <div class="cal-dots"><span class="cal-dot" style="background:#7B61D8"></span></div>
+                    </div>
+                    <div class="cal-day">15</div>
+                    <div class="cal-day">
+                      16
+                      <div class="cal-dots"><span class="cal-dot" style="background:#E85D4C"></span></div>
+                    </div>
+                    <div class="cal-day">17</div>
+                    <div class="cal-day">18</div>
+                    <div class="cal-day">
+                      19
+                      <div class="cal-dots"><span class="cal-dot" style="background:#FF6B9D"></span></div>
+                    </div>
+                    <div class="cal-day">20</div>
+                    <div class="cal-day">21</div>
+                    <div class="cal-day">
+                      22
+                      <div class="cal-dots">
+                        <span class="cal-dot" style="background:#4A90D9"></span>
+                        <span class="cal-dot" style="background:#34C759"></span>
+                      </div>
+                    </div>
+                    <div class="cal-day">23</div>
+                    <div class="cal-day">24</div>
+                    <div class="cal-day">25</div>
+                    <div class="cal-day">26</div>
+                    <div class="cal-day">27</div>
+                    <div class="cal-day">28</div>
+                    <div class="cal-day">29</div>
+                    <div class="cal-day">30</div>
+                    <div class="cal-day">31</div>
+                    <div class="cal-day muted">1</div>
+                    <div class="cal-day muted">2</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- State B: Day events half-sheet -->
+              <div class="overlay" id="overlayB" data-state="b">
+                <div class="dim"></div>
+                <div class="events-sheet">
+                  <div class="sheet-handle"></div>
+                  <div class="events-head">
+                    <div class="events-date">7 月 12 日 · 当日标记</div>
+                    <div class="events-sub">共 3 条事件 · 点击条目可编辑</div>
+                  </div>
+                  <div class="events-list">
+                    <div class="event-card">
+                      <div class="event-stripe" style="background:#4A90D9"></div>
+                      <div class="event-body">
+                        <div class="event-top">
+                          <span class="event-cat">常用</span>
+                          <span class="event-time">全天</span>
+                        </div>
+                        <div class="event-title">住院</div>
+                        <div class="event-meta">儿保复查入院观察，禁食特奶，静脉补液中。</div>
+                      </div>
+                    </div>
+                    <div class="event-card">
+                      <div class="event-stripe" style="background:#E85D4C"></div>
+                      <div class="event-body">
+                        <div class="event-top">
+                          <span class="event-cat">常用</span>
+                          <span class="event-time">09:20</span>
+                        </div>
+                        <div class="event-title">呕吐</div>
+                        <div class="event-meta">喂奶后约 15 分钟喷射状呕吐，量少，精神尚可。</div>
+                      </div>
+                    </div>
+                    <div class="event-card">
+                      <div class="event-stripe" style="background:#E85D4C"></div>
+                      <div class="event-body">
+                        <div class="event-top">
+                          <span class="event-cat">常用</span>
+                          <span class="event-time">15:40</span>
+                        </div>
+                        <div class="event-title">呕吐</div>
+                        <div class="event-meta">进食后再次呕吐，已通知值班护士，暂停下一顿特奶。</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="add-mark-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+                    </svg>
+                    添加标记
+                  </div>
+                </div>
+              </div>
+
+              <!-- State C: Add event form -->
+              <div class="overlay" id="overlayC" data-state="c">
+                <div class="dim"></div>
+                <div class="form-sheet">
+                  <div class="sheet-handle"></div>
+                  <div class="form-head">
+                    <div class="form-title">添加日标记 · 7 月 12 日</div>
+                    <div class="form-close">✕</div>
+                  </div>
+                  <div class="form-body">
+                    <div class="chip-group">
+                      <div class="chip-group-label">
+                        <span>常用标签</span>
+                        <span class="hint">点选快速填入</span>
+                      </div>
+                      <div class="chips" id="presetChips">
+                        <span class="chip selected" data-label="住院">住院</span>
+                        <span class="chip" data-label="呕吐">呕吐</span>
+                        <span class="chip" data-label="腹泻">腹泻</span>
+                        <span class="chip" data-label="发热">发热</span>
+                        <span class="chip" data-label="咳嗽">咳嗽</span>
+                        <span class="chip" data-label="转奶">转奶</span>
+                        <span class="chip" data-label="门诊">门诊</span>
+                        <span class="chip" data-label="抽血">抽血</span>
+                        <span class="chip" data-label="月经">月经</span>
+                        <span class="chip" data-label="疫苗">疫苗</span>
+                        <span class="chip custom" data-label="">自定义</span>
+                      </div>
+                    </div>
+                    <div class="form-field">
+                      <div class="form-label">标签名称</div>
+                      <input
+                        class="form-input"
+                        id="labelInput"
+                        type="text"
+                        placeholder="选常用标签或自行输入"
+                        value="住院"
+                      />
+                    </div>
+                    <div class="chip-group">
+                      <div class="chip-group-label">
+                        <span>标记颜色</span>
+                        <span class="required">必选</span>
+                      </div>
+                      <div class="color-picker" id="colorPicker">
+                        <div class="color-swatch selected" data-color="#4A90D9" style="background:#4A90D9" title="蓝色"></div>
+                        <div class="color-swatch" data-color="#E85D4C" style="background:#E85D4C" title="红色"></div>
+                        <div class="color-swatch" data-color="#7B61D8" style="background:#7B61D8" title="紫色"></div>
+                        <div class="color-swatch" data-color="#5CB8A8" style="background:#5CB8A8" title="青色"></div>
+                        <div class="color-swatch" data-color="#F5A623" style="background:#F5A623" title="橙色"></div>
+                        <div class="color-swatch" data-color="#FF6B9D" style="background:#FF6B9D" title="粉色"></div>
+                        <div class="color-swatch" data-color="#34C759" style="background:#34C759" title="绿色"></div>
+                        <div class="color-swatch" data-color="#8E8E93" style="background:#8E8E93" title="灰色"></div>
+                      </div>
+                      <div class="color-preview-bar">
+                        <span class="color-preview-dot" id="previewDot" style="background:#4A90D9"></span>
+                        <span id="previewText">住院 · 蓝色</span>
+                      </div>
+                    </div>
+                    <div class="form-field">
+                      <div class="form-label">备注 <span class="opt">选填</span></div>
+                      <input
+                        class="form-input"
+                        type="text"
+                        placeholder="记录详细情况，如呕吐量、用药调整原因…"
+                        value="儿保复查入院观察，禁食特奶，静脉补液中。"
+                        readonly
+                      />
+                    </div>
+                    <div class="form-field">
+                      <div class="form-label">时间 <span class="opt">选填</span></div>
+                      <div class="time-picker">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v5l3 2" stroke-linecap="round" />
+                        </svg>
+                        全天
+                      </div>
+                    </div>
+                  </div>
+                  <button class="save-btn" id="saveBtn" type="button">保存</button>
+                  <p class="save-hint" id="saveHint">未选颜色时无法保存</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="legend" aria-label="设计说明">
+        <h3>交互规则说明</h3>
+        <div class="legend-grid">
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#4A90D9"></span>
+            颜色由用户每条自选，不绑定标签
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#E85D4C"></span>
+            同标签可重复，颜色可不同
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#7B61D8"></span>
+            常用标签写死在配置，可改文案
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#5CB8A8"></span>
+            自定义标签走输入框
+          </div>
+        </div>
+        <p class="legend-note">
+          预置 10 个常用标签 +「自定义」；保存时 <strong>标签名称 + 颜色</strong> 必填，备注和时间选填。月历圆点展示当日各条标记的实际颜色，最多 3 个圆点。
+        </p>
+      </aside>
+    </div>
+
+    <script>
+      (function () {
+        var tabs = document.querySelectorAll(".state-tab");
+        var overlays = document.querySelectorAll(".overlay");
+        var stateLabel = document.getElementById("stateLabel");
+        var labels = {
+          a: "月历选日浮层 · 圆点颜色 = 当日各条标记的用户自选色",
+          b: "7 月 12 日事件列表 · 左侧色条与月历圆点一致",
+          c: "添加标记 · 常用标签 + 必选颜色（可点选交互）",
+        };
+
+        var colorNames = {
+          "#4A90D9": "蓝色",
+          "#E85D4C": "红色",
+          "#7B61D8": "紫色",
+          "#5CB8A8": "青色",
+          "#F5A623": "橙色",
+          "#FF6B9D": "粉色",
+          "#34C759": "绿色",
+          "#8E8E93": "灰色",
+        };
+
+        tabs.forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            var state = tab.getAttribute("data-state");
+            tabs.forEach(function (t) {
+              var active = t === tab;
+              t.classList.toggle("active", active);
+              t.setAttribute("aria-selected", active ? "true" : "false");
+            });
+            overlays.forEach(function (ov) {
+              ov.classList.toggle("visible", ov.getAttribute("data-state") === state);
+            });
+            stateLabel.textContent = labels[state] || "";
+          });
+        });
+
+        var presetChips = document.getElementById("presetChips");
+        var labelInput = document.getElementById("labelInput");
+        var colorPicker = document.getElementById("colorPicker");
+        var previewDot = document.getElementById("previewDot");
+        var previewText = document.getElementById("previewText");
+        var saveBtn = document.getElementById("saveBtn");
+        var saveHint = document.getElementById("saveHint");
+        var selectedColor = "#4A90D9";
+
+        function updatePreview() {
+          var label = (labelInput && labelInput.value.trim()) || "未命名";
+          var colorName = colorNames[selectedColor] || "";
+          if (previewDot) previewDot.style.background = selectedColor;
+          if (previewText) previewText.textContent = label + " · " + colorName;
+          if (saveBtn) saveBtn.classList.toggle("disabled", !selectedColor || !label);
+          if (saveHint) saveHint.textContent = !label ? "请填写标签名称" : !selectedColor ? "请选择标记颜色" : "可以保存";
+        }
+
+        if (presetChips) {
+          presetChips.addEventListener("click", function (e) {
+            var chip = e.target.closest(".chip");
+            if (!chip) return;
+            presetChips.querySelectorAll(".chip").forEach(function (c) {
+              c.classList.remove("selected");
+            });
+            chip.classList.add("selected");
+            if (chip.classList.contains("custom")) {
+              if (labelInput) {
+                labelInput.value = "";
+                labelInput.placeholder = "输入自定义标签，如：失代偿";
+                labelInput.focus();
+              }
+            } else if (labelInput) {
+              labelInput.value = chip.getAttribute("data-label") || chip.textContent;
+            }
+            updatePreview();
+          });
+        }
+
+        if (colorPicker) {
+          colorPicker.addEventListener("click", function (e) {
+            var swatch = e.target.closest(".color-swatch");
+            if (!swatch) return;
+            colorPicker.querySelectorAll(".color-swatch").forEach(function (s) {
+              s.classList.remove("selected");
+            });
+            swatch.classList.add("selected");
+            selectedColor = swatch.getAttribute("data-color");
+            updatePreview();
+          });
+        }
+
+        if (labelInput) {
+          labelInput.addEventListener("input", updatePreview);
+        }
+
+        updatePreview();
+      })();
+    </script>
+  </body>
+</html>

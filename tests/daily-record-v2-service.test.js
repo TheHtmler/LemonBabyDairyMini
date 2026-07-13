@@ -1227,6 +1227,121 @@ test('getDailySummariesForRange pushes date range into daily_summary_v2 query', 
   }
 });
 
+test('getDailySummariesForRange rebuildMissing 会刷新干净但全空的占位汇总', async () => {
+  const { db } = createDbMock({
+    dailySummaryData: [
+      {
+        _id: 'summary-empty-09',
+        babyUid: 'baby-1',
+        date: '2026-07-09',
+        status: 'active',
+        isDirty: false,
+        rev: 1,
+        recordCounts: { milk: 0, food: 0, medication: 0, treatment: 0, bowel: 0 },
+        macroSummary: {
+          calories: 0,
+          protein: 0,
+          naturalProtein: 0,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 0
+        }
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  models.FeedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    if (date === '2026-07-09') {
+      return [{
+        _id: 'milk-09',
+        date: '2026-07-09',
+        startTime: '08:00',
+        nutritionSummary: {
+          calories: 120,
+          protein: 2.2,
+          naturalProtein: 1.5,
+          specialProtein: 0.7,
+          carbs: 10,
+          fat: 5,
+          totalVolume: 150
+        }
+      }];
+    }
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-07-09', '2026-07-09', {
+      rebuildMissing: true
+    });
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0].macroSummary.calories, 120);
+    assert.equal(summaries[0].recordCounts.milk, 1);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailySummariesForRange rebuildMissing 会刷新仅有体重顺延、无喂养的假 fresh 汇总', async () => {
+  const { db } = createDbMock({
+    dailySummaryData: [
+      {
+        _id: 'summary-weight-only-09',
+        babyUid: 'baby-1',
+        date: '2026-07-09',
+        status: 'active',
+        isDirty: false,
+        rev: 1,
+        basicInfo: { weight: 14.8, height: 81 },
+        recordCounts: { milk: 0, food: 0, medication: 0, treatment: 0, bowel: 0 },
+        macroSummary: {
+          calories: 0,
+          protein: 0,
+          naturalProtein: 0,
+          specialProtein: 0,
+          carbs: 0,
+          fat: 0
+        }
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  models.FeedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    if (date === '2026-07-09') {
+      return [{
+        _id: 'milk-09',
+        date: '2026-07-09',
+        startTime: '08:00',
+        nutritionSummary: {
+          calories: 180,
+          protein: 3,
+          naturalProtein: 2,
+          specialProtein: 1,
+          carbs: 12,
+          fat: 6,
+          totalVolume: 200
+        }
+      }];
+    }
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => ({ success: true, data: [] });
+  models.TreatmentRecordModel.findByDate = async () => ({ success: true, data: [] });
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-07-09', '2026-07-09', {
+      rebuildMissing: true
+    });
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0].macroSummary.calories, 180);
+    assert.equal(summaries[0].recordCounts.milk, 1);
+  } finally {
+    restore();
+  }
+});
+
 test('getDailySummariesForRange rereads daily_summary_v2 for repeated range reads to keep summaries fresh', async () => {
   const { db, calls } = createDbMock({
     dailySummaryData: [

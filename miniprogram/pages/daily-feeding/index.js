@@ -1310,6 +1310,13 @@ Page({
     wx.switchTab({ url: '/pages/data-records-v2/index' });
   },
 
+  navigateToDayMarkRecord() {
+    if (app.globalData) {
+      app.globalData.pendingOpenDayMarkForm = true;
+    }
+    wx.switchTab({ url: '/pages/data-records-v2/index' });
+  },
+
   goToReport() {
     wx.switchTab({ url: '/pages/analysis-report/index' });
   },

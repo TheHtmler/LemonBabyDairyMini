@@ -1,4 +1,4 @@
-<page-meta page-style="{{showBasicInfoModal || showFoodIntakeModal || showDeleteConfirm || showAddFeedingModal || showEditFeedingModal || showAddMedicationModal || showEditMedicationModal || showFoodIntakeExperimentModal || showFatRatioPopup ? 'overflow: hidden;' : ''}}" />
+<page-meta page-style="{{showBasicInfoModal || showFoodIntakeModal || showDeleteConfirm || showAddFeedingModal || showEditFeedingModal || showAddMedicationModal || showEditMedicationModal || showFoodIntakeExperimentModal || showFatRatioPopup || showDayMarksSheet || showDayMarkForm ? 'overflow: hidden;' : ''}}" />
 <view class="container">
   <!-- 日期选择器 -->
   <view class="date-selector">
@@ -9,6 +9,15 @@
             <text class="weekday">{{item.weekday}}</text>
             <text class="day">{{item.day}}</text>
             <text class="month">{{item.month}}月</text>
+            <view class="date-item-mark-dots" wx:if="{{item.markDots && item.markDots.length}}">
+              <view
+                class="date-item-mark-dot"
+                wx:for="{{item.markDots}}"
+                wx:for-item="dotColor"
+                wx:key="*this"
+                style="background: {{dotColor}};"
+              ></view>
+            </view>
           </view>
         </view>
       </scroll-view>
@@ -31,9 +40,13 @@
     <block>
       <view class="summary-card summary-card-main">
         <view class="summary-header">
-          <view>
+          <view class="summary-header-main">
             <text class="summary-title">当日汇总数据</text>
-            <text class="summary-date">{{summaryPreview.displayDate}}</text>
+            <view class="summary-mark-link" catchtap="openDayMarksSheet">
+              <text class="summary-mark-link-text">记备忘</text>
+              <text class="summary-mark-link-count" wx:if="{{dayMarks.length}}">{{dayMarks.length}}</text>
+              <text class="summary-mark-link-arrow">›</text>
+            </view>
           </view>
           <view class="hero-badges">
             <view class="hero-badge" wx:for="{{summaryPreview.heroBadges}}" wx:key="label">
@@ -458,6 +471,18 @@
         <view class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.date === selectedDate && !copyCalendarContext ? 'active' : ''}} {{item.isToday ? 'date-today' : ''}} {{copyCalendarContext && isFutureCalendarDay(item.date) ? 'disabled-future' : ''}} {{!copyCalendarContext && isBeyondFuturePrerecordDate(item.date) ? 'disabled-future' : ''}}" wx:for="{{calendarDays}}" wx:key="date" bindtap="{{item.isCurrentMonth ? 'selectCalendarDay' : ''}}" data-date="{{item.date}}">
           <text class="calendar-today-label" wx:if="{{item.isToday}}">今天</text>
           <text class="calendar-day-number" wx:else>{{item.day}}</text>
+          <view class="calendar-mark-list" wx:if="{{item.markItems && item.markItems.length && !copyCalendarContext}}">
+            <view
+              class="calendar-mark-row"
+              wx:for="{{item.markItems}}"
+              wx:for-item="mark"
+              wx:for-index="markIndex"
+              wx:key="markIndex"
+            >
+              <view class="calendar-mark-dot" style="background: {{mark.color}};"></view>
+              <text class="calendar-mark-label">{{mark.label}}</text>
+            </view>
+          </view>
         </view>
       </view>
       <view class="calendar-footer" wx:if="{{!isSelectedToday}}">
@@ -674,4 +699,123 @@
     bind:confirm="saveEditedMedication"
     bind:manage="goToMedicationManage"
   />
+
+  <!-- 当天备忘列表 -->
+  <view class="day-mark-overlay" wx:if="{{showDayMarksSheet && !showDayMarkForm}}" bindtap="closeDayMarksSheet">
+    <view class="day-mark-sheet" catchtap="preventBubble">
+      <view class="day-mark-sheet-handle"></view>
+      <view class="day-mark-sheet-head">
+        <text class="day-mark-sheet-title">{{formattedSelectedDate}} · 记备忘</text>
+        <text class="day-mark-sheet-sub">共 {{dayMarks.length}} 条 · 点击条目可编辑</text>
+      </view>
+      <scroll-view scroll-y class="day-mark-list" enhanced show-scrollbar="{{false}}">
+        <view
+          class="day-mark-card"
+          wx:for="{{dayMarks}}"
+          wx:key="id"
+          bindtap="openDayMarkForm"
+          data-id="{{item.id}}"
+        >
+          <view class="day-mark-stripe" style="background: {{item.color}};"></view>
+          <view class="day-mark-card-body">
+            <view class="day-mark-card-title-row">
+              <view class="day-mark-card-title-group">
+                <text class="day-mark-card-label">{{item.label}}</text>
+                <text class="day-mark-card-time">{{item.timeText}}</text>
+              </view>
+              <view class="day-mark-card-delete" catchtap="deleteDayMark" data-id="{{item.id}}">删除</view>
+            </view>
+            <text class="day-mark-card-note" wx:if="{{item.note}}">{{item.note}}</text>
+          </view>
+        </view>
+        <view class="day-mark-list-empty" wx:if="{{!dayMarks.length}}">这一天还没有备忘</view>
+      </scroll-view>
+      <view class="day-mark-add-btn" bindtap="openDayMarkForm">
+        <text>+ 记备忘</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加/编辑标记 -->
+  <view class="day-mark-overlay" wx:if="{{showDayMarkForm}}" bindtap="closeDayMarkForm">
+    <view class="day-mark-form-sheet" catchtap="preventBubble">
+      <view class="day-mark-sheet-handle"></view>
+      <view class="day-mark-form-head">
+        <text class="day-mark-form-title">{{dayMarkFormMode === 'edit' ? '编辑' : '记'}}备忘</text>
+        <view class="day-mark-form-close" bindtap="closeDayMarkForm">✕</view>
+      </view>
+      <scroll-view scroll-y class="day-mark-form-body" enhanced show-scrollbar="{{false}}">
+        <view class="day-mark-field">
+          <view class="day-mark-field-label">常用标签</view>
+          <view class="day-mark-chips">
+            <view
+              class="day-mark-chip {{dayMarkForm.presetKey === item.key ? 'selected' : ''}}"
+              wx:for="{{dayMarkPresets}}"
+              wx:key="key"
+              bindtap="onDayMarkPresetTap"
+              data-key="{{item.key}}"
+              data-label="{{item.label}}"
+            >{{item.label}}</view>
+            <view
+              class="day-mark-chip custom {{dayMarkForm.presetKey === 'custom' || (!dayMarkForm.presetKey && dayMarkForm.label) ? 'selected' : ''}}"
+              bindtap="onDayMarkPresetTap"
+              data-key="custom"
+              data-label=""
+            >自定义</view>
+          </view>
+        </view>
+        <view class="day-mark-field">
+          <view class="day-mark-field-label">记录事件</view>
+          <input
+            class="day-mark-input"
+            value="{{dayMarkForm.label}}"
+            placeholder="选常用事件或自行输入"
+            bindinput="onDayMarkLabelInput"
+          />
+        </view>
+        <view class="day-mark-field">
+          <view class="day-mark-field-label row">
+            <text>标记颜色</text>
+            <text class="required">必选</text>
+          </view>
+          <view class="day-mark-colors">
+            <view
+              class="day-mark-color {{dayMarkForm.color === item.value ? 'selected' : ''}}"
+              wx:for="{{dayMarkColors}}"
+              wx:key="key"
+              style="background: {{item.value}};"
+              bindtap="onDayMarkColorTap"
+              data-color="{{item.value}}"
+            ></view>
+          </view>
+          <view class="day-mark-color-preview" wx:if="{{dayMarkFormPreviewText}}">
+            <view class="day-mark-color-preview-dot" style="background: {{dayMarkForm.color}};"></view>
+            <text>{{dayMarkFormPreviewText}}</text>
+          </view>
+        </view>
+        <view class="day-mark-field">
+          <view class="day-mark-field-label">备注 <text class="optional">选填</text></view>
+          <input
+            class="day-mark-input"
+            value="{{dayMarkForm.note}}"
+            placeholder="补充详细情况…"
+            bindinput="onDayMarkNoteInput"
+          />
+        </view>
+        <view class="day-mark-field">
+          <view class="day-mark-field-label">时间 <text class="optional">选填</text></view>
+          <view class="day-mark-time-row">
+            <picker class="day-mark-time-picker-wrap" mode="time" value="{{dayMarkForm.time || '00:00'}}" bindchange="onDayMarkTimeChange">
+              <view class="day-mark-time-picker">{{dayMarkForm.time || '全天'}}</view>
+            </picker>
+            <text class="day-mark-time-clear" wx:if="{{dayMarkForm.time}}" bindtap="onDayMarkTimeClear">清除</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="day-mark-form-actions">
+        <view class="day-mark-save-btn {{dayMarkCanSave ? '' : 'disabled'}}" bindtap="saveDayMark">保存</view>
+        <view class="day-mark-delete-btn" wx:if="{{dayMarkFormMode === 'edit'}}" bindtap="deleteDayMark">删除这条备忘</view>
+      </view>
+    </view>
+  </view>
 </view>

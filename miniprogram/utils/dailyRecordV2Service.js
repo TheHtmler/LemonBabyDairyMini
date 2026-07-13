@@ -199,6 +199,73 @@ function hasFoodProteinQualitySummary(summary = {}) {
     && Object.prototype.hasOwnProperty.call(food, 'regularProtein');
 }
 
+// 判断汇总是否已有喂养摄入（奶/辅食）。
+// 注意：体重顺延或仅用药/治疗也会让 summary「非空」，但不能据此认定热量趋势可信。
+function hasIntakeRecordSummary(summary = {}) {
+  const counts = summary.recordCounts || {};
+  if (toNumber(counts.milk) > 0 || toNumber(counts.food) > 0) {
+    return true;
+  }
+  const macro = summary.macroSummary || {};
+  return ['calories', 'protein', 'naturalProtein', 'specialProtein']
+    .some((field) => toNumber(macro[field]) > 0);
+}
+
+// 本进程内已确认“重建后仍无喂养摄入”的占位汇总，避免首页每次进入都对空天重复打云。
+// key = babyUid|date；有真实喂养写入并 markDirty 后会走 isDirty 重建，不再命中此缓存。
+const verifiedEmptySummaryKeys = new Set();
+
+function emptySummaryCacheKey(summary = {}) {
+  if (!summary.babyUid || !summary.date) return '';
+  return `${summary.babyUid}|${summary.date}`;
+}
+
+function rememberVerifiedEmptySummary(summary) {
+  const key = emptySummaryCacheKey(summary);
+  // 只有确认没有奶/辅食摄入时才记为 verified empty
+  if (!key || hasIntakeRecordSummary(summary)) return;
+  verifiedEmptySummaryKeys.add(key);
+}
+
+function isVerifiedEmptySummary(summary) {
+  const key = emptySummaryCacheKey(summary);
+  return !!key && verifiedEmptySummaryKeys.has(key);
+}
+
+function isFreshRangeSummary(summary = {}) {
+  if (!summary || summary.isDirty === true) return false;
+  if (!hasFoodProteinQualitySummary(summary)) return false;
+  // 仅有体重顺延/用药时不能当 fresh，否则漏掉后来补录的喂养，热量柱会一直空。
+  if (hasIntakeRecordSummary(summary)) return true;
+  return isVerifiedEmptySummary(summary);
+}
+
+function preferRicherSummary(current, next) {
+  if (!current) return next;
+  if (!next) return current;
+  const currentScore = (hasIntakeRecordSummary(current) ? 100 : 0)
+    + toNumber(current.macroSummary?.calories)
+    + toNumber(current.recordCounts?.milk) * 10
+    + toNumber(current.recordCounts?.food) * 10;
+  const nextScore = (hasIntakeRecordSummary(next) ? 100 : 0)
+    + toNumber(next.macroSummary?.calories)
+    + toNumber(next.recordCounts?.milk) * 10
+    + toNumber(next.recordCounts?.food) * 10;
+  if (nextScore !== currentScore) return nextScore > currentScore ? next : current;
+  const currentUpdated = Number(current.updatedAt || current.rev || 0);
+  const nextUpdated = Number(next.updatedAt || next.rev || 0);
+  return nextUpdated >= currentUpdated ? next : current;
+}
+
+function dedupeSummariesByDate(summaries = []) {
+  const byDate = new Map();
+  (summaries || []).forEach((summary) => {
+    if (!summary?.date) return;
+    byDate.set(summary.date, preferRicherSummary(byDate.get(summary.date), summary));
+  });
+  return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
 function toNumber(value) {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
@@ -499,6 +566,7 @@ async function rebuildDatesSafely(babyUid, dates = [], options = {}) {
     try {
       const { summary } = await rebuildDailySummaryForDate(babyUid, date);
       if (summary) {
+        rememberVerifiedEmptySummary(summary);
         rebuilt.push(summary);
       }
     } catch (error) {
@@ -519,11 +587,12 @@ async function rebuildDatesSafely(babyUid, dates = [], options = {}) {
 
 // 取范围内每日汇总。
 // 默认只读已存在的 daily_summary_v2 缓存（懒生成）。
-// rebuildMissing=true 时，对范围内“缺失或过期(isDirty)”的天按原始记录重建并补齐，
+// rebuildMissing=true 时，对范围内“缺失、过期(isDirty)、或无喂养摄入的假 fresh”天按原始记录重建并补齐，
 // 让趋势与「数据记录」页同源（会顺延体重、为缺数据的天写入空汇总）。
 // skipDates 用于排除“调用方另行实时处理”的日期（如首页的今天），避免与 getDailyRecordV2 并发重建产生重复文档。
 async function getDailySummariesForRange(babyUid, startDate, endDate, options = {}) {
-  const summaries = await DailySummaryV2Model.getRange(babyUid, startDate, endDate);
+  const rawSummaries = await DailySummaryV2Model.getRange(babyUid, startDate, endDate);
+  const summaries = dedupeSummariesByDate(rawSummaries);
   const skip = new Set(options.skipDates || []);
   const staleSchemaDates = summaries
     .filter((summary) => summary.isDirty !== true && !hasFoodProteinQualitySummary(summary))
@@ -541,12 +610,14 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
     const targetSet = new Set(staleSchemaDates);
     const kept = summaries.filter((summary) => !targetSet.has(summary.date));
     const rebuilt = await rebuildDatesSafely(babyUid, staleSchemaDates, options);
-    return kept.concat(rebuilt);
+    const rebuiltDates = new Set(rebuilt.map((summary) => summary.date));
+    const fallback = summaries.filter((summary) => targetSet.has(summary.date) && !rebuiltDates.has(summary.date));
+    return dedupeSummariesByDate(kept.concat(rebuilt).concat(fallback));
   }
 
   const freshDates = new Set(
     summaries
-      .filter((summary) => summary.isDirty !== true && hasFoodProteinQualitySummary(summary))
+      .filter((summary) => isFreshRangeSummary(summary))
       .map((summary) => summary.date)
   );
   const targetDates = enumerateDateKeys(startDate, endDate)
@@ -558,8 +629,11 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
   const targetSet = new Set(targetDates);
   const kept = summaries.filter((summary) => !targetSet.has(summary.date));
   const rebuilt = await rebuildDatesSafely(babyUid, targetDates, options);
+  const rebuiltDates = new Set(rebuilt.map((summary) => summary.date));
+  // 重建失败时保留原 summary，避免趋势窗口整天空缺
+  const fallback = summaries.filter((summary) => targetSet.has(summary.date) && !rebuiltDates.has(summary.date));
 
-  return kept.concat(rebuilt);
+  return dedupeSummariesByDate(kept.concat(rebuilt).concat(fallback));
 }
 
 module.exports = {

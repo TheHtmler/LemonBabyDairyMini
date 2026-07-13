@@ -18,6 +18,7 @@ const BABY_SCOPED_COLLECTIONS = [
   'nutrition_settings',
   'milk_nutrition_profiles',
   'daily_summary_v2',
+  'day_calendar_marks',
   'participant_unbind_logs',
   'audit_logs'
 ];
