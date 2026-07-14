@@ -90,6 +90,9 @@ Page({
     roleGateAction: '', // enter | create
     roleDraft: '',
     selectedRolePreset: '',
+    accessDenied: false,
+    accessDeniedTitle: '',
+    accessDeniedSubtitle: '',
     form: createEmptyForm()
   },
 
@@ -122,8 +125,61 @@ Page({
   },
 
   async onShow() {
+    const access = await this.checkDiaryAccess();
+    if (!access.ok) {
+      this.setData({
+        accessDenied: true,
+        accessDeniedTitle: access.title || '无权限访问',
+        accessDeniedSubtitle: access.subtitle || '请先加入家庭后再查看成长日记。',
+        showRoleModal: false,
+        showForm: false,
+        entries: [],
+        loading: false
+      });
+      return;
+    }
+
+    this.setData({
+      accessDenied: false,
+      accessDeniedTitle: '',
+      accessDeniedSubtitle: ''
+    });
     await this.loadEntries();
     await this.ensureAuthorRole({ action: 'enter' });
+  },
+
+  async checkDiaryAccess() {
+    const babyUid = getBabyUid();
+    const userRole = this.data.userRole
+      || getApp().globalData.userRole
+      || wx.getStorageSync('user_role')
+      || '';
+    const openid = getApp().globalData.openid || wx.getStorageSync('openid') || '';
+
+    if (!openid) {
+      return {
+        ok: false,
+        title: '无权限访问',
+        subtitle: '请先登录微信后再查看成长日记。'
+      };
+    }
+    if (!babyUid || (userRole !== 'creator' && userRole !== 'participant')) {
+      return {
+        ok: false,
+        title: '无权限访问',
+        subtitle: '你还不是该家庭成员，无法查看成长日记。'
+      };
+    }
+
+    const relation = await this.loadRelationRecord();
+    if (!relation) {
+      return {
+        ok: false,
+        title: '无权限访问',
+        subtitle: '未找到家庭成员身份，请确认已加入后再试。'
+      };
+    }
+    return { ok: true };
   },
 
   getActor(userInfo = {}) {
@@ -191,6 +247,19 @@ Page({
   },
 
   async ensureAuthorRole({ action = 'enter' } = {}) {
+    // 无权限访客不拦角色，交给无权限兜底
+    if (this.data.accessDenied) return false;
+    const access = await this.checkDiaryAccess();
+    if (!access.ok) {
+      this.setData({
+        accessDenied: true,
+        accessDeniedTitle: access.title || '无权限访问',
+        accessDeniedSubtitle: access.subtitle || '你还不是该家庭成员，无法查看成长日记。',
+        showRoleModal: false
+      });
+      return false;
+    }
+
     const name = await this.refreshAuthorDisplayName();
     if (hasAuthorDisplayName(name)) return true;
     this.setData({

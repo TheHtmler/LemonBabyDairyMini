@@ -64,7 +64,14 @@ Page({
     }
 
     const babyUid = getBabyUid();
+    const userRole = getApp().globalData.userRole || wx.getStorageSync('user_role') || '';
+    const openid = getApp().globalData.openid || wx.getStorageSync('openid') || '';
     const entry = await GrowthDiaryModel.getById(id);
+
+    if (!openid) {
+      this.showDenied('无权限访问', '请先登录微信后再查看。');
+      return;
+    }
 
     if (!entry) {
       this.showDenied('无权限访问', '日记不存在或无权查看。');
@@ -76,8 +83,15 @@ Page({
       return;
     }
 
-    if (!babyUid || entry.babyUid !== babyUid) {
-      this.showDenied('无权限访问', '该日记不属于当前宝宝，请确认已加入对应家庭。');
+    // 非家庭成员 / 未绑定：直接无权限兜底，不进入角色设置
+    if (!babyUid || (userRole !== 'creator' && userRole !== 'participant') || entry.babyUid !== babyUid) {
+      this.showDenied('无权限访问', '你还不是该家庭成员，无法查看这篇成长日记。');
+      return;
+    }
+
+    const hasRelation = await this.hasFamilyRelation(openid, babyUid, userRole);
+    if (!hasRelation) {
+      this.showDenied('无权限访问', '你还不是该家庭成员，无法查看这篇成长日记。');
       return;
     }
 
@@ -132,6 +146,23 @@ Page({
 
     if (typeof wx.showShareMenu === 'function') {
       wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
+    }
+  },
+
+  async hasFamilyRelation(openid, babyUid, userRole) {
+    const collectionName = userRole === 'creator'
+      ? 'baby_creators'
+      : (userRole === 'participant' ? 'baby_participants' : '');
+    if (!collectionName || !openid || !babyUid) return false;
+    try {
+      const db = wx.cloud.database();
+      const res = await db.collection(collectionName).where({
+        _openid: openid,
+        babyUid
+      }).limit(1).get();
+      return !!(res.data && res.data[0]);
+    } catch (error) {
+      return false;
     }
   },
 

@@ -1,4 +1,13 @@
 <view class="diary-container">
+  <block wx:if="{{accessDenied}}">
+    <view class="empty-state access-denied">
+      <text class="empty-emoji">🍋</text>
+      <text class="empty-text">{{accessDeniedTitle || '无权限访问'}}</text>
+      <text class="empty-tip">{{accessDeniedSubtitle || '你还不是该家庭成员，无法查看成长日记。'}}</text>
+    </view>
+  </block>
+
+  <block wx:else>
   <view class="page-header">
     <text class="page-title">成长日记</text>
     <text class="page-subtitle">记录柠檬宝宝的每一个小里程碑</text>
@@ -67,6 +76,7 @@
       <text class="empty-tip">点上方按钮写下第一篇吧</text>
     </view>
   </view>
+  </block>
 </view>
 
 <!-- 新增 / 编辑弹窗 -->

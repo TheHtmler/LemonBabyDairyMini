@@ -47,8 +47,9 @@ test('profile and daily-feeding expose growth diary and curve entries', () => {
 test('growth diary requires role modal and publish meta wiring', () => {
   const diaryJs = fs.readFileSync(path.join(__dirname, '../miniprogram/pkg-records/growth-diary/index.js'), 'utf8');
   const diaryWxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pkg-records/growth-diary/index.wxml'), 'utf8');
-  assert.match(diaryJs, /ensureAuthorRole/);
-  assert.match(diaryJs, /roleGateAction/);
+  assert.match(diaryJs, /checkDiaryAccess/);
+  assert.match(diaryJs, /accessDenied/);
+  assert.match(diaryWxml, /accessDenied/);
   assert.match(diaryJs, /confirmRoleModal/);
   assert.match(diaryJs, /authorDisplayName/);
   assert.match(diaryJs, /formatDiaryPublishMeta/);
