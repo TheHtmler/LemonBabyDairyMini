@@ -102,6 +102,7 @@ test('accountCleanup lets creator hard delete baby scoped data and relations', a
     'growth_records',
     'growth_records_v2',
     'growth_milestones',
+    'growth_diary',
     'medications',
     'nutrition_settings',
     'milk_nutrition_profiles',
