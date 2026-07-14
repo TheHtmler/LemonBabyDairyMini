@@ -17,20 +17,12 @@ Page({
     babyInfo: {},
     chartInfoText: '',
     growthRecords: [],
-    milestones: [],
-    expandedMilestoneId: '',
     showMeasurementForm: false,
-    showMilestoneForm: false,
     newMeasurement: {
       date: '',
       weight: '',
       length: '',
       head: '',
-      notes: ''
-    },
-    newMilestone: {
-      date: '',
-      title: '',
       notes: ''
     },
     ec: {
@@ -60,10 +52,7 @@ Page({
   },
 
   async refreshData() {
-    await Promise.all([
-      this.loadGrowthRecords(),
-      this.loadMilestones()
-    ]);
+    await this.loadGrowthRecords();
     this.updateChartInfo();
   },
 
@@ -297,62 +286,15 @@ Page({
     }
   },
 
-  async loadMilestones() {
-    try {
-      const babyUid = getBabyUid();
-      if (!babyUid) return;
-      const db = wx.cloud.database();
-      const res = await db.collection('growth_milestones')
-        .where({ babyUid })
-        .orderBy('eventDate', 'desc')
-        .get();
-      const milestones = (res.data || []).map(item => ({
-        ...item,
-        eventDateText: item.eventDate ? this.formatDate(item.eventDate) : ''
-      }));
-      this.setData({
-        milestones
-      });
-    } catch (error) {
-      handleError(error, { title: '获取里程碑失败' });
-    }
-  },
-
-  formatDate(dateValue) {
-    if (!dateValue) return '';
-    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return '';
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  },
-
-  toggleMilestone(e) {
-    const { id } = e.currentTarget.dataset;
-    this.setData({
-      expandedMilestoneId: this.data.expandedMilestoneId === id ? '' : id
-    });
-  },
-
   openMeasurementForm() {
     this.setData({
-      showMeasurementForm: true,
-      showMilestoneForm: false
-    });
-  },
-
-  openMilestoneForm() {
-    this.setData({
-      showMilestoneForm: true,
-      showMeasurementForm: false
+      showMeasurementForm: true
     });
   },
 
   closeForms() {
     this.setData({
-      showMeasurementForm: false,
-      showMilestoneForm: false
+      showMeasurementForm: false
     });
   },
 
@@ -444,61 +386,6 @@ Page({
       }
     } catch (error) {
       console.warn('同步宝宝信息失败:', error);
-    }
-  },
-
-  onMilestoneInput(e) {
-    const { field } = e.currentTarget.dataset;
-    const value = e.detail.value;
-    this.setData({
-      [`newMilestone.${field}`]: value
-    });
-  },
-
-  onMilestoneDateChange(e) {
-    this.setData({
-      'newMilestone.date': e.detail.value
-    });
-  },
-
-  async saveMilestone() {
-    const { newMilestone } = this.data;
-    if (!newMilestone.date) {
-      wx.showToast({ title: '请选择发生日期', icon: 'none' });
-      return;
-    }
-    if (!newMilestone.title) {
-      wx.showToast({ title: '请输入里程碑', icon: 'none' });
-      return;
-    }
-    try {
-      const babyUid = getBabyUid();
-      if (!babyUid) return;
-      const userInfo = await getUserInfo();
-      const eventDate = growthUtils.parseDateString(newMilestone.date);
-      const payload = {
-        babyUid,
-        eventDate,
-        title: newMilestone.title,
-        notes: newMilestone.notes || '',
-        userInfo,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      const db = wx.cloud.database();
-      await db.collection('growth_milestones').add({ data: payload });
-      this.setData({
-        newMilestone: {
-          date: '',
-          title: '',
-          notes: ''
-        },
-        showMilestoneForm: false
-      });
-      await this.loadMilestones();
-      wx.showToast({ title: '记录成功', icon: 'success' });
-    } catch (error) {
-      handleError(error, { title: '保存里程碑失败' });
     }
   }
 });

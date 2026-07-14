@@ -75,12 +75,6 @@
   color: #fff;
 }
 
-.action-btn.secondary {
-  background: #fff;
-  color: #4c3a00;
-  border: 1rpx solid #ffd369;
-}
-
 .action-btn.ghost {
   background: #fffaf0;
   color: #8a6b00;
@@ -134,78 +128,4 @@
   display: flex;
   gap: 12rpx;
   margin-top: 8rpx;
-}
-
-.milestone-section {
-  margin-top: 12rpx;
-}
-
-.section-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #3b2d00;
-  margin-bottom: 16rpx;
-}
-
-.milestone-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.milestone-item {
-  position: relative;
-  padding-left: 30rpx;
-}
-
-.milestone-dot {
-  position: absolute;
-  left: 6rpx;
-  top: 10rpx;
-  width: 14rpx;
-  height: 14rpx;
-  background: #ffb800;
-  border-radius: 50%;
-}
-
-.milestone-item::before {
-  content: '';
-  position: absolute;
-  left: 12rpx;
-  top: 30rpx;
-  width: 2rpx;
-  height: calc(100% - 10rpx);
-  background: #ffe5a4;
-}
-
-.milestone-content {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 16rpx;
-  box-shadow: 0 6rpx 16rpx rgba(255, 184, 0, 0.1);
-}
-
-.milestone-title {
-  font-size: 26rpx;
-  color: #3b2d00;
-  font-weight: 600;
-}
-
-.milestone-date {
-  font-size: 22rpx;
-  color: #9b7a00;
-  margin-top: 6rpx;
-}
-
-.milestone-notes {
-  margin-top: 10rpx;
-  font-size: 24rpx;
-  color: #6a5200;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 30rpx 0;
-  color: #9b7a00;
-  font-size: 24rpx;
 }

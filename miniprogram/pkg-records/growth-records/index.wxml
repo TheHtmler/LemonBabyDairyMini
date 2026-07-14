@@ -18,7 +18,6 @@
 
   <view class="action-row">
     <button class="action-btn primary" bindtap="openMeasurementForm">新增测量</button>
-    <button class="action-btn secondary" bindtap="openMilestoneForm">新增里程碑</button>
   </view>
 
   <view class="form-card" wx:if="{{showMeasurementForm}}">
@@ -48,47 +47,6 @@
     <view class="form-actions">
       <button class="action-btn ghost" bindtap="closeForms">取消</button>
       <button class="action-btn primary" bindtap="saveMeasurement">保存</button>
-    </view>
-  </view>
-
-  <view class="form-card" wx:if="{{showMilestoneForm}}">
-    <view class="form-title">新增成长里程碑</view>
-    <view class="form-item">
-      <text class="form-label">里程碑</text>
-      <input class="form-input" type="text" data-field="title" value="{{newMilestone.title}}" placeholder="如：第一次会坐" bindinput="onMilestoneInput" />
-    </view>
-    <view class="form-item">
-      <text class="form-label">发生日期</text>
-      <picker mode="date" value="{{newMilestone.date}}" bindchange="onMilestoneDateChange">
-        <view class="picker-value">{{newMilestone.date || '请选择日期'}}</view>
-      </picker>
-    </view>
-    <view class="form-item">
-      <text class="form-label">备注</text>
-      <input class="form-input" type="text" data-field="notes" value="{{newMilestone.notes}}" placeholder="可选" bindinput="onMilestoneInput" />
-    </view>
-    <view class="form-actions">
-      <button class="action-btn ghost" bindtap="closeForms">取消</button>
-      <button class="action-btn primary" bindtap="saveMilestone">保存</button>
-    </view>
-  </view>
-
-  <view class="milestone-section">
-    <view class="section-title">成长里程碑</view>
-    <view class="milestone-list" wx:if="{{milestones.length > 0}}">
-      <view class="milestone-item" wx:for="{{milestones}}" wx:key="_id" data-id="{{item._id}}" bindtap="toggleMilestone">
-        <view class="milestone-dot"></view>
-        <view class="milestone-content">
-          <view class="milestone-title">{{item.title}}</view>
-          <view class="milestone-date">{{item.eventDateText}}</view>
-          <view class="milestone-notes" wx:if="{{expandedMilestoneId === item._id}}">
-            {{item.notes || '暂无备注'}}
-          </view>
-        </view>
-      </view>
-    </view>
-    <view class="empty-state" wx:else>
-      <text>暂无里程碑记录</text>
     </view>
   </view>
 </view>
