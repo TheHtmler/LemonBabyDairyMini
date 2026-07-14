@@ -180,6 +180,9 @@
           <view class="qa" data-url="/pkg-records/growth-records/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic growth">📈</view><text class="qa-nm">成长曲线</text>
           </view>
+          <view class="qa" data-url="/pkg-records/growth-diary/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic mark">📔</view><text class="qa-nm">成长日记</text>
+          </view>
         </view>
         <view class="qrow">
           <view class="qa" bindtap="navigateToDayMarkRecord" hover-class="press-pop" hover-stay-time="60">
