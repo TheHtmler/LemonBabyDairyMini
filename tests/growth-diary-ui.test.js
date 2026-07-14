@@ -23,4 +23,30 @@ test('profile and daily-feeding expose growth diary and curve entries', () => {
   assert.equal(diaryPathMatches.length, 1, 'daily-feeding should have exactly one growth-diary shortcut');
   assert.match(dailyWxml, /成长日记/);
   assert.doesNotMatch(dailyWxml, /情感/);
+
+  const firstRow = dailyWxml.match(/<view class="qrow">[\s\S]*?<\/view>\s*<view class="qrow">/);
+  assert.ok(firstRow, 'should have two qrows');
+  assert.match(firstRow[0], /成长日记/);
+  assert.doesNotMatch(firstRow[0], /微信提醒/);
+
+  const secondRowMatch = dailyWxml.match(/<view class="qrow">[\s\S]*?<\/view>\s*<\/view>\s*<\/scroll-view>/);
+  assert.ok(secondRowMatch);
+  assert.match(dailyWxml, /微信提醒/);
+  // 微信提醒应出现在成长日记之后（第二排）
+  assert.ok(
+    dailyWxml.indexOf('成长日记') < dailyWxml.indexOf('微信提醒'),
+    '成长日记 should appear before 微信提醒'
+  );
+});
+
+test('growth diary requires role modal and publish meta wiring', () => {
+  const diaryJs = fs.readFileSync(path.join(__dirname, '../miniprogram/pkg-records/growth-diary/index.js'), 'utf8');
+  const diaryWxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pkg-records/growth-diary/index.wxml'), 'utf8');
+  assert.match(diaryJs, /ensureAuthorRoleBeforeCreate/);
+  assert.match(diaryJs, /confirmRoleModal/);
+  assert.match(diaryJs, /authorDisplayName/);
+  assert.match(diaryJs, /formatDiaryPublishMeta/);
+  assert.match(diaryWxml, /showRoleModal/);
+  assert.match(diaryWxml, /publishMetaText/);
+  assert.match(diaryWxml, /maxRoleLen/);
 });

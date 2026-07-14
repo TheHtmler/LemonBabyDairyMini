@@ -7,7 +7,8 @@ const {
 } = require('../../utils/index');
 const {
   MAX_DIARY_PHOTOS,
-  normalizePhotos
+  normalizePhotos,
+  formatDiaryPublishMeta
 } = require('../../utils/growthDiaryUtils');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
@@ -35,7 +36,7 @@ Page({
     eventDateText: '',
     thumbUrls: [],
     originalUrls: [],
-    authorName: ''
+    publishMetaText: ''
   },
 
   async onLoad(options = {}) {
@@ -110,7 +111,7 @@ Page({
       eventDateText: formatDateText(entry.eventDate),
       thumbUrls,
       originalUrls,
-      authorName: entry.userInfo?.nickName || entry.userInfo?.displayName || ''
+      publishMetaText: formatDiaryPublishMeta(entry)
     });
 
     if (typeof wx.showShareMenu === 'function') {

@@ -302,6 +302,13 @@
   white-space: pre-wrap;
 }
 
+.timeline-publish {
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  color: #9b7a00;
+  line-height: 1.4;
+}
+
 .timeline-thumbs {
   display: flex;
   gap: 12rpx;
@@ -395,4 +402,38 @@
   margin-top: 8rpx;
   font-size: 24rpx;
   color: #9b7a00;
+}
+
+.role-modal-content {
+  max-height: 70vh;
+}
+
+.role-tip {
+  font-size: 24rpx;
+  color: #8a6b00;
+  line-height: 1.5;
+  margin-bottom: 20rpx;
+}
+
+.role-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.role-chip {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background: #fffaf0;
+  border: 1rpx solid #ffe1a3;
+  color: #8a6b00;
+  font-size: 26rpx;
+}
+
+.role-chip.active {
+  background: #ffb800;
+  border-color: #ffb800;
+  color: #fff;
+  font-weight: 600;
 }

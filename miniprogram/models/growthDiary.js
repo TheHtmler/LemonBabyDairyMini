@@ -84,6 +84,12 @@ class GrowthDiaryModel {
     }
 
     try {
+      const authorDisplayName = String(
+        validation.normalized.authorDisplayName
+        || actor.authorDisplayName
+        || actor.userInfo?.displayName
+        || ''
+      ).trim();
       const record = {
         babyUid,
         title: validation.normalized.title,
@@ -91,7 +97,11 @@ class GrowthDiaryModel {
         eventDate: validation.normalized.eventDate,
         photos: validation.normalized.photos,
         createdByOpenid: openid,
-        userInfo: actor.userInfo || {},
+        authorDisplayName,
+        userInfo: {
+          ...(actor.userInfo || {}),
+          displayName: authorDisplayName || (actor.userInfo && actor.userInfo.displayName) || ''
+        },
         status: 'active',
         createdAt: this.db.serverDate(),
         updatedAt: this.db.serverDate()

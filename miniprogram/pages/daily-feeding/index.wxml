@@ -156,6 +156,9 @@
           <view class="qa" bindtap="navigateToMilkFeedingEditor" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic milk">🍼</view><text class="qa-nm">记一顿奶</text>
           </view>
+          <view class="qa" data-url="/pkg-records/growth-diary/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic diary">📔</view><text class="qa-nm">成长日记</text>
+          </view>
           <view class="qa" bindtap="navigateToMealEditor" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic food">🥣</view><text class="qa-nm">加食物</text>
           </view>
@@ -180,9 +183,6 @@
           <view class="qa" data-url="/pkg-records/growth-records/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic growth">📈</view><text class="qa-nm">成长曲线</text>
           </view>
-          <view class="qa" data-url="/pkg-records/growth-diary/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
-            <view class="qa-ic mark">📔</view><text class="qa-nm">成长日记</text>
-          </view>
         </view>
         <view class="qrow">
           <view class="qa" bindtap="navigateToDayMarkRecord" hover-class="press-pop" hover-stay-time="60">
@@ -194,9 +194,6 @@
           <view class="qa" bindtap="openHeightModal" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic height">📏</view><text class="qa-nm">量身高</text>
           </view>
-          <view class="qa" bindtap="goToFutureReminders" hover-class="press-pop" hover-stay-time="60">
-            <view class="qa-ic remind">⏰</view><text class="qa-nm">微信提醒</text>
-          </view>
           <view class="qa" bindtap="goToReport" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic report">📊</view><text class="qa-nm">检测报告</text>
           </view>
@@ -205,6 +202,9 @@
           </view>
           <view class="qa" wx:if="{{isCreator}}" data-url="/pkg-misc/member-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic member">👪</view><text class="qa-nm">成员管理</text>
+          </view>
+          <view class="qa" bindtap="goToFutureReminders" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic remind">⏰</view><text class="qa-nm">微信提醒</text>
           </view>
         </view>
       </view>

@@ -7,7 +7,6 @@
     <view class="detail-card">
       <view class="detail-meta">
         <text class="detail-date">{{eventDateText}}</text>
-        <text class="detail-author" wx:if="{{authorName}}">{{authorName}}</text>
       </view>
 
       <view class="detail-title">{{entry.title}}</view>
@@ -24,6 +23,8 @@
           bindtap="previewPhotos"
         />
       </view>
+
+      <view class="detail-publish" wx:if="{{publishMetaText}}">{{publishMetaText}}</view>
     </view>
 
     <view class="share-hint">

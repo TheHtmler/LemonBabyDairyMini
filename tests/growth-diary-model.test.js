@@ -176,19 +176,22 @@ test('create writes createdByOpenid photos and active status', async () => {
       title: '会坐',
       eventDate: '2026-07-01',
       notes: '开心',
-      photos: [{ originalFileId: 'cloud://o1', thumbFileId: 'cloud://t1', width: 100, height: 80 }]
+      photos: [{ originalFileId: 'cloud://o1', thumbFileId: 'cloud://t1', width: 100, height: 80 }],
+      authorDisplayName: '妈妈'
     },
-    { openid: 'author-openid', userInfo: { nickName: '爸爸' } }
+    { openid: 'author-openid', authorDisplayName: '妈妈', userInfo: { nickName: '微信名' } }
   );
 
   assert.equal(result.success, true);
   assert.equal(writes.adds[0].collectionName, 'growth_diary');
   assert.equal(writes.adds[0].data.createdByOpenid, 'author-openid');
   assert.equal(writes.adds[0].data.status, 'active');
+  assert.equal(writes.adds[0].data.authorDisplayName, '妈妈');
   assert.deepEqual(writes.adds[0].data.photos, [
     { originalFileId: 'cloud://o1', thumbFileId: 'cloud://t1', width: 100, height: 80 }
   ]);
-  assert.deepEqual(writes.adds[0].data.userInfo, { nickName: '爸爸' });
+  assert.equal(writes.adds[0].data.userInfo.displayName, '妈妈');
+  assert.equal(writes.adds[0].data.userInfo.nickName, '微信名');
 });
 
 test('update returns success false when canEditDiaryEntry is false', async () => {

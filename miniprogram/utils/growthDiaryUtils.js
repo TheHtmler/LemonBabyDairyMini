@@ -1,4 +1,6 @@
 const MAX_DIARY_PHOTOS = 3;
+const MAX_AUTHOR_ROLE_LEN = 5;
+const DIARY_ROLE_PRESETS = ['妈妈', '爸爸', '奶奶', '爷爷', '外婆', '外公'];
 
 function normalizePhotos(photos = []) {
   if (!Array.isArray(photos)) return [];
@@ -12,6 +14,25 @@ function normalizePhotos(photos = []) {
     .filter((p) => p.originalFileId && p.thumbFileId);
 }
 
+function normalizeAuthorDisplayName(value = '') {
+  return String(value || '').trim().slice(0, MAX_AUTHOR_ROLE_LEN);
+}
+
+function validateAuthorDisplayName(value = '') {
+  const name = normalizeAuthorDisplayName(value);
+  if (!name) {
+    return { isValid: false, errors: ['请选择或填写家庭角色'], normalized: '' };
+  }
+  if ([...String(value || '').trim()].length > MAX_AUTHOR_ROLE_LEN) {
+    return { isValid: false, errors: [`角色最多 ${MAX_AUTHOR_ROLE_LEN} 个字`], normalized: name };
+  }
+  return { isValid: true, errors: [], normalized: name };
+}
+
+function hasAuthorDisplayName(value = '') {
+  return Boolean(normalizeAuthorDisplayName(value));
+}
+
 function validateDiaryPayload(payload = {}) {
   const errors = [];
   const title = String(payload.title || '').trim();
@@ -22,6 +43,9 @@ function validateDiaryPayload(payload = {}) {
   if ((payload.photos || []).length > MAX_DIARY_PHOTOS || photos.length > MAX_DIARY_PHOTOS) {
     errors.push(`最多上传 ${MAX_DIARY_PHOTOS} 张图片`);
   }
+  const authorDisplayName = normalizeAuthorDisplayName(
+    payload.authorDisplayName || payload.authorRole || ''
+  );
   return {
     isValid: errors.length === 0,
     errors,
@@ -29,7 +53,8 @@ function validateDiaryPayload(payload = {}) {
       title,
       notes: String(payload.notes || '').trim(),
       eventDate,
-      photos
+      photos,
+      authorDisplayName
     }
   };
 }
@@ -52,6 +77,7 @@ function mapMilestoneToDiary(milestone = {}) {
     notes: String(milestone.notes || '').trim(),
     photos: [],
     createdByOpenid: openid,
+    authorDisplayName: '',
     userInfo: milestone.userInfo || {},
     migratedFromId: milestone._id || '',
     legacy: !openid,
@@ -61,21 +87,49 @@ function mapMilestoneToDiary(milestone = {}) {
   };
 }
 
+function pad2(n) {
+  return `${n}`.padStart(2, '0');
+}
+
+function formatPublishDateTime(dateValue) {
+  if (!dateValue) return '';
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}年${pad2(date.getMonth() + 1)}月${pad2(date.getDate())}日 ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function formatDiaryPublishMeta(entry = {}) {
+  const role = normalizeAuthorDisplayName(
+    entry.authorDisplayName || entry.authorRole || entry.userInfo?.displayName || ''
+  ) || '家庭成员';
+  const when = formatPublishDateTime(entry.createdAt || entry.updatedAt || entry.eventDate);
+  if (!when) return `【${role}】发布`;
+  return `【${role}】发布于${when}`;
+}
+
 function formatDiaryForDisplay(entry = {}) {
   return {
     ...entry,
     canEdit: false,
     eventDateText: '',
     thumbUrls: [],
-    originalUrls: []
+    originalUrls: [],
+    publishMetaText: formatDiaryPublishMeta(entry)
   };
 }
 
 module.exports = {
   MAX_DIARY_PHOTOS,
+  MAX_AUTHOR_ROLE_LEN,
+  DIARY_ROLE_PRESETS,
   normalizePhotos,
+  normalizeAuthorDisplayName,
+  validateAuthorDisplayName,
+  hasAuthorDisplayName,
   validateDiaryPayload,
   canEditDiaryEntry,
   mapMilestoneToDiary,
+  formatPublishDateTime,
+  formatDiaryPublishMeta,
   formatDiaryForDisplay
 };

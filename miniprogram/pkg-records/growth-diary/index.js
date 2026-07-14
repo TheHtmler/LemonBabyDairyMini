@@ -9,8 +9,14 @@ const {
 } = require('../../utils/index');
 const {
   MAX_DIARY_PHOTOS,
+  MAX_AUTHOR_ROLE_LEN,
+  DIARY_ROLE_PRESETS,
   canEditDiaryEntry,
-  normalizePhotos
+  normalizePhotos,
+  hasAuthorDisplayName,
+  normalizeAuthorDisplayName,
+  validateAuthorDisplayName,
+  formatDiaryPublishMeta
 } = require('../../utils/growthDiaryUtils');
 const { prepareAndUploadDiaryPhoto } = require('../../utils/diaryImage');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
@@ -73,9 +79,16 @@ Page({
     showForm: false,
     editingId: '',
     maxPhotos: MAX_DIARY_PHOTOS,
+    maxRoleLen: MAX_AUTHOR_ROLE_LEN,
+    rolePresets: DIARY_ROLE_PRESETS,
     isCreator: false,
+    userRole: '',
     babyName: '柠檬宝宝',
+    authorDisplayName: '',
     shareEntryId: '',
+    showRoleModal: false,
+    roleDraft: '',
+    selectedRolePreset: '',
     form: createEmptyForm()
   },
 
@@ -93,8 +106,10 @@ Page({
       }
       this.setData({
         isCreator: userRole === 'creator',
+        userRole,
         babyName
       });
+      await this.refreshAuthorDisplayName();
       if (typeof wx.showShareMenu === 'function') {
         wx.showShareMenu({
           menus: ['shareAppMessage', 'shareTimeline']
@@ -111,11 +126,77 @@ Page({
 
   getActor(userInfo = {}) {
     const openid = userInfo.openid || getApp().globalData.openid || wx.getStorageSync('openid') || '';
+    const authorDisplayName = this.data.authorDisplayName || '';
     return {
       openid,
       isCreator: this.data.isCreator,
-      userInfo
+      authorDisplayName,
+      userInfo: {
+        ...userInfo,
+        displayName: authorDisplayName || userInfo.displayName || ''
+      }
     };
+  },
+
+  getRelationCollectionName(userRole = this.data.userRole) {
+    if (userRole === 'creator') return 'baby_creators';
+    if (userRole === 'participant') return 'baby_participants';
+    return '';
+  },
+
+  displayNameCacheKey(babyUid, userRole) {
+    return babyUid && userRole ? `personal_display_name_${babyUid}_${userRole}` : '';
+  },
+
+  async loadRelationRecord() {
+    const babyUid = getBabyUid();
+    const userRole = this.data.userRole
+      || getApp().globalData.userRole
+      || wx.getStorageSync('user_role')
+      || '';
+    const openid = getApp().globalData.openid || wx.getStorageSync('openid') || '';
+    const collectionName = this.getRelationCollectionName(userRole);
+    if (!babyUid || !openid || !collectionName) return null;
+
+    try {
+      const db = wx.cloud.database();
+      const res = await db.collection(collectionName).where({
+        _openid: openid,
+        babyUid
+      }).limit(1).get();
+      return (res.data && res.data[0]) || null;
+    } catch (error) {
+      console.warn('读取家庭角色失败:', error);
+      return null;
+    }
+  },
+
+  async refreshAuthorDisplayName() {
+    const babyUid = getBabyUid();
+    const userRole = this.data.userRole
+      || getApp().globalData.userRole
+      || wx.getStorageSync('user_role')
+      || '';
+    const cacheKey = this.displayNameCacheKey(babyUid, userRole);
+    const cached = cacheKey ? wx.getStorageSync(cacheKey) : '';
+    const relation = await this.loadRelationRecord();
+    const name = normalizeAuthorDisplayName(relation?.displayName || cached || '');
+    this.setData({
+      userRole,
+      authorDisplayName: name
+    });
+    return name;
+  },
+
+  async ensureAuthorRoleBeforeCreate() {
+    const name = await this.refreshAuthorDisplayName();
+    if (hasAuthorDisplayName(name)) return true;
+    this.setData({
+      showRoleModal: true,
+      roleDraft: '',
+      selectedRolePreset: ''
+    });
+    return false;
   },
 
   async loadEntries() {
@@ -153,7 +234,7 @@ Page({
           eventDateText: formatDateText(entry.eventDate),
           thumbUrls,
           originalFileIds: photos.map((photo) => photo.originalFileId).filter(Boolean),
-          authorName: entry.userInfo?.nickName || entry.userInfo?.displayName || ''
+          publishMetaText: formatDiaryPublishMeta(entry)
         };
       });
 
@@ -164,7 +245,9 @@ Page({
     }
   },
 
-  openCreateForm() {
+  async openCreateForm() {
+    const ready = await this.ensureAuthorRoleBeforeCreate();
+    if (!ready) return;
     this.setData({
       showForm: true,
       editingId: '',
@@ -205,6 +288,91 @@ Page({
       editingId: '',
       form: createEmptyForm()
     });
+  },
+
+  closeRoleModal() {
+    this.setData({
+      showRoleModal: false,
+      roleDraft: '',
+      selectedRolePreset: ''
+    });
+  },
+
+  onSelectRolePreset(e) {
+    const role = e.currentTarget.dataset.role || '';
+    this.setData({
+      selectedRolePreset: role,
+      roleDraft: role
+    });
+  },
+
+  onRoleDraftInput(e) {
+    const value = String(e.detail.value || '').slice(0, MAX_AUTHOR_ROLE_LEN);
+    const matched = DIARY_ROLE_PRESETS.includes(value) ? value : '';
+    this.setData({
+      roleDraft: value,
+      selectedRolePreset: matched
+    });
+  },
+
+  async confirmRoleModal() {
+    const validation = validateAuthorDisplayName(this.data.roleDraft);
+    if (!validation.isValid) {
+      wx.showToast({ title: validation.errors[0] || '请填写角色', icon: 'none' });
+      return;
+    }
+
+    const displayName = validation.normalized;
+    const babyUid = getBabyUid();
+    const userRole = this.data.userRole
+      || getApp().globalData.userRole
+      || wx.getStorageSync('user_role')
+      || '';
+    const openid = getApp().globalData.openid || wx.getStorageSync('openid') || '';
+    const collectionName = this.getRelationCollectionName(userRole);
+
+    if (!babyUid || !openid || !collectionName) {
+      wx.showToast({ title: '当前未绑定宝宝记录', icon: 'none' });
+      return;
+    }
+
+    try {
+      wx.showLoading({ title: '保存角色...', mask: true });
+      const db = wx.cloud.database();
+      const res = await db.collection(collectionName).where({
+        _openid: openid,
+        babyUid
+      }).limit(1).get();
+      const relation = res.data && res.data[0];
+      if (!relation) {
+        throw new Error('未找到身份记录');
+      }
+
+      await db.collection(collectionName).doc(relation._id).update({
+        data: {
+          displayName,
+          updatedAt: db.serverDate()
+        }
+      });
+
+      const cacheKey = this.displayNameCacheKey(babyUid, userRole);
+      if (cacheKey) wx.setStorageSync(cacheKey, displayName);
+
+      this.setData({
+        authorDisplayName: displayName,
+        showRoleModal: false,
+        roleDraft: '',
+        selectedRolePreset: '',
+        showForm: true,
+        editingId: '',
+        form: createEmptyForm()
+      });
+      wx.hideLoading();
+      wx.showToast({ title: '角色已设置', icon: 'success' });
+    } catch (error) {
+      wx.hideLoading();
+      handleError(error, { title: '保存角色失败' });
+    }
   },
 
   preventMove() {},
@@ -378,6 +546,14 @@ Page({
 
       const userInfo = await getUserInfo();
       const actor = this.getActor(userInfo);
+      if (!hasAuthorDisplayName(actor.authorDisplayName)) {
+        wx.hideLoading();
+        this.setData({ saving: false });
+        const ready = await this.ensureAuthorRoleBeforeCreate();
+        if (!ready) return;
+        return;
+      }
+
       const entryKey = editingId || `tmp_${Date.now()}`;
       const photos = await this.uploadFormPhotos(babyUid, entryKey);
       const eventDate = growthUtils.parseDateString(form.eventDate) || form.eventDate;
@@ -385,7 +561,8 @@ Page({
         title,
         notes: String(form.notes || '').trim(),
         eventDate,
-        photos
+        photos,
+        authorDisplayName: actor.authorDisplayName
       };
 
       const result = editingId
