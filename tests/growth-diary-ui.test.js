@@ -53,8 +53,10 @@ test('growth diary requires role modal and publish meta wiring', () => {
   assert.match(diaryJs, /confirmRoleModal/);
   assert.match(diaryJs, /authorDisplayName/);
   assert.match(diaryJs, /formatDiaryPublishMeta/);
+  assert.match(diaryJs, /formatDiaryEventAgeText/);
   assert.match(diaryJs, /onShow[\s\S]*ensureAuthorRole/);
   assert.match(diaryWxml, /showRoleModal/);
   assert.match(diaryWxml, /publishMetaText/);
+  assert.match(diaryWxml, /eventAgeText/);
   assert.match(diaryWxml, /maxRoleLen/);
 });

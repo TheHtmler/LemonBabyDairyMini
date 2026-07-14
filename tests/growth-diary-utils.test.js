@@ -9,7 +9,11 @@ const {
   mapMilestoneToDiary,
   validateAuthorDisplayName,
   formatDiaryPublishMeta,
-  hasAuthorDisplayName
+  hasAuthorDisplayName,
+  sortDiaryEntriesByEventDateDesc,
+  toComparableDateMs,
+  normalizeEventDateKey,
+  formatDiaryEventAgeText
 } = require('../miniprogram/utils/growthDiaryUtils');
 
 test('MAX_DIARY_PHOTOS is 3', () => {
@@ -67,6 +71,7 @@ test('mapMilestoneToDiary fills photos empty and migratedFromId', () => {
   assert.equal(out.status, 'active');
   assert.equal(out.title, '满月');
   assert.equal(out.authorDisplayName, '');
+  assert.equal(out.eventDate, '2026-01-01');
 });
 
 test('mapMilestoneToDiary marks legacy when no openid', () => {
@@ -107,4 +112,55 @@ test('formatDiaryPublishMeta falls back to openid display map', () => {
     { displayNameByOpenid: { o1: '爸爸' } }
   );
   assert.match(text, /^【爸爸】发布于/);
+});
+
+test('sortDiaryEntriesByEventDateDesc sorts by eventDate new to old', () => {
+  const sorted = sortDiaryEntriesByEventDateDesc([
+    { _id: 'a', eventDate: '2025-10-04', title: '扶坐' },
+    { _id: 'b', eventDate: '2026-01-03', title: '第一次自己坐' },
+    { _id: 'c', eventDate: '2025-12-01', title: '中间' }
+  ]);
+  assert.deepEqual(sorted.map((item) => item._id), ['b', 'c', 'a']);
+});
+
+test('sortDiaryEntriesByEventDateDesc same day orders by createdAt', () => {
+  const sorted = sortDiaryEntriesByEventDateDesc([
+    {
+      _id: 'earlier',
+      eventDate: '2026-07-14',
+      createdAt: '2026-07-14T08:00:00.000Z',
+      title: '早发'
+    },
+    {
+      _id: 'later',
+      eventDate: '2026-07-14',
+      createdAt: '2026-07-14T12:00:00.000Z',
+      title: '晚发'
+    },
+    {
+      _id: 'other-day',
+      eventDate: '2026-07-13',
+      createdAt: '2026-07-15T12:00:00.000Z',
+      title: '昨天'
+    }
+  ]);
+  assert.deepEqual(sorted.map((item) => item._id), ['later', 'earlier', 'other-day']);
+});
+
+test('normalizeEventDateKey keeps calendar day only', () => {
+  assert.equal(normalizeEventDateKey('2026-07-14'), '2026-07-14');
+  assert.equal(normalizeEventDateKey('2026-07-14T08:05:00.000Z'), '2026-07-14');
+});
+
+test('formatDiaryEventAgeText shows age at event day', () => {
+  assert.equal(formatDiaryEventAgeText('2026-06-11', '2026-05-21'), '21天（约3周）');
+  assert.equal(formatDiaryEventAgeText('2026-06-11', ''), '');
+  assert.equal(formatDiaryEventAgeText('', '2026-05-21'), '');
+});
+
+test('toComparableDateMs reads $date objects', () => {
+  assert.equal(
+    toComparableDateMs({ $date: '2026-01-02T16:00:00Z' }),
+    new Date('2026-01-02T16:00:00Z').getTime()
+  );
 });

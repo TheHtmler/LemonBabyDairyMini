@@ -31,7 +31,10 @@
         <view class="timeline-dot"></view>
         <view class="timeline-card">
           <view class="timeline-meta">
-            <text class="timeline-date">{{item.eventDateText}}</text>
+            <view class="timeline-date-row">
+              <text class="timeline-date">{{item.eventDateText}}</text>
+              <text class="timeline-age" wx:if="{{item.eventAgeText}}"> · {{item.eventAgeText}}</text>
+            </view>
           </view>
           <view class="timeline-title">{{item.title}}</view>
           <view class="timeline-notes" wx:if="{{item.notes}}">{{item.notes}}</view>

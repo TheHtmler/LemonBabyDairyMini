@@ -166,6 +166,19 @@ test('listByBaby filters active entries and orders by eventDate desc', async () 
   assert.deepEqual(writes.queries[0].orderBy, { field: 'eventDate', direction: 'desc' });
 });
 
+test('listByBaby client-sorts when cloud date objects do not orderBy correctly', async () => {
+  const { db } = createDbMock({
+    growthDiaryData: [
+      { _id: 'old', babyUid: 'baby-1', status: 'active', eventDate: '2025-10-04', title: '扶坐' },
+      { _id: 'new', babyUid: 'baby-1', status: 'active', eventDate: '2026-01-03', title: '坐' },
+      { _id: 'mid', babyUid: 'baby-1', status: 'active', eventDate: '2025-12-01', title: '中间' }
+    ]
+  });
+  const model = loadFreshModel(db);
+  const list = await model.listByBaby('baby-1');
+  assert.deepEqual(list.map((item) => item._id), ['new', 'mid', 'old']);
+});
+
 test('create writes createdByOpenid photos and active status', async () => {
   const { db, writes } = createDbMock();
   const model = loadFreshModel(db);

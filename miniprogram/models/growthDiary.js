@@ -1,7 +1,8 @@
 const {
   validateDiaryPayload,
   canEditDiaryEntry,
-  normalizePhotos
+  normalizePhotos,
+  sortDiaryEntriesByEventDateDesc
 } = require('../utils/growthDiaryUtils');
 const { deleteCloudFiles: defaultDeleteCloudFiles } = require('../utils/diaryImage');
 
@@ -53,7 +54,7 @@ class GrowthDiaryModel {
         hasMore = rows.length === batchSize;
         skip += batchSize;
       }
-      return all;
+      return sortDiaryEntriesByEventDateDesc(all);
     } catch (error) {
       console.error('查询成长日记失败:', error);
       return [];

@@ -29,15 +29,20 @@
 
 .detail-meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
   margin-bottom: 12rpx;
 }
 
 .detail-date {
   font-size: 24rpx;
   color: #9b7a00;
+}
+
+.detail-age {
+  font-size: 24rpx;
+  color: #c49a00;
 }
 
 .detail-author {

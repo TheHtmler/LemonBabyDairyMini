@@ -8,21 +8,14 @@ const {
 const {
   MAX_DIARY_PHOTOS,
   normalizePhotos,
-  formatDiaryPublishMeta
+  formatDiaryPublishMeta,
+  normalizeEventDateKey,
+  formatDiaryEventAgeText
 } = require('../../utils/growthDiaryUtils');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
 function formatDateText(dateValue) {
-  if (!dateValue) return '';
-  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
-    return dateValue.slice(0, 10);
-  }
-  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return normalizeEventDateKey(dateValue);
 }
 
 Page({
@@ -34,6 +27,7 @@ Page({
     babyName: '柠檬宝宝',
     entry: null,
     eventDateText: '',
+    eventAgeText: '',
     thumbUrls: [],
     originalUrls: [],
     publishMetaText: ''
@@ -108,9 +102,11 @@ Page({
       .filter(Boolean);
 
     let babyName = '柠檬宝宝';
+    let birthday = '';
     try {
       const babyInfo = await getBabyInfo();
       babyName = (babyInfo && (babyInfo.name || babyInfo.babyName)) || babyName;
+      birthday = (babyInfo && babyInfo.birthday) || '';
     } catch (error) {
       // keep fallback name
     }
@@ -139,6 +135,7 @@ Page({
       babyName,
       entry,
       eventDateText: formatDateText(entry.eventDate),
+      eventAgeText: formatDiaryEventAgeText(entry.eventDate, birthday),
       thumbUrls,
       originalUrls,
       publishMetaText: formatDiaryPublishMeta(entry, { displayNameByOpenid })

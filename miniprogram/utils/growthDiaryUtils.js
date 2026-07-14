@@ -1,3 +1,5 @@
+const { formatBabyAgeText } = require('./babyAgeDisplay');
+
 const MAX_DIARY_PHOTOS = 3;
 const MAX_AUTHOR_ROLE_LEN = 5;
 const DIARY_ROLE_PRESETS = ['妈妈', '爸爸', '奶奶', '爷爷', '外婆', '外公'];
@@ -37,7 +39,7 @@ function validateDiaryPayload(payload = {}) {
   const errors = [];
   const title = String(payload.title || '').trim();
   if (!title) errors.push('请输入里程碑标题');
-  const eventDate = payload.eventDate;
+  const eventDate = normalizeEventDateKey(payload.eventDate);
   if (!eventDate) errors.push('请选择发生日期');
   const photos = normalizePhotos(payload.photos);
   if ((payload.photos || []).length > MAX_DIARY_PHOTOS || photos.length > MAX_DIARY_PHOTOS) {
@@ -72,7 +74,7 @@ function mapMilestoneToDiary(milestone = {}) {
   const openid = String(milestone.userInfo?.openid || milestone._openid || '').trim();
   return {
     babyUid: milestone.babyUid,
-    eventDate: milestone.eventDate,
+    eventDate: normalizeEventDateKey(milestone.eventDate),
     title: String(milestone.title || '').trim(),
     notes: String(milestone.notes || '').trim(),
     photos: [],
@@ -91,9 +93,9 @@ function pad2(n) {
   return `${n}`.padStart(2, '0');
 }
 
-function formatPublishDateTime(dateValue) {
-  if (!dateValue) return '';
-  // 云开发可能返回 { seconds } / Date / 字符串
+/** 统一解析云库 Date / 字符串 / {$date} / {seconds}，供排序与展示 */
+function toDateValue(dateValue) {
+  if (!dateValue && dateValue !== 0) return null;
   let raw = dateValue;
   if (raw && typeof raw === 'object') {
     if (typeof raw.toDate === 'function') {
@@ -103,13 +105,58 @@ function formatPublishDateTime(dateValue) {
     } else if (typeof raw.seconds === 'number') {
       raw = new Date(raw.seconds * 1000);
     } else if (typeof raw.getTime === 'function') {
-      // Date-like
+      // Date-like，直接用
     } else {
-      return '';
+      return null;
     }
   }
+  if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
+    const parts = raw.trim().split('-').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
   const date = raw instanceof Date ? raw : new Date(raw);
-  if (Number.isNaN(date.getTime())) return '';
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+/**
+ * 发生日期统一为本地日历日 YYYY-MM-DD（不精确到时分）。
+ * 写入、展示、同日分组都用这个 key。
+ */
+function normalizeEventDateKey(dateValue) {
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateValue.trim())) {
+    return dateValue.trim().slice(0, 10);
+  }
+  const date = toDateValue(dateValue);
+  if (!date) return '';
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function toComparableDateMs(dateValue) {
+  const date = toDateValue(dateValue);
+  return date ? date.getTime() : 0;
+}
+
+/**
+ * 时光轴最优序：
+ * 1) 按发生日期（天）倒序
+ * 2) 同一天按发布时间 createdAt 倒序
+ */
+function sortDiaryEntriesByEventDateDesc(entries = []) {
+  return [...entries].sort((left, right) => {
+    const leftDay = normalizeEventDateKey(left.eventDate);
+    const rightDay = normalizeEventDateKey(right.eventDate);
+    if (leftDay !== rightDay) {
+      // YYYY-MM-DD 字典序倒序 = 日期新→旧
+      return rightDay > leftDay ? 1 : -1;
+    }
+    return toComparableDateMs(right.createdAt) - toComparableDateMs(left.createdAt);
+  });
+}
+
+function formatPublishDateTime(dateValue) {
+  const date = toDateValue(dateValue);
+  if (!date) return '';
   return `${date.getFullYear()}年${pad2(date.getMonth() + 1)}月${pad2(date.getDate())}日 ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
@@ -131,11 +178,19 @@ function formatDiaryPublishMeta(entry = {}, options = {}) {
   return `【${role}】发布于${when}`;
 }
 
+/** 发生日对应的宝宝年龄文案；无生日或日期无效时返回空串 */
+function formatDiaryEventAgeText(eventDate, birthday) {
+  const day = normalizeEventDateKey(eventDate);
+  if (!day || !birthday) return '';
+  return formatBabyAgeText(birthday, day);
+}
+
 function formatDiaryForDisplay(entry = {}) {
   return {
     ...entry,
     canEdit: false,
     eventDateText: '',
+    eventAgeText: '',
     thumbUrls: [],
     originalUrls: [],
     publishMetaText: formatDiaryPublishMeta(entry)
@@ -153,7 +208,12 @@ module.exports = {
   validateDiaryPayload,
   canEditDiaryEntry,
   mapMilestoneToDiary,
+  toDateValue,
+  normalizeEventDateKey,
+  toComparableDateMs,
+  sortDiaryEntriesByEventDateDesc,
   formatPublishDateTime,
   formatDiaryPublishMeta,
+  formatDiaryEventAgeText,
   formatDiaryForDisplay
 };
