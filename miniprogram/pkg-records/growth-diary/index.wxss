@@ -317,6 +317,7 @@
 
 .timeline-actions {
   display: flex;
+  align-items: center;
   gap: 24rpx;
   margin-top: 16rpx;
   padding-top: 12rpx;
@@ -338,11 +339,30 @@
   border: none;
 }
 
+/* 微信 button 默认很高很宽，压成和「编辑」一样的文字链 */
 .share-btn {
-  padding: 0;
-  font-size: 24rpx;
-  color: #c49a00;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 24rpx !important;
+  font-weight: 400;
+  line-height: 1.4 !important;
+  color: #c49a00 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+  box-sizing: content-box;
+  vertical-align: middle;
+}
+
+.share-btn::after {
+  border: none;
 }
 
 .link-btn.danger {
