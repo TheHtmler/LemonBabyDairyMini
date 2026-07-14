@@ -890,6 +890,7 @@ page {
 .qa-ic.foods { background: #E7F7EF; }
 .qa-ic.medcfg { background: #E8F1FE; }
 .qa-ic.growth { background: #E8F8EE; }
+.qa-ic.diary { background: #FFF3CC; }
 .qa-ic.emergency { background: #FFE9ED; }
 .qa-ic.member { background: #E3F6F5; }
 .qa-nm {
