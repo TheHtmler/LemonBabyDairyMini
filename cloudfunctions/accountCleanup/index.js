@@ -14,6 +14,7 @@ const BABY_SCOPED_COLLECTIONS = [
   'growth_records',
   'growth_records_v2',
   'growth_milestones',
+  'growth_diary',
   'medications',
   'nutrition_settings',
   'milk_nutrition_profiles',

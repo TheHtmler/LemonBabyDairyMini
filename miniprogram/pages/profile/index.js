@@ -88,11 +88,18 @@ const MENU_GROUPS = [
         description: '查看周、月维度的数据趋势'
       },
       {
+        id: 21,
+        name: '成长日记',
+        icon: 'growth',
+        path: '/pkg-records/growth-diary/index',
+        description: '里程碑时光轴与配图'
+      },
+      {
         id: 10,
-        name: '成长记录',
+        name: '成长曲线',
         icon: 'growth',
         path: '/pkg-records/growth-records/index',
-        description: '身高体重曲线与成长里程碑'
+        description: '身高体重曲线与测量'
       }
     ]
   },

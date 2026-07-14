@@ -1,0 +1,187 @@
+<view class="diary-container">
+  <block wx:if="{{accessDenied}}">
+    <view class="empty-state access-denied">
+      <text class="empty-emoji">🍋</text>
+      <text class="empty-text">{{accessDeniedTitle || '无权限访问'}}</text>
+      <text class="empty-tip">{{accessDeniedSubtitle || '你还不是该家庭成员，无法查看成长日记。'}}</text>
+    </view>
+  </block>
+
+  <block wx:else>
+  <view class="page-header">
+    <text class="page-title">成长日记</text>
+    <text class="page-subtitle">记录柠檬宝宝的每一个小里程碑</text>
+  </view>
+
+  <view class="action-row">
+    <button class="action-btn primary" bindtap="openCreateForm">写一篇日记</button>
+  </view>
+
+  <view class="timeline-section">
+    <view class="section-title">时光轴</view>
+
+    <view class="timeline-list" wx:if="{{entries.length > 0}}">
+      <view
+        class="timeline-item"
+        wx:for="{{entries}}"
+        wx:key="_id"
+        data-id="{{item._id}}"
+        bindtap="onTapEntry"
+      >
+        <view class="timeline-dot"></view>
+        <view class="timeline-card">
+          <view class="timeline-meta">
+            <text class="timeline-date">{{item.eventDateText}}</text>
+          </view>
+          <view class="timeline-title">{{item.title}}</view>
+          <view class="timeline-notes" wx:if="{{item.notes}}">{{item.notes}}</view>
+
+          <view class="timeline-thumbs" wx:if="{{item.thumbUrls.length}}">
+            <image
+              class="timeline-thumb"
+              wx:for="{{item.thumbUrls}}"
+              wx:for-item="thumb"
+              wx:for-index="tIndex"
+              wx:key="tIndex"
+              src="{{thumb}}"
+              mode="aspectFill"
+              data-id="{{item._id}}"
+              data-urls="{{item.thumbUrls}}"
+              data-current="{{thumb}}"
+              catchtap="previewThumbs"
+            />
+          </view>
+
+          <view class="timeline-publish" wx:if="{{item.publishMetaText}}">{{item.publishMetaText}}</view>
+
+          <view class="timeline-actions">
+            <button
+              class="link-btn share-btn"
+              open-type="share"
+              data-id="{{item._id}}"
+              catchtap="prepareShare"
+            >分享</button>
+            <block wx:if="{{item.canEdit}}">
+              <view class="link-btn" data-id="{{item._id}}" catchtap="openEditForm">编辑</view>
+              <view class="link-btn danger" data-id="{{item._id}}" catchtap="confirmDelete">删除</view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:else>
+      <text class="empty-emoji">🍋</text>
+      <text class="empty-text">还没有成长日记</text>
+      <text class="empty-tip">点上方按钮写下第一篇吧</text>
+    </view>
+  </view>
+  </block>
+</view>
+
+<!-- 新增 / 编辑弹窗 -->
+<view class="modal" wx:if="{{showForm}}" catchtouchmove="preventMove">
+  <view class="modal-mask" catchtap="closeForm"></view>
+  <view class="modal-content" catchtap="preventMove">
+    <view class="modal-header">
+      <text class="modal-title">{{editingId ? '编辑成长日记' : '新增成长日记'}}</text>
+      <text class="modal-close" catchtap="closeForm">关闭</text>
+    </view>
+
+    <scroll-view class="modal-body" scroll-y="{{true}}">
+      <view class="form-item">
+        <text class="form-label">标题</text>
+        <input
+          class="form-input"
+          type="text"
+          value="{{form.title}}"
+          placeholder="如：第一次会坐"
+          data-field="title"
+          bindinput="onFormInput"
+          maxlength="40"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">发生日期</text>
+        <picker mode="date" value="{{form.eventDate}}" bindchange="onFormDateChange">
+          <view class="picker-value">{{form.eventDate || '请选择日期'}}</view>
+        </picker>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">备注</text>
+        <textarea
+          class="form-textarea"
+          value="{{form.notes}}"
+          placeholder="可选，记下当时的小心情"
+          data-field="notes"
+          bindinput="onFormInput"
+          maxlength="500"
+          auto-height="{{true}}"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">配图（最多 {{maxPhotos}} 张）</text>
+        <view class="photo-grid">
+          <view class="photo-item" wx:for="{{form.photos}}" wx:key="key">
+            <image class="photo-thumb" src="{{item.previewUrl}}" mode="aspectFill" />
+            <view class="photo-remove" data-index="{{index}}" catchtap="removeFormPhoto">×</view>
+          </view>
+          <view
+            class="photo-add"
+            wx:if="{{form.photos.length < maxPhotos}}"
+            bindtap="pickPhotos"
+          >
+            <text class="photo-add-icon">＋</text>
+            <text class="photo-add-text">添加</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="form-actions">
+      <button class="action-btn ghost" bindtap="closeForm" disabled="{{saving}}">取消</button>
+      <button class="action-btn primary" bindtap="saveDiary" loading="{{saving}}" disabled="{{saving}}">
+        保存
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- 家庭角色拦截弹窗 -->
+<view class="modal role-modal" wx:if="{{showRoleModal}}" catchtouchmove="preventMove">
+  <view class="modal-mask" catchtap="closeRoleModal"></view>
+  <view class="modal-content role-modal-content" catchtap="preventMove">
+    <view class="modal-header">
+      <text class="modal-title">先设置家庭角色</text>
+      <text class="modal-close" catchtap="closeRoleModal">返回</text>
+    </view>
+    <view class="role-tip">进入成长日记前，请先选择或自定义你的家庭角色（最多 {{maxRoleLen}} 个字），方便成员认出是谁发布的。</view>
+    <view class="role-presets">
+      <view
+        class="role-chip {{selectedRolePreset === item ? 'active' : ''}}"
+        wx:for="{{rolePresets}}"
+        wx:key="*this"
+        data-role="{{item}}"
+        bindtap="onSelectRolePreset"
+      >{{item}}</view>
+    </view>
+    <view class="form-item">
+      <text class="form-label">自定义角色</text>
+      <input
+        class="form-input"
+        type="text"
+        value="{{roleDraft}}"
+        placeholder="例如：姨妈"
+        maxlength="{{maxRoleLen}}"
+        bindinput="onRoleDraftInput"
+      />
+    </view>
+    <view class="form-actions">
+      <button class="action-btn ghost" bindtap="closeRoleModal">返回</button>
+      <button class="action-btn primary" bindtap="confirmRoleModal">确认</button>
+    </view>
+  </view>
+</view>
