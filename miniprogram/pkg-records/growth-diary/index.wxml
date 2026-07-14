@@ -97,6 +97,7 @@
               wx:key="tIndex"
               src="{{thumb}}"
               mode="aspectFill"
+              data-id="{{item._id}}"
               data-urls="{{item.thumbUrls}}"
               data-current="{{thumb}}"
               catchtap="previewThumbs"

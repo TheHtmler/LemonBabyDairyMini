@@ -24,6 +24,8 @@ function createDbMock(overrides = {}) {
     const chain = {
       _where: whereInput,
       _orderBy: null,
+      _skip: 0,
+      _limit: null,
       where(nextWhere) {
         this._where = { ...this._where, ...nextWhere };
         return this;
@@ -32,8 +34,22 @@ function createDbMock(overrides = {}) {
         this._orderBy = { field, direction };
         return this;
       },
+      skip(count) {
+        this._skip = Number(count) || 0;
+        return this;
+      },
+      limit(count) {
+        this._limit = Number(count);
+        return this;
+      },
       async get() {
-        writes.queries.push({ collectionName, where: { ...this._where }, orderBy: this._orderBy });
+        writes.queries.push({
+          collectionName,
+          where: { ...this._where },
+          orderBy: this._orderBy,
+          skip: this._skip,
+          limit: this._limit
+        });
         let data = (dataByCollection[collectionName] || []).filter((item) =>
           Object.entries(this._where || {}).every(([key, expected]) => item[key] === expected)
         );
@@ -45,6 +61,8 @@ function createDbMock(overrides = {}) {
             return direction === 'desc' ? -result : result;
           });
         }
+        if (this._skip) data = data.slice(this._skip);
+        if (this._limit != null) data = data.slice(0, this._limit);
         return { data };
       }
     };
@@ -119,6 +137,8 @@ test('growthDiary model uses growth_diary collection and active filter', () => {
   assert.match(source, /collection\('growth_diary'\)/);
   assert.match(source, /status:\s*'active'/);
   assert.match(source, /orderBy\('eventDate',\s*'desc'\)/);
+  assert.match(source, /\.skip\(/);
+  assert.match(source, /\.limit\(/);
   assert.match(source, /validateDiaryPayload/);
   assert.match(source, /canEditDiaryEntry/);
   assert.match(source, /normalizePhotos/);

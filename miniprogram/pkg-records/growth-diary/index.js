@@ -134,6 +134,7 @@ Page({
           canEdit: canEditDiaryEntry(entry, actor),
           eventDateText: formatDateText(entry.eventDate),
           thumbUrls,
+          originalFileIds: photos.map((photo) => photo.originalFileId).filter(Boolean),
           authorName: entry.userInfo?.nickName || entry.userInfo?.displayName || ''
         };
       });
@@ -409,11 +410,33 @@ Page({
   },
 
   previewThumbs(e) {
-    const { urls, current } = e.currentTarget.dataset;
-    if (!urls || !urls.length) return;
-    wx.previewImage({
-      current: current || urls[0],
-      urls
-    });
+    const entryId = e.currentTarget.dataset.id;
+    const thumbCurrent = e.currentTarget.dataset.current;
+    const entry = (this.data.entries || []).find((item) => item._id === entryId);
+    const thumbUrls = entry?.thumbUrls || e.currentTarget.dataset.urls || [];
+    if (!thumbUrls.length) return;
+
+    const openPreview = (urls) => {
+      const currentIndex = Math.max(0, (entry?.thumbUrls || []).indexOf(thumbCurrent));
+      wx.previewImage({
+        current: urls[currentIndex] || urls[0],
+        urls
+      });
+    };
+
+    const originalIds = entry?.originalFileIds || [];
+    if (!originalIds.length) {
+      openPreview(thumbUrls);
+      return;
+    }
+
+    resolveCloudTempUrls(originalIds)
+      .then((urlMap) => {
+        const urls = originalIds
+          .map((id) => urlMap.get(id) || '')
+          .filter(Boolean);
+        openPreview(urls.length ? urls : thumbUrls);
+      })
+      .catch(() => openPreview(thumbUrls));
   }
 });

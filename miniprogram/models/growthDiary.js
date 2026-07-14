@@ -34,14 +34,26 @@ class GrowthDiaryModel {
     if (!babyUid) return [];
 
     try {
-      const res = await this.collection
-        .where({
-          babyUid,
-          status: 'active'
-        })
-        .orderBy('eventDate', 'desc')
-        .get();
-      return res?.data || [];
+      const batchSize = 20;
+      let skip = 0;
+      let hasMore = true;
+      let all = [];
+      while (hasMore) {
+        const batch = await this.collection
+          .where({
+            babyUid,
+            status: 'active'
+          })
+          .orderBy('eventDate', 'desc')
+          .skip(skip)
+          .limit(batchSize)
+          .get();
+        const rows = batch?.data || [];
+        all = all.concat(rows);
+        hasMore = rows.length === batchSize;
+        skip += batchSize;
+      }
+      return all;
     } catch (error) {
       console.error('查询成长日记失败:', error);
       return [];
