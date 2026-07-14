@@ -4,8 +4,7 @@ const {
   getBabyUid,
   getBabyInfo,
   getUserInfo,
-  handleError,
-  growthUtils
+  handleError
 } = require('../../utils/index');
 const {
   MAX_DIARY_PHOTOS,
@@ -16,7 +15,9 @@ const {
   hasAuthorDisplayName,
   normalizeAuthorDisplayName,
   validateAuthorDisplayName,
-  formatDiaryPublishMeta
+  formatDiaryPublishMeta,
+  normalizeEventDateKey,
+  formatDiaryEventAgeText
 } = require('../../utils/growthDiaryUtils');
 const { prepareAndUploadDiaryPhoto } = require('../../utils/diaryImage');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
@@ -27,16 +28,7 @@ function getTodayDateKey() {
 }
 
 function formatDateText(dateValue) {
-  if (!dateValue) return '';
-  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
-    return dateValue.slice(0, 10);
-  }
-  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return normalizeEventDateKey(dateValue);
 }
 
 function createEmptyForm(overrides = {}) {
@@ -304,10 +296,12 @@ Page({
       await this.refreshAuthorDisplayName();
       const userInfo = await getUserInfo();
       const actor = this.getActor(userInfo);
-      const [list, displayNameByOpenid] = await Promise.all([
+      const [list, displayNameByOpenid, babyInfo] = await Promise.all([
         GrowthDiaryModel.listByBaby(babyUid),
-        this.loadFamilyDisplayNameMap(babyUid)
+        this.loadFamilyDisplayNameMap(babyUid),
+        getBabyInfo().catch(() => null)
       ]);
+      const birthday = babyInfo?.birthday || '';
 
       // 当前用户有角色时补进映射，覆盖未落库署名的旧日记
       if (actor.openid && actor.authorDisplayName) {
@@ -334,6 +328,7 @@ Page({
           ...entry,
           canEdit: canEditDiaryEntry(entry, actor),
           eventDateText: formatDateText(entry.eventDate),
+          eventAgeText: formatDiaryEventAgeText(entry.eventDate, birthday),
           thumbUrls,
           originalFileIds: photos.map((photo) => photo.originalFileId).filter(Boolean),
           publishMetaText: formatDiaryPublishMeta(entry, { displayNameByOpenid })
@@ -678,11 +673,10 @@ Page({
 
       const entryKey = editingId || `tmp_${Date.now()}`;
       const photos = await this.uploadFormPhotos(babyUid, entryKey);
-      const eventDate = growthUtils.parseDateString(form.eventDate) || form.eventDate;
       const payload = {
         title,
         notes: String(form.notes || '').trim(),
-        eventDate,
+        eventDate: form.eventDate,
         photos,
         authorDisplayName: actor.authorDisplayName
       };

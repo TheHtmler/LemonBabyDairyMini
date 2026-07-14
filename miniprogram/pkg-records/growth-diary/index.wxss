@@ -278,9 +278,22 @@
   margin-bottom: 8rpx;
 }
 
+.timeline-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+}
+
 .timeline-date {
   font-size: 22rpx;
   color: #9b7a00;
+}
+
+.timeline-age {
+  font-size: 22rpx;
+  color: #c49a00;
 }
 
 .timeline-author {
