@@ -16,6 +16,8 @@
 2. 选择环境，进入集合 `growth_milestones`。
 3. 使用「导出」功能，将全量记录导出为 JSON 文件（例如 `growth_milestones.export.json`）。
 
+> 注意：云开发导出常为 **NDJSON**（每行一条 JSON），不是 `[...]` 数组。迁移脚本已同时支持 NDJSON 与 JSON 数组。
+
 ### 2. 本地运行转换脚本
 
 在项目根目录执行：
@@ -24,8 +26,15 @@
 node scripts/migrate-growth-milestones-to-diary.js <导出的 milestones.json> [输出路径]
 ```
 
+示例：
+
+```bash
+node scripts/migrate-growth-milestones-to-diary.js ./growth_milestones.export.json ./growth_diary.import.json
+```
+
 - 第一个参数：控制台导出的 JSON 路径（必填）。
 - 第二个参数：输出文件路径（可选，默认写入当前目录下的 `growth_diary.import.json`）。
+- 输出为 **JSON Lines**（每行一条 JSON），与云开发控制台「导入」格式一致；不要用带缩进的 `[...]` 数组。
 
 脚本会逐条调用 `mapMilestoneToDiary`，完成字段映射，主要包括：
 
@@ -60,7 +69,7 @@ node scripts/migrate-growth-milestones-to-diary.js <导出的 milestones.json> [
 ```bash
 node -e 'require("fs").writeFileSync("/tmp/ms.json", JSON.stringify([{_id:"1",babyUid:"b",title:"t",eventDate:"2026-01-01",userInfo:{openid:"o"}}]))'
 node scripts/migrate-growth-milestones-to-diary.js /tmp/ms.json /tmp/diary.json
-node -e 'const d=require("/tmp/diary.json"); if(d[0].migratedFromId!=="1") process.exit(1)'
+node -e 'const d=JSON.parse(require("fs").readFileSync("/tmp/diary.json","utf8").trim().split(/\n/)[0]); if(d.migratedFromId!=="1") process.exit(1)'
 ```
 
-预期：三条命令均退出码为 0，且 `/tmp/diary.json` 首条记录的 `migratedFromId` 为 `"1"`。
+预期：三条命令均退出码为 0，且 `/tmp/diary.json` 首行记录的 `migratedFromId` 为 `"1"`。
