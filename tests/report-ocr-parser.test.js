@@ -413,6 +413,31 @@ test('parseStructuredReportItems maps BE(B) and parenthesised negative ref range
   assert.equal(result.be.maxRange, '3');
 });
 
+test('parseStructuredReportItems maps BEecf name variants to beecf', () => {
+  const names = [
+    '细胞外剩余碱',
+    '细胞外液剩余碱',
+    '标准剩余碱',
+    'BEecf',
+    'BE(ecf)',
+    'BE(ECF)',
+    '细胞外(标准)剩余碱'
+  ];
+
+  names.forEach((name) => {
+    const result = parseStructuredReportItems({
+      reportType: 'blood_gas',
+      structuredItems: [
+        { name, value: '-5.80', ref_range: '(-3)-3' },
+        { name: 'BE(B)', value: '-3.90', ref_range: '(-3)-3' }
+      ]
+    });
+
+    assert.equal(result.beecf?.value, '-5.80', `expected ${name} -> beecf`);
+    assert.equal(result.be?.value, '-3.90', `expected BE(B) to stay on be when parsing ${name}`);
+  });
+});
+
 test('parseStructuredReportItems maps Xinhua-style blood gas panel items', () => {
   const result = parseStructuredReportItems({
     reportType: 'blood_gas',

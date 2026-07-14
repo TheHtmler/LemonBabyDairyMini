@@ -837,8 +837,8 @@ function splitIndicatorGroups(reportType, indicatorConfigs = []) {
       {
         key: 'acid-base',
         title: '酸碱相关指标',
-        hint: '优先看 pH、HCO3-、BE(B) 的变化。',
-        configs: indicatorConfigs.filter((item) => ['ph', 'hco3', 'be', 'beecf'].includes(item.key))
+        hint: '优先看 pH、HCO3-、细胞外(标准)剩余碱与(实际)剩余碱的变化。',
+        configs: indicatorConfigs.filter((item) => ['ph', 'hco3', 'beecf', 'be'].includes(item.key))
       },
       {
         key: 'gas-pressure',

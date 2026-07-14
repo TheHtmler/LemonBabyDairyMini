@@ -62,13 +62,20 @@ const EXTRA_ALIASES = {
   potassium: ['k+', 'k', '钾'],
   chloride: ['cl-', 'cl', '氯'],
   calcium: ['ca++', 'ca', '离子钙', '钙'],
-  beecf: ['beecf', 'be(ecf)', 'be-ecf'],
+  beecf: [
+    'beecf', 'be(ecf)', 'be (ecf)', 'be-ecf', 'be_ecf', 'be ecf',
+    '细胞外(标准)剩余碱', '细胞外标准剩余碱', '细胞外液剩余碱', '细胞外剩余碱',
+    '标准剩余碱', '标准碱剩余', '细胞外液碱剩余', '细胞外碱剩余'
+  ],
   cthb: ['cthb', 'thb', '总血红蛋白'],
   ph: ['ph值', 'ph', '酸碱度'],
   pco2: ['pco2', 'p co2', 'p-co2', '二氧化碳分压', 'co2分压', 'partial pressure of co2'],
   po2: ['po2', 'p o2', 'p-o2', '氧分压', 'partial pressure of o2'],
   hco3: ['hco3-', 'hco3', 'hco3std', 'hco3 std', 'hco3-std', '碳酸氢根', '碳酸氢盐', '标准碳酸氢盐'],
-  be: ['be(b)', 'be (b)', 'be', '剩余碱', '碱剩余', '碱剩余(base excess)'],
+  be: [
+    'be(b)', 'be (b)', 'beb', 'be',
+    '(实际)剩余碱', '实际剩余碱', '剩余碱', '碱剩余', '碱剩余(base excess)', '剩余碱 be(b)', '实际碱剩余'
+  ],
   ammonia: ['nh3', '血氨']
 };
 
@@ -147,6 +154,9 @@ const LEGACY_INDICATOR_KEY_ALIASES = {
   ca: 'calcium',
   'ca++': 'calcium',
   beecf: 'beecf',
+  'be(ecf)': 'beecf',
+  'be-ecf': 'beecf',
+  be_ecf: 'beecf',
   cthb: 'cthb',
   thb: 'cthb',
   ile_leu: 'iso_leu',
@@ -155,7 +165,9 @@ const LEGACY_INDICATOR_KEY_ALIASES = {
   va1: 'val',
   hco3std: 'hco3',
   hco3_std: 'hco3',
-  arg: 'arginine'
+  arg: 'arginine',
+  'be(b)': 'be',
+  beb: 'be'
 };
 
 const CARNITINE_ABBREVS = new Set(['c0', 'c2', 'c3']);

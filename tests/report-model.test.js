@@ -6,17 +6,24 @@ function buildBloodGasIndicators(overrides = {}) {
   return {
     ph: { value: '7.40', minRange: '7.35', maxRange: '7.45' },
     hco3: { value: '24.0', minRange: '22', maxRange: '26' },
+    beecf: { value: '-5.80', minRange: '-3', maxRange: '3' },
     be: { value: '-1.0', minRange: '-3', maxRange: '3' },
     ...overrides
   };
 }
 
-test('blood gas only requires pH, HCO3std and BE(B)', () => {
+test('blood gas requires pH, HCO3std, BEecf and BE(B)', () => {
   const indicators = ReportModel.getIndicators(ReportModel.REPORT_TYPES.BLOOD_GAS);
   const required = indicators.filter((item) => !item.optional).map((item) => item.key);
 
-  assert.deepEqual(required, ['ph', 'hco3', 'be']);
+  assert.deepEqual(required, ['ph', 'hco3', 'beecf', 'be']);
   assert.equal(indicators.length, 14);
+  assert.equal(indicators.find((item) => item.key === 'beecf').name, '细胞外(标准)剩余碱');
+  assert.equal(indicators.find((item) => item.key === 'be').name, '(实际)剩余碱');
+  assert.ok(
+    indicators.findIndex((item) => item.key === 'beecf')
+      < indicators.findIndex((item) => item.key === 'be')
+  );
 
   const result = ReportModel.validateReportData(
     ReportModel.REPORT_TYPES.BLOOD_GAS,
@@ -31,7 +38,7 @@ test('validateReportData allows optional blood gas value without reference range
   const result = ReportModel.validateReportData(
     ReportModel.REPORT_TYPES.BLOOD_GAS,
     buildBloodGasIndicators({
-      beecf: { value: '-5.80', minRange: '', maxRange: '' },
+      pco2: { value: '40.0', minRange: '', maxRange: '' },
       lactate: { value: '2.00', minRange: '0.5', maxRange: '1.6' }
     })
   );
@@ -49,7 +56,19 @@ test('validateReportData still requires reference range for mandatory blood gas 
   );
 
   assert.equal(result.isValid, false);
-  assert.match(result.errors.join(' '), /剩余碱 BE\(B\).*参考范围/);
+  assert.match(result.errors.join(' '), /\(实际\)剩余碱.*参考范围/);
+});
+
+test('validateReportData requires reference range for BEecf', () => {
+  const result = ReportModel.validateReportData(
+    ReportModel.REPORT_TYPES.BLOOD_GAS,
+    buildBloodGasIndicators({
+      beecf: { value: '-5.80', minRange: '', maxRange: '' }
+    })
+  );
+
+  assert.equal(result.isValid, false);
+  assert.match(result.errors.join(' '), /细胞外\(标准\)剩余碱.*参考范围/);
 });
 
 test('validateReportData accepts partial blood cbc reports with optional fields omitted', () => {

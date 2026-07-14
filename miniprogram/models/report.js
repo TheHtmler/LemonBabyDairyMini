@@ -35,14 +35,14 @@ class ReportModel {
     { key: 'lactate', name: '乳酸', unit: '', abbr: 'Lac' }
   ];
 
-  // 血气指标：仅 pH / HCO3- / BE(B) 必填，其余按报告单上有则填
+  // 血气指标：pH / HCO3- / 细胞外(标准)剩余碱 / (实际)剩余碱 必填，其余按报告单上有则填
   static BLOOD_GAS_INDICATORS = [
     { key: 'ph', name: 'pH值', unit: '', abbr: 'pH' },
     { key: 'hco3', name: '标准碳酸氢根', unit: '', abbr: 'HCO3std' },
-    { key: 'be', name: '剩余碱 BE(B)', unit: '', abbr: 'BE(B)' },
+    { key: 'beecf', name: '细胞外(标准)剩余碱', unit: '', abbr: 'BEecf' },
+    { key: 'be', name: '(实际)剩余碱', unit: '', abbr: 'BE(B)' },
     { key: 'pco2', name: '二氧化碳分压', unit: '', abbr: 'pCO2', optional: true },
     { key: 'po2', name: '氧分压', unit: '', abbr: 'pO2', optional: true },
-    { key: 'beecf', name: '细胞外液剩余碱', unit: '', abbr: 'BEecf', optional: true },
     { key: 'lactate', name: '乳酸', unit: '', abbr: 'Lac', optional: true },
     { key: 'glucose', name: '葡萄糖', unit: '', abbr: 'Glu', optional: true },
     { key: 'sodium', name: '钠', unit: '', abbr: 'Na+', optional: true },
