@@ -1,0 +1,39 @@
+<view class="detail-container">
+  <view class="loading-card" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{visible && entry}}">
+    <view class="detail-card">
+      <view class="detail-meta">
+        <text class="detail-date">{{eventDateText}}</text>
+        <text class="detail-author" wx:if="{{authorName}}">{{authorName}}</text>
+      </view>
+
+      <view class="detail-title">{{entry.title}}</view>
+      <view class="detail-notes" wx:if="{{entry.notes}}">{{entry.notes}}</view>
+
+      <view class="detail-photos" wx:if="{{thumbUrls.length}}">
+        <image
+          class="detail-photo"
+          wx:for="{{thumbUrls}}"
+          wx:key="*this"
+          src="{{item}}"
+          mode="aspectFill"
+          data-index="{{index}}"
+          bindtap="previewPhotos"
+        />
+      </view>
+    </view>
+
+    <view class="share-hint">
+      <text class="share-hint-text">点击右上角 · 可分享这篇成长日记</text>
+    </view>
+  </block>
+
+  <view class="empty-card" wx:else>
+    <text class="empty-emoji">🍋</text>
+    <text class="empty-title">{{emptyTitle || '无权限访问'}}</text>
+    <text class="empty-subtitle">{{emptySubtitle || '无法查看该日记内容。'}}</text>
+  </view>
+</view>

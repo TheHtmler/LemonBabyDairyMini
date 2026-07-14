@@ -16,6 +16,7 @@
         "food-picker/index",
         "growth-records/index",
         "growth-diary/index",
+        "growth-diary/detail",
         "treatment-record/index",
         "bowel-record/index"
       ]
