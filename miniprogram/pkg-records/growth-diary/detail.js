@@ -101,6 +101,22 @@ Page({
       // keep fallback name
     }
 
+    let displayNameByOpenid = {};
+    try {
+      const db = wx.cloud.database();
+      const [creatorsRes, participantsRes] = await Promise.all([
+        db.collection('baby_creators').where({ babyUid: entry.babyUid }).limit(20).get(),
+        db.collection('baby_participants').where({ babyUid: entry.babyUid }).limit(50).get()
+      ]);
+      [...(creatorsRes.data || []), ...(participantsRes.data || [])].forEach((row) => {
+        const openid = String(row._openid || '').trim();
+        const name = String(row.displayName || '').trim().slice(0, 5);
+        if (openid && name) displayNameByOpenid[openid] = name;
+      });
+    } catch (error) {
+      // ignore map failures
+    }
+
     this.setData({
       loading: false,
       visible: true,
@@ -111,7 +127,7 @@ Page({
       eventDateText: formatDateText(entry.eventDate),
       thumbUrls,
       originalUrls,
-      publishMetaText: formatDiaryPublishMeta(entry)
+      publishMetaText: formatDiaryPublishMeta(entry, { displayNameByOpenid })
     });
 
     if (typeof wx.showShareMenu === 'function') {

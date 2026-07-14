@@ -100,3 +100,11 @@ test('formatDiaryPublishMeta shows role and datetime', () => {
   assert.match(text, /^【妈妈】发布于/);
   assert.match(text, /\d{4}年\d{2}月\d{2}日 \d{2}:\d{2}$/);
 });
+
+test('formatDiaryPublishMeta falls back to openid display map', () => {
+  const text = formatDiaryPublishMeta(
+    { createdByOpenid: 'o1', createdAt: '2026-07-14T08:05:00.000Z' },
+    { displayNameByOpenid: { o1: '爸爸' } }
+  );
+  assert.match(text, /^【爸爸】发布于/);
+});

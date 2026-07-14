@@ -93,14 +93,38 @@ function pad2(n) {
 
 function formatPublishDateTime(dateValue) {
   if (!dateValue) return '';
-  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  // 云开发可能返回 { seconds } / Date / 字符串
+  let raw = dateValue;
+  if (raw && typeof raw === 'object') {
+    if (typeof raw.toDate === 'function') {
+      raw = raw.toDate();
+    } else if (raw.$date) {
+      raw = raw.$date;
+    } else if (typeof raw.seconds === 'number') {
+      raw = new Date(raw.seconds * 1000);
+    } else if (typeof raw.getTime === 'function') {
+      // Date-like
+    } else {
+      return '';
+    }
+  }
+  const date = raw instanceof Date ? raw : new Date(raw);
   if (Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}年${pad2(date.getMonth() + 1)}月${pad2(date.getDate())}日 ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-function formatDiaryPublishMeta(entry = {}) {
+function formatDiaryPublishMeta(entry = {}, options = {}) {
+  const openid = String(entry.createdByOpenid || entry._openid || '').trim();
+  const fromMap = openid && options.displayNameByOpenid
+    ? options.displayNameByOpenid[openid]
+    : '';
   const role = normalizeAuthorDisplayName(
-    entry.authorDisplayName || entry.authorRole || entry.userInfo?.displayName || ''
+    entry.authorDisplayName
+    || entry.authorRole
+    || entry.userInfo?.displayName
+    || fromMap
+    || options.fallbackDisplayName
+    || ''
   ) || '家庭成员';
   const when = formatPublishDateTime(entry.createdAt || entry.updatedAt || entry.eventDate);
   if (!when) return `【${role}】发布`;

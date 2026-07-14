@@ -199,6 +199,27 @@ Page({
     return false;
   },
 
+  async loadFamilyDisplayNameMap(babyUid) {
+    const map = {};
+    if (!babyUid) return map;
+    try {
+      const db = wx.cloud.database();
+      const [creatorsRes, participantsRes] = await Promise.all([
+        db.collection('baby_creators').where({ babyUid }).limit(20).get(),
+        db.collection('baby_participants').where({ babyUid }).limit(50).get()
+      ]);
+      const rows = [...(creatorsRes.data || []), ...(participantsRes.data || [])];
+      rows.forEach((row) => {
+        const openid = String(row._openid || '').trim();
+        const name = normalizeAuthorDisplayName(row.displayName || '');
+        if (openid && name) map[openid] = name;
+      });
+    } catch (error) {
+      console.warn('加载家庭角色映射失败:', error);
+    }
+    return map;
+  },
+
   async loadEntries() {
     try {
       this.setData({ loading: true });
@@ -208,9 +229,18 @@ Page({
         return;
       }
 
+      await this.refreshAuthorDisplayName();
       const userInfo = await getUserInfo();
       const actor = this.getActor(userInfo);
-      const list = await GrowthDiaryModel.listByBaby(babyUid);
+      const [list, displayNameByOpenid] = await Promise.all([
+        GrowthDiaryModel.listByBaby(babyUid),
+        this.loadFamilyDisplayNameMap(babyUid)
+      ]);
+
+      // 当前用户有角色时补进映射，覆盖未落库署名的旧日记
+      if (actor.openid && actor.authorDisplayName) {
+        displayNameByOpenid[actor.openid] = actor.authorDisplayName;
+      }
 
       const thumbFileIds = [];
       list.forEach((entry) => {
@@ -234,7 +264,7 @@ Page({
           eventDateText: formatDateText(entry.eventDate),
           thumbUrls,
           originalFileIds: photos.map((photo) => photo.originalFileId).filter(Boolean),
-          publishMetaText: formatDiaryPublishMeta(entry)
+          publishMetaText: formatDiaryPublishMeta(entry, { displayNameByOpenid })
         };
       });
 
@@ -544,13 +574,13 @@ Page({
       this.setData({ saving: true });
       wx.showLoading({ title: '保存中...', mask: true });
 
+      await this.refreshAuthorDisplayName();
       const userInfo = await getUserInfo();
       const actor = this.getActor(userInfo);
       if (!hasAuthorDisplayName(actor.authorDisplayName)) {
         wx.hideLoading();
         this.setData({ saving: false });
-        const ready = await this.ensureAuthorRoleBeforeCreate();
-        if (!ready) return;
+        await this.ensureAuthorRoleBeforeCreate();
         return;
       }
 

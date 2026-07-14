@@ -26,16 +26,21 @@ test('profile and daily-feeding expose growth diary and curve entries', () => {
 
   const firstRow = dailyWxml.match(/<view class="qrow">[\s\S]*?<\/view>\s*<view class="qrow">/);
   assert.ok(firstRow, 'should have two qrows');
-  assert.match(firstRow[0], /成长日记/);
+  assert.match(firstRow[0], /记一顿奶/);
+  assert.match(firstRow[0], /加食物/);
+  assert.match(firstRow[0], /喂药/);
+  assert.match(firstRow[0], /治疗/);
+  assert.match(firstRow[0], /记尿布/);
+  assert.doesNotMatch(firstRow[0], /成长日记/);
   assert.doesNotMatch(firstRow[0], /微信提醒/);
 
-  const secondRowMatch = dailyWxml.match(/<view class="qrow">[\s\S]*?<\/view>\s*<\/view>\s*<\/scroll-view>/);
-  assert.ok(secondRowMatch);
-  assert.match(dailyWxml, /微信提醒/);
-  // 微信提醒应出现在成长日记之后（第二排）
   assert.ok(
-    dailyWxml.indexOf('成长日记') < dailyWxml.indexOf('微信提醒'),
-    '成长日记 should appear before 微信提醒'
+    dailyWxml.indexOf('记一顿奶') < dailyWxml.indexOf('量体重')
+    && dailyWxml.indexOf('量体重') < dailyWxml.indexOf('成长日记')
+    && dailyWxml.indexOf('成长日记') < dailyWxml.indexOf('记备忘')
+    && dailyWxml.indexOf('记备忘') < dailyWxml.indexOf('检测报告')
+    && dailyWxml.indexOf('检测报告') < dailyWxml.indexOf('微信提醒'),
+    'first-screen shortcuts should follow the requested order'
   );
 });
 
