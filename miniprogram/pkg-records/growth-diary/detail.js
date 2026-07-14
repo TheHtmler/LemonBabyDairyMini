@@ -114,7 +114,7 @@ Page({
     });
 
     if (typeof wx.showShareMenu === 'function') {
-      wx.showShareMenu({ menus: ['shareAppMessage'] });
+      wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
     }
   },
 
@@ -171,6 +171,21 @@ Page({
     return {
       title: `${babyName} · ${entry.title}`,
       path: `/pkg-records/growth-diary/detail?id=${entry._id}`
+    };
+  },
+
+  onShareTimeline() {
+    const entry = this.data.entry;
+    if (!this.data.visible || !entry || !entry._id) {
+      return {
+        title: '成长日记',
+        query: ''
+      };
+    }
+    const babyName = this.data.babyName || '柠檬宝宝';
+    return {
+      title: `${babyName} · ${entry.title}`,
+      query: `id=${entry._id}`
     };
   }
 });

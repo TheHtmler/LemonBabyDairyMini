@@ -2,6 +2,7 @@ const GrowthDiaryModel = require('../../models/growthDiary');
 const {
   waitForAppInitialization,
   getBabyUid,
+  getBabyInfo,
   getUserInfo,
   handleError,
   growthUtils
@@ -73,6 +74,8 @@ Page({
     editingId: '',
     maxPhotos: MAX_DIARY_PHOTOS,
     isCreator: false,
+    babyName: '柠檬宝宝',
+    shareEntryId: '',
     form: createEmptyForm()
   },
 
@@ -81,7 +84,22 @@ Page({
       await waitForAppInitialization();
       const app = getApp();
       const userRole = (app.globalData && app.globalData.userRole) || wx.getStorageSync('user_role') || '';
-      this.setData({ isCreator: userRole === 'creator' });
+      let babyName = '柠檬宝宝';
+      try {
+        const babyInfo = await getBabyInfo();
+        babyName = babyInfo?.name || babyInfo?.nickname || babyName;
+      } catch (e) {
+        // ignore
+      }
+      this.setData({
+        isCreator: userRole === 'creator',
+        babyName
+      });
+      if (typeof wx.showShareMenu === 'function') {
+        wx.showShareMenu({
+          menus: ['shareAppMessage', 'shareTimeline']
+        });
+      }
     } catch (error) {
       handleError(error, { title: '初始化失败' });
     }
@@ -187,6 +205,47 @@ Page({
       editingId: '',
       form: createEmptyForm()
     });
+  },
+
+  preventMove() {},
+
+  prepareShare(e) {
+    const id = e.currentTarget.dataset.id || '';
+    this.setData({ shareEntryId: id });
+  },
+
+  buildSharePayload(entryId) {
+    const id = entryId || this.data.shareEntryId;
+    const entry = (this.data.entries || []).find((item) => item._id === id);
+    const babyName = this.data.babyName || '柠檬宝宝';
+    if (!entry) {
+      return {
+        title: `${babyName}的成长日记`,
+        path: '/pkg-records/growth-diary/index',
+        query: ''
+      };
+    }
+    return {
+      title: `${babyName} · ${entry.title}`,
+      path: `/pkg-records/growth-diary/detail?id=${entry._id}`,
+      query: `id=${entry._id}`
+    };
+  },
+
+  onShareAppMessage() {
+    const payload = this.buildSharePayload();
+    return {
+      title: payload.title,
+      path: payload.path
+    };
+  },
+
+  onShareTimeline() {
+    const payload = this.buildSharePayload();
+    return {
+      title: payload.title,
+      query: payload.query
+    };
   },
 
   onFormInput(e) {
