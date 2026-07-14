@@ -87,6 +87,7 @@ Page({
     authorDisplayName: '',
     shareEntryId: '',
     showRoleModal: false,
+    roleGateAction: '', // enter | create
     roleDraft: '',
     selectedRolePreset: '',
     form: createEmptyForm()
@@ -122,6 +123,7 @@ Page({
 
   async onShow() {
     await this.loadEntries();
+    await this.ensureAuthorRole({ action: 'enter' });
   },
 
   getActor(userInfo = {}) {
@@ -188,11 +190,12 @@ Page({
     return name;
   },
 
-  async ensureAuthorRoleBeforeCreate() {
+  async ensureAuthorRole({ action = 'enter' } = {}) {
     const name = await this.refreshAuthorDisplayName();
     if (hasAuthorDisplayName(name)) return true;
     this.setData({
       showRoleModal: true,
+      roleGateAction: action,
       roleDraft: '',
       selectedRolePreset: ''
     });
@@ -276,7 +279,7 @@ Page({
   },
 
   async openCreateForm() {
-    const ready = await this.ensureAuthorRoleBeforeCreate();
+    const ready = await this.ensureAuthorRole({ action: 'create' });
     if (!ready) return;
     this.setData({
       showForm: true,
@@ -321,8 +324,23 @@ Page({
   },
 
   closeRoleModal() {
+    // 进页拦截：未设置角色则返回上一页
+    if (!hasAuthorDisplayName(this.data.authorDisplayName)) {
+      wx.navigateBack({
+        fail: () => {
+          this.setData({
+            showRoleModal: false,
+            roleGateAction: '',
+            roleDraft: '',
+            selectedRolePreset: ''
+          });
+        }
+      });
+      return;
+    }
     this.setData({
       showRoleModal: false,
+      roleGateAction: '',
       roleDraft: '',
       selectedRolePreset: ''
     });
@@ -388,17 +406,22 @@ Page({
       const cacheKey = this.displayNameCacheKey(babyUid, userRole);
       if (cacheKey) wx.setStorageSync(cacheKey, displayName);
 
+      const shouldOpenCreate = this.data.roleGateAction === 'create';
       this.setData({
         authorDisplayName: displayName,
         showRoleModal: false,
+        roleGateAction: '',
         roleDraft: '',
         selectedRolePreset: '',
-        showForm: true,
-        editingId: '',
-        form: createEmptyForm()
+        showForm: shouldOpenCreate,
+        editingId: shouldOpenCreate ? '' : this.data.editingId,
+        form: shouldOpenCreate ? createEmptyForm() : this.data.form
       });
       wx.hideLoading();
       wx.showToast({ title: '角色已设置', icon: 'success' });
+      if (!shouldOpenCreate) {
+        await this.loadEntries();
+      }
     } catch (error) {
       wx.hideLoading();
       handleError(error, { title: '保存角色失败' });
@@ -580,7 +603,7 @@ Page({
       if (!hasAuthorDisplayName(actor.authorDisplayName)) {
         wx.hideLoading();
         this.setData({ saving: false });
-        await this.ensureAuthorRoleBeforeCreate();
+        await this.ensureAuthorRole({ action: 'create' });
         return;
       }
 

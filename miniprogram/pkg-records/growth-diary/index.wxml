@@ -146,9 +146,9 @@
   <view class="modal-content role-modal-content" catchtap="preventMove">
     <view class="modal-header">
       <text class="modal-title">先设置家庭角色</text>
-      <text class="modal-close" catchtap="closeRoleModal">关闭</text>
+      <text class="modal-close" catchtap="closeRoleModal">返回</text>
     </view>
-    <view class="role-tip">发布日记需要显示你是谁，请选择或自定义角色（最多 {{maxRoleLen}} 个字）</view>
+    <view class="role-tip">进入成长日记前，请先选择或自定义你的家庭角色（最多 {{maxRoleLen}} 个字），方便成员认出是谁发布的。</view>
     <view class="role-presets">
       <view
         class="role-chip {{selectedRolePreset === item ? 'active' : ''}}"
@@ -170,8 +170,8 @@
       />
     </view>
     <view class="form-actions">
-      <button class="action-btn ghost" bindtap="closeRoleModal">取消</button>
-      <button class="action-btn primary" bindtap="confirmRoleModal">确认并继续</button>
+      <button class="action-btn ghost" bindtap="closeRoleModal">返回</button>
+      <button class="action-btn primary" bindtap="confirmRoleModal">确认</button>
     </view>
   </view>
 </view>
