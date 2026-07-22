@@ -1,4 +1,4 @@
-<page-meta page-style="{{showBasicInfoModal || showFoodIntakeModal || showDeleteConfirm || showAddFeedingModal || showEditFeedingModal || showAddMedicationModal || showEditMedicationModal || showFoodIntakeExperimentModal || showFatRatioPopup || showDayMarksSheet || showDayMarkForm ? 'overflow: hidden;' : ''}}" />
+<page-meta page-style="{{showBasicInfoModal || showFoodIntakeModal || showDeleteConfirm || showAddFeedingModal || showEditFeedingModal || showAddMedicationModal || showEditMedicationModal || showFoodIntakeExperimentModal || showFatRatioPopup || showDayMarksSheet || showDayMarkForm || showRecordTabCustomizeSheet ? 'overflow: hidden;' : ''}}" />
 <view class="container">
   <!-- 日期选择器 -->
   <view class="date-selector">
@@ -177,26 +177,31 @@
           </view>
         </view>
       </view>
-      <!-- 记录选项卡 -->
-      <scroll-view class="tabs-scroll" scroll-x="true" enhanced="true" show-scrollbar="false">
-        <view class="tabs">
-          <view class="tab {{activeTab === 'feeding' ? 'active' : ''}}" data-tab="feeding" bindtap="switchTab">
-            <text>喂奶记录</text>
+      <!-- 记录选项卡：两字平铺；右侧「排序」为次要操作 -->
+      <view class="tabs-bar">
+        <scroll-view class="tabs-scroll" scroll-x="true" enhanced="true" show-scrollbar="false">
+          <view class="tabs">
+            <view
+              class="tab {{activeTab === item.key ? 'active' : ''}}"
+              wx:for="{{recordTabs}}"
+              wx:key="key"
+              data-tab="{{item.key}}"
+              bindtap="switchTab"
+            >
+              <text>{{item.label}}</text>
+            </view>
           </view>
-          <view class="tab {{activeTab === 'food' ? 'active' : ''}}" data-tab="food" bindtap="switchTab">
-            <text>食物记录</text>
-          </view>
-          <view class="tab {{activeTab === 'medication' ? 'active' : ''}}" data-tab="medication" bindtap="switchTab">
-            <text>用药记录</text>
-          </view>
-          <view class="tab {{activeTab === 'treatment' ? 'active' : ''}}" data-tab="treatment" bindtap="switchTab">
-            <text>治疗记录</text>
-          </view>
-          <view class="tab {{activeTab === 'bowel' ? 'active' : ''}}" data-tab="bowel" bindtap="switchTab">
-            <text>尿布记录</text>
-          </view>
+        </scroll-view>
+        <view
+          class="tabs-sort"
+          hover-class="tabs-sort-press"
+          hover-stay-time="60"
+          bindtap="openRecordTabCustomizeSheet"
+          aria-label="排序"
+        >
+          <image class="tabs-sort-icon" src="/images/icons/sort.svg" mode="aspectFit"></image>
         </view>
-      </scroll-view>
+      </view>
 
       <block wx:if="{{activeTab === 'food'}}">
         <view class="card">
@@ -412,6 +417,54 @@
             <text class="bowel-empty-icon">🌙</text>
             <text class="bowel-empty-title">今天还没有尿布记录</text>
             <text class="bowel-empty-desc">点这里补一条小记录</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'water'}}">
+        <view class="card">
+          <view class="card-title actions-only">
+            <view class="card-actions">
+              <view class="add-btn" bindtap="navigateToWaterRecord">
+                <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+                <text>补充记录</text>
+              </view>
+            </view>
+          </view>
+          <view class="water-stats-row" wx:if="{{!loadingRecordTabs.water}}">
+            <view class="water-stat-pill">
+              <text class="water-stat-label">今日喝水</text>
+              <text class="water-stat-value">{{intakeOverview.water.volume || 0}} ml</text>
+            </view>
+            <view class="water-stat-pill">
+              <text class="water-stat-label">记录次数</text>
+              <text class="water-stat-value">{{intakeOverview.water.count || waterRecords.length || 0}} 次</text>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{loadingRecordTabs.water}}">
+            <view class="empty-text">加载中...</view>
+          </view>
+          <view class="water-record-list" wx:elif="{{waterRecords.length > 0}}">
+            <view class="water-record-item" wx:for="{{waterRecords}}" wx:key="_id" wx:for-item="record">
+              <view class="record-content">
+                <view class="water-record-main-row">
+                  <text class="water-record-time">🕒 {{record.timeString}}</text>
+                  <text class="water-record-volume">💧 {{record.volumeMl}} ml</text>
+                </view>
+                <text class="water-record-notes" wx:if="{{record.notes}}">📝 {{record.notes}}</text>
+              </view>
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openEditWaterRecord" data-record-id="{{record._id}}">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteWaterRecord" data-record-id="{{record._id}}">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{!loadingRecordTabs.water && waterRecords.length === 0}}">
+            <view class="empty-text">暂无喝水记录</view>
           </view>
         </view>
       </block>
@@ -816,6 +869,31 @@
         <view class="day-mark-save-btn {{dayMarkCanSave ? '' : 'disabled'}}" bindtap="saveDayMark">保存</view>
         <view class="day-mark-delete-btn" wx:if="{{dayMarkFormMode === 'edit'}}" bindtap="deleteDayMark">删除这条备忘</view>
       </view>
+    </view>
+  </view>
+
+  <!-- 自定义分类记录顺序 -->
+  <view class="record-tab-sheet-mask" wx:if="{{showRecordTabCustomizeSheet}}" bindtap="closeRecordTabCustomizeSheet"></view>
+  <view class="record-tab-sheet customize {{showRecordTabCustomizeSheet ? 'visible' : ''}}" wx:if="{{showRecordTabCustomizeSheet}}">
+    <view class="record-tab-sheet-handle"></view>
+    <view class="record-tab-sheet-head">
+      <text class="record-tab-sheet-title">调整分类记录顺序</text>
+      <text class="record-tab-sheet-action muted" bindtap="resetRecordTabCustomize">恢复默认</text>
+    </view>
+    <text class="record-tab-sheet-hint">按使用习惯调整喂奶、食物等分类的展示顺序，仅保存在本机。</text>
+
+    <scroll-view class="record-tab-customize-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="record-tab-customize-item" wx:for="{{customizeRecordTabs}}" wx:key="key">
+        <text class="record-tab-customize-label">{{item.label}}</text>
+        <view class="record-tab-customize-actions">
+          <text class="record-tab-mini-btn" data-key="{{item.key}}" data-dir="up" bindtap="onMoveCustomizeTab">上移</text>
+          <text class="record-tab-mini-btn" data-key="{{item.key}}" data-dir="down" bindtap="onMoveCustomizeTab">下移</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="record-tab-customize-footer">
+      <view class="record-tab-save-btn" bindtap="saveRecordTabCustomize">保存设置</view>
     </view>
   </view>
 </view>

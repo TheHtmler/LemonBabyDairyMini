@@ -58,6 +58,8 @@
   - 主题偏向婴幼儿
   - 以柠檬色为主色调
   - 页面 UI 尽量生趣活泼
+  - 按钮对齐是高频问题：原生 `<button>` 必须显式 `width:100%; margin:0; padding:0; box-sizing:border-box;`，并清除 `::after` 边框；详见 `docs/miniprogram/ui-conventions.md`
+  - 时间/数量等表单控件优先复用现有记录页的 `compact-picker` / `compact-input` 样式，保持交互一致
 
 # 功能模块
   ## 今日记录

@@ -484,3 +484,13 @@ test('data records restores food protein quality totals from daily summary cache
   assert.match(pageJs, /premiumProtein:\s*Number\(food\.premiumProtein\)\s*\|\|\s*0/);
   assert.match(pageJs, /regularProtein:\s*Number\(food\.regularProtein\)\s*\|\|\s*0/);
 });
+
+test('data records restores food and treatment fluid volumes from daily summary cache', () => {
+  const pageJs = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/pages/data-records-v2/index.js'),
+    'utf8'
+  );
+
+  assert.match(pageJs, /fluidVolume:\s*Number\(food\.fluidVolume\)\s*\|\|\s*0/);
+  assert.match(pageJs, /fluidVolume:\s*Number\(treatment\.fluidVolume\)\s*\|\|\s*0/);
+});

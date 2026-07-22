@@ -51,7 +51,8 @@ function createEmptyFoodSummary() {
     regularProtein: 0,
     fat: 0,
     carbs: 0,
-    fiber: 0
+    fiber: 0,
+    fluidVolume: 0
   };
 }
 
@@ -60,7 +61,8 @@ function createEmptyTreatmentSummary() {
     calories: 0,
     protein: 0,
     carbs: 0,
-    fat: 0
+    fat: 0,
+    fluidVolume: 0
   };
 }
 
@@ -95,13 +97,18 @@ function createEmptyDailySummaryV2(babyUid = '', date = '') {
       totalRecords: 0,
       latestType: ''
     },
+    water: {
+      totalVolume: 0,
+      totalRecords: 0
+    },
     macroSummary: createEmptyMacroSummary(),
     recordCounts: {
       milk: 0,
       food: 0,
       medication: 0,
       treatment: 0,
-      bowel: 0
+      bowel: 0,
+      water: 0
     },
     sourceUpdatedAt: {
       feeding: null,
@@ -109,6 +116,7 @@ function createEmptyDailySummaryV2(babyUid = '', date = '') {
       medication: null,
       treatment: null,
       bowel: null,
+      water: null,
       growth: null
     },
     isDirty: false,
@@ -144,7 +152,8 @@ function roundFoodSummary(summary = {}) {
     regularProtein: roundValue(summary.regularProtein),
     fat: roundValue(summary.fat),
     carbs: roundValue(summary.carbs),
-    fiber: roundValue(summary.fiber)
+    fiber: roundValue(summary.fiber),
+    fluidVolume: roundValue(summary.fluidVolume)
   };
 }
 
@@ -153,7 +162,8 @@ function roundTreatmentSummary(summary = {}) {
     calories: roundValue(summary.calories),
     protein: roundValue(summary.protein),
     carbs: roundValue(summary.carbs),
-    fat: roundValue(summary.fat)
+    fat: roundValue(summary.fat),
+    fluidVolume: roundValue(summary.fluidVolume)
   };
 }
 
@@ -266,6 +276,9 @@ function mergeFoodNutrition(records = []) {
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);
     summary.fiber += toNumber(nutrition.fiber);
+    if (String(record.unit || '').toLowerCase() === 'ml') {
+      summary.fluidVolume += toNumber(record.quantity);
+    }
   });
   return roundFoodSummary(summary);
 }
@@ -291,6 +304,16 @@ function addTreatmentGroups(summary, groups = []) {
   });
 }
 
+function addTreatmentFluidVolume(summary, groups = []) {
+  (Array.isArray(groups) ? groups : []).forEach((group = {}) => {
+    (Array.isArray(group.items) ? group.items : []).forEach((item = {}) => {
+      if ((item.unit || 'ml') === 'ml') {
+        summary.fluidVolume += toNumber(item.amount ?? item.volumeMl);
+      }
+    });
+  });
+}
+
 function mergeTreatmentNutrition(records = []) {
   const summary = createEmptyTreatmentSummary();
   (Array.isArray(records) ? records : []).forEach((record = {}) => {
@@ -300,22 +323,33 @@ function mergeTreatmentNutrition(records = []) {
       || recordSummary.protein !== undefined
       || recordSummary.carbs !== undefined
       || recordSummary.fat !== undefined;
+    const hasFluidInSummary = recordSummary.fluidVolume !== undefined
+      && recordSummary.fluidVolume !== null;
 
     if (hasSummary) {
       summary.calories += toNumber(recordSummary.totalCalories ?? recordSummary.calories);
       summary.protein += toNumber(recordSummary.protein);
       summary.carbs += toNumber(recordSummary.carbs);
       summary.fat += toNumber(recordSummary.fat);
+      if (hasFluidInSummary) {
+        summary.fluidVolume += toNumber(recordSummary.fluidVolume);
+      } else if (Array.isArray(record.groups)) {
+        addTreatmentFluidVolume(summary, record.groups);
+      } else if (Array.isArray(record.items)) {
+        addTreatmentFluidVolume(summary, [{ items: record.items }]);
+      }
       return;
     }
 
     if (Array.isArray(record.groups)) {
       addTreatmentGroups(summary, record.groups);
+      addTreatmentFluidVolume(summary, record.groups);
       return;
     }
 
     if (Array.isArray(record.items)) {
       addTreatmentGroups(summary, [{ items: record.items }]);
+      addTreatmentFluidVolume(summary, [{ items: record.items }]);
     }
   });
   return roundTreatmentSummary(summary);
@@ -407,6 +441,17 @@ function buildBowelSummary(records = []) {
   };
 }
 
+function buildWaterSummary(records = []) {
+  const validRecords = (records || []).filter((record) => (record?.status || 'active') === 'active');
+  const totalVolume = validRecords.reduce((sum, record = {}) => (
+    sum + toNumber(record.volumeMl ?? record.volume)
+  ), 0);
+  return {
+    totalVolume: roundValue(totalVolume, 0),
+    totalRecords: validRecords.length
+  };
+}
+
 function buildMacroSummary(milk, food, treatment) {
   return roundMacroSummary({
     calories: toNumber(milk.calories) + toNumber(food.calories) + toNumber(treatment.calories),
@@ -439,13 +484,18 @@ function normalizeDailySummaryV2(summary = {}) {
       totalRecords: toNumber(summary.bowel?.totalRecords),
       latestType: summary.bowel?.latestType || ''
     },
+    water: {
+      totalVolume: toNumber(summary.water?.totalVolume),
+      totalRecords: toNumber(summary.water?.totalRecords)
+    },
     macroSummary: roundMacroSummary(summary.macroSummary || {}),
     recordCounts: {
       milk: toNumber(summary.recordCounts?.milk),
       food: toNumber(summary.recordCounts?.food),
       medication: toNumber(summary.recordCounts?.medication),
       treatment: toNumber(summary.recordCounts?.treatment),
-      bowel: toNumber(summary.recordCounts?.bowel)
+      bowel: toNumber(summary.recordCounts?.bowel),
+      water: toNumber(summary.recordCounts?.water)
     },
     sourceUpdatedAt: {
       ...createEmptyDailySummaryV2().sourceUpdatedAt,
@@ -461,6 +511,7 @@ function buildDailySummaryV2(input = {}) {
   const treatmentRecords = input.treatmentRecords || [];
   const medicationRecords = input.medicationRecords || [];
   const bowelRecords = input.bowelRecords || [];
+  const waterRecords = input.waterRecords || [];
   const growthRecords = input.growthRecords || [];
   const milk = mergeMilkNutrition(milkRecords);
   const food = mergeFoodNutrition(foodIntakeRecords);
@@ -473,13 +524,15 @@ function buildDailySummaryV2(input = {}) {
     treatment,
     medication: buildMedicationSummary(medicationRecords),
     bowel: buildBowelSummary(bowelRecords),
+    water: buildWaterSummary(waterRecords),
     macroSummary: buildMacroSummary(milk, food, treatment),
     recordCounts: {
       milk: Array.isArray(milkRecords) ? milkRecords.length : 0,
       food: Array.isArray(foodIntakeRecords) ? foodIntakeRecords.length : 0,
       medication: Array.isArray(medicationRecords) ? medicationRecords.length : 0,
       treatment: Array.isArray(treatmentRecords) ? treatmentRecords.length : 0,
-      bowel: Array.isArray(bowelRecords) ? bowelRecords.length : 0
+      bowel: Array.isArray(bowelRecords) ? bowelRecords.length : 0,
+      water: Array.isArray(waterRecords) ? waterRecords.length : 0
     },
     sourceUpdatedAt: {
       feeding: getLatestSourceUpdatedAt(milkRecords),
@@ -487,6 +540,7 @@ function buildDailySummaryV2(input = {}) {
       medication: getLatestSourceUpdatedAt(medicationRecords),
       treatment: getLatestSourceUpdatedAt(treatmentRecords),
       bowel: getLatestSourceUpdatedAt(bowelRecords),
+      water: getLatestSourceUpdatedAt(waterRecords),
       growth: getLatestSourceUpdatedAt(growthRecords)
     },
     isDirty: false

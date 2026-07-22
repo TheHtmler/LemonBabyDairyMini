@@ -15,6 +15,7 @@ const NutritionModel = require('../../models/nutrition');
 const MedicationRecordModel = require('../../models/medicationRecord');
 const MedicationModel = require('../../models/medication');
 const TreatmentRecordModel = require('../../models/treatmentRecord');
+const WaterRecordModel = require('../../models/waterRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
@@ -29,6 +30,13 @@ const {
 const {
   buildDataRecordsSummaryPreview
 } = require('../../utils/dataRecordsSummaryPreview');
+const {
+  buildRecordTabBar,
+  loadRecordTabsPreference,
+  saveRecordTabsPreference,
+  moveOrderedTab,
+  normalizeRecordTabsPreference
+} = require('../../utils/recordTabsPreference');
 const { findOrCreateDailyRecord } = require('../../utils/feedingRecordStore');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 const { createDailyRecordFromV2 } = require('../../utils/dataRecordsV2Adapter');
@@ -398,8 +406,30 @@ function createEmptyIntakeOverview() {
       carbs: 0,
       fat: 0
     },
+    water: {
+      volume: 0,
+      count: 0
+    },
     treatment: createEmptyTreatmentOverview()
   };
+}
+
+function formatWaterRecordsForDisplay(records = []) {
+  return (records || []).map((record = {}) => {
+    let timeString = record.timeString || '';
+    if (!timeString && record.recordTime) {
+      const date = new Date(record.recordTime);
+      if (!Number.isNaN(date.getTime())) {
+        timeString = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+    return {
+      ...record,
+      timeString: timeString || '--:--',
+      volumeMl: Number(record.volumeMl) || 0,
+      notes: String(record.notes || '').trim()
+    };
+  });
 }
 
 function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutritionSettings = {}, treatmentRecords = []) {
@@ -1457,6 +1487,7 @@ function createDataRecordsPageConfig(options = {}) {
     bowelRecords: [], // 排便记录
     groupedBowelRecords: [], // 按类型分组的排便记录
     bowelStats: createEmptyBowelStats(),
+    waterRecords: [],
     totalNaturalMilk: 0,
     totalSpecialMilk: 0,
     totalMilk: 0,
@@ -1584,6 +1615,11 @@ function createDataRecordsPageConfig(options = {}) {
       '>6岁: 25%-30%'
     ],
     activeTab: 'feeding',
+    recordTabPrefs: normalizeRecordTabsPreference(),
+    recordTabs: [],
+    showRecordTabCustomizeSheet: false,
+    customizeDraftPrefs: null,
+    customizeRecordTabs: [],
     loadedRecordTabs: {},
     loadingRecordTabs: {},
     summaryPreview: buildDataRecordsSummaryPreview({ isV2RecordsPage: options.recordSource === 'v2' }),
@@ -1770,6 +1806,47 @@ function createDataRecordsPageConfig(options = {}) {
     if (!recordId) return;
     wx.navigateTo({
       url: `/pkg-records/bowel-record/index?id=${encodeURIComponent(recordId)}&date=${selectedDate}`
+    });
+  },
+
+  navigateToWaterRecord() {
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pkg-records/water-record/index?date=${selectedDate}`
+    });
+  },
+
+  openEditWaterRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    if (!recordId) return;
+    wx.navigateTo({
+      url: `/pkg-records/water-record/index?id=${encodeURIComponent(recordId)}&date=${selectedDate}`
+    });
+  },
+
+  async deleteWaterRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    if (!recordId) return;
+    wx.showModal({
+      title: '删除喝水记录',
+      content: '确认删除这条喝水记录吗？',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          const result = await WaterRecordModel.delete(recordId);
+          if (!result.success) {
+            throw new Error(result.message || '删除失败');
+          }
+          wx.hideLoading();
+          wx.showToast({ title: '已删除', icon: 'success' });
+          await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
+        } catch (error) {
+          wx.hideLoading();
+          wx.showToast({ title: error.message || '删除失败', icon: 'none' });
+        }
+      }
     });
   },
 
@@ -2672,11 +2749,21 @@ function createDataRecordsPageConfig(options = {}) {
       isSelectedToday: true,
       isSelectedFuture: false
     });
+    this.applyRecordTabBar(loadRecordTabsPreference(), this.data.activeTab);
 
     this.initCalendar(today.getFullYear(), today.getMonth() + 1);
 
     // 等待应用初始化完成后再加载数据
     this.initializePage(formattedDate);
+  },
+
+  applyRecordTabBar(prefs, activeTab = this.data.activeTab) {
+    const bar = buildRecordTabBar(prefs, activeTab || 'feeding');
+    this.setData({
+      recordTabPrefs: bar.prefs,
+      recordTabs: bar.visibleTabs
+    });
+    return bar;
   },
 
   async initializePage(formattedDate) {
@@ -3617,6 +3704,7 @@ function createDataRecordsPageConfig(options = {}) {
     const tab = e.currentTarget.dataset.tab;
     if (!tab) return;
     this.setData({ activeTab: tab });
+    this.applyRecordTabBar(this.data.recordTabPrefs, tab);
     if (this.isV2RecordsSource()) {
       try {
         await this.loadActiveTabDetails(this.data.selectedDate, getBabyUid());
@@ -3625,6 +3713,56 @@ function createDataRecordsPageConfig(options = {}) {
         wx.showToast({ title: '加载失败', icon: 'none' });
       }
     }
+  },
+
+  openRecordTabCustomizeSheet() {
+    const prefs = normalizeRecordTabsPreference(this.data.recordTabPrefs);
+    const bar = buildRecordTabBar(prefs, this.data.activeTab);
+    this.setData({
+      showRecordTabCustomizeSheet: true,
+      customizeDraftPrefs: bar.prefs,
+      customizeRecordTabs: bar.visibleTabs
+    });
+  },
+
+  closeRecordTabCustomizeSheet() {
+    this.setData({
+      showRecordTabCustomizeSheet: false,
+      customizeDraftPrefs: null
+    });
+  },
+
+  refreshCustomizeLists(prefs) {
+    const bar = buildRecordTabBar(prefs, this.data.activeTab);
+    this.setData({
+      customizeDraftPrefs: bar.prefs,
+      customizeRecordTabs: bar.visibleTabs
+    });
+  },
+
+  onMoveCustomizeTab(e) {
+    const key = e.currentTarget.dataset.key;
+    const dir = e.currentTarget.dataset.dir;
+    const offset = dir === 'up' ? -1 : (dir === 'down' ? 1 : Number(e.currentTarget.dataset.offset));
+    if (!key || !Number.isFinite(offset) || offset === 0) return;
+    const next = moveOrderedTab(this.data.customizeDraftPrefs || this.data.recordTabPrefs, key, offset);
+    this.refreshCustomizeLists(next);
+  },
+
+  saveRecordTabCustomize() {
+    const saved = saveRecordTabsPreference(this.data.customizeDraftPrefs || this.data.recordTabPrefs);
+    this.applyRecordTabBar(saved, this.data.activeTab);
+    this.setData({
+      showRecordTabCustomizeSheet: false,
+      customizeDraftPrefs: null
+    });
+    wx.showToast({ title: '已保存本地设置', icon: 'success' });
+  },
+
+  resetRecordTabCustomize() {
+    const draft = normalizeRecordTabsPreference({ orderedKeys: [] });
+    this.refreshCustomizeLists(draft);
+    wx.showToast({ title: '已恢复默认，保存后生效', icon: 'none' });
   },
 
   isV2RecordsSource() {
@@ -3820,7 +3958,8 @@ function createDataRecordsPageConfig(options = {}) {
       premiumProtein: Number(food.premiumProtein) || 0,
       regularProtein: Number(food.regularProtein) || 0,
       carbs: Number(food.carbs) || 0,
-      fat: Number(food.fat) || 0
+      fat: Number(food.fat) || 0,
+      fluidVolume: Number(food.fluidVolume) || 0
     };
     overview.treatment = {
       ...overview.treatment,
@@ -3828,7 +3967,13 @@ function createDataRecordsPageConfig(options = {}) {
       totalCalories: Number(treatment.calories) || 0,
       protein: Number(treatment.protein) || 0,
       carbs: Number(treatment.carbs) || 0,
-      fat: Number(treatment.fat) || 0
+      fat: Number(treatment.fat) || 0,
+      fluidVolume: Number(treatment.fluidVolume) || 0
+    };
+    const water = summary.water || {};
+    overview.water = {
+      volume: Number(water.totalVolume) || 0,
+      count: Number(water.totalRecords) || Number(counts.water) || 0
     };
 
     return overview;
@@ -3859,7 +4004,7 @@ function createDataRecordsPageConfig(options = {}) {
       ? roundNumber(specialProteinIntakeNum / coefficientWeight, 2)
       : '';
     const counts = summary.recordCounts || {};
-    const hasRecord = ['milk', 'food', 'medication', 'treatment', 'bowel']
+    const hasRecord = ['milk', 'food', 'medication', 'treatment', 'bowel', 'water']
       .some(key => (Number(counts[key]) || 0) > 0);
 
     return {
@@ -3875,6 +4020,7 @@ function createDataRecordsPageConfig(options = {}) {
       bowelRecords: [],
       groupedBowelRecords: [],
       bowelStats: createEmptyBowelStats(),
+      waterRecords: [],
       loadedRecordTabs: {},
       loadingRecordTabs: {},
       macroSummary,
@@ -3998,6 +4144,15 @@ function createDataRecordsPageConfig(options = {}) {
     if (tab === 'bowel') {
       this.processBowelData(details.bowelRecords || []);
       this.setData({ loadedRecordTabs, loadingRecordTabs });
+      return;
+    }
+
+    if (tab === 'water') {
+      this.setData({
+        waterRecords: formatWaterRecordsForDisplay(details.waterRecords || []),
+        loadedRecordTabs,
+        loadingRecordTabs
+      });
     }
   },
 
@@ -4032,9 +4187,16 @@ function createDataRecordsPageConfig(options = {}) {
     const treatmentRecordsToSet = formatTreatmentRecords(serviceResult.treatmentRecords || []);
     const medicationRecordsToSet = serviceResult.medicationRecords || [];
     const bowelRecordsToSet = serviceResult.bowelRecords || [];
+    const waterRecordsToSet = formatWaterRecordsForDisplay(serviceResult.waterRecords || []);
     const summaryMacro = serviceResult.summary?.macroSummary;
     const macroSummary = summaryMacro || calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
     const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
+    const waterFromSummary = serviceResult.summary?.water || {};
+    const waterVolumeFromRecords = waterRecordsToSet.reduce((sum, item) => sum + (Number(item.volumeMl) || 0), 0);
+    intakeOverview.water = {
+      volume: Number(waterFromSummary.totalVolume) || waterVolumeFromRecords,
+      count: Number(waterFromSummary.totalRecords) || waterRecordsToSet.length
+    };
     const proteinSummaryDisplay = summaryMacro
       ? this.buildProteinSummaryDisplayFromMacroSummary(summaryMacro, intakeOverview)
       : this.computeProteinSummaryDisplay(intakeOverview);
@@ -4059,7 +4221,8 @@ function createDataRecordsPageConfig(options = {}) {
       || intakes.length > 0
       || medicationRecordsToSet.length > 0
       || treatmentRecordsToSet.length > 0
-      || bowelRecordsToSet.length > 0;
+      || bowelRecordsToSet.length > 0
+      || waterRecordsToSet.length > 0;
 
     this.setData({
       recordId: record._id,
@@ -4075,6 +4238,7 @@ function createDataRecordsPageConfig(options = {}) {
       medicationRecords: medicationRecordsToSet,
       treatmentRecords: treatmentRecordsToSet,
       bowelRecords: bowelRecordsToSet,
+      waterRecords: waterRecordsToSet,
       weight: recordWeight || '--',
       height: recordHeight || '--',
       weightSource: recordWeight ? 'record' : 'empty',

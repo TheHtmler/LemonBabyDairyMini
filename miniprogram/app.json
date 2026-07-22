@@ -18,7 +18,8 @@
         "growth-diary/index",
         "growth-diary/detail",
         "treatment-record/index",
-        "bowel-record/index"
+        "bowel-record/index",
+        "water-record/index"
       ]
     },
     {

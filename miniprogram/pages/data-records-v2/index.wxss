@@ -2554,6 +2554,78 @@
   padding: 0;
 }
 
+.water-stats-row {
+  display: flex;
+  gap: 12rpx;
+  margin: 0 0 16rpx;
+}
+
+.water-stat-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 20rpx;
+  background: rgba(231, 245, 255, 0.7);
+  border: 1rpx solid rgba(99, 169, 231, 0.14);
+}
+
+.water-stat-label {
+  font-size: 22rpx;
+  color: #6a8aa3;
+}
+
+.water-stat-value {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #2f6f9f;
+}
+
+.water-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.water-record-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 18rpx;
+  border: 1rpx solid rgba(99, 169, 231, 0.16);
+  border-radius: 22rpx;
+  background: rgba(231, 245, 255, 0.55);
+}
+
+.water-record-main-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.water-record-time,
+.water-record-volume {
+  display: block;
+  font-size: 28rpx;
+  color: #3a5f7a;
+  font-weight: 600;
+}
+
+.water-record-volume {
+  color: #2f6f9f;
+}
+
+.water-record-notes {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #6a8aa3;
+  line-height: 1.4;
+}
+
 .bowel-record-item {
   display: flex;
   align-items: flex-start;
@@ -2863,20 +2935,45 @@
 }
 
 /* 记录 Tabs */
-.tabs-scroll {
-  width: 100%;
+.tabs-bar {
+  display: flex;
+  align-items: stretch;
   margin: 16rpx 0 20rpx;
+  border-radius: 16rpx;
+  background-color: rgba(255, 184, 0, 0.1);
+  overflow: hidden;
+}
+
+.tabs-scroll {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
 }
 
 .tabs {
   display: inline-flex;
-  min-width: 100%;
   box-sizing: border-box;
   gap: 8rpx;
-  background-color: rgba(255, 184, 0, 0.1);
-  border-radius: 16rpx;
-  padding: 8rpx 12rpx;
+  padding: 8rpx 8rpx 8rpx 12rpx;
+}
+
+.tabs-sort {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  border-left: 1rpx solid rgba(180, 140, 40, 0.14);
+}
+
+.tabs-sort-icon {
+  width: 32rpx;
+  height: 32rpx;
+  opacity: 0.88;
+}
+
+.tabs-sort-press .tabs-sort-icon {
+  opacity: 1;
 }
 
 .tab {
@@ -2902,6 +2999,179 @@
 
 .tab.active::after {
   display: none;
+}
+
+.record-tab-sheet-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(20, 24, 30, 0.35);
+}
+
+.record-tab-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 121;
+  max-height: 78vh;
+  padding: 12rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+  border-radius: 28rpx 28rpx 0 0;
+  background: #fffdf7;
+  box-shadow: 0 -8rpx 28rpx rgba(80, 60, 10, 0.12);
+  box-sizing: border-box;
+}
+
+.record-tab-sheet.customize {
+  display: flex;
+  flex-direction: column;
+}
+
+.record-tab-sheet-handle {
+  width: 72rpx;
+  height: 8rpx;
+  margin: 4rpx auto 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 184, 0, 0.35);
+}
+
+.record-tab-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.record-tab-sheet-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.record-tab-sheet-action {
+  font-size: 26rpx;
+  color: #c99500;
+  font-weight: 600;
+}
+
+.record-tab-sheet-action.muted {
+  color: #9a8a62;
+  font-weight: 500;
+}
+
+.record-tab-sheet-hint {
+  display: block;
+  margin-bottom: 18rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #9a8a62;
+}
+
+.record-tab-more-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.record-tab-more-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 24rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 184, 0, 0.08);
+  color: #4a3f28;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.record-tab-more-item.active {
+  background: rgba(255, 184, 0, 0.2);
+  box-shadow: inset 0 0 0 2rpx rgba(255, 184, 0, 0.28);
+}
+
+.record-tab-more-check {
+  font-size: 22rpx;
+  color: #c99500;
+}
+
+.record-tab-more-empty {
+  padding: 28rpx 8rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #9a8a62;
+}
+
+.record-tab-customize-scroll {
+  flex: 1;
+  max-height: 52vh;
+  min-height: 240rpx;
+}
+
+.record-tab-section-title {
+  display: block;
+  margin: 12rpx 0 10rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #7a6a42;
+}
+
+.record-tab-customize-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid rgba(255, 184, 0, 0.14);
+}
+
+.record-tab-customize-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.record-tab-customize-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8rpx;
+}
+
+.record-tab-mini-btn {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: #7a6a42;
+  background: rgba(255, 184, 0, 0.12);
+}
+
+.record-tab-mini-btn.primary {
+  color: #8a6500;
+  background: rgba(255, 184, 0, 0.22);
+  font-weight: 600;
+}
+
+.record-tab-mini-btn.danger {
+  color: #b05a3a;
+  background: rgba(240, 140, 100, 0.14);
+}
+
+.record-tab-customize-footer {
+  margin-top: 18rpx;
+}
+
+.record-tab-save-btn {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 22rpx 0;
+  border-radius: 18rpx;
+  background: #FFB800;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
 }
 
 .metric-info-overlay{position:fixed;inset:0;z-index:40}

@@ -1,0 +1,188 @@
+<page-meta page-style="{{sheetVisible || listVisible ? 'overflow: hidden;' : ''}}" />
+
+<view class="page {{entered ? 'is-entered' : ''}} {{sheetVisible || listVisible ? 'sheet-open' : ''}}">
+  <view class="hero">
+    <view class="amount-bar {{amountPop ? 'is-popping' : ''}}">
+      <text class="amount-label">今日已记录</text>
+      <view class="amount-row">
+        <text class="amount-value">{{displayTotalMl}}</text>
+        <text class="amount-unit">ml</text>
+      </view>
+      <text class="amount-meta">{{recordCountText}} · 水位仅表示已记录量</text>
+    </view>
+
+    <view class="vessel-slot">
+      <view class="vessel-stage {{splashOn ? 'is-splashing' : ''}}">
+        <view class="vessel-glow"></view>
+        <!-- 弹窗打开时销毁 canvas（避免盖住弹层），用静态水位占位保持水量可见 -->
+        <canvas
+          wx:if="{{canvasVisible}}"
+          type="2d"
+          id="waterCanvas"
+          class="water-canvas"
+        ></canvas>
+        <view class="water-static" wx:if="{{!canvasVisible && staticFillPercent > 0}}">
+          <view class="water-static-clip">
+            <view class="water-static-fill" style="height: {{staticFillPercent}}%;"></view>
+          </view>
+        </view>
+        <image
+          class="vessel-overlay"
+          src="./images/lemon-water-vessel.png"
+          mode="aspectFit"
+        />
+        <view class="splash-ring" wx:if="{{splashOn}}"></view>
+        <view class="water-drop {{dropFalling ? 'is-falling' : ''}}" wx:if="{{dropFalling}}">💧</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="dock">
+    <view class="dock-main">
+      <view class="dock-head">
+        <text class="dock-title">{{records.length > 0 ? '最近记录' : '还没有喝水记录'}}</text>
+        <view
+          class="dock-all-btn"
+          wx:if="{{records.length > 0}}"
+          hover-class="dock-all-btn-press"
+          hover-stay-time="60"
+          bindtap="openListSheet"
+        >
+          <text class="dock-all-text">全部</text>
+          <text class="dock-all-arrow">›</text>
+        </view>
+      </view>
+
+      <scroll-view
+        wx:if="{{records.length > 0}}"
+        class="chip-scroll"
+        scroll-x="{{true}}"
+        enhanced="{{true}}"
+        show-scrollbar="{{false}}"
+      >
+        <view class="chip-row">
+          <view
+            class="record-chip"
+            wx:for="{{records}}"
+            wx:key="_id"
+            data-id="{{item._id}}"
+            bindtap="onEditRecord"
+            hover-class="record-chip-press"
+            hover-stay-time="60"
+          >
+            <text class="chip-time">{{item.timeString}}</text>
+            <text class="chip-volume">{{item.volumeMl}}ml</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view class="dock-empty" wx:else>
+        <text class="dock-empty-text">点右侧按钮记第一笔</text>
+      </view>
+    </view>
+
+    <view
+      class="fab"
+      hover-class="fab-press"
+      hover-stay-time="80"
+      bindtap="openRecordSheet"
+    >
+      <text class="fab-plus">＋</text>
+      <text class="fab-label">记喝水</text>
+    </view>
+  </view>
+</view>
+
+<!-- 全部明细 -->
+<view class="drawer-mask {{listVisible ? 'visible' : ''}}" wx:if="{{listVisible}}" bindtap="closeListSheet"></view>
+<view class="list-sheet {{listVisible ? 'visible' : ''}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-title-row">
+    <text class="sheet-title">今日明细</text>
+    <text class="sheet-sub">共 {{records.length}} 次 · {{totalMl}} ml</text>
+  </view>
+  <scroll-view class="list-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="list-item" wx:for="{{records}}" wx:key="_id">
+      <view class="list-main">
+        <view class="list-main-row">
+          <text class="list-time">{{item.timeString}}</text>
+          <text class="list-volume">{{item.volumeMl}} ml</text>
+        </view>
+        <text class="list-notes" wx:if="{{item.notes}}">📝 {{item.notes}}</text>
+      </view>
+      <view class="list-actions">
+        <text class="list-action" data-id="{{item._id}}" bindtap="onEditRecord">编辑</text>
+        <text class="list-action danger" data-id="{{item._id}}" bindtap="onDeleteRecord">删除</text>
+      </view>
+    </view>
+    <view class="list-empty" wx:if="{{records.length === 0}}">暂无记录</view>
+  </scroll-view>
+</view>
+
+<!-- 新增/编辑：wx:if 整层重建，确保编辑时时间/水量/备注可靠回显 -->
+<view class="drawer-mask visible" wx:if="{{sheetVisible}}" bindtap="closeRecordSheet"></view>
+<view class="record-sheet visible" wx:if="{{sheetVisible}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-title">{{editingId ? '调整喝水记录' : '新增喝水'}}</view>
+
+  <scroll-view class="sheet-body" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="compact-grid">
+      <view class="compact-field">
+        <text class="field-label">时间</text>
+        <picker mode="time" value="{{form.time}}" bindchange="onTimeChange">
+          <view class="compact-picker">🕒 {{form.time || '请选择'}}</view>
+        </picker>
+      </view>
+      <view class="compact-field">
+        <text class="field-label">水量</text>
+        <view class="volume-input-wrap">
+          <input
+            class="compact-input volume-input"
+            type="digit"
+            value="{{form.volume}}"
+            placeholder="输入水量"
+            bindinput="onVolumeInput"
+          />
+          <text class="volume-unit">ml</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="quick-block">
+      <text class="field-label">快捷水量</text>
+      <view class="quick-row">
+        <view
+          class="quick-chip {{form.volume == item ? 'active' : ''}}"
+          wx:for="{{quickVolumes}}"
+          wx:key="*this"
+          data-volume="{{item}}"
+          hover-class="quick-chip-press"
+          hover-stay-time="60"
+          bindtap="onQuickVolume"
+        >{{item}}</view>
+      </view>
+    </view>
+
+    <view class="notes-block">
+      <text class="field-label">备注</text>
+      <textarea
+        class="notes-area"
+        value="{{form.notes}}"
+        placeholder="选填，比如水温、杯子或补充说明"
+        maxlength="120"
+        bindinput="onNotesInput"
+      />
+    </view>
+  </scroll-view>
+
+  <view class="sheet-footer">
+    <button
+      class="save-btn"
+      hover-class="save-btn-press"
+      hover-stay-time="80"
+      loading="{{saving}}"
+      disabled="{{saving}}"
+      bindtap="saveRecord"
+    >保存记录</button>
+  </view>
+</view>

@@ -168,6 +168,9 @@
           <view class="qa" bindtap="navigateToBowelRecord" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic bowel">💩</view><text class="qa-nm">记尿布</text>
           </view>
+          <view class="qa" bindtap="navigateToWaterRecord" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic water">💧</view><text class="qa-nm">记喝水</text>
+          </view>
           <view class="qa" data-url="/pkg-milk/powder-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic powder">⚙️</view><text class="qa-nm">奶粉管理</text>
           </view>

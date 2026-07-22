@@ -17,6 +17,7 @@ function createDbMock(overrides = {}) {
     food_intake_records: overrides.foodIntakeData || [],
     growth_records_v2: overrides.growthRecordsV2Data || [],
     bowel_records: overrides.bowelRecords || [],
+    water_records: overrides.waterRecords || [],
     feeding_records_v2: overrides.v2Data || [],
     baby_info: overrides.babyInfoData || [],
     feeding_records: overrides.legacyFeedingRecords || []
@@ -150,7 +151,8 @@ function loadFreshService(db) {
     '../miniprogram/models/feedingRecordV2.js',
     '../miniprogram/models/foodIntakeRecord.js',
     '../miniprogram/models/medicationRecord.js',
-    '../miniprogram/models/treatmentRecord.js'
+    '../miniprogram/models/treatmentRecord.js',
+    '../miniprogram/models/waterRecord.js'
   ].forEach((modulePath) => {
     try {
       delete require.cache[require.resolve(modulePath)];
@@ -204,7 +206,7 @@ test('getDailyRecordV2 returns a clean daily_summary_v2 cache while loading v2 e
     basicInfo: { weight: '6.2' },
     milk: { calories: 100 },
     food: { calories: 40, premiumProtein: 0, regularProtein: 0 },
-    treatment: { calories: 10 },
+    treatment: { calories: 10, fluidVolume: 0 },
     macroSummary: { calories: 150, protein: 3 }
   };
   const { db, calls } = createDbMock({
@@ -754,7 +756,8 @@ test('dirty daily_summary_v2 rebuild uses actual food_intake_records nutrition a
       regularProtein: 1.62,
       fat: 1.21,
       carbs: 8.48,
-      fiber: 1.91
+      fiber: 1.91,
+      fluidVolume: 0
     });
     assert.deepEqual(dailyRecord.summary.macroSummary, {
       calories: 60.24,
@@ -1381,8 +1384,8 @@ function setupDailyRecordCacheScenario(summaryOverrides = {}) {
     rev: 111,
     basicInfo: { weight: '6.2', height: '61' },
     milk: { calories: 100, protein: 2, naturalProtein: 2, specialProtein: 0, totalVolume: 100, totalPowderWeight: 0 },
-    food: { calories: 0, protein: 0, naturalProtein: 0, specialProtein: 0, fat: 0, carbs: 0, fiber: 0 },
-    treatment: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    food: { calories: 0, protein: 0, naturalProtein: 0, specialProtein: 0, fat: 0, carbs: 0, fiber: 0, fluidVolume: 0 },
+    treatment: { calories: 0, protein: 0, carbs: 0, fat: 0, fluidVolume: 0 },
     macroSummary: { calories: 100, protein: 2, naturalProtein: 2, specialProtein: 0, carbs: 0, fat: 0 },
     recordCounts: { milk: 1, food: 0, medication: 0, treatment: 0, bowel: 0 },
     ...summaryOverrides

@@ -91,7 +91,8 @@ const TIMELINE_TABS = [
   { key: 'food', label: '辅食' },
   { key: 'med', label: '用药' },
   { key: 'treatment', label: '治疗' },
-  { key: 'bowel', label: '大小便' }
+  { key: 'bowel', label: '大小便' },
+  { key: 'water', label: '喝水' }
 ];
 const TIMELINE_DISPLAY_LIMIT = 12;
 // 把 "HH:MM" 拼到「今天」得到一个 Date（用于打卡记录的 actualDateTime）
@@ -640,6 +641,7 @@ Page({
       medicationRecords: daily.medicationRecords || [],
       treatmentRecords: daily.treatmentRecords || [],
       bowelRecords: daily.bowelRecords || [],
+      waterRecords: daily.waterRecords || [],
       limit: 0
     });
     this.timelineAll = timelineAll;
@@ -1247,6 +1249,10 @@ Page({
 
   navigateToBowelRecord() {
     wx.navigateTo({ url: `/pkg-records/bowel-record/index?date=${todayKey()}` });
+  },
+
+  navigateToWaterRecord() {
+    wx.navigateTo({ url: `/pkg-records/water-record/index?date=${todayKey()}` });
   },
 
   rebuildNutritionTargetWithPreferences(targetPreferences = readNutritionTargetPreferences(getBabyUid())) {

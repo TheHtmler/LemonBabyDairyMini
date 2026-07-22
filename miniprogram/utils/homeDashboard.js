@@ -1007,9 +1007,18 @@ function getUrineColorText(color) {
  * @param {Array}  params.medicationRecords  用药记录
  * @param {Array}  params.treatmentRecords   治疗记录
  * @param {Array}  params.bowelRecords       大便/小便记录
+ * @param {Array}  params.waterRecords       喝水记录
  * @param {number} params.limit              最多条数（0=不限制）
  */
-function buildTimeline({ milkRecords = [], foodIntakeRecords = [], medicationRecords = [], treatmentRecords = [], bowelRecords = [], limit = 0 } = {}) {
+function buildTimeline({
+  milkRecords = [],
+  foodIntakeRecords = [],
+  medicationRecords = [],
+  treatmentRecords = [],
+  bowelRecords = [],
+  waterRecords = [],
+  limit = 0
+} = {}) {
   const events = [];
 
   (milkRecords || []).forEach((record = {}) => {
@@ -1081,6 +1090,16 @@ function buildTimeline({ milkRecords = [], foodIntakeRecords = [], medicationRec
       time: resolveTimeLabel(record.timeString, record.recordTime, record.time),
       title: typeText,
       desc: details.filter(Boolean).join(' · ')
+    });
+  });
+
+  (waterRecords || []).forEach((record = {}) => {
+    const volumeMl = round(toNumber(record.volumeMl, 0), 0);
+    pushEvent(events, {
+      type: 'water',
+      time: resolveTimeLabel(record.timeString, record.recordTime, record.time),
+      title: volumeMl > 0 ? `喝水 · ${volumeMl}ml` : '喝水',
+      desc: String(record.notes || '').trim()
     });
   });
 

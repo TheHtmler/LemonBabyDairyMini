@@ -881,6 +881,7 @@ page {
 .qa-ic.med { background: #E8F1FE; }
 .qa-ic.treat { background: #F0EBFF; }
 .qa-ic.bowel { background: #FFF0E0; }
+.qa-ic.water { background: #E3F4FF; }
 .qa-ic.mark { background: #FFF3D6; }
 .qa-ic.weight { background: #FFE9ED; }
 .qa-ic.height { background: #E3F6F5; }
@@ -1244,6 +1245,7 @@ page {
 .tl-node.med { border-color: #5B9DF9; }
 .tl-node.treatment { border-color: #A78BFA; }
 .tl-node.bowel { border-color: #F59E7A; }
+.tl-node.water { border-color: #4AA8E0; }
 .tl-body {
   flex: 1;
   min-width: 0;

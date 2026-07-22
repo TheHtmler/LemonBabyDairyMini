@@ -132,6 +132,18 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
         recordTime: '2026-05-25T16:00:00.000Z',
         updatedAt: '2026-05-25T16:05:00.000Z'
       }
+    ],
+    waterRecords: [
+      {
+        _id: 'water-1',
+        volumeMl: 30,
+        updatedAt: '2026-05-25T10:00:00.000Z'
+      },
+      {
+        _id: 'water-2',
+        volumeMl: 20,
+        updatedAt: '2026-05-25T15:30:00.000Z'
+      }
     ]
   };
   const cloned = JSON.parse(JSON.stringify(input));
@@ -167,13 +179,15 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
     regularProtein: 1.23,
     fat: 0.56,
     carbs: 20.79,
-    fiber: 0.32
+    fiber: 0.32,
+    fluidVolume: 0
   });
   assert.deepEqual(summary.treatment, {
     calories: 34.56,
     protein: 0.11,
     carbs: 8.67,
-    fat: 0.22
+    fat: 0.22,
+    fluidVolume: 0
   });
   assert.deepEqual(summary.medication, {
     totalRecords: 2,
@@ -182,6 +196,10 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
   assert.deepEqual(summary.bowel, {
     totalRecords: 2,
     latestType: 'loose'
+  });
+  assert.deepEqual(summary.water, {
+    totalVolume: 50,
+    totalRecords: 2
   });
   assert.deepEqual(summary.macroSummary, {
     calories: 212.47,
@@ -196,13 +214,15 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
     food: 2,
     medication: 2,
     treatment: 1,
-    bowel: 2
+    bowel: 2,
+    water: 2
   });
   assert.equal(summary.sourceUpdatedAt.feeding, '2026-05-25T08:10:00.000Z');
   assert.equal(summary.sourceUpdatedAt.food, '2026-05-25T12:40:00.000Z');
   assert.equal(summary.sourceUpdatedAt.treatment, '2026-05-25T14:00:00.000Z');
   assert.equal(summary.sourceUpdatedAt.medication, '2026-05-25T09:00:00.000Z');
   assert.equal(summary.sourceUpdatedAt.bowel, '2026-05-25T16:05:00.000Z');
+  assert.equal(summary.sourceUpdatedAt.water, '2026-05-25T15:30:00.000Z');
   assert.equal(summary.isDirty, false);
 });
 
@@ -403,4 +423,45 @@ test('missing data returns a zeroed daily summary shape', () => {
     buildDailySummaryV2({ babyUid: 'baby-1', date: '2026-05-25' }),
     createEmptyDailySummaryV2('baby-1', '2026-05-25')
   );
+});
+
+test('buildDailySummaryV2 aggregates treatment and food fluid volumes for total liquid stats', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-07-22',
+    foodIntakeRecords: [
+      { unit: 'ml', quantity: 45, nutrition: { calories: 10 } },
+      { unit: 'g', quantity: 30, nutrition: { calories: 20 } }
+    ],
+    treatmentRecords: [
+      {
+        summary: {
+          totalCalories: 34,
+          carbs: 8,
+          protein: 0,
+          fat: 0,
+          fluidVolume: 120
+        }
+      },
+      {
+        groups: [
+          {
+            items: [
+              { name: '10%葡萄糖', unit: 'ml', amount: 80, category: 'dextrose_10', calories: 27 },
+              { name: '左卡尼丁', unit: 'mg', amount: 30 }
+            ]
+          }
+        ]
+      }
+    ],
+    waterRecords: [{ volumeMl: 35 }]
+  });
+
+  assert.equal(summary.food.fluidVolume, 45);
+  assert.equal(summary.treatment.fluidVolume, 200);
+  assert.equal(summary.water.totalVolume, 35);
 });

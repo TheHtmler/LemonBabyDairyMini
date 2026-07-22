@@ -42,6 +42,7 @@ function createDbMock(overrides = {}) {
     treatment_records: overrides.treatmentRecords || [],
     medication_records: overrides.medicationRecords || [],
     bowel_records: overrides.bowelRecords || [],
+    water_records: overrides.waterRecords || [],
     growth_records_v2: overrides.growthRecords || []
   };
 
@@ -270,7 +271,8 @@ test('rebuild writes daily_summary_v2 from v2 milk and food facts', async () => 
     regularProtein: 0,
     fat: 1,
     carbs: 8,
-    fiber: 0.5
+    fiber: 0.5,
+    fluidVolume: 0
   });
   assert.deepEqual(writes.updates[0].data.macroSummary, {
     calories: 130,

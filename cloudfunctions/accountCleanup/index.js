@@ -11,6 +11,7 @@ const BABY_SCOPED_COLLECTIONS = [
   'medication_records',
   'treatment_records',
   'bowel_records',
+  'water_records',
   'growth_records',
   'growth_records_v2',
   'growth_milestones',

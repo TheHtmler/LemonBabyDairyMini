@@ -710,6 +710,28 @@ test('buildTimeline：大小便记录以事件类型进入时间轴', () => {
   assert.equal(timeline[2].type, 'milk');
 });
 
+test('buildTimeline：喝水记录进入时间轴并带水量与备注', () => {
+  const timeline = buildTimeline({
+    milkRecords: [{ startTime: '08:00', nutritionSummary: { totalVolume: 100, calories: 67 } }],
+    waterRecords: [
+      { timeString: '10:15', volumeMl: 30, notes: '温水' },
+      { timeString: '15:40', volumeMl: 50 }
+    ],
+    limit: 0
+  });
+
+  assert.equal(timeline.length, 3);
+  assert.equal(timeline[0].type, 'water');
+  assert.equal(timeline[0].time, '15:40');
+  assert.equal(timeline[0].title, '喝水 · 50ml');
+  assert.equal(timeline[0].desc, '');
+  assert.equal(timeline[1].type, 'water');
+  assert.equal(timeline[1].time, '10:15');
+  assert.equal(timeline[1].title, '喝水 · 30ml');
+  assert.equal(timeline[1].desc, '温水');
+  assert.equal(timeline[2].type, 'milk');
+});
+
 test('buildTimeline：时间字段为 Date / datetime 字符串时归一化为 HH:MM', () => {
   const timeline = buildTimeline({
     milkRecords: [{ startTime: '', startDateTime: new Date(2026, 5, 2, 7, 5) }],

@@ -2,6 +2,7 @@ const FeedingRecordV2Model = require('../models/feedingRecordV2');
 const FoodIntakeRecordModel = require('../models/foodIntakeRecord');
 const MedicationRecordModel = require('../models/medicationRecord');
 const TreatmentRecordModel = require('../models/treatmentRecord');
+const WaterRecordModel = require('../models/waterRecord');
 const DailySummaryV2Model = require('../models/dailySummaryV2');
 const {
   buildDailySummaryV2
@@ -128,6 +129,7 @@ async function loadEventRecords(babyUid, date) {
     medicationResult,
     treatmentResult,
     bowelRecords,
+    waterResult,
     growthRecords
   ] = await Promise.all([
     FeedingRecordV2Model.getRecordsByDate(babyUid, date),
@@ -135,6 +137,7 @@ async function loadEventRecords(babyUid, date) {
     MedicationRecordModel.findByDate(date, babyUid),
     TreatmentRecordModel.findByDate(date, babyUid),
     loadBowelRecords(babyUid, date),
+    WaterRecordModel.findByDate(date, babyUid),
     loadGrowthRecords(babyUid, date)
   ]);
 
@@ -145,6 +148,7 @@ async function loadEventRecords(babyUid, date) {
     medicationRecords: unwrapResult(medicationResult),
     treatmentRecords: unwrapResult(treatmentResult),
     bowelRecords: unwrapResult(bowelRecords),
+    waterRecords: unwrapResult(waterResult),
     growthRecords: unwrapResult(growthRecords)
   };
 }
@@ -161,6 +165,7 @@ function buildServiceResult(babyUid, date, eventRecords, summary) {
     medicationRecords: eventRecords.medicationRecords,
     treatmentRecords: eventRecords.treatmentRecords,
     bowelRecords: eventRecords.bowelRecords,
+    waterRecords: eventRecords.waterRecords,
     growthRecords: eventRecords.growthRecords,
     overview: {
       milk: summary.milk,
@@ -168,6 +173,7 @@ function buildServiceResult(babyUid, date, eventRecords, summary) {
       treatment: summary.treatment,
       medication: summary.medication,
       bowel: summary.bowel,
+      water: summary.water,
       macroSummary: summary.macroSummary,
       recordCounts: summary.recordCounts
     }
@@ -197,6 +203,20 @@ function hasFoodProteinQualitySummary(summary = {}) {
   }
   return Object.prototype.hasOwnProperty.call(food, 'premiumProtein')
     && Object.prototype.hasOwnProperty.call(food, 'regularProtein');
+}
+
+function hasTreatmentFluidSummary(summary = {}) {
+  const treatment = summary.treatment || {};
+  const hasTreatment = toNumber(summary.recordCounts?.treatment) > 0
+    || ['calories', 'protein', 'carbs', 'fat'].some((field) => toNumber(treatment[field]) > 0);
+  if (!hasTreatment) {
+    return true;
+  }
+  return Object.prototype.hasOwnProperty.call(treatment, 'fluidVolume');
+}
+
+function hasCompatibleSummarySchema(summary = {}) {
+  return hasFoodProteinQualitySummary(summary) && hasTreatmentFluidSummary(summary);
 }
 
 // 判断汇总是否已有喂养摄入（奶/辅食）。
@@ -234,7 +254,7 @@ function isVerifiedEmptySummary(summary) {
 
 function isFreshRangeSummary(summary = {}) {
   if (!summary || summary.isDirty === true) return false;
-  if (!hasFoodProteinQualitySummary(summary)) return false;
+  if (!hasCompatibleSummarySchema(summary)) return false;
   // 仅有体重顺延/用药时不能当 fresh，否则漏掉后来补录的喂养，热量柱会一直空。
   if (hasIntakeRecordSummary(summary)) return true;
   return isVerifiedEmptySummary(summary);
@@ -283,7 +303,7 @@ function hasRecordCountIncrease(cachedSummary = {}, rebuiltSummary = {}) {
 }
 
 function shouldRefreshCachedSummary(cachedSummary = {}, rebuiltSummary = {}) {
-  if (!hasFoodProteinQualitySummary(cachedSummary)) {
+  if (!hasCompatibleSummarySchema(cachedSummary)) {
     return true;
   }
 
@@ -292,9 +312,9 @@ function shouldRefreshCachedSummary(cachedSummary = {}, rebuiltSummary = {}) {
   }
 
   const macroFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat'];
-  const foodFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'premiumProtein', 'regularProtein', 'carbs', 'fat', 'fiber'];
+  const foodFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'premiumProtein', 'regularProtein', 'carbs', 'fat', 'fiber', 'fluidVolume'];
   const milkFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'totalVolume', 'totalPowderWeight'];
-  const treatmentFields = ['calories', 'protein', 'carbs', 'fat'];
+  const treatmentFields = ['calories', 'protein', 'carbs', 'fat', 'fluidVolume'];
 
   if (hasNumericIncrease(cachedSummary.macroSummary, rebuiltSummary.macroSummary, macroFields)) {
     return true;
@@ -425,7 +445,7 @@ async function getDailyRecordV2(babyUid, date, options = {}) {
   if (
     cachedSummary &&
     cachedSummary.isDirty !== true &&
-    hasFoodProteinQualitySummary(cachedSummary) &&
+    hasCompatibleSummarySchema(cachedSummary) &&
     cachedEntry &&
     cachedSummary.rev != null &&
     cachedEntry.rev === cachedSummary.rev
@@ -471,7 +491,7 @@ async function getDailyRecordV2(babyUid, date, options = {}) {
 
 async function getDailySummaryForDate(babyUid, date, options = {}) {
   const cachedSummary = await DailySummaryV2Model.getByDate(babyUid, date);
-  if (cachedSummary && cachedSummary.isDirty !== true && hasFoodProteinQualitySummary(cachedSummary)) {
+  if (cachedSummary && cachedSummary.isDirty !== true && hasCompatibleSummarySchema(cachedSummary)) {
     return cachedSummary;
   }
 
@@ -510,6 +530,11 @@ async function getDailyRecordTabDetails(babyUid, date, tab) {
       return {
         tab: 'bowel',
         bowelRecords: await loadBowelRecords(babyUid, date)
+      };
+    case 'water':
+      return {
+        tab: 'water',
+        waterRecords: unwrapResult(await WaterRecordModel.findByDate(date, babyUid))
       };
     case 'growth':
       return {
@@ -595,7 +620,7 @@ async function getDailySummariesForRange(babyUid, startDate, endDate, options = 
   const summaries = dedupeSummariesByDate(rawSummaries);
   const skip = new Set(options.skipDates || []);
   const staleSchemaDates = summaries
-    .filter((summary) => summary.isDirty !== true && !hasFoodProteinQualitySummary(summary))
+    .filter((summary) => summary.isDirty !== true && !hasCompatibleSummarySchema(summary))
     .map((summary) => summary.date)
     .filter((date) => date && !skip.has(date));
 
