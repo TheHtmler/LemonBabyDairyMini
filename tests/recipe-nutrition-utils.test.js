@@ -1,0 +1,57 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const {
+  emptyNutrition,
+  addNutrition,
+  scaleNutrition,
+  buildIngredientNutrition,
+  summarizeRecipeNutrition,
+  shouldWarnYieldMismatch,
+  deriveProteinSource
+} = require('../miniprogram/utils/recipeNutritionUtils');
+
+test('summarizeRecipeNutrition builds per-100g from yield weight', () => {
+  const ingredients = [
+    {
+      nutrition: {
+        calories: 100, protein: 10, naturalProtein: 10, specialProtein: 0,
+        fat: 2, carbs: 8, fiber: 1, sodium: 0
+      }
+    },
+    {
+      nutrition: {
+        calories: 50, protein: 5, naturalProtein: 0, specialProtein: 5,
+        fat: 1, carbs: 0, fiber: 0, sodium: 200
+      }
+    }
+  ];
+  const result = summarizeRecipeNutrition(ingredients, 200);
+  assert.equal(result.totalNutrition.protein, 15);
+  assert.equal(result.totalNutrition.naturalProtein, 10);
+  assert.equal(result.totalNutrition.specialProtein, 5);
+  assert.equal(result.nutritionPer100g.protein, 7.5);
+  assert.equal(result.nutritionPer100g.calories, 75);
+  assert.equal(result.proteinSource, 'mixed');
+});
+
+test('scaleNutrition by eaten grams uses per-100g', () => {
+  const per100 = {
+    calories: 75, protein: 7.5, naturalProtein: 5, specialProtein: 2.5,
+    fat: 1.5, carbs: 4, fiber: 0.5, sodium: 100
+  };
+  const ate = scaleNutrition(per100, 60); // 60/100
+  assert.equal(ate.protein, 4.5);
+  assert.equal(ate.naturalProtein, 3);
+  assert.equal(ate.specialProtein, 1.5);
+});
+
+test('shouldWarnYieldMismatch only when all units are g', () => {
+  assert.equal(shouldWarnYieldMismatch([
+    { quantity: 100, unit: 'g' },
+    { quantity: 50, unit: 'g' }
+  ], 200), true);
+  assert.equal(shouldWarnYieldMismatch([
+    { quantity: 100, unit: 'g' },
+    { quantity: 10, unit: 'ml' }
+  ], 200), false);
+});
