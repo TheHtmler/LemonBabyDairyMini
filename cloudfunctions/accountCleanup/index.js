@@ -19,6 +19,7 @@ const BABY_SCOPED_COLLECTIONS = [
   'medications',
   'nutrition_settings',
   'milk_nutrition_profiles',
+  'recipe_catalog',
   'daily_summary_v2',
   'day_calendar_marks',
   'participant_unbind_logs',
