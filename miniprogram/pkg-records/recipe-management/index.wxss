@@ -1,0 +1,524 @@
+page {
+  background: #FFF6D8;
+  color: #3E321E;
+}
+
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24rpx 24rpx calc(124rpx + env(safe-area-inset-bottom));
+}
+
+.loading-state {
+  padding-top: 36vh;
+  text-align: center;
+  color: #8A7C60;
+  font-size: 28rpx;
+}
+
+.list-hero,
+.detail-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 34rpx 32rpx;
+  margin-bottom: 22rpx;
+  border-radius: 28rpx;
+  background: #FFE064;
+  box-shadow: 0 12rpx 28rpx rgba(162, 113, 0, 0.12);
+}
+
+.eyebrow,
+.detail-kicker {
+  display: block;
+  margin-bottom: 8rpx;
+  color: #866000;
+  font-size: 20rpx;
+  font-weight: 700;
+  letter-spacing: 3rpx;
+}
+
+.hero-title,
+.detail-title {
+  display: block;
+  max-width: 520rpx;
+  color: #3F3100;
+  font-size: 44rpx;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.hero-copy,
+.detail-notes {
+  display: block;
+  max-width: 520rpx;
+  margin-top: 12rpx;
+  color: #705A18;
+  font-size: 25rpx;
+  line-height: 1.55;
+}
+
+.lemon-mark {
+  position: absolute;
+  right: -12rpx;
+  bottom: -22rpx;
+  font-size: 132rpx;
+  opacity: 0.8;
+  transform: rotate(-12deg);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 90rpx 46rpx;
+  margin-top: 46rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 78rpx;
+}
+
+.empty-title {
+  margin-top: 18rpx;
+  color: #4D3B16;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.empty-copy {
+  margin-top: 12rpx;
+  color: #8A7C60;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.recipe-card,
+.section-card {
+  padding: 26rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  border-radius: 24rpx;
+  background: #FFFDF7;
+  box-shadow: 0 8rpx 20rpx rgba(128, 89, 0, 0.07);
+  box-sizing: border-box;
+}
+
+.recipe-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.recipe-name {
+  color: #3D301A;
+  font-size: 32rpx;
+  font-weight: 750;
+}
+
+.recipe-arrow {
+  color: #C28A00;
+  font-size: 48rpx;
+  line-height: 1;
+}
+
+.recipe-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10rpx;
+  margin-top: 24rpx;
+}
+
+.recipe-fact {
+  min-width: 0;
+}
+
+.fact-value,
+.fact-label {
+  display: block;
+}
+
+.fact-value {
+  color: #5A4310;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.fact-label {
+  margin-top: 5rpx;
+  color: #9A8C70;
+  font-size: 19rpx;
+  white-space: nowrap;
+}
+
+.last-used {
+  display: block;
+  margin-top: 22rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx dashed rgba(158, 114, 12, 0.14);
+  color: #9A8C70;
+  font-size: 22rpx;
+}
+
+.form-scroll,
+.detail-scroll {
+  height: calc(100vh - 148rpx - env(safe-area-inset-bottom));
+}
+
+.section-card {
+  margin-bottom: 20rpx;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 26rpx;
+}
+
+.section-index {
+  width: 54rpx;
+  height: 54rpx;
+  border-radius: 50%;
+  background: #FFDC52;
+  color: #5D4300;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 54rpx;
+  text-align: center;
+}
+
+.section-title,
+.section-subtitle {
+  display: block;
+}
+
+.section-title {
+  color: #3E321E;
+  font-size: 31rpx;
+  font-weight: 750;
+}
+
+.section-subtitle {
+  margin-top: 5rpx;
+  color: #9A8C70;
+  font-size: 22rpx;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 10rpx;
+  color: #66583E;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.field-gap {
+  margin-top: 22rpx;
+}
+
+.compact-input,
+.notes-area {
+  width: 100%;
+  min-height: 76rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+  border-radius: 16rpx;
+  background: #FFF9EA;
+  color: #3E321E;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.notes-area {
+  min-height: 132rpx;
+  padding-top: 20rpx;
+  padding-bottom: 20rpx;
+  line-height: 1.5;
+}
+
+.ingredient-empty {
+  padding: 34rpx 24rpx;
+  margin-bottom: 18rpx;
+  border-radius: 18rpx;
+  background: #FFF9EA;
+  color: #9A8C70;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.ingredient-row {
+  padding: 20rpx 0;
+  border-bottom: 2rpx dashed rgba(158, 114, 12, 0.16);
+}
+
+.ingredient-row.unavailable {
+  padding: 20rpx;
+  margin: 0 -4rpx 12rpx;
+  border: 2rpx solid rgba(216, 90, 67, 0.16);
+  border-radius: 18rpx;
+  background: #FFF7F2;
+}
+
+.ingredient-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 14rpx;
+}
+
+.ingredient-title-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ingredient-name {
+  display: block;
+  color: #40331E;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.snapshot-warning {
+  display: block;
+  margin-top: 6rpx;
+  color: #C4513D;
+  font-size: 21rpx;
+}
+
+.remove-link,
+.delete-link {
+  color: #C4513D;
+  font-size: 23rpx;
+}
+
+.quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.quantity-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit-label {
+  flex-shrink: 0;
+  min-width: 46rpx;
+  color: #75684E;
+  font-size: 26rpx;
+}
+
+.ingredient-nutrition,
+.yield-tip,
+.yield-warning {
+  display: block;
+  margin-top: 10rpx;
+  color: #9A8C70;
+  font-size: 21rpx;
+}
+
+.yield-warning {
+  color: #C4513D;
+  line-height: 1.45;
+}
+
+.yield-field {
+  padding-top: 26rpx;
+  margin-top: 24rpx;
+  border-top: 2rpx solid rgba(158, 114, 12, 0.12);
+}
+
+.nutrition-board {
+  display: flex;
+  align-items: stretch;
+  padding: 28rpx 20rpx;
+  margin-bottom: 20rpx;
+  border-radius: 24rpx;
+  background: #3C321F;
+  color: #FFF8E7;
+  box-shadow: 0 12rpx 24rpx rgba(60, 50, 31, 0.16);
+}
+
+.nutrition-column {
+  flex: 1;
+  min-width: 0;
+  padding: 0 14rpx;
+}
+
+.nutrition-kicker,
+.nutrition-main,
+.nutrition-caption,
+.nutrition-detail {
+  display: block;
+}
+
+.nutrition-kicker {
+  color: #F7D96F;
+  font-size: 21rpx;
+  font-weight: 700;
+}
+
+.nutrition-main {
+  margin-top: 10rpx;
+  color: #FFF4C4;
+  font-size: 42rpx;
+  font-weight: 800;
+}
+
+.nutrition-caption {
+  margin-top: 2rpx;
+  color: #E7DCC6;
+  font-size: 21rpx;
+}
+
+.nutrition-detail {
+  margin-top: 10rpx;
+  color: #BFB49E;
+  font-size: 19rpx;
+  line-height: 1.45;
+}
+
+.nutrition-divider {
+  width: 2rpx;
+  background: rgba(255, 244, 196, 0.14);
+}
+
+.outline-btn,
+.primary-btn,
+.secondary-btn {
+  width: 100%;
+  height: 82rpx;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 82rpx;
+}
+
+.outline-btn {
+  margin-top: 22rpx;
+  border: 2rpx solid rgba(194, 138, 0, 0.24);
+  background: #FFF6D8;
+  color: #9A6D00;
+  box-shadow: none;
+}
+
+.primary-btn {
+  background: #FFB800;
+  color: #4B3500;
+  box-shadow: 0 8rpx 18rpx rgba(255, 184, 0, 0.24);
+}
+
+.secondary-btn {
+  background: #FFF0BC;
+  color: #765300;
+}
+
+.outline-btn::after,
+.primary-btn::after,
+.secondary-btn::after {
+  border: none;
+}
+
+.footer-actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 253, 247, 0.97);
+  box-shadow: 0 -8rpx 22rpx rgba(102, 72, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.dual-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.dual-actions button {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-hero {
+  padding-bottom: 32rpx;
+}
+
+.detail-weight {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-top: 28rpx;
+}
+
+.detail-weight-value {
+  color: #3F3100;
+  font-size: 54rpx;
+  font-weight: 800;
+}
+
+.detail-weight-unit {
+  color: #705A18;
+  font-size: 23rpx;
+}
+
+.detail-ingredient {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 2rpx dashed rgba(158, 114, 12, 0.14);
+}
+
+.detail-ingredient:last-child {
+  border-bottom: 0;
+}
+
+.detail-ingredient-name {
+  color: #40331E;
+  font-size: 27rpx;
+  font-weight: 650;
+}
+
+.detail-ingredient-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  color: #5E4C2B;
+  font-size: 25rpx;
+}
+
+.detail-ingredient-meta {
+  margin-top: 5rpx;
+  color: #9A8C70;
+  font-size: 20rpx;
+}
+
+.detail-board {
+  margin-top: 20rpx;
+}
+
+.delete-link {
+  display: block;
+  padding: 26rpx 0;
+  text-align: center;
+}
+
+.scroll-bottom-space {
+  height: 28rpx;
+}

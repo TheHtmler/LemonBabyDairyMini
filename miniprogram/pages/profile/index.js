@@ -69,6 +69,13 @@ const MENU_GROUPS = [
         description: '维护常用食物，记录摄入更快捷'
       },
       {
+        id: 11,
+        name: '食谱管理',
+        icon: 'add',
+        path: '/pkg-records/recipe-management/index',
+        description: '维护成品菜配方，按食用克数记录营养'
+      },
+      {
         id: 3,
         name: '药物管理',
         icon: 'medicine',

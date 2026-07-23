@@ -14,6 +14,7 @@
       "pages": [
         "meal-editor/index",
         "food-picker/index",
+        "recipe-management/index",
         "growth-records/index",
         "growth-diary/index",
         "growth-diary/detail",

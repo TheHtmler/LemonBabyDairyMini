@@ -10,6 +10,7 @@ const {
 } = require('../../utils/nutritionTargetPreview');
 
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
+const RECIPE_INGREDIENT_PICKER_SELECTION_KEY = 'recipe_ingredient_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
 const FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY = 'meal_food_picker_last_library_scope';
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
@@ -76,8 +77,8 @@ function readFoodSelectionItems(value) {
   return [];
 }
 
-function writeFoodSelectionIds(foodIds = []) {
-  wx.setStorageSync(FOOD_PICKER_SELECTION_KEY, {
+function writeFoodSelectionIds(foodIds = [], storageKey = FOOD_PICKER_SELECTION_KEY) {
+  wx.setStorageSync(storageKey, {
     schemaVersion: 2,
     foodIds: (foodIds || []).filter(Boolean)
   });
@@ -171,9 +172,14 @@ Page({
   },
 
   async onLoad() {
+    const options = arguments[0] || {};
+    this.pickerSource = options.from === 'recipe-management' ? 'recipe-management' : 'meal';
     this.loadFoodPickerTargetContext();
     this.restoreLastLibraryScope();
-    const previousSelection = wx.getStorageSync(FOOD_PICKER_SELECTION_KEY);
+    const selectionKey = this.pickerSource === 'recipe-management'
+      ? RECIPE_INGREDIENT_PICKER_SELECTION_KEY
+      : FOOD_PICKER_SELECTION_KEY;
+    const previousSelection = wx.getStorageSync(selectionKey);
     this.pendingSelectedFoodIds = readFoodSelectionIds(previousSelection);
     this.pendingSelectedFoodQuantities = new Map(
       readFoodSelectionItems(previousSelection).map(item => [item.foodId, item.quantity])
@@ -1179,6 +1185,14 @@ Page({
     const selectedFoods = this.data.selectedFoodCart || [];
     if (!selectedFoods.length) {
       wx.showToast({ title: '请先选择食物', icon: 'none' });
+      return;
+    }
+    if (this.pickerSource === 'recipe-management') {
+      writeFoodSelectionIds(
+        selectedFoods.map(food => food._id),
+        RECIPE_INGREDIENT_PICKER_SELECTION_KEY
+      );
+      wx.navigateBack();
       return;
     }
     this.openQuantityDrawer();
