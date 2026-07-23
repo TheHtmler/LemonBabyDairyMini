@@ -65,7 +65,7 @@ test('stripProtectedAuditFields removes immutable and operator-only fields', () 
 test('buildHardDeleteAuditLog records deletion metadata', () => {
   const log = buildHardDeleteAuditLog({
     timestamp: '__server_date__',
-    collectionName: 'meal_combinations',
+    collectionName: 'food_intake_records',
     recordId: 'combo-1',
     babyUid: 'baby-1',
     operatorOpenid: 'openid-3'
@@ -75,7 +75,7 @@ test('buildHardDeleteAuditLog records deletion metadata', () => {
     schemaVersion: 1,
     recordType: 'audit_log',
     action: 'delete',
-    collection: 'meal_combinations',
+    collection: 'food_intake_records',
     recordId: 'combo-1',
     babyUid: 'baby-1',
     operatorOpenid: 'openid-3',

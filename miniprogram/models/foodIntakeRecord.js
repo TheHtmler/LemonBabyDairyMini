@@ -94,16 +94,6 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
   };
 }
 
-function normalizeMealCombinationSource(source = {}) {
-  const normalizedSource = source || {};
-
-  return {
-    combinationId: normalizedSource.combinationId || '',
-    combinationName: normalizedSource.combinationName || '',
-    ...(normalizedSource.sourceGroupId ? { sourceGroupId: normalizedSource.sourceGroupId } : {})
-  };
-}
-
 function normalizeFoodIntakeRecord(record = {}) {
   const foodName = record.foodName || record.foodSnapshot?.name || '';
 
@@ -140,9 +130,6 @@ function normalizeFoodIntakeRecord(record = {}) {
   if (hasOwn(record, 'plannedNutrition')) {
     normalizedRecord.plannedNutrition = normalizePlannedNutrition(record.plannedNutrition);
   }
-  if (hasOwn(record, 'mealCombinationSource')) {
-    normalizedRecord.mealCombinationSource = normalizeMealCombinationSource(record.mealCombinationSource);
-  }
 
   return normalizedRecord;
 }
@@ -167,9 +154,6 @@ function normalizeFoodIntakeUpdate(data = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'completionPercent')) {
     updateData.completionPercent = toNumber(updateData.completionPercent, 100);
-  }
-  if (Object.prototype.hasOwnProperty.call(updateData, 'mealCombinationSource')) {
-    updateData.mealCombinationSource = normalizeMealCombinationSource(updateData.mealCombinationSource);
   }
 
   return updateData;

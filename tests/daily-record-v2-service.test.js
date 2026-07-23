@@ -675,11 +675,7 @@ test('dirty daily_summary_v2 rebuild uses actual food_intake_records nutrition a
           fat: 1.5,
           fiber: 2.25
         },
-        completionPercent: 50,
-        mealCombinationSource: {
-          combinationId: 'combo-breakfast',
-          combinationName: '早餐组合'
-        }
+        completionPercent: 50
       },
       {
         _id: 'food-half-2',
@@ -709,11 +705,7 @@ test('dirty daily_summary_v2 rebuild uses actual food_intake_records nutrition a
           fat: 0.912,
           fiber: 1.578
         },
-        completionPercent: 50,
-        mealCombinationSource: {
-          combinationId: 'combo-breakfast',
-          combinationName: '早餐组合'
-        }
+        completionPercent: 50
       },
       {
         _id: 'food-archived',
