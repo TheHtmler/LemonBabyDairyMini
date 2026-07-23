@@ -1197,34 +1197,6 @@
   margin-top: 0;
 }
 
-.meal-group-completion {
-  display: inline-flex;
-  align-items: center;
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  background: rgba(255, 184, 0, 0.18);
-  color: #8A4B00;
-  font-size: 22rpx;
-  font-weight: 600;
-}
-
-.meal-combination-source {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 6rpx 14rpx;
-  border-radius: 999rpx;
-  background: rgba(76, 175, 80, 0.12);
-  color: #3F7F32;
-  font-size: 22rpx;
-  line-height: 1.3;
-}
-
-.meal-combination-source.item-source {
-  margin-top: 8rpx;
-  background: rgba(255, 184, 0, 0.1);
-  color: #8A7C60;
-}
-
 .meal-group-toggle {
   font-size: 22rpx;
   color: #C78200;
@@ -1385,92 +1357,6 @@
   color: #8A7C60;
   font-size: 20rpx;
   line-height: 1.5;
-}
-
-.meal-recipe-group,
-.manual-meal-items {
-  padding: 16rpx;
-  margin-bottom: 14rpx;
-  border-radius: 18rpx;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1rpx solid rgba(255, 184, 0, 0.16);
-}
-
-.meal-recipe-group {
-  background: linear-gradient(135deg, rgba(255, 250, 226, 0.98), rgba(255, 255, 255, 0.82));
-}
-
-.meal-recipe-group-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14rpx;
-}
-
-.meal-recipe-group-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.meal-recipe-group-badge {
-  align-self: flex-start;
-  padding: 4rpx 12rpx;
-  border-radius: 999rpx;
-  background: rgba(255, 184, 0, 0.16);
-  color: #B27400;
-  font-size: 20rpx;
-  font-weight: 700;
-}
-
-.meal-recipe-group-title {
-  color: #4A341A;
-  font-size: 27rpx;
-  font-weight: 700;
-  line-height: 1.35;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.meal-recipe-group-meta,
-.manual-meal-items-title {
-  color: #9A8A70;
-  font-size: 22rpx;
-}
-
-.meal-recipe-group-summary {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4rpx;
-  color: #8A6B2D;
-  font-size: 21rpx;
-  line-height: 1.3;
-}
-
-.meal-recipe-group-items {
-  margin-top: 14rpx;
-}
-
-.manual-meal-items-title {
-  display: block;
-  margin-bottom: 10rpx;
-  font-weight: 700;
-}
-
-.food-planned-actual {
-  display: inline-flex;
-  margin-top: 10rpx;
-  padding: 8rpx 14rpx;
-  border-radius: 12rpx;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1rpx solid rgba(255, 184, 0, 0.18);
-  color: #A96E00;
-  font-size: 23rpx;
-  line-height: 1.35;
 }
 
 .intake-item {

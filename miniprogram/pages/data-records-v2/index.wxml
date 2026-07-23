@@ -298,6 +298,35 @@
             <view class="food-record-item" wx:for="{{legacyFoodIntakes}}" wx:key="_id">
               <view class="record-content">
                 <food-record-item record="{{item}}" />
+                <view class="recipe-history" wx:if="{{item.isRecipe}}">
+                  <view
+                    class="recipe-source-row"
+                    catchtap="toggleRecipeIngredients"
+                    data-group-id="legacy"
+                    data-item-id="{{item.displayKey}}"
+                  >
+                    <text class="recipe-source-text">{{item.recipeSourceText}}</text>
+                    <text class="recipe-source-toggle" wx:if="{{item.recipeIngredientRows.length}}">
+                      {{item.recipeExpanded ? '收起原料' : '查看原料'}}
+                    </text>
+                  </view>
+                  <view class="recipe-ingredient-list" wx:if="{{item.recipeExpanded && item.recipeIngredientRows.length}}">
+                    <view
+                      class="recipe-ingredient-row"
+                      wx:for="{{item.recipeIngredientRows}}"
+                      wx:key="index"
+                      wx:for-item="ingredient"
+                    >
+                      <view class="recipe-ingredient-main">
+                        <text class="recipe-ingredient-name">{{ingredient.foodName}}</text>
+                        <text class="recipe-ingredient-quantity">{{ingredient.quantityText}}</text>
+                      </view>
+                      <text class="recipe-ingredient-nutrition">
+                        热量 {{ingredient.nutrition.calories}} kcal · 蛋白 {{ingredient.nutrition.protein}} g · 碳水 {{ingredient.nutrition.carbs}} g · 脂肪 {{ingredient.nutrition.fat}} g
+                      </text>
+                    </view>
+                  </view>
+                </view>
               </view>
               <view class="action-buttons">
                 <view class="action-btn edit-btn" bindtap="openEditFoodModal" data-index="{{item.originalIndex}}" data-id="{{item._id}}">

@@ -794,7 +794,7 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     mealLabel: record.mealLabel || '',
     mealNote: record.mealNote || '',
     sourceType: record.sourceType || 'manual_food',
-    recipeSource: record.recipeSource || null,
+    recipeSource: FoodIntakeRecordModel.normalizeRecipeSource(record.recipeSource),
     sortOrder: record.sortOrder || 0,
     createdAt: record.createdAt || null,
     updatedAt: record.updatedAt || null,
@@ -987,6 +987,8 @@ function groupFoodIntakesByMeal(intakes = []) {
     .sort((a, b) => b.sortKey - a.sortKey);
 }
 
+const LEGACY_RECIPE_GROUP_ID = 'legacy';
+
 function getLegacyFoodIntakes(intakes = []) {
   if (!Array.isArray(intakes) || intakes.length === 0) return [];
 
@@ -994,6 +996,8 @@ function getLegacyFoodIntakes(intakes = []) {
     if (!intake || intake.type === 'milk' || intake.mealBatchId) return result;
     result.push({
       ...intake,
+      ...buildRecipeIntakeDisplay(intake),
+      displayKey: intake._id || intake.localId || `${LEGACY_RECIPE_GROUP_ID}:${index}`,
       originalIndex: index
     });
     return result;
@@ -1863,6 +1867,17 @@ function createDataRecordsPageConfig(options = {}) {
   toggleRecipeIngredients(e) {
     const { groupId, itemId } = e.currentTarget.dataset || {};
     if (!groupId || !itemId) return;
+
+    if (groupId === LEGACY_RECIPE_GROUP_ID) {
+      const legacyFoodIntakes = (this.data.legacyFoodIntakes || []).map(item => (
+        item.displayKey === itemId
+          ? { ...item, recipeExpanded: !item.recipeExpanded }
+          : item
+      ));
+      this.setData({ legacyFoodIntakes });
+      return;
+    }
+
     const foodMealGroups = (this.data.foodMealGroups || []).map(group => {
       if (group.id !== groupId) return group;
       return {
