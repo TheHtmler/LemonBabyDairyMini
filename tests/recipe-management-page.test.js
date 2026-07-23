@@ -12,14 +12,24 @@ test('recipe management page is registered and linked from profile', () => {
   assert.match(profileSource, /食谱管理/);
 });
 
-test('recipe management implements yield weight without exposing steps UI', () => {
+test('recipe management preserves hidden recipe metadata while editing', () => {
   const pageSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.js', 'utf8');
   const templateSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.wxml', 'utf8');
 
   assert.match(pageSource, /yieldWeightG/);
   assert.match(pageSource, /shouldWarnYieldMismatch/);
-  assert.match(pageSource, /steps:\s*\[\]/);
+  assert.match(pageSource, /steps:\s*recipe\.steps/);
+  assert.match(pageSource, /coverImageFileId:\s*recipe\.coverImageFileId/);
+  assert.match(pageSource, /prepTimeSec:\s*recipe\.prepTimeSec/);
+  assert.match(pageSource, /steps:\s*form\.steps/);
   assert.doesNotMatch(templateSource, /制作过程|bindinput="onStep|steps\}\}/);
+});
+
+test('recipe management preserves unavailable ingredient protein split', () => {
+  const pageSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.js', 'utf8');
+
+  assert.match(pageSource, /buildIngredientNutritionPreservingSplit/);
+  assert.match(pageSource, /ingredient\.nutrition/);
 });
 
 test('recipe ingredients use an isolated food picker selection flow', () => {

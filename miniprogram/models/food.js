@@ -432,6 +432,7 @@ class FoodModel {
       nutritionBasis: formatted.nutritionBasis,
       nutritionPerBasis: formatted.nutritionPerBasis,
       proteinSource: formatted.proteinSource || 'natural',
+      proteinSplit: formatted.proteinSplit || null,
       proteinQuality: formatted.proteinQuality || '',
       sourceType: formatted.sourceType || '',
       libraryScope: formatted.libraryScope || (formatted.isSystem ? 'system' : 'mine'),

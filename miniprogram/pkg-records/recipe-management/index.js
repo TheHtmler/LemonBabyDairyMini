@@ -2,6 +2,7 @@ const RecipeModel = require('../../models/recipe');
 const FoodModel = require('../../models/food');
 const {
   buildIngredientNutrition,
+  buildIngredientNutritionPreservingSplit,
   summarizeRecipeNutrition,
   shouldWarnYieldMismatch,
   emptyNutrition
@@ -54,7 +55,9 @@ Page({
       notes: '',
       yieldWeightG: '',
       ingredients: [],
-      steps: []
+      steps: [],
+      coverImageFileId: '',
+      prepTimeSec: null
     },
     nutritionPreview: {
       totalNutrition: formatNutrition(),
@@ -121,7 +124,9 @@ Page({
       notes: '',
       yieldWeightG: '',
       ingredients: [],
-      steps: []
+      steps: [],
+      coverImageFileId: '',
+      prepTimeSec: null
     };
   },
 
@@ -159,7 +164,9 @@ Page({
       notes: recipe.notes || '',
       yieldWeightG: recipe.yieldWeightG || '',
       ingredients,
-      steps: []
+      steps: recipe.steps || [],
+      coverImageFileId: recipe.coverImageFileId || '',
+      prepTimeSec: recipe.prepTimeSec === undefined ? null : recipe.prepTimeSec
     };
     this.hasLoadedPage = true;
     this.setData({
@@ -194,7 +201,14 @@ Page({
       unit: food?.baseUnit || ingredient.unit || snapshot.nutritionBasis?.unit || 'g',
       sortOrder: index,
       foodSnapshot: snapshot,
-      nutrition: buildIngredientNutrition(nutritionSource, quantity),
+      nutrition: food
+        ? buildIngredientNutrition(food, quantity)
+        : buildIngredientNutritionPreservingSplit(
+          snapshot,
+          quantity,
+          ingredient.nutrition,
+          quantity
+        ),
       unavailable: !food,
       unavailableText: !food ? '原食物已不可用，营养按快照' : ''
     };
@@ -231,12 +245,17 @@ Page({
     if (!ingredient) return;
     const quantity = e.detail.value;
     const nutritionSource = this.foodById.get(ingredient.foodId) || ingredient.foodSnapshot;
+    const nutrition = ingredient.unavailable
+      ? buildIngredientNutritionPreservingSplit(
+        nutritionSource,
+        Number(quantity) || 0,
+        ingredient.nutrition,
+        Number(ingredient.quantity) || 0
+      )
+      : buildIngredientNutrition(nutritionSource, Number(quantity) || 0);
     this.setData({
       [`form.ingredients[${index}].quantity`]: quantity,
-      [`form.ingredients[${index}].nutrition`]: buildIngredientNutrition(
-        nutritionSource,
-        Number(quantity) || 0
-      ),
+      [`form.ingredients[${index}].nutrition`]: nutrition,
       yieldWarning: ''
     }, () => this.refreshNutritionPreview());
   },
@@ -322,7 +341,9 @@ Page({
       notes: String(form.notes || '').trim(),
       yieldWeightG: Number(form.yieldWeightG),
       ingredients,
-      steps: []
+      steps: form.steps || [],
+      coverImageFileId: form.coverImageFileId || '',
+      prepTimeSec: form.prepTimeSec === undefined ? null : form.prepTimeSec
     };
   },
 
@@ -354,7 +375,7 @@ Page({
     this.setData({ saving: true });
     wx.showLoading({ title: '保存中...', mask: true });
     const result = this.data.recipeId
-      ? await RecipeModel.update(this.data.recipeId, payload)
+      ? await RecipeModel.update(this.data.recipeId, payload, getBabyUid())
       : await RecipeModel.create(payload);
     wx.hideLoading();
     this.setData({ saving: false });

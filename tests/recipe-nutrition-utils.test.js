@@ -5,6 +5,7 @@ const {
   addNutrition,
   scaleNutrition,
   buildIngredientNutrition,
+  buildIngredientNutritionPreservingSplit,
   summarizeRecipeNutrition,
   shouldWarnYieldMismatch,
   deriveProteinSource
@@ -43,6 +44,33 @@ test('scaleNutrition by eaten grams uses per-100g', () => {
   assert.equal(ate.protein, 4.5);
   assert.equal(ate.naturalProtein, 3);
   assert.equal(ate.specialProtein, 1.5);
+});
+
+test('unavailable mixed food scales its saved protein split with quantity', () => {
+  const snapshot = {
+    proteinSource: 'mixed',
+    nutritionBasis: { quantity: 100, unit: 'g' },
+    nutritionPerBasis: { protein: 10 }
+  };
+  const nutrition = buildIngredientNutritionPreservingSplit(
+    snapshot,
+    150,
+    {
+      protein: 10,
+      naturalProtein: 4,
+      specialProtein: 6
+    },
+    100,
+    {
+      calculateNutrition: (food, quantity) => ({
+        protein: food.nutritionPerBasis.protein * quantity / food.nutritionBasis.quantity
+      })
+    }
+  );
+
+  assert.equal(nutrition.protein, 15);
+  assert.equal(nutrition.naturalProtein, 6);
+  assert.equal(nutrition.specialProtein, 9);
 });
 
 test('shouldWarnYieldMismatch only when all units are g', () => {

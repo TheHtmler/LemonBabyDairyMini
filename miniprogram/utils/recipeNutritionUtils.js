@@ -97,6 +97,42 @@ function buildIngredientNutrition(food, quantity, deps = {}) {
   };
 }
 
+function hasProteinSplit(nutrition = {}) {
+  return nutrition.naturalProtein !== undefined
+    && nutrition.naturalProtein !== null
+    && nutrition.naturalProtein !== ''
+    && nutrition.specialProtein !== undefined
+    && nutrition.specialProtein !== null
+    && nutrition.specialProtein !== ''
+    && Number.isFinite(Number(nutrition.naturalProtein))
+    && Number.isFinite(Number(nutrition.specialProtein));
+}
+
+function buildIngredientNutritionPreservingSplit(
+  food,
+  quantity,
+  previousNutrition,
+  previousQuantity,
+  deps = {}
+) {
+  const nutrition = buildIngredientNutrition(food, quantity, deps);
+  const oldQuantity = Number(previousQuantity);
+  if (
+    food?.proteinSource !== 'mixed'
+    || !hasProteinSplit(previousNutrition)
+    || !(oldQuantity > 0)
+  ) {
+    return nutrition;
+  }
+
+  const factor = (Number(quantity) || 0) / oldQuantity;
+  return {
+    ...nutrition,
+    naturalProtein: roundNumber(Number(previousNutrition.naturalProtein) * factor, 2),
+    specialProtein: roundNumber(Number(previousNutrition.specialProtein) * factor, 2)
+  };
+}
+
 function deriveProteinSource(nutrition = {}) {
   const natural = Number(nutrition.naturalProtein) || 0;
   const special = Number(nutrition.specialProtein) || 0;
@@ -142,6 +178,7 @@ module.exports = {
   scaleNutrition,
   splitProtein,
   buildIngredientNutrition,
+  buildIngredientNutritionPreservingSplit,
   summarizeRecipeNutrition,
   shouldWarnYieldMismatch,
   deriveProteinSource,

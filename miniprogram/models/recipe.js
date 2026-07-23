@@ -170,6 +170,32 @@ class RecipeModel {
     }
   }
 
+  assertRecipeOwnership(doc, babyUid) {
+    const expectedBabyUid = resolveBabyUid({ babyUid });
+    if (!expectedBabyUid) {
+      throw new Error('未找到宝宝信息');
+    }
+    if (!doc) {
+      throw new Error('食谱不存在');
+    }
+    if (doc.babyUid !== expectedBabyUid) {
+      throw new Error('无权修改该食谱');
+    }
+    return expectedBabyUid;
+  }
+
+  async getOwnedRecipe(id, babyUid) {
+    const result = await this.getById(id);
+    if (!result.success) {
+      throw new Error(result.message || '查询食谱失败');
+    }
+    const expectedBabyUid = this.assertRecipeOwnership(result.data, babyUid);
+    return {
+      record: result.data,
+      babyUid: expectedBabyUid
+    };
+  }
+
   async create(recipe = {}) {
     try {
       const babyUid = resolveBabyUid(recipe);
@@ -205,25 +231,18 @@ class RecipeModel {
     }
   }
 
-  async update(id, patch = {}) {
+  async update(id, patch = {}, babyUid) {
     try {
-      const previous = await this.getById(id);
-      const previousRecord = previous?.data || {};
-      const babyUid = resolveBabyUid({
-        ...previousRecord,
-        ...patch
-      }) || previousRecord.babyUid;
-
-      if (!babyUid) {
-        throw new Error('未找到宝宝信息');
-      }
+      const ownedRecipe = await this.getOwnedRecipe(id, babyUid);
+      const previousRecord = ownedRecipe.record;
+      const expectedBabyUid = ownedRecipe.babyUid;
 
       const operatorOpenid = resolveOperatorOpenid(patch);
       const timestamp = db.serverDate();
       const payload = this.buildRecipePayload({
         ...previousRecord,
         ...patch,
-        babyUid,
+        babyUid: expectedBabyUid,
         usageCount: previousRecord.usageCount,
         lastUsedAt: previousRecord.lastUsedAt
       });
@@ -247,7 +266,9 @@ class RecipeModel {
 
   async softDelete(id, babyUid) {
     try {
-      const operatorOpenid = resolveOperatorOpenid({ babyUid });
+      const ownedRecipe = await this.getOwnedRecipe(id, babyUid);
+      const expectedBabyUid = ownedRecipe.babyUid;
+      const operatorOpenid = resolveOperatorOpenid({ babyUid: expectedBabyUid });
       const timestamp = db.serverDate();
       const result = await this.collection.doc(id).update({
         data: {
@@ -293,9 +314,11 @@ class RecipeModel {
     }
   }
 
-  async touchUsage(id) {
+  async touchUsage(id, babyUid) {
     try {
-      const operatorOpenid = resolveOperatorOpenid({});
+      const ownedRecipe = await this.getOwnedRecipe(id, babyUid);
+      const expectedBabyUid = ownedRecipe.babyUid;
+      const operatorOpenid = resolveOperatorOpenid({ babyUid: expectedBabyUid });
       const timestamp = db.serverDate();
       const result = await this.collection.doc(id).update({
         data: {

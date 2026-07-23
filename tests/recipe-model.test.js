@@ -21,3 +21,16 @@ test('recipe model targets recipe_catalog with soft delete and usage fields', ()
   assert.match(source, /listActiveByBaby/);
   assert.match(source, /touchUsage/);
 });
+
+test('recipe model guards every existing-document write by babyUid', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', 'miniprogram/models/recipe.js'),
+    'utf8'
+  );
+
+  assert.match(source, /async update\(id,\s*patch\s*=\s*\{\},\s*babyUid\)/);
+  assert.match(source, /async softDelete\(id,\s*babyUid\)/);
+  assert.match(source, /async touchUsage\(id,\s*babyUid\)/);
+  assert.match(source, /assertRecipeOwnership/);
+  assert.match(source, /doc\.babyUid\s*!==\s*expectedBabyUid/);
+});
