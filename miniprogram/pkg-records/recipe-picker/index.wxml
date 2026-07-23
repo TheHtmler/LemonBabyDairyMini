@@ -1,0 +1,57 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">本顿食谱</text>
+    <text class="hero-title">这顿吃了哪道菜？</text>
+    <text class="hero-copy">选择已做好的食谱，再填写宝宝实际吃下的克数。</text>
+  </view>
+
+  <view class="loading-state" wx:if="{{loading}}">正在加载食谱...</view>
+
+  <view class="empty-state" wx:elif="{{recipes.length === 0}}">
+    <text class="empty-icon">🥣</text>
+    <text class="empty-title">还没有可用食谱</text>
+    <text class="empty-copy">请先到“我的 → 食谱管理”创建食谱。</text>
+  </view>
+
+  <view class="recipe-list" wx:else>
+    <view
+      class="recipe-card {{selectedRecipeId === item._id ? 'selected' : ''}}"
+      wx:for="{{recipes}}"
+      wx:key="_id"
+      data-id="{{item._id}}"
+      bindtap="selectRecipe"
+    >
+      <view class="recipe-head">
+        <view class="recipe-main">
+          <text class="recipe-name">{{item.name}}</text>
+          <text class="recipe-meta">成品 {{item.yieldWeightG}}g · 每 100g {{item.caloriesText}} kcal</text>
+        </view>
+        <text class="select-mark">{{selectedRecipeId === item._id ? '✓' : '○'}}</text>
+      </view>
+      <view class="nutrition-line">
+        蛋白 {{item.proteinText}}g · 天然 {{item.nutritionPer100g.naturalProtein || 0}}g · 特殊 {{item.nutritionPer100g.specialProtein || 0}}g
+      </view>
+      <view class="quantity-panel" wx:if="{{selectedRecipeId === item._id}}" catchtap="selectRecipe" data-id="{{item._id}}">
+        <text class="field-label">本次食用克数</text>
+        <view class="quantity-row">
+          <input
+            class="compact-input"
+            type="digit"
+            value="{{quantity}}"
+            placeholder="请输入实际吃下的重量"
+            bindinput="onQuantityInput"
+          />
+          <text class="unit-label">g</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer-actions">
+    <button
+      class="confirm-btn"
+      disabled="{{!selectedRecipeId || !quantity}}"
+      bindtap="confirmSelection"
+    >加入本顿</button>
+  </view>
+</view>

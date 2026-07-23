@@ -55,6 +55,8 @@ function normalizeNutritionPerBasis(nutrition = {}) {
   return {
     calories: toNumber(nutrition.calories),
     protein: toNumber(nutrition.protein),
+    naturalProtein: toNumber(nutrition.naturalProtein),
+    specialProtein: toNumber(nutrition.specialProtein),
     fat: toNumber(nutrition.fat),
     carbs: toNumber(nutrition.carbs),
     fiber: toNumber(nutrition.fiber),
@@ -94,8 +96,28 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
   };
 }
 
+function normalizeRecipeSource(source = {}) {
+  if (!source || typeof source !== 'object') return null;
+  const recipeId = String(source.recipeId || '').trim();
+  const recipeName = String(source.recipeName || '').trim();
+  if (!recipeId && !recipeName) return null;
+  return {
+    recipeId,
+    recipeName,
+    yieldWeightG: Number(source.yieldWeightG) || 0,
+    ingredientsSnapshot: Array.isArray(source.ingredientsSnapshot)
+      ? source.ingredientsSnapshot
+      : []
+  };
+}
+
 function normalizeFoodIntakeRecord(record = {}) {
   const foodName = record.foodName || record.foodSnapshot?.name || '';
+  const recipeSource = normalizeRecipeSource(record.recipeSource);
+  const foodSnapshot = normalizeFoodSnapshot(record.foodSnapshot, foodName);
+  if (record.sourceType === 'recipe' || recipeSource) {
+    delete foodSnapshot.sourceType;
+  }
 
   const normalizedRecord = {
     ...record,
@@ -110,7 +132,8 @@ function normalizeFoodIntakeRecord(record = {}) {
     time: record.time || '',
     foodId: record.foodId || '',
     foodName,
-    foodSnapshot: normalizeFoodSnapshot(record.foodSnapshot, foodName),
+    foodSnapshot,
+    recipeSource,
     quantity: toNumber(record.quantity),
     unit: record.unit || 'g',
     nutrition: normalizeNutrition(record.nutrition),
@@ -145,6 +168,15 @@ function normalizeFoodIntakeUpdate(data = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'foodSnapshot')) {
     updateData.foodSnapshot = normalizeFoodSnapshot(updateData.foodSnapshot, updateData.foodName);
+  }
+  if (Object.prototype.hasOwnProperty.call(updateData, 'recipeSource')) {
+    updateData.recipeSource = normalizeRecipeSource(updateData.recipeSource);
+  }
+  if (
+    updateData.foodSnapshot
+    && (updateData.sourceType === 'recipe' || updateData.recipeSource)
+  ) {
+    delete updateData.foodSnapshot.sourceType;
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'plannedQuantity')) {
     updateData.plannedQuantity = toNumber(updateData.plannedQuantity);
@@ -449,5 +481,6 @@ module.exports = {
   findMigratedLegacyIntake,
   findRecentFoodIntakes,
   findByDate,
-  normalizeFoodIntakeRecord
+  normalizeFoodIntakeRecord,
+  normalizeRecipeSource
 };

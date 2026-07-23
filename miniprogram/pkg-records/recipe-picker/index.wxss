@@ -1,0 +1,183 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx 24rpx calc(144rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #fff6d8 0%, #fffaf0 100%);
+}
+
+.hero {
+  padding: 30rpx 28rpx;
+  margin-bottom: 24rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #ffcb38 0%, #ffb800 100%);
+  color: #5f3900;
+}
+
+.eyebrow,
+.hero-title,
+.hero-copy,
+.empty-icon,
+.empty-title,
+.empty-copy,
+.recipe-name,
+.recipe-meta {
+  display: block;
+}
+
+.eyebrow {
+  font-size: 20rpx;
+  font-weight: 700;
+  letter-spacing: 4rpx;
+}
+
+.hero-title {
+  margin-top: 10rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.hero-copy {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: rgba(95, 57, 0, 0.75);
+}
+
+.loading-state,
+.empty-state {
+  padding: 60rpx 28rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.94);
+  text-align: center;
+  color: #8a7c60;
+}
+
+.empty-icon {
+  font-size: 56rpx;
+}
+
+.empty-title {
+  margin-top: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #4c402f;
+}
+
+.empty-copy {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+}
+
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.recipe-card {
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.96);
+  box-sizing: border-box;
+}
+
+.recipe-card.selected {
+  border-color: #ffb800;
+  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.16);
+}
+
+.recipe-head,
+.quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.recipe-head {
+  justify-content: space-between;
+}
+
+.recipe-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.recipe-meta,
+.nutrition-line {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #8a7c60;
+}
+
+.select-mark {
+  color: #c78200;
+  font-size: 34rpx;
+}
+
+.quantity-panel {
+  margin-top: 22rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid rgba(255, 184, 0, 0.16);
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 12rpx;
+  color: #6b604d;
+  font-size: 24rpx;
+}
+
+.compact-input {
+  flex: 1;
+  height: 76rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.14);
+  border-radius: 16rpx;
+  background: #fff9ea;
+  box-sizing: border-box;
+  font-size: 28rpx;
+}
+
+.unit-label {
+  color: #8a7c60;
+  font-size: 26rpx;
+}
+
+.footer-actions {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 250, 240, 0.98);
+  box-sizing: border-box;
+}
+
+.confirm-btn {
+  width: 100%;
+  height: 84rpx;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 18rpx;
+  background: #ffb800;
+  color: #fff;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.confirm-btn[disabled] {
+  background: #ead8a0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.confirm-btn::after {
+  border: none;
+}

@@ -1,8 +1,10 @@
 const FoodModel = require('../../models/food');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
+const RecipeModel = require('../../models/recipe');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
+const { scaleNutrition } = require('../../utils/recipeNutritionUtils');
 const {
   getNutritionTargetPreferences,
   pickCoefficient
@@ -26,6 +28,7 @@ const MEAL_LABELS = ['早餐', '午餐', '晚餐', '加餐'];
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
+const RECIPE_PICKER_SELECTION_KEY = 'meal_recipe_picker_selection';
 
 function canLoadDailyTargetContext() {
   try {
@@ -323,6 +326,7 @@ Page({
     },
     targetContextLoaded: false,
     foodCatalog: [],
+    showAddTypeSheet: false,
     drawerVisible: false,
     drawerStep: 'batch',
     batchFoodDrafts: [],
@@ -331,6 +335,12 @@ Page({
       food: null,
       quantity: '',
       unit: 'g',
+      nutritionPreview: null
+    },
+    currentRecipeDraft: {
+      localId: '',
+      recipeName: '',
+      quantity: '',
       nutritionPreview: null
     },
     editingItemId: '',
@@ -372,9 +382,10 @@ Page({
     if (!this.hasLoadedCatalog) {
       return;
     }
+    const hasRecipePickerSelection = this.handleRecipePickerSelection();
     const hasFoodPickerSelection = this.handleFoodPickerSelection();
     await this.reloadTargetContextAndPreviews();
-    if (hasFoodPickerSelection) {
+    if (hasRecipePickerSelection || hasFoodPickerSelection) {
       return;
     }
     // 仅从食物管理返回（可能新增/改图）时重载目录；普通 onShow 不换链不读库
@@ -472,7 +483,12 @@ Page({
   },
 
   refreshDraftTargetPreview() {
-    const pendingItem = this.buildMealItemFromDraft(false);
+    const recipeTarget = this.data.drawerStep === 'recipe-edit'
+      ? (this.data.mealDraft.items || []).find(item => item.localId === this.data.currentRecipeDraft.localId)
+      : null;
+    const pendingItem = recipeTarget
+      ? this.updateRecipeMealItemQuantity(recipeTarget, this.data.currentRecipeDraft.quantity, false)
+      : this.buildMealItemFromDraft(false);
     if (!pendingItem) {
       this.setData({ draftTargetPreview: null });
       return;
@@ -567,6 +583,26 @@ Page({
     this.setData({ 'mealDraft.mealNote': e.detail.value || '' });
   },
 
+  openAddTypeSheet() {
+    this.setData({ showAddTypeSheet: true });
+  },
+
+  closeAddTypeSheet() {
+    this.setData({ showAddTypeSheet: false });
+  },
+
+  chooseFoodEntry() {
+    this.setData({ showAddTypeSheet: false });
+    this.openFoodDrawer();
+  },
+
+  chooseRecipeEntry() {
+    this.setData({ showAddTypeSheet: false });
+    wx.navigateTo({
+      url: '/pkg-records/recipe-picker/index'
+    });
+  },
+
   resetCurrentFoodDraft() {
     this.setData({
       currentFoodDraft: {
@@ -574,6 +610,12 @@ Page({
         food: null,
         quantity: '',
         unit: 'g',
+        nutritionPreview: null
+      },
+      currentRecipeDraft: {
+        localId: '',
+        recipeName: '',
+        quantity: '',
         nutritionPreview: null
       },
       editingItemId: '',
@@ -646,6 +688,74 @@ Page({
     });
   },
 
+  handleRecipePickerSelection() {
+    const selection = wx.getStorageSync(RECIPE_PICKER_SELECTION_KEY);
+    const selectedItems = Array.isArray(selection?.items) ? selection.items : [];
+    if (!selectedItems.length) return false;
+    wx.removeStorageSync(RECIPE_PICKER_SELECTION_KEY);
+
+    const items = [...(this.data.mealDraft.items || [])];
+    selectedItems.forEach((selected, index) => {
+      const quantity = Number(selected.quantity);
+      if (!selected.recipeId || !selected.recipeName || !Number.isFinite(quantity) || quantity <= 0) {
+        return;
+      }
+      const localId = selected.localId || `meal_recipe_${Date.now()}_${index}`;
+      const nutritionPer100g = selected.nutritionPer100g || {};
+      const nutrition = withProteinNutritionDisplay(scaleNutrition(nutritionPer100g, quantity));
+      const nextItem = {
+        localId,
+        originalIntakeId: '',
+        createdAt: null,
+        createdBy: '',
+        foodId: '',
+        food: null,
+        foodSnapshot: {
+          name: selected.recipeName,
+          category: '食谱成品',
+          nutritionBasis: { quantity: 100, unit: 'g' },
+          nutritionPerBasis: nutritionPer100g,
+          proteinSource: selected.proteinSource || 'natural'
+        },
+        recipeId: selected.recipeId,
+        recipeName: selected.recipeName,
+        nameSnapshot: selected.recipeName,
+        category: '食谱成品',
+        unit: 'g',
+        quantity,
+        nutritionPer100g,
+        nutrition,
+        proteinSource: selected.proteinSource || 'natural',
+        sourceLabel: '食谱',
+        sourceType: 'recipe',
+        naturalProtein: Number(nutrition.naturalProtein) || 0,
+        specialProtein: Number(nutrition.specialProtein) || 0,
+        yieldWeightG: Number(selected.yieldWeightG) || 0,
+        ingredientsSnapshot: Array.isArray(selected.ingredientsSnapshot) ? selected.ingredientsSnapshot : [],
+        recipeSource: {
+          recipeId: selected.recipeId,
+          recipeName: selected.recipeName,
+          yieldWeightG: Number(selected.yieldWeightG) || 0,
+          ingredientsSnapshot: Array.isArray(selected.ingredientsSnapshot) ? selected.ingredientsSnapshot : []
+        }
+      };
+      const existingIndex = items.findIndex(item => item.localId === localId);
+      if (existingIndex >= 0) {
+        items[existingIndex] = nextItem;
+      } else {
+        items.push(nextItem);
+      }
+    });
+
+    this.setData({
+      'mealDraft.items': items,
+      mealSummary: calculateMealSummary(items)
+    }, () => {
+      this.refreshMealTargetPreview();
+    });
+    return true;
+  },
+
   handleFoodPickerSelection() {
     const selection = wx.getStorageSync(FOOD_PICKER_SELECTION_KEY);
     const selectedItems = readFoodSelectionItems(selection);
@@ -705,6 +815,21 @@ Page({
       'currentFoodDraft.quantity': quantity
     }, () => {
       this.updateCurrentFoodDraftPreview();
+    });
+  },
+
+  onRecipeQuantityInput(e) {
+    const quantity = e.detail.value || '';
+    const target = (this.data.mealDraft.items || [])
+      .find(item => item.localId === this.data.currentRecipeDraft.localId);
+    const nutritionPreview = target && Number(quantity) > 0
+      ? withProteinNutritionDisplay(scaleNutrition(target.nutritionPer100g, Number(quantity)))
+      : null;
+    this.setData({
+      'currentRecipeDraft.quantity': quantity,
+      'currentRecipeDraft.nutritionPreview': nutritionPreview
+    }, () => {
+      this.refreshDraftTargetPreview();
     });
   },
 
@@ -849,9 +974,50 @@ Page({
   },
 
   buildMealItemFromDraft(showToast = true) {
+    if (this.data.drawerStep === 'recipe-edit') {
+      const target = (this.data.mealDraft.items || [])
+        .find(item => item.localId === this.data.currentRecipeDraft.localId);
+      return this.updateRecipeMealItemQuantity(target, this.data.currentRecipeDraft.quantity, showToast);
+    }
     return this.buildMealItemFromFoodDraft(this.data.currentFoodDraft, showToast, {
       editingItemId: this.data.editingItemId
     });
+  },
+
+  updateRecipeMealItemQuantity(target, quantity, showToast = true) {
+    if (!target || target.sourceType !== 'recipe') return null;
+    const numQuantity = Number(quantity);
+    if (!Number.isFinite(numQuantity) || numQuantity <= 0) {
+      if (showToast) wx.showToast({ title: '请输入有效的食用克数', icon: 'none' });
+      return null;
+    }
+    const nutrition = withProteinNutritionDisplay(scaleNutrition(target.nutritionPer100g || {}, numQuantity));
+    return {
+      ...target,
+      quantity: numQuantity,
+      unit: 'g',
+      nutrition,
+      naturalProtein: Number(nutrition.naturalProtein) || 0,
+      specialProtein: Number(nutrition.specialProtein) || 0
+    };
+  },
+
+  addOrUpdateRecipeMealItem() {
+    const target = (this.data.mealDraft.items || [])
+      .find(item => item.localId === this.data.currentRecipeDraft.localId);
+    const nextItem = this.updateRecipeMealItemQuantity(target, this.data.currentRecipeDraft.quantity);
+    if (!nextItem) return;
+    const items = (this.data.mealDraft.items || [])
+      .map(item => item.localId === nextItem.localId ? nextItem : item);
+    this.setData({
+      'mealDraft.items': items,
+      mealSummary: calculateMealSummary(items),
+      drawerVisible: false
+    }, () => {
+      this.refreshMealTargetPreview();
+      this.resetCurrentFoodDraft();
+    });
+    wx.showToast({ title: '已更新食谱份量', icon: 'success' });
   },
 
   addOrUpdateMealItem() {
@@ -955,6 +1121,22 @@ Page({
     const { id } = e.currentTarget.dataset;
     const target = (this.data.mealDraft.items || []).find(item => item.localId === id);
     if (!target) return;
+    if (target.sourceType === 'recipe') {
+      this.setData({
+        drawerVisible: true,
+        drawerStep: 'recipe-edit',
+        editingItemId: target.localId,
+        currentRecipeDraft: {
+          localId: target.localId,
+          recipeName: target.recipeName || target.nameSnapshot,
+          quantity: String(target.quantity),
+          nutritionPreview: target.nutrition ? withProteinNutritionDisplay(target.nutrition) : null
+        }
+      }, () => {
+        this.refreshDraftTargetPreview();
+      });
+      return;
+    }
     this.setData({
       drawerVisible: true,
       drawerStep: 'edit',
@@ -1052,6 +1234,57 @@ Page({
       const items = targetIntakes.map((intake, index) => {
         const catalogFood = this.getFoodById(intake.foodId);
         const snapshot = intake.foodSnapshot || {};
+        const isRecipe = intake.sourceType === 'recipe' || !!intake.recipeSource;
+        if (isRecipe) {
+          const recipeSource = intake.recipeSource || {};
+          const recipeName = recipeSource.recipeName || intake.foodName || intake.nameSnapshot || snapshot.name || '食谱';
+          const nutritionPer100g = snapshot.nutritionPerBasis || {};
+          const nutrition = withProteinNutritionDisplay(intake.nutrition || {});
+          return {
+            localId: intake._id || `meal_recipe_${index}`,
+            originalIntakeId: intake._id || '',
+            createdAt: intake.createdAt || null,
+            createdBy: intake.createdBy || '',
+            foodId: '',
+            food: null,
+            foodSnapshot: {
+              name: recipeName,
+              category: '食谱成品',
+              nutritionBasis: { quantity: 100, unit: 'g' },
+              nutritionPerBasis: nutritionPer100g,
+              proteinSource: snapshot.proteinSource || intake.proteinSource || 'natural'
+            },
+            recipeId: recipeSource.recipeId || '',
+            recipeName,
+            nameSnapshot: recipeName,
+            category: '食谱成品',
+            unit: 'g',
+            quantity: Number(intake.quantity) || 0,
+            nutritionPer100g,
+            nutrition,
+            proteinSource: snapshot.proteinSource || intake.proteinSource || 'natural',
+            sourceLabel: '食谱',
+            sourceType: 'recipe',
+            naturalProtein: typeof nutrition.naturalProtein === 'number'
+              ? nutrition.naturalProtein
+              : (Number(intake.naturalProtein) || 0),
+            specialProtein: typeof nutrition.specialProtein === 'number'
+              ? nutrition.specialProtein
+              : (Number(intake.specialProtein) || 0),
+            yieldWeightG: Number(recipeSource.yieldWeightG) || 0,
+            ingredientsSnapshot: Array.isArray(recipeSource.ingredientsSnapshot)
+              ? recipeSource.ingredientsSnapshot
+              : [],
+            recipeSource: {
+              recipeId: recipeSource.recipeId || '',
+              recipeName,
+              yieldWeightG: Number(recipeSource.yieldWeightG) || 0,
+              ingredientsSnapshot: Array.isArray(recipeSource.ingredientsSnapshot)
+                ? recipeSource.ingredientsSnapshot
+                : []
+            }
+          };
+        }
         const fallbackFood = {
           _id: intake.foodId || `legacy_food_${index}`,
           name: intake.foodName || intake.nameSnapshot || snapshot.name || '食物',
@@ -1123,51 +1356,90 @@ Page({
   buildMealIntakes(mealBatchId) {
     const { mealTime, mealLabel, mealNote, items } = this.data.mealDraft;
     const now = new Date();
-    return (items || []).map((item, index) => ({
-      _id: item.originalIntakeId || `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
-      type: 'food',
-      foodType: 'food',
-      category: item.category || '辅食',
-      foodId: item.foodId,
-      foodSnapshot: item.foodSnapshot || FoodModel.buildFoodSnapshot(item.food || {}),
-      nameSnapshot: item.nameSnapshot,
-      unit: item.unit || 'g',
-      quantity: item.quantity,
-      proteinSource: item.proteinSource || 'natural',
-      proteinQuality: item.proteinQuality || '',
-      libraryScope: item.libraryScope || item.foodSnapshot?.libraryScope || this.getFoodLibraryScope(item.food || {}),
-      sourceLabel: item.sourceLabel || this.getFoodSourceLabel({
-        ...(item.food || {}),
-        libraryScope: item.libraryScope || item.foodSnapshot?.libraryScope,
-        isSystem: (item.libraryScope || item.foodSnapshot?.libraryScope) === 'system'
-      }),
-      sourceType: item.sourceType || item.foodSnapshot?.sourceType || 'manual_food',
-      naturalProtein: item.naturalProtein || 0,
-      specialProtein: item.specialProtein || 0,
-      milkType: item.milkType || '',
-      notes: '',
-      recordedAt: mealTime,
-      time: mealTime,
-      mealBatchId,
-      mealTime,
-      mealLabel,
-      mealNote: String(mealNote || '').trim(),
-      sortOrder: index,
-      createdAt: item.createdAt || now,
-      updatedAt: now,
-      createdBy: item.createdBy || app.globalData.openid || wx.getStorageSync('openid') || '',
-      foodName: item.nameSnapshot || item.food?.name || '',
-      nutrition: {
-        calories: item.nutrition?.calories || 0,
-        protein: item.nutrition?.protein || 0,
-        carbs: item.nutrition?.carbs || 0,
-        fat: item.nutrition?.fat || 0,
-        fiber: item.nutrition?.fiber || 0,
-        sodium: item.nutrition?.sodium || 0,
-        naturalProtein: item.naturalProtein || item.nutrition?.naturalProtein || 0,
-        specialProtein: item.specialProtein || item.nutrition?.specialProtein || 0
+    return (items || []).map((item, index) => {
+      const baseFields = {
+        _id: item.originalIntakeId || `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
+        type: 'food',
+        foodType: 'food',
+        nameSnapshot: item.recipeName || item.nameSnapshot,
+        notes: '',
+        recordedAt: mealTime,
+        time: mealTime,
+        mealBatchId,
+        mealTime,
+        mealLabel,
+        mealNote: String(mealNote || '').trim(),
+        sortOrder: index,
+        createdAt: item.createdAt || now,
+        updatedAt: now,
+        createdBy: item.createdBy || app.globalData.openid || wx.getStorageSync('openid') || ''
+      };
+
+      if (item.sourceType === 'recipe') {
+        return {
+          ...baseFields,
+          foodId: '',
+          foodName: item.recipeName || item.nameSnapshot,
+          category: '食谱成品',
+          sourceType: 'recipe',
+          foodSnapshot: {
+            name: item.recipeName || item.nameSnapshot,
+            category: '食谱成品',
+            nutritionBasis: { quantity: 100, unit: 'g' },
+            nutritionPerBasis: item.nutritionPer100g,
+            proteinSource: item.proteinSource
+          },
+          recipeSource: {
+            recipeId: item.recipeId,
+            recipeName: item.recipeName,
+            yieldWeightG: item.yieldWeightG,
+            ingredientsSnapshot: item.ingredientsSnapshot || []
+          },
+          quantity: item.quantity,
+          unit: 'g',
+          proteinSource: item.proteinSource || 'natural',
+          naturalProtein: item.nutrition?.naturalProtein || 0,
+          specialProtein: item.nutrition?.specialProtein || 0,
+          nutrition: {
+            ...(item.nutrition || {}),
+            naturalProtein: item.nutrition?.naturalProtein || 0,
+            specialProtein: item.nutrition?.specialProtein || 0
+          }
+        };
       }
-    }));
+
+      return {
+        ...baseFields,
+        category: item.category || '辅食',
+        foodId: item.foodId,
+        foodSnapshot: item.foodSnapshot || FoodModel.buildFoodSnapshot(item.food || {}),
+        unit: item.unit || 'g',
+        quantity: item.quantity,
+        proteinSource: item.proteinSource || 'natural',
+        proteinQuality: item.proteinQuality || '',
+        libraryScope: item.libraryScope || item.foodSnapshot?.libraryScope || this.getFoodLibraryScope(item.food || {}),
+        sourceLabel: item.sourceLabel || this.getFoodSourceLabel({
+          ...(item.food || {}),
+          libraryScope: item.libraryScope || item.foodSnapshot?.libraryScope,
+          isSystem: (item.libraryScope || item.foodSnapshot?.libraryScope) === 'system'
+        }),
+        sourceType: item.sourceType || item.foodSnapshot?.sourceType || 'manual_food',
+        naturalProtein: item.naturalProtein || 0,
+        specialProtein: item.specialProtein || 0,
+        milkType: item.milkType || '',
+        foodName: item.nameSnapshot || item.food?.name || '',
+        nutrition: {
+          calories: item.nutrition?.calories || 0,
+          protein: item.nutrition?.protein || 0,
+          carbs: item.nutrition?.carbs || 0,
+          fat: item.nutrition?.fat || 0,
+          fiber: item.nutrition?.fiber || 0,
+          sodium: item.nutrition?.sodium || 0,
+          naturalProtein: item.naturalProtein || item.nutrition?.naturalProtein || 0,
+          specialProtein: item.specialProtein || item.nutrition?.specialProtein || 0
+        }
+      };
+    });
   },
 
   async notifyPreviousPageRefresh() {
@@ -1188,11 +1460,42 @@ Page({
     }
   },
 
+  async touchActiveRecipeUsage(items = [], babyUid = '') {
+    const recipeIds = [...new Set(
+      (items || [])
+        .filter(item => item.sourceType === 'recipe')
+        .map(item => item.recipeId)
+        .filter(Boolean)
+    )];
+    if (!recipeIds.length) return;
+    try {
+      const activeResult = await RecipeModel.listActiveByBaby(babyUid);
+      if (!activeResult.success) return;
+      const activeIds = new Set((activeResult.data || []).map(recipe => recipe._id));
+      await Promise.all(
+        recipeIds
+          .filter(recipeId => activeIds.has(recipeId))
+          .map(recipeId => RecipeModel.touchUsage(recipeId))
+      );
+    } catch (error) {
+      console.warn('更新食谱使用统计失败，餐次已按快照保存:', error);
+    }
+  },
+
   async saveMeal() {
     if (this.data.isSaving) return;
 
     let items = [...(this.data.mealDraft.items || [])];
-    if (this.data.drawerStep === 'edit' && this.data.currentFoodDraft.food) {
+    if (this.data.drawerStep === 'recipe-edit' && this.data.currentRecipeDraft.localId) {
+      const target = items.find(item => item.localId === this.data.currentRecipeDraft.localId);
+      const pendingItem = this.updateRecipeMealItemQuantity(
+        target,
+        this.data.currentRecipeDraft.quantity
+      );
+      if (!pendingItem) return;
+      items = items.map(item => item.localId === pendingItem.localId ? pendingItem : item);
+      this.setData({ 'mealDraft.items': items });
+    } else if (this.data.drawerStep === 'edit' && this.data.currentFoodDraft.food) {
       const pendingItem = this.buildMealItemFromDraft();
       if (!pendingItem) return;
       const pendingIndex = items.findIndex(item => item.localId === pendingItem.localId);
@@ -1229,6 +1532,7 @@ Page({
         records: mealIntakes,
         operatorOpenid: app.globalData.openid || wx.getStorageSync('openid') || ''
       });
+      await this.touchActiveRecipeUsage(items, babyUid);
       const savedMealIntakes = mealIntakes.map((record, index) => ({
         ...record,
         _id: saveResult?.createdIds?.[index] || record._id,

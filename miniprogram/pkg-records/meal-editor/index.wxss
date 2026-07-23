@@ -447,6 +447,87 @@
   color: #2e9e5b;
 }
 
+.food-option-source.recipe {
+  background: #eee7ff;
+  color: #7652b7;
+}
+
+.add-type-sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding: 16rpx 24rpx calc(28rpx + env(safe-area-inset-bottom));
+  border-radius: 28rpx 28rpx 0 0;
+  background: #fffdf7;
+  box-sizing: border-box;
+  box-shadow: 0 -18rpx 36rpx rgba(0, 0, 0, 0.14);
+  transform: translateY(105%);
+  transition: transform 0.22s ease;
+}
+
+.add-type-sheet.visible {
+  transform: translateY(0);
+}
+
+.add-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.add-type-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  min-height: 142rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 184, 0, 0.16);
+  border-radius: 22rpx;
+  background: #fff7e3;
+  box-sizing: border-box;
+}
+
+.add-type-card.recipe {
+  border-color: rgba(118, 82, 183, 0.18);
+  background: #f8f4ff;
+}
+
+.add-type-icon {
+  flex-shrink: 0;
+  font-size: 48rpx;
+}
+
+.add-type-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-type-title,
+.add-type-copy {
+  display: block;
+}
+
+.add-type-title {
+  color: #333;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.add-type-copy {
+  margin-top: 8rpx;
+  color: #8a7c60;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.add-type-arrow {
+  flex-shrink: 0;
+  color: #c78200;
+  font-size: 42rpx;
+}
+
 .batch-body {
   display: flex;
   flex-direction: column;
