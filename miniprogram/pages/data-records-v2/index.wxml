@@ -257,9 +257,38 @@
                 <text class="meal-group-note-text">{{item.mealNote}}</text>
               </view>
               <view class="meal-group-items" wx:if="{{item.expanded}}">
-                <view class="food-record-item" wx:for="{{item.items}}" wx:key="_id" wx:for-item="foodItem">
+                <view class="food-record-item" wx:for="{{item.items}}" wx:key="displayKey" wx:for-item="foodItem">
                   <view class="record-content">
                     <food-record-item record="{{foodItem}}" />
+                    <view class="recipe-history" wx:if="{{foodItem.isRecipe}}">
+                      <view
+                        class="recipe-source-row"
+                        catchtap="toggleRecipeIngredients"
+                        data-group-id="{{foodItem.mealGroupId}}"
+                        data-item-id="{{foodItem.displayKey}}"
+                      >
+                        <text class="recipe-source-text">{{foodItem.recipeSourceText}}</text>
+                        <text class="recipe-source-toggle" wx:if="{{foodItem.recipeIngredientRows.length}}">
+                          {{foodItem.recipeExpanded ? '收起原料' : '查看原料'}}
+                        </text>
+                      </view>
+                      <view class="recipe-ingredient-list" wx:if="{{foodItem.recipeExpanded && foodItem.recipeIngredientRows.length}}">
+                        <view
+                          class="recipe-ingredient-row"
+                          wx:for="{{foodItem.recipeIngredientRows}}"
+                          wx:key="index"
+                          wx:for-item="ingredient"
+                        >
+                          <view class="recipe-ingredient-main">
+                            <text class="recipe-ingredient-name">{{ingredient.foodName}}</text>
+                            <text class="recipe-ingredient-quantity">{{ingredient.quantityText}}</text>
+                          </view>
+                          <text class="recipe-ingredient-nutrition">
+                            热量 {{ingredient.nutrition.calories}} kcal · 蛋白 {{ingredient.nutrition.protein}} g · 碳水 {{ingredient.nutrition.carbs}} g · 脂肪 {{ingredient.nutrition.fat}} g
+                          </text>
+                        </view>
+                      </view>
+                    </view>
                   </view>
                 </view>
               </view>

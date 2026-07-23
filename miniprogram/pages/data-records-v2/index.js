@@ -737,7 +737,8 @@ function normalizeIntakes(intakes = []) {
 
       return {
         ...normalizedItem,
-        ...buildFoodIntakeDisplayFields(normalizedItem)
+        ...buildFoodIntakeDisplayFields(normalizedItem),
+        ...buildRecipeIntakeDisplay(normalizedItem)
       };
     })
     .filter(Boolean)
@@ -793,6 +794,7 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     mealLabel: record.mealLabel || '',
     mealNote: record.mealNote || '',
     sourceType: record.sourceType || 'manual_food',
+    recipeSource: record.recipeSource || null,
     sortOrder: record.sortOrder || 0,
     createdAt: record.createdAt || null,
     updatedAt: record.updatedAt || null,
@@ -816,6 +818,77 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
 
 function foodIntakeRecordsToLegacyIntakes(records = []) {
   return normalizeIntakes((records || []).map(record => foodIntakeRecordToLegacyIntake(record)));
+}
+
+function isRecipeIntake(intake = {}) {
+  const recipeSource = intake.recipeSource;
+  const hasValidRecipeSource = !!(
+    recipeSource
+    && typeof recipeSource === 'object'
+    && String(recipeSource.recipeId || '').trim()
+  );
+  return intake.sourceType === 'recipe' || hasValidRecipeSource;
+}
+
+function buildRecipeIntakeDisplay(intake = {}) {
+  if (!isRecipeIntake(intake)) {
+    return {
+      isRecipe: false,
+      recipeName: '',
+      recipeSourceText: '',
+      recipeExpanded: false,
+      recipeIngredientRows: []
+    };
+  }
+
+  const recipeSource = intake.recipeSource || {};
+  const recipeName = String(
+    recipeSource.recipeName
+    || intake.nameSnapshot
+    || intake.foodName
+    || '食谱成品'
+  ).trim();
+  const yieldWeightG = Number(recipeSource.yieldWeightG) || 0;
+  const eatenWeightG = Number(intake.quantity) || 0;
+  const scale = yieldWeightG > 0 ? eatenWeightG / yieldWeightG : 0;
+  const nutritionFields = [
+    'calories',
+    'protein',
+    'naturalProtein',
+    'specialProtein',
+    'fat',
+    'carbs',
+    'fiber',
+    'sodium'
+  ];
+  const ingredients = Array.isArray(recipeSource.ingredientsSnapshot)
+    ? recipeSource.ingredientsSnapshot
+    : [];
+  const recipeIngredientRows = scale > 0
+    ? ingredients.map((ingredient = {}) => {
+        const unit = ingredient.unit || 'g';
+        const quantity = roundNumber((Number(ingredient.quantity) || 0) * scale, 2);
+        const nutrition = nutritionFields.reduce((result, field) => {
+          result[field] = roundNumber((Number(ingredient.nutrition?.[field]) || 0) * scale, 2);
+          return result;
+        }, {});
+        return {
+          foodName: ingredient.foodName || ingredient.foodSnapshot?.name || '原料',
+          quantity,
+          unit,
+          quantityText: `${quantity}${unit}`,
+          nutrition
+        };
+      })
+    : [];
+
+  return {
+    isRecipe: true,
+    recipeName,
+    recipeSourceText: `来自食谱：${recipeName}`,
+    recipeExpanded: false,
+    recipeIngredientRows
+  };
 }
 
 function groupFoodIntakesByMeal(intakes = []) {
@@ -856,6 +929,9 @@ function groupFoodIntakesByMeal(intakes = []) {
     const enrichedIntake = {
       ...intake,
       ...buildFoodIntakeDisplayFields(intake),
+      ...buildRecipeIntakeDisplay(intake),
+      mealGroupId: groupKey,
+      displayKey: intake._id || intake.localId || `${groupKey}:${index}`,
       originalIndex: index
     };
 
@@ -1782,6 +1858,23 @@ function createDataRecordsPageConfig(options = {}) {
     wx.navigateTo({
       url: `/pkg-records/meal-editor/index?date=${selectedDate}&from=records&mealBatchId=${encodeURIComponent(mealBatchId)}`
     });
+  },
+
+  toggleRecipeIngredients(e) {
+    const { groupId, itemId } = e.currentTarget.dataset || {};
+    if (!groupId || !itemId) return;
+    const foodMealGroups = (this.data.foodMealGroups || []).map(group => {
+      if (group.id !== groupId) return group;
+      return {
+        ...group,
+        items: (group.items || []).map(item => (
+          item.displayKey === itemId
+            ? { ...item, recipeExpanded: !item.recipeExpanded }
+            : item
+        ))
+      };
+    });
+    this.setData({ foodMealGroups });
   },
 
   async deleteMealGroup(e) {
