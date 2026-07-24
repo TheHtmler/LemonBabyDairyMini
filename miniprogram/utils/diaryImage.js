@@ -1,3 +1,8 @@
+const {
+  MAX_VIDEO_DURATION_SEC,
+  MAX_VIDEO_BYTES
+} = require('./growthDiaryUtils');
+
 const DIARY_ORIG_MAX_BYTES = 500 * 1024;
 const ORIG_QUALITY_LADDER = [70, 50, 40, 30];
 const THUMB_QUALITY = 40;
@@ -8,6 +13,52 @@ function buildDiaryCloudPaths({ babyUid, entryKey, index, ts }) {
     originalCloudPath: `${base}_orig.jpg`,
     thumbCloudPath: `${base}_thumb.jpg`
   };
+}
+
+function normalizeVideoExt(videoExt, videoLocalPath = '') {
+  const fromArg = String(videoExt || '')
+    .trim()
+    .replace(/^\./, '')
+    .toLowerCase();
+  if (fromArg) return fromArg;
+  const match = String(videoLocalPath || '').match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  if (match && match[1]) return match[1].toLowerCase();
+  return 'mp4';
+}
+
+function buildDiaryVideoCloudPaths({ babyUid, entryKey, index, ts, videoExt, videoLocalPath }) {
+  const base = `growth-diary/${babyUid}/${entryKey}/${ts}_${index}`;
+  const ext = normalizeVideoExt(videoExt, videoLocalPath);
+  return {
+    videoCloudPath: `${base}_video.${ext}`,
+    coverCloudPath: `${base}_cover.jpg`
+  };
+}
+
+function validateDiaryVideoLocal({
+  durationSec,
+  sizeBytes,
+  coverLocalPath,
+  requireCover = true
+} = {}) {
+  const duration = Number(durationSec);
+  const size = Number(sizeBytes);
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return { ok: false, message: '无法读取视频时长' };
+  }
+  if (duration > MAX_VIDEO_DURATION_SEC) {
+    return { ok: false, message: `视频不能超过 ${MAX_VIDEO_DURATION_SEC} 秒` };
+  }
+  if (!Number.isFinite(size) || size <= 0) {
+    return { ok: false, message: '无法读取视频大小' };
+  }
+  if (size > MAX_VIDEO_BYTES) {
+    return { ok: false, message: '视频不能超过 10MB' };
+  }
+  if (requireCover && !String(coverLocalPath || '').trim()) {
+    return { ok: false, message: '无法生成封面，请换一段视频' };
+  }
+  return { ok: true, message: '' };
 }
 
 function resolveCompressImage(compressImage) {
@@ -116,6 +167,78 @@ async function prepareAndUploadDiaryPhoto(
   return { originalFileId, thumbFileId };
 }
 
+async function prepareAndUploadDiaryVideo({
+  videoLocalPath,
+  coverLocalPath,
+  durationSec,
+  sizeBytes,
+  babyUid,
+  entryKey,
+  index,
+  ts = Date.now(),
+  videoExt,
+  uploadFile,
+  compressImage,
+  getFileInfo
+} = {}) {
+  const check = validateDiaryVideoLocal({
+    durationSec,
+    sizeBytes,
+    coverLocalPath,
+    requireCover: true
+  });
+  if (!check.ok) {
+    throw new Error(check.message);
+  }
+  if (!String(videoLocalPath || '').trim()) {
+    throw new Error('视频文件无效');
+  }
+
+  const doCompress = resolveCompressImage(compressImage);
+  const doUpload = resolveUploadFile(uploadFile);
+  const doGetFileInfo = resolveGetFileInfo(getFileInfo);
+  const { videoCloudPath, coverCloudPath } = buildDiaryVideoCloudPaths({
+    babyUid,
+    entryKey,
+    index,
+    ts,
+    videoExt,
+    videoLocalPath
+  });
+
+  const videoResult = await doUpload({
+    cloudPath: videoCloudPath,
+    filePath: videoLocalPath
+  });
+  const videoFileId = videoResult?.fileID;
+  if (!videoFileId) {
+    throw new Error('上传视频失败');
+  }
+
+  const coverPath = await compressToTargetSize(coverLocalPath, {
+    compressImage: doCompress,
+    getFileInfo: doGetFileInfo,
+    qualities: ORIG_QUALITY_LADDER
+  });
+  const coverResult = await doUpload({
+    cloudPath: coverCloudPath,
+    filePath: coverPath
+  });
+  const coverFileId = coverResult?.fileID;
+  if (!coverFileId) {
+    throw new Error('上传视频封面失败');
+  }
+
+  return {
+    videoFileId,
+    coverFileId,
+    durationSec: Number(durationSec),
+    sizeBytes: Number(sizeBytes),
+    width: null,
+    height: null
+  };
+}
+
 async function deleteCloudFiles(fileIds, { deleteFile } = {}) {
   const ids = (Array.isArray(fileIds) ? fileIds : [])
     .map((id) => String(id || '').trim())
@@ -132,7 +255,10 @@ async function deleteCloudFiles(fileIds, { deleteFile } = {}) {
 
 module.exports = {
   buildDiaryCloudPaths,
+  buildDiaryVideoCloudPaths,
+  validateDiaryVideoLocal,
   prepareAndUploadDiaryPhoto,
+  prepareAndUploadDiaryVideo,
   deleteCloudFiles,
   DIARY_ORIG_MAX_BYTES,
   ORIG_QUALITY_LADDER,
