@@ -11,12 +11,15 @@
 }
 
 .food-name {
+  flex: 1;
+  min-width: 0;
   font-size: 30rpx;
   color: #333333;
   font-weight: 600;
 }
 
 .food-time {
+  flex-shrink: 0;
   font-size: 26rpx;
   color: #999999;
 }

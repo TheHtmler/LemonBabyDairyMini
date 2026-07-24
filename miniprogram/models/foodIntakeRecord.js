@@ -101,10 +101,14 @@ function normalizeRecipeSource(source = {}) {
   const recipeId = String(source.recipeId || '').trim();
   const recipeName = String(source.recipeName || '').trim();
   if (!recipeId && !recipeName) return null;
+  const batchWeightG = Number(source.batchWeightG || source.yieldWeightG) || 0;
   return {
     recipeId,
     recipeName,
-    yieldWeightG: Number(source.yieldWeightG) || 0,
+    yieldWeightG: batchWeightG,
+    batchWeightG,
+    intakeMode: source.intakeMode === 'percent' ? 'percent' : 'grams',
+    intakePercent: Number(source.intakePercent) || 0,
     ingredientsSnapshot: Array.isArray(source.ingredientsSnapshot)
       ? source.ingredientsSnapshot
       : []

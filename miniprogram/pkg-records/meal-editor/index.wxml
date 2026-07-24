@@ -223,7 +223,7 @@
       <view class="preview-grid" wx:if="{{currentFoodDraft.nutritionPreview}}">
         <view class="preview-item">
           <text class="preview-value">{{currentFoodDraft.nutritionPreview.calories || 0}}</text>
-          <text class="preview-label">kcal</text>
+          <text class="preview-label">热量</text>
         </view>
         <view class="preview-item">
           <text class="preview-value">{{currentFoodDraft.nutritionPreview.proteinText || '0.00'}}</text>
@@ -267,10 +267,10 @@
         subtitle="按当前克数实时预估"
         bind:targetssaved="handleNutritionTargetsSaved"
       />
-      <view class="preview-grid" wx:if="{{currentRecipeDraft.nutritionPreview}}">
+      <view class="preview-grid preview-grid-recipe" wx:if="{{currentRecipeDraft.nutritionPreview}}">
         <view class="preview-item">
           <text class="preview-value">{{currentRecipeDraft.nutritionPreview.calories || 0}}</text>
-          <text class="preview-label">kcal</text>
+          <text class="preview-label">热量</text>
         </view>
         <view class="preview-item">
           <text class="preview-value">{{currentRecipeDraft.nutritionPreview.proteinText || '0.00'}}</text>

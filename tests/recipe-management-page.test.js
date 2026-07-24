@@ -12,32 +12,28 @@ test('recipe management page is registered and linked from profile', () => {
   assert.match(profileSource, /食谱管理/);
 });
 
-test('recipe management preserves hidden recipe metadata while editing', () => {
+test('recipe management is a template of foods without recipe quantities', () => {
   const pageSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.js', 'utf8');
   const templateSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.wxml', 'utf8');
 
-  assert.match(pageSource, /yieldWeightG/);
-  assert.match(pageSource, /shouldWarnYieldMismatch/);
   assert.match(pageSource, /steps:\s*recipe\.steps/);
   assert.match(pageSource, /coverImageFileId:\s*recipe\.coverImageFileId/);
-  assert.match(pageSource, /prepTimeSec:\s*recipe\.prepTimeSec/);
-  assert.match(pageSource, /steps:\s*form\.steps/);
-  assert.doesNotMatch(templateSource, /制作过程|bindinput="onStep|steps\}\}/);
-});
-
-test('recipe management preserves unavailable ingredient protein split', () => {
-  const pageSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.js', 'utf8');
-
-  assert.match(pageSource, /buildIngredientNutritionPreservingSplit/);
-  assert.match(pageSource, /ingredient\.nutrition/);
+  assert.doesNotMatch(pageSource, /yieldWeightG/);
+  assert.doesNotMatch(pageSource, /onIngredientQuantityInput|shouldWarnYieldMismatch/);
+  assert.doesNotMatch(templateSource, /成品总重|配方用量|制作过程/);
+  assert.match(templateSource, /原料组合/);
+  assert.match(templateSource, /用量在记本顿时填写/);
 });
 
 test('recipe ingredients use an isolated food picker selection flow', () => {
   const pageSource = fs.readFileSync('miniprogram/pkg-records/recipe-management/index.js', 'utf8');
   const pickerSource = fs.readFileSync('miniprogram/pkg-records/food-picker/index.js', 'utf8');
+  const pickerTemplate = fs.readFileSync('miniprogram/pkg-records/food-picker/index.wxml', 'utf8');
 
   assert.match(pageSource, /\/pkg-records\/food-picker\/index\?from=recipe-management/);
   assert.match(pageSource, /recipe_ingredient_picker_selection/);
-  assert.match(pickerSource, /from=recipe-management|recipe-management/);
+  assert.match(pickerSource, /from === 'recipe-management'/);
   assert.match(pickerSource, /recipe_ingredient_picker_selection/);
+  assert.match(pickerSource, /添加到食谱/);
+  assert.match(pickerTemplate, /用量在记本顿时填写/);
 });

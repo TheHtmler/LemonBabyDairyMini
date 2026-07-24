@@ -15,6 +15,7 @@
         "meal-editor/index",
         "food-picker/index",
         "recipe-picker/index",
+        "recipe-batch/index",
         "recipe-management/index",
         "growth-records/index",
         "growth-diary/index",

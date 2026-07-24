@@ -56,6 +56,9 @@ test('normalizeFoodIntakeRecord mounts normalized recipe provenance', () => {
       recipeId: 'recipe-1',
       recipeName: '番茄炒蛋',
       yieldWeightG: 200,
+      batchWeightG: 200,
+      intakeMode: 'grams',
+      intakePercent: 0,
       ingredientsSnapshot: [
         { foodName: '番茄', quantity: 100, unit: 'g' }
       ]
@@ -78,6 +81,9 @@ test('normalizeRecipeSource rejects empty provenance and normalizes missing snap
       recipeId: 'recipe-2',
       recipeName: '南瓜泥',
       yieldWeightG: 0,
+      batchWeightG: 0,
+      intakeMode: 'grams',
+      intakePercent: 0,
       ingredientsSnapshot: []
     });
   } finally {

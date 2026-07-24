@@ -127,6 +127,21 @@ page {
   line-height: 1;
 }
 
+.recipe-ingredients {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #8a7c60;
+  line-height: 1.4;
+}
+
+.ingredient-unit {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #9a8b6e;
+}
+
 .recipe-facts {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -263,6 +278,21 @@ page {
   border: 2rpx solid rgba(216, 90, 67, 0.16);
   border-radius: 18rpx;
   background: #FFF7F2;
+}
+
+.ingredient-row.needs-quantity {
+  padding: 20rpx;
+  margin: 0 -4rpx 12rpx;
+  border: 2rpx solid rgba(244, 180, 0, 0.45);
+  border-radius: 18rpx;
+  background: #FFF9E8;
+}
+
+.quantity-hint {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #B8860B;
 }
 
 .ingredient-title-row {

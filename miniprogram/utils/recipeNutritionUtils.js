@@ -40,11 +40,85 @@ function addNutrition(a = {}, b = {}) {
 
 function scaleNutrition(nutritionPer100g = {}, ateG) {
   const factor = Number(ateG) / 100;
+  return scaleNutritionByFactor(nutritionPer100g, factor);
+}
+
+function scaleNutritionByFactor(nutrition = {}, factor) {
+  const scale = Number(factor);
   const result = emptyNutrition();
+  const safeFactor = Number.isFinite(scale) ? scale : 0;
   NUTRITION_FIELDS.forEach((field) => {
-    result[field] = roundNumber((Number(nutritionPer100g[field]) || 0) * factor, 2);
+    result[field] = roundNumber((Number(nutrition[field]) || 0) * safeFactor, 2);
   });
   return result;
+}
+
+function summarizeBatchFromIngredients(ingredients = []) {
+  const totalNutrition = (ingredients || []).reduce(
+    (sum, ingredient) => addNutrition(sum, ingredient && ingredient.nutrition),
+    emptyNutrition()
+  );
+  let totalWeightG = 0;
+  let hasNonGramUnit = false;
+  (ingredients || []).forEach((item) => {
+    const unit = String(item?.unit || 'g').toLowerCase();
+    if (unit === 'g') {
+      totalWeightG += Number(item.quantity) || 0;
+    } else {
+      // 只要配方含非克单位，就禁用按克数摄入（不必等填用量）
+      hasNonGramUnit = true;
+    }
+  });
+  totalWeightG = roundNumber(totalWeightG, 2);
+  const nutritionPer100g = summarizeRecipeNutrition(
+    [{ nutrition: totalNutrition }],
+    totalWeightG
+  ).nutritionPer100g;
+
+  return {
+    totalNutrition,
+    totalWeightG,
+    nutritionPer100g,
+    proteinSource: deriveProteinSource(totalNutrition),
+    // 单位全是 g 即可选按克数；确认时仍要求总重 > 0
+    canUseGramsIntake: !hasNonGramUnit
+  };
+}
+
+function resolveBatchIntake(batchNutrition = {}, batchWeightG, intakeMode, intakeValue) {
+  const mode = intakeMode === 'percent' ? 'percent' : 'grams';
+  const value = Number(intakeValue);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(mode === 'percent' ? '请输入有效的摄入百分比' : '请输入有效的食用克数');
+  }
+
+  const weight = Number(batchWeightG) || 0;
+  if (mode === 'percent') {
+    if (value > 100) {
+      throw new Error('摄入百分比不能超过 100');
+    }
+    const factor = value / 100;
+    return {
+      intakeMode: 'percent',
+      intakePercent: roundNumber(value, 2),
+      eatenG: weight > 0 ? roundNumber(weight * factor, 2) : 0,
+      nutrition: scaleNutritionByFactor(batchNutrition, factor)
+    };
+  }
+
+  if (!(weight > 0)) {
+    throw new Error('请先填写各原料用量以计算本次总重');
+  }
+  if (value > weight) {
+    throw new Error('食用克数不能超过本次食谱总重');
+  }
+  const factor = value / weight;
+  return {
+    intakeMode: 'grams',
+    intakePercent: roundNumber(factor * 100, 2),
+    eatenG: roundNumber(value, 2),
+    nutrition: scaleNutritionByFactor(batchNutrition, factor)
+  };
 }
 
 function splitProtein(protein, proteinSource, proteinSplit) {
@@ -176,6 +250,9 @@ module.exports = {
   emptyNutrition,
   addNutrition,
   scaleNutrition,
+  scaleNutritionByFactor,
+  summarizeBatchFromIngredients,
+  resolveBatchIntake,
   splitProtein,
   buildIngredientNutrition,
   buildIngredientNutritionPreservingSplit,

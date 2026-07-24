@@ -134,11 +134,12 @@
       <view class="cart-copy">
         <text wx:if="{{selectedFoodCart.length > 0}}" class="cart-title">已选 {{selectedFoodCart.length}} 种食物</text>
         <text wx:else class="cart-title">已选食物</text>
-        <text class="cart-subtitle" wx:if="{{selectedFoodCart.length > 0}}">{{cartExpanded ? '收起明细' : '点击查看明细'}}</text>
+        <text class="cart-subtitle" wx:if="{{isRecipeIngredientPicker && selectedFoodCart.length > 0}}">仅选择原料组合，用量在记本顿时填写</text>
+        <text class="cart-subtitle" wx:elif="{{selectedFoodCart.length > 0}}">{{cartExpanded ? '收起明细' : '点击查看明细'}}</text>
         <text class="cart-subtitle" wx:else>点击食物右侧的 + 添加到这里</text>
       </view>
     </view>
-    <view class="cart-confirm {{selectedFoodCart.length === 0 ? 'disabled' : ''}}" catchtap="confirmSelection">确定</view>
+    <view class="cart-confirm {{selectedFoodCart.length === 0 ? 'disabled' : ''}}" catchtap="confirmSelection">{{cartConfirmText}}</view>
   </view>
 
   <view class="quantity-mask" wx:if="{{quantityDrawerVisible}}" bindtap="closeQuantityDrawer"></view>

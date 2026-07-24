@@ -6,7 +6,7 @@
       <view>
         <text class="eyebrow">LEMON KITCHEN</text>
         <text class="hero-title">宝宝的食谱夹</text>
-        <text class="hero-copy">保存常做的菜，记录时按实际吃下的克数计算营养。</text>
+        <text class="hero-copy">先定好一道菜由哪些原料组成；记本顿时再填本次实际用量。</text>
       </view>
       <view class="lemon-mark">🍋</view>
     </view>
@@ -14,7 +14,7 @@
     <view class="empty-state" wx:if="{{recipes.length === 0}}">
       <text class="empty-icon">🥣</text>
       <text class="empty-title">还没有食谱</text>
-      <text class="empty-copy">把常做的菜存成食谱，记本顿时按吃的克数算营养。</text>
+      <text class="empty-copy">把常做的菜存成原料组合，记录时再填当次用量和宝宝吃了多少。</text>
     </view>
 
     <view class="recipe-list" wx:else>
@@ -29,24 +29,7 @@
           <text class="recipe-name">{{item.name}}</text>
           <text class="recipe-arrow">›</text>
         </view>
-        <view class="recipe-facts">
-          <view class="recipe-fact">
-            <text class="fact-value">{{item.ingredientCount}}</text>
-            <text class="fact-label">种原料</text>
-          </view>
-          <view class="recipe-fact">
-            <text class="fact-value">{{item.yieldWeightG}}</text>
-            <text class="fact-label">成品克数</text>
-          </view>
-          <view class="recipe-fact">
-            <text class="fact-value">{{item.proteinText}}</text>
-            <text class="fact-label">蛋白 / 100g</text>
-          </view>
-          <view class="recipe-fact">
-            <text class="fact-value">{{item.caloriesText}}</text>
-            <text class="fact-label">kcal / 100g</text>
-          </view>
-        </view>
+        <text class="recipe-ingredients">{{item.ingredientCount}} 种原料 · {{item.ingredientNames || '未命名原料'}}</text>
         <text class="last-used">最近使用 · {{item.lastUsedText}}</text>
       </view>
     </view>
@@ -63,7 +46,7 @@
           <text class="section-index">A</text>
           <view>
             <text class="section-title">基本信息</text>
-            <text class="section-subtitle">给这道成品菜起一个好记的名字</text>
+            <text class="section-subtitle">给这道菜起一个好记的名字</text>
           </view>
         </view>
         <text class="field-label">食谱名称</text>
@@ -89,13 +72,13 @@
         <view class="section-heading">
           <text class="section-index">B</text>
           <view>
-            <text class="section-title">原料与成品</text>
-            <text class="section-subtitle">原料营养相加，再按成品总重折算</text>
+            <text class="section-title">原料组合</text>
+            <text class="section-subtitle">这里只选原料；用量在记本顿时填写</text>
           </view>
         </view>
 
         <view class="ingredient-empty" wx:if="{{form.ingredients.length === 0}}">
-          先从食物库挑选这道菜用到的原料
+          从食物库挑选这道菜会用到的原料
         </view>
 
         <view
@@ -107,61 +90,14 @@
           <view class="ingredient-title-row">
             <view class="ingredient-title-main">
               <text class="ingredient-name">{{item.foodName}}</text>
+              <text class="ingredient-unit">单位 {{item.unit}}</text>
               <text class="snapshot-warning" wx:if="{{item.unavailable}}">{{item.unavailableText}}</text>
             </view>
             <text class="remove-link" data-index="{{ingredientIndex}}" bindtap="removeIngredient">删除</text>
           </view>
-          <view class="quantity-row">
-            <input
-              class="compact-input quantity-input"
-              type="digit"
-              value="{{item.quantity}}"
-              placeholder="原料份量"
-              data-index="{{ingredientIndex}}"
-              bindinput="onIngredientQuantityInput"
-            />
-            <text class="unit-label">{{item.unit}}</text>
-          </view>
-          <view class="ingredient-nutrition">
-            蛋白 {{item.nutrition.protein || 0}}g · 热量 {{item.nutrition.calories || 0}}kcal
-          </view>
         </view>
 
         <button class="outline-btn" bindtap="addIngredients">＋ 添加原料</button>
-
-        <view class="yield-field">
-          <text class="field-label">成品总重</text>
-          <view class="quantity-row">
-            <input
-              class="compact-input quantity-input"
-              type="digit"
-              value="{{form.yieldWeightG}}"
-              placeholder="出锅后的实际重量"
-              bindinput="onYieldWeightInput"
-            />
-            <text class="unit-label">g</text>
-          </view>
-          <text class="yield-tip">允许烹饪失水或加水，不必等于原料克数之和。</text>
-          <text class="yield-warning" wx:if="{{yieldWarning}}">{{yieldWarning}}</text>
-        </view>
-      </view>
-
-      <view class="nutrition-board">
-        <view class="nutrition-column">
-          <text class="nutrition-kicker">整份成品</text>
-          <text class="nutrition-main">{{nutritionPreview.totalNutrition.protein}}g</text>
-          <text class="nutrition-caption">总蛋白</text>
-          <text class="nutrition-detail">天然 {{nutritionPreview.totalNutrition.naturalProtein}}g · 特殊 {{nutritionPreview.totalNutrition.specialProtein}}g</text>
-          <text class="nutrition-detail">{{nutritionPreview.totalNutrition.calories}} kcal</text>
-        </view>
-        <view class="nutrition-divider"></view>
-        <view class="nutrition-column">
-          <text class="nutrition-kicker">每 100g</text>
-          <text class="nutrition-main">{{nutritionPreview.nutritionPer100g.protein}}g</text>
-          <text class="nutrition-caption">蛋白浓度</text>
-          <text class="nutrition-detail">天然 {{nutritionPreview.nutritionPer100g.naturalProtein}}g · 特殊 {{nutritionPreview.nutritionPer100g.specialProtein}}g</text>
-          <text class="nutrition-detail">{{nutritionPreview.nutritionPer100g.calories}} kcal</text>
-        </view>
       </view>
 
       <view class="scroll-bottom-space"></view>
@@ -176,17 +112,13 @@
   <block wx:if="{{!loading && mode === 'detail' && recipe}}">
     <scroll-view class="detail-scroll" scroll-y="true" show-scrollbar="{{false}}">
       <view class="detail-hero">
-        <text class="detail-kicker">成品食谱</text>
+        <text class="detail-kicker">原料组合</text>
         <text class="detail-title">{{recipe.name}}</text>
         <text class="detail-notes" wx:if="{{recipe.notes}}">{{recipe.notes}}</text>
-        <view class="detail-weight">
-          <text class="detail-weight-value">{{recipe.yieldWeightG}}</text>
-          <text class="detail-weight-unit">g 成品</text>
-        </view>
       </view>
 
       <view class="section-card">
-        <text class="section-title">原料清单</text>
+        <text class="section-title">包含原料</text>
         <view
           class="detail-ingredient"
           wx:for="{{recipe.ingredients}}"
@@ -196,28 +128,7 @@
             <text class="detail-ingredient-name">{{item.foodName}}</text>
             <text class="snapshot-warning" wx:if="{{item.unavailable}}">{{item.unavailableText}}</text>
           </view>
-          <view class="detail-ingredient-right">
-            <text>{{item.quantity}}{{item.unit}}</text>
-            <text class="detail-ingredient-meta">{{item.nutrition.protein || 0}}g 蛋白</text>
-          </view>
-        </view>
-      </view>
-
-      <view class="nutrition-board detail-board">
-        <view class="nutrition-column">
-          <text class="nutrition-kicker">整份成品</text>
-          <text class="nutrition-main">{{recipe.totalNutritionDisplay.protein}}g</text>
-          <text class="nutrition-caption">总蛋白</text>
-          <text class="nutrition-detail">天然 {{recipe.totalNutritionDisplay.naturalProtein}}g · 特殊 {{recipe.totalNutritionDisplay.specialProtein}}g</text>
-          <text class="nutrition-detail">{{recipe.totalNutritionDisplay.calories}} kcal</text>
-        </view>
-        <view class="nutrition-divider"></view>
-        <view class="nutrition-column">
-          <text class="nutrition-kicker">每 100g</text>
-          <text class="nutrition-main">{{recipe.nutritionPer100gDisplay.protein}}g</text>
-          <text class="nutrition-caption">蛋白浓度</text>
-          <text class="nutrition-detail">天然 {{recipe.nutritionPer100gDisplay.naturalProtein}}g · 特殊 {{recipe.nutritionPer100gDisplay.specialProtein}}g</text>
-          <text class="nutrition-detail">{{recipe.nutritionPer100gDisplay.calories}} kcal</text>
+          <text class="detail-ingredient-meta">{{item.unit}}</text>
         </view>
       </view>
 

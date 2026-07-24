@@ -1,51 +1,93 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('path');
 
-function readSource(path) {
-  return fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
-}
-
-const mealEditorSource = readSource('miniprogram/pkg-records/meal-editor/index.js');
-const mealEditorTemplate = readSource('miniprogram/pkg-records/meal-editor/index.wxml');
-const recipePickerSource = readSource('miniprogram/pkg-records/recipe-picker/index.js');
-const intakeModelSource = readSource('miniprogram/models/foodIntakeRecord.js');
+const mealEditorPath = path.join('miniprogram', 'pkg-records', 'meal-editor', 'index.js');
+const mealEditorWxmlPath = path.join('miniprogram', 'pkg-records', 'meal-editor', 'index.wxml');
+const recipePickerPath = path.join('miniprogram', 'pkg-records', 'recipe-picker', 'index.js');
+const recipePickerWxmlPath = path.join('miniprogram', 'pkg-records', 'recipe-picker', 'index.wxml');
+const foodIntakePath = path.join('miniprogram', 'models', 'foodIntakeRecord.js');
 
 test('meal editor presents food and recipe entry choices', () => {
-  assert.match(mealEditorSource, /showAddTypeSheet:\s*false/);
-  assert.match(mealEditorSource, /openAddTypeSheet/);
-  assert.match(mealEditorSource, /chooseFoodEntry[\s\S]*openFoodDrawer/);
-  assert.match(mealEditorSource, /chooseRecipeEntry[\s\S]*\/pkg-records\/recipe-picker\/index/);
-  assert.match(mealEditorTemplate, /从食物库选，按克\/毫升记录/);
-  assert.match(mealEditorTemplate, /选已做好的菜，按本次吃的克数记营养/);
+  const pageSource = fs.readFileSync(mealEditorPath, 'utf8');
+  const templateSource = fs.readFileSync(mealEditorWxmlPath, 'utf8');
+
+  assert.match(pageSource, /showAddTypeSheet/);
+  assert.match(pageSource, /openAddTypeSheet/);
+  assert.match(pageSource, /chooseFoodEntry/);
+  assert.match(pageSource, /chooseRecipeEntry/);
+  assert.match(pageSource, /\/pkg-records\/recipe-picker\/index/);
+  assert.match(templateSource, /食物/);
+  assert.match(templateSource, /食谱/);
 });
 
-test('recipe picker stores a complete recipe meal selection', () => {
-  assert.match(recipePickerSource, /RecipeModel\.listActiveByBaby/);
-  assert.match(recipePickerSource, /meal_recipe_picker_selection/);
-  assert.match(recipePickerSource, /sourceType:\s*['"]recipe['"]/);
-  assert.match(recipePickerSource, /nutritionPer100g/);
-  assert.match(recipePickerSource, /ingredientsSnapshot/);
-});
+test('recipe picker collects batch ingredient amounts and intake percent or grams', () => {
+  const pickerSource = fs.readFileSync(recipePickerPath, 'utf8');
+  const pickerTemplate = fs.readFileSync(recipePickerWxmlPath, 'utf8');
+  const batchPath = path.join(__dirname, '..', 'miniprogram/pkg-records/recipe-batch/index.js');
+  const batchTemplate = fs.readFileSync(
+    path.join(__dirname, '..', 'miniprogram/pkg-records/recipe-batch/index.wxml'),
+    'utf8'
+  );
+  const batchSource = fs.readFileSync(batchPath, 'utf8');
+  const appJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'miniprogram/app.json'), 'utf8'));
+  const recordsPackage = appJson.subPackages.find((item) => item.root === 'pkg-records');
 
-test('meal editor merges, saves, reloads and edits recipe rows without foodId', () => {
-  assert.match(mealEditorSource, /meal_recipe_picker_selection/);
-  assert.match(mealEditorSource, /scaleNutrition/);
-  assert.match(mealEditorSource, /if\s*\(item\.sourceType\s*===\s*['"]recipe['"]\)/);
-  assert.match(mealEditorSource, /recipeSource:\s*\{/);
-  assert.match(mealEditorSource, /foodId:\s*['"]/);
-  assert.match(mealEditorSource, /if\s*\(target\.sourceType\s*===\s*['"]recipe['"]\)/);
-  assert.match(mealEditorSource, /updateRecipeMealItemQuantity/);
-  assert.match(mealEditorSource, /RecipeModel\.touchUsage/);
-  assert.doesNotMatch(
-    mealEditorSource,
-    /foodSnapshot:\s*\{[\s\S]{0,500}sourceType:\s*['"]recipe['"]/
+  assert.ok(recordsPackage.pages.includes('recipe-batch/index'));
+  assert.match(pickerSource, /\/pkg-records\/recipe-batch\/index/);
+  assert.match(pickerSource, /recipeCount/);
+  assert.match(pickerTemplate, /recipeCount/);
+  assert.doesNotMatch(pickerTemplate, /本次原料用量/);
+
+  assert.match(batchSource, /meal_recipe_picker_selection/);
+  assert.match(batchSource, /summarizeBatchFromIngredients/);
+  assert.match(batchSource, /resolveBatchIntake/);
+  assert.match(batchSource, /intakeMode/);
+  assert.match(batchSource, /batchWeightG/);
+  assert.match(batchSource, /ingredientsSnapshot/);
+  assert.match(batchSource, /navigateBack\(\{\s*delta:\s*2\s*\}\)/);
+  assert.match(batchTemplate, /原料用量/);
+  assert.match(batchTemplate, /按百分比/);
+  assert.match(batchTemplate, /按克数/);
+  assert.match(batchTemplate, /summary-card/);
+  assert.match(batchTemplate, /per100Label|100/);
+  assert.match(batchSource, /intakeMode:\s*canUseGramsIntake\s*\?\s*'grams'\s*:\s*'percent'/);
+  assert.match(batchSource, /buildPer100Display|100/);
+  assert.match(batchSource, /buildCurrentNutritionDisplay/);
+  assert.match(batchSource, /refreshIntakePreview/);
+  assert.match(batchTemplate, /实际摄入|intakePreview/);
+  assert.match(
+    fs.readFileSync(path.join(__dirname, '..', 'miniprogram/pkg-records/recipe-batch/index.wxss'), 'utf8'),
+    /margin:\s*0\s*!important/
   );
 });
 
+test('meal editor merges, saves, reloads and edits recipe rows without foodId', () => {
+  const pageSource = fs.readFileSync(mealEditorPath, 'utf8');
+
+  assert.match(pageSource, /handleRecipePickerSelection/);
+  assert.match(pageSource, /meal_recipe_picker_selection/);
+  assert.match(pageSource, /sourceType:\s*'recipe'/);
+  assert.match(pageSource, /recipeSource/);
+  assert.match(pageSource, /batchNutrition/);
+  assert.match(pageSource, /updateRecipeMealItemQuantity/);
+  assert.match(pageSource, /drawerStep:\s*'recipe-edit'/);
+  assert.match(pageSource, /foodId:\s*''/);
+  const recipeUpdateStart = pageSource.indexOf('updateRecipeMealItemQuantity(target, quantity');
+  const recipeUpdateEnd = pageSource.indexOf('addOrUpdateRecipeMealItem', recipeUpdateStart);
+  const recipeUpdateBody = pageSource.slice(recipeUpdateStart, recipeUpdateEnd);
+  assert.match(recipeUpdateBody, /batchNutrition|nutritionPer100g/);
+  assert.doesNotMatch(recipeUpdateBody, /请选择食物/);
+});
+
 test('food intake normalization preserves recipeSource outside foodSnapshot', () => {
-  assert.match(intakeModelSource, /function normalizeRecipeSource/);
-  assert.match(intakeModelSource, /const recipeSource\s*=\s*normalizeRecipeSource\(record\.recipeSource\)/);
-  assert.match(intakeModelSource, /foodSnapshot,\s*\n\s*recipeSource,/);
-  assert.match(intakeModelSource, /updateData\.recipeSource\s*=\s*normalizeRecipeSource/);
+  const modelSource = fs.readFileSync(foodIntakePath, 'utf8');
+
+  assert.match(modelSource, /normalizeRecipeSource/);
+  assert.match(modelSource, /batchWeightG/);
+  assert.match(modelSource, /intakeMode/);
+  assert.match(modelSource, /intakePercent/);
+  assert.match(modelSource, /recipeSource/);
+  assert.match(modelSource, /delete foodSnapshot\.sourceType/);
 });

@@ -1,7 +1,7 @@
 <view class="food-record">
   <view class="food-header">
     <text class="food-name">{{nameText}}</text>
-    <text class="food-time">{{timeText}}</text>
+    <text class="food-time" wx:if="{{showTime}}">{{timeText}}</text>
   </view>
   <view class="food-quantity-row">
     <text class="food-quantity">{{quantityText}}</text>

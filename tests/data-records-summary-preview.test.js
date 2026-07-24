@@ -143,7 +143,6 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
       stats: [
         { label: '热量', value: '160 kcal' },
         { label: '蛋白', value: '6.20 g' },
-        { label: '液体', value: '45 ml' },
         { label: '碳水', value: '18 g' }
       ]
     },

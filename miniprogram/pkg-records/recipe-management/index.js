@@ -1,12 +1,5 @@
 const RecipeModel = require('../../models/recipe');
 const FoodModel = require('../../models/food');
-const {
-  buildIngredientNutrition,
-  buildIngredientNutritionPreservingSplit,
-  summarizeRecipeNutrition,
-  shouldWarnYieldMismatch,
-  emptyNutrition
-} = require('../../utils/recipeNutritionUtils');
 
 const RECIPE_INGREDIENT_PICKER_SELECTION_KEY = 'recipe_ingredient_picker_selection';
 
@@ -34,14 +27,6 @@ function formatLastUsedAt(value) {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function formatNutrition(nutrition = emptyNutrition()) {
-  const result = {};
-  Object.keys(emptyNutrition()).forEach((field) => {
-    result[field] = Number(nutrition[field] || 0).toFixed(2);
-  });
-  return result;
-}
-
 Page({
   data: {
     mode: 'list',
@@ -53,17 +38,11 @@ Page({
     form: {
       name: '',
       notes: '',
-      yieldWeightG: '',
       ingredients: [],
       steps: [],
       coverImageFileId: '',
       prepTimeSec: null
-    },
-    nutritionPreview: {
-      totalNutrition: formatNutrition(),
-      nutritionPer100g: formatNutrition()
-    },
-    yieldWarning: ''
+    }
   },
 
   async onLoad(options = {}) {
@@ -78,7 +57,6 @@ Page({
   },
 
   onShow() {
-    if (!this.hasLoadedPage) return;
     this.consumeIngredientSelection();
   },
 
@@ -92,7 +70,38 @@ Page({
 
   async loadRecipes() {
     this.setData({ loading: true });
-    const result = await RecipeModel.listActiveByBaby(getBabyUid());
+    const babyUid = getBabyUid();
+    console.log('[recipe-management] loadRecipes start', { babyUid });
+    if (!babyUid) {
+      console.warn('[recipe-management] loadRecipes abort: no babyUid');
+      this.hasLoadedPage = true;
+      this.setData({ mode: 'list', recipes: [], loading: false });
+      wx.setNavigationBarTitle({ title: '食谱管理' });
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    const result = await RecipeModel.listActiveByBaby(babyUid);
+    console.log('[recipe-management] listActiveByBaby result', {
+      success: result.success,
+      message: result.message || '',
+      fromCache: !!result.fromCache,
+      count: (result.data || []).length,
+      names: (result.data || []).map((item) => item.name),
+      ids: (result.data || []).map((item) => item._id)
+    });
+    if (!result.success) {
+      this.hasLoadedPage = true;
+      this.setData({ mode: 'list', recipes: [], loading: false });
+      wx.setNavigationBarTitle({ title: '食谱管理' });
+      wx.showModal({
+        title: '加载食谱失败',
+        content: result.message || '请检查云库 recipe_catalog 集合是否已创建',
+        showCancel: false
+      });
+      return;
+    }
+
     const recipes = (result.data || [])
       .sort((a, b) => {
         const usedDiff = toTimestamp(b.lastUsedAt) - toTimestamp(a.lastUsedAt);
@@ -100,12 +109,16 @@ Page({
         return Number(b.usageCount || 0) - Number(a.usageCount || 0);
       })
       .map(recipe => ({
-        ...recipe,
+        _id: recipe._id,
+        name: recipe.name || '',
         ingredientCount: (recipe.ingredients || []).length,
-        lastUsedText: formatLastUsedAt(recipe.lastUsedAt),
-        proteinText: Number(recipe.nutritionPer100g?.protein || 0).toFixed(2),
-        caloriesText: Number(recipe.nutritionPer100g?.calories || 0).toFixed(0)
+        ingredientNames: (recipe.ingredients || []).map(item => item.foodName).filter(Boolean).join('、'),
+        lastUsedText: formatLastUsedAt(recipe.lastUsedAt)
       }));
+    console.log('[recipe-management] setData recipes', {
+      count: recipes.length,
+      names: recipes.map((item) => item.name)
+    });
     this.hasLoadedPage = true;
     this.setData({
       mode: 'list',
@@ -113,16 +126,12 @@ Page({
       loading: false
     });
     wx.setNavigationBarTitle({ title: '食谱管理' });
-    if (!result.success) {
-      wx.showToast({ title: result.message || '加载食谱失败', icon: 'none' });
-    }
   },
 
   createEmptyForm() {
     return {
       name: '',
       notes: '',
-      yieldWeightG: '',
       ingredients: [],
       steps: [],
       coverImageFileId: '',
@@ -135,14 +144,28 @@ Page({
       mode: 'edit',
       recipeId: '',
       recipe: null,
-      form: this.createEmptyForm(),
-      yieldWarning: ''
-    }, () => this.refreshNutritionPreview());
+      form: this.createEmptyForm()
+    });
     wx.setNavigationBarTitle({ title: '新建食谱' });
   },
 
   onRecipeTap(e) {
     this.openRecipe(e.currentTarget.dataset.id, 'detail');
+  },
+
+  hydrateIngredient(ingredient = {}, index = 0) {
+    const food = this.foodById.get(ingredient.foodId) || null;
+    const snapshot = ingredient.foodSnapshot || {};
+    return {
+      foodId: ingredient.foodId || food?._id || '',
+      foodName: food?.name || ingredient.foodName || snapshot.name || '未知食物',
+      unit: food?.baseUnit || ingredient.unit || snapshot.nutritionBasis?.unit || 'g',
+      sortOrder: index,
+      foodSnapshot: snapshot.name ? snapshot : (food ? FoodModel.buildFoodSnapshot(food) : snapshot),
+      food: food || null,
+      unavailable: !food,
+      unavailableText: !food ? '原食物已不可用，将按快照记录' : ''
+    };
   },
 
   async openRecipe(id, mode = 'detail') {
@@ -162,7 +185,6 @@ Page({
     const form = {
       name: recipe.name || '',
       notes: recipe.notes || '',
-      yieldWeightG: recipe.yieldWeightG || '',
       ingredients,
       steps: recipe.steps || [],
       coverImageFileId: recipe.coverImageFileId || '',
@@ -176,42 +198,14 @@ Page({
       recipe: {
         ...recipe,
         ingredients,
-        totalNutritionDisplay: formatNutrition(recipe.totalNutrition),
-        nutritionPer100gDisplay: formatNutrition(recipe.nutritionPer100g)
+        ingredientNames: ingredients.map(item => item.foodName).join('、')
       },
-      form,
-      yieldWarning: ''
-    }, () => this.refreshNutritionPreview());
+      form
+    });
     wx.setNavigationBarTitle({ title: mode === 'edit' ? '编辑食谱' : '食谱详情' });
     if (unavailableCount > 0) {
-      wx.showToast({ title: '部分原食物已不可用，营养按快照', icon: 'none' });
+      wx.showToast({ title: '部分原食物已不可用，将按快照', icon: 'none' });
     }
-  },
-
-  hydrateIngredient(ingredient = {}, index = 0) {
-    const food = this.foodById.get(ingredient.foodId) || null;
-    const snapshot = ingredient.foodSnapshot || {};
-    const quantity = Number(ingredient.quantity) || 0;
-    const nutritionSource = food || snapshot;
-    return {
-      ...ingredient,
-      foodId: ingredient.foodId || food?._id || '',
-      foodName: food?.name || ingredient.foodName || snapshot.name || '未知食物',
-      quantity: quantity ? String(quantity) : '',
-      unit: food?.baseUnit || ingredient.unit || snapshot.nutritionBasis?.unit || 'g',
-      sortOrder: index,
-      foodSnapshot: snapshot,
-      nutrition: food
-        ? buildIngredientNutrition(food, quantity)
-        : buildIngredientNutritionPreservingSplit(
-          snapshot,
-          quantity,
-          ingredient.nutrition,
-          quantity
-        ),
-      unavailable: !food,
-      unavailableText: !food ? '原食物已不可用，营养按快照' : ''
-    };
   },
 
   editRecipe() {
@@ -232,43 +226,12 @@ Page({
     this.setData({ 'form.notes': e.detail.value });
   },
 
-  onYieldWeightInput(e) {
-    this.setData({
-      'form.yieldWeightG': e.detail.value,
-      yieldWarning: ''
-    }, () => this.refreshNutritionPreview());
-  },
-
-  onIngredientQuantityInput(e) {
-    const index = Number(e.currentTarget.dataset.index);
-    const ingredient = this.data.form.ingredients[index];
-    if (!ingredient) return;
-    const quantity = e.detail.value;
-    const nutritionSource = this.foodById.get(ingredient.foodId) || ingredient.foodSnapshot;
-    const nutrition = ingredient.unavailable
-      ? buildIngredientNutritionPreservingSplit(
-        nutritionSource,
-        Number(quantity) || 0,
-        ingredient.nutrition,
-        Number(ingredient.quantity) || 0
-      )
-      : buildIngredientNutrition(nutritionSource, Number(quantity) || 0);
-    this.setData({
-      [`form.ingredients[${index}].quantity`]: quantity,
-      [`form.ingredients[${index}].nutrition`]: nutrition,
-      yieldWarning: ''
-    }, () => this.refreshNutritionPreview());
-  },
-
   removeIngredient(e) {
     const index = Number(e.currentTarget.dataset.index);
     const ingredients = this.data.form.ingredients
       .filter((_, itemIndex) => itemIndex !== index)
       .map((item, itemIndex) => ({ ...item, sortOrder: itemIndex }));
-    this.setData({
-      'form.ingredients': ingredients,
-      yieldWarning: ''
-    }, () => this.refreshNutritionPreview());
+    this.setData({ 'form.ingredients': ingredients });
   },
 
   addIngredients() {
@@ -285,41 +248,52 @@ Page({
   },
 
   consumeIngredientSelection() {
-    const selection = wx.getStorageSync(RECIPE_INGREDIENT_PICKER_SELECTION_KEY);
-    if (!selection || !Array.isArray(selection.foodIds)) return;
+    if (this.data.mode !== 'edit') return;
+    let selection = null;
+    try {
+      selection = wx.getStorageSync(RECIPE_INGREDIENT_PICKER_SELECTION_KEY);
+    } catch (error) {
+      return;
+    }
+    if (!selection || !Array.isArray(selection.foodIds) || !selection.foodIds.length) return;
     wx.removeStorageSync(RECIPE_INGREDIENT_PICKER_SELECTION_KEY);
-    const existingIds = new Set(this.data.form.ingredients.map(item => item.foodId));
-    const added = selection.foodIds
-      .filter(id => !existingIds.has(id))
-      .map(id => this.foodById.get(id))
-      .filter(Boolean)
-      .map((food, index) => this.hydrateIngredient({
-        foodId: food._id,
-        foodName: food.name,
-        quantity: '',
-        unit: food.baseUnit || 'g',
-        foodSnapshot: FoodModel.buildFoodSnapshot(food)
-      }, this.data.form.ingredients.length + index));
-    if (!added.length) return;
-    this.setData({
-      'form.ingredients': [...this.data.form.ingredients, ...added]
-    }, () => this.refreshNutritionPreview());
-  },
 
-  refreshNutritionPreview() {
-    const ingredients = (this.data.form.ingredients || []).map(item => ({
-      ...item,
-      quantity: Number(item.quantity) || 0
-    }));
-    const summary = summarizeRecipeNutrition(
-      ingredients,
-      Number(this.data.form.yieldWeightG) || 0
+    const existingIds = new Set(
+      (this.data.form.ingredients || []).map(item => item.foodId).filter(Boolean)
     );
-    this.setData({
-      nutritionPreview: {
-        totalNutrition: formatNutrition(summary.totalNutrition),
-        nutritionPer100g: formatNutrition(summary.nutritionPer100g)
+    const missingIds = [];
+    const added = selection.foodIds
+      .filter(id => id && !existingIds.has(id))
+      .map((id) => {
+        const food = this.foodById?.get(id);
+        if (!food) {
+          missingIds.push(id);
+          return null;
+        }
+        return this.hydrateIngredient({
+          foodId: food._id,
+          foodName: food.name,
+          unit: food.baseUnit || 'g',
+          foodSnapshot: FoodModel.buildFoodSnapshot(food),
+          food
+        }, (this.data.form.ingredients || []).length);
+      })
+      .filter(Boolean)
+      .map((item, index) => ({
+        ...item,
+        sortOrder: (this.data.form.ingredients || []).length + index
+      }));
+
+    if (!added.length) {
+      if (missingIds.length) {
+        wx.showToast({ title: '部分食物加载失败，请重试', icon: 'none' });
       }
+      return;
+    }
+
+    this.setData({
+      mode: 'edit',
+      'form.ingredients': [...(this.data.form.ingredients || []), ...added]
     });
   },
 
@@ -328,18 +302,15 @@ Page({
     const ingredients = (form.ingredients || []).map((item, index) => ({
       foodId: item.foodId,
       foodName: item.foodName,
-      quantity: Number(item.quantity),
       unit: item.unit,
       sortOrder: index,
-      food: item.unavailable ? null : this.foodById.get(item.foodId),
-      foodSnapshot: item.foodSnapshot,
-      nutrition: item.nutrition
+      food: item.unavailable ? null : (item.food || this.foodById.get(item.foodId)),
+      foodSnapshot: item.foodSnapshot
     }));
     return {
       babyUid: getBabyUid(),
       name: String(form.name || '').trim(),
       notes: String(form.notes || '').trim(),
-      yieldWeightG: Number(form.yieldWeightG),
       ingredients,
       steps: form.steps || [],
       coverImageFileId: form.coverImageFileId || '',
@@ -358,32 +329,45 @@ Page({
       wx.showToast({ title: '请至少添加一种原料', icon: 'none' });
       return;
     }
-    if (payload.ingredients.some(item => !(item.quantity > 0))) {
-      wx.showToast({ title: '请填写有效的原料份量', icon: 'none' });
-      return;
-    }
-    if (!(payload.yieldWeightG > 0)) {
-      wx.showToast({ title: '请填写有效的成品总重', icon: 'none' });
-      return;
-    }
-
-    if (shouldWarnYieldMismatch(payload.ingredients, payload.yieldWeightG)) {
-      this.setData({ yieldWarning: '成品总重与原料克数差异较大，请确认是否包含失水或加水' });
-      wx.showToast({ title: '成品重量与原料差异较大', icon: 'none' });
-    }
 
     this.setData({ saving: true });
     wx.showLoading({ title: '保存中...', mask: true });
+    const app = typeof getApp === 'function' ? getApp() : null;
+    const savePayload = {
+      ...payload,
+      operatorOpenid: app?.globalData?.openid || wx.getStorageSync('openid') || ''
+    };
+    console.log('[recipe-management] saveRecipe', {
+      mode: this.data.recipeId ? 'update' : 'create',
+      recipeId: this.data.recipeId || '',
+      babyUid: savePayload.babyUid,
+      name: savePayload.name,
+      ingredientCount: (savePayload.ingredients || []).length
+    });
     const result = this.data.recipeId
-      ? await RecipeModel.update(this.data.recipeId, payload, getBabyUid())
-      : await RecipeModel.create(payload);
+      ? await RecipeModel.update(this.data.recipeId, savePayload, getBabyUid())
+      : await RecipeModel.create(savePayload);
+    console.log('[recipe-management] saveRecipe result', {
+      success: result.success,
+      message: result.message || '',
+      readable: result.readable,
+      newId: result.data?._id || result.recipe?._id || ''
+    });
     wx.hideLoading();
     this.setData({ saving: false });
     if (!result.success) {
       wx.showToast({ title: result.message || '保存失败', icon: 'none' });
       return;
     }
-    wx.showToast({ title: '保存成功', icon: 'success' });
+    if (!this.data.recipeId && result.readable === false) {
+      wx.showModal({
+        title: '已保存但读回失败',
+        content: `请到云开发控制台检查 recipe_catalog 权限（建议与 food_catalog 一致），并确认记录 babyUid=${payload.babyUid || ''}`,
+        showCancel: false
+      });
+    } else {
+      wx.showToast({ title: '保存成功', icon: 'success' });
+    }
     await this.loadRecipes();
   },
 

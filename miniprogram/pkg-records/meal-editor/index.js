@@ -4,7 +4,11 @@ const RecipeModel = require('../../models/recipe');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
-const { scaleNutrition } = require('../../utils/recipeNutritionUtils');
+const {
+  scaleNutrition,
+  scaleNutritionByFactor,
+  summarizeBatchFromIngredients
+} = require('../../utils/recipeNutritionUtils');
 const {
   getNutritionTargetPreferences,
   pickCoefficient
@@ -695,14 +699,36 @@ Page({
     wx.removeStorageSync(RECIPE_PICKER_SELECTION_KEY);
 
     const items = [...(this.data.mealDraft.items || [])];
+    let addedCount = 0;
     selectedItems.forEach((selected, index) => {
       const quantity = Number(selected.quantity);
-      if (!selected.recipeId || !selected.recipeName || !Number.isFinite(quantity) || quantity <= 0) {
+      const intakePercent = Number(selected.intakePercent) || 0;
+      const allowPercentWithoutGrams = selected.intakeMode === 'percent' && intakePercent > 0;
+      if (
+        !selected.recipeId
+        || !selected.recipeName
+        || (!(Number.isFinite(quantity) && quantity > 0) && !allowPercentWithoutGrams)
+      ) {
         return;
       }
+      addedCount += 1;
+      const eatenQuantity = Number.isFinite(quantity) && quantity > 0
+        ? quantity
+        : intakePercent;
       const localId = selected.localId || `meal_recipe_${Date.now()}_${index}`;
-      const nutritionPer100g = selected.nutritionPer100g || {};
-      const nutrition = withProteinNutritionDisplay(scaleNutrition(nutritionPer100g, quantity));
+      const batchWeightG = Number(selected.batchWeightG || selected.yieldWeightG) || 0;
+      const batchNutrition = selected.batchNutrition || {};
+      const nutritionPer100g = selected.nutritionPer100g
+        || summarizeBatchFromIngredients([{ nutrition: batchNutrition, quantity: batchWeightG, unit: 'g' }]).nutritionPer100g;
+      const nutrition = withProteinNutritionDisplay(
+        selected.nutrition
+        || (batchWeightG > 0
+          ? scaleNutrition(nutritionPer100g, eatenQuantity)
+          : scaleNutritionByFactor(batchNutrition, intakePercent / 100))
+      );
+      const ingredientsSnapshot = Array.isArray(selected.ingredientsSnapshot)
+        ? selected.ingredientsSnapshot
+        : [];
       const nextItem = {
         localId,
         originalIntakeId: '',
@@ -722,21 +748,28 @@ Page({
         nameSnapshot: selected.recipeName,
         category: '食谱成品',
         unit: 'g',
-        quantity,
+        quantity: eatenQuantity,
         nutritionPer100g,
+        batchWeightG,
+        batchNutrition,
+        intakeMode: selected.intakeMode || 'grams',
+        intakePercent,
         nutrition,
         proteinSource: selected.proteinSource || 'natural',
         sourceLabel: '食谱',
         sourceType: 'recipe',
         naturalProtein: Number(nutrition.naturalProtein) || 0,
         specialProtein: Number(nutrition.specialProtein) || 0,
-        yieldWeightG: Number(selected.yieldWeightG) || 0,
-        ingredientsSnapshot: Array.isArray(selected.ingredientsSnapshot) ? selected.ingredientsSnapshot : [],
+        yieldWeightG: batchWeightG,
+        ingredientsSnapshot,
         recipeSource: {
           recipeId: selected.recipeId,
           recipeName: selected.recipeName,
-          yieldWeightG: Number(selected.yieldWeightG) || 0,
-          ingredientsSnapshot: Array.isArray(selected.ingredientsSnapshot) ? selected.ingredientsSnapshot : []
+          yieldWeightG: batchWeightG,
+          batchWeightG,
+          intakeMode: selected.intakeMode || 'grams',
+          intakePercent,
+          ingredientsSnapshot
         }
       };
       const existingIndex = items.findIndex(item => item.localId === localId);
@@ -746,6 +779,11 @@ Page({
         items.push(nextItem);
       }
     });
+
+    if (!addedCount) {
+      wx.showToast({ title: '食谱未加入本顿，请重新选择', icon: 'none' });
+      return false;
+    }
 
     this.setData({
       'mealDraft.items': items,
@@ -991,14 +1029,39 @@ Page({
       if (showToast) wx.showToast({ title: '请输入有效的食用克数', icon: 'none' });
       return null;
     }
-    const nutrition = withProteinNutritionDisplay(scaleNutrition(target.nutritionPer100g || {}, numQuantity));
+    const batchWeightG = Number(target.batchWeightG || target.yieldWeightG) || 0;
+    let nutrition;
+    let intakePercent = Number(target.intakePercent) || 0;
+    if (batchWeightG > 0 && target.batchNutrition) {
+      if (numQuantity > batchWeightG) {
+        if (showToast) wx.showToast({ title: '食用克数不能超过本次总重', icon: 'none' });
+        return null;
+      }
+      const factor = numQuantity / batchWeightG;
+      nutrition = withProteinNutritionDisplay(scaleNutritionByFactor(target.batchNutrition, factor));
+      intakePercent = Math.round(factor * 10000) / 100;
+    } else {
+      nutrition = withProteinNutritionDisplay(scaleNutrition(target.nutritionPer100g || {}, numQuantity));
+    }
     return {
       ...target,
       quantity: numQuantity,
       unit: 'g',
+      intakeMode: 'grams',
+      intakePercent,
       nutrition,
       naturalProtein: Number(nutrition.naturalProtein) || 0,
-      specialProtein: Number(nutrition.specialProtein) || 0
+      specialProtein: Number(nutrition.specialProtein) || 0,
+      recipeSource: {
+        ...(target.recipeSource || {}),
+        recipeId: target.recipeId,
+        recipeName: target.recipeName,
+        yieldWeightG: batchWeightG,
+        batchWeightG,
+        intakeMode: 'grams',
+        intakePercent,
+        ingredientsSnapshot: target.ingredientsSnapshot || []
+      }
     };
   },
 
@@ -1240,6 +1303,13 @@ Page({
           const recipeName = recipeSource.recipeName || intake.foodName || intake.nameSnapshot || snapshot.name || '食谱';
           const nutritionPer100g = snapshot.nutritionPerBasis || {};
           const nutrition = withProteinNutritionDisplay(intake.nutrition || {});
+          const batchWeightG = Number(recipeSource.batchWeightG || recipeSource.yieldWeightG) || 0;
+          const ingredientsSnapshot = Array.isArray(recipeSource.ingredientsSnapshot)
+            ? recipeSource.ingredientsSnapshot
+            : [];
+          const batchNutrition = batchWeightG > 0 && Number(intake.quantity) > 0
+            ? scaleNutritionByFactor(intake.nutrition || {}, batchWeightG / Number(intake.quantity))
+            : {};
           return {
             localId: intake._id || `meal_recipe_${index}`,
             originalIntakeId: intake._id || '',
@@ -1261,6 +1331,10 @@ Page({
             unit: 'g',
             quantity: Number(intake.quantity) || 0,
             nutritionPer100g,
+            batchWeightG,
+            batchNutrition,
+            intakeMode: recipeSource.intakeMode || 'grams',
+            intakePercent: Number(recipeSource.intakePercent) || 0,
             nutrition,
             proteinSource: snapshot.proteinSource || intake.proteinSource || 'natural',
             sourceLabel: '食谱',
@@ -1271,17 +1345,16 @@ Page({
             specialProtein: typeof nutrition.specialProtein === 'number'
               ? nutrition.specialProtein
               : (Number(intake.specialProtein) || 0),
-            yieldWeightG: Number(recipeSource.yieldWeightG) || 0,
-            ingredientsSnapshot: Array.isArray(recipeSource.ingredientsSnapshot)
-              ? recipeSource.ingredientsSnapshot
-              : [],
+            yieldWeightG: batchWeightG,
+            ingredientsSnapshot,
             recipeSource: {
               recipeId: recipeSource.recipeId || '',
               recipeName,
-              yieldWeightG: Number(recipeSource.yieldWeightG) || 0,
-              ingredientsSnapshot: Array.isArray(recipeSource.ingredientsSnapshot)
-                ? recipeSource.ingredientsSnapshot
-                : []
+              yieldWeightG: batchWeightG,
+              batchWeightG,
+              intakeMode: recipeSource.intakeMode || 'grams',
+              intakePercent: Number(recipeSource.intakePercent) || 0,
+              ingredientsSnapshot
             }
           };
         }
@@ -1392,7 +1465,10 @@ Page({
           recipeSource: {
             recipeId: item.recipeId,
             recipeName: item.recipeName,
-            yieldWeightG: item.yieldWeightG,
+            yieldWeightG: item.batchWeightG || item.yieldWeightG || 0,
+            batchWeightG: item.batchWeightG || item.yieldWeightG || 0,
+            intakeMode: item.intakeMode || 'grams',
+            intakePercent: Number(item.intakePercent) || 0,
             ingredientsSnapshot: item.ingredientsSnapshot || []
           },
           quantity: item.quantity,

@@ -135,6 +135,7 @@
 .field-picker,
 .quantity-input {
   flex: 1;
+  min-width: 0;
   height: 72rpx;
   line-height: 72rpx;
   padding: 0 20rpx;
@@ -648,6 +649,18 @@
   margin-bottom: 0;
 }
 
+/* 份量行：label 随文案宽度，输入框占满右侧剩余空间 */
+.quantity-row .field-label {
+  width: auto;
+  max-width: 45%;
+  white-space: nowrap;
+}
+
+.quantity-row .quantity-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .unit-text {
   flex-shrink: 0;
   font-size: 24rpx;
@@ -658,26 +671,41 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16rpx;
+  align-items: stretch;
+}
+
+.preview-grid-recipe {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .preview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 112rpx;
   padding: 18rpx 12rpx;
   border-radius: 16rpx;
   background: #FFF7E3;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .preview-value {
   display: block;
+  width: 100%;
   font-size: 28rpx;
+  line-height: 1.2;
   color: #333333;
   font-weight: 700;
 }
 
 .preview-label {
   display: block;
-  margin-top: 6rpx;
+  width: 100%;
+  margin-top: 8rpx;
   font-size: 22rpx;
+  line-height: 1.2;
   color: #8A7C60;
 }
 

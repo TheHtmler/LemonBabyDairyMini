@@ -1,0 +1,124 @@
+<view class="page">
+  <view class="loading-state" wx:if="{{loading}}">正在打开食谱...</view>
+
+  <block wx:elif="{{recipeId}}">
+    <view class="hero">
+      <text class="hero-title">{{recipeName}}</text>
+    </view>
+
+    <view class="batch-panel">
+      <text class="panel-title">原料用量</text>
+      <view
+        class="ingredient-row"
+        wx:for="{{draftIngredients}}"
+        wx:key="index"
+        wx:for-index="ingredientIndex"
+      >
+        <view class="ingredient-head">
+          <text class="ingredient-name">{{item.foodName}}</text>
+          <text class="ingredient-ref">{{item.per100Label}} {{item.per100Text}}</text>
+        </view>
+        <view class="quantity-row">
+          <input
+            class="compact-input"
+            type="digit"
+            value="{{item.quantity}}"
+            placeholder="用量"
+            data-index="{{ingredientIndex}}"
+            bindinput="onIngredientQuantityInput"
+            bindblur="onIngredientQuantityBlur"
+          />
+          <text class="unit-label">{{item.unit}}</text>
+        </view>
+        <text class="ingredient-current" wx:if="{{item.hasCurrentNutrition}}">{{item.currentText}}</text>
+      </view>
+    </view>
+
+    <view class="summary-card">
+      <view class="summary-head">
+        <text class="summary-title">本次合计</text>
+        <text class="summary-weight">{{batchPreview.totalWeightG}}g</text>
+      </view>
+      <view class="summary-grid">
+        <view class="summary-item">
+          <text class="summary-value">{{batchPreview.totalCalories}}</text>
+          <text class="summary-label">热量 kcal</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-value">{{batchPreview.totalProtein}}</text>
+          <text class="summary-label">蛋白 g</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-value">{{batchPreview.totalCarbs}}</text>
+          <text class="summary-label">碳水 g</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-value">{{batchPreview.totalFat}}</text>
+          <text class="summary-label">脂肪 g</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="batch-panel intake-panel">
+      <text class="panel-title">宝宝摄入</text>
+      <view class="mode-tabs">
+        <view
+          class="mode-tab {{intakeMode === 'grams' ? 'active' : ''}} {{batchPreview.canUseGramsIntake ? '' : 'disabled'}}"
+          data-mode="grams"
+          bindtap="switchIntakeMode"
+        >按克数</view>
+        <view
+          class="mode-tab {{intakeMode === 'percent' ? 'active' : ''}}"
+          data-mode="percent"
+          bindtap="switchIntakeMode"
+        >按百分比</view>
+      </view>
+      <view class="quantity-row">
+        <input
+          class="compact-input"
+          type="digit"
+          value="{{intakeValue}}"
+          placeholder="{{intakeMode === 'grams' ? '如 60' : '如 30'}}"
+          bindinput="onIntakeValueInput"
+          bindblur="onIntakeValueBlur"
+        />
+        <text class="unit-label">{{intakeMode === 'grams' ? 'g' : '%'}}</text>
+      </view>
+
+      <view class="intake-preview" wx:if="{{intakePreview.visible}}">
+        <view class="intake-preview-head">
+          <text class="intake-preview-title">实际摄入</text>
+          <text class="intake-preview-meta" wx:if="{{intakePreview.eatenGText}}">约 {{intakePreview.eatenGText}}</text>
+        </view>
+        <view class="summary-grid intake-preview-grid">
+          <view class="summary-item">
+            <text class="summary-value">{{intakePreview.calories}}</text>
+            <text class="summary-label">热量 kcal</text>
+          </view>
+          <view class="summary-item">
+            <text class="summary-value">{{intakePreview.protein}}</text>
+            <text class="summary-label">蛋白 g</text>
+          </view>
+          <view class="summary-item">
+            <text class="summary-value">{{intakePreview.carbs}}</text>
+            <text class="summary-label">碳水 g</text>
+          </view>
+          <view class="summary-item">
+            <text class="summary-value">{{intakePreview.fat}}</text>
+            <text class="summary-label">脂肪 g</text>
+          </view>
+        </view>
+      </view>
+      <text class="intake-preview-tip" wx:elif="{{intakePreview.tip}}">{{intakePreview.tip}}</text>
+    </view>
+    <view class="scroll-space"></view>
+  </block>
+
+  <view class="footer-actions" wx:if="{{!loading && recipeId}}">
+    <button
+      class="confirm-btn"
+      disabled="{{!intakeValue}}"
+      bindtap="confirmSelection"
+    >加入本顿</button>
+  </view>
+</view>

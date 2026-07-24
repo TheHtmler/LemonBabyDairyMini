@@ -775,13 +775,15 @@
 
 .quantity-input-label {
   flex-shrink: 0;
-  width: 80rpx;
+  width: auto;
+  max-width: 45%;
+  white-space: nowrap;
   font-size: 25rpx;
   color: #6B5A3A;
 }
 
 .quantity-input {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   height: 72rpx;
   font-size: 30rpx;

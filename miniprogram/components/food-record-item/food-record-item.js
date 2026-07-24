@@ -3,6 +3,11 @@ Component({
     record: {
       type: Object,
       value: null
+    },
+    // 分组头已展示餐次时间时，展开项可隐藏食物级时间
+    showTime: {
+      type: Boolean,
+      value: true
     }
   },
   data: {

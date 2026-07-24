@@ -474,10 +474,10 @@ label: '食物',
 type: 'stats',
 meta: `${normalizeValue(foodOverview.count || 0)}条记录`,
 summaryText: `热量 ${normalizeValue(foodOverview.totalCalories || 0)} kcal · 蛋白 ${formatTwoDecimals(getFoodProtein(foodOverview))} g`,
+// 液体已在上方「总液体量」展示，食物分区不再重复
 stats: buildNonZeroStats([
 { label: '热量', value: buildStatValue(foodOverview.totalCalories || 0, 'kcal') },
 { label: '蛋白', value: buildProteinStatValue(getFoodProtein(foodOverview)) },
-{ label: '液体', value: buildStatValue(roundDisplayInteger(foodFluidVolume), 'ml') },
 { label: '碳水', value: buildStatValue(foodOverview.carbs || 0, 'g') },
 { label: '脂肪', value: buildStatValue(foodFat, 'g') }
 ])

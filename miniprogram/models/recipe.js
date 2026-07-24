@@ -1,6 +1,7 @@
 /**
  * 食谱目录数据模型
- * 管理 recipe_catalog 集合的 CRUD；不参与 daily_summary_v2 失效
+ * 管理 recipe_catalog：只维护原料组合模板；用量与营养在记本顿时计算
+ * 不参与 daily_summary_v2 失效
  */
 
 const FoodModel = require('./food');
@@ -10,13 +11,19 @@ const {
   resolveOperatorOpenid,
   stripProtectedAuditFields
 } = require('../utils/auditFields');
-const {
-  summarizeRecipeNutrition,
-  buildIngredientNutrition,
-  emptyNutrition
-} = require('../utils/recipeNutritionUtils');
+const { emptyNutrition } = require('../utils/recipeNutritionUtils');
 
-const db = wx.cloud.database();
+function getDb() {
+  return wx.cloud.database();
+}
+
+function getCollection() {
+  return getDb().collection('recipe_catalog');
+}
+
+function cacheKey(babyUid) {
+  return `recipe_catalog_cache_${babyUid}`;
+}
 
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) {
@@ -39,39 +46,68 @@ function normalizeNutrition(nutrition = {}) {
   };
 }
 
+function sanitizeFoodSnapshot(snapshot = {}) {
+  const basis = snapshot.nutritionBasis || {};
+  const perBasis = snapshot.nutritionPerBasis || {};
+  return {
+    name: snapshot.name || '',
+    category: snapshot.category || '',
+    categoryLevel1: snapshot.categoryLevel1 || snapshot.category || '',
+    categoryLevel2: snapshot.categoryLevel2 || '',
+    nutritionBasis: {
+      quantity: toNumber(basis.quantity, 100),
+      unit: basis.unit || 'g'
+    },
+    nutritionPerBasis: normalizeNutrition(perBasis),
+    proteinSource: snapshot.proteinSource || 'natural',
+    proteinSplit: snapshot.proteinSplit || null,
+    proteinQuality: snapshot.proteinQuality || '',
+    sourceType: snapshot.sourceType || '',
+    libraryScope: snapshot.libraryScope || '',
+    sourceSystemFoodId: snapshot.sourceSystemFoodId || '',
+    sourceFoodCode: snapshot.sourceFoodCode || ''
+  };
+}
+
 function normalizeIngredient(ingredient = {}, index = 0) {
   return {
     foodId: ingredient.foodId || '',
     foodName: ingredient.foodName || ingredient.foodSnapshot?.name || '',
-    quantity: toNumber(ingredient.quantity),
-    unit: ingredient.unit || 'g',
+    // 模板阶段不存配方用量；兼容旧数据可读 quantity
+    quantity: toNumber(ingredient.quantity, 0),
+    unit: ingredient.unit || ingredient.foodSnapshot?.nutritionBasis?.unit || 'g',
     sortOrder: Number.isFinite(Number(ingredient.sortOrder))
       ? Number(ingredient.sortOrder)
       : index,
-    foodSnapshot: ingredient.foodSnapshot || {},
-    nutrition: normalizeNutrition(ingredient.nutrition)
+    foodSnapshot: sanitizeFoodSnapshot(ingredient.foodSnapshot || {}),
+    nutrition: normalizeNutrition(ingredient.nutrition || emptyNutrition())
   };
 }
 
 function normalizeRecipe(doc = {}) {
+  // 不使用 ...doc：云文档里的 undefined / 多余字段会导致 setData 失败，列表表现为一直为空
   return {
-    ...doc,
+    _id: doc._id || '',
     schemaVersion: doc.schemaVersion || 1,
     recordType: doc.recordType || 'recipe',
     status: doc.status || 'active',
     babyUid: doc.babyUid || '',
     name: doc.name || '',
     notes: doc.notes || '',
-    yieldWeightG: toNumber(doc.yieldWeightG),
+    yieldWeightG: toNumber(doc.yieldWeightG, 0),
     steps: Array.isArray(doc.steps) ? doc.steps : [],
     coverImageFileId: doc.coverImageFileId || '',
-    prepTimeSec: doc.prepTimeSec === undefined ? null : doc.prepTimeSec,
+    prepTimeSec: doc.prepTimeSec === undefined || doc.prepTimeSec === null
+      ? null
+      : doc.prepTimeSec,
     ingredients: (doc.ingredients || []).map((item, index) => normalizeIngredient(item, index)),
     totalNutrition: normalizeNutrition(doc.totalNutrition || emptyNutrition()),
     nutritionPer100g: normalizeNutrition(doc.nutritionPer100g || emptyNutrition()),
     proteinSource: doc.proteinSource || 'natural',
     usageCount: toNumber(doc.usageCount, 0),
-    lastUsedAt: doc.lastUsedAt === undefined ? null : doc.lastUsedAt
+    lastUsedAt: doc.lastUsedAt === undefined ? null : doc.lastUsedAt,
+    updatedAt: doc.updatedAt || null,
+    createdAt: doc.createdAt || null
   };
 }
 
@@ -83,10 +119,76 @@ function resolveBabyUid(source = {}) {
     || '';
 }
 
+function readRecipeCache(babyUid) {
+  if (!babyUid) return [];
+  try {
+    const raw = wx.getStorageSync(cacheKey(babyUid));
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((item) => item && item._id && (!item.status || item.status === 'active'))
+      .map((item) => normalizeRecipe(item));
+  } catch (error) {
+    console.warn('读取食谱本地缓存失败:', error);
+    return [];
+  }
+}
+
+function writeRecipeCache(babyUid, recipes = []) {
+  if (!babyUid) return;
+  try {
+    const slim = (recipes || [])
+      .filter((item) => item && item._id && (!item.status || item.status === 'active'))
+      .map((item) => normalizeRecipe(item));
+    wx.setStorageSync(cacheKey(babyUid), slim);
+  } catch (error) {
+    console.warn('写入食谱本地缓存失败:', error);
+  }
+}
+
+function upsertRecipeCache(babyUid, recipe) {
+  if (!babyUid || !recipe || !recipe._id) return;
+  const current = readRecipeCache(babyUid);
+  const next = normalizeRecipe(recipe);
+  const index = current.findIndex((item) => item._id === next._id);
+  if (index >= 0) {
+    current[index] = next;
+  } else {
+    current.unshift(next);
+  }
+  writeRecipeCache(babyUid, current);
+}
+
+function removeRecipeCache(babyUid, recipeId) {
+  if (!babyUid || !recipeId) return;
+  writeRecipeCache(
+    babyUid,
+    readRecipeCache(babyUid).filter((item) => item._id !== recipeId)
+  );
+}
+
+function mergeRecipeLists(remote = [], cached = []) {
+  const map = new Map();
+  cached.forEach((item) => {
+    if (item && item._id) map.set(item._id, item);
+  });
+  // 远端优先
+  remote.forEach((item) => {
+    if (item && item._id) map.set(item._id, item);
+  });
+  return Array.from(map.values());
+}
+
 class RecipeModel {
   constructor() {
-    this.db = db;
-    this.collection = db.collection('recipe_catalog');
+    // collection 改为按次获取，避免模块加载早于 cloud.init
+  }
+
+  get collection() {
+    return getCollection();
+  }
+
+  get db() {
+    return getDb();
   }
 
   normalizeRecipe(doc = {}) {
@@ -99,31 +201,24 @@ class RecipeModel {
     }
 
     return ingredients.map((item, index) => {
-      const quantity = Number(item.quantity);
-      if (!Number.isFinite(quantity) || quantity <= 0) {
-        throw new Error('原料份量必须大于 0');
-      }
-
       const food = item.food || item.foodDoc || null;
       const foodName = item.foodName || food?.name || item.foodSnapshot?.name || '';
       let foodSnapshot = item.foodSnapshot;
-      let nutrition = item.nutrition;
 
       if (food) {
         foodSnapshot = FoodModel.buildFoodSnapshot(food);
-        nutrition = buildIngredientNutrition(food, quantity);
-      } else if (!foodSnapshot || !nutrition) {
+      } else if (!foodSnapshot || !foodSnapshot.name) {
         throw new Error(`缺少原料「${foodName || index + 1}」的食物信息`);
       }
 
       return normalizeIngredient({
         foodId: item.foodId || food?._id || '',
         foodName: foodName || foodSnapshot?.name || '',
-        quantity,
-        unit: item.unit || 'g',
+        quantity: 0,
+        unit: item.unit || food?.baseUnit || foodSnapshot?.nutritionBasis?.unit || 'g',
         sortOrder: item.sortOrder,
         foodSnapshot,
-        nutrition
+        nutrition: emptyNutrition()
       }, index);
     });
   }
@@ -138,35 +233,51 @@ class RecipeModel {
       throw new Error('请输入食谱名称');
     }
 
-    const yieldWeightG = Number(merged.yieldWeightG);
-    if (!Number.isFinite(yieldWeightG) || yieldWeightG <= 0) {
-      throw new Error('成品总重必须大于 0');
-    }
-
     const ingredients = this.prepareIngredients(merged.ingredients);
-    const nutritionSummary = summarizeRecipeNutrition(ingredients, yieldWeightG);
-
-    return normalizeRecipe({
+    const normalized = normalizeRecipe({
       ...merged,
       name,
-      yieldWeightG,
+      yieldWeightG: 0,
       ingredients,
-      totalNutrition: nutritionSummary.totalNutrition,
-      nutritionPer100g: nutritionSummary.nutritionPer100g,
-      proteinSource: nutritionSummary.proteinSource,
+      totalNutrition: emptyNutrition(),
+      nutritionPer100g: emptyNutrition(),
+      proteinSource: 'natural',
       steps: merged.steps,
       coverImageFileId: merged.coverImageFileId,
       prepTimeSec: merged.prepTimeSec,
       notes: merged.notes || ''
     });
+
+    // 只写白名单字段，避免 ...doc 带入不可序列化/多余字段导致 add 失败或读回异常
+    return {
+      schemaVersion: normalized.schemaVersion || 1,
+      recordType: 'recipe',
+      status: normalized.status || 'active',
+      babyUid: normalized.babyUid || '',
+      name: normalized.name,
+      notes: normalized.notes || '',
+      yieldWeightG: 0,
+      steps: Array.isArray(normalized.steps) ? normalized.steps : [],
+      coverImageFileId: normalized.coverImageFileId || '',
+      prepTimeSec: normalized.prepTimeSec === undefined ? null : normalized.prepTimeSec,
+      ingredients: normalized.ingredients,
+      totalNutrition: emptyNutrition(),
+      nutritionPer100g: emptyNutrition(),
+      proteinSource: 'natural',
+      usageCount: toNumber(normalized.usageCount, 0),
+      lastUsedAt: normalized.lastUsedAt === undefined ? null : normalized.lastUsedAt
+    };
   }
 
   async getById(id) {
     try {
+      if (!id) {
+        return { success: false, message: '缺少食谱ID', data: null };
+      }
       const res = await this.collection.doc(id).get();
       return { success: true, data: res?.data ? normalizeRecipe(res.data) : null };
     } catch (error) {
-      return { success: false, message: error.message || '查询失败', data: null };
+      return { success: false, message: error.errMsg || error.message || '查询失败', data: null };
     }
   }
 
@@ -203,13 +314,28 @@ class RecipeModel {
         throw new Error('未找到宝宝信息');
       }
 
-      const operatorOpenid = resolveOperatorOpenid(recipe);
-      const timestamp = db.serverDate();
+      const app = typeof getApp === 'function' ? getApp() : null;
+      const operatorOpenid = resolveOperatorOpenid({
+        ...recipe,
+        operatorOpenid: recipe.operatorOpenid
+          || recipe.openid
+          || app?.globalData?.openid
+          || wx.getStorageSync('openid')
+          || ''
+      });
+      const timestamp = this.db.serverDate();
       const payload = this.buildRecipePayload({
         ...recipe,
         babyUid,
         usageCount: 0,
         lastUsedAt: null
+      });
+
+      console.log('[recipe] create start', {
+        babyUid,
+        name: payload.name,
+        ingredientCount: (payload.ingredients || []).length,
+        hasOpenid: !!operatorOpenid
       });
 
       const result = await this.collection.add({
@@ -224,10 +350,53 @@ class RecipeModel {
         }
       });
 
-      return { success: true, data: result };
+      const newId = result._id || result.id || '';
+      console.log('[recipe] create add ok', { newId, errMsg: result.errMsg });
+      let saved = null;
+      let readable = false;
+      if (newId) {
+        const fetched = await this.getById(newId);
+        console.log('[recipe] create getById after add', {
+          success: fetched.success,
+          message: fetched.message || '',
+          hasData: !!fetched.data,
+          dataBabyUid: fetched.data?.babyUid || '',
+          dataName: fetched.data?.name || ''
+        });
+        if (fetched.success && fetched.data) {
+          saved = fetched.data;
+          readable = true;
+        } else {
+          // 写成功但读失败（常见于权限只开了写/控制台可见）：本地缓存兜底供选择页使用
+          saved = normalizeRecipe({
+            ...payload,
+            _id: newId,
+            status: 'active'
+          });
+          readable = false;
+        }
+        upsertRecipeCache(babyUid, saved);
+        console.log('[recipe] create cache upsert', {
+          babyUid,
+          recipeId: saved._id,
+          readable,
+          cacheSize: readRecipeCache(babyUid).length
+        });
+      }
+
+      return {
+        success: true,
+        data: result,
+        recipe: saved,
+        readable
+      };
     } catch (error) {
-      console.error('创建食谱失败:', error);
-      return { success: false, message: error.message || '创建失败' };
+      console.error('[recipe] create failed', error);
+      const errMsg = error.errMsg || error.message || '创建失败';
+      const message = /COLLECTION_NOT_EXIST|not exist/i.test(errMsg)
+        ? '请先在云开发控制台创建 recipe_catalog 集合'
+        : errMsg;
+      return { success: false, message };
     }
   }
 
@@ -237,8 +406,15 @@ class RecipeModel {
       const previousRecord = ownedRecipe.record;
       const expectedBabyUid = ownedRecipe.babyUid;
 
-      const operatorOpenid = resolveOperatorOpenid(patch);
-      const timestamp = db.serverDate();
+      const app = typeof getApp === 'function' ? getApp() : null;
+      const operatorOpenid = resolveOperatorOpenid({
+        ...patch,
+        operatorOpenid: patch.operatorOpenid
+          || app?.globalData?.openid
+          || wx.getStorageSync('openid')
+          || ''
+      });
+      const timestamp = this.db.serverDate();
       const payload = this.buildRecipePayload({
         ...previousRecord,
         ...patch,
@@ -257,10 +433,16 @@ class RecipeModel {
         }
       });
 
+      upsertRecipeCache(expectedBabyUid, {
+        ...payload,
+        _id: id,
+        updatedAt: previousRecord.updatedAt
+      });
+
       return { success: true, data: result };
     } catch (error) {
       console.error('更新食谱失败:', error);
-      return { success: false, message: error.message || '更新失败' };
+      return { success: false, message: error.errMsg || error.message || '更新失败' };
     }
   }
 
@@ -268,8 +450,12 @@ class RecipeModel {
     try {
       const ownedRecipe = await this.getOwnedRecipe(id, babyUid);
       const expectedBabyUid = ownedRecipe.babyUid;
-      const operatorOpenid = resolveOperatorOpenid({ babyUid: expectedBabyUid });
-      const timestamp = db.serverDate();
+      const app = typeof getApp === 'function' ? getApp() : null;
+      const operatorOpenid = resolveOperatorOpenid({
+        babyUid: expectedBabyUid,
+        operatorOpenid: app?.globalData?.openid || wx.getStorageSync('openid') || ''
+      });
+      const timestamp = this.db.serverDate();
       const result = await this.collection.doc(id).update({
         data: {
           status: 'deleted',
@@ -281,36 +467,151 @@ class RecipeModel {
           })
         }
       });
+      removeRecipeCache(expectedBabyUid, id);
       return { success: true, data: result };
     } catch (error) {
       console.error('删除食谱失败:', error);
-      return { success: false, message: error.message || '删除失败' };
+      return { success: false, message: error.errMsg || error.message || '删除失败' };
     }
   }
 
   async listActiveByBaby(babyUid) {
+    const app = typeof getApp === 'function' ? getApp() : null;
+    console.log('[recipe] listActiveByBaby start', {
+      babyUid,
+      babyUidType: typeof babyUid,
+      globalBabyUid: app?.globalData?.babyUid || '',
+      storageBabyUid: wx.getStorageSync('baby_uid') || '',
+      cloudEnvId: app?.globalData?.cloudEnvId || ''
+    });
+
     try {
       if (!babyUid) {
-        return { success: true, data: [] };
+        console.warn('[recipe] listActiveByBaby skip: empty babyUid');
+        return { success: true, data: [], fromCache: false };
       }
 
-      const result = await this.collection
-        .where({
-          babyUid,
-          status: 'active'
-        })
-        .orderBy('updatedAt', 'desc')
-        .get();
+      const cached = readRecipeCache(babyUid);
+      console.log('[recipe] listActiveByBaby cache', {
+        size: cached.length,
+        ids: cached.map((item) => item._id),
+        names: cached.map((item) => item.name)
+      });
 
-      return {
-        success: true,
-        data: (result.data || [])
-          .filter((item) => item.status === 'active')
-          .map((item) => normalizeRecipe(item))
-      };
+      let remote = [];
+      let remoteError = null;
+      let rawRowCount = 0;
+
+      try {
+        // 只按 babyUid 查：多字段 where / orderBy 在新集合上常因缺复合索引直接失败
+        const pageSize = 20;
+        let skip = 0;
+        let hasMore = true;
+        const rows = [];
+        const _ = this.db.command;
+        while (hasMore) {
+          console.log('[recipe] listActiveByBaby query page', { skip, pageSize, babyUid });
+          const result = await this.collection
+            .where({ babyUid: _.eq(babyUid) })
+            .skip(skip)
+            .limit(pageSize)
+            .get();
+          const batch = result.data || [];
+          console.log('[recipe] listActiveByBaby query page result', {
+            skip,
+            batchSize: batch.length,
+            errMsg: result.errMsg || '',
+            sample: batch.slice(0, 3).map((item) => ({
+              _id: item._id,
+              name: item.name,
+              babyUid: item.babyUid,
+              status: item.status,
+              babyUidMatch: item.babyUid === babyUid
+            }))
+          });
+          rows.push(...batch);
+          hasMore = batch.length === pageSize;
+          skip += batch.length;
+        }
+
+        rawRowCount = rows.length;
+        const inactiveCount = rows.filter((item) => item.status && item.status !== 'active').length;
+        remote = rows
+          .filter((item) => !item.status || item.status === 'active')
+          .map((item) => normalizeRecipe(item));
+        console.log('[recipe] listActiveByBaby remote normalized', {
+          rawRowCount,
+          inactiveCount,
+          activeCount: remote.length,
+          ids: remote.map((item) => item._id),
+          names: remote.map((item) => item.name)
+        });
+      } catch (error) {
+        remoteError = error;
+        console.error('[recipe] listActiveByBaby remote query error', {
+          errMsg: error.errMsg || '',
+          message: error.message || '',
+          errCode: error.errCode,
+          error
+        });
+      }
+
+      if (remote.length) {
+        writeRecipeCache(babyUid, remote);
+        console.log('[recipe] listActiveByBaby return remote', { count: remote.length });
+        return { success: true, data: remote, fromCache: false };
+      }
+
+      // 云查询成功但为空，或查询失败：用本地缓存兜底，避免「控制台有、选择页无」
+      const merged = mergeRecipeLists(remote, cached);
+      if (merged.length) {
+        console.warn('[recipe] listActiveByBaby return cache fallback', {
+          count: merged.length,
+          rawRowCount,
+          remoteError: remoteError ? (remoteError.errMsg || remoteError.message) : ''
+        });
+        return {
+          success: true,
+          data: merged,
+          fromCache: true,
+          message: remoteError
+            ? (remoteError.errMsg || remoteError.message || '云查询失败，已使用本地缓存')
+            : ''
+        };
+      }
+
+      if (remoteError) {
+        const errMsg = remoteError.errMsg || remoteError.message || '查询失败';
+        const hint = /COLLECTION_NOT_EXIST|not exist/i.test(errMsg)
+          ? '请先在云开发控制台创建 recipe_catalog 集合'
+          : errMsg;
+        console.error('[recipe] listActiveByBaby fail', { hint });
+        return { success: false, message: hint, data: [], fromCache: false };
+      }
+
+      console.warn('[recipe] listActiveByBaby empty', {
+        babyUid,
+        rawRowCount,
+        cacheSize: cached.length
+      });
+      return { success: true, data: [], fromCache: false };
     } catch (error) {
-      console.error('查询食谱列表失败:', error);
-      return { success: false, message: error.message || '查询失败', data: [] };
+      console.error('[recipe] listActiveByBaby unexpected error', error);
+      const cached = readRecipeCache(babyUid);
+      if (cached.length) {
+        console.warn('[recipe] listActiveByBaby unexpected -> cache', { count: cached.length });
+        return {
+          success: true,
+          data: cached,
+          fromCache: true,
+          message: error.errMsg || error.message || '云查询失败，已使用本地缓存'
+        };
+      }
+      const errMsg = error.errMsg || error.message || '查询失败';
+      const hint = /COLLECTION_NOT_EXIST|not exist/i.test(errMsg)
+        ? '请先在云开发控制台创建 recipe_catalog 集合'
+        : errMsg;
+      return { success: false, message: hint, data: [], fromCache: false };
     }
   }
 
@@ -318,11 +619,15 @@ class RecipeModel {
     try {
       const ownedRecipe = await this.getOwnedRecipe(id, babyUid);
       const expectedBabyUid = ownedRecipe.babyUid;
-      const operatorOpenid = resolveOperatorOpenid({ babyUid: expectedBabyUid });
-      const timestamp = db.serverDate();
+      const app = typeof getApp === 'function' ? getApp() : null;
+      const operatorOpenid = resolveOperatorOpenid({
+        babyUid: expectedBabyUid,
+        operatorOpenid: app?.globalData?.openid || wx.getStorageSync('openid') || ''
+      });
+      const timestamp = this.db.serverDate();
       const result = await this.collection.doc(id).update({
         data: {
-          usageCount: db.command.inc(1),
+          usageCount: this.db.command.inc(1),
           lastUsedAt: timestamp,
           ...buildUpdateAuditFields({
             timestamp,
@@ -333,10 +638,12 @@ class RecipeModel {
       return { success: true, data: result };
     } catch (error) {
       console.error('更新食谱使用统计失败:', error);
-      return { success: false, message: error.message || '更新失败' };
+      return { success: false, message: error.errMsg || error.message || '更新失败' };
     }
   }
 }
 
 module.exports = new RecipeModel();
 module.exports.normalizeRecipe = normalizeRecipe;
+module.exports.readRecipeCache = readRecipeCache;
+module.exports.upsertRecipeCache = upsertRecipeCache;

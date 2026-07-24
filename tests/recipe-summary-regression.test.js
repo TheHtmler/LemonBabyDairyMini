@@ -1,10 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { mergeFoodNutrition } = require('../miniprogram/utils/dailySummaryV2Utils');
-const { scaleNutrition } = require('../miniprogram/utils/recipeNutritionUtils');
+const { resolveBatchIntake } = require('../miniprogram/utils/recipeNutritionUtils');
 
-test('daily food summary adds normal food and 60g of a 200g recipe yield', () => {
-  const recipeTotal = {
+test('daily food summary adds normal food and 30% of a recipe batch', () => {
+  const recipeBatch = {
     calories: 300,
     protein: 20,
     naturalProtein: 14,
@@ -14,8 +14,7 @@ test('daily food summary adds normal food and 60g of a 200g recipe yield', () =>
     fiber: 8,
     sodium: 400
   };
-  const recipePer100g = scaleNutrition(recipeTotal, 100 / 2);
-  const eatenRecipeNutrition = scaleNutrition(recipePer100g, 60);
+  const intake = resolveBatchIntake(recipeBatch, 200, 'percent', 30);
   const normalFoodNutrition = {
     calories: 40,
     protein: 2,
@@ -37,19 +36,23 @@ test('daily food summary adds normal food and 60g of a 200g recipe yield', () =>
     },
     {
       foodName: '番茄炒蛋',
-      quantity: 60,
+      quantity: intake.eatenG,
       unit: 'g',
       sourceType: 'recipe',
       recipeSource: {
         recipeId: 'recipe-1',
         recipeName: '番茄炒蛋',
-        yieldWeightG: 200
+        batchWeightG: 200,
+        yieldWeightG: 200,
+        intakeMode: 'percent',
+        intakePercent: 30
       },
-      nutrition: eatenRecipeNutrition
+      nutrition: intake.nutrition
     }
   ]);
 
-  assert.deepEqual(eatenRecipeNutrition, scaleNutrition(recipeTotal, 30));
+  assert.equal(intake.eatenG, 60);
+  assert.equal(intake.nutrition.protein, 6);
   assert.deepEqual(summary, {
     calories: 130,
     protein: 8,

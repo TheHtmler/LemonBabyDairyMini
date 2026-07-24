@@ -168,15 +168,22 @@ Page({
     quantityDraftScrollIntoView: '',
     quantityDraftInvalidIndex: -1,
     quantityTargetContext: null,
-    quantityTargetPreview: null
+    quantityTargetPreview: null,
+    isRecipeIngredientPicker: false,
+    cartConfirmText: '确定'
   },
 
-  async onLoad() {
-    const options = arguments[0] || {};
-    this.pickerSource = options.from === 'recipe-management' ? 'recipe-management' : 'meal';
+  async onLoad(options = {}) {
+    const from = String(options.from || '').trim();
+    this.pickerSource = from === 'recipe-management' ? 'recipe-management' : 'meal';
+    const isRecipeIngredientPicker = this.pickerSource === 'recipe-management';
+    this.setData({
+      isRecipeIngredientPicker,
+      cartConfirmText: isRecipeIngredientPicker ? '添加到食谱' : '确定'
+    });
     this.loadFoodPickerTargetContext();
     this.restoreLastLibraryScope();
-    const selectionKey = this.pickerSource === 'recipe-management'
+    const selectionKey = isRecipeIngredientPicker
       ? RECIPE_INGREDIENT_PICKER_SELECTION_KEY
       : FOOD_PICKER_SELECTION_KEY;
     const previousSelection = wx.getStorageSync(selectionKey);
@@ -825,6 +832,11 @@ Page({
   },
 
   openQuantityDrawer() {
+    if (this.pickerSource === 'recipe-management' || this.data.isRecipeIngredientPicker) {
+      // 食谱原料份量在食谱页填写
+      this.confirmSelection();
+      return;
+    }
     const selectedFoods = this.data.selectedFoodCart || [];
     if (!selectedFoods.length) {
       wx.showToast({ title: '请先选择食物', icon: 'none' });
@@ -1187,7 +1199,8 @@ Page({
       wx.showToast({ title: '请先选择食物', icon: 'none' });
       return;
     }
-    if (this.pickerSource === 'recipe-management') {
+    // 食谱原料：只回传所选食物，份量在食谱新增/编辑页填写，不打开本顿份量抽屉
+    if (this.pickerSource === 'recipe-management' || this.data.isRecipeIngredientPicker) {
       writeFoodSelectionIds(
         selectedFoods.map(food => food._id),
         RECIPE_INGREDIENT_PICKER_SELECTION_KEY
