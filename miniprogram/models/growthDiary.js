@@ -1,23 +1,16 @@
 const {
   validateDiaryPayload,
   canEditDiaryEntry,
-  normalizePhotos,
+  normalizeMedia,
+  collectMediaFileIds,
   sortDiaryEntriesByEventDateDesc
 } = require('../utils/growthDiaryUtils');
 const { deleteCloudFiles: defaultDeleteCloudFiles } = require('../utils/diaryImage');
 
-function collectPhotoFileIds(photos = []) {
-  const ids = [];
-  for (const photo of normalizePhotos(photos)) {
-    if (photo.originalFileId) ids.push(photo.originalFileId);
-    if (photo.thumbFileId) ids.push(photo.thumbFileId);
-  }
-  return ids;
-}
-
-function findReplacedPhotoFileIds(oldPhotos = [], newPhotos = []) {
-  const newIds = new Set(collectPhotoFileIds(newPhotos));
-  return collectPhotoFileIds(oldPhotos).filter((id) => !newIds.has(id));
+function findReplacedMediaFileIds(oldEntry = {}, newMedia = []) {
+  const oldIds = collectMediaFileIds(normalizeMedia(oldEntry.media, oldEntry.photos));
+  const newIds = new Set(collectMediaFileIds(newMedia));
+  return oldIds.filter((id) => !newIds.has(id));
 }
 
 function resolveActorOpenid(actor = {}) {
@@ -96,6 +89,7 @@ class GrowthDiaryModel {
         title: validation.normalized.title,
         notes: validation.normalized.notes,
         eventDate: validation.normalized.eventDate,
+        media: validation.normalized.media,
         photos: validation.normalized.photos,
         createdByOpenid: openid,
         authorDisplayName,
@@ -134,7 +128,7 @@ class GrowthDiaryModel {
       return { success: false, message: validation.errors[0] || '数据无效' };
     }
 
-    const replacedFileIds = findReplacedPhotoFileIds(entry.photos, validation.normalized.photos);
+    const replacedFileIds = findReplacedMediaFileIds(entry, validation.normalized.media);
 
     try {
       await this.collection.doc(id).update({
@@ -142,6 +136,7 @@ class GrowthDiaryModel {
           title: validation.normalized.title,
           notes: validation.normalized.notes,
           eventDate: validation.normalized.eventDate,
+          media: validation.normalized.media,
           photos: validation.normalized.photos,
           updatedAt: this.db.serverDate()
         }
@@ -180,7 +175,7 @@ class GrowthDiaryModel {
         }
       });
 
-      await this.deleteCloudFiles(collectPhotoFileIds(entry.photos));
+      await this.deleteCloudFiles(collectMediaFileIds(normalizeMedia(entry.media, entry.photos)));
       return { success: true };
     } catch (error) {
       console.error('删除成长日记失败:', error);

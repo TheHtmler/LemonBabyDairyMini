@@ -1,6 +1,10 @@
 const { formatBabyAgeText } = require('./babyAgeDisplay');
 
 const MAX_DIARY_PHOTOS = 3;
+const MAX_DIARY_MEDIA = 3;
+const MAX_DIARY_VIDEOS = 1;
+const MAX_VIDEO_DURATION_SEC = 15;
+const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
 const MAX_AUTHOR_ROLE_LEN = 5;
 const DIARY_ROLE_PRESETS = ['妈妈', '爸爸', '奶奶', '爷爷', '外婆', '外公'];
 
@@ -14,6 +18,105 @@ function normalizePhotos(photos = []) {
       height: p?.height == null ? null : Number(p.height)
     }))
     .filter((p) => p.originalFileId && p.thumbFileId);
+}
+
+function normalizeNullableNumber(value) {
+  if (value == null || value === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function normalizeMediaItem(item = {}) {
+  const type = String(item?.type || '').trim() === 'video' ? 'video' : 'image';
+  const width = normalizeNullableNumber(item.width);
+  const height = normalizeNullableNumber(item.height);
+
+  if (type === 'video') {
+    const videoFileId = String(item.videoFileId || '').trim();
+    const coverFileId = String(item.coverFileId || '').trim();
+    if (!videoFileId || !coverFileId) return null;
+    return {
+      type: 'video',
+      originalFileId: null,
+      thumbFileId: null,
+      videoFileId,
+      coverFileId,
+      durationSec: normalizeNullableNumber(item.durationSec),
+      sizeBytes: normalizeNullableNumber(item.sizeBytes),
+      width,
+      height
+    };
+  }
+
+  const originalFileId = String(item.originalFileId || '').trim();
+  const thumbFileId = String(item.thumbFileId || '').trim();
+  if (!originalFileId || !thumbFileId) return null;
+  return {
+    type: 'image',
+    originalFileId,
+    thumbFileId,
+    videoFileId: null,
+    coverFileId: null,
+    durationSec: null,
+    sizeBytes: null,
+    width,
+    height
+  };
+}
+
+function photosToMedia(photos = []) {
+  return normalizePhotos(photos).map((photo) => ({
+    type: 'image',
+    originalFileId: photo.originalFileId,
+    thumbFileId: photo.thumbFileId,
+    videoFileId: null,
+    coverFileId: null,
+    durationSec: null,
+    sizeBytes: null,
+    width: photo.width,
+    height: photo.height
+  }));
+}
+
+function normalizeMedia(media, photos = []) {
+  if (Array.isArray(media) && media.length) {
+    return media.map(normalizeMediaItem).filter(Boolean);
+  }
+  return photosToMedia(photos);
+}
+
+function mediaToPhotos(media = []) {
+  return normalizeMedia(media)
+    .filter((item) => item.type === 'image')
+    .map((item) => ({
+      originalFileId: item.originalFileId,
+      thumbFileId: item.thumbFileId,
+      width: item.width,
+      height: item.height
+    }));
+}
+
+function collectMediaFileIds(media = []) {
+  const ids = [];
+  for (const item of normalizeMedia(media)) {
+    if (item.type === 'image') {
+      if (item.originalFileId) ids.push(item.originalFileId);
+      if (item.thumbFileId) ids.push(item.thumbFileId);
+    } else if (item.type === 'video') {
+      if (item.videoFileId) ids.push(item.videoFileId);
+      if (item.coverFileId) ids.push(item.coverFileId);
+    }
+  }
+  return ids;
+}
+
+function listPreviewFileIds(media = []) {
+  const ids = [];
+  for (const item of normalizeMedia(media)) {
+    if (item.type === 'image' && item.thumbFileId) ids.push(item.thumbFileId);
+    if (item.type === 'video' && item.coverFileId) ids.push(item.coverFileId);
+  }
+  return ids;
 }
 
 function normalizeAuthorDisplayName(value = '') {
@@ -41,10 +144,20 @@ function validateDiaryPayload(payload = {}) {
   if (!title) errors.push('请输入里程碑标题');
   const eventDate = normalizeEventDateKey(payload.eventDate);
   if (!eventDate) errors.push('请选择发生日期');
-  const photos = normalizePhotos(payload.photos);
-  if ((payload.photos || []).length > MAX_DIARY_PHOTOS || photos.length > MAX_DIARY_PHOTOS) {
-    errors.push(`最多上传 ${MAX_DIARY_PHOTOS} 张图片`);
+
+  const rawMedia = Array.isArray(payload.media) ? payload.media : null;
+  const rawPhotos = Array.isArray(payload.photos) ? payload.photos : [];
+  const media = normalizeMedia(rawMedia, rawPhotos);
+  const rawCount = rawMedia ? rawMedia.length : rawPhotos.length;
+  if (rawCount > MAX_DIARY_MEDIA || media.length > MAX_DIARY_MEDIA) {
+    errors.push(`最多上传 ${MAX_DIARY_MEDIA} 个媒体（图片+视频）`);
   }
+  const videoCount = media.filter((item) => item.type === 'video').length;
+  if (videoCount > MAX_DIARY_VIDEOS) {
+    errors.push(`每条日记最多 ${MAX_DIARY_VIDEOS} 个视频`);
+  }
+
+  const photos = mediaToPhotos(media);
   const authorDisplayName = normalizeAuthorDisplayName(
     payload.authorDisplayName || payload.authorRole || ''
   );
@@ -55,6 +168,7 @@ function validateDiaryPayload(payload = {}) {
       title,
       notes: String(payload.notes || '').trim(),
       eventDate,
+      media,
       photos,
       authorDisplayName
     }
@@ -78,6 +192,7 @@ function mapMilestoneToDiary(milestone = {}) {
     title: String(milestone.title || '').trim(),
     notes: String(milestone.notes || '').trim(),
     photos: [],
+    media: [],
     createdByOpenid: openid,
     authorDisplayName: '',
     userInfo: milestone.userInfo || {},
@@ -199,9 +314,18 @@ function formatDiaryForDisplay(entry = {}) {
 
 module.exports = {
   MAX_DIARY_PHOTOS,
+  MAX_DIARY_MEDIA,
+  MAX_DIARY_VIDEOS,
+  MAX_VIDEO_DURATION_SEC,
+  MAX_VIDEO_BYTES,
   MAX_AUTHOR_ROLE_LEN,
   DIARY_ROLE_PRESETS,
   normalizePhotos,
+  normalizeMedia,
+  photosToMedia,
+  mediaToPhotos,
+  collectMediaFileIds,
+  listPreviewFileIds,
   normalizeAuthorDisplayName,
   validateAuthorDisplayName,
   hasAuthorDisplayName,

@@ -13,6 +13,18 @@
       <view class="detail-title">{{entry.title}}</view>
       <view class="detail-notes" wx:if="{{entry.notes}}">{{entry.notes}}</view>
 
+      <view class="detail-video-wrap" wx:if="{{videoUrl}}">
+        <video
+          class="detail-video"
+          src="{{videoUrl}}"
+          poster="{{videoPoster}}"
+          controls="{{true}}"
+          show-center-play-btn="{{true}}"
+          object-fit="contain"
+          binderror="onVideoError"
+        ></video>
+      </view>
+
       <view class="detail-photos" wx:if="{{thumbUrls.length}}">
         <image
           class="detail-photo"

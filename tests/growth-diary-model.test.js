@@ -141,7 +141,8 @@ test('growthDiary model uses growth_diary collection and active filter', () => {
   assert.match(source, /\.limit\(/);
   assert.match(source, /validateDiaryPayload/);
   assert.match(source, /canEditDiaryEntry/);
-  assert.match(source, /normalizePhotos/);
+  assert.match(source, /normalizeMedia/);
+  assert.match(source, /collectMediaFileIds/);
   assert.match(source, /createdByOpenid/);
   assert.match(source, /deleteCloudFiles/);
   assert.match(source, /status:\s*'deleted'/);
@@ -203,8 +204,74 @@ test('create writes createdByOpenid photos and active status', async () => {
   assert.deepEqual(writes.adds[0].data.photos, [
     { originalFileId: 'cloud://o1', thumbFileId: 'cloud://t1', width: 100, height: 80 }
   ]);
+  assert.equal(writes.adds[0].data.media.length, 1);
+  assert.equal(writes.adds[0].data.media[0].type, 'image');
   assert.equal(writes.adds[0].data.userInfo.displayName, '妈妈');
   assert.equal(writes.adds[0].data.userInfo.nickName, '微信名');
+});
+
+test('create dual-writes media with video and image photos subset', async () => {
+  const { db, writes } = createDbMock();
+  const model = loadFreshModel(db);
+
+  const result = await model.create(
+    'baby-1',
+    {
+      title: '会爬',
+      eventDate: '2026-07-02',
+      media: [
+        {
+          type: 'video',
+          videoFileId: 'cloud://v1',
+          coverFileId: 'cloud://c1',
+          durationSec: 10,
+          sizeBytes: 2048
+        },
+        { type: 'image', originalFileId: 'cloud://o1', thumbFileId: 'cloud://t1' }
+      ]
+    },
+    { openid: 'author-openid', authorDisplayName: '爸爸' }
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(writes.adds[0].data.media.length, 2);
+  assert.equal(writes.adds[0].data.media[0].type, 'video');
+  assert.deepEqual(writes.adds[0].data.photos, [
+    { originalFileId: 'cloud://o1', thumbFileId: 'cloud://t1', width: null, height: null }
+  ]);
+});
+
+test('softDelete cleans video and cover file ids', async () => {
+  const { db } = createDbMock({
+    growthDiaryData: [
+      {
+        _id: 'd1',
+        babyUid: 'baby-1',
+        status: 'active',
+        createdByOpenid: 'author-openid',
+        title: '标题',
+        eventDate: '2026-07-01',
+        media: [
+          {
+            type: 'video',
+            videoFileId: 'cloud://v1',
+            coverFileId: 'cloud://c1'
+          }
+        ],
+        photos: []
+      }
+    ]
+  });
+  const deletedFiles = [];
+  const model = loadFreshModel(db, {
+    deleteCloudFiles: async (fileIds) => {
+      deletedFiles.push(...fileIds);
+    }
+  });
+
+  const result = await model.softDelete('d1', 'baby-1', { openid: 'author-openid' });
+  assert.equal(result.success, true);
+  assert.deepEqual(deletedFiles.sort(), ['cloud://c1', 'cloud://v1'].sort());
 });
 
 test('update returns success false when canEditDiaryEntry is false', async () => {

@@ -7,11 +7,14 @@ const {
   handleError
 } = require('../../utils/index');
 const {
-  MAX_DIARY_PHOTOS,
+  MAX_DIARY_MEDIA,
+  MAX_DIARY_VIDEOS,
+  MAX_VIDEO_DURATION_SEC,
   MAX_AUTHOR_ROLE_LEN,
   DIARY_ROLE_PRESETS,
   canEditDiaryEntry,
-  normalizePhotos,
+  normalizeMedia,
+  listPreviewFileIds,
   hasAuthorDisplayName,
   normalizeAuthorDisplayName,
   validateAuthorDisplayName,
@@ -19,7 +22,11 @@ const {
   normalizeEventDateKey,
   formatDiaryEventAgeText
 } = require('../../utils/growthDiaryUtils');
-const { prepareAndUploadDiaryPhoto } = require('../../utils/diaryImage');
+const {
+  prepareAndUploadDiaryPhoto,
+  prepareAndUploadDiaryVideo,
+  validateDiaryVideoLocal
+} = require('../../utils/diaryImage');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
 function getTodayDateKey() {
@@ -36,30 +43,84 @@ function createEmptyForm(overrides = {}) {
     title: '',
     eventDate: getTodayDateKey(),
     notes: '',
-    photos: [],
+    media: [],
     ...overrides
   };
 }
 
-function makeLocalPhoto(localPath, index) {
+function countFormVideos(media = []) {
+  return (media || []).filter((item) => item.type === 'video').length;
+}
+
+function makeLocalImage(localPath, index) {
   return {
-    key: `local_${Date.now()}_${index}`,
+    key: `local_img_${Date.now()}_${index}`,
+    type: 'image',
     localPath,
+    coverLocalPath: '',
     previewUrl: localPath,
+    durationSec: null,
+    sizeBytes: null,
     originalFileId: '',
-    thumbFileId: ''
+    thumbFileId: '',
+    videoFileId: '',
+    coverFileId: '',
+    width: null,
+    height: null
   };
 }
 
-function makeCloudPhoto(photo, previewUrl, index) {
+function makeLocalVideo(file, index) {
+  const coverLocalPath = String(file?.thumbTempFilePath || '').trim();
   return {
-    key: photo.thumbFileId || photo.originalFileId || `cloud_${index}`,
+    key: `local_vid_${Date.now()}_${index}`,
+    type: 'video',
+    localPath: String(file?.tempFilePath || '').trim(),
+    coverLocalPath,
+    previewUrl: coverLocalPath,
+    durationSec: Number(file?.duration) || null,
+    sizeBytes: Number(file?.size) || null,
+    originalFileId: '',
+    thumbFileId: '',
+    videoFileId: '',
+    coverFileId: '',
+    width: null,
+    height: null
+  };
+}
+
+function makeCloudMedia(item, previewUrl, index) {
+  if (item.type === 'video') {
+    return {
+      key: item.coverFileId || item.videoFileId || `cloud_v_${index}`,
+      type: 'video',
+      localPath: '',
+      coverLocalPath: '',
+      previewUrl: previewUrl || '',
+      durationSec: item.durationSec == null ? null : item.durationSec,
+      sizeBytes: item.sizeBytes == null ? null : item.sizeBytes,
+      originalFileId: '',
+      thumbFileId: '',
+      videoFileId: item.videoFileId || '',
+      coverFileId: item.coverFileId || '',
+      width: item.width == null ? null : item.width,
+      height: item.height == null ? null : item.height
+    };
+  }
+  return {
+    key: item.thumbFileId || item.originalFileId || `cloud_i_${index}`,
+    type: 'image',
     localPath: '',
+    coverLocalPath: '',
     previewUrl: previewUrl || '',
-    originalFileId: photo.originalFileId || '',
-    thumbFileId: photo.thumbFileId || '',
-    width: photo.width == null ? null : photo.width,
-    height: photo.height == null ? null : photo.height
+    durationSec: null,
+    sizeBytes: null,
+    originalFileId: item.originalFileId || '',
+    thumbFileId: item.thumbFileId || '',
+    videoFileId: '',
+    coverFileId: '',
+    width: item.width == null ? null : item.width,
+    height: item.height == null ? null : item.height
   };
 }
 
@@ -70,7 +131,7 @@ Page({
     saving: false,
     showForm: false,
     editingId: '',
-    maxPhotos: MAX_DIARY_PHOTOS,
+    maxMedia: MAX_DIARY_MEDIA,
     maxRoleLen: MAX_AUTHOR_ROLE_LEN,
     rolePresets: DIARY_ROLE_PRESETS,
     isCreator: false,
@@ -308,29 +369,40 @@ Page({
         displayNameByOpenid[actor.openid] = actor.authorDisplayName;
       }
 
-      const thumbFileIds = [];
+      const previewFileIds = [];
       list.forEach((entry) => {
-        normalizePhotos(entry.photos)
-          .slice(0, MAX_DIARY_PHOTOS)
-          .forEach((photo) => {
-            if (photo.thumbFileId) thumbFileIds.push(photo.thumbFileId);
-          });
+        const media = normalizeMedia(entry.media, entry.photos).slice(0, MAX_DIARY_MEDIA);
+        listPreviewFileIds(media).forEach((id) => previewFileIds.push(id));
       });
 
-      const urlMap = await resolveCloudTempUrls(thumbFileIds);
+      const urlMap = await resolveCloudTempUrls(previewFileIds);
 
       const entries = list.map((entry) => {
-        const photos = normalizePhotos(entry.photos).slice(0, MAX_DIARY_PHOTOS);
-        const thumbUrls = photos
-          .map((photo) => urlMap.get(photo.thumbFileId) || '')
+        const media = normalizeMedia(entry.media, entry.photos).slice(0, MAX_DIARY_MEDIA);
+        const mediaThumbs = media
+          .map((item) => {
+            const url = item.type === 'video'
+              ? (urlMap.get(item.coverFileId) || '')
+              : (urlMap.get(item.thumbFileId) || '');
+            if (!url) return null;
+            return {
+              url,
+              isVideo: item.type === 'video',
+              originalFileId: item.type === 'image' ? item.originalFileId : ''
+            };
+          })
           .filter(Boolean);
         return {
           ...entry,
           canEdit: canEditDiaryEntry(entry, actor),
           eventDateText: formatDateText(entry.eventDate),
           eventAgeText: formatDiaryEventAgeText(entry.eventDate, birthday),
-          thumbUrls,
-          originalFileIds: photos.map((photo) => photo.originalFileId).filter(Boolean),
+          mediaThumbs,
+          thumbUrls: mediaThumbs.map((item) => item.url),
+          originalFileIds: media
+            .filter((item) => item.type === 'image')
+            .map((item) => item.originalFileId)
+            .filter(Boolean),
           publishMetaText: formatDiaryPublishMeta(entry, { displayNameByOpenid })
         };
       });
@@ -360,9 +432,9 @@ Page({
       return;
     }
 
-    const photos = normalizePhotos(entry.photos).slice(0, MAX_DIARY_PHOTOS);
-    const thumbIds = photos.map((p) => p.thumbFileId).filter(Boolean);
-    const urlMap = await resolveCloudTempUrls(thumbIds);
+    const media = normalizeMedia(entry.media, entry.photos).slice(0, MAX_DIARY_MEDIA);
+    const previewIds = listPreviewFileIds(media);
+    const urlMap = await resolveCloudTempUrls(previewIds);
 
     this.setData({
       showForm: true,
@@ -371,9 +443,12 @@ Page({
         title: entry.title || '',
         eventDate: formatDateText(entry.eventDate) || getTodayDateKey(),
         notes: entry.notes || '',
-        photos: photos.map((photo, index) =>
-          makeCloudPhoto(photo, urlMap.get(photo.thumbFileId) || '', index)
-        )
+        media: media.map((item, index) => {
+          const previewUrl = item.type === 'video'
+            ? (urlMap.get(item.coverFileId) || '')
+            : (urlMap.get(item.thumbFileId) || '');
+          return makeCloudMedia(item, previewUrl, index);
+        })
       })
     });
   },
@@ -547,82 +622,149 @@ Page({
     });
   },
 
-  async pickPhotos() {
-    const remain = MAX_DIARY_PHOTOS - (this.data.form.photos || []).length;
+  async pickMedia() {
+    const current = this.data.form.media || [];
+    const remain = MAX_DIARY_MEDIA - current.length;
     if (remain <= 0) {
-      wx.showToast({ title: `最多上传 ${MAX_DIARY_PHOTOS} 张图片`, icon: 'none' });
+      wx.showToast({ title: `最多上传 ${MAX_DIARY_MEDIA} 个媒体`, icon: 'none' });
       return;
     }
 
+    const hasVideo = countFormVideos(current) >= MAX_DIARY_VIDEOS;
+    const mediaType = hasVideo ? ['image'] : ['image', 'video'];
+
     try {
-      let tempPaths = [];
+      let nextMedia = [...current];
+
       if (typeof wx.chooseMedia === 'function') {
         const res = await wx.chooseMedia({
           count: remain,
-          mediaType: ['image'],
+          mediaType,
           sourceType: ['album', 'camera'],
-          sizeType: ['compressed']
+          sizeType: ['compressed'],
+          maxDuration: MAX_VIDEO_DURATION_SEC
         });
-        tempPaths = (res.tempFiles || []).map((file) => file.tempFilePath).filter(Boolean);
+        const files = (res.tempFiles || []).slice(0, remain);
+        for (const file of files) {
+          if (nextMedia.length >= MAX_DIARY_MEDIA) break;
+          const fileType = String(file.fileType || '').toLowerCase();
+          const isVideo = fileType === 'video';
+          if (isVideo) {
+            if (countFormVideos(nextMedia) >= MAX_DIARY_VIDEOS) {
+              wx.showToast({ title: `每条日记最多 ${MAX_DIARY_VIDEOS} 个视频`, icon: 'none' });
+              continue;
+            }
+            const localVideo = makeLocalVideo(file, nextMedia.length);
+            const check = validateDiaryVideoLocal({
+              durationSec: localVideo.durationSec,
+              sizeBytes: localVideo.sizeBytes,
+              coverLocalPath: localVideo.coverLocalPath
+            });
+            if (!check.ok) {
+              wx.showToast({ title: check.message || '视频不符合要求', icon: 'none' });
+              continue;
+            }
+            nextMedia.push(localVideo);
+          } else if (file.tempFilePath) {
+            nextMedia.push(makeLocalImage(file.tempFilePath, nextMedia.length));
+          }
+        }
       } else {
         const res = await wx.chooseImage({
           count: remain,
           sizeType: ['compressed'],
           sourceType: ['album', 'camera']
         });
-        tempPaths = res.tempFilePaths || [];
+        (res.tempFilePaths || []).slice(0, remain).forEach((path, index) => {
+          nextMedia.push(makeLocalImage(path, nextMedia.length + index));
+        });
       }
 
-      if (!tempPaths.length) return;
-
-      const nextPhotos = [...this.data.form.photos];
-      tempPaths.slice(0, remain).forEach((path, index) => {
-        nextPhotos.push(makeLocalPhoto(path, nextPhotos.length + index));
-      });
-      this.setData({ 'form.photos': nextPhotos.slice(0, MAX_DIARY_PHOTOS) });
+      this.setData({ 'form.media': nextMedia.slice(0, MAX_DIARY_MEDIA) });
     } catch (error) {
       if (error && /cancel/i.test(error.errMsg || '')) return;
-      handleError(error, { title: '选择图片失败' });
+      handleError(error, { title: '选择媒体失败' });
     }
   },
 
-  removeFormPhoto(e) {
+  removeFormMedia(e) {
     const index = Number(e.currentTarget.dataset.index);
     if (Number.isNaN(index)) return;
-    const photos = [...this.data.form.photos];
-    photos.splice(index, 1);
-    this.setData({ 'form.photos': photos });
+    const media = [...(this.data.form.media || [])];
+    media.splice(index, 1);
+    this.setData({ 'form.media': media });
   },
 
-  async uploadFormPhotos(babyUid, entryKey) {
-    const photos = this.data.form.photos || [];
+  async uploadFormMedia(babyUid, entryKey) {
+    const media = this.data.form.media || [];
     const uploaded = [];
     const ts = Date.now();
 
-    for (let i = 0; i < photos.length; i += 1) {
-      const photo = photos[i];
-      if (photo.originalFileId && photo.thumbFileId && !photo.localPath) {
+    for (let i = 0; i < media.length; i += 1) {
+      const item = media[i];
+      if (item.type === 'video') {
+        if (item.videoFileId && item.coverFileId && !item.localPath) {
+          uploaded.push({
+            type: 'video',
+            videoFileId: item.videoFileId,
+            coverFileId: item.coverFileId,
+            durationSec: item.durationSec == null ? null : item.durationSec,
+            sizeBytes: item.sizeBytes == null ? null : item.sizeBytes,
+            width: item.width == null ? null : item.width,
+            height: item.height == null ? null : item.height
+          });
+          continue;
+        }
+        if (!item.localPath || !item.coverLocalPath) {
+          throw new Error(`第 ${i + 1} 个视频无效或缺少封面`);
+        }
+        wx.showLoading({ title: `上传视频 ${i + 1}/${media.length}`, mask: true });
+        const result = await prepareAndUploadDiaryVideo({
+          videoLocalPath: item.localPath,
+          coverLocalPath: item.coverLocalPath,
+          durationSec: item.durationSec,
+          sizeBytes: item.sizeBytes,
+          babyUid,
+          entryKey,
+          index: i,
+          ts
+        });
         uploaded.push({
-          originalFileId: photo.originalFileId,
-          thumbFileId: photo.thumbFileId,
-          width: photo.width == null ? null : photo.width,
-          height: photo.height == null ? null : photo.height
+          type: 'video',
+          videoFileId: result.videoFileId,
+          coverFileId: result.coverFileId,
+          durationSec: result.durationSec,
+          sizeBytes: result.sizeBytes,
+          width: null,
+          height: null
         });
         continue;
       }
 
-      if (!photo.localPath) {
+      if (item.originalFileId && item.thumbFileId && !item.localPath) {
+        uploaded.push({
+          type: 'image',
+          originalFileId: item.originalFileId,
+          thumbFileId: item.thumbFileId,
+          width: item.width == null ? null : item.width,
+          height: item.height == null ? null : item.height
+        });
+        continue;
+      }
+
+      if (!item.localPath) {
         throw new Error(`第 ${i + 1} 张图片无效`);
       }
 
-      wx.showLoading({ title: `上传图片 ${i + 1}/${photos.length}`, mask: true });
-      const result = await prepareAndUploadDiaryPhoto(photo.localPath, {
+      wx.showLoading({ title: `上传图片 ${i + 1}/${media.length}`, mask: true });
+      const result = await prepareAndUploadDiaryPhoto(item.localPath, {
         babyUid,
         entryKey,
         index: i,
         ts
       });
       uploaded.push({
+        type: 'image',
         originalFileId: result.originalFileId,
         thumbFileId: result.thumbFileId,
         width: null,
@@ -646,8 +788,12 @@ Page({
       wx.showToast({ title: '请选择发生日期', icon: 'none' });
       return;
     }
-    if ((form.photos || []).length > MAX_DIARY_PHOTOS) {
-      wx.showToast({ title: `最多上传 ${MAX_DIARY_PHOTOS} 张图片`, icon: 'none' });
+    if ((form.media || []).length > MAX_DIARY_MEDIA) {
+      wx.showToast({ title: `最多上传 ${MAX_DIARY_MEDIA} 个媒体`, icon: 'none' });
+      return;
+    }
+    if (countFormVideos(form.media) > MAX_DIARY_VIDEOS) {
+      wx.showToast({ title: `每条日记最多 ${MAX_DIARY_VIDEOS} 个视频`, icon: 'none' });
       return;
     }
 
@@ -672,12 +818,12 @@ Page({
       }
 
       const entryKey = editingId || `tmp_${Date.now()}`;
-      const photos = await this.uploadFormPhotos(babyUid, entryKey);
+      const media = await this.uploadFormMedia(babyUid, entryKey);
       const payload = {
         title,
         notes: String(form.notes || '').trim(),
         eventDate: form.eventDate,
-        photos,
+        media,
         authorDisplayName: actor.authorDisplayName
       };
 
@@ -763,13 +909,20 @@ Page({
 
   previewThumbs(e) {
     const entryId = e.currentTarget.dataset.id;
+    const isVideo = !!e.currentTarget.dataset.isVideo;
+    if (isVideo) {
+      this.goDetail(e);
+      return;
+    }
+
     const thumbCurrent = e.currentTarget.dataset.current;
     const entry = (this.data.entries || []).find((item) => item._id === entryId);
-    const thumbUrls = entry?.thumbUrls || e.currentTarget.dataset.urls || [];
+    const imageThumbs = (entry?.mediaThumbs || []).filter((item) => !item.isVideo);
+    const thumbUrls = imageThumbs.map((item) => item.url).filter(Boolean);
     if (!thumbUrls.length) return;
 
     const openPreview = (urls) => {
-      const currentIndex = Math.max(0, (entry?.thumbUrls || []).indexOf(thumbCurrent));
+      const currentIndex = Math.max(0, thumbUrls.indexOf(thumbCurrent));
       wx.previewImage({
         current: urls[currentIndex] || urls[0],
         urls

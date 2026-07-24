@@ -181,6 +181,22 @@
   background: #fff5d6;
 }
 
+.video-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 22rpx;
+  line-height: 48rpx;
+  text-align: center;
+  pointer-events: none;
+}
+
 .photo-remove {
   position: absolute;
   top: 6rpx;
@@ -328,11 +344,24 @@
   margin-top: 14rpx;
 }
 
+.timeline-thumb-wrap {
+  position: relative;
+  width: 140rpx;
+  height: 140rpx;
+}
+
 .timeline-thumb {
   width: 140rpx;
   height: 140rpx;
   border-radius: 12rpx;
   background: #fff5d6;
+}
+
+.timeline-thumb-wrap .video-badge {
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  font-size: 20rpx;
 }
 
 .timeline-actions {
