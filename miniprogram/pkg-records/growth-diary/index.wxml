@@ -39,20 +39,21 @@
           <view class="timeline-title">{{item.title}}</view>
           <view class="timeline-notes" wx:if="{{item.notes}}">{{item.notes}}</view>
 
-          <view class="timeline-thumbs" wx:if="{{item.thumbUrls.length}}">
-            <image
-              class="timeline-thumb"
-              wx:for="{{item.thumbUrls}}"
+          <view class="timeline-thumbs" wx:if="{{item.mediaThumbs.length}}">
+            <view
+              class="timeline-thumb-wrap"
+              wx:for="{{item.mediaThumbs}}"
               wx:for-item="thumb"
               wx:for-index="tIndex"
               wx:key="tIndex"
-              src="{{thumb}}"
-              mode="aspectFill"
               data-id="{{item._id}}"
-              data-urls="{{item.thumbUrls}}"
-              data-current="{{thumb}}"
+              data-is-video="{{thumb.isVideo}}"
+              data-current="{{thumb.url}}"
               catchtap="previewThumbs"
-            />
+            >
+              <image class="timeline-thumb" src="{{thumb.url}}" mode="aspectFill" />
+              <view class="video-badge" wx:if="{{thumb.isVideo}}">▶</view>
+            </view>
           </view>
 
           <view class="timeline-publish" wx:if="{{item.publishMetaText}}">{{item.publishMetaText}}</view>
@@ -126,16 +127,17 @@
       </view>
 
       <view class="form-item">
-        <text class="form-label">配图（最多 {{maxPhotos}} 张）</text>
+        <text class="form-label">配图/视频（最多 {{maxMedia}} 个，视频限 1 个且 ≤15 秒）</text>
         <view class="photo-grid">
-          <view class="photo-item" wx:for="{{form.photos}}" wx:key="key">
+          <view class="photo-item" wx:for="{{form.media}}" wx:key="key">
             <image class="photo-thumb" src="{{item.previewUrl}}" mode="aspectFill" />
-            <view class="photo-remove" data-index="{{index}}" catchtap="removeFormPhoto">×</view>
+            <view class="video-badge" wx:if="{{item.type === 'video'}}">▶</view>
+            <view class="photo-remove" data-index="{{index}}" catchtap="removeFormMedia">×</view>
           </view>
           <view
             class="photo-add"
-            wx:if="{{form.photos.length < maxPhotos}}"
-            bindtap="pickPhotos"
+            wx:if="{{form.media.length < maxMedia}}"
+            bindtap="pickMedia"
           >
             <text class="photo-add-icon">＋</text>
             <text class="photo-add-text">添加</text>

@@ -6,8 +6,8 @@ const {
   handleError
 } = require('../../utils/index');
 const {
-  MAX_DIARY_PHOTOS,
-  normalizePhotos,
+  MAX_DIARY_MEDIA,
+  normalizeMedia,
   formatDiaryPublishMeta,
   normalizeEventDateKey,
   formatDiaryEventAgeText
@@ -30,6 +30,9 @@ Page({
     eventAgeText: '',
     thumbUrls: [],
     originalUrls: [],
+    imageItems: [],
+    videoUrl: '',
+    videoPoster: '',
     publishMetaText: ''
   },
 
@@ -89,17 +92,30 @@ Page({
       return;
     }
 
-    const photos = normalizePhotos(entry.photos).slice(0, MAX_DIARY_PHOTOS);
-    const thumbFileIds = photos.map((p) => p.thumbFileId).filter(Boolean);
-    const originalFileIds = photos.map((p) => p.originalFileId).filter(Boolean);
-    const urlMap = await resolveCloudTempUrls([...thumbFileIds, ...originalFileIds]);
+    const media = normalizeMedia(entry.media, entry.photos).slice(0, MAX_DIARY_MEDIA);
+    const images = media.filter((item) => item.type === 'image');
+    const video = media.find((item) => item.type === 'video') || null;
+    const thumbFileIds = images.map((p) => p.thumbFileId).filter(Boolean);
+    const originalFileIds = images.map((p) => p.originalFileId).filter(Boolean);
+    const coverFileId = video?.coverFileId || '';
+    const videoFileId = video?.videoFileId || '';
+    const urlMap = await resolveCloudTempUrls([
+      ...thumbFileIds,
+      ...originalFileIds,
+      coverFileId,
+      videoFileId
+    ].filter(Boolean));
 
-    const thumbUrls = photos
+    const thumbUrls = images
       .map((photo) => urlMap.get(photo.thumbFileId) || '')
       .filter(Boolean);
-    const originalUrls = photos
+    const originalUrls = images
       .map((photo) => urlMap.get(photo.originalFileId) || urlMap.get(photo.thumbFileId) || '')
       .filter(Boolean);
+    const videoUrl = videoFileId ? (urlMap.get(videoFileId) || '') : '';
+    const videoPoster = coverFileId
+      ? (urlMap.get(coverFileId) || '')
+      : '';
 
     let babyName = '柠檬宝宝';
     let birthday = '';
@@ -138,6 +154,9 @@ Page({
       eventAgeText: formatDiaryEventAgeText(entry.eventDate, birthday),
       thumbUrls,
       originalUrls,
+      imageItems: images,
+      videoUrl,
+      videoPoster,
       publishMetaText: formatDiaryPublishMeta(entry, { displayNameByOpenid })
     });
 
@@ -171,8 +190,15 @@ Page({
       emptySubtitle,
       entry: null,
       thumbUrls: [],
-      originalUrls: []
+      originalUrls: [],
+      imageItems: [],
+      videoUrl: '',
+      videoPoster: ''
     });
+  },
+
+  onVideoError() {
+    wx.showToast({ title: '视频暂时无法播放', icon: 'none' });
   },
 
   async previewPhotos(e) {
@@ -180,11 +206,15 @@ Page({
     let urls = this.data.originalUrls || [];
 
     if (!urls.length) {
-      const photos = normalizePhotos(this.data.entry?.photos).slice(0, MAX_DIARY_PHOTOS);
-      const originalFileIds = photos.map((p) => p.originalFileId).filter(Boolean);
+      const images = (this.data.imageItems || []).length
+        ? this.data.imageItems
+        : normalizeMedia(this.data.entry?.media, this.data.entry?.photos)
+          .filter((item) => item.type === 'image')
+          .slice(0, MAX_DIARY_MEDIA);
+      const originalFileIds = images.map((p) => p.originalFileId).filter(Boolean);
       if (originalFileIds.length) {
         const urlMap = await resolveCloudTempUrls(originalFileIds);
-        urls = photos
+        urls = images
           .map((photo) => urlMap.get(photo.originalFileId) || '')
           .filter(Boolean);
         this.setData({ originalUrls: urls });
