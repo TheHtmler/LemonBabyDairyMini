@@ -1,15 +1,21 @@
-<view class="food-record">
+<view class="food-record {{variant === 'meal' ? 'is-meal' : ''}}">
   <view class="food-header">
-    <text class="food-name">{{nameText}}</text>
-    <text class="food-time" wx:if="{{showTime}}">{{timeText}}</text>
-  </view>
-  <view class="food-quantity-row">
-    <text class="food-quantity">{{quantityText}}</text>
+    <view class="food-name-wrap">
+      <text class="food-name">{{nameText}}</text>
+      <text class="food-source-tag {{sourceTagClass}}" wx:if="{{sourceTag}}">{{sourceTag}}</text>
+    </view>
+    <text class="food-quantity" wx:if="{{quantityText}}">{{quantityText}}</text>
+    <text class="food-time" wx:if="{{showTime && !headerAction}}">{{timeText}}</text>
+    <text
+      class="food-header-action"
+      wx:if="{{headerAction}}"
+      catchtap="onHeaderActionTap"
+    >{{headerAction}}</text>
   </view>
   <view class="food-metrics">
     <block wx:for="{{metricItems}}" wx:key="index">
       <text class="metric">{{item}}</text>
-      <text class="divider" wx:if="{{index < metricItems.length - 1}}">|</text>
+      <text class="divider" wx:if="{{index < metricItems.length - 1}}">·</text>
     </block>
   </view>
   <view class="food-notes" wx:if="{{record.notes}}">

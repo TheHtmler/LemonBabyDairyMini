@@ -22,7 +22,7 @@
       <view class="target-preview-label-row">
         <view class="target-preview-label">
           <text class="target-preview-dot"></text>
-          <text>{{item.displayLabel || item.label}}</text>
+          <text class="target-preview-label-text">{{item.displayLabel || item.label}}</text>
         </view>
         <text class="target-preview-badge {{item.status}}">{{item.badgeText}}</text>
       </view>

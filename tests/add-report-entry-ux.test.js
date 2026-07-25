@@ -47,7 +47,7 @@ test('analysis-report add flow opens type picker or navigates by context', () =>
 });
 
 test('countFilledIndicators only counts current indicator keys with non-empty value', () => {
-  const { countFilledIndicators } = require('../miniprogram/utils/reportFilledCount');
+  const { countFilledIndicators } = require('../miniprogram/pkg-report/utils/reportFilledCount');
   const current = [{ key: 'alt' }, { key: 'ast' }];
   const data = { alt: { value: '32' }, ast: { value: '  ' }, crea: { value: '99' } };
   assert.equal(countFilledIndicators(current, data), 1);

@@ -9,7 +9,7 @@ test('repository and workbench register blood_cbc_crp key metrics', () => {
   const repo = read('miniprogram/models/reportRepository.js');
   const workbench = read('miniprogram/utils/reportWorkbench.js');
   const analysis = read('miniprogram/pages/analysis-report/index.js');
-  const lexicon = read('miniprogram/utils/reportIndicatorLexicon.js');
+  const lexicon = read('miniprogram/pkg-report/utils/reportIndicatorLexicon.js');
 
   assert.match(repo, /BLOOD_CBC_CRP[\s\S]*crp[\s\S]*wbc[\s\S]*hgb[\s\S]*plt[\s\S]*neut_pct/);
   assert.match(workbench, /KEY_METRICS_BY_REPORT_TYPE[\s\S]*BLOOD_CBC_CRP[\s\S]*'crp'/);

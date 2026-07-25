@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 16rpx 16rpx calc(160rpx + env(safe-area-inset-bottom));
+  padding: 16rpx 16rpx calc(220rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   background: linear-gradient(180deg, #FFF8E8 0%, #FFFDF7 100%);
 }
@@ -224,8 +224,9 @@
 }
 
 .notes-area {
-  min-height: 140rpx;
-  line-height: 1.5;
+  min-height: 88rpx;
+  max-height: 160rpx;
+  line-height: 1.45;
 }
 
 .footer-actions {
@@ -233,9 +234,10 @@
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 30;
   align-items: center;
   padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 253, 247, 0.96);
+  background: #FFFDF7;
   box-shadow: 0 -6rpx 18rpx rgba(71, 51, 0, 0.08);
   box-sizing: border-box;
 }
@@ -254,6 +256,10 @@
   font-weight: 800;
   border: none;
   box-shadow: 0 10rpx 22rpx rgba(255, 184, 0, 0.22);
+}
+
+.save-btn::after {
+  border: none;
 }
 
 .save-btn[disabled] {

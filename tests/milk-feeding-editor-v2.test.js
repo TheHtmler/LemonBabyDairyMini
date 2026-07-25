@@ -43,7 +43,7 @@ function loadV2Page(options = {}) {
   const profilePath = require.resolve('../miniprogram/models/nutritionProfile.js');
   const modelPath = require.resolve('../miniprogram/models/feedingRecordV2.js');
   const dailySummaryPath = require.resolve('../miniprogram/models/dailySummaryV2.js');
-  const powderCatalogPath = require.resolve('../miniprogram/models/powderCatalog.js');
+  const powderCatalogPath = require.resolve('../miniprogram/pkg-milk/models/powderCatalog.js');
   const utilsPath = require.resolve('../miniprogram/utils/index.js');
   delete require.cache[pagePath];
   delete require.cache[profilePath];

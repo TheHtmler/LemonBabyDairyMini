@@ -3,7 +3,7 @@ const {
   getDefaultProteinRole,
   normalizeNutritionPer100g,
   normalizeMixRatio
-} = require('./formulaPowderUtils');
+} = require('../../utils/formulaPowderUtils');
 
 const META_COLLECTION = 'system_powder_catalog_meta';
 const POWDER_COLLECTION = 'powder_catalog';

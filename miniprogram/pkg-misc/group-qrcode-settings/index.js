@@ -1,6 +1,6 @@
 const { waitForAppInitialization, handleError } = require('../../utils/index');
 const { isDeveloperOpenid } = require('../../config/developer');
-const { resolveGroupQrcodeUrl } = require('../../utils/groupQrCode');
+const { resolveGroupQrcodeUrl } = require('../utils/groupQrCode');
 
 function formatDateTime(value) {
   if (!value) return '尚未保存';

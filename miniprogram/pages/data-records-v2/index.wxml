@@ -230,63 +230,66 @@
                   <view class="meal-group-actions">
                     <text class="meal-group-edit" catchtap="navigateToMealGroupEditor" data-meal-batch-id="{{item.mealBatchId}}">编辑</text>
                     <text class="meal-group-delete" catchtap="deleteMealGroup" data-meal-batch-id="{{item.mealBatchId}}" data-meal-label="{{item.mealLabel}}" data-item-count="{{item.itemCount}}">删除</text>
-                    <text class="meal-group-toggle">{{item.expanded ? '收起' : '展开'}}</text>
+                    <view class="meal-group-toggle {{item.expanded ? 'is-open' : ''}}">
+                      <text class="meal-group-toggle-text">{{item.expanded ? '收起' : '展开'}}</text>
+                      <text class="meal-group-toggle-arrow">▾</text>
+                    </view>
                   </view>
                 </view>
-                <view class="meal-group-summary-grid">
-                  <view class="meal-group-summary-item">
-                    <text class="meal-group-summary-label">热量：</text>
-                    <text class="meal-group-summary-value">{{item.summary.calories}} kcal</text>
+                <view class="meal-group-digest">
+                  <view class="meal-group-digest-grid">
+                    <view class="meal-group-digest-cell">
+                      <text class="meal-group-digest-num">{{item.summary.calories || 0}}</text>
+                      <text class="meal-group-digest-unit">热量 kcal</text>
+                    </view>
+                    <view class="meal-group-digest-cell">
+                      <text class="meal-group-digest-num">{{item.summary.proteinText || '0.00'}}</text>
+                      <text class="meal-group-digest-unit">蛋白 g</text>
+                    </view>
+                    <view class="meal-group-digest-cell">
+                      <text class="meal-group-digest-num">{{item.summary.carbs || 0}}</text>
+                      <text class="meal-group-digest-unit">碳水 g</text>
+                    </view>
+                    <view class="meal-group-digest-cell">
+                      <text class="meal-group-digest-num">{{item.summary.fat || 0}}</text>
+                      <text class="meal-group-digest-unit">脂肪 g</text>
+                    </view>
                   </view>
-                  <view class="meal-group-summary-item">
-                    <text class="meal-group-summary-label">蛋白：</text>
-                    <text class="meal-group-summary-value">{{item.summary.proteinText || '0.00'}} g</text>
+                  <view class="meal-group-digest-premium" wx:if="{{item.summary.showPremiumProtein}}">
+                    <text class="meal-group-digest-premium-text">含优质蛋白 {{item.summary.premiumProteinText}}g</text>
                   </view>
-                  <view class="meal-group-summary-item">
-                    <text class="meal-group-summary-label">碳水：</text>
-                    <text class="meal-group-summary-value">{{item.summary.carbs}} g</text>
-                  </view>
-                  <view class="meal-group-summary-item">
-                    <text class="meal-group-summary-label">脂肪：</text>
-                    <text class="meal-group-summary-value">{{item.summary.fat}} g</text>
+                  <view class="meal-group-note" wx:if="{{item.mealNote}}">
+                    <text class="meal-group-note-label">备注</text>
+                    <text class="meal-group-note-text">{{item.mealNote}}</text>
                   </view>
                 </view>
               </view>
-              <view class="meal-group-note" wx:if="{{item.mealNote}}">
-                <text class="meal-group-note-label">备注</text>
-                <text class="meal-group-note-text">{{item.mealNote}}</text>
-              </view>
-              <view class="meal-group-items" wx:if="{{item.expanded}}">
-                <view class="food-record-item" wx:for="{{item.items}}" wx:key="displayKey" wx:for-item="foodItem">
-                  <view class="record-content">
-                    <food-record-item record="{{foodItem}}" show-time="{{false}}" />
-                    <view class="recipe-history" wx:if="{{foodItem.isRecipe}}">
+              <view class="meal-group-items {{item.expanded ? 'is-open' : ''}}">
+                <view class="meal-group-items-inner">
+                  <view class="meal-group-item" wx:for="{{item.items}}" wx:key="displayKey" wx:for-item="foodItem">
+                    <food-record-item
+                      record="{{foodItem}}"
+                      variant="meal"
+                      show-time="{{false}}"
+                      header-action="{{foodItem.isRecipe && foodItem.recipeIngredientRows.length ? (foodItem.recipeExpanded ? '收起原料' : '查看原料') : ''}}"
+                      action-group-id="{{foodItem.mealGroupId}}"
+                      action-item-id="{{foodItem.displayKey}}"
+                      bind:headeraction="onRecipeHeaderAction"
+                    />
+                    <view class="recipe-history" wx:if="{{foodItem.isRecipe && foodItem.recipeExpanded && foodItem.recipeIngredientRows.length}}">
                       <view
-                        class="recipe-source-row"
-                        catchtap="toggleRecipeIngredients"
-                        data-group-id="{{foodItem.mealGroupId}}"
-                        data-item-id="{{foodItem.displayKey}}"
+                        class="recipe-ingredient-row"
+                        wx:for="{{foodItem.recipeIngredientRows}}"
+                        wx:key="index"
+                        wx:for-item="ingredient"
                       >
-                        <text class="recipe-source-text">{{foodItem.recipeSourceText}}</text>
-                        <text class="recipe-source-toggle" wx:if="{{foodItem.recipeIngredientRows.length}}">
-                          {{foodItem.recipeExpanded ? '收起原料' : '查看原料'}}
-                        </text>
-                      </view>
-                      <view class="recipe-ingredient-list" wx:if="{{foodItem.recipeExpanded && foodItem.recipeIngredientRows.length}}">
-                        <view
-                          class="recipe-ingredient-row"
-                          wx:for="{{foodItem.recipeIngredientRows}}"
-                          wx:key="index"
-                          wx:for-item="ingredient"
-                        >
-                          <view class="recipe-ingredient-main">
-                            <text class="recipe-ingredient-name">{{ingredient.foodName}}</text>
-                            <text class="recipe-ingredient-quantity">{{ingredient.quantityText}}</text>
-                          </view>
-                          <text class="recipe-ingredient-nutrition">
-                            热量 {{ingredient.nutrition.calories}} kcal · 蛋白 {{ingredient.nutrition.protein}} g · 碳水 {{ingredient.nutrition.carbs}} g · 脂肪 {{ingredient.nutrition.fat}} g
-                          </text>
+                        <view class="recipe-ingredient-main">
+                          <text class="recipe-ingredient-name">{{ingredient.foodName}}</text>
+                          <text class="recipe-ingredient-quantity">{{ingredient.quantityText}}</text>
                         </view>
+                        <text class="recipe-ingredient-nutrition">
+                          热量 {{ingredient.nutrition.calories}} kcal · 蛋白 {{ingredient.nutrition.protein}} g · 碳水 {{ingredient.nutrition.carbs}} g · 脂肪 {{ingredient.nutrition.fat}} g
+                        </text>
                       </view>
                     </view>
                   </view>
@@ -297,34 +300,27 @@
           <view class="intake-list" wx:if="{{!loadingRecordTabs.food && legacyFoodIntakes.length > 0}}">
             <view class="food-record-item" wx:for="{{legacyFoodIntakes}}" wx:key="_id">
               <view class="record-content">
-                <food-record-item record="{{item}}" />
-                <view class="recipe-history" wx:if="{{item.isRecipe}}">
+                <food-record-item
+                  record="{{item}}"
+                  header-action="{{item.isRecipe && item.recipeIngredientRows.length ? (item.recipeExpanded ? '收起原料' : '查看原料') : ''}}"
+                  action-group-id="legacy"
+                  action-item-id="{{item.displayKey}}"
+                  bind:headeraction="onRecipeHeaderAction"
+                />
+                <view class="recipe-history" wx:if="{{item.isRecipe && item.recipeExpanded && item.recipeIngredientRows.length}}">
                   <view
-                    class="recipe-source-row"
-                    catchtap="toggleRecipeIngredients"
-                    data-group-id="legacy"
-                    data-item-id="{{item.displayKey}}"
+                    class="recipe-ingredient-row"
+                    wx:for="{{item.recipeIngredientRows}}"
+                    wx:key="index"
+                    wx:for-item="ingredient"
                   >
-                    <text class="recipe-source-text">{{item.recipeSourceText}}</text>
-                    <text class="recipe-source-toggle" wx:if="{{item.recipeIngredientRows.length}}">
-                      {{item.recipeExpanded ? '收起原料' : '查看原料'}}
-                    </text>
-                  </view>
-                  <view class="recipe-ingredient-list" wx:if="{{item.recipeExpanded && item.recipeIngredientRows.length}}">
-                    <view
-                      class="recipe-ingredient-row"
-                      wx:for="{{item.recipeIngredientRows}}"
-                      wx:key="index"
-                      wx:for-item="ingredient"
-                    >
-                      <view class="recipe-ingredient-main">
-                        <text class="recipe-ingredient-name">{{ingredient.foodName}}</text>
-                        <text class="recipe-ingredient-quantity">{{ingredient.quantityText}}</text>
-                      </view>
-                      <text class="recipe-ingredient-nutrition">
-                        热量 {{ingredient.nutrition.calories}} kcal · 蛋白 {{ingredient.nutrition.protein}} g · 碳水 {{ingredient.nutrition.carbs}} g · 脂肪 {{ingredient.nutrition.fat}} g
-                      </text>
+                    <view class="recipe-ingredient-main">
+                      <text class="recipe-ingredient-name">{{ingredient.foodName}}</text>
+                      <text class="recipe-ingredient-quantity">{{ingredient.quantityText}}</text>
                     </view>
+                    <text class="recipe-ingredient-nutrition">
+                      热量 {{ingredient.nutrition.calories}} kcal · 蛋白 {{ingredient.nutrition.protein}} g · 碳水 {{ingredient.nutrition.carbs}} g · 脂肪 {{ingredient.nutrition.fat}} g
+                    </text>
                   </view>
                 </view>
               </view>

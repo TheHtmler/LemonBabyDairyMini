@@ -4,6 +4,9 @@ const {
   mergeTreatmentIntoMacroSummary,
   mergeTreatmentIntoOverview
 } = require('./treatmentUtils');
+const {
+  resolveFoodIntakePremiumProteinSplit
+} = require('./recipeNutritionUtils');
 
 const DEFAULT_BREAST_MILK_PROTEIN = 1.1;
 const DEFAULT_FORMULA_MILK_PROTEIN = 2.1;
@@ -454,10 +457,14 @@ function calculateMacroSummary(intakes = [], feedings = [], nutritionSettings = 
     summary.naturalProtein += Number(intake.naturalProtein) || 0;
     summary.specialProtein += Number(intake.specialProtein) || 0;
     const naturalP = Number(intake.naturalProtein) || 0;
-    if (intake.proteinQuality === 'premium') {
-      summary.premiumProtein += naturalP;
-    } else if (naturalP > 0) {
-      summary.regularProtein += naturalP;
+    if (naturalP > 0) {
+      if (intake.type === 'milk' || intake.milkType) {
+        summary.premiumProtein += naturalP;
+      } else {
+        const qualitySplit = resolveFoodIntakePremiumProteinSplit(intake, naturalP);
+        summary.premiumProtein += Number(qualitySplit.premiumProtein) || 0;
+        summary.regularProtein += Number(qualitySplit.regularProtein) || 0;
+      }
     }
     summary.carbs += Number(nutrition.carbs) || 0;
     summary.fat += Number(nutrition.fat) || 0;

@@ -2,7 +2,7 @@
  * 报告指标词典：集中维护 OCR/报告别名、常见错字、拉丁缩写变体。
  * 解析时优先最长匹配，避免「3-羟基丁酸」误吸「3,4-二羟基丁酸」「3-羟基丁酸-2」。
  */
-const ReportModel = require('../models/report');
+const ReportModel = require('../../models/report');
 
 const CHINESE_TYPO_REPLACEMENTS = [
   ['枸缘酸', '枸橼酸'],

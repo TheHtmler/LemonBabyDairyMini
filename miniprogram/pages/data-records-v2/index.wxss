@@ -1145,14 +1145,15 @@
   border: 2rpx solid rgba(255, 184, 0, 0.18);
   box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.08);
   overflow: hidden;
+  border-left: 8rpx solid #FFB800;
 }
 
 .meal-group-header {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  padding: 20rpx 24rpx;
-  background: rgba(255, 184, 0, 0.08);
+  gap: 14rpx;
+  padding: 20rpx 20rpx 18rpx;
+  background: #FFFFFF;
 }
 
 .meal-group-top {
@@ -1180,9 +1181,9 @@
 
 .meal-group-title {
   display: block;
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #333333;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #3D2E1A;
 }
 
 .meal-group-meta {
@@ -1198,11 +1199,30 @@
 }
 
 .meal-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
   font-size: 22rpx;
   color: #C78200;
-  padding: 8rpx 16rpx;
+  padding: 8rpx 14rpx;
   border-radius: 999rpx;
   background: rgba(255, 184, 0, 0.14);
+}
+
+.meal-group-toggle-text {
+  line-height: 1;
+}
+
+.meal-group-toggle-arrow {
+  display: inline-block;
+  line-height: 1;
+  font-size: 20rpx;
+  transform: rotate(0deg);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.meal-group-toggle.is-open .meal-group-toggle-arrow {
+  transform: rotate(180deg);
 }
 
 .meal-group-edit {
@@ -1223,101 +1243,140 @@
   border: 1rpx solid rgba(180, 35, 24, 0.18);
 }
 
-.meal-group-summary-grid {
+.meal-group-digest {
+  padding: 16rpx 12rpx 12rpx;
+  border-radius: 16rpx;
+  background: #FFF7E3;
+  box-sizing: border-box;
+}
+
+.meal-group-digest-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12rpx;
-}
-
-.meal-group-summary-item {
-  display: flex;
-  align-items: baseline;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8rpx;
-  padding: 16rpx;
-  border-radius: 14rpx;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1rpx solid rgba(255, 184, 0, 0.16);
+  align-items: stretch;
 }
 
-.meal-group-summary-value {
+.meal-group-digest-cell {
+  min-width: 0;
+  padding: 12rpx 6rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1rpx solid rgba(255, 184, 0, 0.14);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.meal-group-digest-num {
+  display: block;
   font-size: 28rpx;
-  line-height: 1.1;
+  line-height: 1.15;
   font-weight: 700;
   color: #8A4B00;
+  font-variant-numeric: tabular-nums;
 }
 
-.meal-group-summary-label {
-  font-size: 20rpx;
-  color: #8A7C60;
-  white-space: nowrap;
+.meal-group-digest-unit {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 18rpx;
+  line-height: 1.2;
+  color: #9A8766;
+}
+
+.meal-group-digest-premium {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 10rpx;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.meal-group-digest-premium-text {
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: #C78200;
+  text-align: center;
 }
 
 .meal-group-note {
   display: flex;
   align-items: flex-start;
-  gap: 12rpx;
-  padding: 0 24rpx 14rpx;
-  background: rgba(255, 184, 0, 0.04);
+  gap: 10rpx;
+  margin-top: 12rpx;
+  padding: 10rpx 12rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1rpx solid rgba(255, 184, 0, 0.12);
+  box-sizing: border-box;
 }
 
 .meal-group-note-label {
   flex-shrink: 0;
-  padding: 4rpx 12rpx;
+  height: 36rpx;
+  padding: 0 12rpx;
   border-radius: 999rpx;
-  background: rgba(255, 184, 0, 0.14);
+  background: rgba(255, 184, 0, 0.18);
   font-size: 20rpx;
+  line-height: 36rpx;
   color: #8A4B00;
+  box-sizing: border-box;
 }
 
 .meal-group-note-text {
   flex: 1;
   min-width: 0;
   font-size: 22rpx;
-  line-height: 1.5;
+  line-height: 36rpx;
   color: #8A7C60;
 }
 
 .meal-group-items {
-  padding: 16rpx;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+  transition:
+    max-height 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.24s ease,
+    padding 0.28s ease;
 }
 
-.meal-group-items .food-record-item:last-child {
-  margin-bottom: 0;
+.meal-group-items.is-open {
+  max-height: 2400rpx;
+  opacity: 1;
+  pointer-events: auto;
+  padding: 4rpx 16rpx 16rpx;
 }
 
-.recipe-history {
-  margin-top: 14rpx;
-  padding-top: 14rpx;
-  border-top: 1rpx solid rgba(255, 184, 0, 0.18);
-}
-
-.recipe-source-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-}
-
-.recipe-source-text {
-  flex: 1;
-  min-width: 0;
-  color: #8A6200;
-  font-size: 22rpx;
-  line-height: 1.4;
-}
-
-.recipe-source-toggle {
-  flex-shrink: 0;
-  color: #C78200;
-  font-size: 22rpx;
-  font-weight: 600;
-}
-
-.recipe-ingredient-list {
+.meal-group-items-inner {
   display: flex;
   flex-direction: column;
   gap: 10rpx;
-  margin-top: 14rpx;
+  padding-top: 4rpx;
+}
+
+.meal-group-item {
+  padding: 16rpx 14rpx;
+  border-radius: 14rpx;
+  background: #FFFDF8;
+  border: 1rpx solid rgba(255, 184, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.meal-group-item .recipe-history {
+  margin-top: 10rpx;
+}
+
+.recipe-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  margin-top: 12rpx;
   padding: 14rpx;
   border-radius: 14rpx;
   background: rgba(255, 255, 255, 0.72);

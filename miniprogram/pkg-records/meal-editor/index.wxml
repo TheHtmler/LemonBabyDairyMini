@@ -1,108 +1,127 @@
 <page-meta page-style="{{drawerVisible || showAddTypeSheet ? 'overflow: hidden;' : ''}}" />
 <view class="page">
-  <view class="overview-card">
-    <view class="overview-main">
-      <text class="overview-title">{{mode === 'edit' ? '编辑本顿' : (mealDraft.mealLabel || '本顿记录')}}</text>
-      <text class="overview-subtitle">{{formattedSelectedDate}} · {{mealDraft.mealTime}}</text>
-    </view>
-    <view class="overview-count">
-      <text class="overview-count-value">{{mealDraft.items.length}}</text>
-      <text class="overview-count-label">已添加</text>
-    </view>
-  </view>
-
-  <view class="section-card meal-meta-card">
-    <view class="section-header">
-      <text class="section-title">餐次设置</text>
-      <text class="section-meta">{{mode === 'edit' ? '修改后会覆盖原餐次' : '这顿饭只设置一次'}}</text>
-    </view>
-    <view class="field-row">
-      <text class="field-label">时间</text>
-      <picker mode="time" value="{{mealDraft.mealTime}}" bindchange="onMealTimeChange">
-        <view class="field-picker">{{mealDraft.mealTime}}</view>
-      </picker>
-    </view>
-    <view class="label-group">
-      <view
-        class="label-chip {{mealDraft.mealLabel === item ? 'active' : ''}}"
-        wx:for="{{mealLabels}}"
-        wx:key="*this"
-        data-label="{{item}}"
-        bindtap="onMealLabelTap"
-      >
-        <text>{{item}}</text>
+  <view class="meal-hero">
+    <view class="meal-hero-top">
+      <view class="meal-hero-main">
+        <text class="meal-hero-title">{{mode === 'edit' ? '编辑本顿' : '记本顿'}}</text>
+        <view class="meal-hero-meta">
+          <text class="meal-hero-date">{{formattedSelectedDate}}</text>
+          <picker mode="time" value="{{mealDraft.mealTime}}" bindchange="onMealTimeChange">
+            <view class="meal-time-field" hover-class="meal-time-field-hover" hover-stay-time="80">
+              <text class="meal-time-icon">🕒</text>
+              <text class="meal-time-value">{{mealDraft.mealTime || '选择时间'}}</text>
+              <text class="meal-time-caret">▾</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+      <view class="meal-hero-count">
+        <text class="meal-hero-count-value">{{initialLoading ? '--' : mealDraft.items.length}}</text>
+        <text class="meal-hero-count-label">种食物</text>
       </view>
     </view>
+    <view class="meal-label-block">
+      <text class="meal-label-caption">餐次</text>
+      <scroll-view class="meal-label-scroll" scroll-x>
+        <view class="meal-label-row">
+          <view
+            class="label-chip {{mealDraft.mealLabel === item ? 'active' : ''}}"
+            wx:for="{{mealLabels}}"
+            wx:key="*this"
+            data-label="{{item}}"
+            bindtap="onMealLabelTap"
+          >
+            <text>{{item}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
   </view>
 
-  <view class="section-card items-card">
-    <view class="section-header">
-      <text class="section-title">本顿内容</text>
-      <text class="section-meta">已添加 {{mealDraft.items.length}} 种</text>
+  <view class="focus-panel">
+    <view class="loading-state" wx:if="{{initialLoading}}">
+      <text class="loading-title">正在加载本顿内容</text>
+      <text class="loading-hint">稍等一下，马上就好</text>
     </view>
+
+    <view class="empty-state" wx:elif="{{mealDraft.items.length === 0}}">
+      <text class="empty-title">先选择食物或食谱</text>
+      <text class="empty-hint">点底部“选择”，加入这顿要吃的内容</text>
+    </view>
+
+    <block wx:else>
+      <view class="meal-item" wx:for="{{mealDraft.items}}" wx:key="localId">
+        <view class="meal-item-main">
+          <view class="meal-item-title-row">
+            <text class="meal-item-name">{{item.nameSnapshot}}</text>
+            <text class="food-option-source {{item.sourceType === 'recipe' ? 'recipe' : (item.sourceLabel === '我的' ? 'mine' : '')}}">{{item.sourceLabel}}</text>
+          </view>
+          <view class="meal-item-meta">
+            <text class="amount-echo">{{item.quantity}}{{item.unit}}</text>
+            <text> · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}}g{{item.showPremiumProtein ? ('（含优质蛋白 ' + item.premiumProteinText + 'g）') : ''}}</text>
+          </view>
+          <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g</text>
+        </view>
+        <view class="meal-item-actions">
+          <view class="text-btn" data-id="{{item.localId}}" bindtap="editMealItem">编辑</view>
+          <view class="text-btn danger" data-id="{{item.localId}}" bindtap="removeMealItem">删除</view>
+        </view>
+      </view>
+
+      <view class="meal-digest">
+        <text class="meal-digest-caption">本顿合计</text>
+        <view class="meal-digest-grid">
+          <view class="meal-digest-cell">
+            <text class="meal-digest-num">{{mealSummary.calories || 0}}</text>
+            <text class="meal-digest-unit">热量 kcal</text>
+          </view>
+          <view class="meal-digest-cell">
+            <text class="meal-digest-num">{{mealSummary.proteinText || '0.00'}}</text>
+            <text class="meal-digest-unit">蛋白 g</text>
+          </view>
+          <view class="meal-digest-cell">
+            <text class="meal-digest-num">{{mealSummary.carbs || 0}}</text>
+            <text class="meal-digest-unit">碳水 g</text>
+          </view>
+          <view class="meal-digest-cell">
+            <text class="meal-digest-num">{{mealSummary.fat || 0}}</text>
+            <text class="meal-digest-unit">脂肪 g</text>
+          </view>
+        </view>
+        <view class="meal-digest-premium" wx:if="{{mealSummary.showPremiumProtein}}">
+          <text class="meal-digest-premium-text">含优质蛋白 {{mealSummary.premiumProteinText}}g</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="secondary-panel" wx:if="{{!initialLoading && mealDraft.items.length > 0}}">
     <nutrition-target-preview
       preview="{{mealTargetPreview}}"
       title="保存本顿后的目标"
-      subtitle="按今日已记录 + 本顿内容预估"
+      subtitle="按已记录 + 本顿内容预估"
       bind:targetssaved="handleNutritionTargetsSaved"
-      wx:if="{{mealDraft.items.length > 0}}"
     />
-    <view class="meal-summary-grid" wx:if="{{mealDraft.items.length > 0}}">
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.calories || 0}}</text>
-        <text class="meal-summary-label">总热量 kcal</text>
-      </view>
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.proteinText || '0.00'}}</text>
-        <text class="meal-summary-label">总蛋白 g</text>
-      </view>
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.carbs || 0}}</text>
-        <text class="meal-summary-label">总碳水 g</text>
-      </view>
-      <view class="meal-summary-item">
-        <text class="meal-summary-value">{{mealSummary.fat || 0}}</text>
-        <text class="meal-summary-label">总脂肪 g</text>
-      </view>
-    </view>
-    <view class="empty-state" wx:if="{{mealDraft.items.length === 0}}">
-      <text>先点底部“添加”，选择记录食物或已经做好的食谱。</text>
-    </view>
-    <view class="meal-item" wx:for="{{mealDraft.items}}" wx:key="localId">
-      <view class="meal-item-main">
-        <view class="meal-item-title-row">
-          <text class="meal-item-name">{{item.nameSnapshot}}</text>
-          <text class="food-option-source {{item.sourceType === 'recipe' ? 'recipe' : (item.sourceLabel === '我的' ? 'mine' : '')}}">{{item.sourceLabel}}</text>
-        </view>
-        <text class="meal-item-meta">{{item.quantity}}{{item.unit}} · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}} g</text>
-        <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g · 纤维 {{item.nutrition.fiber || 0}} g</text>
-      </view>
-      <view class="meal-item-actions">
-        <view class="text-btn" data-id="{{item.localId}}" bindtap="editMealItem">编辑</view>
-        <view class="text-btn danger" data-id="{{item.localId}}" bindtap="removeMealItem">删除</view>
-      </view>
-    </view>
   </view>
 
-  <view class="section-card note-card">
-    <view class="section-header">
-      <text class="section-title">备注</text>
-      <text class="section-meta">可选，不影响主要记录流程</text>
-    </view>
-    <view class="field-block">
-      <textarea
-        class="notes-input"
-        value="{{mealDraft.mealNote}}"
-        placeholder="可选，记录这顿饭的说明"
-        bindinput="onMealNoteInput"
-      />
-    </view>
+  <view class="note-panel">
+    <textarea
+      class="notes-input compact"
+      value="{{mealDraft.mealNote}}"
+      placeholder="备注（可选）"
+      maxlength="120"
+      fixed="{{false}}"
+      show-confirm-bar="{{false}}"
+      adjust-position="{{true}}"
+      bindinput="onMealNoteInput"
+    />
   </view>
+  <view class="page-footer-spacer"></view>
 
   <view class="footer-bar">
     <button class="footer-btn cancel" bindtap="onCancel">取消</button>
-    <button class="footer-btn secondary" bindtap="openAddTypeSheet">添加</button>
-    <button class="footer-btn confirm" bindtap="saveMeal" disabled="{{mealDraft.items.length === 0}}">
+    <button class="footer-btn secondary" bindtap="openAddTypeSheet" disabled="{{initialLoading}}">选择</button>
+    <button class="footer-btn confirm" bindtap="saveMeal" disabled="{{initialLoading || mealDraft.items.length === 0}}">
       {{mode === 'edit' ? '保存修改' : '保存本顿'}}
     </button>
   </view>
@@ -142,7 +161,7 @@
     <view class="drawer-handle"></view>
     <view class="drawer-header">
       <view class="drawer-header-main">
-        <text class="drawer-title">{{drawerStep === 'batch' ? '填写份量' : (drawerStep === 'recipe-edit' ? '编辑食谱克数' : (editingItemId ? '编辑食物' : '添加食物'))}}</text>
+        <text class="drawer-title">{{drawerStep === 'batch' ? '填写份量' : (drawerStep === 'recipe-edit' ? '编辑食谱' : (editingItemId ? '编辑食物' : '添加食物'))}}</text>
         <text class="drawer-subtitle">{{drawerStep === 'batch' ? '给每种食物填写本顿份量' : (drawerStep === 'recipe-edit' ? '只修改本次实际吃下的重量' : '确认份量后加入这顿饭')}}</text>
       </view>
       <view class="drawer-close" bindtap="closeFoodDrawer">关闭</view>
@@ -174,17 +193,35 @@
           <text class="field-label">份量</text>
           <input
             type="digit"
-            class="quantity-input"
+            class="quantity-input amount-input"
             value="{{item.quantity}}"
             placeholder="请输入份量"
+            placeholder-class="amount-input-placeholder"
             data-index="{{draftIndex}}"
             bindinput="onBatchQuantityInput"
           />
-          <text class="unit-text">{{item.unit || 'g'}}</text>
+          <text class="unit-text amount-echo">{{item.unit || 'g'}}</text>
         </view>
-        <view class="batch-preview" wx:if="{{item.nutritionPreview}}">
-          <text>{{item.nutritionPreview.calories || 0}} kcal</text>
-          <text>蛋白 {{item.nutritionPreview.proteinText || '0.00'}} g</text>
+        <view class="preview-grid" wx:if="{{item.nutritionPreview}}">
+          <view class="preview-item">
+            <text class="preview-value">{{item.nutritionPreview.calories || 0}}</text>
+            <text class="preview-label">热量</text>
+          </view>
+          <view class="preview-item">
+            <text class="preview-value">{{item.nutritionPreview.proteinText || '0.00'}}</text>
+            <text class="preview-label">蛋白</text>
+          </view>
+          <view class="preview-item">
+            <text class="preview-value">{{item.nutritionPreview.carbs || 0}}</text>
+            <text class="preview-label">碳水</text>
+          </view>
+          <view class="preview-item">
+            <text class="preview-value">{{item.nutritionPreview.fat || 0}}</text>
+            <text class="preview-label">脂肪</text>
+          </view>
+        </view>
+        <view class="meal-digest-premium" wx:if="{{item.nutritionPreview.showPremiumProtein}}">
+          <text class="meal-digest-premium-text">含优质蛋白 {{item.nutritionPreview.premiumProteinText}}g</text>
         </view>
       </view>
       <view class="batch-actions">
@@ -194,98 +231,121 @@
     </view>
 
     <view class="drawer-body edit-body" wx:if="{{drawerStep === 'edit'}}">
-      <view class="selected-food-card">
-        <view class="selected-food-main">
-          <view class="selected-food-title-row">
-            <text class="selected-food-name">{{currentFoodDraft.food ? currentFoodDraft.food.name : '未选择食物'}}</text>
-            <text class="food-option-source {{currentFoodDraft.food.sourceLabel === '我的' ? 'mine' : ''}}" wx:if="{{currentFoodDraft.food}}">{{currentFoodDraft.food.sourceLabel}}</text>
+      <scroll-view class="edit-body-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="edit-body-content">
+          <nutrition-target-preview
+            preview="{{draftTargetPreview}}"
+            title="加入后目标提醒"
+            subtitle="按当前份量实时预估"
+            bind:targetssaved="handleNutritionTargetsSaved"
+          />
+          <view class="selected-food-card">
+            <view class="selected-food-main">
+              <view class="selected-food-title-row">
+                <text class="selected-food-name">{{currentFoodDraft.food ? currentFoodDraft.food.name : '未选择食物'}}</text>
+                <text class="food-option-source {{currentFoodDraft.food.sourceLabel === '我的' ? 'mine' : ''}}" wx:if="{{currentFoodDraft.food}}">{{currentFoodDraft.food.sourceLabel}}</text>
+              </view>
+              <text class="selected-food-sub">{{currentFoodDraft.food ? (currentFoodDraft.food.category || '未分类') : '请先选择食物'}}</text>
+            </view>
           </view>
-          <text class="selected-food-sub">{{currentFoodDraft.food ? (currentFoodDraft.food.category || '未分类') : '请先选择食物'}}</text>
+          <view class="field-row quantity-row">
+            <text class="field-label">份量</text>
+            <input
+              type="digit"
+              class="quantity-input amount-input"
+              value="{{currentFoodDraft.quantity}}"
+              placeholder="请输入份量"
+              placeholder-class="amount-input-placeholder"
+              bindinput="onDraftQuantityInput"
+            />
+            <text class="unit-text amount-echo">{{currentFoodDraft.unit || 'g'}}</text>
+          </view>
+          <view class="preview-grid" wx:if="{{currentFoodDraft.nutritionPreview}}">
+            <view class="preview-item">
+              <text class="preview-value">{{currentFoodDraft.nutritionPreview.calories || 0}}</text>
+              <text class="preview-label">热量</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{currentFoodDraft.nutritionPreview.proteinText || '0.00'}}</text>
+              <text class="preview-label">蛋白</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{currentFoodDraft.nutritionPreview.carbs || 0}}</text>
+              <text class="preview-label">碳水</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{currentFoodDraft.nutritionPreview.fat || 0}}</text>
+              <text class="preview-label">脂肪</text>
+            </view>
+          </view>
+          <view class="meal-digest-premium" wx:if="{{currentFoodDraft.nutritionPreview.showPremiumProtein}}">
+            <text class="meal-digest-premium-text">含优质蛋白 {{currentFoodDraft.nutritionPreview.premiumProteinText}}g</text>
+          </view>
         </view>
+      </scroll-view>
+      <view class="edit-body-actions">
+        <button class="add-item-btn" bindtap="addOrUpdateMealItem">
+          {{editingItemId ? '更新这项食物' : '加入本顿'}}
+        </button>
       </view>
-      <view class="field-row quantity-row">
-        <text class="field-label">份量</text>
-        <input
-          type="digit"
-          class="quantity-input"
-          value="{{currentFoodDraft.quantity}}"
-          placeholder="请输入份量"
-          bindinput="onDraftQuantityInput"
-        />
-        <text class="unit-text">{{currentFoodDraft.unit || 'g'}}</text>
-      </view>
-      <nutrition-target-preview
-        preview="{{draftTargetPreview}}"
-        title="加入后目标提醒"
-        subtitle="按当前份量实时预估"
-        bind:targetssaved="handleNutritionTargetsSaved"
-      />
-      <view class="preview-grid" wx:if="{{currentFoodDraft.nutritionPreview}}">
-        <view class="preview-item">
-          <text class="preview-value">{{currentFoodDraft.nutritionPreview.calories || 0}}</text>
-          <text class="preview-label">热量</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-value">{{currentFoodDraft.nutritionPreview.proteinText || '0.00'}}</text>
-          <text class="preview-label">蛋白</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-value">{{currentFoodDraft.nutritionPreview.carbs || 0}}</text>
-          <text class="preview-label">碳水</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-value">{{currentFoodDraft.nutritionPreview.fat || 0}}</text>
-          <text class="preview-label">脂肪</text>
-        </view>
-      </view>
-      <button class="add-item-btn" bindtap="addOrUpdateMealItem">
-        {{editingItemId ? '更新这项食物' : '加入本顿'}}
-      </button>
     </view>
 
     <view class="drawer-body edit-body" wx:if="{{drawerStep === 'recipe-edit'}}">
-      <view class="selected-food-card">
-        <view class="selected-food-main">
-          <text class="selected-food-name">{{currentRecipeDraft.recipeName}}</text>
-          <text class="selected-food-sub">食谱成品 · 按每 100g 营养折算</text>
+      <scroll-view class="edit-body-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="edit-body-content">
+          <nutrition-target-preview
+            preview="{{draftTargetPreview}}"
+            title="修改后目标提醒"
+            subtitle="按当前克数实时预估"
+            bind:targetssaved="handleNutritionTargetsSaved"
+          />
+          <view class="selected-food-card">
+            <view class="selected-food-main">
+              <view class="selected-food-title-row">
+                <text class="selected-food-name">{{currentRecipeDraft.recipeName}}</text>
+                <text class="food-option-source recipe">食谱</text>
+              </view>
+              <text class="selected-food-sub">按每 100g 营养折算本次摄入</text>
+            </view>
+          </view>
+          <view class="field-row quantity-row">
+            <text class="field-label">食用克数</text>
+            <input
+              type="digit"
+              class="quantity-input amount-input"
+              value="{{currentRecipeDraft.quantity}}"
+              placeholder="请输入食用克数"
+              placeholder-class="amount-input-placeholder"
+              bindinput="onRecipeQuantityInput"
+            />
+            <text class="unit-text amount-echo">g</text>
+          </view>
+          <view class="preview-grid" wx:if="{{currentRecipeDraft.nutritionPreview}}">
+            <view class="preview-item">
+              <text class="preview-value">{{currentRecipeDraft.nutritionPreview.calories || 0}}</text>
+              <text class="preview-label">热量</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{currentRecipeDraft.nutritionPreview.proteinText || '0.00'}}</text>
+              <text class="preview-label">蛋白</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{currentRecipeDraft.nutritionPreview.carbs || 0}}</text>
+              <text class="preview-label">碳水</text>
+            </view>
+            <view class="preview-item">
+              <text class="preview-value">{{currentRecipeDraft.nutritionPreview.fat || 0}}</text>
+              <text class="preview-label">脂肪</text>
+            </view>
+          </view>
+          <view class="meal-digest-premium" wx:if="{{currentRecipeDraft.nutritionPreview.showPremiumProtein}}">
+            <text class="meal-digest-premium-text">含优质蛋白 {{currentRecipeDraft.nutritionPreview.premiumProteinText}}g</text>
+          </view>
         </view>
+      </scroll-view>
+      <view class="edit-body-actions">
+        <button class="add-item-btn" bindtap="addOrUpdateRecipeMealItem">更新食谱份量</button>
       </view>
-      <view class="field-row quantity-row">
-        <text class="field-label">食用克数</text>
-        <input
-          type="digit"
-          class="quantity-input"
-          value="{{currentRecipeDraft.quantity}}"
-          placeholder="请输入食用克数"
-          bindinput="onRecipeQuantityInput"
-        />
-        <text class="unit-text">g</text>
-      </view>
-      <nutrition-target-preview
-        preview="{{draftTargetPreview}}"
-        title="修改后目标提醒"
-        subtitle="按当前克数实时预估"
-        bind:targetssaved="handleNutritionTargetsSaved"
-      />
-      <view class="preview-grid preview-grid-recipe" wx:if="{{currentRecipeDraft.nutritionPreview}}">
-        <view class="preview-item">
-          <text class="preview-value">{{currentRecipeDraft.nutritionPreview.calories || 0}}</text>
-          <text class="preview-label">热量</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-value">{{currentRecipeDraft.nutritionPreview.proteinText || '0.00'}}</text>
-          <text class="preview-label">蛋白</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-value">{{currentRecipeDraft.nutritionPreview.naturalProtein || 0}}</text>
-          <text class="preview-label">天然蛋白</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-value">{{currentRecipeDraft.nutritionPreview.specialProtein || 0}}</text>
-          <text class="preview-label">特殊蛋白</text>
-        </view>
-      </view>
-      <button class="add-item-btn" bindtap="addOrUpdateRecipeMealItem">更新食谱份量</button>
     </view>
   </view>
 </view>

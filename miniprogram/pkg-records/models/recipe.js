@@ -1,17 +1,30 @@
 /**
  * 食谱目录数据模型
- * 管理 recipe_catalog：只维护原料组合模板；用量与营养在记本顿时计算
+ * 管理 recipe_catalog：原料组合模板；可选默认份量，记本顿时可预填并修改
  * 不参与 daily_summary_v2 失效
  */
 
-const FoodModel = require('./food');
+const FoodModel = require('../../models/food');
 const {
   buildCreateAuditFields,
   buildUpdateAuditFields,
   resolveOperatorOpenid,
   stripProtectedAuditFields
-} = require('../utils/auditFields');
-const { emptyNutrition } = require('../utils/recipeNutritionUtils');
+} = require('../../utils/auditFields');
+const {
+  emptyNutrition,
+  buildIngredientNutrition,
+  summarizeRecipeNutrition
+} = require('../../utils/recipeNutritionUtils');
+
+function isWeightUnit(unit) {
+  const normalized = String(unit || '').toLowerCase();
+  return normalized === 'g' || normalized === 'ml';
+}
+
+function roundWeight(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
 
 function getDb() {
   return wx.cloud.database();
@@ -70,16 +83,21 @@ function sanitizeFoodSnapshot(snapshot = {}) {
 }
 
 function normalizeIngredient(ingredient = {}, index = 0) {
+  const foodSnapshot = sanitizeFoodSnapshot(ingredient.foodSnapshot || {});
   return {
     foodId: ingredient.foodId || '',
-    foodName: ingredient.foodName || ingredient.foodSnapshot?.name || '',
-    // 模板阶段不存配方用量；兼容旧数据可读 quantity
+    foodName: ingredient.foodName || foodSnapshot.name || '',
+    // 可选默认份量：0 表示未预填
     quantity: toNumber(ingredient.quantity, 0),
-    unit: ingredient.unit || ingredient.foodSnapshot?.nutritionBasis?.unit || 'g',
+    unit: ingredient.unit || foodSnapshot.nutritionBasis?.unit || 'g',
     sortOrder: Number.isFinite(Number(ingredient.sortOrder))
       ? Number(ingredient.sortOrder)
       : index,
-    foodSnapshot: sanitizeFoodSnapshot(ingredient.foodSnapshot || {}),
+    // 显式落库，避免只靠 foodSnapshot 时下游漏读优质标记
+    proteinQuality: ingredient.proteinQuality
+      || foodSnapshot.proteinQuality
+      || '',
+    foodSnapshot,
     nutrition: normalizeNutrition(ingredient.nutrition || emptyNutrition())
   };
 }
@@ -166,18 +184,6 @@ function removeRecipeCache(babyUid, recipeId) {
   );
 }
 
-function mergeRecipeLists(remote = [], cached = []) {
-  const map = new Map();
-  cached.forEach((item) => {
-    if (item && item._id) map.set(item._id, item);
-  });
-  // 远端优先
-  remote.forEach((item) => {
-    if (item && item._id) map.set(item._id, item);
-  });
-  return Array.from(map.values());
-}
-
 class RecipeModel {
   constructor() {
     // collection 改为按次获取，避免模块加载早于 cloud.init
@@ -211,14 +217,25 @@ class RecipeModel {
         throw new Error(`缺少原料「${foodName || index + 1}」的食物信息`);
       }
 
+      const quantity = Math.max(0, toNumber(item.quantity, 0));
+      const unit = item.unit || food?.baseUnit || foodSnapshot?.nutritionBasis?.unit || 'g';
+      const source = food || foodSnapshot;
+      const nutrition = quantity > 0
+        ? buildIngredientNutrition(source, quantity)
+        : emptyNutrition();
+
       return normalizeIngredient({
         foodId: item.foodId || food?._id || '',
         foodName: foodName || foodSnapshot?.name || '',
-        quantity: 0,
-        unit: item.unit || food?.baseUnit || foodSnapshot?.nutritionBasis?.unit || 'g',
+        quantity,
+        unit,
         sortOrder: item.sortOrder,
+        proteinQuality: item.proteinQuality
+          || food?.proteinQuality
+          || foodSnapshot?.proteinQuality
+          || '',
         foodSnapshot,
-        nutrition: emptyNutrition()
+        nutrition
       }, index);
     });
   }
@@ -234,14 +251,19 @@ class RecipeModel {
     }
 
     const ingredients = this.prepareIngredients(merged.ingredients);
+    const yieldWeightG = roundWeight(ingredients.reduce((sum, item) => {
+      if (!(Number(item.quantity) > 0) || !isWeightUnit(item.unit)) return sum;
+      return sum + (Number(item.quantity) || 0);
+    }, 0));
+    const nutritionSummary = summarizeRecipeNutrition(ingredients, yieldWeightG);
     const normalized = normalizeRecipe({
       ...merged,
       name,
-      yieldWeightG: 0,
+      yieldWeightG,
       ingredients,
-      totalNutrition: emptyNutrition(),
-      nutritionPer100g: emptyNutrition(),
-      proteinSource: 'natural',
+      totalNutrition: nutritionSummary.totalNutrition,
+      nutritionPer100g: nutritionSummary.nutritionPer100g,
+      proteinSource: nutritionSummary.proteinSource || 'natural',
       steps: merged.steps,
       coverImageFileId: merged.coverImageFileId,
       prepTimeSec: merged.prepTimeSec,
@@ -256,14 +278,14 @@ class RecipeModel {
       babyUid: normalized.babyUid || '',
       name: normalized.name,
       notes: normalized.notes || '',
-      yieldWeightG: 0,
+      yieldWeightG: normalized.yieldWeightG,
       steps: Array.isArray(normalized.steps) ? normalized.steps : [],
       coverImageFileId: normalized.coverImageFileId || '',
       prepTimeSec: normalized.prepTimeSec === undefined ? null : normalized.prepTimeSec,
       ingredients: normalized.ingredients,
-      totalNutrition: emptyNutrition(),
-      nutritionPer100g: emptyNutrition(),
-      proteinSource: 'natural',
+      totalNutrition: normalized.totalNutrition,
+      nutritionPer100g: normalized.nutritionPer100g,
+      proteinSource: normalized.proteinSource || 'natural',
       usageCount: toNumber(normalized.usageCount, 0),
       lastUsedAt: normalized.lastUsedAt === undefined ? null : normalized.lastUsedAt
     };
@@ -556,45 +578,37 @@ class RecipeModel {
         });
       }
 
-      if (remote.length) {
+      // 云查询成功（含空列表）以云端为准，并覆盖本地缓存，避免控制台已删本地仍显示
+      if (!remoteError) {
         writeRecipeCache(babyUid, remote);
-        console.log('[recipe] listActiveByBaby return remote', { count: remote.length });
+        console.log('[recipe] listActiveByBaby return remote', {
+          count: remote.length,
+          rawRowCount,
+          cacheClearedOrReplaced: true
+        });
         return { success: true, data: remote, fromCache: false };
       }
 
-      // 云查询成功但为空，或查询失败：用本地缓存兜底，避免「控制台有、选择页无」
-      const merged = mergeRecipeLists(remote, cached);
-      if (merged.length) {
+      // 仅云查询失败时用本地缓存兜底
+      if (cached.length) {
         console.warn('[recipe] listActiveByBaby return cache fallback', {
-          count: merged.length,
-          rawRowCount,
-          remoteError: remoteError ? (remoteError.errMsg || remoteError.message) : ''
+          count: cached.length,
+          remoteError: remoteError.errMsg || remoteError.message || ''
         });
         return {
           success: true,
-          data: merged,
+          data: cached,
           fromCache: true,
-          message: remoteError
-            ? (remoteError.errMsg || remoteError.message || '云查询失败，已使用本地缓存')
-            : ''
+          message: remoteError.errMsg || remoteError.message || '云查询失败，已使用本地缓存'
         };
       }
 
-      if (remoteError) {
-        const errMsg = remoteError.errMsg || remoteError.message || '查询失败';
-        const hint = /COLLECTION_NOT_EXIST|not exist/i.test(errMsg)
-          ? '请先在云开发控制台创建 recipe_catalog 集合'
-          : errMsg;
-        console.error('[recipe] listActiveByBaby fail', { hint });
-        return { success: false, message: hint, data: [], fromCache: false };
-      }
-
-      console.warn('[recipe] listActiveByBaby empty', {
-        babyUid,
-        rawRowCount,
-        cacheSize: cached.length
-      });
-      return { success: true, data: [], fromCache: false };
+      const errMsg = remoteError.errMsg || remoteError.message || '查询失败';
+      const hint = /COLLECTION_NOT_EXIST|not exist/i.test(errMsg)
+        ? '请先在云开发控制台创建 recipe_catalog 集合'
+        : errMsg;
+      console.error('[recipe] listActiveByBaby fail', { hint });
+      return { success: false, message: hint, data: [], fromCache: false };
     } catch (error) {
       console.error('[recipe] listActiveByBaby unexpected error', error);
       const cached = readRecipeCache(babyUid);

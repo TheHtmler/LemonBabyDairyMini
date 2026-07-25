@@ -123,6 +123,9 @@ test('bowel record editor page is page-level and uses icons while adding', () =>
   assert.match(js, /\{ value: 'soft', label: '糊状', icon: '🥣' \}/);
   assert.match(js, /\{ value: 'normal', label: '正常', icon: '💩' \}/);
   assert.match(wxss, /\.footer-actions\s*\{[^}]*left: 0;[^}]*right: 0;/s);
+  assert.match(wxss, /\.footer-actions\s*\{[^}]*z-index:\s*30;/s);
+  assert.match(wxss, /\.footer-actions\s*\{[^}]*background:\s*#FFFDF7;/s);
+  assert.match(wxss, /\.notes-area\s*\{[^}]*max-height:\s*160rpx;/s);
   assert.match(wxss, /\.save-btn\s*\{[^}]*margin: 0;[^}]*padding: 0;[^}]*box-sizing: border-box;/s);
   assert.match(wxml, /saveBowelRecord/);
   assert.doesNotMatch(wxml, /modal/);

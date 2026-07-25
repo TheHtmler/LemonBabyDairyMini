@@ -7,11 +7,11 @@ const {
   prepareAndUploadDiaryPhoto,
   prepareAndUploadDiaryVideo,
   deleteCloudFiles
-} = require('../miniprogram/utils/diaryImage');
+} = require('../miniprogram/pkg-records/utils/diaryImage');
 const {
   MAX_VIDEO_DURATION_SEC,
   MAX_VIDEO_BYTES
-} = require('../miniprogram/utils/growthDiaryUtils');
+} = require('../miniprogram/pkg-records/utils/growthDiaryUtils');
 
 test('buildDiaryCloudPaths returns orig and thumb paths', () => {
   const p = buildDiaryCloudPaths({ babyUid: 'b1', entryKey: 'tmp', index: 0, ts: 1000 });

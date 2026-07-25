@@ -1,9 +1,9 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
 const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
-const { parseReportOcrResult, parseStructuredReportItems } = require('../../utils/reportOcrParser');
-const { sanitizeSignedDecimalInput } = require('../../utils/reportNumberFormat');
-const { countFilledIndicators } = require('../../utils/reportFilledCount');
+const { parseReportOcrResult, parseStructuredReportItems } = require('../utils/reportOcrParser');
+const { sanitizeSignedDecimalInput } = require('../utils/reportNumberFormat');
+const { countFilledIndicators } = require('../utils/reportFilledCount');
 
 const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
 

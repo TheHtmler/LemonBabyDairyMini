@@ -31,6 +31,9 @@ const {
   buildDataRecordsSummaryPreview
 } = require('../../utils/dataRecordsSummaryPreview');
 const {
+  resolveFoodIntakePremiumProteinSplit
+} = require('../../utils/recipeNutritionUtils');
+const {
   buildRecordTabBar,
   loadRecordTabsPreference,
   saveRecordTabsPreference,
@@ -565,11 +568,9 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     overview.food.protein += protein;
     overview.food.naturalProtein += naturalProtein;
     overview.food.specialProtein += specialProtein;
-    if (intake.proteinQuality === 'premium') {
-      overview.food.premiumProtein += naturalProtein;
-    } else if (naturalProtein > 0) {
-      overview.food.regularProtein += naturalProtein;
-    }
+    const qualitySplit = resolveFoodIntakePremiumProteinSplit(intake, naturalProtein);
+    overview.food.premiumProtein += Number(qualitySplit.premiumProtein) || 0;
+    overview.food.regularProtein += Number(qualitySplit.regularProtein) || 0;
     overview.food.carbs += Number(nutrition.carbs) || 0;
     overview.food.fat += Number(nutrition.fat) || 0;
   });
@@ -835,7 +836,7 @@ function buildRecipeIntakeDisplay(intake = {}) {
     return {
       isRecipe: false,
       recipeName: '',
-      recipeSourceText: '',
+      sourceLabel: intake.sourceLabel || '',
       recipeExpanded: false,
       recipeIngredientRows: []
     };
@@ -848,7 +849,7 @@ function buildRecipeIntakeDisplay(intake = {}) {
     || intake.foodName
     || '食谱成品'
   ).trim();
-  const yieldWeightG = Number(recipeSource.yieldWeightG) || 0;
+  const yieldWeightG = Number(recipeSource.yieldWeightG || recipeSource.batchWeightG) || 0;
   const eatenWeightG = Number(intake.quantity) || 0;
   const scale = yieldWeightG > 0 ? eatenWeightG / yieldWeightG : 0;
   const nutritionFields = [
@@ -885,7 +886,7 @@ function buildRecipeIntakeDisplay(intake = {}) {
   return {
     isRecipe: true,
     recipeName,
-    recipeSourceText: `来自食谱：${recipeName}`,
+    sourceLabel: '食谱',
     recipeExpanded: false,
     recipeIngredientRows
   };
@@ -916,6 +917,7 @@ function groupFoodIntakesByMeal(intakes = []) {
         summary: {
           calories: 0,
           protein: 0,
+          premiumProtein: 0,
           carbs: 0,
           fat: 0
         },
@@ -926,6 +928,12 @@ function groupFoodIntakesByMeal(intakes = []) {
 
     const group = groups.get(groupKey);
     const nutrition = intake.nutrition || {};
+    const naturalProtein = Number(
+      intake.naturalProtein !== undefined && intake.naturalProtein !== null && intake.naturalProtein !== ''
+        ? intake.naturalProtein
+        : nutrition.naturalProtein
+    ) || 0;
+    const premiumSplit = resolveFoodIntakePremiumProteinSplit(intake, naturalProtein);
     const enrichedIntake = {
       ...intake,
       ...buildFoodIntakeDisplayFields(intake),
@@ -939,6 +947,7 @@ function groupFoodIntakesByMeal(intakes = []) {
     group.itemCount += 1;
     group.summary.calories += Number(nutrition.calories) || 0;
     group.summary.protein += Number(nutrition.protein) || 0;
+    group.summary.premiumProtein += Number(premiumSplit.premiumProtein) || 0;
     group.summary.carbs += Number(nutrition.carbs) || 0;
     group.summary.fat += Number(nutrition.fat) || 0;
     group.completionCandidates.push({
@@ -974,13 +983,19 @@ function groupFoodIntakesByMeal(intakes = []) {
         hasCompletionDisplay,
         hasPartialCompletion,
         hasPlannedDifference: hasPartialCompletion || items.some(item => item.hasPlannedDifference),
-        summary: {
-          calories: roundCalories(group.summary.calories),
-          protein: roundNumber(group.summary.protein, 2),
-          proteinText: formatProteinText(group.summary.protein),
-          carbs: roundNumber(group.summary.carbs, 2),
-          fat: roundNumber(group.summary.fat, 2)
-        },
+        summary: (() => {
+          const premiumProtein = roundNumber(group.summary.premiumProtein, 2);
+          return {
+            calories: roundCalories(group.summary.calories),
+            protein: roundNumber(group.summary.protein, 2),
+            proteinText: formatProteinText(group.summary.protein),
+            premiumProtein,
+            premiumProteinText: formatProteinText(premiumProtein),
+            showPremiumProtein: premiumProtein > 0,
+            carbs: roundNumber(group.summary.carbs, 2),
+            fat: roundNumber(group.summary.fat, 2)
+          };
+        })(),
         items
       };
     })
@@ -1864,8 +1879,23 @@ function createDataRecordsPageConfig(options = {}) {
     });
   },
 
+  onRecipeHeaderAction(e) {
+    const detail = e.detail || {};
+    this.toggleRecipeIngredients({
+      currentTarget: {
+        dataset: {
+          groupId: detail.groupId || '',
+          itemId: detail.itemId || ''
+        }
+      }
+    });
+  },
+
   toggleRecipeIngredients(e) {
-    const { groupId, itemId } = e.currentTarget.dataset || {};
+    const dataset = e.currentTarget?.dataset || {};
+    const detail = e.detail || {};
+    const groupId = dataset.groupId || detail.groupId || '';
+    const itemId = dataset.itemId || detail.itemId || '';
     if (!groupId || !itemId) return;
 
     if (groupId === LEGACY_RECIPE_GROUP_ID) {

@@ -7,7 +7,7 @@ function loadFoodManagementPage() {
   [
     pagePath,
     require.resolve('../miniprogram/models/food.js'),
-    require.resolve('../miniprogram/models/foodCategory.js'),
+    require.resolve('../miniprogram/pkg-milk/models/foodCategory.js'),
     require.resolve('../miniprogram/utils/index.js')
   ].forEach((modulePath) => {
     delete require.cache[modulePath];

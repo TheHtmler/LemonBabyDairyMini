@@ -11,6 +11,9 @@ const {
   groupV2FeedingRecordsByDate
 } = require('../../utils/dataRecordsV2Adapter');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
+const {
+  resolveFoodIntakePremiumProteinSplit
+} = require('../../utils/recipeNutritionUtils');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -1788,10 +1791,12 @@ Page({
       summary.carbs += Number(nutrition.carbs) || 0;
       summary.fat += Number(nutrition.fat) || 0;
       if (Number(naturalProtein) > 0) {
-        if (intake.type === 'milk' || intake.milkType || intake.proteinQuality === 'premium') {
+        if (intake.type === 'milk' || intake.milkType) {
           summary.premiumProtein += Number(naturalProtein) || 0;
         } else {
-          summary.regularProtein += Number(naturalProtein) || 0;
+          const qualitySplit = resolveFoodIntakePremiumProteinSplit(intake, naturalProtein);
+          summary.premiumProtein += Number(qualitySplit.premiumProtein) || 0;
+          summary.regularProtein += Number(qualitySplit.regularProtein) || 0;
         }
       }
     });

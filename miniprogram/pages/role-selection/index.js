@@ -263,7 +263,7 @@ Page({
         } else {
           // 没有邀请码，跳转到邀请码输入页面
           wx.redirectTo({
-            url: '/pages/invite-join/index?firstLogin=true&role=participant',
+            url: '/pkg-misc/invite-join/index?firstLogin=true&role=participant',
           });
         }
       }
@@ -367,7 +367,7 @@ Page({
         success: () => {
           // 跳转到邀请码输入页面
           wx.redirectTo({
-            url: '/pages/invite-join/index?firstLogin=true&role=participant',
+            url: '/pkg-misc/invite-join/index?firstLogin=true&role=participant',
           });
         }
       });

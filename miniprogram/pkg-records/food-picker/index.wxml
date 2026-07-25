@@ -134,7 +134,7 @@
       <view class="cart-copy">
         <text wx:if="{{selectedFoodCart.length > 0}}" class="cart-title">已选 {{selectedFoodCart.length}} 种食物</text>
         <text wx:else class="cart-title">已选食物</text>
-        <text class="cart-subtitle" wx:if="{{isRecipeIngredientPicker && selectedFoodCart.length > 0}}">仅选择原料组合，用量在记本顿时填写</text>
+        <text class="cart-subtitle" wx:if="{{isRecipeIngredientPicker && selectedFoodCart.length > 0}}">先选原料，回到食谱页可预填默认份量</text>
         <text class="cart-subtitle" wx:elif="{{selectedFoodCart.length > 0}}">{{cartExpanded ? '收起明细' : '点击查看明细'}}</text>
         <text class="cart-subtitle" wx:else>点击食物右侧的 + 添加到这里</text>
       </view>
@@ -182,21 +182,24 @@
         <view class="quantity-input-row">
           <text class="quantity-input-label">份量</text>
           <input
-            class="quantity-input"
+            class="quantity-input amount-input"
             type="digit"
             value="{{item.quantity}}"
             placeholder="{{item.placeholder || '请输入'}}"
+            placeholder-class="amount-input-placeholder"
             data-index="{{draftIndex}}"
             bindinput="onQuantityDraftInput"
           />
-          <text class="quantity-unit">{{item.unit || 'g'}}</text>
+          <text class="quantity-unit amount-echo">{{item.unit || 'g'}}</text>
         </view>
         <view class="quantity-preview {{item.nutritionPreview ? '' : 'empty'}}">
           <block wx:if="{{item.nutritionPreview}}">
             <text>{{item.nutritionPreview.calories || 0}} kcal</text>
             <text>蛋白 {{item.nutritionPreview.proteinText || '0.00'}} g</text>
+            <text>碳水 {{item.nutritionPreview.carbs || 0}} g</text>
+            <text>脂肪 {{item.nutritionPreview.fat || 0}} g</text>
           </block>
-          <text wx:else>输入份量后计算蛋白</text>
+          <text wx:else>输入份量后计算营养</text>
         </view>
       </view>
     </scroll-view>

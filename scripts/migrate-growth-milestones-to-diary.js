@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { mapMilestoneToDiary } = require('../miniprogram/utils/growthDiaryUtils');
+const { mapMilestoneToDiary } = require('../miniprogram/pkg-records/utils/growthDiaryUtils');
 
 const input = process.argv[2];
 const output = process.argv[3] || path.join(process.cwd(), 'growth_diary.import.json');

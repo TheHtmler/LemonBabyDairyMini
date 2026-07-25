@@ -1,9 +1,9 @@
 const SystemPowderIndex = require('../utils/systemPowderIndex');
-const MilkNutritionProfileModel = require('./nutritionProfile');
+const MilkNutritionProfileModel = require('../../models/nutritionProfile');
 const {
   POWDER_STATUSES,
   normalizeFormulaPowders
-} = require('../utils/formulaPowderUtils');
+} = require('../../utils/formulaPowderUtils');
 
 const db = wx.cloud.database();
 
@@ -87,7 +87,7 @@ class PowderCatalogModel {
       return list;
     }
 
-    const { resolveCloudTempUrls } = require('../utils/cloudTempUrlCache');
+    const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
     let imageUrlMap = new Map();
     try {
       imageUrlMap = await resolveCloudTempUrls(fileIds);

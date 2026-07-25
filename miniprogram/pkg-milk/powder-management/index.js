@@ -1,12 +1,12 @@
-const PowderCatalogModel = require('../../models/powderCatalog');
+const PowderCatalogModel = require('../models/powderCatalog');
 const NutritionModel = require('../../models/nutrition');
-const SystemPowderIndex = require('../../utils/systemPowderIndex');
+const SystemPowderIndex = require('../utils/systemPowderIndex');
 const {
   buildVirtualBreastMilkPowder,
   buildBreastMilkPowderDraft,
   isVirtualBreastMilkPowder,
   stripVirtualBreastMilkPowders
-} = require('../../utils/breastMilkProfileItem');
+} = require('../utils/breastMilkProfileItem');
 const {
   POWDER_CATEGORIES,
   POWDER_CATEGORY_META,

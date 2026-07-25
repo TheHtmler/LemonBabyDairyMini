@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const modelPath = path.resolve(__dirname, '../miniprogram/models/growthDiary.js');
+const modelPath = path.resolve(__dirname, '../miniprogram/pkg-records/models/growthDiary.js');
 
 function readProjectFile(relativePath) {
   return fs.readFileSync(path.resolve(__dirname, '..', relativePath), 'utf8');
@@ -132,7 +132,7 @@ function loadFreshModel(db, options = {}) {
 }
 
 test('growthDiary model uses growth_diary collection and active filter', () => {
-  const source = readProjectFile('miniprogram/models/growthDiary.js');
+  const source = readProjectFile('miniprogram/pkg-records/models/growthDiary.js');
 
   assert.match(source, /collection\('growth_diary'\)/);
   assert.match(source, /status:\s*'active'/);

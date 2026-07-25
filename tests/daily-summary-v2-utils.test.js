@@ -296,6 +296,53 @@ test('buildDailySummaryV2 tracks premium and regular natural protein from food q
   assert.equal(summary.food.regularProtein, 0.75);
 });
 
+test('buildDailySummaryV2 splits recipe premium protein by ingredient snapshot quality', () => {
+  const {
+    buildDailySummaryV2
+  } = require(utilsPath);
+
+  // 整锅：优质 8 + 普通 2 = 10；吃 30% → 天然 3，优质应约 2.4
+  const summary = buildDailySummaryV2({
+    babyUid: 'baby-1',
+    date: '2026-07-25',
+    foodIntakeRecords: [
+      {
+        sourceType: 'recipe',
+        quantity: 60,
+        unit: 'g',
+        nutrition: {
+          calories: 60,
+          protein: 3,
+          naturalProtein: 3,
+          specialProtein: 0
+        },
+        recipeSource: {
+          recipeId: 'recipe-1',
+          recipeName: '番茄炒蛋',
+          batchWeightG: 200,
+          yieldWeightG: 200,
+          ingredientsSnapshot: [
+            {
+              foodName: '鸡蛋',
+              proteinQuality: 'premium',
+              nutrition: { naturalProtein: 8, specialProtein: 0, protein: 8 }
+            },
+            {
+              foodName: '番茄',
+              proteinQuality: 'regular',
+              nutrition: { naturalProtein: 2, specialProtein: 0, protein: 2 }
+            }
+          ]
+        }
+      }
+    ]
+  });
+
+  assert.equal(summary.food.naturalProtein, 3);
+  assert.equal(summary.food.premiumProtein, 2.4);
+  assert.equal(summary.food.regularProtein, 0.6);
+});
+
 test('macroSummary includes milk carbs and fat from v2 nutritionSummary', () => {
   const {
     buildDailySummaryV2

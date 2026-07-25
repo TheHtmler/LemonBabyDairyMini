@@ -1,5 +1,5 @@
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
-const PowderCatalogModel = require('../../models/powderCatalog');
+const PowderCatalogModel = require('../models/powderCatalog');
 const feedingRecordV2Model = require('../../models/feedingRecordV2');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');

@@ -7,7 +7,7 @@ const {
   buildVirtualBreastMilkPowder,
   isVirtualBreastMilkPowder,
   stripVirtualBreastMilkPowders
-} = require('../miniprogram/utils/breastMilkProfileItem');
+} = require('../miniprogram/pkg-milk/utils/breastMilkProfileItem');
 const {
   POWDER_CATEGORIES,
   POWDER_CATEGORY_ORDER,
@@ -54,7 +54,7 @@ test('stripVirtualBreastMilkPowders removes only virtual breast milk entries', (
 });
 
 test('buildBreastMilkPowderDraft prepares modal form values from virtual powder', () => {
-  const { buildBreastMilkPowderDraft } = require('../miniprogram/utils/breastMilkProfileItem');
+  const { buildBreastMilkPowderDraft } = require('../miniprogram/pkg-milk/utils/breastMilkProfileItem');
   const draft = buildBreastMilkPowderDraft(buildVirtualBreastMilkPowder({
     natural_milk_protein: 1.2,
     natural_milk_calories: 68

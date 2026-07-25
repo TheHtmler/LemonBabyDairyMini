@@ -1,5 +1,5 @@
 const { waitForAppInitialization, handleError } = require('../../utils/index');
-const { loadGroupQrcode } = require('../../utils/groupQrCode');
+const { loadGroupQrcode } = require('../utils/groupQrCode');
 
 Page({
   data: {

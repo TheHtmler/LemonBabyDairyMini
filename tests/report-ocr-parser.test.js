@@ -6,7 +6,7 @@ const {
   parseRefRange,
   parseReportOcrResult,
   parseStructuredReportItems
-} = require('../miniprogram/utils/reportOcrParser');
+} = require('../miniprogram/pkg-report/utils/reportOcrParser');
 
 test('groupOcrItemsIntoLines merges text blocks on the same row and preserves left-to-right order', () => {
   const items = [

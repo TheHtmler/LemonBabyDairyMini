@@ -100,7 +100,7 @@ function installWxMock({ catalog = [], meta = null } = {}) {
 }
 
 function loadSystemPowderIndex() {
-  const modulePath = require.resolve('../miniprogram/utils/systemPowderIndex');
+  const modulePath = require.resolve('../miniprogram/pkg-milk/utils/systemPowderIndex');
   delete require.cache[modulePath];
   return require(modulePath);
 }
@@ -217,9 +217,9 @@ test('powder catalog model can add system powder to nutrition profile', async ()
     }
   };
 
-  const powderCatalogPath = require.resolve('../miniprogram/models/powderCatalog');
+  const powderCatalogPath = require.resolve('../miniprogram/pkg-milk/models/powderCatalog');
   delete require.cache[powderCatalogPath];
-  const PowderCatalogModel = require('../miniprogram/models/powderCatalog');
+  const PowderCatalogModel = require('../miniprogram/pkg-milk/models/powderCatalog');
 
   const result = await PowderCatalogModel.saveUserPowder('baby-1', {
     id: 'powder_test_1',

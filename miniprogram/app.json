@@ -1,12 +1,10 @@
 {
   "pages": [
     "pages/role-selection/index",
-    "pages/invite-join/index",
     "pages/daily-feeding/index",
     "pages/data-records-v2/index",
     "pages/analysis-report/index",
-    "pages/profile/index",
-    "pages/meal-editor-v2/index"
+    "pages/profile/index"
   ],
   "subPackages": [
     {
@@ -46,6 +44,8 @@
     {
       "root": "pkg-misc",
       "pages": [
+        "invite-join/index",
+        "meal-editor-v2/index",
         "baby-info/index",
         "medications/index",
         "feedback/index",

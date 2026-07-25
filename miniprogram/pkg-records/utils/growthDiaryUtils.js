@@ -1,4 +1,4 @@
-const { formatBabyAgeText } = require('./babyAgeDisplay');
+const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
 
 const MAX_DIARY_PHOTOS = 3;
 const MAX_DIARY_MEDIA = 3;

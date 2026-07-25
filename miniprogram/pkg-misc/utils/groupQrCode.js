@@ -1,4 +1,4 @@
-const { resolveCloudTempUrls } = require('./cloudTempUrlCache');
+const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
 const GROUP_QRCODE_KEY = 'group_qrcode';
 

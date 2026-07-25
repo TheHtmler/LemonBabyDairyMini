@@ -94,7 +94,7 @@ test('resolveCloudTempUrls fetches missing ids and writes local cache', async ()
 
 test('powder / food / group qrcode resolvers use cloudTempUrlCache', () => {
   const powderCatalog = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/models/powderCatalog.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-milk/models/powderCatalog.js'),
     'utf8'
   );
   const food = fs.readFileSync(
@@ -102,7 +102,7 @@ test('powder / food / group qrcode resolvers use cloudTempUrlCache', () => {
     'utf8'
   );
   const groupQr = fs.readFileSync(
-    path.resolve(__dirname, '../miniprogram/utils/groupQrCode.js'),
+    path.resolve(__dirname, '../miniprogram/pkg-misc/utils/groupQrCode.js'),
     'utf8'
   );
 

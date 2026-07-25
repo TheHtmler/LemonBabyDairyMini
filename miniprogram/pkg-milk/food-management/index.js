@@ -1,5 +1,5 @@
 const FoodModel = require('../../models/food');
-const FoodCategoryModel = require('../../models/foodCategory');
+const FoodCategoryModel = require('../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
 const DEFAULT_CATEGORY_SUGGESTIONS = [

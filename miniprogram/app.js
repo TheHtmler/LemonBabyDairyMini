@@ -1,4 +1,7 @@
 // app.js
+// 跨分包共享工具：主包显式引用，避免「主包未使用的 JS」质量检测误报
+require('./utils/nutritionTargetPreview');
+
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 
 App({

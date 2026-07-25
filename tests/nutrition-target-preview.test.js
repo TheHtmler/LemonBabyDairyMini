@@ -82,7 +82,7 @@ test('buildEntryTargetPreview keeps calorie as optional weak reminder', () => {
   assert.equal(visible.calorieNote.visible, true);
   assert.equal(visible.calorieNote.status, 'over');
   assert.equal(visible.calorieNote.badgeText, '超出 20kcal');
-  assert.equal(visible.calorieNote.text, '本次 +50 kcal · 今日超出 20 kcal');
+  assert.equal(visible.calorieNote.text, '本次 +50 kcal · 超出 20 kcal');
 });
 
 test('summarizeFoodItems preserves natural and special protein split', () => {
@@ -239,12 +239,15 @@ test('target preview pages refresh targets after returning from setup', () => {
 
 test('meal editor food drawer keeps add button reachable after target preview expands content', () => {
   const wxss = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.wxss', 'utf8');
+  const wxml = fs.readFileSync('miniprogram/pkg-records/meal-editor/index.wxml', 'utf8');
 
   assert.match(wxss, /\.drawer-body\s*\{[^}]*flex:\s*1/s);
   assert.match(wxss, /\.drawer-body\s*\{[^}]*overflow:\s*hidden/s);
   assert.match(wxss, /\.edit-body\s*\{[^}]*min-height:\s*0/s);
-  assert.match(wxss, /\.add-item-btn\s*\{[^}]*position:\s*sticky/s);
-  assert.match(wxss, /\.add-item-btn\s*\{[^}]*bottom:\s*0/s);
+  assert.match(wxss, /\.edit-body-scroll\s*\{/);
+  assert.match(wxss, /\.edit-body-actions\s*\{[^}]*flex-shrink:\s*0/s);
+  assert.match(wxml, /edit-body-actions[\s\S]*更新这项食物|edit-body-actions[\s\S]*加入本顿/);
+  assert.match(wxml, /edit-body-actions[\s\S]*更新食谱份量/);
 });
 
 test('milk feeding editor keeps concentrated input layout without changing entry calculation flow', () => {

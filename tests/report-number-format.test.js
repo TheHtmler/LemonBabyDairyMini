@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatReportNumber, normalizeSignedNumberText, sanitizeSignedDecimalInput } = require('../miniprogram/utils/reportNumberFormat');
+const { formatReportNumber, normalizeSignedNumberText, sanitizeSignedDecimalInput } = require('../miniprogram/pkg-report/utils/reportNumberFormat');
 
 test('formatReportNumber normalizes equivalent numeric strings to three decimals', () => {
   assert.equal(formatReportNumber('1.5'), '1.500');

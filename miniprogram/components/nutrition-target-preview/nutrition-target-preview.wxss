@@ -77,17 +77,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10rpx;
+  flex-wrap: wrap;
+  gap: 8rpx 10rpx;
 }
 
 .target-preview-label {
   display: flex;
   align-items: center;
   gap: 8rpx;
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 22rpx;
   font-weight: 700;
   color: #72551a;
+}
+
+.target-preview-label-text {
+  white-space: nowrap;
 }
 
 .target-preview-dot {
@@ -103,13 +109,15 @@
 }
 
 .target-preview-badge {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  margin-left: auto;
   min-height: 30rpx;
   padding: 0 10rpx;
   border-radius: 999rpx;
   font-size: 18rpx;
   line-height: 30rpx;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .target-preview-badge.ok {

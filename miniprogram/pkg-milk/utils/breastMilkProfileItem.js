@@ -1,4 +1,4 @@
-const { POWDER_CATEGORIES, PROTEIN_ROLES, POWDER_STATUSES } = require('./formulaPowderUtils');
+const { POWDER_CATEGORIES, PROTEIN_ROLES, POWDER_STATUSES } = require('../../utils/formulaPowderUtils');
 
 const DEFAULT_BREAST_MILK_NUTRITION = {
   natural_milk_protein: 1.1,

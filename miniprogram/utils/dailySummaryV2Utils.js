@@ -1,3 +1,7 @@
+const {
+  resolveFoodIntakePremiumProteinSplit
+} = require('./recipeNutritionUtils');
+
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) {
     return fallback;
@@ -263,16 +267,13 @@ function mergeFoodNutrition(records = []) {
     const nutrition = record.nutrition || {};
     const { natural, special } = resolveFoodProteinSplit(record);
     const naturalProtein = toNumber(natural);
-    const proteinQuality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
+    const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
     summary.calories += toNumber(nutrition.calories);
     summary.protein += toNumber(nutrition.protein);
     summary.naturalProtein += naturalProtein;
     summary.specialProtein += toNumber(special);
-    if (proteinQuality === 'premium') {
-      summary.premiumProtein += naturalProtein;
-    } else if (naturalProtein > 0) {
-      summary.regularProtein += naturalProtein;
-    }
+    summary.premiumProtein += toNumber(qualitySplit.premiumProtein);
+    summary.regularProtein += toNumber(qualitySplit.regularProtein);
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);
     summary.fiber += toNumber(nutrition.fiber);

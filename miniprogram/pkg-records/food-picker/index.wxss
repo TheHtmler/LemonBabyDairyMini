@@ -791,6 +791,23 @@
   text-align: right;
 }
 
+.amount-input {
+  color: #C78200;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-input-placeholder {
+  color: #B2A17B;
+  font-weight: 400;
+}
+
+.amount-echo {
+  color: #C78200;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .quantity-unit {
   flex-shrink: 0;
   min-width: 46rpx;
@@ -799,11 +816,16 @@
   color: #8A7C60;
 }
 
+.quantity-unit.amount-echo {
+  color: #C78200;
+}
+
 .quantity-preview {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 18rpx;
+  gap: 10rpx 16rpx;
   min-height: 30rpx;
   margin-top: 12rpx;
   color: #8A7C60;

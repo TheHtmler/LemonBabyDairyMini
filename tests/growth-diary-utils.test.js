@@ -22,7 +22,7 @@ const {
   mediaToPhotos,
   collectMediaFileIds,
   listPreviewFileIds
-} = require('../miniprogram/utils/growthDiaryUtils');
+} = require('../miniprogram/pkg-records/utils/growthDiaryUtils');
 
 test('MAX_DIARY_PHOTOS is 3', () => {
   assert.equal(MAX_DIARY_PHOTOS, 3);

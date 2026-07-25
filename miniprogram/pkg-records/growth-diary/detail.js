@@ -1,4 +1,4 @@
-const GrowthDiaryModel = require('../../models/growthDiary');
+const GrowthDiaryModel = require('../models/growthDiary');
 const {
   waitForAppInitialization,
   getBabyUid,
@@ -11,7 +11,7 @@ const {
   formatDiaryPublishMeta,
   normalizeEventDateKey,
   formatDiaryEventAgeText
-} = require('../../utils/growthDiaryUtils');
+} = require('../utils/growthDiaryUtils');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
 function formatDateText(dateValue) {

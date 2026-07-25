@@ -363,17 +363,14 @@ async function deleteMealBatch(babyUid, date, mealBatchId, options = {}) {
 }
 
 async function createFoodIntakes(records = [], defaults = {}) {
-  const createdIds = [];
-  for (const [index, record] of (records || []).entries()) {
-    const payload = {
-      ...defaults,
-      ...record,
-      sortOrder: normalizeSortOrder(record.sortOrder, index)
-    };
-    const result = await createFoodIntake(payload);
-    createdIds.push(result._id);
-  }
-  return createdIds;
+  const payloads = (records || []).map((record, index) => ({
+    ...defaults,
+    ...record,
+    sortOrder: normalizeSortOrder(record.sortOrder, index)
+  }));
+  // 并行写入，避免多食物时串行等云开发往返
+  const results = await Promise.all(payloads.map((payload) => createFoodIntake(payload)));
+  return results.map((result) => result._id);
 }
 
 async function replaceMealBatch(options = {}) {

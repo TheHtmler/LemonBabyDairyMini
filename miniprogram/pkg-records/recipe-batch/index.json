@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "填写食谱用量",
-  "enablePullDownRefresh": false
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "nutrition-target-preview": "/components/nutrition-target-preview/nutrition-target-preview"
+  }
 }

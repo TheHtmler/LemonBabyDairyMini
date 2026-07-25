@@ -5,17 +5,91 @@
 
 .food-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12rpx;
   margin-bottom: 6rpx;
 }
 
-.food-name {
+.food-name-wrap {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.food-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 30rpx;
   color: #333333;
   font-weight: 600;
+}
+
+.food-record.is-meal .food-header {
+  align-items: baseline;
+  margin-bottom: 4rpx;
+}
+
+.food-record.is-meal .food-name {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #6B5A3E;
+}
+
+.food-record.is-meal .food-quantity {
+  font-size: 26rpx;
+}
+
+.food-record.is-meal .food-metrics {
+  margin-top: 2rpx;
+  font-size: 22rpx;
+  color: #8A7C60;
+}
+
+.food-record.is-meal .food-metrics .metric {
+  color: #8A7C60;
+}
+
+.food-record.is-meal .food-notes {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+}
+
+.food-source-tag {
+  flex-shrink: 0;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #fff1cf;
+  color: #b97800;
+  font-size: 20rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.food-header-action {
+  flex-shrink: 0;
+  color: #C78200;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.food-source-tag.recipe {
+  background: #fff1c8;
+  color: #a86400;
+}
+
+.food-source-tag.mine {
+  background: #e5f6ec;
+  color: #2e9e5b;
+}
+
+.food-source-tag.system {
+  background: #eef3ff;
+  color: #4d6fb8;
 }
 
 .food-time {
@@ -24,30 +98,26 @@
   color: #999999;
 }
 
-.food-quantity-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  margin-bottom: 4rpx;
-}
-
 .food-quantity {
+  flex-shrink: 0;
   font-size: 28rpx;
-  color: #FFB800;
-  font-weight: 600;
+  color: #C78200;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .food-metrics {
   display: flex;
   flex-wrap: wrap;
-  row-gap: 8rpx;
-  gap: 12rpx;
+  row-gap: 6rpx;
+  gap: 8rpx;
+  margin-top: 4rpx;
   font-size: 24rpx;
   color: #555555;
 }
 
 .food-metrics .divider {
-  color: #DDDDDD;
+  color: #D8C9A8;
 }
 
 .food-metrics .metric {

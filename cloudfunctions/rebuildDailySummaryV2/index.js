@@ -205,22 +205,99 @@ function resolveFoodProteinSplit(record = {}) {
   return { natural, special };
 }
 
+function resolveRecipeIngredientNatural(item = {}) {
+  return toNumber(item.nutrition?.naturalProtein);
+}
+
+function summarizeRecipeBatchPremium(ingredients = []) {
+  let premiumProtein = 0;
+  let regularProtein = 0;
+  (ingredients || []).forEach((item = {}) => {
+    const natural = resolveRecipeIngredientNatural(item);
+    if (!(natural > 0)) return;
+    const quality = item.proteinQuality
+      || item.foodSnapshot?.proteinQuality
+      || item.food?.proteinQuality
+      || '';
+    if (quality === 'premium') {
+      premiumProtein += natural;
+    } else {
+      regularProtein += natural;
+    }
+  });
+  return {
+    premiumProtein: roundValue(premiumProtein),
+    regularProtein: roundValue(regularProtein),
+    naturalProtein: roundValue(premiumProtein + regularProtein)
+  };
+}
+
+function isRecipeIntakeRecord(record = {}) {
+  const recipeSource = record.recipeSource;
+  const hasRecipeId = !!(
+    recipeSource
+    && typeof recipeSource === 'object'
+    && String(recipeSource.recipeId || '').trim()
+  );
+  const hasIngredients = !!(
+    recipeSource
+    && typeof recipeSource === 'object'
+    && Array.isArray(recipeSource.ingredientsSnapshot)
+    && recipeSource.ingredientsSnapshot.length > 0
+  );
+  return record.sourceType === 'recipe' || hasRecipeId || hasIngredients;
+}
+
+/** 食谱按原料优质占比分摊；普通食物看 proteinQuality */
+function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) {
+  const naturalProtein = Math.max(0, toNumber(
+    naturalProteinInput !== undefined && naturalProteinInput !== null && naturalProteinInput !== ''
+      ? naturalProteinInput
+      : (
+        record.naturalProtein !== undefined && record.naturalProtein !== null && record.naturalProtein !== ''
+          ? record.naturalProtein
+          : record.nutrition?.naturalProtein
+      )
+  ));
+  if (!(naturalProtein > 0)) {
+    return { premiumProtein: 0, regularProtein: 0 };
+  }
+
+  if (isRecipeIntakeRecord(record)) {
+    const recipeSource = record.recipeSource || {};
+    const ingredients = Array.isArray(recipeSource.ingredientsSnapshot)
+      ? recipeSource.ingredientsSnapshot
+      : [];
+    if (ingredients.length) {
+      const batch = summarizeRecipeBatchPremium(ingredients);
+      if (batch.naturalProtein > 0) {
+        const premiumProtein = roundValue(naturalProtein * batch.premiumProtein / batch.naturalProtein);
+        const regularProtein = roundValue(Math.max(0, naturalProtein - premiumProtein));
+        return { premiumProtein, regularProtein };
+      }
+    }
+  }
+
+  const quality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
+  if (quality === 'premium') {
+    return { premiumProtein: roundValue(naturalProtein), regularProtein: 0 };
+  }
+  return { premiumProtein: 0, regularProtein: roundValue(naturalProtein) };
+}
+
 function mergeFoodNutrition(records = []) {
   const food = createEmptySummary().food;
   (records || []).forEach((record = {}) => {
     const nutrition = record.nutrition || {};
     const split = resolveFoodProteinSplit(record);
     const naturalProtein = toNumber(split.natural);
-    const proteinQuality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
+    const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
     food.calories += toNumber(nutrition.calories);
     food.protein += toNumber(nutrition.protein);
     food.naturalProtein += naturalProtein;
     food.specialProtein += toNumber(split.special);
-    if (proteinQuality === 'premium') {
-      food.premiumProtein += naturalProtein;
-    } else if (naturalProtein > 0) {
-      food.regularProtein += naturalProtein;
-    }
+    food.premiumProtein += toNumber(qualitySplit.premiumProtein);
+    food.regularProtein += toNumber(qualitySplit.regularProtein);
     food.fat += toNumber(nutrition.fat);
     food.carbs += toNumber(nutrition.carbs);
     food.fiber += toNumber(nutrition.fiber);

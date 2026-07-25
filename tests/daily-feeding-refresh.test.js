@@ -14,21 +14,26 @@ test('meal-editor and treatment-record notify daily-feeding page to reload after
   const treatmentRecord = fs.readFileSync('miniprogram/pkg-records/treatment-record/index.js', 'utf8');
   const milkFeedingEditorV2 = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.js', 'utf8');
 
+  // 记本顿：保存后尽快返回，依赖上一页 onShow / 首页 dirty 刷新，避免在保存 loading 里整页重拉
   assert.match(mealEditor, /notifyPreviousPageRefresh\s*\(/);
-  assert.match(mealEditor, /await this\.notifyPreviousPageRefresh\(\);[\s\S]*wx\.navigateBack\(\)/);
-  assert.match(mealEditor, /prevPage\.route [!=]==? 'pages\/daily-feeding\/index'/);
-  assert.match(mealEditor, /await prevPage\.loadTodayData\(true\)/);
+  assert.match(mealEditor, /DailySummaryV2Model\.markDirty/);
+  assert.match(mealEditor, /Promise\.all\(\[\s*this\.touchActiveRecipeUsage/);
+  assert.doesNotMatch(mealEditor, /await this\.notifyPreviousPageRefresh\(\)/);
+  assert.match(mealEditor, /wx\.navigateBack\(\)/);
 
   assert.match(treatmentRecord, /notifyPreviousPageRefresh\s*\(/);
   assert.match(treatmentRecord, /await this\.notifyPreviousPageRefresh\(\);[\s\S]*wx\.navigateBack\(\)/);
   assert.match(treatmentRecord, /prevPage\.route [!=]==? 'pages\/daily-feeding\/index'/);
   assert.match(treatmentRecord, /await prevPage\.loadTodayData\(true\)/);
 
-  [mealEditor, treatmentRecord, milkFeedingEditorV2].forEach((source) => {
+  [treatmentRecord, milkFeedingEditorV2].forEach((source) => {
     assert.match(source, /typeof prevPage\.fetchDailyRecords === 'function'/);
     assert.match(source, /await prevPage\.fetchDailyRecords\([^,]+,\s*\{[\s\S]*silent:\s*true[\s\S]*skipNextOnShowRefresh:\s*true[\s\S]*\}\)/);
     assert.doesNotMatch(source, /prevPage\.route === 'pages\/data-records-v2\/index'/);
   });
+
+  assert.match(mealEditor, /typeof prevPage\.fetchDailyRecords === 'function'/);
+  assert.match(mealEditor, /await prevPage\.fetchDailyRecords\([^,]+,\s*\{[\s\S]*silent:\s*true[\s\S]*skipNextOnShowRefresh:\s*true[\s\S]*\}\)/);
 });
 
 test('data records skips the onShow refresh after child editor already refreshed parent', () => {

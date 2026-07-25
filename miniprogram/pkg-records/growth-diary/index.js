@@ -1,4 +1,4 @@
-const GrowthDiaryModel = require('../../models/growthDiary');
+const GrowthDiaryModel = require('../models/growthDiary');
 const {
   waitForAppInitialization,
   getBabyUid,
@@ -21,12 +21,12 @@ const {
   formatDiaryPublishMeta,
   normalizeEventDateKey,
   formatDiaryEventAgeText
-} = require('../../utils/growthDiaryUtils');
+} = require('../utils/growthDiaryUtils');
 const {
   prepareAndUploadDiaryPhoto,
   prepareAndUploadDiaryVideo,
   validateDiaryVideoLocal
-} = require('../../utils/diaryImage');
+} = require('../utils/diaryImage');
 const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
 function getTodayDateKey() {

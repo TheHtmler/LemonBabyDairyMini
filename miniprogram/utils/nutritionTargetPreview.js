@@ -122,8 +122,8 @@ function buildCalorieNote({ actual, draft, target, includeCalories }) {
     unit: 'kcal'
   });
   const relation = row.overAmount > 0
-    ? `今日超出 ${row.overAmount} kcal`
-    : `今日还差 ${row.remaining} kcal`;
+    ? `超出 ${row.overAmount} kcal`
+    : `还差 ${row.remaining} kcal`;
 
   return {
     visible: true,
@@ -151,7 +151,7 @@ function buildEntryTargetPreview({
     buildGoalRow({
       key: 'naturalProtein',
       label: '天然蛋白',
-      displayLabel: '今日天然蛋白',
+      displayLabel: '天然蛋白',
       tone: 'nat',
       actual: afterSave.naturalProtein,
       draft: draft.naturalProtein,
@@ -161,7 +161,7 @@ function buildEntryTargetPreview({
     buildGoalRow({
       key: 'specialProtein',
       label: '特殊蛋白',
-      displayLabel: '今日特殊蛋白',
+      displayLabel: '特殊蛋白',
       tone: 'spe',
       actual: afterSave.specialProtein,
       draft: draft.specialProtein,

@@ -215,6 +215,228 @@ function deriveProteinSource(nutrition = {}) {
   return 'natural';
 }
 
+/**
+ * 按原料汇总优质/普通天然蛋白（与日汇总口径一致：仅统计 naturalProtein）
+ * proteinQuality 可在原料本身、foodSnapshot 或 food 上
+ */
+function summarizePremiumProteinFromIngredients(ingredients = []) {
+  let premiumProtein = 0;
+  let regularProtein = 0;
+  (ingredients || []).forEach((item = {}) => {
+    const natural = Number(item.nutrition?.naturalProtein) || 0;
+    if (!(natural > 0)) return;
+    const quality = item.proteinQuality
+      || item.foodSnapshot?.proteinQuality
+      || item.food?.proteinQuality
+      || '';
+    if (quality === 'premium') {
+      premiumProtein += natural;
+    } else {
+      regularProtein += natural;
+    }
+  });
+  premiumProtein = roundNumber(premiumProtein, 2);
+  regularProtein = roundNumber(regularProtein, 2);
+  const naturalProtein = roundNumber(premiumProtein + regularProtein, 2);
+  const premiumRatio = naturalProtein > 0
+    ? Math.round((premiumProtein / naturalProtein) * 100)
+    : 0;
+  return {
+    premiumProtein,
+    regularProtein,
+    naturalProtein,
+    premiumRatio
+  };
+}
+
+function scalePremiumProteinSummary(summary = {}, factor) {
+  const scale = Number(factor);
+  const safeFactor = Number.isFinite(scale) ? scale : 0;
+  const premiumProtein = roundNumber((Number(summary.premiumProtein) || 0) * safeFactor, 2);
+  const regularProtein = roundNumber((Number(summary.regularProtein) || 0) * safeFactor, 2);
+  const naturalProtein = roundNumber(premiumProtein + regularProtein, 2);
+  const premiumRatio = naturalProtein > 0
+    ? Math.round((premiumProtein / naturalProtein) * 100)
+    : 0;
+  return {
+    premiumProtein,
+    regularProtein,
+    naturalProtein,
+    premiumRatio
+  };
+}
+
+/** 日汇总口径：优质 = 奶类天然蛋白（全算优质）+ 食物 premium 天然蛋白 */
+function resolveDayPremiumProteinBase(summary = {}) {
+  const milkNatural = Number(summary.milk?.naturalProtein) || 0;
+  const foodNatural = Number(summary.food?.naturalProtein) || 0;
+  const foodPremium = Number(summary.food?.premiumProtein) || 0;
+  return {
+    naturalProtein: roundNumber(milkNatural + foodNatural, 2),
+    premiumProtein: roundNumber(milkNatural + foodPremium, 2)
+  };
+}
+
+function isRecipeIntakeRecord(record = {}) {
+  const recipeSource = record.recipeSource;
+  const hasRecipeId = !!(
+    recipeSource
+    && typeof recipeSource === 'object'
+    && String(recipeSource.recipeId || '').trim()
+  );
+  const hasIngredients = !!(
+    recipeSource
+    && typeof recipeSource === 'object'
+    && Array.isArray(recipeSource.ingredientsSnapshot)
+    && recipeSource.ingredientsSnapshot.length > 0
+  );
+  return record.sourceType === 'recipe' || hasRecipeId || hasIngredients;
+}
+
+/**
+ * 单条食物摄入的优质/普通天然蛋白拆分。
+ * 食谱：按原料快照的优质占比，分摊到本条已摄入的 naturalProtein（避免整道菜被当成单一 quality）。
+ * 普通食物：premium → 全算优质，否则算普通。
+ */
+function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) {
+  const naturalProtein = Math.max(
+    0,
+    Number(
+      naturalProteinInput !== undefined && naturalProteinInput !== null && naturalProteinInput !== ''
+        ? naturalProteinInput
+        : (
+          record.naturalProtein !== undefined
+          && record.naturalProtein !== null
+          && record.naturalProtein !== ''
+            ? record.naturalProtein
+            : record.nutrition?.naturalProtein
+        )
+    ) || 0
+  );
+
+  if (!(naturalProtein > 0)) {
+    return { premiumProtein: 0, regularProtein: 0 };
+  }
+
+  if (isRecipeIntakeRecord(record)) {
+    const recipeSource = record.recipeSource || {};
+    const ingredients = Array.isArray(recipeSource.ingredientsSnapshot)
+      ? recipeSource.ingredientsSnapshot
+      : (Array.isArray(record.ingredientsSnapshot) ? record.ingredientsSnapshot : []);
+    if (ingredients.length) {
+      const batch = summarizePremiumProteinFromIngredients(ingredients);
+      const batchNatural = Number(batch.naturalProtein) || 0;
+      if (batchNatural > 0) {
+        const premiumProtein = roundNumber(
+          naturalProtein * (Number(batch.premiumProtein) || 0) / batchNatural,
+          2
+        );
+        const regularProtein = roundNumber(Math.max(0, naturalProtein - premiumProtein), 2);
+        return { premiumProtein, regularProtein };
+      }
+    }
+  }
+
+  const quality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
+  if (quality === 'premium') {
+    return {
+      premiumProtein: roundNumber(naturalProtein, 2),
+      regularProtein: 0
+    };
+  }
+  return {
+    premiumProtein: 0,
+    regularProtein: roundNumber(naturalProtein, 2)
+  };
+}
+
+function resolveMealItemNaturalProtein(item = {}) {
+  if (item.naturalProtein !== undefined && item.naturalProtein !== null && item.naturalProtein !== '') {
+    return Number(item.naturalProtein) || 0;
+  }
+  return Number(item.nutrition?.naturalProtein) || 0;
+}
+
+/** 本顿条目对优质/天然蛋白的贡献（食谱按原料 quality × 摄入比例） */
+function summarizeMealItemsPremiumProtein(items = []) {
+  let premiumProtein = 0;
+  let naturalProtein = 0;
+  (items || []).forEach((item = {}) => {
+    const natural = resolveMealItemNaturalProtein(item);
+    if (!(natural > 0)) return;
+    naturalProtein += natural;
+
+    const isRecipe = item.sourceType === 'recipe' || !!item.recipeId || !!item.recipeSource;
+    if (isRecipe) {
+      const ingredients = item.ingredientsSnapshot
+        || item.recipeSource?.ingredientsSnapshot
+        || [];
+      const batchWeight = Number(
+        item.batchWeightG
+        || item.yieldWeightG
+        || item.recipeSource?.batchWeightG
+        || item.recipeSource?.yieldWeightG
+      ) || 0;
+      const eaten = Number(item.quantity) || 0;
+      if (ingredients.length && batchWeight > 0 && eaten > 0) {
+        const batchPremium = summarizePremiumProteinFromIngredients(ingredients);
+        premiumProtein += (batchPremium.premiumProtein * eaten) / batchWeight;
+      }
+      return;
+    }
+
+    const quality = item.proteinQuality || item.foodSnapshot?.proteinQuality || '';
+    if (quality === 'premium') {
+      premiumProtein += natural;
+    }
+  });
+  return {
+    premiumProtein: roundNumber(premiumProtein, 2),
+    naturalProtein: roundNumber(naturalProtein, 2)
+  };
+}
+
+/**
+ * 当天已摄入基底（可含本顿未保存草稿调整）+ 本次摄入 → 综合优质占比
+ */
+function combinePremiumProteinWithDay(dayBase = {}, intakePremiumProtein = 0, intakeNaturalProtein = 0) {
+  const dayNatural = Math.max(0, Number(dayBase.naturalProtein) || 0);
+  const dayPremium = Math.max(0, Number(dayBase.premiumProtein) || 0);
+  const addPremium = Math.max(0, Number(intakePremiumProtein) || 0);
+  const addNatural = Math.max(0, Number(intakeNaturalProtein) || 0);
+  const naturalProtein = roundNumber(dayNatural + addNatural, 2);
+  const premiumProtein = roundNumber(dayPremium + addPremium, 2);
+  const premiumRatio = naturalProtein > 0
+    ? Math.round((premiumProtein / naturalProtein) * 100)
+    : 0;
+  return {
+    naturalProtein,
+    premiumProtein,
+    premiumRatio
+  };
+}
+
+function normalizeSearchText(value = '') {
+  return String(value || '').trim().toLowerCase();
+}
+
+function matchRecipeBySearch(recipe = {}, query = '') {
+  const keyword = normalizeSearchText(query);
+  if (!keyword) return true;
+  const haystack = [
+    recipe.name,
+    recipe.notes,
+    ...(Array.isArray(recipe.ingredients)
+      ? recipe.ingredients.map((item) => item?.foodName || item?.foodSnapshot?.name || '')
+      : []),
+    recipe.ingredientNames
+  ]
+    .map((part) => normalizeSearchText(part))
+    .filter(Boolean)
+    .join(' ');
+  return haystack.includes(keyword);
+}
+
 function summarizeRecipeNutrition(ingredients = [], yieldWeightG) {
   const totalNutrition = (ingredients || []).reduce(
     (sum, ingredient) => addNutrition(sum, ingredient && ingredient.nutrition),
@@ -257,6 +479,14 @@ module.exports = {
   buildIngredientNutrition,
   buildIngredientNutritionPreservingSplit,
   summarizeRecipeNutrition,
+  summarizePremiumProteinFromIngredients,
+  scalePremiumProteinSummary,
+  resolveDayPremiumProteinBase,
+  isRecipeIntakeRecord,
+  resolveFoodIntakePremiumProteinSplit,
+  summarizeMealItemsPremiumProtein,
+  combinePremiumProteinWithDay,
+  matchRecipeBySearch,
   shouldWarnYieldMismatch,
   deriveProteinSource,
   roundNumber,

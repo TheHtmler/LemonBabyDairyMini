@@ -1,52 +1,111 @@
-<view class="page">
-  <view class="loading-state" wx:if="{{loading}}">正在准备食谱...</view>
+<view class="page {{!loading && mode === 'list' ? 'page-list' : ''}}">
+  <view class="loading-state" wx:if="{{loading}}">正在加载食谱...</view>
 
   <block wx:if="{{!loading && mode === 'list'}}">
-    <view class="list-hero">
-      <view>
-        <text class="eyebrow">LEMON KITCHEN</text>
-        <text class="hero-title">宝宝的食谱夹</text>
-        <text class="hero-copy">先定好一道菜由哪些原料组成；记本顿时再填本次实际用量。</text>
-      </view>
-      <view class="lemon-mark">🍋</view>
-    </view>
-
-    <view class="empty-state" wx:if="{{recipes.length === 0}}">
-      <text class="empty-icon">🥣</text>
-      <text class="empty-title">还没有食谱</text>
-      <text class="empty-copy">把常做的菜存成原料组合，记录时再填当次用量和宝宝吃了多少。</text>
-    </view>
-
-    <view class="recipe-list" wx:else>
-      <view
-        class="recipe-card"
-        wx:for="{{recipes}}"
-        wx:key="_id"
-        data-id="{{item._id}}"
-        bindtap="onRecipeTap"
-      >
-        <view class="recipe-card-head">
-          <text class="recipe-name">{{item.name}}</text>
-          <text class="recipe-arrow">›</text>
+    <view class="list-shell">
+      <view class="list-sticky">
+        <view class="manage-hero">
+          <view class="manage-hero-copy">
+            <text class="manage-kicker">维护</text>
+            <text class="manage-title">食谱管理</text>
+            <text class="manage-desc">保存常做菜的原料组合；记本顿时再填用量。</text>
+          </view>
+          <view class="manage-hero-stat" wx:if="{{recipeCount > 0}}">
+            <text class="manage-stat-num">{{recipeCount}}</text>
+            <text class="manage-stat-label">道食谱</text>
+          </view>
         </view>
-        <text class="recipe-ingredients">{{item.ingredientCount}} 种原料 · {{item.ingredientNames || '未命名原料'}}</text>
-        <text class="last-used">最近使用 · {{item.lastUsedText}}</text>
-      </view>
-    </view>
 
-    <view class="footer-actions">
-      <button class="primary-btn" bindtap="openCreate">＋ 新建食谱</button>
+        <view class="search-panel" wx:if="{{recipeCount > 0}}">
+          <view class="search-input-wrap">
+            <text class="search-icon">搜索</text>
+            <input
+              class="search-input"
+              type="text"
+              value="{{searchQuery}}"
+              placeholder="菜名或原料，如番茄、鸡蛋"
+              confirm-type="search"
+              bindinput="onSearchInput"
+            />
+            <text class="search-clear" wx:if="{{searchQuery}}" bindtap="clearSearch">清空</text>
+          </view>
+          <view class="search-summary">
+            <text wx:if="{{searchQuery}}">找到 {{filteredCount}} 道</text>
+            <text wx:else>共 {{recipeCount}} 道 · 点条目可查看编辑</text>
+          </view>
+        </view>
+      </view>
+
+      <scroll-view class="list-scroll" scroll-y="true" enhanced show-scrollbar="{{false}}">
+        <view class="empty-card" wx:if="{{recipeCount === 0}}">
+          <text class="empty-emoji">🍋</text>
+          <text class="empty-title">还没有食谱</text>
+          <text class="empty-desc">先存一道常做的菜，下次记本顿就能直接选用。</text>
+        </view>
+
+        <view class="empty-card" wx:elif="{{filteredCount === 0}}">
+          <text class="empty-title">没有匹配结果</text>
+          <text class="empty-desc">可以试试原料名，比如「鸡蛋」。</text>
+        </view>
+
+        <view class="catalog-list" wx:else>
+          <view
+            class="catalog-item"
+            wx:for="{{filteredRecipes}}"
+            wx:key="_id"
+            data-id="{{item._id}}"
+            hover-class="catalog-item-hover"
+            hover-stay-time="80"
+            bindtap="onRecipeTap"
+          >
+            <view class="catalog-head">
+              <text class="catalog-name">{{item.name}}</text>
+              <view class="catalog-actions">
+                <text
+                  class="catalog-edit"
+                  data-id="{{item._id}}"
+                  catchtap="onEditTap"
+                >编辑</text>
+                <text
+                  class="catalog-delete"
+                  data-id="{{item._id}}"
+                  catchtap="onDeleteTap"
+                >删除</text>
+              </view>
+            </view>
+            <view class="catalog-tags" wx:if="{{item.ingredientTags.length}}">
+              <text
+                class="catalog-tag"
+                wx:for="{{item.ingredientTags}}"
+                wx:for-item="tag"
+                wx:key="*this"
+              >{{tag}}</text>
+              <text class="catalog-tag more" wx:if="{{item.moreIngredientCount > 0}}">+{{item.moreIngredientCount}}</text>
+            </view>
+            <text class="catalog-tags-empty" wx:else>还没加原料</text>
+            <view class="catalog-foot">
+              <text class="catalog-count">{{item.ingredientCount}} 种原料</text>
+              <text class="catalog-time">最近 · {{item.lastUsedText}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="list-scroll-pad"></view>
+      </scroll-view>
+
+      <view class="footer-actions footer-dock">
+        <button class="primary-btn" bindtap="openCreate">新建食谱</button>
+      </view>
     </view>
   </block>
 
   <block wx:if="{{!loading && mode === 'edit'}}">
     <scroll-view class="form-scroll" scroll-y="true" show-scrollbar="{{false}}">
-      <view class="section-card">
-        <view class="section-heading">
-          <text class="section-index">A</text>
+      <view class="soft-card">
+        <view class="soft-card-head">
+          <text class="soft-emoji">✏️</text>
           <view>
-            <text class="section-title">基本信息</text>
-            <text class="section-subtitle">给这道菜起一个好记的名字</text>
+            <text class="soft-title">基本信息</text>
+            <text class="soft-sub">给这道菜起个好记的名字</text>
           </view>
         </view>
         <text class="field-label">食谱名称</text>
@@ -62,42 +121,85 @@
           class="notes-area"
           value="{{form.notes}}"
           maxlength="200"
-          placeholder="记录口味、适合月龄等"
+          placeholder="口味、适合月龄等"
           auto-height
           bindinput="onNotesInput"
         />
       </view>
 
-      <view class="section-card">
-        <view class="section-heading">
-          <text class="section-index">B</text>
-          <view>
-            <text class="section-title">原料组合</text>
-            <text class="section-subtitle">这里只选原料；用量在记本顿时填写</text>
+      <view class="soft-card">
+        <view class="soft-card-head">
+          <text class="soft-emoji">🥕</text>
+          <view class="soft-card-head-main">
+            <text class="soft-title">原料组合</text>
+            <text class="soft-sub">可预填默认份量；记本顿时仍可改</text>
           </view>
+          <text class="pill" wx:if="{{form.ingredients.length}}">{{form.ingredients.length}} 种</text>
+        </view>
+
+        <view class="add-ingredient-bar" bindtap="addIngredients">
+          <text class="add-ingredient-plus">+</text>
+          <text class="add-ingredient-text">添加原料</text>
         </view>
 
         <view class="ingredient-empty" wx:if="{{form.ingredients.length === 0}}">
-          从食物库挑选这道菜会用到的原料
+          还没有原料，点上面添加
         </view>
 
-        <view
-          class="ingredient-row {{item.unavailable ? 'unavailable' : ''}}"
-          wx:for="{{form.ingredients}}"
-          wx:key="foodId"
-          wx:for-index="ingredientIndex"
-        >
-          <view class="ingredient-title-row">
-            <view class="ingredient-title-main">
-              <text class="ingredient-name">{{item.foodName}}</text>
-              <text class="ingredient-unit">单位 {{item.unit}}</text>
-              <text class="snapshot-warning" wx:if="{{item.unavailable}}">{{item.unavailableText}}</text>
+        <view class="ingredient-edit-list" wx:else>
+          <view
+            class="ingredient-edit-row {{item.unavailable ? 'warn' : ''}}"
+            wx:for="{{form.ingredients}}"
+            wx:key="foodId"
+            wx:for-index="ingredientIndex"
+          >
+            <view class="ingredient-edit-line">
+              <text class="edit-tag-name">{{item.foodName}}</text>
+              <input
+                class="default-qty-input"
+                type="digit"
+                value="{{item.quantity}}"
+                placeholder="选填"
+                placeholder-class="default-qty-placeholder"
+                data-index="{{ingredientIndex}}"
+                bindinput="onDefaultQuantityInput"
+                bindblur="onDefaultQuantityBlur"
+                confirm-type="done"
+              />
+              <text class="unit-text">{{item.unit}}</text>
+              <text class="remove-x" data-index="{{ingredientIndex}}" bindtap="removeIngredient">×</text>
             </view>
-            <text class="remove-link" data-index="{{ingredientIndex}}" bindtap="removeIngredient">删除</text>
+            <text class="snapshot-warning" wx:if="{{item.unavailable}}">{{item.unavailableText}}</text>
           </view>
         </view>
 
-        <button class="outline-btn" bindtap="addIngredients">＋ 添加原料</button>
+        <view class="default-preview" wx:if="{{form.ingredients.length}}">
+          <view class="default-preview-head">
+            <text class="default-preview-title">当前食谱营养成份</text>
+            <text class="default-preview-meta" wx:if="{{!defaultPreview.hasDefaults}}">填默认份量后可预览</text>
+          </view>
+          <view class="default-preview-grid" wx:if="{{defaultPreview.hasDefaults}}">
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.caloriesText}}</text>
+              <text class="default-preview-label">热量</text>
+            </view>
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.proteinText}}</text>
+              <text class="default-preview-label">蛋白</text>
+            </view>
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.carbsText}}</text>
+              <text class="default-preview-label">碳水</text>
+            </view>
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.fatText}}</text>
+              <text class="default-preview-label">脂肪</text>
+            </view>
+          </view>
+          <view class="default-preview-premium" wx:if="{{defaultPreview.hasDefaults && defaultPreview.showPremiumProtein}}">
+            <text class="default-preview-premium-text">含优质蛋白 {{defaultPreview.premiumProteinText}}g</text>
+          </view>
+        </view>
       </view>
 
       <view class="scroll-bottom-space"></view>
@@ -105,40 +207,75 @@
 
     <view class="footer-actions dual-actions">
       <button class="secondary-btn" bindtap="backToList">取消</button>
-      <button class="primary-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="saveRecipe">保存食谱</button>
+      <button class="primary-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="saveRecipe">保存</button>
     </view>
   </block>
 
   <block wx:if="{{!loading && mode === 'detail' && recipe}}">
     <scroll-view class="detail-scroll" scroll-y="true" show-scrollbar="{{false}}">
-      <view class="detail-hero">
-        <text class="detail-kicker">原料组合</text>
-        <text class="detail-title">{{recipe.name}}</text>
-        <text class="detail-notes" wx:if="{{recipe.notes}}">{{recipe.notes}}</text>
-      </view>
-
-      <view class="section-card">
-        <text class="section-title">包含原料</text>
-        <view
-          class="detail-ingredient"
-          wx:for="{{recipe.ingredients}}"
-          wx:key="foodId"
-        >
-          <view>
-            <text class="detail-ingredient-name">{{item.foodName}}</text>
-            <text class="snapshot-warning" wx:if="{{item.unavailable}}">{{item.unavailableText}}</text>
-          </view>
-          <text class="detail-ingredient-meta">{{item.unit}}</text>
+      <view class="intro-card detail-intro">
+        <view class="intro-icon">🍽️</view>
+        <view class="intro-copy">
+          <text class="intro-title">{{recipe.name}}</text>
+          <text class="intro-desc" wx:if="{{recipe.notes}}">{{recipe.notes}}</text>
+          <text class="intro-desc" wx:else>原料组合详情</text>
         </view>
       </view>
 
-      <text class="delete-link" bindtap="deleteRecipe">删除这份食谱</text>
+      <view class="soft-card">
+        <text class="soft-title">包含原料</text>
+        <view class="detail-list">
+          <view
+            class="detail-item"
+            wx:for="{{recipe.ingredients}}"
+            wx:key="foodId"
+          >
+            <text class="detail-dot">•</text>
+            <view class="detail-main">
+              <text class="detail-name">{{item.foodName}}</text>
+              <text class="snapshot-warning" wx:if="{{item.unavailable}}">{{item.unavailableText}}</text>
+            </view>
+            <text class="detail-unit">{{item.quantityDisplay || item.unit}}</text>
+          </view>
+        </view>
+        <view class="default-preview detail-preview" wx:if="{{defaultPreview.hasDefaults}}">
+          <view class="default-preview-head">
+            <text class="default-preview-title">当前食谱营养成份</text>
+          </view>
+          <view class="default-preview-grid">
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.caloriesText}}</text>
+              <text class="default-preview-label">热量</text>
+            </view>
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.proteinText}}</text>
+              <text class="default-preview-label">蛋白</text>
+            </view>
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.carbsText}}</text>
+              <text class="default-preview-label">碳水</text>
+            </view>
+            <view class="default-preview-cell">
+              <text class="default-preview-num">{{defaultPreview.fatText}}</text>
+              <text class="default-preview-label">脂肪</text>
+            </view>
+          </view>
+          <view class="default-preview-premium" wx:if="{{defaultPreview.showPremiumProtein}}">
+            <text class="default-preview-premium-text">含优质蛋白 {{defaultPreview.premiumProteinText}}g</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="delete-panel">
+        <text class="delete-link" bindtap="deleteRecipe">删除这份食谱</text>
+        <text class="delete-hint">删除后不再出现在选用列表；已保存的喂养记录仍按当时快照保留。</text>
+      </view>
       <view class="scroll-bottom-space"></view>
     </scroll-view>
 
     <view class="footer-actions dual-actions">
-      <button class="secondary-btn" bindtap="backToList">返回列表</button>
-      <button class="primary-btn" bindtap="editRecipe">编辑食谱</button>
+      <button class="secondary-btn" bindtap="backToList">返回</button>
+      <button class="primary-btn" bindtap="editRecipe">编辑</button>
     </view>
   </block>
 </view>

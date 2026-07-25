@@ -1,3 +1,34 @@
+const {
+  resolveFoodIntakePremiumProteinSplit
+} = require('../../utils/recipeNutritionUtils');
+
+function resolveSourceTag(record = {}) {
+  const recipeSource = record.recipeSource;
+  const hasRecipeSource = !!(
+    recipeSource
+    && typeof recipeSource === 'object'
+    && String(recipeSource.recipeId || '').trim()
+  );
+  if (record.isRecipe || record.sourceType === 'recipe' || hasRecipeSource) {
+    return { sourceTag: '食谱', sourceTagClass: 'recipe' };
+  }
+  const label = String(record.sourceLabel || '').trim();
+  if (label === '我的') {
+    return { sourceTag: '我的', sourceTagClass: 'mine' };
+  }
+  if (label === '系统') {
+    return { sourceTag: '系统', sourceTagClass: 'system' };
+  }
+  return { sourceTag: '', sourceTagClass: '' };
+}
+
+function resolveNaturalProtein(record = {}) {
+  if (record.naturalProtein !== undefined && record.naturalProtein !== null && record.naturalProtein !== '') {
+    return Number(record.naturalProtein) || 0;
+  }
+  return Number(record.nutrition?.naturalProtein) || 0;
+}
+
 Component({
   properties: {
     record: {
@@ -8,13 +39,32 @@ Component({
     showTime: {
       type: Boolean,
       value: true
+    },
+    headerAction: {
+      type: String,
+      value: ''
+    },
+    actionGroupId: {
+      type: String,
+      value: ''
+    },
+    actionItemId: {
+      type: String,
+      value: ''
+    },
+    // default | meal（本顿展开列表更轻量）
+    variant: {
+      type: String,
+      value: 'default'
     }
   },
   data: {
     timeText: '--:--',
     nameText: '',
     quantityText: '',
-    metricItems: []
+    metricItems: [],
+    sourceTag: '',
+    sourceTagClass: ''
   },
   observers: {
     record: function(record) {
@@ -36,21 +86,35 @@ Component({
       const quantity = record.quantity || 0;
       const unit = record.unit || 'g';
       const nutrition = record.nutrition || {};
+      const { sourceTag, sourceTagClass } = resolveSourceTag(record);
+      const naturalProtein = resolveNaturalProtein(record);
+      const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
+      const premiumProtein = Number(qualitySplit.premiumProtein) || 0;
 
+      const proteinText = `蛋白 ${this.formatProteinText(nutrition.protein)}g`;
       const metricItems = [
-        `热量 ${nutrition.calories || 0} kcal`,
-        `蛋白 ${this.formatProteinText(nutrition.protein)} g`,
-        `碳水 ${nutrition.carbs || 0} g`,
-        `脂肪 ${nutrition.fat || 0} g`,
-        `膳纤 ${nutrition.fiber || 0} g`,
-        `钠 ${nutrition.sodium || 0} mg`
+        `${nutrition.calories || 0} kcal`,
+        premiumProtein > 0
+          ? `${proteinText}（含优质蛋白 ${this.formatProteinText(premiumProtein)}g）`
+          : proteinText,
+        `碳水 ${nutrition.carbs || 0}g`,
+        `脂肪 ${nutrition.fat || 0}g`
       ];
 
       this.setData({
         timeText,
         nameText,
         quantityText: `${quantity}${unit}`,
-        metricItems
+        metricItems,
+        sourceTag,
+        sourceTagClass
+      });
+    },
+
+    onHeaderActionTap() {
+      this.triggerEvent('headeraction', {
+        groupId: this.properties.actionGroupId || '',
+        itemId: this.properties.actionItemId || ''
       });
     }
   }
