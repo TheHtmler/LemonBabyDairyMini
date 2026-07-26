@@ -29,6 +29,14 @@ const {
   invalidateReminderSubscriptions,
   rescheduleReminderSubscriptions
 } = require('../../utils/reminderSubscriptionPrompt');
+const {
+  buildTimelineTabBar,
+  loadTimelineTabsPreference,
+  saveTimelineTabsPreference,
+  normalizeTimelineTabsPreference,
+  moveOrderedTab,
+  togglePinnedTab
+} = require('../../utils/timelineTabsPreference');
 
 const app = getApp();
 
@@ -85,17 +93,6 @@ function buildTrendStats(metricKey, weeklyTrend = {}) {
   ];
 }
 
-// 今日时间轴分类切换
-const TIMELINE_TABS = [
-  { key: 'all', label: '全部' },
-  { key: 'milk', label: '喂奶' },
-  { key: 'food', label: '辅食' },
-  { key: 'med', label: '用药' },
-  { key: 'treatment', label: '治疗' },
-  { key: 'bowel', label: '大小便' },
-  { key: 'water', label: '喝水' },
-  { key: 'sleep', label: '睡眠' }
-];
 const TIMELINE_DISPLAY_LIMIT = 12;
 // 把 "HH:MM" 拼到「今天」得到一个 Date（用于打卡记录的 actualDateTime）
 function timeStrToToday(timeStr) {
@@ -232,8 +229,15 @@ Page({
     // 时间轴 & 趋势
     timeline: [],
     hasTimeline: false,
-    timelineTabs: TIMELINE_TABS,
+    timelineTabPrefs: loadTimelineTabsPreference(),
+    timelineTabs: [],
+    timelineMoreTabs: [],
+    timelineShowMore: false,
     timelineCategory: 'all',
+    showTimelineMoreSheet: false,
+    showTimelineCustomizeSheet: false,
+    customizeTimelineDraftPrefs: null,
+    customizeTimelineTabs: [],
     trendMetrics: TREND_METRICS,
     trendMetric: 'calorie',
     trendStats: [],
@@ -274,7 +278,20 @@ Page({
       isHomeBooting: this._skipHomeBoot ? false : true,
       homeDataReady: false
     });
+    this.applyTimelineTabBar(loadTimelineTabsPreference(), 'all');
     this.initializePage();
+  },
+
+  applyTimelineTabBar(prefs, activeTab = this.data.timelineCategory) {
+    const bar = buildTimelineTabBar(prefs, activeTab);
+    this.setData({
+      timelineTabPrefs: bar.prefs,
+      timelineTabs: bar.visibleTabs,
+      timelineMoreTabs: bar.moreTabs,
+      timelineShowMore: bar.showMoreEntry,
+      timelineCategory: bar.activeTab
+    });
+    return bar;
   },
 
   async onShow() {
@@ -710,10 +727,83 @@ Page({
   switchTimelineCategory(e) {
     const category = e.currentTarget.dataset.category;
     if (!category || category === this.data.timelineCategory) return;
+    this.applyTimelineTabBar(this.data.timelineTabPrefs, category);
     this.setData({
-      timelineCategory: category,
-      timeline: filterTimeline(this.timelineAll || [], category)
+      timeline: filterTimeline(this.timelineAll || [], category),
+      showTimelineMoreSheet: false
     });
+  },
+
+  openTimelineMoreSheet() {
+    if (!this.data.timelineShowMore && !(this.data.timelineMoreTabs || []).length) {
+      this.openTimelineCustomizeSheet();
+      return;
+    }
+    this.setData({ showTimelineMoreSheet: true });
+  },
+
+  closeTimelineMoreSheet() {
+    this.setData({ showTimelineMoreSheet: false });
+  },
+
+  openTimelineCustomizeSheet() {
+    const prefs = normalizeTimelineTabsPreference(this.data.timelineTabPrefs);
+    const bar = buildTimelineTabBar(prefs, this.data.timelineCategory);
+    this.setData({
+      showTimelineMoreSheet: false,
+      showTimelineCustomizeSheet: true,
+      customizeTimelineDraftPrefs: bar.prefs,
+      customizeTimelineTabs: bar.customizeTabs
+    });
+  },
+
+  closeTimelineCustomizeSheet() {
+    this.setData({
+      showTimelineCustomizeSheet: false,
+      customizeTimelineDraftPrefs: null
+    });
+  },
+
+  refreshTimelineCustomizeLists(prefs) {
+    const bar = buildTimelineTabBar(prefs, this.data.timelineCategory);
+    this.setData({
+      customizeTimelineDraftPrefs: bar.prefs,
+      customizeTimelineTabs: bar.customizeTabs
+    });
+  },
+
+  onMoveTimelineCustomizeTab(e) {
+    const key = e.currentTarget.dataset.key;
+    const dir = e.currentTarget.dataset.dir;
+    const offset = dir === 'up' ? -1 : (dir === 'down' ? 1 : 0);
+    if (!key || !offset) return;
+    const next = moveOrderedTab(this.data.customizeTimelineDraftPrefs || this.data.timelineTabPrefs, key, offset);
+    this.refreshTimelineCustomizeLists(next);
+  },
+
+  onToggleTimelinePinnedTab(e) {
+    const key = e.currentTarget.dataset.key;
+    if (!key) return;
+    const next = togglePinnedTab(this.data.customizeTimelineDraftPrefs || this.data.timelineTabPrefs, key);
+    this.refreshTimelineCustomizeLists(next);
+  },
+
+  saveTimelineTabCustomize() {
+    const saved = saveTimelineTabsPreference(
+      this.data.customizeTimelineDraftPrefs || this.data.timelineTabPrefs
+    );
+    this.applyTimelineTabBar(saved, this.data.timelineCategory);
+    this.setData({
+      showTimelineCustomizeSheet: false,
+      customizeTimelineDraftPrefs: null,
+      timeline: filterTimeline(this.timelineAll || [], this.data.timelineCategory)
+    });
+    wx.showToast({ title: '已保存本地设置', icon: 'success' });
+  },
+
+  resetTimelineTabCustomize() {
+    this.refreshTimelineCustomizeLists(normalizeTimelineTabsPreference({}));
+    wx.showToast({ title: '已恢复默认，保存后生效', icon: 'none' });
   },
 
   switchTrendMetric(e) {

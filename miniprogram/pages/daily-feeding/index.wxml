@@ -1,4 +1,4 @@
-<page-meta page-style="{{showWeightModal || showHeightModal || medPanel.visible || targetSettingsModalVisible || modals.medication ? 'overflow: hidden;' : ''}}" />
+<page-meta page-style="{{showWeightModal || showHeightModal || medPanel.visible || targetSettingsModalVisible || modals.medication || showTimelineMoreSheet || showTimelineCustomizeSheet ? 'overflow: hidden;' : ''}}" />
 <view class="home {{animReady ? 'anim-on' : ''}} {{homeDataReady ? 'data-ready' : 'data-pending'}}">
   <view class="home-boot-mask" wx:if="{{isHomeBooting}}">
     <view class="home-boot-card">
@@ -302,9 +302,23 @@
       <text class="card-title">今日时间轴</text>
       <text class="card-more" catchtap="goToDataRecords">全部 ›</text>
     </view>
-    <scroll-view class="trend-tabs" scroll-x="true" enhanced="true" show-scrollbar="false">
-      <text class="ttab {{timelineCategory === item.key ? 'on' : ''}}" wx:for="{{timelineTabs}}" wx:key="key" data-category="{{item.key}}" catchtap="switchTimelineCategory">{{item.label}}</text>
-    </scroll-view>
+    <view class="timeline-tabs-row">
+      <view class="timeline-tabs">
+        <text
+          class="ttab {{timelineCategory === item.key ? 'on' : ''}}"
+          wx:for="{{timelineTabs}}"
+          wx:key="key"
+          data-category="{{item.key}}"
+          catchtap="switchTimelineCategory"
+        >{{item.label}}</text>
+        <text
+          class="ttab more"
+          wx:if="{{timelineShowMore}}"
+          catchtap="openTimelineMoreSheet"
+        >更多</text>
+      </view>
+      <text class="timeline-tabs-gear" catchtap="openTimelineCustomizeSheet">设置</text>
+    </view>
     <scroll-view class="tl" scroll-y="true" enhanced="true" show-scrollbar="false" wx:if="{{timeline.length > 0}}">
       <view class="tl-entry" wx:for="{{timeline}}" wx:key="index">
         <view class="tl-item">
@@ -446,6 +460,56 @@
       </view>
 
       <view class="mp-close" catchtap="closeMedPanel">关闭</view>
+    </view>
+  </view>
+
+  <!-- 时间轴「更多」分类 -->
+  <view class="tl-sheet-mask" wx:if="{{showTimelineMoreSheet}}" catchtap="closeTimelineMoreSheet"></view>
+  <view class="tl-sheet {{showTimelineMoreSheet ? 'visible' : ''}}" wx:if="{{showTimelineMoreSheet}}">
+    <view class="tl-sheet-handle"></view>
+    <view class="tl-sheet-head">
+      <text class="tl-sheet-title">更多分类</text>
+      <text class="tl-sheet-action" catchtap="openTimelineCustomizeSheet">调整顺序</text>
+    </view>
+    <view class="tl-more-list">
+      <view
+        class="tl-more-item {{timelineCategory === item.key ? 'active' : ''}}"
+        wx:for="{{timelineMoreTabs}}"
+        wx:key="key"
+        data-category="{{item.key}}"
+        catchtap="switchTimelineCategory"
+      >
+        <text>{{item.label}}</text>
+        <text class="tl-more-check" wx:if="{{timelineCategory === item.key}}">当前</text>
+      </view>
+      <view class="tl-more-empty" wx:if="{{!timelineMoreTabs.length}}">暂无更多分类，可在设置里调整常驻项</view>
+    </view>
+  </view>
+
+  <!-- 时间轴分类自定义 -->
+  <view class="tl-sheet-mask" wx:if="{{showTimelineCustomizeSheet}}" catchtap="closeTimelineCustomizeSheet"></view>
+  <view class="tl-sheet customize {{showTimelineCustomizeSheet ? 'visible' : ''}}" wx:if="{{showTimelineCustomizeSheet}}">
+    <view class="tl-sheet-handle"></view>
+    <view class="tl-sheet-head">
+      <text class="tl-sheet-title">时间轴分类设置</text>
+      <text class="tl-sheet-action muted" catchtap="resetTimelineTabCustomize">恢复默认</text>
+    </view>
+    <text class="tl-sheet-hint">「全部」固定在首位。可调整常驻分类与顺序，仅保存在本机。</text>
+    <scroll-view class="tl-customize-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="tl-customize-item" wx:for="{{customizeTimelineTabs}}" wx:key="key">
+        <view class="tl-customize-main">
+          <text class="tl-customize-label">{{item.label}}</text>
+          <text class="tl-customize-tag {{item.pinned ? 'pin' : ''}}">{{item.pinned ? '常驻' : '更多'}}</text>
+        </view>
+        <view class="tl-customize-actions">
+          <text class="tl-mini-btn" data-key="{{item.key}}" catchtap="onToggleTimelinePinnedTab">{{item.pinned ? '移入更多' : '设为常驻'}}</text>
+          <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="up" catchtap="onMoveTimelineCustomizeTab">上移</text>
+          <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="down" catchtap="onMoveTimelineCustomizeTab">下移</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="tl-customize-footer">
+      <view class="tl-save-btn" catchtap="saveTimelineTabCustomize">保存设置</view>
     </view>
   </view>
 </view>
