@@ -120,7 +120,7 @@ Page({
     }
     if (action !== 0) return false;
 
-    const completeResult = await SleepRecordModel.completeSleep(ongoing._id, formatTime());
+    const completeResult = await SleepRecordModel.completeSleep(ongoing._id);
     if (!completeResult.success) {
       if (completeResult.code === 'INVALID_END') {
         this.openOngoingRecord(ongoing._id);
