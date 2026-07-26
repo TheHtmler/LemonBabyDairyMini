@@ -12,6 +12,7 @@ const TREATMENT_RECORDS_COLLECTION = 'treatment_records';
 const MEDICATION_RECORDS_COLLECTION = 'medication_records';
 const BOWEL_RECORDS_COLLECTION = 'bowel_records';
 const WATER_RECORDS_COLLECTION = 'water_records';
+const SLEEP_RECORDS_COLLECTION = 'sleep_records';
 const GROWTH_RECORDS_V2_COLLECTION = 'growth_records_v2';
 
 function toNumber(value, fallback = 0) {
@@ -122,6 +123,11 @@ function createEmptySummary(babyUid = '', date = '') {
       totalVolume: 0,
       totalRecords: 0
     },
+    sleep: {
+      totalRecords: 0,
+      totalDurationMinutes: 0,
+      ongoingCount: 0
+    },
     macroSummary: {
       calories: 0,
       protein: 0,
@@ -136,7 +142,8 @@ function createEmptySummary(babyUid = '', date = '') {
       medication: 0,
       treatment: 0,
       bowel: 0,
-      water: 0
+      water: 0,
+      sleep: 0
     },
     sourceUpdatedAt: {
       feeding: null,
@@ -145,6 +152,7 @@ function createEmptySummary(babyUid = '', date = '') {
       treatment: null,
       bowel: null,
       water: null,
+      sleep: null,
       growth: null
     },
     isDirty: false,
@@ -443,6 +451,25 @@ function buildWaterSummary(records = []) {
   };
 }
 
+function buildSleepSummary(records = []) {
+  const valid = (records || []).filter((record) => (record?.status || 'active') === 'active');
+  let totalDurationMinutes = 0;
+  let ongoingCount = 0;
+  valid.forEach((record) => {
+    const endEmpty = record.endTime == null || String(record.endTime).trim() === '';
+    if (endEmpty && (record.endDateTime == null || record.endDateTime === '')) {
+      ongoingCount += 1;
+    } else {
+      totalDurationMinutes += toNumber(record.durationMinutes);
+    }
+  });
+  return {
+    totalRecords: valid.length,
+    totalDurationMinutes: roundValue(totalDurationMinutes, 0),
+    ongoingCount
+  };
+}
+
 function buildMacroSummary(milk, food, treatment) {
   return {
     calories: roundValue(toNumber(milk.calories) + toNumber(food.calories) + toNumber(treatment.calories)),
@@ -514,6 +541,35 @@ async function loadWaterRecords(babyUid, date) {
   return res.data || [];
 }
 
+async function loadSleepRecords(babyUid, date) {
+  const startOfDay = toDateStart(date);
+  const endOfDay = toDateEnd(date);
+  try {
+    const rangeRes = await db.collection(SLEEP_RECORDS_COLLECTION)
+      .where({
+        babyUid,
+        startDateTime: db.command.gte(startOfDay).and(db.command.lt(endOfDay)),
+        status: 'active'
+      })
+      .orderBy('startDateTime', 'desc')
+      .get();
+    if ((rangeRes.data || []).length > 0) {
+      return rangeRes.data || [];
+    }
+  } catch (error) {
+    // 集合未建或索引缺失时回退到 dateKey 查询
+  }
+  const res = await db.collection(SLEEP_RECORDS_COLLECTION)
+    .where({
+      babyUid,
+      date,
+      status: 'active'
+    })
+    .orderBy('startDateTime', 'desc')
+    .get();
+  return res.data || [];
+}
+
 async function loadMedicationRecords(babyUid, date) {
   const startOfDay = toDateStart(date);
   const endOfDay = toDateEnd(date);
@@ -556,6 +612,7 @@ async function loadEventRecords(babyUid, date) {
     medicationRecords,
     bowelRecords,
     waterRecords,
+    sleepRecords,
     growthRecords
   ] = await Promise.all([
     queryByDate(FEEDING_RECORDS_V2_COLLECTION, babyUid, date),
@@ -564,9 +621,19 @@ async function loadEventRecords(babyUid, date) {
     loadMedicationRecords(babyUid, date),
     loadBowelRecords(babyUid, date),
     loadWaterRecords(babyUid, date),
+    loadSleepRecords(babyUid, date),
     queryByDate(GROWTH_RECORDS_V2_COLLECTION, babyUid, date)
   ]);
-  return { milkRecords, foodRecords, treatmentRecords, medicationRecords, bowelRecords, waterRecords, growthRecords };
+  return {
+    milkRecords,
+    foodRecords,
+    treatmentRecords,
+    medicationRecords,
+    bowelRecords,
+    waterRecords,
+    sleepRecords,
+    growthRecords
+  };
 }
 
 function buildDailySummaryForDate(babyUid, date, events) {
@@ -582,6 +649,7 @@ function buildDailySummaryForDate(babyUid, date, events) {
     medication: buildMedicationSummary(events.medicationRecords),
     bowel: buildBowelSummary(events.bowelRecords),
     water: buildWaterSummary(events.waterRecords),
+    sleep: buildSleepSummary(events.sleepRecords),
     macroSummary: buildMacroSummary(milk, food, treatment),
     recordCounts: {
       milk: events.milkRecords.length,
@@ -589,7 +657,8 @@ function buildDailySummaryForDate(babyUid, date, events) {
       medication: events.medicationRecords.length,
       treatment: events.treatmentRecords.length,
       bowel: events.bowelRecords.length,
-      water: events.waterRecords.length
+      water: events.waterRecords.length,
+      sleep: events.sleepRecords.length
     },
     sourceUpdatedAt: {
       feeding: latestTimestamp(events.milkRecords),
@@ -598,6 +667,7 @@ function buildDailySummaryForDate(babyUid, date, events) {
       treatment: latestTimestamp(events.treatmentRecords),
       bowel: latestTimestamp(events.bowelRecords),
       water: latestTimestamp(events.waterRecords),
+      sleep: latestTimestamp(events.sleepRecords),
       growth: latestTimestamp(events.growthRecords)
     },
     isDirty: false

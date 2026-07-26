@@ -1,0 +1,75 @@
+<view class="page sleep-page">
+  <view class="hero-card">
+    <view class="moon-mark">
+      <view class="moon-shape"></view>
+      <view class="star star-one"></view>
+      <view class="star star-two"></view>
+    </view>
+    <view class="hero-copy">
+      <view class="hero-title">睡眠记录</view>
+      <view class="hero-subtitle">{{isEdit ? '调整宝宝这段睡眠' : '记下宝宝安睡的时光'}}</view>
+    </view>
+  </view>
+
+  <view class="card compact-card">
+    <view class="compact-field">
+      <text class="field-label">记录日期</text>
+      <view class="compact-value fixed-date">{{dateKey}}</view>
+    </view>
+
+    <view class="time-grid">
+      <view class="compact-field">
+        <text class="field-label">开始时间 <text class="required">*</text></text>
+        <picker mode="time" value="{{form.startTime}}" bindchange="onStartTimeChange">
+          <view class="compact-picker">{{form.startTime || '请选择开始时间'}}</view>
+        </picker>
+      </view>
+
+      <view class="compact-field">
+        <view class="field-label-row">
+          <text class="field-label">结束时间</text>
+          <text class="clear-control" wx:if="{{form.endTime}}" bindtap="clearEndTime">清空</text>
+        </view>
+        <picker mode="time" value="{{form.endTime}}" bindchange="onEndTimeChange">
+          <view class="compact-picker {{form.endTime ? '' : 'placeholder'}}">{{form.endTime || '睡觉中'}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="ongoing-tip" wx:if="{{!form.endTime}}">
+      结束时间留空，将保存为进行中的睡眠
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">备注</view>
+    <view class="section-tip">可选，记下入睡状态或需要留意的情况</view>
+    <textarea
+      class="notes-area"
+      value="{{form.notes}}"
+      maxlength="200"
+      auto-height
+      placeholder="例如：哄睡顺利，中途醒过一次"
+      bindinput="onNotesInput"
+    />
+  </view>
+
+  <view class="footer-actions">
+    <button
+      class="delete-btn"
+      wx:if="{{isEdit}}"
+      loading="{{deleting}}"
+      disabled="{{saving || deleting}}"
+      bindtap="deleteRecord"
+    >删除记录</button>
+    <view class="primary-actions">
+      <button class="cancel-btn" disabled="{{saving || deleting}}" bindtap="cancelEdit">取消</button>
+      <button
+        class="save-btn"
+        loading="{{saving}}"
+        disabled="{{saving || deleting}}"
+        bindtap="saveRecord"
+      >{{isEdit ? '保存修改' : '保存记录'}}</button>
+    </view>
+  </view>
+</view>

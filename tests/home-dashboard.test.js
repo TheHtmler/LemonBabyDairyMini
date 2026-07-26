@@ -732,6 +732,23 @@ test('buildTimeline：喝水记录进入时间轴并带水量与备注', () => {
   assert.equal(timeline[2].type, 'milk');
 });
 
+test('buildTimeline：已结束和进行中睡眠记录进入时间轴', () => {
+  const timeline = buildTimeline({
+    sleepRecords: [
+      { startTime: '09:20', endTime: '10:50', durationMinutes: 90, notes: '上午觉' },
+      { startTime: '14:30', endTime: null, endDateTime: null }
+    ],
+    limit: 0
+  });
+
+  assert.equal(timeline.length, 2);
+  assert.equal(timeline[0].type, 'sleep');
+  assert.equal(timeline[0].title, '睡眠 · 睡觉中');
+  assert.equal(timeline[1].type, 'sleep');
+  assert.equal(timeline[1].title, '睡眠 · 1小时30分');
+  assert.equal(timeline[1].desc, '上午觉');
+});
+
 test('buildTimeline：时间字段为 Date / datetime 字符串时归一化为 HH:MM', () => {
   const timeline = buildTimeline({
     milkRecords: [{ startTime: '', startDateTime: new Date(2026, 5, 2, 7, 5) }],

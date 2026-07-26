@@ -4,6 +4,7 @@ const MedicationRecordModel = require('../../models/medicationRecord');
 const MedicationModel = require('../../models/medication');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
+const SleepRecordModel = require('../../models/sleepRecord');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const {
   waitForAppInitialization,
@@ -28,6 +29,14 @@ const {
   invalidateReminderSubscriptions,
   rescheduleReminderSubscriptions
 } = require('../../utils/reminderSubscriptionPrompt');
+const {
+  buildTimelineTabBar,
+  loadTimelineTabsPreference,
+  saveTimelineTabsPreference,
+  normalizeTimelineTabsPreference,
+  moveOrderedTab,
+  togglePinnedTab
+} = require('../../utils/timelineTabsPreference');
 
 const app = getApp();
 
@@ -84,16 +93,6 @@ function buildTrendStats(metricKey, weeklyTrend = {}) {
   ];
 }
 
-// 今日时间轴分类切换
-const TIMELINE_TABS = [
-  { key: 'all', label: '全部' },
-  { key: 'milk', label: '喂奶' },
-  { key: 'food', label: '辅食' },
-  { key: 'med', label: '用药' },
-  { key: 'treatment', label: '治疗' },
-  { key: 'bowel', label: '大小便' },
-  { key: 'water', label: '喝水' }
-];
 const TIMELINE_DISPLAY_LIMIT = 12;
 // 把 "HH:MM" 拼到「今天」得到一个 Date（用于打卡记录的 actualDateTime）
 function timeStrToToday(timeStr) {
@@ -221,6 +220,7 @@ Page({
     medUndo: { visible: false, name: '', time: '', recordId: '', localId: '' },
     medPanel: { visible: false, medicationId: '', name: '', meta: '', doseCount: 0, doseTotal: 0, entries: [] },
     foodCount: 0,
+    ongoingSleep: null,
 
     // 用药
     medicationsList: [],
@@ -229,8 +229,15 @@ Page({
     // 时间轴 & 趋势
     timeline: [],
     hasTimeline: false,
-    timelineTabs: TIMELINE_TABS,
+    timelineTabPrefs: loadTimelineTabsPreference(),
+    timelineTabs: [],
+    timelineMoreTabs: [],
+    timelineShowMore: false,
     timelineCategory: 'all',
+    showTimelineMoreSheet: false,
+    showTimelineCustomizeSheet: false,
+    customizeTimelineDraftPrefs: null,
+    customizeTimelineTabs: [],
     trendMetrics: TREND_METRICS,
     trendMetric: 'calorie',
     trendStats: [],
@@ -271,7 +278,20 @@ Page({
       isHomeBooting: this._skipHomeBoot ? false : true,
       homeDataReady: false
     });
+    this.applyTimelineTabBar(loadTimelineTabsPreference(), 'all');
     this.initializePage();
+  },
+
+  applyTimelineTabBar(prefs, activeTab = this.data.timelineCategory) {
+    const bar = buildTimelineTabBar(prefs, activeTab);
+    this.setData({
+      timelineTabPrefs: bar.prefs,
+      timelineTabs: bar.visibleTabs,
+      timelineMoreTabs: bar.moreTabs,
+      timelineShowMore: bar.showMoreEntry,
+      timelineCategory: bar.activeTab
+    });
+    return bar;
   },
 
   async onShow() {
@@ -526,19 +546,26 @@ Page({
           return null;
         });
 
-      const [daily, rangeSummaries, meds, recentDay, medicationHistoryRecords] = await Promise.all([
+      const [daily, rangeSummaries, meds, recentDay, medicationHistoryRecords, ongoingSleepResult] = await Promise.all([
         DailyRecordV2Service.getDailyRecordV2(babyUid, today),
         // 首屏不发趋势请求；完整补齐放到 loadDeferredDashboardParts，避免拖慢首页首屏。
         rangeSummariesPromise,
         medsPromise,
         // 下一顿参考：取上次（最近历史日）那天的全部喂奶记录，按今日已喂顿数对应同序号那一顿
         FeedingRecordV2Model.getRecentDayRecords(babyUid, today).catch(() => ({ date: '', records: [] })),
-        medicationHistoryPromise
+        medicationHistoryPromise,
+        SleepRecordModel.findOngoing(babyUid).catch((error) => {
+          console.warn('加载进行中睡眠失败:', error);
+          return { success: false, data: [] };
+        })
       ]);
       const plannedMeals = Array.isArray(recentDay?.records) ? recentDay.records.length : 0;
+      const ongoingSleep = ongoingSleepResult?.success
+        ? (ongoingSleepResult.data || [])[0] || null
+        : null;
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
-      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, today });
+      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, ongoingSleep, today });
       this.markDashboardCacheFresh(babyUid, today, loadStartedAt);
 
       if (!silent) wx.hideLoading();
@@ -585,7 +612,7 @@ Page({
     return this._trendRefreshPromise;
   },
 
-  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, medicationHistoryRecords = [], today }) {
+  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, medicationHistoryRecords = [], ongoingSleep = null, today }) {
     const summary = daily.summary || {};
     const basicInfo = daily.basicInfo || summary.basicInfo || {};
     const macroSummary = summary.macroSummary || {};
@@ -642,6 +669,7 @@ Page({
       treatmentRecords: daily.treatmentRecords || [],
       bowelRecords: daily.bowelRecords || [],
       waterRecords: daily.waterRecords || [],
+      sleepRecords: daily.sleepRecords || [],
       limit: 0
     });
     this.timelineAll = timelineAll;
@@ -657,6 +685,7 @@ Page({
       nutritionTarget,
       feedingProgress,
       feedingPlanHint,
+      ongoingSleep,
       medicationsList: meds || [],
       medicationChecklist,
       timeline,
@@ -698,10 +727,83 @@ Page({
   switchTimelineCategory(e) {
     const category = e.currentTarget.dataset.category;
     if (!category || category === this.data.timelineCategory) return;
+    this.applyTimelineTabBar(this.data.timelineTabPrefs, category);
     this.setData({
-      timelineCategory: category,
-      timeline: filterTimeline(this.timelineAll || [], category)
+      timeline: filterTimeline(this.timelineAll || [], category),
+      showTimelineMoreSheet: false
     });
+  },
+
+  openTimelineMoreSheet() {
+    if (!this.data.timelineShowMore && !(this.data.timelineMoreTabs || []).length) {
+      this.openTimelineCustomizeSheet();
+      return;
+    }
+    this.setData({ showTimelineMoreSheet: true });
+  },
+
+  closeTimelineMoreSheet() {
+    this.setData({ showTimelineMoreSheet: false });
+  },
+
+  openTimelineCustomizeSheet() {
+    const prefs = normalizeTimelineTabsPreference(this.data.timelineTabPrefs);
+    const bar = buildTimelineTabBar(prefs, this.data.timelineCategory);
+    this.setData({
+      showTimelineMoreSheet: false,
+      showTimelineCustomizeSheet: true,
+      customizeTimelineDraftPrefs: bar.prefs,
+      customizeTimelineTabs: bar.customizeTabs
+    });
+  },
+
+  closeTimelineCustomizeSheet() {
+    this.setData({
+      showTimelineCustomizeSheet: false,
+      customizeTimelineDraftPrefs: null
+    });
+  },
+
+  refreshTimelineCustomizeLists(prefs) {
+    const bar = buildTimelineTabBar(prefs, this.data.timelineCategory);
+    this.setData({
+      customizeTimelineDraftPrefs: bar.prefs,
+      customizeTimelineTabs: bar.customizeTabs
+    });
+  },
+
+  onMoveTimelineCustomizeTab(e) {
+    const key = e.currentTarget.dataset.key;
+    const dir = e.currentTarget.dataset.dir;
+    const offset = dir === 'up' ? -1 : (dir === 'down' ? 1 : 0);
+    if (!key || !offset) return;
+    const next = moveOrderedTab(this.data.customizeTimelineDraftPrefs || this.data.timelineTabPrefs, key, offset);
+    this.refreshTimelineCustomizeLists(next);
+  },
+
+  onToggleTimelinePinnedTab(e) {
+    const key = e.currentTarget.dataset.key;
+    if (!key) return;
+    const next = togglePinnedTab(this.data.customizeTimelineDraftPrefs || this.data.timelineTabPrefs, key);
+    this.refreshTimelineCustomizeLists(next);
+  },
+
+  saveTimelineTabCustomize() {
+    const saved = saveTimelineTabsPreference(
+      this.data.customizeTimelineDraftPrefs || this.data.timelineTabPrefs
+    );
+    this.applyTimelineTabBar(saved, this.data.timelineCategory);
+    this.setData({
+      showTimelineCustomizeSheet: false,
+      customizeTimelineDraftPrefs: null,
+      timeline: filterTimeline(this.timelineAll || [], this.data.timelineCategory)
+    });
+    wx.showToast({ title: '已保存本地设置', icon: 'success' });
+  },
+
+  resetTimelineTabCustomize() {
+    this.refreshTimelineCustomizeLists(normalizeTimelineTabsPreference({}));
+    wx.showToast({ title: '已恢复默认，保存后生效', icon: 'none' });
   },
 
   switchTrendMetric(e) {
@@ -1253,6 +1355,64 @@ Page({
 
   navigateToWaterRecord() {
     wx.navigateTo({ url: `/pkg-records/water-record/index?date=${todayKey()}` });
+  },
+
+  openOngoingSleep(record) {
+    if (!record?._id) return;
+    const date = record.dateKey || record.date || todayKey();
+    wx.navigateTo({
+      url: `/pkg-records/sleep-record/index?id=${encodeURIComponent(record._id)}&date=${encodeURIComponent(date)}`
+    });
+  },
+
+  navigateToSleepRecord() {
+    const ongoing = this.data.ongoingSleep;
+    if (!ongoing) {
+      wx.navigateTo({ url: `/pkg-records/sleep-record/index?date=${todayKey()}` });
+      return;
+    }
+
+    wx.showActionSheet({
+      itemList: ['补结束并继续新建', '先去结束上一段'],
+      success: async ({ tapIndex }) => {
+        if (tapIndex === 1) {
+          this.openOngoingSleep(ongoing);
+          return;
+        }
+        if (tapIndex !== 0) return;
+
+        const result = await SleepRecordModel.completeSleep(ongoing._id);
+        if (!result.success) {
+          if (result.code === 'INVALID_END') {
+            this.openOngoingSleep(ongoing);
+          } else {
+            wx.showToast({ title: result.message || '补结束失败', icon: 'none' });
+          }
+          return;
+        }
+        this.setData({ ongoingSleep: null });
+        wx.navigateTo({ url: `/pkg-records/sleep-record/index?date=${todayKey()}` });
+      }
+    });
+  },
+
+  async wakeOngoingSleep() {
+    const ongoing = this.data.ongoingSleep;
+    if (!ongoing?._id) return;
+
+    const result = await SleepRecordModel.completeSleep(ongoing._id);
+    if (!result.success) {
+      if (result.code === 'INVALID_END') {
+        this.openOngoingSleep(ongoing);
+      } else {
+        wx.showToast({ title: result.message || '记录醒来失败', icon: 'none' });
+      }
+      return;
+    }
+
+    this.setData({ ongoingSleep: null });
+    await this.loadDashboard({ silent: true, rebuildTrend: false });
+    wx.showToast({ title: '已记录醒来', icon: 'success' });
   },
 
   rebuildNutritionTargetWithPreferences(targetPreferences = readNutritionTargetPreferences(getBabyUid())) {

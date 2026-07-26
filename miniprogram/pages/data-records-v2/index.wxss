@@ -2645,6 +2645,80 @@
   line-height: 1.4;
 }
 
+.sleep-stats-row {
+  display: flex;
+  gap: 12rpx;
+  margin: 0 0 16rpx;
+}
+
+.sleep-stat-pill {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 16rpx 12rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 247, 191, 0.72);
+  border: 1rpx solid rgba(236, 190, 45, 0.2);
+}
+
+.sleep-stat-label {
+  font-size: 22rpx;
+  color: #8a762e;
+}
+
+.sleep-stat-value {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #7b6518;
+  white-space: nowrap;
+}
+
+.sleep-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.sleep-record-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 18rpx;
+  border: 1rpx solid rgba(236, 190, 45, 0.2);
+  border-radius: 22rpx;
+  background: rgba(255, 250, 218, 0.62);
+}
+
+.sleep-record-main-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.sleep-record-time,
+.sleep-record-duration {
+  display: block;
+  font-size: 28rpx;
+  color: #66551b;
+  font-weight: 600;
+}
+
+.sleep-record-duration {
+  color: #9a7c12;
+}
+
+.sleep-record-notes {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8a762e;
+  line-height: 1.4;
+}
+
 .bowel-record-item {
   display: flex;
   align-items: flex-start;

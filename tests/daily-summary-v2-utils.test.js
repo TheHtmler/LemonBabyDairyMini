@@ -215,7 +215,8 @@ test('buildDailySummaryV2 merges v2 milk, food, treatment, medication, and bowel
     medication: 2,
     treatment: 1,
     bowel: 2,
-    water: 2
+    water: 2,
+    sleep: 0
   });
   assert.equal(summary.sourceUpdatedAt.feeding, '2026-05-25T08:10:00.000Z');
   assert.equal(summary.sourceUpdatedAt.food, '2026-05-25T12:40:00.000Z');

@@ -105,6 +105,11 @@ function createEmptyDailySummaryV2(babyUid = '', date = '') {
       totalVolume: 0,
       totalRecords: 0
     },
+    sleep: {
+      totalRecords: 0,
+      totalDurationMinutes: 0,
+      ongoingCount: 0
+    },
     macroSummary: createEmptyMacroSummary(),
     recordCounts: {
       milk: 0,
@@ -112,7 +117,8 @@ function createEmptyDailySummaryV2(babyUid = '', date = '') {
       medication: 0,
       treatment: 0,
       bowel: 0,
-      water: 0
+      water: 0,
+      sleep: 0
     },
     sourceUpdatedAt: {
       feeding: null,
@@ -121,6 +127,7 @@ function createEmptyDailySummaryV2(babyUid = '', date = '') {
       treatment: null,
       bowel: null,
       water: null,
+      sleep: null,
       growth: null
     },
     isDirty: false,
@@ -453,6 +460,25 @@ function buildWaterSummary(records = []) {
   };
 }
 
+function buildSleepSummary(records = []) {
+  const valid = (records || []).filter((r) => (r?.status || 'active') === 'active');
+  let totalDurationMinutes = 0;
+  let ongoingCount = 0;
+  valid.forEach((r) => {
+    const endEmpty = r.endTime == null || String(r.endTime).trim() === '';
+    if (endEmpty && (r.endDateTime == null || r.endDateTime === '')) {
+      ongoingCount += 1;
+    } else {
+      totalDurationMinutes += toNumber(r.durationMinutes);
+    }
+  });
+  return {
+    totalRecords: valid.length,
+    totalDurationMinutes: roundValue(totalDurationMinutes, 0),
+    ongoingCount
+  };
+}
+
 function buildMacroSummary(milk, food, treatment) {
   return roundMacroSummary({
     calories: toNumber(milk.calories) + toNumber(food.calories) + toNumber(treatment.calories),
@@ -489,6 +515,11 @@ function normalizeDailySummaryV2(summary = {}) {
       totalVolume: toNumber(summary.water?.totalVolume),
       totalRecords: toNumber(summary.water?.totalRecords)
     },
+    sleep: {
+      totalRecords: toNumber(summary.sleep?.totalRecords),
+      totalDurationMinutes: toNumber(summary.sleep?.totalDurationMinutes),
+      ongoingCount: toNumber(summary.sleep?.ongoingCount)
+    },
     macroSummary: roundMacroSummary(summary.macroSummary || {}),
     recordCounts: {
       milk: toNumber(summary.recordCounts?.milk),
@@ -496,7 +527,8 @@ function normalizeDailySummaryV2(summary = {}) {
       medication: toNumber(summary.recordCounts?.medication),
       treatment: toNumber(summary.recordCounts?.treatment),
       bowel: toNumber(summary.recordCounts?.bowel),
-      water: toNumber(summary.recordCounts?.water)
+      water: toNumber(summary.recordCounts?.water),
+      sleep: toNumber(summary.recordCounts?.sleep)
     },
     sourceUpdatedAt: {
       ...createEmptyDailySummaryV2().sourceUpdatedAt,
@@ -513,6 +545,7 @@ function buildDailySummaryV2(input = {}) {
   const medicationRecords = input.medicationRecords || [];
   const bowelRecords = input.bowelRecords || [];
   const waterRecords = input.waterRecords || [];
+  const sleepRecords = input.sleepRecords || [];
   const growthRecords = input.growthRecords || [];
   const milk = mergeMilkNutrition(milkRecords);
   const food = mergeFoodNutrition(foodIntakeRecords);
@@ -526,6 +559,7 @@ function buildDailySummaryV2(input = {}) {
     medication: buildMedicationSummary(medicationRecords),
     bowel: buildBowelSummary(bowelRecords),
     water: buildWaterSummary(waterRecords),
+    sleep: buildSleepSummary(sleepRecords),
     macroSummary: buildMacroSummary(milk, food, treatment),
     recordCounts: {
       milk: Array.isArray(milkRecords) ? milkRecords.length : 0,
@@ -533,7 +567,8 @@ function buildDailySummaryV2(input = {}) {
       medication: Array.isArray(medicationRecords) ? medicationRecords.length : 0,
       treatment: Array.isArray(treatmentRecords) ? treatmentRecords.length : 0,
       bowel: Array.isArray(bowelRecords) ? bowelRecords.length : 0,
-      water: Array.isArray(waterRecords) ? waterRecords.length : 0
+      water: Array.isArray(waterRecords) ? waterRecords.length : 0,
+      sleep: Array.isArray(sleepRecords) ? sleepRecords.length : 0
     },
     sourceUpdatedAt: {
       feeding: getLatestSourceUpdatedAt(milkRecords),
@@ -542,6 +577,7 @@ function buildDailySummaryV2(input = {}) {
       treatment: getLatestSourceUpdatedAt(treatmentRecords),
       bowel: getLatestSourceUpdatedAt(bowelRecords),
       water: getLatestSourceUpdatedAt(waterRecords),
+      sleep: getLatestSourceUpdatedAt(sleepRecords),
       growth: getLatestSourceUpdatedAt(growthRecords)
     },
     isDirty: false

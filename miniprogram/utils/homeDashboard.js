@@ -6,6 +6,8 @@
  * 组装成看板视图数据：营养达成 / 喂养进度 / 配奶建议 / 用药打卡 / 时间轴 / 周趋势。
  */
 
+const { isOngoingSleep, formatDurationLabel } = require('./sleepRecordUtils');
+
 // 每日计划喂奶顿数：新用户（无历史记录）默认 6 顿；
 // 有历史时仍以「最近记录日的顿数」为准（见 buildFeedingProgress）。
 const DEFAULT_PLANNED_MEALS = 6;
@@ -1008,6 +1010,7 @@ function getUrineColorText(color) {
  * @param {Array}  params.treatmentRecords   治疗记录
  * @param {Array}  params.bowelRecords       大便/小便记录
  * @param {Array}  params.waterRecords       喝水记录
+ * @param {Array}  params.sleepRecords       睡眠记录
  * @param {number} params.limit              最多条数（0=不限制）
  */
 function buildTimeline({
@@ -1017,6 +1020,7 @@ function buildTimeline({
   treatmentRecords = [],
   bowelRecords = [],
   waterRecords = [],
+  sleepRecords = [],
   limit = 0
 } = {}) {
   const events = [];
@@ -1099,6 +1103,17 @@ function buildTimeline({
       type: 'water',
       time: resolveTimeLabel(record.timeString, record.recordTime, record.time),
       title: volumeMl > 0 ? `喝水 · ${volumeMl}ml` : '喝水',
+      desc: String(record.notes || '').trim()
+    });
+  });
+
+  (sleepRecords || []).forEach((record = {}) => {
+    const ongoing = isOngoingSleep(record);
+    const durationLabel = formatDurationLabel(record.durationMinutes);
+    pushEvent(events, {
+      type: 'sleep',
+      time: resolveTimeLabel(record.startTime, record.startDateTime),
+      title: ongoing ? '睡眠 · 睡觉中' : (durationLabel ? `睡眠 · ${durationLabel}` : '睡眠'),
       desc: String(record.notes || '').trim()
     });
   });

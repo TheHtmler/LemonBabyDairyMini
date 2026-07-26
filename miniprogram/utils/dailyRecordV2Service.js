@@ -3,6 +3,7 @@ const FoodIntakeRecordModel = require('../models/foodIntakeRecord');
 const MedicationRecordModel = require('../models/medicationRecord');
 const TreatmentRecordModel = require('../models/treatmentRecord');
 const WaterRecordModel = require('../models/waterRecord');
+const SleepRecordModel = require('../models/sleepRecord');
 const DailySummaryV2Model = require('../models/dailySummaryV2');
 const {
   buildDailySummaryV2
@@ -130,6 +131,7 @@ async function loadEventRecords(babyUid, date) {
     treatmentResult,
     bowelRecords,
     waterResult,
+    sleepResult,
     growthRecords
   ] = await Promise.all([
     FeedingRecordV2Model.getRecordsByDate(babyUid, date),
@@ -138,6 +140,7 @@ async function loadEventRecords(babyUid, date) {
     TreatmentRecordModel.findByDate(date, babyUid),
     loadBowelRecords(babyUid, date),
     WaterRecordModel.findByDate(date, babyUid),
+    SleepRecordModel.findByDate(date, babyUid),
     loadGrowthRecords(babyUid, date)
   ]);
 
@@ -149,6 +152,7 @@ async function loadEventRecords(babyUid, date) {
     treatmentRecords: unwrapResult(treatmentResult),
     bowelRecords: unwrapResult(bowelRecords),
     waterRecords: unwrapResult(waterResult),
+    sleepRecords: unwrapResult(sleepResult),
     growthRecords: unwrapResult(growthRecords)
   };
 }
@@ -166,6 +170,7 @@ function buildServiceResult(babyUid, date, eventRecords, summary) {
     treatmentRecords: eventRecords.treatmentRecords,
     bowelRecords: eventRecords.bowelRecords,
     waterRecords: eventRecords.waterRecords,
+    sleepRecords: eventRecords.sleepRecords,
     growthRecords: eventRecords.growthRecords,
     overview: {
       milk: summary.milk,
@@ -174,6 +179,7 @@ function buildServiceResult(babyUid, date, eventRecords, summary) {
       medication: summary.medication,
       bowel: summary.bowel,
       water: summary.water,
+      sleep: summary.sleep,
       macroSummary: summary.macroSummary,
       recordCounts: summary.recordCounts
     }
@@ -535,6 +541,11 @@ async function getDailyRecordTabDetails(babyUid, date, tab) {
       return {
         tab: 'water',
         waterRecords: unwrapResult(await WaterRecordModel.findByDate(date, babyUid))
+      };
+    case 'sleep':
+      return {
+        tab: 'sleep',
+        sleepRecords: unwrapResult(await SleepRecordModel.findByDate(date, babyUid))
       };
     case 'growth':
       return {
