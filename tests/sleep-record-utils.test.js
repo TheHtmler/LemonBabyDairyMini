@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   buildDateTime,
   resolveEndDateTime,
+  resolveWakeEndDateTime,
   computeDurationMinutes,
   isOngoingSleep,
   formatDurationLabel
@@ -40,4 +41,17 @@ test('formatDurationLabel', () => {
   assert.equal(formatDurationLabel(90), '1小时30分');
   assert.equal(formatDurationLabel(45), '45分');
   assert.equal(formatDurationLabel(null), '');
+});
+
+test('resolveWakeEndDateTime uses wall clock across calendar days', () => {
+  const start = buildDateTime('2026-07-25', '10:00');
+  const now = buildDateTime('2026-07-26', '11:00');
+  const end = resolveWakeEndDateTime(start, now);
+  assert.equal(end.getDate(), 26);
+  assert.equal(computeDurationMinutes(start, end), 25 * 60);
+});
+
+test('resolveWakeEndDateTime rejects same minute', () => {
+  const start = buildDateTime('2026-07-26', '22:10');
+  assert.equal(resolveWakeEndDateTime(start, buildDateTime('2026-07-26', '22:10')), null);
 });

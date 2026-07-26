@@ -16,6 +16,7 @@ test('sleepRecord model covers CRUD ongoing and dirty', () => {
   assert.match(source, /async update/);
   assert.match(source, /async delete/);
   assert.match(source, /resolveEndDateTime/);
+  assert.match(source, /resolveWakeEndDateTime/);
 });
 
 test('buildDailySummaryV2 aggregates sleep duration and ongoing', () => {

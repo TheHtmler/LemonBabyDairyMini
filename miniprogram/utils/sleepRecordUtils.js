@@ -29,6 +29,27 @@ function resolveEndDateTime(dateKey, startTime, endTime) {
   return endDateTime;
 }
 
+function isSameMinute(a, b) {
+  if (!(a instanceof Date) || !(b instanceof Date)) return false;
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate()
+    && a.getHours() === b.getHours()
+    && a.getMinutes() === b.getMinutes();
+}
+
+/**
+ * 一键醒来：用真实墙钟 now，避免「归属日 + HH:MM」在跨自然日时拼成错误短时长。
+ * 同分钟或 now 不晚于开始 → null（INVALID_END）。
+ */
+function resolveWakeEndDateTime(startDateTime, now = new Date()) {
+  if (!(startDateTime instanceof Date) || Number.isNaN(startDateTime.getTime())) return null;
+  const end = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(end.getTime())) return null;
+  if (!(end > startDateTime) || isSameMinute(startDateTime, end)) return null;
+  return end;
+}
+
 function computeDurationMinutes(startDateTime, endDateTime) {
   if (!(startDateTime instanceof Date) || !(endDateTime instanceof Date)) return null;
   const ms = endDateTime.getTime() - startDateTime.getTime();
@@ -57,6 +78,7 @@ function formatDurationLabel(minutes) {
 module.exports = {
   buildDateTime,
   resolveEndDateTime,
+  resolveWakeEndDateTime,
   computeDurationMinutes,
   isOngoingSleep,
   formatDurationLabel

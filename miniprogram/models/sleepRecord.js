@@ -7,6 +7,7 @@ const DailySummaryV2Model = require('./dailySummaryV2');
 const {
   buildDateTime,
   resolveEndDateTime,
+  resolveWakeEndDateTime,
   computeDurationMinutes,
   isOngoingSleep
 } = require('../utils/sleepRecordUtils');
@@ -76,7 +77,15 @@ class SleepRecordModel {
 
     if (hasEndTime) {
       const endTime = String(endTimeRaw).trim();
-      const endDateTime = resolveEndDateTime(dateKey, startTime, endTime);
+      let endDateTime = null;
+      if (data.endDateTime instanceof Date && !Number.isNaN(data.endDateTime.getTime())) {
+        endDateTime = data.endDateTime;
+        if (!(endDateTime > startDateTime)) {
+          throw new Error('结束时间无效');
+        }
+      } else {
+        endDateTime = resolveEndDateTime(dateKey, startTime, endTime);
+      }
       if (!endDateTime) {
         throw new Error('结束时间无效');
       }
@@ -247,12 +256,26 @@ class SleepRecordModel {
         return { success: true };
       }
       const dateKey = record.dateKey || record.date;
-      const endTime = endTimeOptional || this.formatTimeString(new Date());
-      const endDateTime = resolveEndDateTime(dateKey, record.startTime, endTime);
+      const startDateTime = record.startDateTime instanceof Date
+        ? record.startDateTime
+        : buildDateTime(dateKey, record.startTime);
+
+      let endTime;
+      let endDateTime;
+      if (endTimeOptional != null && String(endTimeOptional).trim() !== '') {
+        // 手选钟点：仍按归属日拼装（含跨午夜）
+        endTime = String(endTimeOptional).trim();
+        endDateTime = resolveEndDateTime(dateKey, record.startTime, endTime);
+      } else {
+        // 一键醒来：用真实墙钟，避免跨自然日被拼成短时长
+        endDateTime = resolveWakeEndDateTime(startDateTime, new Date());
+        endTime = endDateTime ? this.formatTimeString(endDateTime) : '';
+      }
+
       if (!endDateTime) {
         return { success: false, code: 'INVALID_END', message: '结束时间无效' };
       }
-      return await this.update(id, { endTime });
+      return await this.update(id, { endTime, endDateTime });
     } catch (error) {
       console.error('完成睡眠记录失败:', error);
       return { success: false, message: error.message || '完成失败' };
