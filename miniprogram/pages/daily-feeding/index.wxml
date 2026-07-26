@@ -495,10 +495,10 @@
         <text class="tl-sheet-title">时间轴分类设置</text>
         <text class="tl-sheet-action muted" catchtap="resetTimelineTabCustomize">恢复默认</text>
       </view>
-      <text class="tl-sheet-hint">「全部」固定在首位。可调整常驻分类与顺序，仅保存在本机。列表可上下滚动。</text>
+      <text class="tl-sheet-hint">「全部」固定在首位。可调整常驻分类与顺序，仅保存在本机。</text>
     </view>
-    <view class="tl-customize-body">
-      <scroll-view class="tl-customize-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{true}}">
+    <scroll-view class="tl-customize-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{true}}">
+      <view class="tl-customize-list">
         <view class="tl-customize-item" wx:for="{{customizeTimelineTabs}}" wx:key="key">
           <view class="tl-customize-main">
             <text class="tl-customize-label">{{item.label}}</text>
@@ -510,9 +510,8 @@
             <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="down" catchtap="onMoveTimelineCustomizeTab">下移</text>
           </view>
         </view>
-      </scroll-view>
-      <view class="tl-customize-fade"></view>
-    </view>
+      </view>
+    </scroll-view>
     <view class="tl-customize-footer">
       <view class="tl-save-btn" catchtap="saveTimelineTabCustomize">保存设置</view>
     </view>

@@ -1377,16 +1377,22 @@ page {
   box-sizing: border-box;
 }
 .tl-sheet.customize {
-  height: 72vh;
-  max-height: 72vh;
-  display: flex;
-  flex-direction: column;
-  padding: 12rpx 0 0;
+  /* 贴底固定高度：顶栏 + 列表 + 底栏，避免按钮悬在内容下方 */
+  height: 75vh;
+  max-height: 75vh;
+  padding: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 .tl-sheet-top {
-  flex-shrink: 0;
-  padding: 0 28rpx;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  padding: 12rpx 28rpx 16rpx;
+  background: #fffdf7;
+  box-sizing: border-box;
 }
 .tl-sheet-handle {
   width: 72rpx;
@@ -1418,7 +1424,7 @@ page {
 }
 .tl-sheet-hint {
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: 0;
   font-size: 22rpx;
   line-height: 1.5;
   color: #9a8a62;
@@ -1453,46 +1459,38 @@ page {
   font-size: 24rpx;
   color: #9a8a62;
 }
-.tl-customize-body {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 0; /* 占满标题与底部按钮之间的剩余高度，保证 scroll-view 可滚 */
-  margin: 0 28rpx;
-  border-radius: 18rpx;
-  background: rgba(255, 248, 230, 0.9);
-  border: 1rpx solid rgba(255, 184, 0, 0.22);
-  overflow: hidden;
-}
+/* 列表占满顶栏与底栏之间；滚动条贴右缘，内容左侧留白 */
 .tl-customize-scroll {
-  height: 100%;
-  box-sizing: border-box;
-  padding: 8rpx 20rpx 36rpx;
-}
-.tl-customize-fade {
-  pointer-events: none;
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 48rpx;
-  background: linear-gradient(180deg, rgba(255, 248, 230, 0), rgba(255, 248, 230, 0.95));
+  /* 顶栏约 handle+标题+说明；底栏约按钮+安全区，绝对定位保证按钮贴屏底 */
+  top: 220rpx;
+  bottom: calc(148rpx + env(safe-area-inset-bottom));
+  width: auto;
+  box-sizing: border-box;
+  background: #fffdf7;
+}
+.tl-customize-list {
+  padding: 4rpx 0 24rpx;
 }
 .tl-customize-item {
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  padding: 18rpx 0;
+  margin: 0;
+  padding: 18rpx 28rpx;
   border-bottom: 1rpx solid rgba(255, 184, 0, 0.14);
+  box-sizing: border-box;
 }
 .tl-customize-item:last-child {
   border-bottom: none;
-  padding-bottom: 28rpx;
 }
 .tl-customize-main {
   display: flex;
   align-items: center;
   gap: 12rpx;
+  padding-right: 8rpx;
 }
 .tl-customize-label {
   font-size: 28rpx;
@@ -1514,6 +1512,7 @@ page {
   display: flex;
   flex-wrap: wrap;
   gap: 8rpx;
+  padding-right: 8rpx;
 }
 .tl-mini-btn {
   padding: 8rpx 14rpx;
@@ -1523,12 +1522,17 @@ page {
   background: rgba(255, 184, 0, 0.12);
 }
 .tl-customize-footer {
-  flex-shrink: 0;
-  margin-top: 0;
-  padding: 18rpx 28rpx calc(18rpx + env(safe-area-inset-bottom));
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom));
   background: #fffdf7;
-  box-shadow: 0 -8rpx 20rpx rgba(80, 60, 10, 0.06);
+  box-shadow: 0 -8rpx 20rpx rgba(80, 60, 10, 0.08);
   border-top: 1rpx solid rgba(255, 184, 0, 0.16);
+  box-sizing: border-box;
 }
 .tl-save-btn {
   width: 100%;
