@@ -255,6 +255,34 @@ page {
   margin-top: 6rpx;
 }
 
+.sleep-ongoing-banner {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: -6rpx 0 22rpx;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid #F4D66C;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #FFF8D8, #FFF1A8);
+  box-shadow: 0 5rpx 14rpx rgba(211, 164, 0, 0.12);
+}
+.sleep-ongoing-icon {
+  flex: 0 0 auto;
+  font-size: 28rpx;
+}
+.sleep-ongoing-text {
+  flex: 1;
+  font-size: 25rpx;
+  color: #8A6500;
+  font-weight: 700;
+}
+.sleep-ongoing-arrow {
+  flex: 0 0 auto;
+  font-size: 34rpx;
+  color: #C79600;
+  line-height: 1;
+}
+
 /* 通用卡片 */
 .card {
   background: #fff;
@@ -882,6 +910,7 @@ page {
 .qa-ic.treat { background: #F0EBFF; }
 .qa-ic.bowel { background: #FFF0E0; }
 .qa-ic.water { background: #E3F4FF; }
+.qa-ic.sleep { background: #FFF2A8; }
 .qa-ic.mark { background: #FFF3D6; }
 .qa-ic.weight { background: #FFE9ED; }
 .qa-ic.height { background: #E3F6F5; }
@@ -1246,6 +1275,7 @@ page {
 .tl-node.treatment { border-color: #A78BFA; }
 .tl-node.bowel { border-color: #F59E7A; }
 .tl-node.water { border-color: #4AA8E0; }
+.tl-node.sleep { border-color: #E2B400; }
 .tl-body {
   flex: 1;
   min-width: 0;
@@ -1502,6 +1532,7 @@ page {
 /* 卡片入场：轻微上浮淡入。挂在 .anim-on 下，onShow 时先卸下再挂上即可重播。 */
 .anim-on .notice,
 .anim-on .hero,
+.anim-on .sleep-ongoing-banner,
 .anim-on .card {
   animation: home-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -1519,6 +1550,7 @@ page {
 /* 按压反馈：轻缩放 + 透明度（配合 hover-class 使用）
    transition 写在基础元素上，按下/松开两个方向都平滑 */
 .baby-card,
+.sleep-ongoing-banner,
 .weight-chip,
 .calc-btn,
 .qa,

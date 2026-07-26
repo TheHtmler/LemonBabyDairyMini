@@ -44,6 +44,12 @@
     </view>
   </view>
 
+  <view class="sleep-ongoing-banner" wx:if="{{ongoingSleep}}" bindtap="wakeOngoingSleep" hover-class="press-soft" hover-stay-time="60">
+    <text class="sleep-ongoing-icon">🌙</text>
+    <text class="sleep-ongoing-text">宝宝还在睡 · 点此醒来</text>
+    <text class="sleep-ongoing-arrow">›</text>
+  </view>
+
   <!-- 今日营养摄入：未设置目标时显示实际值，设置目标后显示目标进度 -->
   <view class="card hero-nutri">
     <view class="card-head">
@@ -170,6 +176,9 @@
           </view>
           <view class="qa" bindtap="navigateToWaterRecord" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic water">💧</view><text class="qa-nm">记喝水</text>
+          </view>
+          <view class="qa" bindtap="navigateToSleepRecord" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic sleep">🌙</view><text class="qa-nm">记睡眠</text>
           </view>
           <view class="qa" data-url="/pkg-milk/powder-management/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic powder">⚙️</view><text class="qa-nm">奶粉管理</text>

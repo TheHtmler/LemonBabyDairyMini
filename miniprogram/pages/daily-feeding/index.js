@@ -4,6 +4,7 @@ const MedicationRecordModel = require('../../models/medicationRecord');
 const MedicationModel = require('../../models/medication');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
+const SleepRecordModel = require('../../models/sleepRecord');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const {
   waitForAppInitialization,
@@ -92,7 +93,8 @@ const TIMELINE_TABS = [
   { key: 'med', label: '用药' },
   { key: 'treatment', label: '治疗' },
   { key: 'bowel', label: '大小便' },
-  { key: 'water', label: '喝水' }
+  { key: 'water', label: '喝水' },
+  { key: 'sleep', label: '睡眠' }
 ];
 const TIMELINE_DISPLAY_LIMIT = 12;
 // 把 "HH:MM" 拼到「今天」得到一个 Date（用于打卡记录的 actualDateTime）
@@ -221,6 +223,7 @@ Page({
     medUndo: { visible: false, name: '', time: '', recordId: '', localId: '' },
     medPanel: { visible: false, medicationId: '', name: '', meta: '', doseCount: 0, doseTotal: 0, entries: [] },
     foodCount: 0,
+    ongoingSleep: null,
 
     // 用药
     medicationsList: [],
@@ -526,19 +529,26 @@ Page({
           return null;
         });
 
-      const [daily, rangeSummaries, meds, recentDay, medicationHistoryRecords] = await Promise.all([
+      const [daily, rangeSummaries, meds, recentDay, medicationHistoryRecords, ongoingSleepResult] = await Promise.all([
         DailyRecordV2Service.getDailyRecordV2(babyUid, today),
         // 首屏不发趋势请求；完整补齐放到 loadDeferredDashboardParts，避免拖慢首页首屏。
         rangeSummariesPromise,
         medsPromise,
         // 下一顿参考：取上次（最近历史日）那天的全部喂奶记录，按今日已喂顿数对应同序号那一顿
         FeedingRecordV2Model.getRecentDayRecords(babyUid, today).catch(() => ({ date: '', records: [] })),
-        medicationHistoryPromise
+        medicationHistoryPromise,
+        SleepRecordModel.findOngoing(babyUid).catch((error) => {
+          console.warn('加载进行中睡眠失败:', error);
+          return { success: false, data: [] };
+        })
       ]);
       const plannedMeals = Array.isArray(recentDay?.records) ? recentDay.records.length : 0;
+      const ongoingSleep = ongoingSleepResult?.success
+        ? (ongoingSleepResult.data || [])[0] || null
+        : null;
 
       this.rangeSummaries = Array.isArray(rangeSummaries) ? rangeSummaries : [];
-      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, today });
+      await this.applyDashboard({ daily, meds, plannedMeals, recentDay, medicationHistoryRecords, ongoingSleep, today });
       this.markDashboardCacheFresh(babyUid, today, loadStartedAt);
 
       if (!silent) wx.hideLoading();
@@ -585,7 +595,7 @@ Page({
     return this._trendRefreshPromise;
   },
 
-  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, medicationHistoryRecords = [], today }) {
+  async applyDashboard({ daily = {}, meds = [], plannedMeals = 0, recentDay = { date: '', records: [] }, medicationHistoryRecords = [], ongoingSleep = null, today }) {
     const summary = daily.summary || {};
     const basicInfo = daily.basicInfo || summary.basicInfo || {};
     const macroSummary = summary.macroSummary || {};
@@ -642,6 +652,7 @@ Page({
       treatmentRecords: daily.treatmentRecords || [],
       bowelRecords: daily.bowelRecords || [],
       waterRecords: daily.waterRecords || [],
+      sleepRecords: daily.sleepRecords || [],
       limit: 0
     });
     this.timelineAll = timelineAll;
@@ -657,6 +668,7 @@ Page({
       nutritionTarget,
       feedingProgress,
       feedingPlanHint,
+      ongoingSleep,
       medicationsList: meds || [],
       medicationChecklist,
       timeline,
@@ -1253,6 +1265,64 @@ Page({
 
   navigateToWaterRecord() {
     wx.navigateTo({ url: `/pkg-records/water-record/index?date=${todayKey()}` });
+  },
+
+  openOngoingSleep(record) {
+    if (!record?._id) return;
+    const date = record.dateKey || record.date || todayKey();
+    wx.navigateTo({
+      url: `/pkg-records/sleep-record/index?id=${encodeURIComponent(record._id)}&date=${encodeURIComponent(date)}`
+    });
+  },
+
+  navigateToSleepRecord() {
+    const ongoing = this.data.ongoingSleep;
+    if (!ongoing) {
+      wx.navigateTo({ url: `/pkg-records/sleep-record/index?date=${todayKey()}` });
+      return;
+    }
+
+    wx.showActionSheet({
+      itemList: ['补结束并继续新建', '先去结束上一段'],
+      success: async ({ tapIndex }) => {
+        if (tapIndex === 1) {
+          this.openOngoingSleep(ongoing);
+          return;
+        }
+        if (tapIndex !== 0) return;
+
+        const result = await SleepRecordModel.completeSleep(ongoing._id);
+        if (!result.success) {
+          if (result.code === 'INVALID_END') {
+            this.openOngoingSleep(ongoing);
+          } else {
+            wx.showToast({ title: result.message || '补结束失败', icon: 'none' });
+          }
+          return;
+        }
+        this.setData({ ongoingSleep: null });
+        wx.navigateTo({ url: `/pkg-records/sleep-record/index?date=${todayKey()}` });
+      }
+    });
+  },
+
+  async wakeOngoingSleep() {
+    const ongoing = this.data.ongoingSleep;
+    if (!ongoing?._id) return;
+
+    const result = await SleepRecordModel.completeSleep(ongoing._id);
+    if (!result.success) {
+      if (result.code === 'INVALID_END') {
+        this.openOngoingSleep(ongoing);
+      } else {
+        wx.showToast({ title: result.message || '记录醒来失败', icon: 'none' });
+      }
+      return;
+    }
+
+    this.setData({ ongoingSleep: null });
+    await this.loadDashboard({ silent: true, rebuildTrend: false });
+    wx.showToast({ title: '已记录醒来', icon: 'success' });
   },
 
   rebuildNutritionTargetWithPreferences(targetPreferences = readNutritionTargetPreferences(getBabyUid())) {
