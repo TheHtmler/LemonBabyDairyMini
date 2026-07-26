@@ -10,7 +10,8 @@ const ALL_RECORD_TABS = [
   { key: 'medication', label: '用药' },
   { key: 'treatment', label: '治疗' },
   { key: 'bowel', label: '尿布' },
-  { key: 'water', label: '喝水' }
+  { key: 'water', label: '喝水' },
+  { key: 'sleep', label: '睡眠' }
 ];
 
 const DEFAULT_ORDERED_KEYS = ALL_RECORD_TABS.map((item) => item.key);
