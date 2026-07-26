@@ -16,6 +16,7 @@ const MedicationRecordModel = require('../../models/medicationRecord');
 const MedicationModel = require('../../models/medication');
 const TreatmentRecordModel = require('../../models/treatmentRecord');
 const WaterRecordModel = require('../../models/waterRecord');
+const SleepRecordModel = require('../../models/sleepRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
@@ -33,6 +34,10 @@ const {
 const {
   resolveFoodIntakePremiumProteinSplit
 } = require('../../utils/recipeNutritionUtils');
+const {
+  isOngoingSleep,
+  formatDurationLabel
+} = require('../../utils/sleepRecordUtils');
 const {
   buildRecordTabBar,
   loadRecordTabsPreference,
@@ -413,6 +418,11 @@ function createEmptyIntakeOverview() {
       volume: 0,
       count: 0
     },
+    sleep: {
+      durationMinutes: 0,
+      count: 0,
+      ongoingCount: 0
+    },
     treatment: createEmptyTreatmentOverview()
   };
 }
@@ -431,6 +441,30 @@ function formatWaterRecordsForDisplay(records = []) {
       timeString: timeString || '--:--',
       volumeMl: Number(record.volumeMl) || 0,
       notes: String(record.notes || '').trim()
+    };
+  });
+}
+
+function formatSleepRecordsForDisplay(records = []) {
+  return (records || []).map((record = {}) => {
+    const ongoing = isOngoingSleep(record);
+    const durationMinutes = Number(record.durationMinutes) || 0;
+    const durationLabel = ongoing
+      ? '睡觉中'
+      : (formatDurationLabel(durationMinutes) || '--');
+    const displayTitle = ongoing
+      ? '睡眠 · 睡觉中'
+      : (durationLabel !== '--' ? `睡眠 · ${durationLabel}` : '睡眠');
+
+    return {
+      ...record,
+      startTime: record.startTime || '--:--',
+      endTime: ongoing ? '' : (record.endTime || '--:--'),
+      durationMinutes,
+      durationLabel,
+      ongoing,
+      notes: String(record.notes || '').trim(),
+      displayTitle
     };
   });
 }
@@ -1482,6 +1516,7 @@ function createDataRecordsPageConfig(options = {}) {
     groupedBowelRecords: [], // 按类型分组的排便记录
     bowelStats: createEmptyBowelStats(),
     waterRecords: [],
+    sleepRecords: [],
     totalNaturalMilk: 0,
     totalSpecialMilk: 0,
     totalMilk: 0,
@@ -1830,6 +1865,47 @@ function createDataRecordsPageConfig(options = {}) {
         try {
           wx.showLoading({ title: '删除中...' });
           const result = await WaterRecordModel.delete(recordId);
+          if (!result.success) {
+            throw new Error(result.message || '删除失败');
+          }
+          wx.hideLoading();
+          wx.showToast({ title: '已删除', icon: 'success' });
+          await this.fetchDailyRecords(this.data.selectedDate, { silent: true });
+        } catch (error) {
+          wx.hideLoading();
+          wx.showToast({ title: error.message || '删除失败', icon: 'none' });
+        }
+      }
+    });
+  },
+
+  navigateToSleepRecord() {
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    wx.navigateTo({
+      url: `/pkg-records/sleep-record/index?date=${selectedDate}`
+    });
+  },
+
+  openEditSleepRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    const selectedDate = this.data.selectedDate || this.formatDate(new Date());
+    if (!recordId) return;
+    wx.navigateTo({
+      url: `/pkg-records/sleep-record/index?id=${encodeURIComponent(recordId)}&date=${selectedDate}`
+    });
+  },
+
+  async deleteSleepRecord(e) {
+    const recordId = e.currentTarget?.dataset?.recordId || e.detail?.recordId;
+    if (!recordId) return;
+    wx.showModal({
+      title: '删除睡眠记录',
+      content: '确认删除这条睡眠记录吗？',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          const result = await SleepRecordModel.delete(recordId);
           if (!result.success) {
             throw new Error(result.message || '删除失败');
           }
@@ -3993,6 +4069,12 @@ function createDataRecordsPageConfig(options = {}) {
       volume: Number(water.totalVolume) || 0,
       count: Number(water.totalRecords) || Number(counts.water) || 0
     };
+    const sleep = summary.sleep || {};
+    overview.sleep = {
+      durationMinutes: Number(sleep.totalDurationMinutes) || 0,
+      count: Number(sleep.totalRecords) || Number(counts.sleep) || 0,
+      ongoingCount: Number(sleep.ongoingCount) || 0
+    };
 
     return overview;
   },
@@ -4022,7 +4104,7 @@ function createDataRecordsPageConfig(options = {}) {
       ? roundNumber(specialProteinIntakeNum / coefficientWeight, 2)
       : '';
     const counts = summary.recordCounts || {};
-    const hasRecord = ['milk', 'food', 'medication', 'treatment', 'bowel', 'water']
+    const hasRecord = ['milk', 'food', 'medication', 'treatment', 'bowel', 'water', 'sleep']
       .some(key => (Number(counts[key]) || 0) > 0);
 
     return {
@@ -4039,6 +4121,7 @@ function createDataRecordsPageConfig(options = {}) {
       groupedBowelRecords: [],
       bowelStats: createEmptyBowelStats(),
       waterRecords: [],
+      sleepRecords: [],
       loadedRecordTabs: {},
       loadingRecordTabs: {},
       macroSummary,
@@ -4171,6 +4254,15 @@ function createDataRecordsPageConfig(options = {}) {
         loadedRecordTabs,
         loadingRecordTabs
       });
+      return;
+    }
+
+    if (tab === 'sleep') {
+      this.setData({
+        sleepRecords: formatSleepRecordsForDisplay(details.sleepRecords || []),
+        loadedRecordTabs,
+        loadingRecordTabs
+      });
     }
   },
 
@@ -4206,6 +4298,7 @@ function createDataRecordsPageConfig(options = {}) {
     const medicationRecordsToSet = serviceResult.medicationRecords || [];
     const bowelRecordsToSet = serviceResult.bowelRecords || [];
     const waterRecordsToSet = formatWaterRecordsForDisplay(serviceResult.waterRecords || []);
+    const sleepRecordsToSet = formatSleepRecordsForDisplay(serviceResult.sleepRecords || []);
     const summaryMacro = serviceResult.summary?.macroSummary;
     const macroSummary = summaryMacro || calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
     const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
@@ -4214,6 +4307,17 @@ function createDataRecordsPageConfig(options = {}) {
     intakeOverview.water = {
       volume: Number(waterFromSummary.totalVolume) || waterVolumeFromRecords,
       count: Number(waterFromSummary.totalRecords) || waterRecordsToSet.length
+    };
+    const sleepFromSummary = serviceResult.summary?.sleep || {};
+    const sleepDurationFromRecords = sleepRecordsToSet.reduce(
+      (sum, item) => sum + (item.ongoing ? 0 : (Number(item.durationMinutes) || 0)),
+      0
+    );
+    const ongoingSleepFromRecords = sleepRecordsToSet.filter(item => item.ongoing).length;
+    intakeOverview.sleep = {
+      durationMinutes: Number(sleepFromSummary.totalDurationMinutes) || sleepDurationFromRecords,
+      count: Number(sleepFromSummary.totalRecords) || sleepRecordsToSet.length,
+      ongoingCount: Number(sleepFromSummary.ongoingCount) || ongoingSleepFromRecords
     };
     const proteinSummaryDisplay = summaryMacro
       ? this.buildProteinSummaryDisplayFromMacroSummary(summaryMacro, intakeOverview)
@@ -4240,7 +4344,8 @@ function createDataRecordsPageConfig(options = {}) {
       || medicationRecordsToSet.length > 0
       || treatmentRecordsToSet.length > 0
       || bowelRecordsToSet.length > 0
-      || waterRecordsToSet.length > 0;
+      || waterRecordsToSet.length > 0
+      || sleepRecordsToSet.length > 0;
 
     this.setData({
       recordId: record._id,
@@ -4257,6 +4362,7 @@ function createDataRecordsPageConfig(options = {}) {
       treatmentRecords: treatmentRecordsToSet,
       bowelRecords: bowelRecordsToSet,
       waterRecords: waterRecordsToSet,
+      sleepRecords: sleepRecordsToSet,
       weight: recordWeight || '--',
       height: recordHeight || '--',
       weightSource: recordWeight ? 'record' : 'empty',

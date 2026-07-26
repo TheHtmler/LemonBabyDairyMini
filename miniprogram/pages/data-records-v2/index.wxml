@@ -523,6 +523,58 @@
         </view>
       </block>
 
+      <block wx:elif="{{activeTab === 'sleep'}}">
+        <view class="card">
+          <view class="card-title actions-only">
+            <view class="card-actions">
+              <view class="add-btn" bindtap="navigateToSleepRecord">
+                <image class="add-icon" src="/images/icons/add.svg" mode="aspectFit"></image>
+                <text>补充记录</text>
+              </view>
+            </view>
+          </view>
+          <view class="sleep-stats-row" wx:if="{{!loadingRecordTabs.sleep}}">
+            <view class="sleep-stat-pill">
+              <text class="sleep-stat-label">次数</text>
+              <text class="sleep-stat-value">{{intakeOverview.sleep.count || sleepRecords.length || 0}} 次</text>
+            </view>
+            <view class="sleep-stat-pill">
+              <text class="sleep-stat-label">总时长</text>
+              <text class="sleep-stat-value">{{intakeOverview.sleep.durationMinutes || 0}} 分钟</text>
+            </view>
+            <view class="sleep-stat-pill">
+              <text class="sleep-stat-label">进行中</text>
+              <text class="sleep-stat-value">{{intakeOverview.sleep.ongoingCount || 0}} 次</text>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{loadingRecordTabs.sleep}}">
+            <view class="empty-text">加载中...</view>
+          </view>
+          <view class="sleep-record-list" wx:elif="{{sleepRecords.length > 0}}">
+            <view class="sleep-record-item" wx:for="{{sleepRecords}}" wx:key="_id" wx:for-item="record">
+              <view class="record-content">
+                <view class="sleep-record-main-row">
+                  <text class="sleep-record-time">🌙 {{record.startTime}} → {{record.ongoing ? '睡觉中' : record.endTime}}</text>
+                  <text class="sleep-record-duration" wx:if="{{!record.ongoing}}">{{record.durationLabel}}</text>
+                </view>
+                <text class="sleep-record-notes" wx:if="{{record.notes}}">📝 {{record.notes}}</text>
+              </view>
+              <view class="action-buttons">
+                <view class="action-btn edit-btn" bindtap="openEditSleepRecord" data-record-id="{{record._id}}">
+                  <image class="action-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+                </view>
+                <view class="action-btn delete-btn" bindtap="deleteSleepRecord" data-record-id="{{record._id}}">
+                  <image class="action-icon" src="/images/icons/delete.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-data" wx:if="{{!loadingRecordTabs.sleep && sleepRecords.length === 0}}">
+            <view class="empty-text">暂无睡眠记录</view>
+          </view>
+        </view>
+      </block>
+
       <block wx:else>
         <!-- 喂奶记录列表 -->
         <view class="card">
