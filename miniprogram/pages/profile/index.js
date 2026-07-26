@@ -76,6 +76,13 @@ const MENU_GROUPS = [
         description: '维护成品菜配方，按食用克数记录营养'
       },
       {
+        id: 22,
+        name: '饮食调整换算',
+        icon: 'nutrition',
+        path: '/pkg-misc/diet-adjust-calculator/index',
+        description: '试验：按目标反算普奶/特奶/食物用量并应用到某天'
+      },
+      {
         id: 3,
         name: '药物管理',
         icon: 'medicine',

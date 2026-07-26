@@ -63,6 +63,7 @@
         "personal-info/index",
         "emergency-support/index",
         "emergency-card/index",
+        "diet-adjust-calculator/index",
         "about/index"
       ]
     }
