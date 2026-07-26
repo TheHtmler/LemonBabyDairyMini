@@ -17,3 +17,31 @@ test('sleepRecord model covers CRUD ongoing and dirty', () => {
   assert.match(source, /async delete/);
   assert.match(source, /resolveEndDateTime/);
 });
+
+test('buildDailySummaryV2 aggregates sleep duration and ongoing', () => {
+  const { buildDailySummaryV2 } = require('../miniprogram/utils/dailySummaryV2Utils');
+
+  const summary = buildDailySummaryV2({
+    babyUid: 'b1',
+    date: '2026-07-26',
+    sleepRecords: [
+      {
+        status: 'active',
+        durationMinutes: 90,
+        endTime: '09:30',
+        updatedAt: '2026-07-26T09:30:00.000Z'
+      },
+      {
+        status: 'active',
+        startTime: '22:00',
+        updatedAt: '2026-07-26T22:00:00.000Z'
+      } // ongoing
+    ]
+  });
+
+  assert.equal(summary.sleep.totalRecords, 2);
+  assert.equal(summary.sleep.totalDurationMinutes, 90);
+  assert.equal(summary.sleep.ongoingCount, 1);
+  assert.equal(summary.recordCounts.sleep, 2);
+  assert.equal(summary.sourceUpdatedAt.sleep, '2026-07-26T22:00:00.000Z');
+});
