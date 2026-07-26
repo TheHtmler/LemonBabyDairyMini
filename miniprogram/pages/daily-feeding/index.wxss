@@ -1377,8 +1377,16 @@ page {
   box-sizing: border-box;
 }
 .tl-sheet.customize {
+  height: 72vh;
+  max-height: 72vh;
   display: flex;
   flex-direction: column;
+  padding: 12rpx 0 0;
+  overflow: hidden;
+}
+.tl-sheet-top {
+  flex-shrink: 0;
+  padding: 0 28rpx;
 }
 .tl-sheet-handle {
   width: 72rpx;
@@ -1410,7 +1418,7 @@ page {
 }
 .tl-sheet-hint {
   display: block;
-  margin-bottom: 18rpx;
+  margin-bottom: 16rpx;
   font-size: 22rpx;
   line-height: 1.5;
   color: #9a8a62;
@@ -1445,10 +1453,30 @@ page {
   font-size: 24rpx;
   color: #9a8a62;
 }
+.tl-customize-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 0; /* 占满标题与底部按钮之间的剩余高度，保证 scroll-view 可滚 */
+  margin: 0 28rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 248, 230, 0.9);
+  border: 1rpx solid rgba(255, 184, 0, 0.22);
+  overflow: hidden;
+}
 .tl-customize-scroll {
-  flex: 1;
-  max-height: 52vh;
-  min-height: 240rpx;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 8rpx 20rpx 36rpx;
+}
+.tl-customize-fade {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48rpx;
+  background: linear-gradient(180deg, rgba(255, 248, 230, 0), rgba(255, 248, 230, 0.95));
 }
 .tl-customize-item {
   display: flex;
@@ -1456,6 +1484,10 @@ page {
   gap: 12rpx;
   padding: 18rpx 0;
   border-bottom: 1rpx solid rgba(255, 184, 0, 0.14);
+}
+.tl-customize-item:last-child {
+  border-bottom: none;
+  padding-bottom: 28rpx;
 }
 .tl-customize-main {
   display: flex;
@@ -1491,7 +1523,12 @@ page {
   background: rgba(255, 184, 0, 0.12);
 }
 .tl-customize-footer {
-  margin-top: 18rpx;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 18rpx 28rpx calc(18rpx + env(safe-area-inset-bottom));
+  background: #fffdf7;
+  box-shadow: 0 -8rpx 20rpx rgba(80, 60, 10, 0.06);
+  border-top: 1rpx solid rgba(255, 184, 0, 0.16);
 }
 .tl-save-btn {
   width: 100%;

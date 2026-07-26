@@ -489,25 +489,30 @@
   <!-- 时间轴分类自定义 -->
   <view class="tl-sheet-mask" wx:if="{{showTimelineCustomizeSheet}}" catchtap="closeTimelineCustomizeSheet"></view>
   <view class="tl-sheet customize {{showTimelineCustomizeSheet ? 'visible' : ''}}" wx:if="{{showTimelineCustomizeSheet}}">
-    <view class="tl-sheet-handle"></view>
-    <view class="tl-sheet-head">
-      <text class="tl-sheet-title">时间轴分类设置</text>
-      <text class="tl-sheet-action muted" catchtap="resetTimelineTabCustomize">恢复默认</text>
-    </view>
-    <text class="tl-sheet-hint">「全部」固定在首位。可调整常驻分类与顺序，仅保存在本机。</text>
-    <scroll-view class="tl-customize-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
-      <view class="tl-customize-item" wx:for="{{customizeTimelineTabs}}" wx:key="key">
-        <view class="tl-customize-main">
-          <text class="tl-customize-label">{{item.label}}</text>
-          <text class="tl-customize-tag {{item.pinned ? 'pin' : ''}}">{{item.pinned ? '常驻' : '更多'}}</text>
-        </view>
-        <view class="tl-customize-actions">
-          <text class="tl-mini-btn" data-key="{{item.key}}" catchtap="onToggleTimelinePinnedTab">{{item.pinned ? '移入更多' : '设为常驻'}}</text>
-          <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="up" catchtap="onMoveTimelineCustomizeTab">上移</text>
-          <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="down" catchtap="onMoveTimelineCustomizeTab">下移</text>
-        </view>
+    <view class="tl-sheet-top">
+      <view class="tl-sheet-handle"></view>
+      <view class="tl-sheet-head">
+        <text class="tl-sheet-title">时间轴分类设置</text>
+        <text class="tl-sheet-action muted" catchtap="resetTimelineTabCustomize">恢复默认</text>
       </view>
-    </scroll-view>
+      <text class="tl-sheet-hint">「全部」固定在首位。可调整常驻分类与顺序，仅保存在本机。列表可上下滚动。</text>
+    </view>
+    <view class="tl-customize-body">
+      <scroll-view class="tl-customize-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{true}}">
+        <view class="tl-customize-item" wx:for="{{customizeTimelineTabs}}" wx:key="key">
+          <view class="tl-customize-main">
+            <text class="tl-customize-label">{{item.label}}</text>
+            <text class="tl-customize-tag {{item.pinned ? 'pin' : ''}}">{{item.pinned ? '常驻' : '更多'}}</text>
+          </view>
+          <view class="tl-customize-actions">
+            <text class="tl-mini-btn" data-key="{{item.key}}" catchtap="onToggleTimelinePinnedTab">{{item.pinned ? '移入更多' : '设为常驻'}}</text>
+            <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="up" catchtap="onMoveTimelineCustomizeTab">上移</text>
+            <text class="tl-mini-btn" data-key="{{item.key}}" data-dir="down" catchtap="onMoveTimelineCustomizeTab">下移</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="tl-customize-fade"></view>
+    </view>
     <view class="tl-customize-footer">
       <view class="tl-save-btn" catchtap="saveTimelineTabCustomize">保存设置</view>
     </view>
