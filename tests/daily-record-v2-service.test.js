@@ -18,6 +18,7 @@ function createDbMock(overrides = {}) {
     growth_records_v2: overrides.growthRecordsV2Data || [],
     bowel_records: overrides.bowelRecords || [],
     water_records: overrides.waterRecords || [],
+    sleep_records: overrides.sleepRecords || [],
     feeding_records_v2: overrides.v2Data || [],
     baby_info: overrides.babyInfoData || [],
     feeding_records: overrides.legacyFeedingRecords || []
@@ -152,7 +153,8 @@ function loadFreshService(db) {
     '../miniprogram/models/foodIntakeRecord.js',
     '../miniprogram/models/medicationRecord.js',
     '../miniprogram/models/treatmentRecord.js',
-    '../miniprogram/models/waterRecord.js'
+    '../miniprogram/models/waterRecord.js',
+    '../miniprogram/models/sleepRecord.js'
   ].forEach((modulePath) => {
     try {
       delete require.cache[require.resolve(modulePath)];
@@ -178,13 +180,17 @@ function loadFreshService(db) {
     const FoodIntakeRecordModel = require('../miniprogram/models/foodIntakeRecord.js');
     const MedicationRecordModel = require('../miniprogram/models/medicationRecord.js');
     const TreatmentRecordModel = require('../miniprogram/models/treatmentRecord.js');
+    const WaterRecordModel = require('../miniprogram/models/waterRecord.js');
+    const SleepRecordModel = require('../miniprogram/models/sleepRecord.js');
     return {
       service,
       models: {
         FeedingRecordV2Model,
         FoodIntakeRecordModel,
         MedicationRecordModel,
-        TreatmentRecordModel
+        TreatmentRecordModel,
+        WaterRecordModel,
+        SleepRecordModel
       },
       restore() {
         global.wx = previousWx;
@@ -467,6 +473,186 @@ test('getDailyRecordTabDetails loads only the requested food tab details', async
       foodIntakeRecords: [{ _id: 'food-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active' }]
     });
     assert.deepEqual(modelCalls, [['food', 'baby-1', '2026-05-25']]);
+    assert.deepEqual(calls.collectionReads, []);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordV2 attaches sleepRecords and overview.sleep from loaded records', async () => {
+  const cleanSummary = {
+    _id: 'summary-sleep',
+    babyUid: 'baby-1',
+    date: '2026-07-26',
+    status: 'active',
+    isDirty: false,
+    basicInfo: { weight: '6.2' },
+    milk: { calories: 0 },
+    food: { calories: 0, premiumProtein: 0, regularProtein: 0 },
+    treatment: { calories: 0, fluidVolume: 0 },
+    sleep: { totalRecords: 2, totalDurationMinutes: 90, ongoingCount: 1 },
+    macroSummary: { calories: 0, protein: 0 }
+  };
+  const { db, calls } = createDbMock({
+    dailySummaryData: [cleanSummary],
+    sleepRecords: [
+      {
+        _id: 'sleep-1',
+        babyUid: 'baby-1',
+        date: '2026-07-26',
+        status: 'active',
+        durationMinutes: 90,
+        endTime: '09:30'
+      },
+      {
+        _id: 'sleep-2',
+        babyUid: 'baby-1',
+        date: '2026-07-26',
+        status: 'active',
+        startTime: '22:00'
+      }
+    ]
+  });
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async (babyUid, date) => {
+    modelCalls.push(['milk', babyUid, date]);
+    return [];
+  };
+  models.FoodIntakeRecordModel.findByDate = async (babyUid, date) => {
+    modelCalls.push(['food', babyUid, date]);
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async (date, babyUid) => {
+    modelCalls.push(['medication', babyUid, date]);
+    return { success: true, data: [] };
+  };
+  models.TreatmentRecordModel.findByDate = async (date, babyUid) => {
+    modelCalls.push(['treatment', babyUid, date]);
+    return { success: true, data: [] };
+  };
+  models.WaterRecordModel.findByDate = async (date, babyUid) => {
+    modelCalls.push(['water', babyUid, date]);
+    return { success: true, data: [] };
+  };
+  models.SleepRecordModel.findByDate = async (date, babyUid) => {
+    modelCalls.push(['sleep', babyUid, date]);
+    return {
+      success: true,
+      data: [
+        { _id: 'sleep-1', durationMinutes: 90, endTime: '09:30' },
+        { _id: 'sleep-2', startTime: '22:00' }
+      ]
+    };
+  };
+
+  try {
+    const dailyRecord = await service.getDailyRecordV2('baby-1', '2026-07-26');
+
+    assert.equal(dailyRecord.summary._id, 'summary-sleep');
+    assert.deepEqual(dailyRecord.sleepRecords, [
+      { _id: 'sleep-1', durationMinutes: 90, endTime: '09:30' },
+      { _id: 'sleep-2', startTime: '22:00' }
+    ]);
+    assert.deepEqual(dailyRecord.overview.sleep, {
+      totalRecords: 2,
+      totalDurationMinutes: 90,
+      ongoingCount: 1
+    });
+    assert.ok(modelCalls.some(([name]) => name === 'sleep'));
+    assert.equal(calls.addCollection, '');
+    assert.equal(calls.updateCollection, '');
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordTabDetails loads only the requested sleep tab details', async () => {
+  const { db, calls } = createDbMock({});
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    modelCalls.push('milk');
+    return [];
+  };
+  models.FoodIntakeRecordModel.findByDate = async () => {
+    modelCalls.push('food');
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => {
+    modelCalls.push('medication');
+    return { success: true, data: [] };
+  };
+  models.TreatmentRecordModel.findByDate = async () => {
+    modelCalls.push('treatment');
+    return { success: true, data: [] };
+  };
+  models.WaterRecordModel.findByDate = async () => {
+    modelCalls.push('water');
+    return { success: true, data: [] };
+  };
+  models.SleepRecordModel.findByDate = async (date, babyUid) => {
+    modelCalls.push(['sleep', babyUid, date]);
+    return {
+      success: true,
+      data: [{ _id: 'sleep-1', babyUid, date, status: 'active', startTime: '22:00' }]
+    };
+  };
+
+  try {
+    const details = await service.getDailyRecordTabDetails('baby-1', '2026-07-26', 'sleep');
+
+    assert.deepEqual(details, {
+      tab: 'sleep',
+      sleepRecords: [{ _id: 'sleep-1', babyUid: 'baby-1', date: '2026-07-26', status: 'active', startTime: '22:00' }]
+    });
+    assert.deepEqual(modelCalls, [['sleep', 'baby-1', '2026-07-26']]);
+    assert.deepEqual(calls.collectionReads, []);
+  } finally {
+    restore();
+  }
+});
+
+test('getDailyRecordTabDetails loads only the requested water tab details', async () => {
+  const { db, calls } = createDbMock({});
+  const { service, models, restore } = loadFreshService(db);
+  const modelCalls = [];
+  models.FeedingRecordV2Model.getRecordsByDate = async () => {
+    modelCalls.push('milk');
+    return [];
+  };
+  models.FoodIntakeRecordModel.findByDate = async () => {
+    modelCalls.push('food');
+    return [];
+  };
+  models.MedicationRecordModel.findByDate = async () => {
+    modelCalls.push('medication');
+    return { success: true, data: [] };
+  };
+  models.TreatmentRecordModel.findByDate = async () => {
+    modelCalls.push('treatment');
+    return { success: true, data: [] };
+  };
+  models.WaterRecordModel.findByDate = async (date, babyUid) => {
+    modelCalls.push(['water', babyUid, date]);
+    return {
+      success: true,
+      data: [{ _id: 'water-1', babyUid, date, status: 'active', volumeMl: 50 }]
+    };
+  };
+  models.SleepRecordModel.findByDate = async () => {
+    modelCalls.push('sleep');
+    return { success: true, data: [] };
+  };
+
+  try {
+    const details = await service.getDailyRecordTabDetails('baby-1', '2026-05-25', 'water');
+
+    assert.deepEqual(details, {
+      tab: 'water',
+      waterRecords: [{ _id: 'water-1', babyUid: 'baby-1', date: '2026-05-25', status: 'active', volumeMl: 50 }]
+    });
+    assert.deepEqual(modelCalls, [['water', 'baby-1', '2026-05-25']]);
     assert.deepEqual(calls.collectionReads, []);
   } finally {
     restore();
