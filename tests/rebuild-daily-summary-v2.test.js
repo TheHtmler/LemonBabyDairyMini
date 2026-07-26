@@ -43,6 +43,7 @@ function createDbMock(overrides = {}) {
     medication_records: overrides.medicationRecords || [],
     bowel_records: overrides.bowelRecords || [],
     water_records: overrides.waterRecords || [],
+    sleep_records: overrides.sleepRecords || [],
     growth_records_v2: overrides.growthRecords || []
   };
 
@@ -282,4 +283,55 @@ test('rebuild writes daily_summary_v2 from v2 milk and food facts', async () => 
     carbs: 14,
     fat: 4
   });
+});
+
+test('rebuild aggregates sleep duration and ongoing into daily_summary_v2', async () => {
+  const { db, writes } = createDbMock({
+    sleepRecords: [
+      {
+        _id: 'sleep-1',
+        babyUid: 'baby-1',
+        date: '2026-07-26',
+        status: 'active',
+        startDateTime: new Date(2026, 6, 26, 8, 0),
+        durationMinutes: 90,
+        endTime: '09:30',
+        updatedAt: '2026-07-26T09:30:00.000Z'
+      },
+      {
+        _id: 'sleep-2',
+        babyUid: 'baby-1',
+        date: '2026-07-26',
+        status: 'active',
+        startDateTime: new Date(2026, 6, 26, 22, 0),
+        startTime: '22:00',
+        updatedAt: '2026-07-26T22:00:00.000Z'
+      }
+    ]
+  });
+  const fn = loadFunctionWithMockCloud(db);
+
+  const result = await fn.main({
+    dryRun: false,
+    babyUid: 'baby-1',
+    startDate: '2026-07-26',
+    endDate: '2026-07-26',
+    pageSize: 1,
+    offset: 0
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.rebuilt, 1);
+  assert.equal(writes.adds.length, 1);
+  assert.deepEqual(writes.adds[0].data.sleep, {
+    totalRecords: 2,
+    totalDurationMinutes: 90,
+    ongoingCount: 1
+  });
+  assert.equal(writes.adds[0].data.recordCounts.sleep, 2);
+  assert.equal(writes.adds[0].data.sourceUpdatedAt.sleep, '2026-07-26T22:00:00.000Z');
+  assert.ok(
+    writes.reads.some((read) => read.collectionName === 'sleep_records' && read.where.startDateTime),
+    'should prefer startDateTime day range query'
+  );
 });
