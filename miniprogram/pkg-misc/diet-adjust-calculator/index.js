@@ -1,5 +1,4 @@
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
-const PowderCatalogModel = require('../../pkg-milk/models/powderCatalog');
 const FoodModel = require('../../models/food');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
@@ -30,6 +29,7 @@ const {
   buildCategoryBadgeStyle,
   sortFormulaPowdersByCategory
 } = require('../../utils/formulaPowderUtils');
+const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 
 const DIET_ADJUST_FOOD_PICKER_SELECTION_KEY = 'diet_adjust_food_picker_selection';
 
@@ -40,10 +40,39 @@ const ADD_MILK_CATEGORY_LABELS = {
   [POWDER_CATEGORIES.ENERGY_SUPPLEMENT]: '能量粉'
 };
 
-const getSystemPowders = PowderCatalogModel.getSystemPowders.bind(PowderCatalogModel);
-const resolvePowderImageUrls = typeof PowderCatalogModel.resolvePowderImageUrls === 'function'
-  ? PowderCatalogModel.resolvePowderImageUrls.bind(PowderCatalogModel)
-  : async (powders) => powders;
+/** 不跨分包 require pkg-milk；系统奶粉直接读云库 */
+async function getSystemPowders() {
+  try {
+    if (!wx.cloud || !wx.cloud.database) return [];
+    const res = await wx.cloud.database().collection('powder_catalog').limit(100).get();
+    return Array.isArray(res?.data) ? res.data : [];
+  } catch (error) {
+    console.warn('加载系统奶粉失败:', error);
+    return [];
+  }
+}
+
+async function resolvePowderImageUrls(powders = []) {
+  const list = Array.isArray(powders) ? powders : [];
+  const fileIds = list
+    .map((powder) => (powder?.image || '').toString().trim())
+    .filter((image) => image.startsWith('cloud://'));
+  if (!fileIds.length) return list;
+  let imageUrlMap = new Map();
+  try {
+    imageUrlMap = await resolveCloudTempUrls(fileIds);
+  } catch (error) {
+    console.warn('解析奶粉图片临时地址失败:', error);
+    return list;
+  }
+  return list.map((powder) => {
+    const image = (powder?.image || '').toString().trim();
+    return {
+      ...powder,
+      imageUrl: imageUrlMap.get(image) || image || ''
+    };
+  });
+}
 
 function round(value, precision = 2) {
   const number = Number(value);

@@ -5,6 +5,15 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 
+test('diet adjust calculator page does not cross-require pkg-milk modules', () => {
+  const source = fs.readFileSync(
+    path.join(root, 'miniprogram/pkg-misc/diet-adjust-calculator/index.js'),
+    'utf8'
+  );
+  assert.doesNotMatch(source, /require\(['"][^'"]*pkg-milk[^'"]*['"]\)/);
+  assert.match(source, /powder_catalog/);
+});
+
 test('diet adjust calculator page exposes solver and overwrite flow', () => {
   const pagePath = path.join(root, 'miniprogram/pkg-misc/diet-adjust-calculator/index.js');
   assert.equal(fs.existsSync(pagePath), true, 'wizard page should exist');
