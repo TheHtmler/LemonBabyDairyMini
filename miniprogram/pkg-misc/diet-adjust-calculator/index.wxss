@@ -774,19 +774,6 @@ page {
   font-weight: 700;
 }
 
-.preview-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10rpx;
-}
-
-.preview-grid-compact {
-  margin-bottom: 0;
-}
-
-.preview-item {
-  border-radius: 16rpx;
-  padding: 12rpx;
 .add-milk-dialog-mask {
   position: fixed;
   inset: 0;
@@ -1253,9 +1240,6 @@ page {
   }
 }
 
-.milk-fly-ghost {
-  position: fixed;
-  z-index: 70;
 .panel-title-wrap {
   display: flex;
   flex-direction: column;
@@ -1269,11 +1253,3 @@ page {
   letter-spacing: 1.5rpx;
   color: #c18b28;
 }
-
-.section-title {
-  font-size: 30rpx;
-  line-height: 1.2;
-  font-weight: 700;
-  color: #3f2a03;
-}
-
