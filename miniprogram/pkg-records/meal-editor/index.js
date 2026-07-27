@@ -20,6 +20,7 @@ const {
   buildEntryTargetPreview,
   summarizeFoodItems,
   normalizeSummary,
+  withDayPremiumFromDailySummary,
   addSummaries,
   subtractSummaries
 } = require('../../utils/nutritionTargetPreview');
@@ -102,10 +103,12 @@ function withPremiumProteinDisplay(item = {}) {
     : Number(item.nutrition?.naturalProtein) || 0;
   const split = resolveFoodIntakePremiumProteinSplit(item, naturalProtein);
   const premiumProtein = Number(split.premiumProtein) || 0;
+  const premiumRatio = Number(split.premiumRatio) || 0;
   return {
     ...item,
     nutrition: withProteinNutritionDisplay(item.nutrition || {}),
     premiumProteinText: formatProteinText(premiumProtein),
+    premiumRatio,
     showPremiumProtein: premiumProtein > 0
   };
 }
@@ -153,6 +156,7 @@ function buildFoodNutritionPreview(food, quantity, itemExtras = {}) {
     ...nutrition,
     ...proteinSplit,
     premiumProteinText: previewItem.premiumProteinText,
+    premiumRatio: previewItem.premiumRatio,
     showPremiumProtein: previewItem.showPremiumProtein
   };
 }
@@ -171,6 +175,7 @@ function buildRecipeNutritionPreview(target, quantity) {
   return {
     ...nutrition,
     premiumProteinText: previewItem.premiumProteinText,
+    premiumRatio: previewItem.premiumRatio,
     showPremiumProtein: previewItem.showPremiumProtein
   };
 }
@@ -373,6 +378,7 @@ function createEmptyMealSummary() {
     proteinText: '0.00',
     premiumProtein: 0,
     premiumProteinText: '0.00',
+    premiumRatio: 0,
     showPremiumProtein: false,
     carbs: 0,
     fat: 0,
@@ -395,6 +401,7 @@ function calculateMealSummary(items = []) {
 
   const premiumSummary = summarizeMealItemsPremiumProtein(items);
   const premiumProtein = Number(premiumSummary.premiumProtein) || 0;
+  const premiumRatio = Number(premiumSummary.premiumRatio) || 0;
 
   return {
     calories: roundCalories(summary.calories),
@@ -402,6 +409,7 @@ function calculateMealSummary(items = []) {
     proteinText: formatProteinText(summary.protein),
     premiumProtein: roundNumber(premiumProtein, 2),
     premiumProteinText: formatProteinText(premiumProtein),
+    premiumRatio,
     showPremiumProtein: premiumProtein > 0,
     carbs: roundNumber(summary.carbs, 2),
     fat: roundNumber(summary.fat, 2),
@@ -599,7 +607,10 @@ Page({
     const dayProteinQualityBase = resolveDayPremiumProteinBase(daily?.summary || {});
     this.setData({
       targetContext: {
-        currentSummary: normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || {}),
+        currentSummary: withDayPremiumFromDailySummary(
+          daily?.summary?.macroSummary || daily?.overview?.macroSummary || {},
+          daily?.summary || {}
+        ),
         weight: basicInfo.weight || '',
         targetPreferences: {
           naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),

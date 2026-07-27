@@ -1000,9 +1000,15 @@ test('meal editor writes target context before opening food picker', async () =>
     assert.equal(storage.__navigateTo, '/pkg-records/food-picker/index');
     assert.deepEqual(storage[FOOD_PICKER_TARGET_CONTEXT_KEY], {
       schemaVersion: 1,
-      currentSummary: { calories: 100, protein: 3, naturalProtein: 3, specialProtein: 0, carbs: 0, fat: 0 },
-      previousSummary: { calories: 20, protein: 0.5, naturalProtein: 0.5, specialProtein: 0, carbs: 0, fat: 0 },
-      baseMealSummary: { calories: 40, protein: 1, naturalProtein: 1, specialProtein: 0, carbs: 6, fat: 0.5 },
+      currentSummary: {
+        calories: 100, protein: 3, naturalProtein: 3, specialProtein: 0, premiumProtein: 0, carbs: 0, fat: 0
+      },
+      previousSummary: {
+        calories: 20, protein: 0.5, naturalProtein: 0.5, specialProtein: 0, premiumProtein: 0, carbs: 0, fat: 0
+      },
+      baseMealSummary: {
+        calories: 40, protein: 1, naturalProtein: 1, specialProtein: 0, premiumProtein: 0, carbs: 6, fat: 0.5
+      },
       weight: 5,
       targetPreferences: {
         naturalProteinCoefficient: 1,

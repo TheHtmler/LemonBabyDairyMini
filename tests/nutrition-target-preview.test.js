@@ -13,16 +13,19 @@ test('buildEntryTargetPreview computes after-save protein status and subtracts p
     currentSummary: {
       naturalProtein: 5,
       specialProtein: 1,
+      premiumProtein: 4,
       calories: 420
     },
     draftSummary: {
       naturalProtein: 1.4,
       specialProtein: 0.2,
+      premiumProtein: 1.4,
       calories: 90
     },
     previousSummary: {
       naturalProtein: 1,
       specialProtein: 0,
+      premiumProtein: 1,
       calories: 60
     },
     weight: 4,
@@ -45,11 +48,17 @@ test('buildEntryTargetPreview computes after-save protein status and subtracts p
   assert.equal(natural.badgeText, '超出 0.60g');
   assert.equal(natural.draftText, '本次增加 +1.40g');
   assert.equal(natural.actionText, '仍然保存');
+  // 全天优质 = 4 - 1 + 1.4 = 4.4；占比 4.4 / 5.4 ≈ 81%
+  assert.equal(natural.premiumProtein, 4.4);
+  assert.equal(natural.premiumRatio, 81);
+  assert.equal(natural.showPremiumNote, true);
+  assert.equal(natural.premiumNoteText, '优质蛋白 4.40g · 81%');
 
   assert.equal(special.actual, 1.2);
   assert.equal(special.target, 3.2);
   assert.equal(special.status, 'ok');
   assert.equal(special.badgeText, '还差 2.00g');
+  assert.equal(special.showPremiumNote, false);
   assert.equal(preview.hasOverProtein, true);
 });
 
@@ -90,7 +99,8 @@ test('summarizeFoodItems preserves natural and special protein split', () => {
     {
       nutrition: { calories: 40, protein: 1, carbs: 5, fat: 1 },
       naturalProtein: 1,
-      specialProtein: 0
+      specialProtein: 0,
+      proteinQuality: 'premium'
     },
     {
       nutrition: { calories: 30, protein: 0.5, carbs: 4, fat: 0.5 },
@@ -104,6 +114,7 @@ test('summarizeFoodItems preserves natural and special protein split', () => {
     protein: 1.5,
     naturalProtein: 1,
     specialProtein: 0.5,
+    premiumProtein: 1,
     carbs: 9,
     fat: 1.5
   });
@@ -124,6 +135,7 @@ test('summarizeTreatmentGroups contributes calories but not natural or special p
     protein: 0,
     naturalProtein: 0,
     specialProtein: 0,
+    premiumProtein: 0,
     carbs: 5,
     fat: 0
   });
@@ -160,6 +172,9 @@ test('nutrition target preview shows a setup entry when protein target is unset'
   );
 
   assert.match(wxml, /\{\{showProtein && !preview\.hasProteinTarget \? emptyTitle : title\}\}/);
+  assert.match(wxml, /target-preview-premium/);
+  assert.match(wxml, /item\.showPremiumNote/);
+  assert.match(wxml, /\{\{item\.premiumNoteText\}\}/);
   assert.match(wxml, /target-preview-empty-copy/);
   assert.match(wxml, /class="target-preview-empty-action" bindtap="handleSetupTap"/);
   assert.match(wxml, /\{\{setupText\}\}/);

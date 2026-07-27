@@ -293,6 +293,14 @@ function isRecipeIntakeRecord(record = {}) {
   return record.sourceType === 'recipe' || hasRecipeId || hasIngredients;
 }
 
+/** 优质蛋白占天然蛋白的百分比（整数） */
+function resolvePremiumProteinRatio(premiumProtein, naturalProtein) {
+  const natural = Number(naturalProtein) || 0;
+  const premium = Number(premiumProtein) || 0;
+  if (!(natural > 0)) return 0;
+  return Math.round((premium / natural) * 100);
+}
+
 /**
  * 单条食物摄入的优质/普通天然蛋白拆分。
  * 食谱：按原料快照的优质占比，分摊到本条已摄入的 naturalProtein（避免整道菜被当成单一 quality）。
@@ -315,7 +323,7 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
   );
 
   if (!(naturalProtein > 0)) {
-    return { premiumProtein: 0, regularProtein: 0 };
+    return { premiumProtein: 0, regularProtein: 0, premiumRatio: 0 };
   }
 
   if (isRecipeIntakeRecord(record)) {
@@ -332,7 +340,11 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
           2
         );
         const regularProtein = roundNumber(Math.max(0, naturalProtein - premiumProtein), 2);
-        return { premiumProtein, regularProtein };
+        return {
+          premiumProtein,
+          regularProtein,
+          premiumRatio: resolvePremiumProteinRatio(premiumProtein, naturalProtein)
+        };
       }
     }
   }
@@ -341,12 +353,14 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
   if (quality === 'premium') {
     return {
       premiumProtein: roundNumber(naturalProtein, 2),
-      regularProtein: 0
+      regularProtein: 0,
+      premiumRatio: 100
     };
   }
   return {
     premiumProtein: 0,
-    regularProtein: roundNumber(naturalProtein, 2)
+    regularProtein: roundNumber(naturalProtein, 2),
+    premiumRatio: 0
   };
 }
 
@@ -390,9 +404,12 @@ function summarizeMealItemsPremiumProtein(items = []) {
       premiumProtein += natural;
     }
   });
+  const naturalRounded = roundNumber(naturalProtein, 2);
+  const premiumRounded = roundNumber(premiumProtein, 2);
   return {
-    premiumProtein: roundNumber(premiumProtein, 2),
-    naturalProtein: roundNumber(naturalProtein, 2)
+    premiumProtein: premiumRounded,
+    naturalProtein: naturalRounded,
+    premiumRatio: resolvePremiumProteinRatio(premiumRounded, naturalRounded)
   };
 }
 
@@ -483,6 +500,7 @@ module.exports = {
   scalePremiumProteinSummary,
   resolveDayPremiumProteinBase,
   isRecipeIntakeRecord,
+  resolvePremiumProteinRatio,
   resolveFoodIntakePremiumProteinSplit,
   summarizeMealItemsPremiumProtein,
   combinePremiumProteinWithDay,

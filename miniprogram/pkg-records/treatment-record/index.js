@@ -8,7 +8,8 @@ const {
 const {
   buildEntryTargetPreview,
   summarizeTreatmentGroups,
-  normalizeSummary
+  normalizeSummary,
+  withDayPremiumFromDailySummary
 } = require('../../utils/nutritionTargetPreview');
 const {
   TREATMENT_ITEM_CATEGORIES,
@@ -160,7 +161,10 @@ Page({
       const localTarget = await getNutritionTargetPreferences(babyUid);
       this.setData({
         targetContext: {
-          currentSummary: normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || {}),
+          currentSummary: withDayPremiumFromDailySummary(
+            daily?.summary?.macroSummary || daily?.overview?.macroSummary || {},
+            daily?.summary || {}
+          ),
           weight: basicInfo.weight || '',
           targetPreferences: {
             naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),

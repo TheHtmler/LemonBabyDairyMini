@@ -90,12 +90,13 @@ Component({
       const naturalProtein = resolveNaturalProtein(record);
       const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
       const premiumProtein = Number(qualitySplit.premiumProtein) || 0;
+      const premiumRatio = Number(qualitySplit.premiumRatio) || 0;
 
       const proteinText = `蛋白 ${this.formatProteinText(nutrition.protein)}g`;
       const metricItems = [
         `${nutrition.calories || 0} kcal`,
         premiumProtein > 0
-          ? `${proteinText}（含优质蛋白 ${this.formatProteinText(premiumProtein)}g）`
+          ? `${proteinText}（含优质蛋白 ${this.formatProteinText(premiumProtein)}g · ${premiumRatio}%）`
           : proteinText,
         `碳水 ${nutrition.carbs || 0}g`,
         `脂肪 ${nutrition.fat || 0}g`

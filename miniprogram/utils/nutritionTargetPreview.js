@@ -1,4 +1,9 @@
 const DEFAULT_NUTRITION_TREATMENT_CATEGORIES = ['dextrose_10', 'dextrose_5'];
+const {
+  resolveFoodIntakePremiumProteinSplit,
+  resolveDayPremiumProteinBase,
+  resolvePremiumProteinRatio
+} = require('./recipeNutritionUtils');
 
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) {
@@ -34,8 +39,19 @@ function normalizeSummary(summary = {}) {
     protein: roundValue(toNumber(summary.protein), 2),
     naturalProtein: roundValue(toNumber(summary.naturalProtein), 2),
     specialProtein: roundValue(toNumber(summary.specialProtein), 2),
+    premiumProtein: roundValue(toNumber(summary.premiumProtein), 2),
     carbs: roundValue(toNumber(summary.carbs), 2),
     fat: roundValue(toNumber(summary.fat), 2)
+  };
+}
+
+/** 从日汇总注入全天优质蛋白（奶天然全算优质 + 食物 premium） */
+function withDayPremiumFromDailySummary(macroSummary = {}, dailySummary = {}) {
+  const normalized = normalizeSummary(macroSummary);
+  const dayPremium = resolveDayPremiumProteinBase(dailySummary || {});
+  return {
+    ...normalized,
+    premiumProtein: dayPremium.premiumProtein
   };
 }
 
@@ -47,6 +63,7 @@ function addSummaries(left = {}, right = {}) {
     protein: a.protein + b.protein,
     naturalProtein: a.naturalProtein + b.naturalProtein,
     specialProtein: a.specialProtein + b.specialProtein,
+    premiumProtein: a.premiumProtein + b.premiumProtein,
     carbs: a.carbs + b.carbs,
     fat: a.fat + b.fat
   });
@@ -60,12 +77,24 @@ function subtractSummaries(left = {}, right = {}) {
     protein: Math.max(0, a.protein - b.protein),
     naturalProtein: Math.max(0, a.naturalProtein - b.naturalProtein),
     specialProtein: Math.max(0, a.specialProtein - b.specialProtein),
+    premiumProtein: Math.max(0, a.premiumProtein - b.premiumProtein),
     carbs: Math.max(0, a.carbs - b.carbs),
     fat: Math.max(0, a.fat - b.fat)
   });
 }
 
-function buildGoalRow({ key, label, displayLabel, tone, actual, draft, target, unit = 'g' }) {
+function buildGoalRow({
+  key,
+  label,
+  displayLabel,
+  tone,
+  actual,
+  draft,
+  target,
+  unit = 'g',
+  premiumProtein = 0,
+  premiumRatio = 0
+} = {}) {
   const hasTarget = target > 0;
   const precision = unit === 'kcal' ? 0 : 2;
   const actualValue = roundValue(actual, precision);
@@ -80,6 +109,9 @@ function buildGoalRow({ key, label, displayLabel, tone, actual, draft, target, u
   const badgeText = !hasTarget
     ? '未设置'
     : (overAmount > 0 ? `超出 ${formatAmount(overAmount, unit)}` : `还差 ${formatAmount(remaining, unit)}`);
+  const premiumValue = roundValue(premiumProtein, 2);
+  const premiumRatioValue = Number(premiumRatio) || 0;
+  const showPremiumNote = key === 'naturalProtein' && premiumValue > 0;
 
   return {
     key,
@@ -102,7 +134,13 @@ function buildGoalRow({ key, label, displayLabel, tone, actual, draft, target, u
     pctText: formatPercentText(pct),
     targetText: hasTarget ? `${formatFixed(targetValue, precision)}${unit}` : '',
     draftText: `本次增加 +${formatAmount(draftValue, unit)}`,
-    actionText: overAmount > 0 ? '仍然保存' : '保存'
+    actionText: overAmount > 0 ? '仍然保存' : '保存',
+    premiumProtein: premiumValue,
+    premiumRatio: premiumRatioValue,
+    showPremiumNote,
+    premiumNoteText: showPremiumNote
+      ? `优质蛋白 ${formatFixed(premiumValue, 2)}g · ${premiumRatioValue}%`
+      : ''
   };
 }
 
@@ -147,6 +185,10 @@ function buildEntryTargetPreview({
   const naturalTarget = safeWeight * toNumber(targetPreferences.naturalProteinCoefficient);
   const specialTarget = safeWeight * toNumber(targetPreferences.specialProteinCoefficient);
   const calorieTarget = safeWeight * toNumber(targetPreferences.calorieCoefficient);
+  const dayPremiumRatio = resolvePremiumProteinRatio(
+    afterSave.premiumProtein,
+    afterSave.naturalProtein
+  );
   const proteinRows = [
     buildGoalRow({
       key: 'naturalProtein',
@@ -156,7 +198,9 @@ function buildEntryTargetPreview({
       actual: afterSave.naturalProtein,
       draft: draft.naturalProtein,
       target: naturalTarget,
-      unit: 'g'
+      unit: 'g',
+      premiumProtein: afterSave.premiumProtein,
+      premiumRatio: dayPremiumRatio
     }),
     buildGoalRow({
       key: 'specialProtein',
@@ -201,11 +245,13 @@ function summarizeFoodItems(items = []) {
     const specialProtein = hasSpecial
       ? toNumber(item.specialProtein)
       : (item.proteinSource === 'special' ? protein : 0);
+    const qualitySplit = resolveFoodIntakePremiumProteinSplit(item, naturalProtein);
 
     acc.calories += toNumber(nutrition.calories);
     acc.protein += protein;
     acc.naturalProtein += naturalProtein;
     acc.specialProtein += specialProtein;
+    acc.premiumProtein += toNumber(qualitySplit.premiumProtein);
     acc.carbs += toNumber(nutrition.carbs);
     acc.fat += toNumber(nutrition.fat);
     return acc;
@@ -236,7 +282,8 @@ function summarizeTreatmentGroups(groups = []) {
   return normalizeSummary({
     ...summary,
     naturalProtein: 0,
-    specialProtein: 0
+    specialProtein: 0,
+    premiumProtein: 0
   });
 }
 
@@ -245,6 +292,7 @@ module.exports = {
   summarizeFoodItems,
   summarizeTreatmentGroups,
   normalizeSummary,
+  withDayPremiumFromDailySummary,
   addSummaries,
   subtractSummaries
 };

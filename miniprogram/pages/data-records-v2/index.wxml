@@ -256,7 +256,7 @@
                     </view>
                   </view>
                   <view class="meal-group-digest-premium" wx:if="{{item.summary.showPremiumProtein}}">
-                    <text class="meal-group-digest-premium-text">含优质蛋白 {{item.summary.premiumProteinText}}g</text>
+                    <text class="meal-group-digest-premium-text">含优质蛋白 {{item.summary.premiumProteinText}}g · {{item.summary.premiumRatio}}%</text>
                   </view>
                   <view class="meal-group-note" wx:if="{{item.mealNote}}">
                     <text class="meal-group-note-label">备注</text>

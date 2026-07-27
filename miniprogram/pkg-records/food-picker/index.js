@@ -988,8 +988,16 @@ Page({
       }
 
       items.push({
-        nutrition,
+        nutrition: {
+          ...nutrition,
+          naturalProtein,
+          specialProtein
+        },
         proteinSource,
+        proteinQuality: food.proteinQuality || '',
+        foodSnapshot: {
+          proteinQuality: food.proteinQuality || ''
+        },
         naturalProtein,
         specialProtein
       });

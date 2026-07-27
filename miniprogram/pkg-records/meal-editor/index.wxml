@@ -58,7 +58,7 @@
           </view>
           <view class="meal-item-meta">
             <text class="amount-echo">{{item.quantity}}{{item.unit}}</text>
-            <text> · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}}g{{item.showPremiumProtein ? ('（含优质蛋白 ' + item.premiumProteinText + 'g）') : ''}}</text>
+            <text> · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}}g{{item.showPremiumProtein ? ('（含优质蛋白 ' + item.premiumProteinText + 'g · ' + item.premiumRatio + '%）') : ''}}</text>
           </view>
           <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g</text>
         </view>
@@ -89,7 +89,7 @@
           </view>
         </view>
         <view class="meal-digest-premium" wx:if="{{mealSummary.showPremiumProtein}}">
-          <text class="meal-digest-premium-text">含优质蛋白 {{mealSummary.premiumProteinText}}g</text>
+          <text class="meal-digest-premium-text">含优质蛋白 {{mealSummary.premiumProteinText}}g · {{mealSummary.premiumRatio}}%</text>
         </view>
       </view>
     </block>
@@ -221,7 +221,7 @@
           </view>
         </view>
         <view class="meal-digest-premium" wx:if="{{item.nutritionPreview.showPremiumProtein}}">
-          <text class="meal-digest-premium-text">含优质蛋白 {{item.nutritionPreview.premiumProteinText}}g</text>
+          <text class="meal-digest-premium-text">含优质蛋白 {{item.nutritionPreview.premiumProteinText}}g · {{item.nutritionPreview.premiumRatio}}%</text>
         </view>
       </view>
       <view class="batch-actions">
@@ -279,7 +279,7 @@
             </view>
           </view>
           <view class="meal-digest-premium" wx:if="{{currentFoodDraft.nutritionPreview.showPremiumProtein}}">
-            <text class="meal-digest-premium-text">含优质蛋白 {{currentFoodDraft.nutritionPreview.premiumProteinText}}g</text>
+            <text class="meal-digest-premium-text">含优质蛋白 {{currentFoodDraft.nutritionPreview.premiumProteinText}}g · {{currentFoodDraft.nutritionPreview.premiumRatio}}%</text>
           </view>
         </view>
       </scroll-view>
@@ -339,7 +339,7 @@
             </view>
           </view>
           <view class="meal-digest-premium" wx:if="{{currentRecipeDraft.nutritionPreview.showPremiumProtein}}">
-            <text class="meal-digest-premium-text">含优质蛋白 {{currentRecipeDraft.nutritionPreview.premiumProteinText}}g</text>
+            <text class="meal-digest-premium-text">含优质蛋白 {{currentRecipeDraft.nutritionPreview.premiumProteinText}}g · {{currentRecipeDraft.nutritionPreview.premiumRatio}}%</text>
           </view>
         </view>
       </scroll-view>

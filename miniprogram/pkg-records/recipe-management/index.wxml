@@ -197,7 +197,7 @@
             </view>
           </view>
           <view class="default-preview-premium" wx:if="{{defaultPreview.hasDefaults && defaultPreview.showPremiumProtein}}">
-            <text class="default-preview-premium-text">含优质蛋白 {{defaultPreview.premiumProteinText}}g</text>
+            <text class="default-preview-premium-text">含优质蛋白 {{defaultPreview.premiumProteinText}}g · {{defaultPreview.premiumRatio}}%</text>
           </view>
         </view>
       </view>
@@ -261,7 +261,7 @@
             </view>
           </view>
           <view class="default-preview-premium" wx:if="{{defaultPreview.showPremiumProtein}}">
-            <text class="default-preview-premium-text">含优质蛋白 {{defaultPreview.premiumProteinText}}g</text>
+            <text class="default-preview-premium-text">含优质蛋白 {{defaultPreview.premiumProteinText}}g · {{defaultPreview.premiumRatio}}%</text>
           </view>
         </view>
       </view>

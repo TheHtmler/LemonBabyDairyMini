@@ -120,10 +120,12 @@ test('meal group card shows digest-style macros and premium protein under the gr
   assert.match(wxml, /meal-group-digest-num/);
   assert.match(wxml, /热量 kcal/);
   assert.match(wxml, /meal-group-digest-premium/);
-  assert.match(wxml, /含优质蛋白 \{\{item\.summary\.premiumProteinText\}\}g/);
+  assert.match(wxml, /含优质蛋白 \{\{item\.summary\.premiumProteinText\}\}g · \{\{item\.summary\.premiumRatio\}\}%/);
   assert.match(wxml, /wx:if="\{\{item\.summary\.showPremiumProtein\}\}"/);
   assert.doesNotMatch(wxml, /meal-group-summary-grid/);
   assert.match(pageSource, /group\.summary\.premiumProtein \+=/);
+  assert.match(pageSource, /group\.summary\.naturalProtein \+=/);
+  assert.match(pageSource, /premiumRatio/);
   assert.match(pageSource, /showPremiumProtein:\s*premiumProtein > 0/);
 });
 
@@ -162,6 +164,7 @@ test('food record item shows premium protein metric only when value is positive'
   const componentSource = fs.readFileSync(foodRecordItemJsPath, 'utf8');
   assert.match(componentSource, /resolveFoodIntakePremiumProteinSplit/);
   assert.match(componentSource, /含优质蛋白/);
+  assert.match(componentSource, /premiumRatio/);
   assert.match(componentSource, /premiumProtein > 0/);
   assert.match(componentSource, /碳水 \$\{nutrition\.carbs \|\| 0\}g/);
   assert.doesNotMatch(componentSource, /膳纤/);

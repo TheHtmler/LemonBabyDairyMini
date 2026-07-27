@@ -152,6 +152,7 @@ Page({
       totalCarbs: '0',
       totalFat: '0',
       premiumProteinText: '0.00',
+      premiumRatio: 0,
       showPremiumProtein: false,
       canUseGramsIntake: true
     },
@@ -205,6 +206,7 @@ Page({
         protein: nutrition.protein,
         naturalProtein: nutrition.naturalProtein,
         specialProtein: nutrition.specialProtein,
+        premiumProtein: nutrition.premiumProtein,
         carbs: nutrition.carbs,
         fat: nutrition.fat
       })
@@ -364,6 +366,7 @@ Page({
         totalCarbs: '0',
         totalFat: '0',
         premiumProteinText: '0.00',
+        premiumRatio: 0,
         showPremiumProtein: false,
         canUseGramsIntake
       }
@@ -651,6 +654,7 @@ Page({
     const summary = summarizeBatchFromIngredients(prepared);
     const premium = summarizePremiumProteinFromIngredients(prepared);
     const premiumProtein = Number(premium.premiumProtein) || 0;
+    const premiumRatio = Number(premium.premiumRatio) || 0;
     const nextMode = (!summary.canUseGramsIntake && this.data.intakeMode === 'grams')
       ? 'percent'
       : this.data.intakeMode;
@@ -669,6 +673,7 @@ Page({
         totalCarbs: formatNumber(summary.totalNutrition.carbs, 0),
         totalFat: formatNumber(summary.totalNutrition.fat, 0),
         premiumProteinText: formatNumber(premiumProtein),
+        premiumRatio,
         showPremiumProtein: premiumProtein > 0,
         canUseGramsIntake: summary.canUseGramsIntake
       }
@@ -688,6 +693,7 @@ Page({
       eatenGText: '',
       showPremium: false,
       premiumValue: '0.00',
+      premiumRatio: 0,
       showDayPremiumRatio: false,
       dayPremiumRatio: 0
     };
@@ -747,10 +753,14 @@ Page({
           eatenGText: intake.eatenG > 0 ? `${formatNumber(intake.eatenG, 1)}g` : '',
           showPremium: naturalProtein > 0 || premiumSummary.premiumProtein > 0,
           premiumValue: formatNumber(premiumSummary.premiumProtein),
+          premiumRatio: Number(premiumSummary.premiumRatio) || 0,
           showDayPremiumRatio: dayCombined.naturalProtein > 0,
           dayPremiumRatio: dayCombined.premiumRatio
         },
-        intakeTargetPreview: this.buildIntakeTargetPreview(intake.nutrition)
+        intakeTargetPreview: this.buildIntakeTargetPreview({
+          ...intake.nutrition,
+          premiumProtein: premiumSummary.premiumProtein
+        })
       });
     } catch (error) {
       this.setData({

@@ -952,6 +952,7 @@ function groupFoodIntakesByMeal(intakes = []) {
           calories: 0,
           protein: 0,
           premiumProtein: 0,
+          naturalProtein: 0,
           carbs: 0,
           fat: 0
         },
@@ -982,6 +983,7 @@ function groupFoodIntakesByMeal(intakes = []) {
     group.summary.calories += Number(nutrition.calories) || 0;
     group.summary.protein += Number(nutrition.protein) || 0;
     group.summary.premiumProtein += Number(premiumSplit.premiumProtein) || 0;
+    group.summary.naturalProtein += naturalProtein;
     group.summary.carbs += Number(nutrition.carbs) || 0;
     group.summary.fat += Number(nutrition.fat) || 0;
     group.completionCandidates.push({
@@ -1019,12 +1021,17 @@ function groupFoodIntakesByMeal(intakes = []) {
         hasPlannedDifference: hasPartialCompletion || items.some(item => item.hasPlannedDifference),
         summary: (() => {
           const premiumProtein = roundNumber(group.summary.premiumProtein, 2);
+          const naturalProtein = roundNumber(group.summary.naturalProtein, 2);
+          const premiumRatio = naturalProtein > 0
+            ? Math.round((premiumProtein / naturalProtein) * 100)
+            : 0;
           return {
             calories: roundCalories(group.summary.calories),
             protein: roundNumber(group.summary.protein, 2),
             proteinText: formatProteinText(group.summary.protein),
             premiumProtein,
             premiumProteinText: formatProteinText(premiumProtein),
+            premiumRatio,
             showPremiumProtein: premiumProtein > 0,
             carbs: roundNumber(group.summary.carbs, 2),
             fat: roundNumber(group.summary.fat, 2)

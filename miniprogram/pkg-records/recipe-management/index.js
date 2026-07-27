@@ -50,6 +50,7 @@ function buildDefaultPreview(ingredients = []) {
   const nutrition = summary.totalNutrition || emptyNutrition();
   const premium = summarizePremiumProteinFromIngredients(prepared);
   const premiumProtein = Number(premium.premiumProtein) || 0;
+  const premiumRatio = Number(premium.premiumRatio) || 0;
   return {
     hasDefaults: filledCount > 0,
     filledCount,
@@ -60,6 +61,7 @@ function buildDefaultPreview(ingredients = []) {
     carbsText: formatPreviewNumber(nutrition.carbs, 2),
     fatText: formatPreviewNumber(nutrition.fat, 2),
     premiumProteinText: formatPreviewNumber(premiumProtein, 2),
+    premiumRatio,
     showPremiumProtein: premiumProtein > 0
   };
 }

@@ -33,7 +33,7 @@ test('recipe management supports optional default quantities with preview', () =
   assert.match(templateSource, /add-ingredient-bar/);
   assert.match(templateSource, /ingredient-edit-line/);
   assert.match(templateSource, /点上面添加/);
-  assert.match(templateSource, /含优质蛋白 \{\{defaultPreview\.premiumProteinText\}\}g/);
+  assert.match(templateSource, /含优质蛋白 \{\{defaultPreview\.premiumProteinText\}\}g · \{\{defaultPreview\.premiumRatio\}\}%/);
   assert.match(pageSource, /summarizePremiumProteinFromIngredients/);
   assert.match(pageSource, /showPremiumProtein:\s*premiumProtein > 0/);
   assert.doesNotMatch(templateSource, /已填 \{\{defaultPreview\.filledCount\}\}/);

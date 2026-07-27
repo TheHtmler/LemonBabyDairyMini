@@ -37,8 +37,13 @@
         <text>{{item.draftText}}</text>
         <text wx:if="{{item.hasTarget}}">{{item.pctText}}</text>
       </view>
-      <view class="target-preview-bar" wx:if="{{item.hasTarget}}">
-        <view class="target-preview-bar-inner" style="width: {{item.barPct}}%;"></view>
+      <view class="target-preview-footer">
+        <view class="target-preview-premium {{item.showPremiumNote ? '' : 'is-empty'}}">
+          <text class="target-preview-premium-text">{{item.showPremiumNote ? item.premiumNoteText : ' '}}</text>
+        </view>
+        <view class="target-preview-bar" wx:if="{{item.hasTarget}}">
+          <view class="target-preview-bar-inner" style="width: {{item.barPct}}%;"></view>
+        </view>
       </view>
     </view>
   </view>

@@ -10,7 +10,8 @@ const {
 } = require('../../utils/nutritionTargetPreferences');
 const {
   buildEntryTargetPreview,
-  normalizeSummary
+  normalizeSummary,
+  withDayPremiumFromDailySummary
 } = require('../../utils/nutritionTargetPreview');
 const {
   BREAST_MILK_TAG_META,
@@ -115,8 +116,13 @@ function formatProteinText(value) {
 }
 
 function withProteinDisplay(summary = {}) {
+  const naturalProtein = Number(summary.naturalProtein) || 0;
   return {
     ...summary,
+    // 奶类天然蛋白全算优质
+    premiumProtein: Number(summary.premiumProtein) > 0
+      ? Number(summary.premiumProtein)
+      : naturalProtein,
     proteinText: formatProteinText(summary.protein),
     naturalProteinText: formatProteinText(summary.naturalProtein),
     specialProteinText: formatProteinText(summary.specialProtein)
@@ -413,10 +419,13 @@ Page({
   summarizeRecordsForTarget(records = []) {
     return normalizeSummary((records || []).reduce((summary, record = {}) => {
       const nutrition = record.nutritionSummary || {};
+      const naturalProtein = Number(nutrition.naturalProtein) || 0;
       summary.calories += Number(nutrition.calories) || 0;
       summary.protein += Number(nutrition.protein) || 0;
-      summary.naturalProtein += Number(nutrition.naturalProtein) || 0;
+      summary.naturalProtein += naturalProtein;
       summary.specialProtein += Number(nutrition.specialProtein) || 0;
+      // 奶类天然蛋白全算优质
+      summary.premiumProtein += naturalProtein;
       summary.carbs += Number(nutrition.carbs) || 0;
       summary.fat += Number(nutrition.fat) || 0;
       return summary;
@@ -443,7 +452,10 @@ Page({
       }
 
       const daily = await DailyRecordV2Service.getDailyRecordV2(this.data.babyUid, this.data.selectedDate);
-      currentSummary = normalizeSummary(daily?.summary?.macroSummary || daily?.overview?.macroSummary || fallbackSummary);
+      currentSummary = withDayPremiumFromDailySummary(
+        daily?.summary?.macroSummary || daily?.overview?.macroSummary || fallbackSummary,
+        daily?.summary || {}
+      );
       resolvedBasicInfo = {
         ...resolvedBasicInfo,
         ...(daily?.basicInfo || {})
@@ -1284,7 +1296,12 @@ Page({
       return normalizeSummary();
     }
     const record = this.resolveEditingRecord(this.data.existingRecords || []);
-    return normalizeSummary(record?.nutritionSummary || {});
+    const summary = normalizeSummary(record?.nutritionSummary || {});
+    // 奶类天然蛋白全算优质
+    return {
+      ...summary,
+      premiumProtein: summary.premiumProtein > 0 ? summary.premiumProtein : summary.naturalProtein
+    };
   },
 
   buildBasicInfoSnapshot() {

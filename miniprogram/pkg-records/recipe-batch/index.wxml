@@ -77,7 +77,7 @@
         </view>
       </view>
       <view class="nutrition-preview-premium" wx:if="{{batchPreview.showPremiumProtein}}">
-        <text class="nutrition-preview-premium-text">含优质蛋白 {{batchPreview.premiumProteinText}}g</text>
+        <text class="nutrition-preview-premium-text">含优质蛋白 {{batchPreview.premiumProteinText}}g · {{batchPreview.premiumRatio}}%</text>
       </view>
     </view>
 
@@ -135,7 +135,7 @@
           </view>
         </view>
         <view class="intake-detail-note" wx:if="{{intakePreview.showPremium}}">
-          <text>含优质蛋白 {{intakePreview.premiumValue}}g</text>
+          <text>含优质蛋白 {{intakePreview.premiumValue}}g · {{intakePreview.premiumRatio}}%</text>
         </view>
       </view>
     </view>

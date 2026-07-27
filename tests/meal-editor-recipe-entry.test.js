@@ -154,7 +154,7 @@ test('recipe picker collects batch ingredient amounts and intake percent or gram
   assert.match(batchSource, /intakeMode:\s*canUseGramsIntake\s*\?\s*'grams'\s*:\s*'percent'/);
   assert.match(batchSource, /buildLiveIngredients/);
   assert.match(batchSource, /buildIntakeTargetPreview/);
-  assert.match(batchSource, /intakeTargetPreview:\s*this\.buildIntakeTargetPreview\(intake\.nutrition\)/);
+  assert.match(batchSource, /intakeTargetPreview:\s*this\.buildIntakeTargetPreview\(\{[\s\S]*premiumProtein:\s*premiumSummary\.premiumProtein[\s\S]*\}\)/);
   assert.match(batchSource, /refreshIntakePreview/);
   assert.match(batchSource, /summarizePremiumProteinFromIngredients/);
   assert.match(batchSource, /combinePremiumProteinWithDay/);
@@ -172,7 +172,7 @@ test('recipe picker collects batch ingredient amounts and intake percent or gram
   assert.match(batchTemplate, /intro-card/);
   assert.match(batchTemplate, /\{\{draftIngredients\.length\}\}种食物/);
   assert.doesNotMatch(batchTemplate, /hero-recipe-tag|原料填多少|intro-bar/);
-  assert.match(batchTemplate, /含优质蛋白 \{\{intakePreview\.premiumValue\}\}g/);
+  assert.match(batchTemplate, /含优质蛋白 \{\{intakePreview\.premiumValue\}\}g · \{\{intakePreview\.premiumRatio\}\}%/);
   assert.doesNotMatch(batchTemplate, /优质占比|天然 \{\{intakePreview/);
   assert.match(batchTemplate, /intake-detail-note/);
   assert.match(

@@ -145,6 +145,7 @@ test('resolveFoodIntakePremiumProteinSplit apportions recipe intake by ingredien
   });
   assert.equal(split.premiumProtein, 2.4);
   assert.equal(split.regularProtein, 0.6);
+  assert.equal(split.premiumRatio, 80);
 
   const plain = resolveFoodIntakePremiumProteinSplit({
     proteinQuality: 'premium',
@@ -152,6 +153,7 @@ test('resolveFoodIntakePremiumProteinSplit apportions recipe intake by ingredien
   });
   assert.equal(plain.premiumProtein, 1.5);
   assert.equal(plain.regularProtein, 0);
+  assert.equal(plain.premiumRatio, 100);
 });
 
 test('recipe search matches name and ingredient food names', () => {
