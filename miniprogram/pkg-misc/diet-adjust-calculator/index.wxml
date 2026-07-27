@@ -2,7 +2,7 @@
   <view class="hero">
     <text class="eyebrow">饮食换算</text>
     <text class="hero-title">调比例，算出该吃多少</text>
-    <text class="hero-copy">先保住蛋白或热量，再把奶匀一点给辅食。勾选要吃的，点算一算就行。</text>
+    <text class="hero-copy">保住蛋白或热量，把奶匀一点给辅食。搜索添加要吃的，点算一算就行。</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">
@@ -35,30 +35,54 @@
       </view>
 
       <view class="link-row" bindtap="toggleMoreTargets">
-        <text>{{showMoreTargets ? '收起更多目标' : '更多目标（脂肪 / 碳水 / 优质蛋白）'}}</text>
+        <text>{{showMoreTargets ? '收起比例范围' : '更多目标（供能比 / 优质蛋白范围）'}}</text>
         <text class="link-arrow">{{showMoreTargets ? '▴' : '▾'}}</text>
       </view>
 
-      <view wx:if="{{showMoreTargets}}" class="soft-grid">
-        <view>
-          <text class="field-label">脂肪</text>
-          <view class="input-shell">
-            <input class="compact-input" type="digit" value="{{softFat}}" data-field="softFat" bindinput="updateField" placeholder="可选" />
-            <text class="unit">g</text>
+      <view wx:if="{{showMoreTargets}}" class="range-panel">
+        <text class="range-tip">已按{{ageRangeLabel}}建议预填，可改；清空表示不考核</text>
+
+        <text class="field-label">蛋白供能 %</text>
+        <view class="range-row">
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{proteinEnergyMin}}" data-field="proteinEnergyMin" bindinput="updateField" placeholder="下限" />
+          </view>
+          <text class="range-sep">～</text>
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{proteinEnergyMax}}" data-field="proteinEnergyMax" bindinput="updateField" placeholder="上限" />
           </view>
         </view>
-        <view>
-          <text class="field-label">碳水</text>
-          <view class="input-shell">
-            <input class="compact-input" type="digit" value="{{softCarbs}}" data-field="softCarbs" bindinput="updateField" placeholder="可选" />
-            <text class="unit">g</text>
+
+        <text class="field-label">脂肪供能 %</text>
+        <view class="range-row">
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{fatEnergyMin}}" data-field="fatEnergyMin" bindinput="updateField" placeholder="下限" />
+          </view>
+          <text class="range-sep">～</text>
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{fatEnergyMax}}" data-field="fatEnergyMax" bindinput="updateField" placeholder="上限" />
           </view>
         </view>
-        <view class="soft-full">
-          <text class="field-label">优质蛋白</text>
-          <view class="input-shell">
-            <input class="compact-input" type="digit" value="{{softPremiumProtein}}" data-field="softPremiumProtein" bindinput="updateField" placeholder="可选" />
-            <text class="unit">g</text>
+
+        <text class="field-label">碳水供能 %</text>
+        <view class="range-row">
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{carbsEnergyMin}}" data-field="carbsEnergyMin" bindinput="updateField" placeholder="下限" />
+          </view>
+          <text class="range-sep">～</text>
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{carbsEnergyMax}}" data-field="carbsEnergyMax" bindinput="updateField" placeholder="上限" />
+          </view>
+        </view>
+
+        <text class="field-label">优质蛋白占总蛋白 %</text>
+        <view class="range-row">
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{premiumRatioMin}}" data-field="premiumRatioMin" bindinput="updateField" placeholder="下限" />
+          </view>
+          <text class="range-sep">～</text>
+          <view class="input-shell range-input">
+            <input class="compact-input" type="digit" value="{{premiumRatioMax}}" data-field="premiumRatioMax" bindinput="updateField" placeholder="上限" />
           </view>
         </view>
       </view>
@@ -86,82 +110,70 @@
     </view>
 
     <view class="section-card">
-      <text class="section-title">3. 勾选今天要吃的</text>
+      <text class="section-title">3. 添加要吃的</text>
 
-      <text class="group-title">普奶</text>
-      <view class="option-grid">
-        <view
-          wx:for="{{normalMilks}}"
-          wx:key="key"
-          class="option-chip {{item.selected ? 'selected' : ''}}"
-          data-group="normalMilks"
-          data-key="{{item.key}}"
-          bindtap="toggleOption"
-        >
-          <text class="option-check">{{item.selected ? '✓' : '+'}}</text>
-          <text>{{item.name}}</text>
+      <view class="select-block">
+        <view class="select-head">
+          <text class="group-title">普奶</text>
+          <view class="add-btn" data-group="normalMilks" bindtap="openPicker">+ 添加</view>
         </view>
-      </view>
-
-      <text class="group-title">特奶</text>
-      <view wx:if="{{specialMilks.length}}" class="option-grid">
-        <view
-          wx:for="{{specialMilks}}"
-          wx:key="key"
-          class="option-chip {{item.selected ? 'selected' : ''}}"
-          data-group="specialMilks"
-          data-key="{{item.key}}"
-          bindtap="toggleOption"
-        >
-          <text class="option-check">{{item.selected ? '✓' : '+'}}</text>
-          <text>{{item.name}}</text>
-        </view>
-      </view>
-      <text wx:else class="empty-copy">暂无特奶</text>
-
-      <text class="group-title">能量粉 <text class="inline-hint">只补热量</text></text>
-      <view wx:if="{{energyPowders.length}}" class="option-grid">
-        <view
-          wx:for="{{energyPowders}}"
-          wx:key="key"
-          class="option-chip {{item.selected ? 'selected' : ''}}"
-          data-group="energyPowders"
-          data-key="{{item.key}}"
-          bindtap="toggleOption"
-        >
-          <text class="option-check">{{item.selected ? '✓' : '+'}}</text>
-          <text>{{item.name}}</text>
-        </view>
-      </view>
-      <text wx:else class="empty-copy">暂无能量粉</text>
-
-      <view class="group-title-row">
-        <text class="group-title">辅食</text>
-        <text class="limit-tag">最多 5 种</text>
-      </view>
-      <scroll-view wx:if="{{foods.length}}" class="food-scroll" scroll-y>
-        <view class="option-grid">
-          <view
-            wx:for="{{foods}}"
-            wx:key="key"
-            class="option-chip {{item.selected ? 'selected' : ''}}"
-            data-group="foods"
-            data-key="{{item.key}}"
-            bindtap="toggleOption"
-          >
-            <text class="option-check">{{item.selected ? '✓' : '+'}}</text>
+        <view wx:if="{{selectedNormalMilks.length}}" class="tag-list">
+          <view wx:for="{{selectedNormalMilks}}" wx:key="key" class="tag-chip">
             <text>{{item.name}}</text>
+            <text class="tag-remove" data-group="normalMilks" data-key="{{item.key}}" bindtap="removeSelected">×</text>
           </view>
         </view>
-      </scroll-view>
-      <text wx:else class="empty-copy">食物库暂无可用品项</text>
+        <text wx:else class="empty-copy">还没添加普奶</text>
+      </view>
+
+      <view class="select-block">
+        <view class="select-head">
+          <text class="group-title">特奶</text>
+          <view class="add-btn" data-group="specialMilks" bindtap="openPicker">+ 添加</view>
+        </view>
+        <view wx:if="{{selectedSpecialMilks.length}}" class="tag-list">
+          <view wx:for="{{selectedSpecialMilks}}" wx:key="key" class="tag-chip">
+            <text>{{item.name}}</text>
+            <text class="tag-remove" data-group="specialMilks" data-key="{{item.key}}" bindtap="removeSelected">×</text>
+          </view>
+        </view>
+        <text wx:else class="empty-copy">还没添加特奶</text>
+      </view>
+
+      <view class="select-block">
+        <view class="select-head">
+          <text class="group-title">能量粉 <text class="inline-hint">只补热量</text></text>
+          <view class="add-btn" data-group="energyPowders" bindtap="openPicker">+ 添加</view>
+        </view>
+        <view wx:if="{{selectedEnergyPowders.length}}" class="tag-list">
+          <view wx:for="{{selectedEnergyPowders}}" wx:key="key" class="tag-chip">
+            <text>{{item.name}}</text>
+            <text class="tag-remove" data-group="energyPowders" data-key="{{item.key}}" bindtap="removeSelected">×</text>
+          </view>
+        </view>
+        <text wx:else class="empty-copy">还没添加能量粉</text>
+      </view>
+
+      <view class="select-block">
+        <view class="select-head">
+          <text class="group-title">辅食</text>
+          <view class="add-btn" data-group="foods" bindtap="openPicker">+ 添加</view>
+        </view>
+        <view wx:if="{{selectedFoods.length}}" class="tag-list">
+          <view wx:for="{{selectedFoods}}" wx:key="key" class="tag-chip">
+            <text>{{item.name}}</text>
+            <text class="tag-remove" data-group="foods" data-key="{{item.key}}" bindtap="removeSelected">×</text>
+          </view>
+        </view>
+        <text wx:else class="empty-copy">还没添加辅食（最多 5 种）</text>
+      </view>
     </view>
 
     <button class="primary-button" bindtap="calculate">算一算</button>
 
     <block wx:if="{{hasResult}}">
       <view class="section-card">
-        <text class="section-title">推荐量（可微调）</text>
+        <text class="section-title">推荐量（具体克重/毫升，可微调）</text>
         <view wx:for="{{resultItems}}" wx:key="key" class="result-row">
           <view class="result-meta">
             <text class="result-name">{{item.name}}</text>
@@ -176,7 +188,7 @@
       </view>
 
       <view class="summary-card">
-        <text class="summary-title">目标对照</text>
+        <text class="summary-title">营养汇总</text>
         <view class="summary-grid">
           <view class="metric">
             <text class="metric-value">{{achieved.protein}}</text>
@@ -191,18 +203,29 @@
           <view class="metric">
             <text class="metric-value">{{achieved.fat}}</text>
             <text class="metric-label">脂肪 g</text>
-            <text wx:if="{{comparisonTargets.fat}}" class="metric-sub">目标 {{comparisonTargets.fat}}</text>
           </view>
           <view class="metric">
             <text class="metric-value">{{achieved.carbs}}</text>
             <text class="metric-label">碳水 g</text>
-            <text wx:if="{{comparisonTargets.carbs}}" class="metric-sub">目标 {{comparisonTargets.carbs}}</text>
           </view>
         </view>
         <view class="premium-line">
           <text>优质蛋白</text>
-          <text>{{achieved.premiumProtein}} g<text wx:if="{{comparisonTargets.premiumProtein}}"> / 目标 {{comparisonTargets.premiumProtein}}</text></text>
+          <text>{{achieved.premiumProtein}} g</text>
         </view>
+
+        <text class="summary-subtitle">比例对照</text>
+        <view wx:for="{{macroRows}}" wx:key="key" class="ratio-row">
+          <view class="ratio-main">
+            <text class="ratio-label">{{item.label}}</text>
+            <text class="ratio-value">{{item.value}}%</text>
+          </view>
+          <view class="ratio-side">
+            <text class="ratio-range">建议 {{item.rangeText}}</text>
+            <text class="ratio-status status-{{item.status}}">{{item.statusText}}</text>
+          </view>
+        </view>
+
         <view wx:if="{{hints.length}}" class="hint-list">
           <text wx:for="{{hints}}" wx:key="*this" class="hint-item">· {{item}}</text>
         </view>
@@ -224,4 +247,35 @@
       </view>
     </block>
   </block>
+
+  <view wx:if="{{showPicker}}" class="picker-mask" bindtap="closePicker">
+    <view class="picker-sheet" catchtap="noop">
+      <view class="picker-header">
+        <text class="picker-title">{{pickerTitle}}</text>
+        <text class="picker-close" bindtap="closePicker">关闭</text>
+      </view>
+      <view class="picker-search">
+        <input
+          class="compact-input"
+          value="{{pickerKeyword}}"
+          bindinput="onPickerSearch"
+          placeholder="输入名称搜索"
+          confirm-type="search"
+        />
+      </view>
+      <scroll-view class="picker-list" scroll-y>
+        <view
+          wx:for="{{pickerOptions}}"
+          wx:key="key"
+          class="picker-item {{item.alreadySelected ? 'disabled' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="pickCatalogItem"
+        >
+          <text class="picker-item-name">{{item.name}}</text>
+          <text class="picker-item-action">{{item.alreadySelected ? '已添加' : '添加'}}</text>
+        </view>
+        <view wx:if="{{!pickerOptions.length}}" class="picker-empty">{{pickerEmpty}}</view>
+      </scroll-view>
+    </view>
+  </view>
 </view>

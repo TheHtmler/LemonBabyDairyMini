@@ -187,16 +187,16 @@ test('rejects milk ratio with only energy powder selected', () => {
   assert.match(result.message, /能量粉|普奶|特奶/);
 });
 
-test('soft targets produce gaps and hints', () => {
+test('soft ratio ranges produce macro summary and hints', () => {
   const result = solveDietAdjust({
     mode: 'protein',
     target: 5,
     milkRatio: 0,
     foodRatio: 1,
-    softTargets: {
-      fat: 20,
-      carbs: 30,
-      premiumProtein: 4
+    ratioRanges: {
+      fatEnergy: { min: 30, max: 40 },
+      carbsEnergy: { min: 55, max: 60 },
+      premiumProteinRatio: { min: 30, max: 50 }
     },
     normalMilks: [],
     specialMilks: [],
@@ -226,7 +226,8 @@ test('soft targets produce gaps and hints', () => {
     ]
   });
   assert.equal(result.ok, true);
-  assert.ok(result.gaps.fat > 0);
+  assert.ok(result.macroRatioSummary);
+  assert.ok(result.macroRatioSummary.rows.length >= 3);
   assert.ok(result.hints.length > 0);
 });
 

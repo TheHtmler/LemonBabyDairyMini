@@ -2,6 +2,10 @@
  * 饮食调整换算：滑条大类 + 自动均分 + 能量粉补热 + 软目标对照（纯函数）
  */
 
+const {
+  buildMacroRatioSummary
+} = require('./dietAdjustMacroRanges');
+
 const SHARE_TOLERANCE = 0.15;
 
 function toNumber(value, fallback = 0) {
@@ -225,26 +229,34 @@ function buildGaps(achieved, targets = {}) {
   return gaps;
 }
 
+function midpointOfRange(range = {}) {
+  const min = toNumber(range.min, NaN);
+  const max = toNumber(range.max, NaN);
+  if (Number.isFinite(min) && Number.isFinite(max)) return (min + max) / 2;
+  if (Number.isFinite(min)) return min;
+  if (Number.isFinite(max)) return max;
+  return 0;
+}
+
 function buildHints(gaps = {}, options = {}) {
   const hints = [];
   if (toNumber(gaps.calories) > 5 && !options.hasEnergyPowder) {
-    hints.push(`热量还差约 ${gaps.calories} kcal，可勾选能量粉补热`);
+    hints.push(`热量还差约 ${gaps.calories} kcal，可添加能量粉补热`);
   } else if (toNumber(gaps.calories) > 5) {
-    hints.push(`热量仍差约 ${gaps.calories} kcal，可略增能量粉或提高目标外零食`);
-  }
-  if (toNumber(gaps.fat) > 0.5) {
-    hints.push(`脂肪还差约 ${gaps.fat} g，可换更高脂食物或略增辅食`);
-  }
-  if (toNumber(gaps.carbs) > 0.5) {
-    hints.push(`碳水还差约 ${gaps.carbs} g，可换更高碳水食物`);
-  }
-  if (toNumber(gaps.premiumProtein) > 0.2) {
-    hints.push(options.premiumAdjusted
-      ? `已尽量提高优质蛋白，仍差约 ${gaps.premiumProtein} g`
-      : `优质蛋白还差约 ${gaps.premiumProtein} g，可多选优质蛋白食物`);
+    hints.push(`热量仍差约 ${gaps.calories} kcal，可略增能量粉`);
   }
   if (toNumber(gaps.protein) > 0.2) {
     hints.push(`蛋白还差约 ${gaps.protein} g，请检查浓度或微调数量`);
+  }
+  (options.ratioRows || []).forEach((row) => {
+    if (row.status === 'low') {
+      hints.push(`${row.label}偏低（现在 ${row.value}%），建议范围 ${row.rangeText}`);
+    } else if (row.status === 'high') {
+      hints.push(`${row.label}偏高（现在 ${row.value}%），建议范围 ${row.rangeText}`);
+    }
+  });
+  if (options.premiumAdjusted) {
+    hints.push('已尽量提高优质蛋白食物占比');
   }
   return hints;
 }
@@ -258,7 +270,8 @@ function buildHints(gaps = {}, options = {}) {
  * @param {number} [input.calorieTarget] 保蛋白时用于能量粉补热与对照
  * @param {number} [input.naturalProteinCoefficient]
  * @param {number} [input.specialProteinCoefficient]
- * @param {object} [input.softTargets] { fat, carbs, premiumProtein, calories }
+ * @param {object} [input.softTargets] 兼容旧字段 { fat, carbs, premiumProtein, calories }
+ * @param {object} [input.ratioRanges] { proteinEnergy, fatEnergy, carbsEnergy, premiumProteinRatio }
  * @param {Array} input.normalMilks
  * @param {Array} input.specialMilks
  * @param {Array} [input.energyPowders]
@@ -325,19 +338,28 @@ function solveDietAdjust(input = {}) {
   const softTargets = input.softTargets && typeof input.softTargets === 'object'
     ? input.softTargets
     : {};
+  const ratioRanges = input.ratioRanges && typeof input.ratioRanges === 'object'
+    ? input.ratioRanges
+    : {};
   const calorieTarget = mode === 'calorie'
     ? target
     : toPositive(input.calorieTarget) || toPositive(softTargets.calories);
 
   let workingItems = parts;
   let premiumAdjusted = false;
-  if (toPositive(softTargets.premiumProtein) > 0) {
-    const rebalanced = softRebalancePremiumFoods(workingItems, toPositive(softTargets.premiumProtein));
+  const premiumRatioMid = midpointOfRange(ratioRanges.premiumProteinRatio);
+  const draftAchieved = summarizeQuantities(workingItems);
+  let premiumGramTarget = toPositive(softTargets.premiumProtein);
+  if (!(premiumGramTarget > 0) && premiumRatioMid > 0 && draftAchieved.protein > 0) {
+    premiumGramTarget = draftAchieved.protein * (premiumRatioMid / 100);
+  }
+  if (premiumGramTarget > 0) {
+    const rebalanced = softRebalancePremiumFoods(workingItems, premiumGramTarget);
     workingItems = rebalanced.items;
     premiumAdjusted = rebalanced.adjusted;
   }
 
-  let baseAchieved = summarizeQuantities(workingItems);
+  const baseAchieved = summarizeQuantities(workingItems);
   const calorieGap = calorieTarget > 0
     ? Math.max(0, calorieTarget - baseAchieved.calories)
     : 0;
@@ -356,17 +378,16 @@ function solveDietAdjust(input = {}) {
   }
 
   const achieved = summarizeQuantities(workingItems);
+  const macroRatioSummary = buildMacroRatioSummary(achieved, ratioRanges);
   const comparisonTargets = {
     protein: mode === 'protein' ? target : toPositive(softTargets.protein),
-    calories: calorieTarget,
-    fat: toPositive(softTargets.fat),
-    carbs: toPositive(softTargets.carbs),
-    premiumProtein: toPositive(softTargets.premiumProtein)
+    calories: calorieTarget
   };
   const gaps = buildGaps(achieved, comparisonTargets);
   const hints = buildHints(gaps, {
     hasEnergyPowder: energyPowders.length > 0,
-    premiumAdjusted
+    premiumAdjusted,
+    ratioRows: macroRatioSummary.rows
   });
 
   return {
@@ -378,6 +399,7 @@ function solveDietAdjust(input = {}) {
     gaps,
     hints,
     comparisonTargets,
+    macroRatioSummary,
     premiumAdjusted,
     breakdown: {
       milkTarget: roundValue(tMilk, 2),

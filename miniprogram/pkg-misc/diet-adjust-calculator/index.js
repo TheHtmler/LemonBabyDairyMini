@@ -15,8 +15,20 @@ const {
   solveDietAdjust,
   summarizeQuantities
 } = require('../../utils/dietAdjustCalculator');
+const {
+  getDefaultMacroRatioRangesByBirthday,
+  buildMacroRatioSummary,
+  parseRangeInputs
+} = require('../../utils/dietAdjustMacroRanges');
 
 const FOOD_SELECT_LIMIT = 5;
+
+const PICKER_META = {
+  normalMilks: { title: '添加普奶', empty: '暂无普奶', catalogKey: 'normalMilkCatalog' },
+  specialMilks: { title: '添加特奶', empty: '暂无特奶', catalogKey: 'specialMilkCatalog' },
+  energyPowders: { title: '添加能量粉', empty: '暂无能量粉', catalogKey: 'energyPowderCatalog' },
+  foods: { title: '添加辅食', empty: '暂无食物', catalogKey: 'foodCatalog' }
+};
 
 function round(value, precision = 2) {
   const number = Number(value);
@@ -68,8 +80,38 @@ function splitProtein(food = {}, protein = 0) {
   return { naturalProtein: protein, specialProtein: 0 };
 }
 
-function selectedOf(list = []) {
-  return (list || []).filter((item) => item.selected);
+function normalizeSearchText(value = '') {
+  return String(value).trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function fuzzyIncludes(text = '', query = '') {
+  const source = normalizeSearchText(text);
+  const keyword = normalizeSearchText(query);
+  if (!keyword) return true;
+  if (!source) return false;
+  if (source.includes(keyword)) return true;
+  let queryIndex = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    if (source[i] === keyword[queryIndex]) {
+      queryIndex += 1;
+      if (queryIndex === keyword.length) return true;
+    }
+  }
+  return false;
+}
+
+function applyRangeDefaults(ranges = {}) {
+  return {
+    proteinEnergyMin: ranges.proteinEnergy?.min ?? '',
+    proteinEnergyMax: ranges.proteinEnergy?.max ?? '',
+    fatEnergyMin: ranges.fatEnergy?.min ?? '',
+    fatEnergyMax: ranges.fatEnergy?.max ?? '',
+    carbsEnergyMin: ranges.carbsEnergy?.min ?? '',
+    carbsEnergyMax: ranges.carbsEnergy?.max ?? '',
+    premiumRatioMin: ranges.premiumProteinRatio?.min ?? '',
+    premiumRatioMax: ranges.premiumProteinRatio?.max ?? '',
+    ageRangeLabel: ranges.fatEnergy?.label || '参考'
+  };
 }
 
 Page({
@@ -79,20 +121,32 @@ Page({
     showMoreTargets: false,
     hasResult: false,
     babyUid: '',
+    birthday: '',
+    ageMonths: null,
     nutritionSettings: {},
     weight: 0,
     targetPreferences: {},
-    normalMilks: [],
-    specialMilks: [],
-    energyPowders: [],
-    foods: [],
+    normalMilkCatalog: [],
+    specialMilkCatalog: [],
+    energyPowderCatalog: [],
+    foodCatalog: [],
+    selectedNormalMilks: [],
+    selectedSpecialMilks: [],
+    selectedEnergyPowders: [],
+    selectedFoods: [],
     mode: 'protein',
     target: '',
     calorieTarget: '',
     milkRatioPercent: 70,
-    softFat: '',
-    softCarbs: '',
-    softPremiumProtein: '',
+    proteinEnergyMin: '',
+    proteinEnergyMax: '',
+    fatEnergyMin: '',
+    fatEnergyMax: '',
+    carbsEnergyMin: '',
+    carbsEnergyMax: '',
+    premiumRatioMin: '',
+    premiumRatioMax: '',
+    ageRangeLabel: '',
     resultItems: [],
     achieved: {
       protein: 0,
@@ -102,9 +156,15 @@ Page({
       premiumProtein: 0
     },
     comparisonTargets: {},
-    gaps: {},
+    macroRows: [],
     hints: [],
-    applyDate: formatDate()
+    applyDate: formatDate(),
+    showPicker: false,
+    pickerGroup: '',
+    pickerTitle: '',
+    pickerKeyword: '',
+    pickerEmpty: '',
+    pickerOptions: []
   },
 
   onLoad() {
@@ -119,11 +179,22 @@ Page({
     this.loadOptions();
   },
 
+  async loadBirthday(babyUid) {
+    try {
+      const cached = getApp()?.globalData?.babyInfo;
+      if (cached?.babyUid === babyUid && cached.birthday) return cached.birthday;
+      const res = await wx.cloud.database().collection('baby_info').where({ babyUid }).limit(1).get();
+      return res?.data?.[0]?.birthday || '';
+    } catch (error) {
+      return '';
+    }
+  },
+
   async loadOptions() {
     this.setData({ loading: true });
     try {
       const today = formatDate();
-      const [settings, foods, targetPreferences, basicInfo] = await Promise.all([
+      const [settings, foods, targetPreferences, basicInfo, birthday] = await Promise.all([
         MilkNutritionProfileModel.getNutritionProfileSettings(this.data.babyUid, {
           includeLegacyFallback: true
         }),
@@ -133,7 +204,8 @@ Page({
           includeFallbacks: true,
           includeProfileInitial: true,
           carryForwardMissing: true
-        })
+        }),
+        this.loadBirthday(this.data.babyUid)
       ]);
       const nutritionSettings = settings || {};
       const formulaPowders = (nutritionSettings.formulaPowders || [])
@@ -149,7 +221,6 @@ Page({
         kind: 'breast_milk',
         name: '母乳',
         unit: 'ml',
-        selected: false,
         premiumProteinPerUnit: breastDensity.proteinPerUnit,
         ...breastDensity
       };
@@ -163,22 +234,21 @@ Page({
           kind: 'formula_powder',
           name: powder.name,
           unit: 'g',
-          selected: false,
           powder,
           mixRatio: powder.mixRatio || {},
           premiumProteinPerUnit: isNaturalRole ? density.proteinPerUnit : 0,
           ...density
         };
       });
-      const energyPowders = powderItems.filter((item) => (
+      const energyPowderCatalog = powderItems.filter((item) => (
         item.powder.category === 'energy_supplement'
       ));
-      const specialMilks = powderItems.filter((item) => {
+      const specialMilkCatalog = powderItems.filter((item) => {
         const category = item.powder.category;
         if (category === 'energy_supplement') return false;
         return category === 'special_formula' || item.powder.proteinRole === 'special';
       });
-      const normalMilks = [
+      const normalMilkCatalog = [
         breastMilk,
         ...powderItems.filter((item) => {
           const category = item.powder.category;
@@ -189,7 +259,7 @@ Page({
             || item.powder.proteinRole === 'natural';
         })
       ];
-      const foodItems = (foods || []).map((food) => {
+      const foodCatalog = (foods || []).map((food) => {
         const basis = food.nutritionBasis || {
           quantity: food.baseQuantity || 100,
           unit: food.baseUnit || (food.isLiquid ? 'ml' : 'g')
@@ -201,7 +271,6 @@ Page({
           kind: 'food',
           name: food.name,
           unit: basis.unit || 'g',
-          selected: false,
           food,
           premiumProteinPerUnit: food.proteinQuality === 'premium' ? density.proteinPerUnit : 0,
           ...density
@@ -209,17 +278,21 @@ Page({
       });
       const weight = Number(basicInfo?.weight) || 0;
       const preferredMode = targetPreferences.preferredTargetMode === 'calorie' ? 'calorie' : 'protein';
+      const { ageMonths, ranges } = getDefaultMacroRatioRangesByBirthday(birthday);
       this.setData({
         nutritionSettings,
-        normalMilks,
-        specialMilks,
-        energyPowders,
-        foods: foodItems,
+        normalMilkCatalog,
+        specialMilkCatalog,
+        energyPowderCatalog,
+        foodCatalog,
         targetPreferences,
         weight,
+        birthday,
+        ageMonths,
         mode: preferredMode,
         target: this.defaultTarget(preferredMode, weight, targetPreferences),
         calorieTarget: this.defaultCalorieTarget(weight, targetPreferences),
+        ...applyRangeDefaults(ranges),
         loading: false
       });
     } catch (error) {
@@ -251,22 +324,6 @@ Page({
     this.setData({ showMoreTargets: !this.data.showMoreTargets });
   },
 
-  toggleOption(event) {
-    const group = event.currentTarget.dataset.group;
-    const key = event.currentTarget.dataset.key;
-    const list = this.data[group] || [];
-    const target = list.find((item) => item.key === key);
-    if (!target) return;
-    if (group === 'foods' && !target.selected && selectedOf(list).length >= FOOD_SELECT_LIMIT) {
-      wx.showToast({ title: `食物最多选择 ${FOOD_SELECT_LIMIT} 种`, icon: 'none' });
-      return;
-    }
-    const next = list.map((item) => (
-      item.key === key ? { ...item, selected: !item.selected } : item
-    ));
-    this.setData({ [group]: next, hasResult: false });
-  },
-
   chooseMode(event) {
     const mode = event.currentTarget.dataset.mode;
     this.setData({
@@ -282,10 +339,120 @@ Page({
   },
 
   onMilkRatioChanging(event) {
-    const milkRatioPercent = Number(event.detail.value);
     this.setData({
-      milkRatioPercent,
+      milkRatioPercent: Number(event.detail.value),
       hasResult: false
+    });
+  },
+
+  openPicker(event) {
+    const group = event.currentTarget.dataset.group;
+    const meta = PICKER_META[group];
+    if (!meta) return;
+    this.setData({
+      showPicker: true,
+      pickerGroup: group,
+      pickerTitle: meta.title,
+      pickerEmpty: meta.empty,
+      pickerKeyword: '',
+      pickerOptions: this.buildPickerOptions(group, '')
+    });
+  },
+
+  closePicker() {
+    this.setData({ showPicker: false, pickerKeyword: '', pickerOptions: [] });
+  },
+
+  noop() {},
+
+  onPickerSearch(event) {
+    const keyword = event.detail.value || '';
+    this.setData({
+      pickerKeyword: keyword,
+      pickerOptions: this.buildPickerOptions(this.data.pickerGroup, keyword)
+    });
+  },
+
+  buildPickerOptions(group, keyword = '') {
+    const meta = PICKER_META[group];
+    if (!meta) return [];
+    const selectedKey = {
+      normalMilks: 'selectedNormalMilks',
+      specialMilks: 'selectedSpecialMilks',
+      energyPowders: 'selectedEnergyPowders',
+      foods: 'selectedFoods'
+    }[group];
+    const selectedKeys = new Set((this.data[selectedKey] || []).map((item) => item.key));
+    return (this.data[meta.catalogKey] || [])
+      .filter((item) => fuzzyIncludes(item.name, keyword))
+      .map((item) => ({
+        ...item,
+        alreadySelected: selectedKeys.has(item.key)
+      }));
+  },
+
+  pickCatalogItem(event) {
+    const key = event.currentTarget.dataset.key;
+    const group = this.data.pickerGroup;
+    const meta = PICKER_META[group];
+    const selectedKey = {
+      normalMilks: 'selectedNormalMilks',
+      specialMilks: 'selectedSpecialMilks',
+      energyPowders: 'selectedEnergyPowders',
+      foods: 'selectedFoods'
+    }[group];
+    const catalog = this.data[meta.catalogKey] || [];
+    const item = catalog.find((row) => row.key === key);
+    if (!item) return;
+    const selected = [...(this.data[selectedKey] || [])];
+    if (selected.some((row) => row.key === key)) {
+      wx.showToast({ title: '已经添加过了', icon: 'none' });
+      return;
+    }
+    if (group === 'foods' && selected.length >= FOOD_SELECT_LIMIT) {
+      wx.showToast({ title: `食物最多选择 ${FOOD_SELECT_LIMIT} 种`, icon: 'none' });
+      return;
+    }
+    selected.push({ ...item });
+    this.setData({
+      [selectedKey]: selected,
+      hasResult: false,
+      pickerOptions: this.buildPickerOptions(group, this.data.pickerKeyword)
+    });
+    wx.showToast({ title: '已添加', icon: 'success', duration: 800 });
+  },
+
+  removeSelected(event) {
+    const group = event.currentTarget.dataset.group;
+    const key = event.currentTarget.dataset.key;
+    const selectedKey = {
+      normalMilks: 'selectedNormalMilks',
+      specialMilks: 'selectedSpecialMilks',
+      energyPowders: 'selectedEnergyPowders',
+      foods: 'selectedFoods'
+    }[group];
+    this.setData({
+      [selectedKey]: (this.data[selectedKey] || []).filter((item) => item.key !== key),
+      hasResult: false
+    });
+  },
+
+  currentRatioRanges() {
+    return {
+      proteinEnergy: parseRangeInputs('proteinEnergy', this.data),
+      fatEnergy: parseRangeInputs('fatEnergy', this.data),
+      carbsEnergy: parseRangeInputs('carbsEnergy', this.data),
+      premiumProteinRatio: parseRangeInputs('premiumRatio', this.data)
+    };
+  },
+
+  refreshSummaryFromItems(resultItems) {
+    const achieved = summarizeQuantities(resultItems);
+    const macroRatioSummary = buildMacroRatioSummary(achieved, this.currentRatioRanges());
+    this.setData({
+      resultItems,
+      achieved,
+      macroRows: macroRatioSummary.rows
     });
   },
 
@@ -295,25 +462,19 @@ Page({
       return;
     }
     const milkRatioPercent = Number(this.data.milkRatioPercent);
-    const foodRatioPercent = 100 - milkRatioPercent;
     const result = solveDietAdjust({
       mode: this.data.mode,
       target: this.data.target,
       milkRatio: milkRatioPercent / 100,
-      foodRatio: foodRatioPercent / 100,
+      foodRatio: (100 - milkRatioPercent) / 100,
       calorieTarget: this.data.calorieTarget,
       naturalProteinCoefficient: this.data.targetPreferences.naturalProteinCoefficient,
       specialProteinCoefficient: this.data.targetPreferences.specialProteinCoefficient,
-      softTargets: {
-        fat: this.data.softFat,
-        carbs: this.data.softCarbs,
-        premiumProtein: this.data.softPremiumProtein,
-        calories: this.data.calorieTarget
-      },
-      normalMilks: selectedOf(this.data.normalMilks),
-      specialMilks: selectedOf(this.data.specialMilks),
-      energyPowders: selectedOf(this.data.energyPowders),
-      foods: selectedOf(this.data.foods)
+      ratioRanges: this.currentRatioRanges(),
+      normalMilks: this.data.selectedNormalMilks,
+      specialMilks: this.data.selectedSpecialMilks,
+      energyPowders: this.data.selectedEnergyPowders,
+      foods: this.data.selectedFoods
     });
     if (!result.ok) {
       wx.showToast({ title: result.message, icon: 'none', duration: 2800 });
@@ -324,7 +485,7 @@ Page({
       resultItems: result.items,
       achieved: result.achieved,
       comparisonTargets: result.comparisonTargets || {},
-      gaps: result.gaps || {},
+      macroRows: result.macroRatioSummary?.rows || [],
       hints: result.hints || []
     });
   },
@@ -347,14 +508,12 @@ Page({
         : current.waterVolume
     };
     const achieved = summarizeQuantities(resultItems);
-    const comparisonTargets = this.data.comparisonTargets || {};
-    const gaps = {};
-    Object.keys(comparisonTargets).forEach((key) => {
-      const target = Number(comparisonTargets[key]);
-      if (!(target > 0)) return;
-      gaps[key] = round(target - Number(achieved[key] || 0), key === 'calories' ? 0 : 2);
+    const macroRatioSummary = buildMacroRatioSummary(achieved, this.currentRatioRanges());
+    this.setData({
+      resultItems,
+      achieved,
+      macroRows: macroRatioSummary.rows
     });
-    this.setData({ resultItems, achieved, gaps });
   },
 
   chooseApplyDate(event) {
