@@ -446,16 +446,6 @@ Page({
     };
   },
 
-  refreshSummaryFromItems(resultItems) {
-    const achieved = summarizeQuantities(resultItems);
-    const macroRatioSummary = buildMacroRatioSummary(achieved, this.currentRatioRanges());
-    this.setData({
-      resultItems,
-      achieved,
-      macroRows: macroRatioSummary.rows
-    });
-  },
-
   calculate() {
     if (!this.data.babyUid) {
       wx.showToast({ title: '请先登录并选择宝宝', icon: 'none' });
