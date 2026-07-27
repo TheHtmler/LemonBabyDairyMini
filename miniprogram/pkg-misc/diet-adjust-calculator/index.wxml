@@ -1,14 +1,8 @@
 <view class="page">
   <view class="hero">
-    <text class="eyebrow">试验工具</text>
-    <text class="hero-title">饮食调整换算</text>
-    <text class="hero-copy">按目标反算普奶、特奶与辅食用量，确认后可覆盖应用到某一天。</text>
-  </view>
-
-  <view class="steps">
-    <view wx:for="{{[1, 2, 3, 4]}}" wx:key="*this" class="step-dot {{step >= item ? 'active' : ''}}">
-      <text>{{item}}</text>
-    </view>
+    <text class="eyebrow">饮食换算</text>
+    <text class="hero-title">调比例，算出该吃多少</text>
+    <text class="hero-copy">先保住蛋白或热量，再把奶匀一点给辅食。勾选要吃的，点算一算就行。</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">
@@ -16,15 +10,83 @@
     <text>正在加载营养档案与食物库…</text>
   </view>
 
-  <block wx:elif="{{step === 1}}">
+  <block wx:else>
     <view class="section-card">
-      <view class="section-heading">
-        <view>
-          <text class="section-kicker">STEP 1</text>
-          <text class="section-title">预选组成</text>
-        </view>
-        <text class="section-note">至少选 1 项</text>
+      <text class="section-title">1. 今天要保住什么</text>
+      <text wx:if="{{weight}}" class="section-note">体重 {{weight}} kg · 已按系数预填，可改</text>
+
+      <view class="segmented">
+        <view class="segment {{mode === 'protein' ? 'active' : ''}}" data-mode="protein" bindtap="chooseMode">保蛋白</view>
+        <view class="segment {{mode === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="chooseMode">保热量</view>
       </view>
+
+      <text class="field-label">{{mode === 'protein' ? '全天蛋白目标' : '全天热量目标'}}</text>
+      <view class="input-shell">
+        <input class="compact-input" type="digit" value="{{target}}" data-field="target" bindinput="updateField" placeholder="请输入目标" />
+        <text class="unit">{{mode === 'protein' ? 'g' : 'kcal'}}</text>
+      </view>
+
+      <view wx:if="{{mode === 'protein'}}" class="sub-block">
+        <text class="field-label">热量参考（给能量粉补热用）</text>
+        <view class="input-shell">
+          <input class="compact-input" type="digit" value="{{calorieTarget}}" data-field="calorieTarget" bindinput="updateField" placeholder="可选" />
+          <text class="unit">kcal</text>
+        </view>
+      </view>
+
+      <view class="link-row" bindtap="toggleMoreTargets">
+        <text>{{showMoreTargets ? '收起更多目标' : '更多目标（脂肪 / 碳水 / 优质蛋白）'}}</text>
+        <text class="link-arrow">{{showMoreTargets ? '▴' : '▾'}}</text>
+      </view>
+
+      <view wx:if="{{showMoreTargets}}" class="soft-grid">
+        <view>
+          <text class="field-label">脂肪</text>
+          <view class="input-shell">
+            <input class="compact-input" type="digit" value="{{softFat}}" data-field="softFat" bindinput="updateField" placeholder="可选" />
+            <text class="unit">g</text>
+          </view>
+        </view>
+        <view>
+          <text class="field-label">碳水</text>
+          <view class="input-shell">
+            <input class="compact-input" type="digit" value="{{softCarbs}}" data-field="softCarbs" bindinput="updateField" placeholder="可选" />
+            <text class="unit">g</text>
+          </view>
+        </view>
+        <view class="soft-full">
+          <text class="field-label">优质蛋白</text>
+          <view class="input-shell">
+            <input class="compact-input" type="digit" value="{{softPremiumProtein}}" data-field="softPremiumProtein" bindinput="updateField" placeholder="可选" />
+            <text class="unit">g</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <text class="section-title">2. 奶和辅食怎么分</text>
+      <view class="slider-labels">
+        <text>奶多</text>
+        <text class="slider-mid">奶约 {{milkRatioPercent}}% · 辅食约 {{100 - milkRatioPercent}}%</text>
+        <text>辅食多</text>
+      </view>
+      <slider
+        class="ratio-slider"
+        min="0"
+        max="100"
+        step="5"
+        value="{{milkRatioPercent}}"
+        activeColor="#efb600"
+        backgroundColor="#f0e4c6"
+        block-size="28"
+        bindchanging="onMilkRatioChanging"
+        bindchange="onMilkRatioChanging"
+      />
+    </view>
+
+    <view class="section-card">
+      <text class="section-title">3. 勾选今天要吃的</text>
 
       <text class="group-title">普奶</text>
       <view class="option-grid">
@@ -55,11 +117,27 @@
           <text>{{item.name}}</text>
         </view>
       </view>
-      <text wx:else class="empty-copy">营养档案中暂无特奶</text>
+      <text wx:else class="empty-copy">暂无特奶</text>
+
+      <text class="group-title">能量粉 <text class="inline-hint">只补热量</text></text>
+      <view wx:if="{{energyPowders.length}}" class="option-grid">
+        <view
+          wx:for="{{energyPowders}}"
+          wx:key="key"
+          class="option-chip {{item.selected ? 'selected' : ''}}"
+          data-group="energyPowders"
+          data-key="{{item.key}}"
+          bindtap="toggleOption"
+        >
+          <text class="option-check">{{item.selected ? '✓' : '+'}}</text>
+          <text>{{item.name}}</text>
+        </view>
+      </view>
+      <text wx:else class="empty-copy">暂无能量粉</text>
 
       <view class="group-title-row">
         <text class="group-title">辅食</text>
-        <text class="limit-tag">最多 3 种</text>
+        <text class="limit-tag">最多 5 种</text>
       </view>
       <scroll-view wx:if="{{foods.length}}" class="food-scroll" scroll-y>
         <view class="option-grid">
@@ -79,173 +157,71 @@
       <text wx:else class="empty-copy">食物库暂无可用品项</text>
     </view>
 
-    <button class="primary-button" bindtap="goToTargets">下一步：设定目标</button>
-  </block>
+    <button class="primary-button" bindtap="calculate">算一算</button>
 
-  <block wx:elif="{{step === 2}}">
-    <view class="section-card">
-      <view class="section-heading">
-        <view>
-          <text class="section-kicker">STEP 2</text>
-          <text class="section-title">目标与结构</text>
-        </view>
-        <text wx:if="{{weight}}" class="section-note">体重 {{weight}} kg</text>
-      </view>
-
-      <text class="field-label">目标模式</text>
-      <view class="segmented">
-        <view class="segment {{mode === 'protein' ? 'active' : ''}}" data-mode="protein" bindtap="chooseMode">总蛋白</view>
-        <view class="segment {{mode === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="chooseMode">总热量</view>
-      </view>
-
-      <text class="field-label">全天目标</text>
-      <view class="input-shell">
-        <input class="compact-input" type="digit" value="{{target}}" data-field="target" bindinput="updateField" placeholder="请输入目标" />
-        <text class="unit">{{mode === 'protein' ? 'g' : 'kcal'}}</text>
-      </view>
-
-      <view class="ratio-grid">
-        <view>
-          <text class="field-label">奶侧占比</text>
-          <view class="input-shell">
-            <input class="compact-input" type="digit" value="{{milkRatioPercent}}" data-field="milkRatioPercent" bindinput="updateField" />
-            <text class="unit">%</text>
+    <block wx:if="{{hasResult}}">
+      <view class="section-card">
+        <text class="section-title">推荐量（可微调）</text>
+        <view wx:for="{{resultItems}}" wx:key="key" class="result-row">
+          <view class="result-meta">
+            <text class="result-name">{{item.name}}</text>
+            <text wx:if="{{item.energyNote}}" class="result-hint">{{item.energyNote}}</text>
+            <text wx:elif="{{item.kind === 'formula_powder'}}" class="result-hint">约兑水 {{item.waterVolume}} ml</text>
           </view>
-        </view>
-        <view>
-          <text class="field-label">辅食侧占比</text>
-          <view class="input-shell">
-            <input class="compact-input" type="digit" value="{{foodRatioPercent}}" data-field="foodRatioPercent" bindinput="updateField" />
-            <text class="unit">%</text>
+          <view class="result-input">
+            <input type="digit" value="{{item.quantity}}" data-index="{{index}}" bindinput="updateQuantity" />
+            <text>{{item.displayUnit}}</text>
           </view>
         </view>
       </view>
 
-      <view wx:if="{{hasBothMilkGroups}}" class="sub-card">
-        <text class="sub-card-title">奶侧内部比例</text>
-        <view class="ratio-grid">
-          <view>
-            <text class="field-label">普奶</text>
-            <view class="input-shell">
-              <input class="compact-input" type="digit" value="{{normalMilkOfMilkPercent}}" data-field="normalMilkOfMilkPercent" bindinput="updateField" />
-              <text class="unit">%</text>
-            </view>
+      <view class="summary-card">
+        <text class="summary-title">目标对照</text>
+        <view class="summary-grid">
+          <view class="metric">
+            <text class="metric-value">{{achieved.protein}}</text>
+            <text class="metric-label">蛋白 g</text>
+            <text wx:if="{{comparisonTargets.protein}}" class="metric-sub">目标 {{comparisonTargets.protein}}</text>
           </view>
-          <view>
-            <text class="field-label">特奶</text>
-            <view class="input-shell">
-              <input class="compact-input" type="digit" value="{{specialMilkOfMilkPercent}}" data-field="specialMilkOfMilkPercent" bindinput="updateField" />
-              <text class="unit">%</text>
-            </view>
+          <view class="metric">
+            <text class="metric-value">{{achieved.calories}}</text>
+            <text class="metric-label">热量 kcal</text>
+            <text wx:if="{{comparisonTargets.calories}}" class="metric-sub">目标 {{comparisonTargets.calories}}</text>
           </view>
-        </view>
-      </view>
-
-      <view wx:if="{{selectedNormalMilks.length}}" class="share-group">
-        <text class="group-title">普奶组内份额</text>
-        <view wx:for="{{selectedNormalMilks}}" wx:key="key" class="share-row">
-          <text class="share-name">{{item.name}}</text>
-          <view class="share-input">
-            <input type="digit" value="{{item.sharePercent}}" data-group="selectedNormalMilks" data-index="{{index}}" bindinput="updateShare" />
-            <text>%</text>
+          <view class="metric">
+            <text class="metric-value">{{achieved.fat}}</text>
+            <text class="metric-label">脂肪 g</text>
+            <text wx:if="{{comparisonTargets.fat}}" class="metric-sub">目标 {{comparisonTargets.fat}}</text>
+          </view>
+          <view class="metric">
+            <text class="metric-value">{{achieved.carbs}}</text>
+            <text class="metric-label">碳水 g</text>
+            <text wx:if="{{comparisonTargets.carbs}}" class="metric-sub">目标 {{comparisonTargets.carbs}}</text>
           </view>
         </view>
+        <view class="premium-line">
+          <text>优质蛋白</text>
+          <text>{{achieved.premiumProtein}} g<text wx:if="{{comparisonTargets.premiumProtein}}"> / 目标 {{comparisonTargets.premiumProtein}}</text></text>
+        </view>
+        <view wx:if="{{hints.length}}" class="hint-list">
+          <text wx:for="{{hints}}" wx:key="*this" class="hint-item">· {{item}}</text>
+        </view>
       </view>
 
-      <view wx:if="{{selectedSpecialMilks.length}}" class="share-group">
-        <text class="group-title">特奶组内份额</text>
-        <view wx:for="{{selectedSpecialMilks}}" wx:key="key" class="share-row">
-          <text class="share-name">{{item.name}}</text>
-          <view class="share-input">
-            <input type="digit" value="{{item.sharePercent}}" data-group="selectedSpecialMilks" data-index="{{index}}" bindinput="updateShare" />
-            <text>%</text>
+      <view class="section-card">
+        <text class="section-title">应用到哪一天</text>
+        <picker mode="date" value="{{applyDate}}" bindchange="chooseApplyDate">
+          <view class="compact-picker">
+            <text>{{applyDate}}</text>
+            <text class="picker-arrow">›</text>
           </view>
+        </picker>
+        <view class="warning-card">
+          <text class="warning-title">记之前请看一下</text>
+          <text>会清掉这一天已有的喂奶和辅食，再按推荐量重新记上。其它记录不动。</text>
         </view>
+        <button class="primary-button" loading="{{applying}}" disabled="{{applying}}" bindtap="confirmApply">记到这一天</button>
       </view>
-
-      <view wx:if="{{selectedFoods.length}}" class="share-group">
-        <text class="group-title">辅食组内份额</text>
-        <view wx:for="{{selectedFoods}}" wx:key="key" class="share-row">
-          <text class="share-name">{{item.name}}</text>
-          <view class="share-input">
-            <input type="digit" value="{{item.sharePercent}}" data-group="selectedFoods" data-index="{{index}}" bindinput="updateShare" />
-            <text>%</text>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <view class="button-row">
-      <button class="secondary-button" bindtap="backStep">上一步</button>
-      <button class="primary-button" bindtap="calculate">智能换算</button>
-    </view>
-  </block>
-
-  <block wx:elif="{{step === 3}}">
-    <view class="section-card">
-      <view class="section-heading">
-        <view>
-          <text class="section-kicker">STEP 3</text>
-          <text class="section-title">推荐量</text>
-        </view>
-        <text class="section-note">可微调</text>
-      </view>
-
-      <view wx:for="{{resultItems}}" wx:key="key" class="result-row">
-        <view class="result-meta">
-          <text class="result-name">{{item.name}}</text>
-          <text wx:if="{{item.kind === 'formula_powder'}}" class="result-hint">约兑水 {{item.waterVolume}} ml</text>
-        </view>
-        <view class="result-input">
-          <input type="digit" value="{{item.quantity}}" data-index="{{index}}" bindinput="updateQuantity" />
-          <text>{{item.displayUnit}}</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="summary-card">
-      <text class="summary-title">当前达成估算</text>
-      <view class="summary-grid">
-        <view class="metric"><text class="metric-value">{{achieved.protein}}</text><text class="metric-label">蛋白 g</text></view>
-        <view class="metric"><text class="metric-value">{{achieved.calories}}</text><text class="metric-label">热量 kcal</text></view>
-        <view class="metric"><text class="metric-value">{{achieved.fat}}</text><text class="metric-label">脂肪 g</text></view>
-        <view class="metric"><text class="metric-value">{{achieved.carbs}}</text><text class="metric-label">碳水 g</text></view>
-      </view>
-      <view class="premium-line"><text>优质蛋白估算</text><text>{{achieved.premiumProtein}} g</text></view>
-    </view>
-
-    <view class="button-row">
-      <button class="secondary-button" bindtap="backStep">上一步</button>
-      <button class="primary-button" bindtap="goToApply">继续应用</button>
-    </view>
-  </block>
-
-  <block wx:elif="{{step === 4}}">
-    <view class="section-card">
-      <view class="section-heading">
-        <view>
-          <text class="section-kicker">STEP 4</text>
-          <text class="section-title">应用到日期</text>
-        </view>
-      </view>
-
-      <text class="field-label">选择日期</text>
-      <picker mode="date" value="{{applyDate}}" bindchange="chooseApplyDate">
-        <view class="compact-picker">
-          <text>{{applyDate}}</text>
-          <text class="picker-arrow">›</text>
-        </view>
-      </picker>
-
-      <view class="warning-card">
-        <text class="warning-title">覆盖提醒</text>
-        <text>确认后会删除该日现有喂奶与辅食记录，再按当前推荐量写入；其他类型记录不受影响。</text>
-      </view>
-    </view>
-
-    <view class="button-row">
-      <button class="secondary-button" bindtap="backStep">上一步</button>
-      <button class="primary-button" loading="{{applying}}" disabled="{{applying}}" bindtap="confirmApply">确认应用</button>
-    </view>
+    </block>
   </block>
 </view>

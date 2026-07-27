@@ -10,8 +10,20 @@ test('diet adjust calculator page exposes solver and overwrite flow', () => {
   assert.equal(fs.existsSync(pagePath), true, 'wizard page should exist');
   const source = fs.readFileSync(pagePath, 'utf8');
   assert.match(source, /solveDietAdjust/);
+  assert.match(source, /energyPowders/);
+  assert.match(source, /onMilkRatioChanging/);
   assert.match(source, /deleteRecord/);
   assert.match(source, /softDeleteFoodIntake/);
+});
+
+test('diet adjust calculator wxml uses slider and energy powder group', () => {
+  const wxml = fs.readFileSync(
+    path.join(root, 'miniprogram/pkg-misc/diet-adjust-calculator/index.wxml'),
+    'utf8'
+  );
+  assert.match(wxml, /<slider/);
+  assert.match(wxml, /能量粉/);
+  assert.match(wxml, /算一算/);
 });
 
 test('profile menu exposes diet adjust calculator entry', () => {

@@ -1,5 +1,5 @@
 /**
- * 饮食调整换算：按目标 + 占比 + 组内份额求解各品项用量（纯函数）
+ * 饮食调整换算：滑条大类 + 自动均分 + 能量粉补热 + 软目标对照（纯函数）
  */
 
 const SHARE_TOLERANCE = 0.15;
@@ -44,17 +44,27 @@ function densityField(item = {}, mode = 'protein') {
     : toPositive(item.proteinPerUnit);
 }
 
-function validateGroupShares(items = [], label = '组') {
-  if (!items.length) return null;
-  if (!sharesAreValid(items.map((i) => i.sharePercent))) {
-    return `${label}份额合计须为 100%`;
-  }
-  return null;
+function withEqualShares(items = []) {
+  const list = Array.isArray(items) ? items.filter(Boolean) : [];
+  if (!list.length) return [];
+  const hasAllShares = list.every((item) => toPositive(item.sharePercent) > 0)
+    && sharesAreValid(list.map((item) => item.sharePercent));
+  if (hasAllShares) return list.map((item) => ({ ...item }));
+
+  let assigned = 0;
+  return list.map((item, index) => {
+    const sharePercent = index === list.length - 1
+      ? roundValue(100 - assigned, 2)
+      : roundValue(100 / list.length, 2);
+    assigned = roundValue(assigned + sharePercent, 2);
+    return { ...item, sharePercent };
+  });
 }
 
 function allocateGroup(items = [], groupTarget = 0, mode = 'protein') {
+  const equalized = withEqualShares(items);
   const rows = [];
-  for (const item of items) {
+  for (const item of equalized) {
     const share = toPositive(item.sharePercent) / 100;
     const allocatedTarget = roundValue(groupTarget * share, 4);
     const density = densityField(item, mode);
@@ -63,7 +73,7 @@ function allocateGroup(items = [], groupTarget = 0, mode = 'protein') {
     }
     const quantity = allocatedTarget > 0 ? allocatedTarget / density : 0;
     if (!(quantity > 0) && allocatedTarget > 0) {
-      return { ok: false, message: `「${item.name || item.key}」推荐量无效，请调整目标或份额` };
+      return { ok: false, message: `「${item.name || item.key}」推荐量无效，请调整目标或比例` };
     }
     const waterVolume = item.kind === 'formula_powder'
       ? calculateWaterFromPowder(quantity, item.mixRatio)
@@ -71,8 +81,11 @@ function allocateGroup(items = [], groupTarget = 0, mode = 'protein') {
 
     rows.push({
       ...item,
+      role: item.role || (item.kind === 'food' ? 'food' : 'milk'),
       allocatedTarget,
-      quantity: item.kind === 'breast_milk' ? roundValue(quantity, 0) : roundValue(quantity, item.kind === 'food' ? 1 : 1),
+      quantity: item.kind === 'breast_milk'
+        ? roundValue(quantity, 0)
+        : roundValue(quantity, 1),
       waterVolume,
       displayUnit: item.kind === 'breast_milk' ? 'ml' : (item.unit || 'g')
     });
@@ -105,16 +118,150 @@ function summarizeQuantities(items = []) {
   };
 }
 
+function resolveMilkSplit(input, normalMilks, specialMilks) {
+  if (normalMilks.length && !specialMilks.length) return { normalOfMilk: 1, specialOfMilk: 0 };
+  if (!normalMilks.length && specialMilks.length) return { normalOfMilk: 0, specialOfMilk: 1 };
+
+  const naturalCoef = toPositive(input.naturalProteinCoefficient);
+  const specialCoef = toPositive(input.specialProteinCoefficient);
+  const coefTotal = naturalCoef + specialCoef;
+  if (coefTotal > 0) {
+    return {
+      normalOfMilk: naturalCoef / coefTotal,
+      specialOfMilk: specialCoef / coefTotal
+    };
+  }
+
+  let normalOfMilk = toNumber(input.normalMilkOfMilkRatio, 0.5);
+  let specialOfMilk = toNumber(input.specialMilkOfMilkRatio, 0.5);
+  if (Math.abs(normalOfMilk + specialOfMilk - 1) > 0.002) {
+    return { error: '普奶/特奶占奶侧比例合计须为 100%' };
+  }
+  return { normalOfMilk, specialOfMilk };
+}
+
+function allocateEnergyPowders(energyPowders = [], calorieGap = 0) {
+  const list = withEqualShares(energyPowders);
+  if (!list.length || !(calorieGap > 0)) return { ok: true, rows: [], filledCalories: 0 };
+
+  const rows = [];
+  let filled = 0;
+  for (const item of list) {
+    const share = toPositive(item.sharePercent) / 100;
+    const allocatedCalories = roundValue(calorieGap * share, 4);
+    const density = toPositive(item.caloriesPerUnit);
+    if (!(density > 0)) {
+      return { ok: false, message: `「${item.name || item.key}」缺少有效热量浓度` };
+    }
+    const quantity = allocatedCalories / density;
+    const waterVolume = calculateWaterFromPowder(quantity, item.mixRatio);
+    rows.push({
+      ...item,
+      role: 'energy',
+      allocatedTarget: allocatedCalories,
+      quantity: roundValue(quantity, 1),
+      waterVolume,
+      displayUnit: item.unit || 'g',
+      energyNote: '用来补热量'
+    });
+    filled += allocatedCalories;
+  }
+  return { ok: true, rows, filledCalories: roundValue(filled, 0) };
+}
+
+function softRebalancePremiumFoods(items = [], premiumTarget = 0) {
+  if (!(premiumTarget > 0)) return { items, adjusted: false };
+  const achieved = summarizeQuantities(items);
+  if (achieved.premiumProtein >= premiumTarget * 0.95) {
+    return { items, adjusted: false };
+  }
+
+  const foodIndexes = [];
+  items.forEach((item, index) => {
+    if (item.kind === 'food') foodIndexes.push(index);
+  });
+  if (foodIndexes.length < 2) return { items, adjusted: false };
+
+  const premiumIndexes = foodIndexes.filter((index) => toPositive(items[index].premiumProteinPerUnit) > 0);
+  const otherIndexes = foodIndexes.filter((index) => !(toPositive(items[index].premiumProteinPerUnit) > 0));
+  if (!premiumIndexes.length || !otherIndexes.length) return { items, adjusted: false };
+
+  const next = items.map((item) => ({ ...item }));
+  let movedProtein = 0;
+  const need = premiumTarget - achieved.premiumProtein;
+  for (const index of otherIndexes) {
+    if (movedProtein >= need) break;
+    const item = next[index];
+    const proteinDensity = toPositive(item.proteinPerUnit);
+    if (!(proteinDensity > 0) || !(toPositive(item.quantity) > 0)) continue;
+    const movableQty = item.quantity * 0.3;
+    const movableProtein = movableQty * proteinDensity;
+    const takeProtein = Math.min(movableProtein, need - movedProtein);
+    const takeQty = takeProtein / proteinDensity;
+    item.quantity = roundValue(item.quantity - takeQty, 1);
+    movedProtein += takeProtein;
+  }
+
+  if (!(movedProtein > 0)) return { items, adjusted: false };
+
+  const perPremium = movedProtein / premiumIndexes.length;
+  for (const index of premiumIndexes) {
+    const item = next[index];
+    const proteinDensity = toPositive(item.proteinPerUnit) || toPositive(item.premiumProteinPerUnit);
+    if (!(proteinDensity > 0)) continue;
+    item.quantity = roundValue(item.quantity + perPremium / proteinDensity, 1);
+  }
+
+  return { items: next, adjusted: true };
+}
+
+function buildGaps(achieved, targets = {}) {
+  const gaps = {};
+  ['protein', 'calories', 'fat', 'carbs', 'premiumProtein'].forEach((key) => {
+    const target = toPositive(targets[key]);
+    if (!(target > 0)) return;
+    gaps[key] = roundValue(target - toNumber(achieved[key], 0), key === 'calories' ? 0 : 2);
+  });
+  return gaps;
+}
+
+function buildHints(gaps = {}, options = {}) {
+  const hints = [];
+  if (toNumber(gaps.calories) > 5 && !options.hasEnergyPowder) {
+    hints.push(`热量还差约 ${gaps.calories} kcal，可勾选能量粉补热`);
+  } else if (toNumber(gaps.calories) > 5) {
+    hints.push(`热量仍差约 ${gaps.calories} kcal，可略增能量粉或提高目标外零食`);
+  }
+  if (toNumber(gaps.fat) > 0.5) {
+    hints.push(`脂肪还差约 ${gaps.fat} g，可换更高脂食物或略增辅食`);
+  }
+  if (toNumber(gaps.carbs) > 0.5) {
+    hints.push(`碳水还差约 ${gaps.carbs} g，可换更高碳水食物`);
+  }
+  if (toNumber(gaps.premiumProtein) > 0.2) {
+    hints.push(options.premiumAdjusted
+      ? `已尽量提高优质蛋白，仍差约 ${gaps.premiumProtein} g`
+      : `优质蛋白还差约 ${gaps.premiumProtein} g，可多选优质蛋白食物`);
+  }
+  if (toNumber(gaps.protein) > 0.2) {
+    hints.push(`蛋白还差约 ${gaps.protein} g，请检查浓度或微调数量`);
+  }
+  return hints;
+}
+
 /**
  * @param {object} input
  * @param {'protein'|'calorie'} input.mode
  * @param {number} input.target
  * @param {number} input.milkRatio 0-1
  * @param {number} input.foodRatio 0-1
- * @param {number} [input.normalMilkOfMilkRatio]
- * @param {number} [input.specialMilkOfMilkRatio]
+ * @param {number} [input.calorieTarget] 保蛋白时用于能量粉补热与对照
+ * @param {number} [input.naturalProteinCoefficient]
+ * @param {number} [input.specialProteinCoefficient]
+ * @param {object} [input.softTargets] { fat, carbs, premiumProtein, calories }
  * @param {Array} input.normalMilks
  * @param {Array} input.specialMilks
+ * @param {Array} [input.energyPowders]
  * @param {Array} input.foods
  */
 function solveDietAdjust(input = {}) {
@@ -127,46 +274,36 @@ function solveDietAdjust(input = {}) {
   const milkRatio = toNumber(input.milkRatio, 0);
   const foodRatio = toNumber(input.foodRatio, 0);
   if (Math.abs(milkRatio + foodRatio - 1) > 0.002) {
-    return { ok: false, message: '奶侧与辅食侧占比合计须为 100%' };
+    return { ok: false, message: '奶与辅食比例合计须为 100%' };
   }
 
   const normalMilks = Array.isArray(input.normalMilks) ? input.normalMilks : [];
   const specialMilks = Array.isArray(input.specialMilks) ? input.specialMilks : [];
+  const energyPowders = Array.isArray(input.energyPowders) ? input.energyPowders : [];
   const foods = Array.isArray(input.foods) ? input.foods : [];
 
   if (milkRatio > 0 && normalMilks.length + specialMilks.length === 0) {
-    return { ok: false, message: '奶侧占比大于 0 时请至少选择一种奶' };
+    return {
+      ok: false,
+      message: energyPowders.length
+        ? '蛋白/主目标需要先选普奶或特奶；能量粉只用来补热量'
+        : '奶的比例大于 0 时请至少选择一种普奶或特奶'
+    };
   }
   if (foodRatio > 0 && foods.length === 0) {
-    return { ok: false, message: '辅食侧占比大于 0 时请至少选择一种食物' };
+    return { ok: false, message: '辅食比例大于 0 时请至少选择一种食物' };
   }
   if (!normalMilks.length && !specialMilks.length && !foods.length) {
-    return { ok: false, message: '请先选择组成品项' };
+    return { ok: false, message: '请先勾选要吃的奶或食物' };
   }
 
-  const milkErr = validateGroupShares(normalMilks, '普奶')
-    || validateGroupShares(specialMilks, '特奶')
-    || validateGroupShares(foods, '食物');
-  if (milkErr) return { ok: false, message: milkErr };
-
-  let normalOfMilk = toNumber(input.normalMilkOfMilkRatio, normalMilks.length && specialMilks.length ? 0.5 : (normalMilks.length ? 1 : 0));
-  let specialOfMilk = toNumber(input.specialMilkOfMilkRatio, normalMilks.length && specialMilks.length ? 0.5 : (specialMilks.length ? 1 : 0));
-  if (normalMilks.length && !specialMilks.length) {
-    normalOfMilk = 1;
-    specialOfMilk = 0;
-  } else if (!normalMilks.length && specialMilks.length) {
-    normalOfMilk = 0;
-    specialOfMilk = 1;
-  } else if (normalMilks.length && specialMilks.length) {
-    if (Math.abs(normalOfMilk + specialOfMilk - 1) > 0.002) {
-      return { ok: false, message: '普奶/特奶占奶侧比例合计须为 100%' };
-    }
-  }
+  const split = resolveMilkSplit(input, normalMilks, specialMilks);
+  if (split.error) return { ok: false, message: split.error };
 
   const tMilk = target * milkRatio;
   const tFood = target * foodRatio;
-  const tNormal = tMilk * normalOfMilk;
-  const tSpecial = tMilk * specialOfMilk;
+  const tNormal = tMilk * split.normalOfMilk;
+  const tSpecial = tMilk * split.specialOfMilk;
 
   const parts = [];
   if (normalMilks.length) {
@@ -185,23 +322,70 @@ function solveDietAdjust(input = {}) {
     parts.push(...allocated.rows);
   }
 
-  const nonPositive = parts.find((row) => !(toPositive(row.quantity) > 0) && toPositive(row.allocatedTarget) > 0);
-  if (nonPositive) {
-    return { ok: false, message: '推荐量无效，请调整目标或份额' };
+  const softTargets = input.softTargets && typeof input.softTargets === 'object'
+    ? input.softTargets
+    : {};
+  const calorieTarget = mode === 'calorie'
+    ? target
+    : toPositive(input.calorieTarget) || toPositive(softTargets.calories);
+
+  let workingItems = parts;
+  let premiumAdjusted = false;
+  if (toPositive(softTargets.premiumProtein) > 0) {
+    const rebalanced = softRebalancePremiumFoods(workingItems, toPositive(softTargets.premiumProtein));
+    workingItems = rebalanced.items;
+    premiumAdjusted = rebalanced.adjusted;
   }
 
-  const achieved = summarizeQuantities(parts);
+  let baseAchieved = summarizeQuantities(workingItems);
+  const calorieGap = calorieTarget > 0
+    ? Math.max(0, calorieTarget - baseAchieved.calories)
+    : 0;
+
+  if (energyPowders.length && calorieGap > 0) {
+    const energy = allocateEnergyPowders(energyPowders, calorieGap);
+    if (!energy.ok) return energy;
+    workingItems = workingItems.concat(energy.rows);
+  }
+
+  const nonPositive = workingItems.find((row) => (
+    !(toPositive(row.quantity) > 0) && toPositive(row.allocatedTarget) > 0
+  ));
+  if (nonPositive) {
+    return { ok: false, message: '推荐量无效，请调整目标或比例' };
+  }
+
+  const achieved = summarizeQuantities(workingItems);
+  const comparisonTargets = {
+    protein: mode === 'protein' ? target : toPositive(softTargets.protein),
+    calories: calorieTarget,
+    fat: toPositive(softTargets.fat),
+    carbs: toPositive(softTargets.carbs),
+    premiumProtein: toPositive(softTargets.premiumProtein)
+  };
+  const gaps = buildGaps(achieved, comparisonTargets);
+  const hints = buildHints(gaps, {
+    hasEnergyPowder: energyPowders.length > 0,
+    premiumAdjusted
+  });
+
   return {
     ok: true,
     mode,
     target,
-    items: parts,
+    items: workingItems,
     achieved,
+    gaps,
+    hints,
+    comparisonTargets,
+    premiumAdjusted,
     breakdown: {
       milkTarget: roundValue(tMilk, 2),
       foodTarget: roundValue(tFood, 2),
       normalMilkTarget: roundValue(tNormal, 2),
-      specialMilkTarget: roundValue(tSpecial, 2)
+      specialMilkTarget: roundValue(tSpecial, 2),
+      calorieTarget: roundValue(calorieTarget, 0),
+      calorieGapBeforeEnergy: roundValue(calorieGap, 0)
     }
   };
 }
@@ -213,7 +397,10 @@ module.exports = {
   roundValue,
   sumSharePercents,
   sharesAreValid,
+  withEqualShares,
   calculateWaterFromPowder,
   summarizeQuantities,
+  buildGaps,
+  buildHints,
   solveDietAdjust
 };

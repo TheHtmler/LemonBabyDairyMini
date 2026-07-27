@@ -64,34 +64,6 @@ page {
   line-height: 1.6;
 }
 
-.steps {
-  display: flex;
-  justify-content: center;
-  gap: 26rpx;
-  margin: 30rpx 0;
-}
-
-.step-dot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50rpx;
-  height: 50rpx;
-  border: 2rpx solid #eadfbf;
-  border-radius: 50%;
-  background: #fff;
-  color: #b1a68b;
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
-.step-dot.active {
-  border-color: #efb600;
-  background: #ffc928;
-  color: #4b3900;
-  box-shadow: 0 6rpx 14rpx rgba(239, 182, 0, 0.22);
-}
-
 .state-card,
 .section-card,
 .summary-card {
@@ -116,6 +88,7 @@ page {
 
 .section-card,
 .summary-card {
+  margin-top: 22rpx;
   padding: 30rpx;
 }
 
@@ -139,13 +112,98 @@ page {
   font-weight: 800;
 }
 
-.section-note,
+.section-note {
+  display: block;
+  margin-top: 10rpx;
+  color: #8a6500;
+  font-size: 22rpx;
+}
+
 .limit-tag {
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
   background: #fff3c8;
   color: #8a6500;
   font-size: 21rpx;
+}
+
+.sub-block {
+  margin-top: 8rpx;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  color: #8a6500;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.link-arrow {
+  font-size: 28rpx;
+}
+
+.soft-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 8rpx;
+}
+
+.soft-full {
+  grid-column: 1 / -1;
+}
+
+.slider-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 18rpx;
+  color: #796d53;
+  font-size: 22rpx;
+}
+
+.slider-mid {
+  flex: 1;
+  color: #5c4500;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ratio-slider {
+  margin: 12rpx 0 0;
+}
+
+.inline-hint {
+  margin-left: 8rpx;
+  color: #9d8e6c;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.metric-sub {
+  display: block;
+  margin-top: 6rpx;
+  color: #e8ddb6;
+  font-size: 20rpx;
+  opacity: 0.9;
+}
+
+.hint-list {
+  margin-top: 18rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx solid rgba(255, 255, 255, 0.16);
+}
+
+.hint-item {
+  display: block;
+  margin-top: 8rpx;
+  color: #ffe9a8;
+  font-size: 22rpx;
+  line-height: 1.5;
 }
 
 .group-title {

@@ -16,6 +16,8 @@ const {
   summarizeQuantities
 } = require('../../utils/dietAdjustCalculator');
 
+const FOOD_SELECT_LIMIT = 5;
+
 function round(value, precision = 2) {
   const number = Number(value);
   if (!Number.isFinite(number)) return 0;
@@ -38,21 +40,6 @@ function timeForIndex(index) {
 
 function dateTime(date, time) {
   return new Date(`${date}T${time}:00`);
-}
-
-function equalized(items = []) {
-  const selectedCount = items.filter((item) => item.selected).length;
-  let assigned = 0;
-  let selectedIndex = 0;
-  return items.map((item) => {
-    if (!item.selected || selectedCount === 0) return { ...item, sharePercent: 0 };
-    selectedIndex += 1;
-    const sharePercent = selectedIndex === selectedCount
-      ? round(100 - assigned, 2)
-      : round(100 / selectedCount, 2);
-    assigned += sharePercent;
-    return { ...item, sharePercent };
-  });
 }
 
 function withDensity(nutrition = {}, basis = 100) {
@@ -81,27 +68,31 @@ function splitProtein(food = {}, protein = 0) {
   return { naturalProtein: protein, specialProtein: 0 };
 }
 
+function selectedOf(list = []) {
+  return (list || []).filter((item) => item.selected);
+}
+
 Page({
   data: {
-    step: 1,
     loading: true,
     applying: false,
+    showMoreTargets: false,
+    hasResult: false,
     babyUid: '',
     nutritionSettings: {},
     weight: 0,
     targetPreferences: {},
     normalMilks: [],
     specialMilks: [],
+    energyPowders: [],
     foods: [],
-    selectedNormalMilks: [],
-    selectedSpecialMilks: [],
-    selectedFoods: [],
     mode: 'protein',
     target: '',
+    calorieTarget: '',
     milkRatioPercent: 70,
-    foodRatioPercent: 30,
-    normalMilkOfMilkPercent: 50,
-    specialMilkOfMilkPercent: 50,
+    softFat: '',
+    softCarbs: '',
+    softPremiumProtein: '',
     resultItems: [],
     achieved: {
       protein: 0,
@@ -110,8 +101,10 @@ Page({
       carbs: 0,
       premiumProtein: 0
     },
-    applyDate: formatDate(),
-    hasBothMilkGroups: false
+    comparisonTargets: {},
+    gaps: {},
+    hints: [],
+    applyDate: formatDate()
   },
 
   onLoad() {
@@ -157,36 +150,45 @@ Page({
         name: '母乳',
         unit: 'ml',
         selected: false,
-        sharePercent: 0,
         premiumProteinPerUnit: breastDensity.proteinPerUnit,
         ...breastDensity
       };
       const powderItems = formulaPowders.map((powder) => {
         const density = withDensity(powder.nutritionPer100g || {});
+        const isNaturalRole = powder.proteinRole === 'natural'
+          || powder.category === 'regular_formula'
+          || powder.category === 'breast_milk';
         return {
           key: `powder_${powder.id}`,
           kind: 'formula_powder',
           name: powder.name,
           unit: 'g',
           selected: false,
-          sharePercent: 0,
           powder,
           mixRatio: powder.mixRatio || {},
-          premiumProteinPerUnit: powder.proteinRole === 'natural' ? density.proteinPerUnit : 0,
+          premiumProteinPerUnit: isNaturalRole ? density.proteinPerUnit : 0,
           ...density
         };
       });
+      const energyPowders = powderItems.filter((item) => (
+        item.powder.category === 'energy_supplement'
+      ));
+      const specialMilks = powderItems.filter((item) => {
+        const category = item.powder.category;
+        if (category === 'energy_supplement') return false;
+        return category === 'special_formula' || item.powder.proteinRole === 'special';
+      });
       const normalMilks = [
         breastMilk,
-        ...powderItems.filter((item) => (
-          item.powder.category === 'regular_formula'
-          && item.powder.proteinRole !== 'special'
-        ))
+        ...powderItems.filter((item) => {
+          const category = item.powder.category;
+          if (category === 'energy_supplement' || category === 'special_formula') return false;
+          if (item.powder.proteinRole === 'special') return false;
+          return category === 'regular_formula'
+            || category === 'breast_milk'
+            || item.powder.proteinRole === 'natural';
+        })
       ];
-      const specialMilks = powderItems.filter((item) => (
-        item.powder.category === 'special_formula'
-        || item.powder.proteinRole === 'special'
-      ));
       const foodItems = (foods || []).map((food) => {
         const basis = food.nutritionBasis || {
           quantity: food.baseQuantity || 100,
@@ -200,7 +202,6 @@ Page({
           name: food.name,
           unit: basis.unit || 'g',
           selected: false,
-          sharePercent: 0,
           food,
           premiumProteinPerUnit: food.proteinQuality === 'premium' ? density.proteinPerUnit : 0,
           ...density
@@ -212,11 +213,13 @@ Page({
         nutritionSettings,
         normalMilks,
         specialMilks,
+        energyPowders,
         foods: foodItems,
         targetPreferences,
         weight,
         mode: preferredMode,
         target: this.defaultTarget(preferredMode, weight, targetPreferences),
+        calorieTarget: this.defaultCalorieTarget(weight, targetPreferences),
         loading: false
       });
     } catch (error) {
@@ -238,116 +241,120 @@ Page({
     return coefficient > 0 ? round(weight * coefficient, 2) : '';
   },
 
+  defaultCalorieTarget(weight, preferences = {}) {
+    if (!(weight > 0)) return '';
+    const coefficient = Number(preferences.calorieCoefficient);
+    return coefficient > 0 ? round(weight * coefficient, 0) : '';
+  },
+
+  toggleMoreTargets() {
+    this.setData({ showMoreTargets: !this.data.showMoreTargets });
+  },
+
   toggleOption(event) {
     const group = event.currentTarget.dataset.group;
     const key = event.currentTarget.dataset.key;
     const list = this.data[group] || [];
     const target = list.find((item) => item.key === key);
     if (!target) return;
-    if (group === 'foods' && !target.selected && list.filter((item) => item.selected).length >= 3) {
-      wx.showToast({ title: '食物最多选择 3 种', icon: 'none' });
+    if (group === 'foods' && !target.selected && selectedOf(list).length >= FOOD_SELECT_LIMIT) {
+      wx.showToast({ title: `食物最多选择 ${FOOD_SELECT_LIMIT} 种`, icon: 'none' });
       return;
     }
-    const next = equalized(list.map((item) => (
+    const next = list.map((item) => (
       item.key === key ? { ...item, selected: !item.selected } : item
-    )));
-    this.setData({ [group]: next });
-  },
-
-  goToTargets() {
-    const selectedCount = ['normalMilks', 'specialMilks', 'foods']
-      .reduce((total, group) => total + this.data[group].filter((item) => item.selected).length, 0);
-    if (!selectedCount) {
-      wx.showToast({ title: '请至少选择 1 个品项', icon: 'none' });
-      return;
-    }
-    const selectedNormalMilks = this.data.normalMilks.filter((item) => item.selected);
-    const selectedSpecialMilks = this.data.specialMilks.filter((item) => item.selected);
-    const selectedFoods = this.data.foods.filter((item) => item.selected);
-    this.setData({
-      step: 2,
-      selectedNormalMilks,
-      selectedSpecialMilks,
-      selectedFoods,
-      hasBothMilkGroups: selectedNormalMilks.length > 0 && selectedSpecialMilks.length > 0
-    });
-  },
-
-  backStep() {
-    if (this.data.step > 1) this.setData({ step: this.data.step - 1 });
+    ));
+    this.setData({ [group]: next, hasResult: false });
   },
 
   chooseMode(event) {
     const mode = event.currentTarget.dataset.mode;
     this.setData({
       mode,
-      target: this.defaultTarget(mode, this.data.weight, this.data.targetPreferences)
+      target: this.defaultTarget(mode, this.data.weight, this.data.targetPreferences),
+      hasResult: false
     });
   },
 
   updateField(event) {
     const field = event.currentTarget.dataset.field;
-    this.setData({ [field]: event.detail.value });
+    this.setData({ [field]: event.detail.value, hasResult: false });
   },
 
-  updateShare(event) {
-    const group = event.currentTarget.dataset.group;
-    const index = Number(event.currentTarget.dataset.index);
-    const list = [...(this.data[group] || [])];
-    list[index] = { ...list[index], sharePercent: event.detail.value };
-    this.setData({ [group]: list });
+  onMilkRatioChanging(event) {
+    const milkRatioPercent = Number(event.detail.value);
+    this.setData({
+      milkRatioPercent,
+      hasResult: false
+    });
   },
 
   calculate() {
+    if (!this.data.babyUid) {
+      wx.showToast({ title: '请先登录并选择宝宝', icon: 'none' });
+      return;
+    }
+    const milkRatioPercent = Number(this.data.milkRatioPercent);
+    const foodRatioPercent = 100 - milkRatioPercent;
     const result = solveDietAdjust({
       mode: this.data.mode,
       target: this.data.target,
-      milkRatio: Number(this.data.milkRatioPercent) / 100,
-      foodRatio: Number(this.data.foodRatioPercent) / 100,
-      normalMilkOfMilkRatio: Number(this.data.normalMilkOfMilkPercent) / 100,
-      specialMilkOfMilkRatio: Number(this.data.specialMilkOfMilkPercent) / 100,
-      normalMilks: this.data.selectedNormalMilks,
-      specialMilks: this.data.selectedSpecialMilks,
-      foods: this.data.selectedFoods
+      milkRatio: milkRatioPercent / 100,
+      foodRatio: foodRatioPercent / 100,
+      calorieTarget: this.data.calorieTarget,
+      naturalProteinCoefficient: this.data.targetPreferences.naturalProteinCoefficient,
+      specialProteinCoefficient: this.data.targetPreferences.specialProteinCoefficient,
+      softTargets: {
+        fat: this.data.softFat,
+        carbs: this.data.softCarbs,
+        premiumProtein: this.data.softPremiumProtein,
+        calories: this.data.calorieTarget
+      },
+      normalMilks: selectedOf(this.data.normalMilks),
+      specialMilks: selectedOf(this.data.specialMilks),
+      energyPowders: selectedOf(this.data.energyPowders),
+      foods: selectedOf(this.data.foods)
     });
     if (!result.ok) {
-      wx.showToast({ title: result.message, icon: 'none', duration: 2600 });
+      wx.showToast({ title: result.message, icon: 'none', duration: 2800 });
       return;
     }
     this.setData({
-      step: 3,
+      hasResult: true,
       resultItems: result.items,
-      achieved: result.achieved
+      achieved: result.achieved,
+      comparisonTargets: result.comparisonTargets || {},
+      gaps: result.gaps || {},
+      hints: result.hints || []
     });
   },
 
   updateQuantity(event) {
     const index = Number(event.currentTarget.dataset.index);
     const resultItems = [...this.data.resultItems];
+    const quantity = event.detail.value;
+    const current = resultItems[index];
     resultItems[index] = {
-      ...resultItems[index],
-      quantity: event.detail.value,
-      waterVolume: resultItems[index].kind === 'formula_powder'
+      ...current,
+      quantity,
+      waterVolume: current.kind === 'formula_powder'
         ? round(
-          Number(event.detail.value)
-          * (Number(resultItems[index].mixRatio?.water) || 0)
-          / (Number(resultItems[index].mixRatio?.powder) || 1),
+          Number(quantity)
+          * (Number(current.mixRatio?.water) || 0)
+          / (Number(current.mixRatio?.powder) || 1),
           0
         )
-        : resultItems[index].waterVolume
+        : current.waterVolume
     };
-    this.setData({
-      resultItems,
-      achieved: summarizeQuantities(resultItems)
+    const achieved = summarizeQuantities(resultItems);
+    const comparisonTargets = this.data.comparisonTargets || {};
+    const gaps = {};
+    Object.keys(comparisonTargets).forEach((key) => {
+      const target = Number(comparisonTargets[key]);
+      if (!(target > 0)) return;
+      gaps[key] = round(target - Number(achieved[key] || 0), key === 'calories' ? 0 : 2);
     });
-  },
-
-  goToApply() {
-    if (this.data.resultItems.some((item) => !(Number(item.quantity) > 0))) {
-      wx.showToast({ title: '所有推荐量都须大于 0', icon: 'none' });
-      return;
-    }
-    this.setData({ step: 4 });
+    this.setData({ resultItems, achieved, gaps });
   },
 
   chooseApplyDate(event) {
@@ -356,9 +363,17 @@ Page({
 
   confirmApply() {
     if (this.data.applying) return;
+    if (!this.data.hasResult || !this.data.resultItems.length) {
+      wx.showToast({ title: '请先点「算一算」', icon: 'none' });
+      return;
+    }
+    if (this.data.resultItems.some((item) => !(Number(item.quantity) > 0))) {
+      wx.showToast({ title: '所有推荐量都须大于 0', icon: 'none' });
+      return;
+    }
     wx.showModal({
-      title: '确认覆盖记录',
-      content: '可能覆盖当天喂奶与辅食，确认后将删除当天奶和辅食并写入推荐量（不预查）',
+      title: '确认记下这一天？',
+      content: '会清掉这一天已有的喂奶和辅食，再按刚才的推荐量重新记上。用药、尿布等其它记录不动。',
       confirmText: '确认应用',
       confirmColor: '#E39A00',
       success: (result) => {
@@ -396,7 +411,7 @@ Page({
       }
       await DailySummaryV2Model.markDirty(babyUid, applyDate);
       wx.hideLoading();
-      wx.showToast({ title: '已应用到所选日期', icon: 'success' });
+      wx.showToast({ title: '已按新方案记到这一天', icon: 'success' });
     } catch (error) {
       console.error('应用饮食调整方案失败:', error);
       wx.hideLoading();

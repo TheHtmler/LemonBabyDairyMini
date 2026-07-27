@@ -80,7 +80,7 @@ const MENU_GROUPS = [
         name: '饮食调整换算',
         icon: 'nutrition',
         path: '/pkg-misc/diet-adjust-calculator/index',
-        description: '试验：按目标反算普奶/特奶/食物用量并应用到某天'
+        description: '调奶/辅食比例，算出用量并可记到某一天'
       },
       {
         id: 3,
