@@ -11,6 +11,7 @@ const {
 
 const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const RECIPE_INGREDIENT_PICKER_SELECTION_KEY = 'recipe_ingredient_picker_selection';
+const DIET_ADJUST_FOOD_PICKER_SELECTION_KEY = 'diet_adjust_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
 const FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY = 'meal_food_picker_last_library_scope';
 const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
@@ -170,22 +171,29 @@ Page({
     quantityTargetContext: null,
     quantityTargetPreview: null,
     isRecipeIngredientPicker: false,
+    isDietAdjustPicker: false,
     cartConfirmText: '确定'
   },
 
   async onLoad(options = {}) {
     const from = String(options.from || '').trim();
-    this.pickerSource = from === 'recipe-management' ? 'recipe-management' : 'meal';
-    const isRecipeIngredientPicker = this.pickerSource === 'recipe-management';
+    const isRecipeIngredientPicker = from === 'recipe-management';
+    const isDietAdjustPicker = from === 'diet-adjust';
+    this.pickerSource = isDietAdjustPicker
+      ? 'diet-adjust'
+      : (isRecipeIngredientPicker ? 'recipe-management' : 'meal');
     this.setData({
       isRecipeIngredientPicker,
+      isDietAdjustPicker,
       cartConfirmText: isRecipeIngredientPicker ? '添加到食谱' : '确定'
     });
     this.loadFoodPickerTargetContext();
     this.restoreLastLibraryScope();
-    const selectionKey = isRecipeIngredientPicker
-      ? RECIPE_INGREDIENT_PICKER_SELECTION_KEY
-      : FOOD_PICKER_SELECTION_KEY;
+    const selectionKey = isDietAdjustPicker
+      ? DIET_ADJUST_FOOD_PICKER_SELECTION_KEY
+      : (isRecipeIngredientPicker
+        ? RECIPE_INGREDIENT_PICKER_SELECTION_KEY
+        : FOOD_PICKER_SELECTION_KEY);
     const previousSelection = wx.getStorageSync(selectionKey);
     this.pendingSelectedFoodIds = readFoodSelectionIds(previousSelection);
     this.pendingSelectedFoodQuantities = new Map(
@@ -832,8 +840,13 @@ Page({
   },
 
   openQuantityDrawer() {
-    if (this.pickerSource === 'recipe-management' || this.data.isRecipeIngredientPicker) {
-      // 食谱原料份量在食谱页填写
+    if (
+      this.pickerSource === 'recipe-management'
+      || this.pickerSource === 'diet-adjust'
+      || this.data.isRecipeIngredientPicker
+      || this.data.isDietAdjustPicker
+    ) {
+      // 食谱原料 / 饮食换算：只选品，份量在来源页填写或由换算器计算
       this.confirmSelection();
       return;
     }
@@ -1207,11 +1220,19 @@ Page({
       wx.showToast({ title: '请先选择食物', icon: 'none' });
       return;
     }
-    // 食谱原料：只回传所选食物，份量在食谱新增/编辑页填写，不打开本顿份量抽屉
+    // 食谱原料 / 饮食换算：只回传所选食物 id，不打开本顿份量抽屉
     if (this.pickerSource === 'recipe-management' || this.data.isRecipeIngredientPicker) {
       writeFoodSelectionIds(
         selectedFoods.map(food => food._id),
         RECIPE_INGREDIENT_PICKER_SELECTION_KEY
+      );
+      wx.navigateBack();
+      return;
+    }
+    if (this.pickerSource === 'diet-adjust' || this.data.isDietAdjustPicker) {
+      writeFoodSelectionIds(
+        selectedFoods.map(food => food._id),
+        DIET_ADJUST_FOOD_PICKER_SELECTION_KEY
       );
       wx.navigateBack();
       return;

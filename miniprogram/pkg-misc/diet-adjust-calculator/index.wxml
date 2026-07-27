@@ -2,7 +2,7 @@
   <view class="hero">
     <text class="eyebrow">饮食换算</text>
     <text class="hero-title">调比例，算出该吃多少</text>
-    <text class="hero-copy">保住蛋白或热量，把奶匀一点给辅食。搜索添加要吃的，点算一算就行。</text>
+    <text class="hero-copy">蛋白和热量都可勾选，指定一个为主；用滑条分奶和辅食，选好要吃的再点算一算。</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">
@@ -13,24 +13,81 @@
   <block wx:else>
     <view class="section-card">
       <text class="section-title">1. 今天要保住什么</text>
-      <text wx:if="{{weight}}" class="section-note">体重 {{weight}} kg · 已按系数预填，可改</text>
+      <text wx:if="{{weight}}" class="section-note">体重 {{weight}} kg · 已按系数预填，可改；至少启用一个，并指定「为主」</text>
 
-      <view class="segmented">
-        <view class="segment {{mode === 'protein' ? 'active' : ''}}" data-mode="protein" bindtap="chooseMode">保蛋白</view>
-        <view class="segment {{mode === 'calorie' ? 'active' : ''}}" data-mode="calorie" bindtap="chooseMode">保热量</view>
+      <view class="select-block">
+        <view class="select-head">
+          <view
+            class="tag-chip {{useProteinTarget ? '' : 'disabled'}}"
+            data-mode="protein"
+            bindtap="toggleTargetEnable"
+          >
+            <text>{{useProteinTarget ? '✓ ' : ''}}蛋白目标</text>
+          </view>
+          <view wx:if="{{useProteinTarget && primaryMode === 'protein'}}" class="limit-tag">为主</view>
+          <view
+            wx:elif="{{useProteinTarget}}"
+            class="add-btn"
+            data-mode="protein"
+            bindtap="setPrimaryMode"
+          >设为主</view>
+        </view>
+        <view
+          wx:if="{{useProteinTarget}}"
+          class="sub-block"
+          data-mode="protein"
+          bindtap="onTargetCardTap"
+        >
+          <text class="field-label">全天蛋白目标</text>
+          <view class="input-shell" catchtap="noop">
+            <input
+              class="compact-input"
+              type="digit"
+              value="{{proteinTarget}}"
+              data-field="proteinTarget"
+              bindinput="updateField"
+              placeholder="请输入蛋白目标"
+            />
+            <text class="unit">g</text>
+          </view>
+        </view>
       </view>
 
-      <text class="field-label">{{mode === 'protein' ? '全天蛋白目标' : '全天热量目标'}}</text>
-      <view class="input-shell">
-        <input class="compact-input" type="digit" value="{{target}}" data-field="target" bindinput="updateField" placeholder="请输入目标" />
-        <text class="unit">{{mode === 'protein' ? 'g' : 'kcal'}}</text>
-      </view>
-
-      <view wx:if="{{mode === 'protein'}}" class="sub-block">
-        <text class="field-label">热量参考（给能量粉补热用）</text>
-        <view class="input-shell">
-          <input class="compact-input" type="digit" value="{{calorieTarget}}" data-field="calorieTarget" bindinput="updateField" placeholder="可选" />
-          <text class="unit">kcal</text>
+      <view class="select-block">
+        <view class="select-head">
+          <view
+            class="tag-chip {{useCalorieTarget ? '' : 'disabled'}}"
+            data-mode="calorie"
+            bindtap="toggleTargetEnable"
+          >
+            <text>{{useCalorieTarget ? '✓ ' : ''}}热量目标</text>
+          </view>
+          <view wx:if="{{useCalorieTarget && primaryMode === 'calorie'}}" class="limit-tag">为主</view>
+          <view
+            wx:elif="{{useCalorieTarget}}"
+            class="add-btn"
+            data-mode="calorie"
+            bindtap="setPrimaryMode"
+          >设为主</view>
+        </view>
+        <view
+          wx:if="{{useCalorieTarget}}"
+          class="sub-block"
+          data-mode="calorie"
+          bindtap="onTargetCardTap"
+        >
+          <text class="field-label">全天热量目标</text>
+          <view class="input-shell" catchtap="noop">
+            <input
+              class="compact-input"
+              type="digit"
+              value="{{calorieTarget}}"
+              data-field="calorieTarget"
+              bindinput="updateField"
+              placeholder="请输入热量目标"
+            />
+            <text class="unit">kcal</text>
+          </view>
         </view>
       </view>
 
@@ -114,50 +171,33 @@
 
       <view class="select-block">
         <view class="select-head">
-          <text class="group-title">普奶</text>
-          <view class="add-btn" data-group="normalMilks" bindtap="openPicker">+ 添加</view>
+          <text class="group-title">奶</text>
+          <view class="add-btn" bindtap="openAddMilkPanel">添加奶</view>
         </view>
-        <view wx:if="{{selectedNormalMilks.length}}" class="tag-list">
+        <view
+          wx:if="{{selectedNormalMilks.length || selectedSpecialMilks.length || selectedEnergyPowders.length}}"
+          class="tag-list"
+        >
           <view wx:for="{{selectedNormalMilks}}" wx:key="key" class="tag-chip">
             <text>{{item.name}}</text>
             <text class="tag-remove" data-group="normalMilks" data-key="{{item.key}}" bindtap="removeSelected">×</text>
           </view>
-        </view>
-        <text wx:else class="empty-copy">还没添加普奶</text>
-      </view>
-
-      <view class="select-block">
-        <view class="select-head">
-          <text class="group-title">特奶</text>
-          <view class="add-btn" data-group="specialMilks" bindtap="openPicker">+ 添加</view>
-        </view>
-        <view wx:if="{{selectedSpecialMilks.length}}" class="tag-list">
           <view wx:for="{{selectedSpecialMilks}}" wx:key="key" class="tag-chip">
             <text>{{item.name}}</text>
             <text class="tag-remove" data-group="specialMilks" data-key="{{item.key}}" bindtap="removeSelected">×</text>
           </view>
-        </view>
-        <text wx:else class="empty-copy">还没添加特奶</text>
-      </view>
-
-      <view class="select-block">
-        <view class="select-head">
-          <text class="group-title">能量粉 <text class="inline-hint">只补热量</text></text>
-          <view class="add-btn" data-group="energyPowders" bindtap="openPicker">+ 添加</view>
-        </view>
-        <view wx:if="{{selectedEnergyPowders.length}}" class="tag-list">
           <view wx:for="{{selectedEnergyPowders}}" wx:key="key" class="tag-chip">
             <text>{{item.name}}</text>
             <text class="tag-remove" data-group="energyPowders" data-key="{{item.key}}" bindtap="removeSelected">×</text>
           </view>
         </view>
-        <text wx:else class="empty-copy">还没添加能量粉</text>
+        <text wx:else class="empty-copy">还没添加奶（普奶 / 特奶 / 能量粉）</text>
       </view>
 
       <view class="select-block">
         <view class="select-head">
           <text class="group-title">辅食</text>
-          <view class="add-btn" data-group="foods" bindtap="openPicker">+ 添加</view>
+          <view class="add-btn" bindtap="openFoodPicker">添加食物</view>
         </view>
         <view wx:if="{{selectedFoods.length}}" class="tag-list">
           <view wx:for="{{selectedFoods}}" wx:key="key" class="tag-chip">
@@ -165,7 +205,7 @@
             <text class="tag-remove" data-group="foods" data-key="{{item.key}}" bindtap="removeSelected">×</text>
           </view>
         </view>
-        <text wx:else class="empty-copy">还没添加辅食（最多 5 种）</text>
+        <text wx:else class="empty-copy">还没添加辅食</text>
       </view>
     </view>
 
@@ -179,6 +219,10 @@
             <text class="result-name">{{item.name}}</text>
             <text wx:if="{{item.energyNote}}" class="result-hint">{{item.energyNote}}</text>
             <text wx:elif="{{item.kind === 'formula_powder'}}" class="result-hint">约兑水 {{item.waterVolume}} ml</text>
+            <text wx:if="{{item.nutrition}}" class="result-hint">
+              蛋白 {{item.nutrition.protein}}g · 热量 {{item.nutrition.calories}}kcal · 脂肪 {{item.nutrition.fat}}g · 碳水 {{item.nutrition.carbs}}g
+              <text wx:if="{{item.nutrition.premiumProtein}}"> · 优质蛋白 {{item.nutrition.premiumProtein}}g</text>
+            </text>
           </view>
           <view class="result-input">
             <input type="digit" value="{{item.quantity}}" data-index="{{index}}" bindinput="updateQuantity" />
@@ -248,34 +292,114 @@
     </block>
   </block>
 
-  <view wx:if="{{showPicker}}" class="picker-mask" bindtap="closePicker">
-    <view class="picker-sheet" catchtap="noop">
-      <view class="picker-header">
-        <text class="picker-title">{{pickerTitle}}</text>
-        <text class="picker-close" bindtap="closePicker">关闭</text>
-      </view>
-      <view class="picker-search">
-        <input
-          class="compact-input"
-          value="{{pickerKeyword}}"
-          bindinput="onPickerSearch"
-          placeholder="输入名称搜索"
-          confirm-type="search"
-        />
-      </view>
-      <scroll-view class="picker-list" scroll-y>
-        <view
-          wx:for="{{pickerOptions}}"
-          wx:key="key"
-          class="picker-item {{item.alreadySelected ? 'disabled' : ''}}"
-          data-key="{{item.key}}"
-          bindtap="pickCatalogItem"
-        >
-          <text class="picker-item-name">{{item.name}}</text>
-          <text class="picker-item-action">{{item.alreadySelected ? '已添加' : '添加'}}</text>
+  <view wx:if="{{showAddMilkPanel}}" class="add-milk-dialog-mask" catchtap="cancelAddMilkPanel">
+    <view class="add-milk-dialog-panel" catchtap="noop">
+      <view class="add-milk-dialog-header">
+        <view class="panel-title-wrap">
+          <text class="section-eyebrow">添加奶</text>
+          <text class="section-title add-milk-dialog-title">选奶粉</text>
+          <text class="add-milk-hint">可选多个不同奶粉</text>
         </view>
-        <view wx:if="{{!pickerOptions.length}}" class="picker-empty">{{pickerEmpty}}</view>
-      </scroll-view>
+        <view class="add-milk-dialog-corner">
+          <view class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">×</view>
+          <view class="add-milk-dialog-manage" bindtap="goToManagePowders">去配奶粉</view>
+        </view>
+      </view>
+      <view class="add-milk-library-tabs">
+        <view
+          wx:for="{{addMilkLibraryTabs}}"
+          wx:key="scope"
+          class="add-milk-library-tab {{addMilkActiveScope === item.scope ? 'active' : ''}}"
+          data-scope="{{item.scope}}"
+          bindtap="switchAddMilkScope"
+        >
+          {{item.label}}
+        </view>
+      </view>
+      <view class="add-milk-picker-layout">
+        <scroll-view class="add-milk-category-sidebar" scroll-y enhanced show-scrollbar="{{false}}">
+          <view
+            wx:for="{{addMilkCategories}}"
+            wx:key="value"
+            class="add-milk-category-nav-item {{addMilkActiveCategory === item.value ? 'active' : ''}}"
+            data-category="{{item.value}}"
+            bindtap="switchAddMilkCategory"
+          >
+            <text class="add-milk-category-nav-label">{{item.label}}</text>
+          </view>
+          <view class="add-milk-category-empty" wx:if="{{addMilkCategories.length === 0}}">暂无分类</view>
+        </scroll-view>
+        <scroll-view class="add-milk-options-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+          <view class="add-milk-options-empty" wx:if="{{addMilkOptions.length === 0}}">
+            <text>{{addMilkActiveScope === 'system' ? '暂无系统奶粉' : '还没有奶粉，点右上角「去配奶粉」添加'}}</text>
+          </view>
+          <view class="add-milk-options">
+            <view
+              wx:for="{{addMilkOptions}}"
+              wx:key="key"
+              class="add-milk-option {{item.selected ? 'selected' : ''}}"
+              data-key="{{item.key}}"
+              data-index="{{index}}"
+              bindtap="toggleAddMilkOption"
+            >
+              <view class="add-milk-option-source add-milk-option-source-{{index}}">
+                <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
+                <image
+                  wx:if="{{item.displayImage}}"
+                  class="add-milk-option-image"
+                  src="{{item.displayImage}}"
+                  mode="aspectFill"
+                  lazy-load="{{true}}"
+                  data-url="{{item.displayImage}}"
+                  catchtap="previewAddMilkImage"
+                />
+                <view class="add-milk-option-copy">
+                  <text class="add-milk-option-title">{{item.label}}</text>
+                  <text class="add-milk-option-subtitle">{{item.subLabel}}</text>
+                </view>
+              </view>
+              <view class="add-milk-option-add {{item.selected ? 'active' : ''}}">{{item.selected ? '✓' : '+'}}</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+      <view class="add-milk-cart-detail-mask" wx:if="{{addMilkCartExpanded && addMilkCart.length > 0}}" catchtap="collapseAddMilkCart"></view>
+      <view class="add-milk-cart-detail {{addMilkCartExpanded && addMilkCart.length > 0 ? 'visible' : ''}}">
+        <view class="add-milk-cart-detail-header">
+          <text class="add-milk-cart-detail-title">已选的奶</text>
+          <text class="add-milk-cart-detail-count">{{addMilkCart.length}} 种</text>
+        </view>
+        <scroll-view class="add-milk-cart-detail-list" scroll-y enhanced show-scrollbar="{{false}}">
+          <view class="add-milk-cart-detail-item" wx:for="{{addMilkCart}}" wx:key="key">
+            <text class="category-badge {{item.categoryBadgeClass}}" style="{{item.categoryBadgeStyle}}">{{item.categoryShortLabel}}</text>
+            <image
+              wx:if="{{item.displayImage}}"
+              class="add-milk-cart-detail-image"
+              src="{{item.displayImage}}"
+              mode="aspectFill"
+              data-url="{{item.displayImage}}"
+              catchtap="previewAddMilkImage"
+            />
+            <text class="add-milk-cart-detail-name">{{item.label}}</text>
+            <view class="add-milk-cart-detail-remove" data-key="{{item.key}}" catchtap="removeAddMilkCartItem">移除</view>
+          </view>
+        </scroll-view>
+      </view>
+      <view class="add-milk-cart-bar">
+        <view class="add-milk-cart-main" bindtap="toggleAddMilkCartExpanded">
+          <view class="add-milk-cart-anchor">
+            <text class="add-milk-cart-icon">🍼</text>
+            <text class="add-milk-cart-badge" wx:if="{{addMilkCart.length > 0}}">{{addMilkCart.length}}</text>
+          </view>
+          <view class="add-milk-cart-copy">
+            <text class="add-milk-cart-title" wx:if="{{addMilkCart.length > 0}}">已选 {{addMilkCart.length}} 种奶</text>
+            <text class="add-milk-cart-title" wx:else>已选的奶</text>
+            <text class="add-milk-cart-subtitle" wx:if="{{addMilkCart.length > 0}}">{{addMilkCartExpanded ? '收起明细' : '点击查看明细'}}</text>
+            <text class="add-milk-cart-subtitle" wx:else>点奶右侧的 + 添加到这里</text>
+          </view>
+        </view>
+        <view class="add-milk-cart-confirm" catchtap="confirmAddMilkPanel">确定</view>
+      </view>
     </view>
   </view>
 </view>

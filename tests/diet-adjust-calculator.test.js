@@ -65,6 +65,8 @@ test('solveDietAdjust protein mode auto-splits milk/food without manual shares',
   assert.ok(Math.abs(milk.quantity - 7 / 0.011) < 1);
   assert.ok(Math.abs(food.quantity - 3 / 0.02) < 0.2);
   assert.ok(Math.abs(result.achieved.protein - 10) < 0.2);
+  assert.ok(milk.nutrition);
+  assert.ok(milk.nutrition.protein > 0);
 });
 
 test('solveDietAdjust splits normal/special by protein coefficients', () => {

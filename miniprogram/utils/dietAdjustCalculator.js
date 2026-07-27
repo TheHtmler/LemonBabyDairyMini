@@ -378,6 +378,16 @@ function solveDietAdjust(input = {}) {
   }
 
   const achieved = summarizeQuantities(workingItems);
+  const items = workingItems.map((item) => ({
+    ...item,
+    nutrition: {
+      protein: roundValue(toPositive(item.quantity) * toPositive(item.proteinPerUnit), 2),
+      calories: roundValue(toPositive(item.quantity) * toPositive(item.caloriesPerUnit), 0),
+      fat: roundValue(toPositive(item.quantity) * toPositive(item.fatPerUnit), 2),
+      carbs: roundValue(toPositive(item.quantity) * toPositive(item.carbsPerUnit), 2),
+      premiumProtein: roundValue(toPositive(item.quantity) * toPositive(item.premiumProteinPerUnit), 2)
+    }
+  }));
   const macroRatioSummary = buildMacroRatioSummary(achieved, ratioRanges);
   const comparisonTargets = {
     protein: mode === 'protein' ? target : toPositive(softTargets.protein),
@@ -394,7 +404,7 @@ function solveDietAdjust(input = {}) {
     ok: true,
     mode,
     target,
-    items: workingItems,
+    items,
     achieved,
     gaps,
     hints,

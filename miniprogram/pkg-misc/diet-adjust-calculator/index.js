@@ -1,4 +1,5 @@
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
+const PowderCatalogModel = require('../../pkg-milk/models/powderCatalog');
 const FoodModel = require('../../models/food');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
@@ -20,15 +21,29 @@ const {
   buildMacroRatioSummary,
   parseRangeInputs
 } = require('../../utils/dietAdjustMacroRanges');
+const {
+  BREAST_MILK_TAG_META,
+  POWDER_CATEGORIES,
+  POWDER_CATEGORY_META,
+  POWDER_CATEGORY_ORDER,
+  POWDER_STATUSES,
+  buildCategoryBadgeStyle,
+  sortFormulaPowdersByCategory
+} = require('../../utils/formulaPowderUtils');
 
-const FOOD_SELECT_LIMIT = 5;
+const DIET_ADJUST_FOOD_PICKER_SELECTION_KEY = 'diet_adjust_food_picker_selection';
 
-const PICKER_META = {
-  normalMilks: { title: '添加普奶', empty: '暂无普奶', catalogKey: 'normalMilkCatalog' },
-  specialMilks: { title: '添加特奶', empty: '暂无特奶', catalogKey: 'specialMilkCatalog' },
-  energyPowders: { title: '添加能量粉', empty: '暂无能量粉', catalogKey: 'energyPowderCatalog' },
-  foods: { title: '添加辅食', empty: '暂无食物', catalogKey: 'foodCatalog' }
+const ADD_MILK_CATEGORY_LABELS = {
+  [POWDER_CATEGORIES.BREAST_MILK]: '母乳',
+  [POWDER_CATEGORIES.REGULAR_FORMULA]: '普奶',
+  [POWDER_CATEGORIES.SPECIAL_FORMULA]: '特奶',
+  [POWDER_CATEGORIES.ENERGY_SUPPLEMENT]: '能量粉'
 };
+
+const getSystemPowders = PowderCatalogModel.getSystemPowders.bind(PowderCatalogModel);
+const resolvePowderImageUrls = typeof PowderCatalogModel.resolvePowderImageUrls === 'function'
+  ? PowderCatalogModel.resolvePowderImageUrls.bind(PowderCatalogModel)
+  : async (powders) => powders;
 
 function round(value, precision = 2) {
   const number = Number(value);
@@ -80,26 +95,6 @@ function splitProtein(food = {}, protein = 0) {
   return { naturalProtein: protein, specialProtein: 0 };
 }
 
-function normalizeSearchText(value = '') {
-  return String(value).trim().toLowerCase().replace(/\s+/g, '');
-}
-
-function fuzzyIncludes(text = '', query = '') {
-  const source = normalizeSearchText(text);
-  const keyword = normalizeSearchText(query);
-  if (!keyword) return true;
-  if (!source) return false;
-  if (source.includes(keyword)) return true;
-  let queryIndex = 0;
-  for (let i = 0; i < source.length; i += 1) {
-    if (source[i] === keyword[queryIndex]) {
-      queryIndex += 1;
-      if (queryIndex === keyword.length) return true;
-    }
-  }
-  return false;
-}
-
 function applyRangeDefaults(ranges = {}) {
   return {
     proteinEnergyMin: ranges.proteinEnergy?.min ?? '',
@@ -114,6 +109,107 @@ function applyRangeDefaults(ranges = {}) {
   };
 }
 
+function enrichPowder(powder = {}) {
+  const meta = POWDER_CATEGORY_META[powder.category] || {};
+  return {
+    ...powder,
+    categoryShortLabel: meta.shortLabel || '',
+    categoryBadgeClass: meta.badgeClass || '',
+    categoryBadgeStyle: buildCategoryBadgeStyle(meta)
+  };
+}
+
+function enrichMinePowder(powder = {}) {
+  return {
+    ...enrichPowder(powder),
+    sourceType: 'user',
+    sourcePowderCode: powder.sourceSystemPowderId || ''
+  };
+}
+
+function enrichSystemPowder(powder = {}) {
+  const powderCode = powder.powderCode || powder._id || powder.id || '';
+  return {
+    ...enrichPowder({
+      id: powderCode,
+      name: powder.name || '未命名奶粉',
+      category: powder.category || '',
+      proteinRole: powder.proteinRole || 'natural',
+      image: powder.image || '',
+      nutritionPer100g: powder.nutritionPer100g || {},
+      mixRatio: powder.mixRatio || {},
+      status: POWDER_STATUSES.ACTIVE
+    }),
+    sourceType: 'system',
+    sourcePowderCode: powderCode,
+    libraryScope: 'system'
+  };
+}
+
+function getPowderDisplayImage(powder = {}) {
+  if (powder.imageUrl) {
+    return powder.imageUrl;
+  }
+  const image = (powder.image || '').toString().trim();
+  return image.startsWith('cloud://') ? '' : image;
+}
+
+function mergeSelectablePowders(minePowders = [], systemPowders = []) {
+  const usedSystemCodes = new Set(
+    (minePowders || [])
+      .map((powder) => powder.sourcePowderCode || powder.sourceSystemPowderId)
+      .filter(Boolean)
+  );
+  const dedupedSystem = (systemPowders || []).filter(
+    (powder) => !usedSystemCodes.has(powder.sourcePowderCode)
+  );
+  return sortFormulaPowdersByCategory([...(minePowders || []), ...dedupedSystem]);
+}
+
+function buildNutritionFromQuantity(item = {}, quantity) {
+  const q = Number(quantity) || 0;
+  return {
+    protein: round(q * (Number(item.proteinPerUnit) || 0), 2),
+    calories: round(q * (Number(item.caloriesPerUnit) || 0), 0),
+    fat: round(q * (Number(item.fatPerUnit) || 0), 2),
+    carbs: round(q * (Number(item.carbsPerUnit) || 0), 2),
+    premiumProtein: round(q * (Number(item.premiumProteinPerUnit) || 0), 2)
+  };
+}
+
+function readFoodSelectionIds(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => (typeof item === 'string' ? item : item?._id)).filter(Boolean);
+  }
+  if (Array.isArray(value?.foodIds)) {
+    return value.foodIds.filter(Boolean);
+  }
+  if (Array.isArray(value?.items)) {
+    return value.items.map((item) => item?.foodId || item?._id).filter(Boolean);
+  }
+  return [];
+}
+
+function mapFoodCatalog(foods = []) {
+  return (foods || []).map((food) => {
+    const basis = food.nutritionBasis || {
+      quantity: food.baseQuantity || 100,
+      unit: food.baseUnit || (food.isLiquid ? 'ml' : 'g')
+    };
+    const nutrition = food.nutritionPerBasis || food.nutritionPerUnit || {};
+    const density = withDensity(nutrition, basis.quantity);
+    return {
+      key: `food_${food._id}`,
+      kind: 'food',
+      name: food.name,
+      unit: basis.unit || 'g',
+      food,
+      premiumProteinPerUnit: food.proteinQuality === 'premium' ? density.proteinPerUnit : 0,
+      ...density
+    };
+  });
+}
+
 Page({
   data: {
     loading: true,
@@ -124,19 +220,19 @@ Page({
     birthday: '',
     ageMonths: null,
     nutritionSettings: {},
+    formulaPowders: [],
+    foodCatalog: [],
     weight: 0,
     targetPreferences: {},
-    normalMilkCatalog: [],
-    specialMilkCatalog: [],
-    energyPowderCatalog: [],
-    foodCatalog: [],
+    useProteinTarget: true,
+    useCalorieTarget: true,
+    primaryMode: 'protein',
+    proteinTarget: '',
+    calorieTarget: '',
     selectedNormalMilks: [],
     selectedSpecialMilks: [],
     selectedEnergyPowders: [],
     selectedFoods: [],
-    mode: 'protein',
-    target: '',
-    calorieTarget: '',
     milkRatioPercent: 70,
     proteinEnergyMin: '',
     proteinEnergyMax: '',
@@ -159,12 +255,17 @@ Page({
     macroRows: [],
     hints: [],
     applyDate: formatDate(),
-    showPicker: false,
-    pickerGroup: '',
-    pickerTitle: '',
-    pickerKeyword: '',
-    pickerEmpty: '',
-    pickerOptions: []
+    showAddMilkPanel: false,
+    addMilkOptions: [],
+    addMilkCart: [],
+    addMilkCartExpanded: false,
+    addMilkLibraryTabs: [
+      { scope: 'mine', label: '我的奶粉' },
+      { scope: 'system', label: '系统奶粉' }
+    ],
+    addMilkActiveScope: 'mine',
+    addMilkCategories: [],
+    addMilkActiveCategory: ''
   },
 
   onLoad() {
@@ -179,6 +280,17 @@ Page({
     this.loadOptions();
   },
 
+  async onShow() {
+    if (this._pendingPowderRefresh) {
+      this._pendingPowderRefresh = false;
+      await this.reloadFormulaPowders();
+    }
+    if (this._awaitingFoodPicker) {
+      this._awaitingFoodPicker = false;
+      await this.consumeFoodPickerSelection();
+    }
+  },
+
   async loadBirthday(babyUid) {
     try {
       const cached = getApp()?.globalData?.babyInfo;
@@ -190,11 +302,68 @@ Page({
     }
   },
 
+  async loadSystemSelectablePowders() {
+    try {
+      const items = await getSystemPowders();
+      return (items || []).map(enrichSystemPowder);
+    } catch (error) {
+      console.warn('加载系统奶粉失败：', error);
+      return [];
+    }
+  },
+
+  buildBreastMilkDietItem(nutritionSettings = this.data.nutritionSettings) {
+    const breastDensity = withDensity({
+      protein: nutritionSettings.natural_milk_protein,
+      calories: nutritionSettings.natural_milk_calories,
+      fat: nutritionSettings.natural_milk_fat,
+      carbs: nutritionSettings.natural_milk_carbs
+    });
+    return {
+      key: 'breast_milk',
+      kind: 'breast_milk',
+      name: '母乳',
+      unit: 'ml',
+      premiumProteinPerUnit: breastDensity.proteinPerUnit,
+      ...breastDensity
+    };
+  },
+
+  buildPowderDietItem(powder = {}) {
+    const density = withDensity(powder.nutritionPer100g || {});
+    const isNaturalRole = powder.proteinRole === 'natural'
+      || powder.category === POWDER_CATEGORIES.REGULAR_FORMULA
+      || powder.category === POWDER_CATEGORIES.BREAST_MILK;
+    return {
+      key: `powder_${powder.id}`,
+      kind: 'formula_powder',
+      name: powder.name,
+      unit: 'g',
+      powder,
+      mixRatio: powder.mixRatio || {},
+      premiumProteinPerUnit: isNaturalRole ? density.proteinPerUnit : 0,
+      ...density
+    };
+  },
+
+  classifyDietMilkItem(item = {}) {
+    if (item.kind === 'breast_milk') return 'normal';
+    const powder = item.powder || {};
+    if (powder.category === POWDER_CATEGORIES.ENERGY_SUPPLEMENT) return 'energy';
+    if (
+      powder.category === POWDER_CATEGORIES.SPECIAL_FORMULA
+      || powder.proteinRole === 'special'
+    ) {
+      return 'special';
+    }
+    return 'normal';
+  },
+
   async loadOptions() {
     this.setData({ loading: true });
     try {
       const today = formatDate();
-      const [settings, foods, targetPreferences, basicInfo, birthday] = await Promise.all([
+      const [settings, foods, targetPreferences, basicInfo, birthday, systemPowders] = await Promise.all([
         MilkNutritionProfileModel.getNutritionProfileSettings(this.data.babyUid, {
           includeLegacyFallback: true
         }),
@@ -205,92 +374,32 @@ Page({
           includeProfileInitial: true,
           carryForwardMissing: true
         }),
-        this.loadBirthday(this.data.babyUid)
+        this.loadBirthday(this.data.babyUid),
+        this.loadSystemSelectablePowders()
       ]);
       const nutritionSettings = settings || {};
-      const formulaPowders = (nutritionSettings.formulaPowders || [])
-        .filter((powder) => powder.status !== 'archived');
-      const breastDensity = withDensity({
-        protein: nutritionSettings.natural_milk_protein,
-        calories: nutritionSettings.natural_milk_calories,
-        fat: nutritionSettings.natural_milk_fat,
-        carbs: nutritionSettings.natural_milk_carbs
-      });
-      const breastMilk = {
-        key: 'breast_milk',
-        kind: 'breast_milk',
-        name: '母乳',
-        unit: 'ml',
-        premiumProteinPerUnit: breastDensity.proteinPerUnit,
-        ...breastDensity
-      };
-      const powderItems = formulaPowders.map((powder) => {
-        const density = withDensity(powder.nutritionPer100g || {});
-        const isNaturalRole = powder.proteinRole === 'natural'
-          || powder.category === 'regular_formula'
-          || powder.category === 'breast_milk';
-        return {
-          key: `powder_${powder.id}`,
-          kind: 'formula_powder',
-          name: powder.name,
-          unit: 'g',
-          powder,
-          mixRatio: powder.mixRatio || {},
-          premiumProteinPerUnit: isNaturalRole ? density.proteinPerUnit : 0,
-          ...density
-        };
-      });
-      const energyPowderCatalog = powderItems.filter((item) => (
-        item.powder.category === 'energy_supplement'
-      ));
-      const specialMilkCatalog = powderItems.filter((item) => {
-        const category = item.powder.category;
-        if (category === 'energy_supplement') return false;
-        return category === 'special_formula' || item.powder.proteinRole === 'special';
-      });
-      const normalMilkCatalog = [
-        breastMilk,
-        ...powderItems.filter((item) => {
-          const category = item.powder.category;
-          if (category === 'energy_supplement' || category === 'special_formula') return false;
-          if (item.powder.proteinRole === 'special') return false;
-          return category === 'regular_formula'
-            || category === 'breast_milk'
-            || item.powder.proteinRole === 'natural';
-        })
-      ];
-      const foodCatalog = (foods || []).map((food) => {
-        const basis = food.nutritionBasis || {
-          quantity: food.baseQuantity || 100,
-          unit: food.baseUnit || (food.isLiquid ? 'ml' : 'g')
-        };
-        const nutrition = food.nutritionPerBasis || food.nutritionPerUnit || {};
-        const density = withDensity(nutrition, basis.quantity);
-        return {
-          key: `food_${food._id}`,
-          kind: 'food',
-          name: food.name,
-          unit: basis.unit || 'g',
-          food,
-          premiumProteinPerUnit: food.proteinQuality === 'premium' ? density.proteinPerUnit : 0,
-          ...density
-        };
-      });
+      const minePowders = (nutritionSettings.formulaPowders || [])
+        .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
+        .map(enrichMinePowder);
+      const formulaPowders = await resolvePowderImageUrls(
+        mergeSelectablePowders(minePowders, systemPowders)
+      );
+      const foodCatalog = mapFoodCatalog(foods);
       const weight = Number(basicInfo?.weight) || 0;
       const preferredMode = targetPreferences.preferredTargetMode === 'calorie' ? 'calorie' : 'protein';
       const { ageMonths, ranges } = getDefaultMacroRatioRangesByBirthday(birthday);
       this.setData({
         nutritionSettings,
-        normalMilkCatalog,
-        specialMilkCatalog,
-        energyPowderCatalog,
+        formulaPowders,
         foodCatalog,
         targetPreferences,
         weight,
         birthday,
         ageMonths,
-        mode: preferredMode,
-        target: this.defaultTarget(preferredMode, weight, targetPreferences),
+        useProteinTarget: true,
+        useCalorieTarget: true,
+        primaryMode: preferredMode,
+        proteinTarget: this.defaultProteinTarget(weight, targetPreferences),
         calorieTarget: this.defaultCalorieTarget(weight, targetPreferences),
         ...applyRangeDefaults(ranges),
         loading: false
@@ -302,12 +411,43 @@ Page({
     }
   },
 
-  defaultTarget(mode, weight, preferences = {}) {
-    if (!(weight > 0)) return '';
-    if (mode === 'calorie') {
-      const coefficient = Number(preferences.calorieCoefficient);
-      return coefficient > 0 ? round(weight * coefficient, 0) : '';
+  async reloadFormulaPowders() {
+    if (!this.data.babyUid) return;
+    try {
+      const [settings, systemPowders] = await Promise.all([
+        MilkNutritionProfileModel.getNutritionProfileSettings(this.data.babyUid, {
+          includeLegacyFallback: true
+        }),
+        this.loadSystemSelectablePowders()
+      ]);
+      const nutritionSettings = settings || this.data.nutritionSettings;
+      const minePowders = ((nutritionSettings && nutritionSettings.formulaPowders) || [])
+        .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
+        .map(enrichMinePowder);
+      const formulaPowders = await resolvePowderImageUrls(
+        mergeSelectablePowders(minePowders, systemPowders)
+      );
+      this.setData({ nutritionSettings, formulaPowders });
+      if (this.data.showAddMilkPanel) {
+        const scope = this.data.addMilkActiveScope || 'mine';
+        const categories = this.buildAddMilkCategories(scope);
+        const activeCategory = this.getNextAddMilkCategory(
+          categories,
+          this.data.addMilkActiveCategory
+        );
+        this.setData({
+          addMilkCategories: categories,
+          addMilkActiveCategory: activeCategory,
+          addMilkOptions: this.buildAddMilkOptions(scope, activeCategory)
+        });
+      }
+    } catch (error) {
+      console.error('刷新奶粉档案失败：', error);
     }
+  },
+
+  defaultProteinTarget(weight, preferences = {}) {
+    if (!(weight > 0)) return '';
     const natural = Number(preferences.naturalProteinCoefficient) || 0;
     const special = Number(preferences.specialProteinCoefficient) || 0;
     const coefficient = natural + special;
@@ -324,13 +464,56 @@ Page({
     this.setData({ showMoreTargets: !this.data.showMoreTargets });
   },
 
-  chooseMode(event) {
+  toggleTargetEnable(event) {
     const mode = event.currentTarget.dataset.mode;
+    if (mode !== 'protein' && mode !== 'calorie') return;
+    const useKey = mode === 'protein' ? 'useProteinTarget' : 'useCalorieTarget';
+    const otherKey = mode === 'protein' ? 'useCalorieTarget' : 'useProteinTarget';
+    const currentlyEnabled = !!this.data[useKey];
+
+    if (currentlyEnabled) {
+      if (!this.data[otherKey]) {
+        wx.showToast({ title: '至少启用一个目标', icon: 'none' });
+        return;
+      }
+      const patch = {
+        [useKey]: false,
+        hasResult: false
+      };
+      if (this.data.primaryMode === mode) {
+        patch.primaryMode = mode === 'protein' ? 'calorie' : 'protein';
+      }
+      this.setData(patch);
+      return;
+    }
+
     this.setData({
-      mode,
-      target: this.defaultTarget(mode, this.data.weight, this.data.targetPreferences),
+      [useKey]: true,
       hasResult: false
     });
+  },
+
+  setPrimaryMode(event) {
+    const mode = event.currentTarget.dataset.mode;
+    if (mode === 'protein' && !this.data.useProteinTarget) return;
+    if (mode === 'calorie' && !this.data.useCalorieTarget) return;
+    if (mode !== 'protein' && mode !== 'calorie') return;
+    this.setData({
+      primaryMode: mode,
+      hasResult: false
+    });
+  },
+
+  onTargetCardTap(event) {
+    const mode = event.currentTarget.dataset.mode;
+    const enabled = mode === 'protein'
+      ? this.data.useProteinTarget
+      : this.data.useCalorieTarget;
+    if (!enabled) {
+      this.toggleTargetEnable(event);
+      return;
+    }
+    this.setPrimaryMode(event);
   },
 
   updateField(event) {
@@ -345,82 +528,7 @@ Page({
     });
   },
 
-  openPicker(event) {
-    const group = event.currentTarget.dataset.group;
-    const meta = PICKER_META[group];
-    if (!meta) return;
-    this.setData({
-      showPicker: true,
-      pickerGroup: group,
-      pickerTitle: meta.title,
-      pickerEmpty: meta.empty,
-      pickerKeyword: '',
-      pickerOptions: this.buildPickerOptions(group, '')
-    });
-  },
-
-  closePicker() {
-    this.setData({ showPicker: false, pickerKeyword: '', pickerOptions: [] });
-  },
-
   noop() {},
-
-  onPickerSearch(event) {
-    const keyword = event.detail.value || '';
-    this.setData({
-      pickerKeyword: keyword,
-      pickerOptions: this.buildPickerOptions(this.data.pickerGroup, keyword)
-    });
-  },
-
-  buildPickerOptions(group, keyword = '') {
-    const meta = PICKER_META[group];
-    if (!meta) return [];
-    const selectedKey = {
-      normalMilks: 'selectedNormalMilks',
-      specialMilks: 'selectedSpecialMilks',
-      energyPowders: 'selectedEnergyPowders',
-      foods: 'selectedFoods'
-    }[group];
-    const selectedKeys = new Set((this.data[selectedKey] || []).map((item) => item.key));
-    return (this.data[meta.catalogKey] || [])
-      .filter((item) => fuzzyIncludes(item.name, keyword))
-      .map((item) => ({
-        ...item,
-        alreadySelected: selectedKeys.has(item.key)
-      }));
-  },
-
-  pickCatalogItem(event) {
-    const key = event.currentTarget.dataset.key;
-    const group = this.data.pickerGroup;
-    const meta = PICKER_META[group];
-    const selectedKey = {
-      normalMilks: 'selectedNormalMilks',
-      specialMilks: 'selectedSpecialMilks',
-      energyPowders: 'selectedEnergyPowders',
-      foods: 'selectedFoods'
-    }[group];
-    const catalog = this.data[meta.catalogKey] || [];
-    const item = catalog.find((row) => row.key === key);
-    if (!item) return;
-    const selected = [...(this.data[selectedKey] || [])];
-    if (selected.some((row) => row.key === key)) {
-      wx.showToast({ title: '已经添加过了', icon: 'none' });
-      return;
-    }
-    if (group === 'foods' && selected.length >= FOOD_SELECT_LIMIT) {
-      wx.showToast({ title: `食物最多选择 ${FOOD_SELECT_LIMIT} 种`, icon: 'none' });
-      return;
-    }
-    selected.push({ ...item });
-    this.setData({
-      [selectedKey]: selected,
-      hasResult: false,
-      pickerOptions: this.buildPickerOptions(group, this.data.pickerKeyword)
-    });
-    wx.showToast({ title: '已添加', icon: 'success', duration: 800 });
-  },
 
   removeSelected(event) {
     const group = event.currentTarget.dataset.group;
@@ -431,9 +539,393 @@ Page({
       energyPowders: 'selectedEnergyPowders',
       foods: 'selectedFoods'
     }[group];
+    if (!selectedKey) return;
     this.setData({
       [selectedKey]: (this.data[selectedKey] || []).filter((item) => item.key !== key),
       hasResult: false
+    });
+  },
+
+  openFoodPicker() {
+    const foodIds = (this.data.selectedFoods || [])
+      .map((item) => item.food?._id || String(item.key || '').replace(/^food_/, ''))
+      .filter(Boolean);
+    try {
+      wx.setStorageSync(DIET_ADJUST_FOOD_PICKER_SELECTION_KEY, {
+        schemaVersion: 2,
+        foodIds
+      });
+    } catch (error) {
+      console.warn('写入食物选择缓存失败:', error);
+    }
+    this._awaitingFoodPicker = true;
+    wx.navigateTo({
+      url: '/pkg-records/food-picker/index?from=diet-adjust',
+      fail: () => {
+        this._awaitingFoodPicker = false;
+      }
+    });
+  },
+
+  async consumeFoodPickerSelection() {
+    let payload = null;
+    try {
+      payload = wx.getStorageSync(DIET_ADJUST_FOOD_PICKER_SELECTION_KEY);
+    } catch (error) {
+      payload = null;
+    }
+    try {
+      wx.removeStorageSync(DIET_ADJUST_FOOD_PICKER_SELECTION_KEY);
+    } catch (error) {
+      // ignore
+    }
+    if (!payload) return;
+
+    const foodIds = readFoodSelectionIds(payload);
+    try {
+      const foods = await FoodModel.getAvailableFoods(this.data.babyUid);
+      const foodCatalog = mapFoodCatalog(foods);
+      const byId = new Map(
+        foodCatalog.map((item) => [item.food?._id, item]).filter(([id]) => !!id)
+      );
+      const selectedFoods = foodIds
+        .map((id) => byId.get(id))
+        .filter(Boolean);
+      this.setData({
+        foodCatalog,
+        selectedFoods,
+        hasResult: false
+      });
+    } catch (error) {
+      console.error('读取食物选择失败:', error);
+      const byId = new Map(
+        (this.data.foodCatalog || [])
+          .map((item) => [item.food?._id, item])
+          .filter(([id]) => !!id)
+      );
+      this.setData({
+        selectedFoods: foodIds.map((id) => byId.get(id)).filter(Boolean),
+        hasResult: false
+      });
+    }
+  },
+
+  goToManagePowders() {
+    this._pendingPowderRefresh = true;
+    wx.navigateTo({
+      url: '/pkg-milk/powder-management/index',
+      fail: (err) => {
+        this._pendingPowderRefresh = false;
+        console.error('打开奶粉管理页失败：', err);
+      }
+    });
+  },
+
+  buildAddMilkNutritionLabel(nutrition = {}, unitLabel = '100g') {
+    const protein = Number(nutrition.protein);
+    const calories = Number(nutrition.calories);
+    if (!Number.isFinite(protein) && !Number.isFinite(calories)) {
+      return '';
+    }
+    const parts = [];
+    if (Number.isFinite(protein)) {
+      parts.push(`蛋白 ${protein}g`);
+    }
+    if (Number.isFinite(calories)) {
+      parts.push(`热量 ${calories}kcal`);
+    }
+    return `${unitLabel}：${parts.join('  ')}`;
+  },
+
+  buildScopedAddMilkOptions(scope = this.data.addMilkActiveScope) {
+    const isSystemScope = scope === 'system';
+    const scopedPowders = (this.data.formulaPowders || []).filter((powder) => (
+      isSystemScope
+        ? powder.sourceType === 'system'
+        : powder.sourceType !== 'system'
+    ));
+    const settings = this.data.nutritionSettings || {};
+    const breastMilkLabel = this.buildAddMilkNutritionLabel({
+      protein: settings.natural_milk_protein,
+      calories: settings.natural_milk_calories
+    }, '100ml');
+
+    return [
+      ...(isSystemScope ? [] : [{
+        key: 'breast_milk',
+        kind: 'breast_milk',
+        category: POWDER_CATEGORIES.BREAST_MILK,
+        label: '母乳',
+        subLabel: breastMilkLabel || '记录母乳体积',
+        categoryShortLabel: '母',
+        categoryBadgeClass: 'breast',
+        categoryBadgeStyle: buildCategoryBadgeStyle(BREAST_MILK_TAG_META),
+        selected: false
+      }]),
+      ...sortFormulaPowdersByCategory(scopedPowders).map((powder) => ({
+        key: `powder:${powder.id}`,
+        kind: 'formula_powder',
+        powderId: powder.id,
+        category: powder.category || '',
+        sourceType: powder.sourceType || 'user',
+        sourcePowderCode: powder.sourcePowderCode || powder.sourceSystemPowderId || '',
+        scopeLabel: isSystemScope ? '系统' : '我的',
+        label: powder.name || '未命名奶粉',
+        subLabel: this.buildAddMilkNutritionLabel(powder.nutritionPer100g || {}, '100g')
+          || `${powder.categoryShortLabel || '奶'}类奶粉`,
+        displayImage: getPowderDisplayImage(powder),
+        categoryShortLabel: powder.categoryShortLabel || '奶',
+        categoryBadgeClass: powder.categoryBadgeClass || '',
+        categoryBadgeStyle: powder.categoryBadgeStyle || '',
+        selected: false
+      }))
+    ];
+  },
+
+  buildAddMilkCategories(scope = this.data.addMilkActiveScope) {
+    const presentCategories = new Set(
+      this.buildScopedAddMilkOptions(scope).map((option) => option.category).filter(Boolean)
+    );
+    const categories = POWDER_CATEGORY_ORDER
+      .filter((category) => presentCategories.has(category))
+      .map((category) => ({
+        value: category,
+        label: ADD_MILK_CATEGORY_LABELS[category] || (POWDER_CATEGORY_META[category] || {}).label || category
+      }));
+    if (categories.length === 0) {
+      return [];
+    }
+    return [{ value: 'all', label: '全部' }, ...categories];
+  },
+
+  getNextAddMilkCategory(categories = [], preferredCategory = '') {
+    if (preferredCategory && categories.some((item) => item.value === preferredCategory)) {
+      return preferredCategory;
+    }
+    return categories.length > 0 ? categories[0].value : '';
+  },
+
+  isAddMilkOptionSelected(option = {}, cart = this.data.addMilkCart || []) {
+    if (option.kind === 'breast_milk') {
+      return (cart || []).some((item) => item.kind === 'breast_milk');
+    }
+    return (cart || []).some((item) => item.kind === 'formula_powder' && item.powderId === option.powderId);
+  },
+
+  buildAddMilkOptions(
+    scope = this.data.addMilkActiveScope,
+    category = this.data.addMilkActiveCategory,
+    cart = this.data.addMilkCart
+  ) {
+    const options = this.buildScopedAddMilkOptions(scope);
+    const filtered = category && category !== 'all'
+      ? options.filter((option) => option.category === category)
+      : options;
+    return filtered.map((option) => ({
+      ...option,
+      selected: this.isAddMilkOptionSelected(option, cart)
+    }));
+  },
+
+  buildAddMilkCartItem(option = {}) {
+    return {
+      key: option.key,
+      kind: option.kind,
+      powderId: option.powderId || '',
+      label: option.label || (option.kind === 'breast_milk' ? '母乳' : '未命名奶粉'),
+      displayImage: option.displayImage || '',
+      categoryShortLabel: option.categoryShortLabel || '奶',
+      categoryBadgeClass: option.categoryBadgeClass || '',
+      categoryBadgeStyle: option.categoryBadgeStyle || ''
+    };
+  },
+
+  buildAddMilkCartFromSelection() {
+    const powders = this.data.formulaPowders || [];
+    const cart = [];
+    const pushItem = (item) => {
+      if (!item) return;
+      if (item.kind === 'breast_milk') {
+        cart.push({
+          key: 'breast_milk',
+          kind: 'breast_milk',
+          powderId: '',
+          label: '母乳',
+          displayImage: '',
+          categoryShortLabel: '母',
+          categoryBadgeClass: 'breast',
+          categoryBadgeStyle: buildCategoryBadgeStyle(BREAST_MILK_TAG_META)
+        });
+        return;
+      }
+      const powderIdHint = item.powder?.id || String(item.key || '').replace(/^powder_/, '');
+      const powder = item.powder
+        || powders.find((row) => row.id === powderIdHint)
+        || {};
+      const powderId = powder.id || powderIdHint;
+      cart.push({
+        key: `powder:${powderId}`,
+        kind: 'formula_powder',
+        powderId,
+        label: item.name || powder.name || '未命名奶粉',
+        displayImage: getPowderDisplayImage(powder),
+        categoryShortLabel: powder.categoryShortLabel || '奶',
+        categoryBadgeClass: powder.categoryBadgeClass || '',
+        categoryBadgeStyle: powder.categoryBadgeStyle || ''
+      });
+    };
+
+    (this.data.selectedNormalMilks || []).forEach(pushItem);
+    (this.data.selectedSpecialMilks || []).forEach(pushItem);
+    (this.data.selectedEnergyPowders || []).forEach(pushItem);
+    return cart;
+  },
+
+  openAddMilkPanel() {
+    const categories = this.buildAddMilkCategories('mine');
+    const activeCategory = this.getNextAddMilkCategory(categories, '');
+    const cart = this.buildAddMilkCartFromSelection();
+    this.setData({
+      showAddMilkPanel: true,
+      addMilkActiveScope: 'mine',
+      addMilkActiveCategory: activeCategory,
+      addMilkCategories: categories,
+      addMilkCart: cart,
+      addMilkCartExpanded: false,
+      addMilkOptions: this.buildAddMilkOptions('mine', activeCategory, cart)
+    });
+  },
+
+  switchAddMilkScope(event) {
+    const { scope } = event.currentTarget.dataset || {};
+    if (!scope || scope === this.data.addMilkActiveScope) return;
+    const categories = this.buildAddMilkCategories(scope);
+    const activeCategory = this.getNextAddMilkCategory(categories, '');
+    this.setData({
+      addMilkActiveScope: scope,
+      addMilkActiveCategory: activeCategory,
+      addMilkCategories: categories,
+      addMilkOptions: this.buildAddMilkOptions(scope, activeCategory)
+    });
+  },
+
+  switchAddMilkCategory(event) {
+    const { category } = event.currentTarget.dataset || {};
+    if (!category || category === this.data.addMilkActiveCategory) return;
+    this.setData({
+      addMilkActiveCategory: category,
+      addMilkOptions: this.buildAddMilkOptions(this.data.addMilkActiveScope, category)
+    });
+  },
+
+  toggleAddMilkOption(event) {
+    const key = event.currentTarget.dataset.key;
+    if (!key) return;
+    const option = (this.data.addMilkOptions || []).find((item) => item.key === key);
+    if (!option) return;
+
+    if (option.selected) {
+      this.removeFromAddMilkCart(key);
+      return;
+    }
+
+    const cart = [
+      ...(this.data.addMilkCart || []),
+      this.buildAddMilkCartItem(option)
+    ];
+    this.setData({
+      addMilkCart: cart,
+      addMilkOptions: (this.data.addMilkOptions || []).map((item) => (
+        item.key === key ? { ...item, selected: true } : item
+      ))
+    });
+  },
+
+  removeFromAddMilkCart(key) {
+    if (!key) return;
+    const cart = (this.data.addMilkCart || []).filter((item) => item.key !== key);
+    this.setData({
+      addMilkCart: cart,
+      addMilkCartExpanded: cart.length > 0 ? this.data.addMilkCartExpanded : false,
+      addMilkOptions: (this.data.addMilkOptions || []).map((item) => (
+        item.key === key ? { ...item, selected: false } : item
+      ))
+    });
+  },
+
+  removeAddMilkCartItem(event) {
+    const { key } = event.currentTarget.dataset || {};
+    this.removeFromAddMilkCart(key);
+  },
+
+  previewAddMilkImage(event) {
+    const { url } = event.currentTarget.dataset || {};
+    if (!url || typeof wx.previewImage !== 'function') return;
+    wx.previewImage({
+      urls: [url],
+      current: url
+    });
+  },
+
+  toggleAddMilkCartExpanded() {
+    if ((this.data.addMilkCart || []).length === 0) {
+      this.setData({ addMilkCartExpanded: false });
+      return;
+    }
+    this.setData({ addMilkCartExpanded: !this.data.addMilkCartExpanded });
+  },
+
+  collapseAddMilkCart() {
+    this.setData({ addMilkCartExpanded: false });
+  },
+
+  buildDietItemFromCart(cartItem = {}) {
+    if (cartItem.kind === 'breast_milk') {
+      return this.buildBreastMilkDietItem();
+    }
+    const powderId = cartItem.powderId || String(cartItem.key || '').replace(/^powder:/, '');
+    const powder = (this.data.formulaPowders || []).find((item) => item.id === powderId);
+    if (!powder) return null;
+    return this.buildPowderDietItem(powder);
+  },
+
+  confirmAddMilkPanel() {
+    const cart = this.data.addMilkCart || [];
+    const selectedNormalMilks = [];
+    const selectedSpecialMilks = [];
+    const selectedEnergyPowders = [];
+
+    cart.forEach((cartItem) => {
+      const dietItem = this.buildDietItemFromCart(cartItem);
+      if (!dietItem) return;
+      const bucket = this.classifyDietMilkItem(dietItem);
+      if (bucket === 'energy') {
+        selectedEnergyPowders.push(dietItem);
+      } else if (bucket === 'special') {
+        selectedSpecialMilks.push(dietItem);
+      } else {
+        selectedNormalMilks.push(dietItem);
+      }
+    });
+
+    this.setData({
+      selectedNormalMilks,
+      selectedSpecialMilks,
+      selectedEnergyPowders,
+      showAddMilkPanel: false,
+      addMilkOptions: [],
+      addMilkCart: [],
+      addMilkCartExpanded: false,
+      hasResult: false
+    });
+  },
+
+  cancelAddMilkPanel() {
+    this.setData({
+      showAddMilkPanel: false,
+      addMilkOptions: [],
+      addMilkCart: [],
+      addMilkCartExpanded: false
     });
   },
 
@@ -446,18 +938,57 @@ Page({
     };
   },
 
+  resolveSolveInputs() {
+    const {
+      useProteinTarget,
+      useCalorieTarget,
+      primaryMode,
+      proteinTarget,
+      calorieTarget
+    } = this.data;
+
+    if (!useProteinTarget && !useCalorieTarget) {
+      return { ok: false, message: '至少启用一个目标' };
+    }
+
+    let mode = primaryMode === 'calorie' ? 'calorie' : 'protein';
+    if (mode === 'protein' && !useProteinTarget) mode = 'calorie';
+    if (mode === 'calorie' && !useCalorieTarget) mode = 'protein';
+
+    const target = mode === 'calorie' ? calorieTarget : proteinTarget;
+    const softTargets = {};
+    if (useProteinTarget && mode === 'calorie') {
+      softTargets.protein = proteinTarget;
+    }
+
+    return {
+      ok: true,
+      mode,
+      target,
+      calorieTarget: useCalorieTarget ? calorieTarget : '',
+      softTargets
+    };
+  },
+
   calculate() {
     if (!this.data.babyUid) {
       wx.showToast({ title: '请先登录并选择宝宝', icon: 'none' });
       return;
     }
+    const solveInputs = this.resolveSolveInputs();
+    if (!solveInputs.ok) {
+      wx.showToast({ title: solveInputs.message, icon: 'none' });
+      return;
+    }
+
     const milkRatioPercent = Number(this.data.milkRatioPercent);
     const result = solveDietAdjust({
-      mode: this.data.mode,
-      target: this.data.target,
+      mode: solveInputs.mode,
+      target: solveInputs.target,
       milkRatio: milkRatioPercent / 100,
       foodRatio: (100 - milkRatioPercent) / 100,
-      calorieTarget: this.data.calorieTarget,
+      calorieTarget: solveInputs.calorieTarget,
+      softTargets: solveInputs.softTargets,
       naturalProteinCoefficient: this.data.targetPreferences.naturalProteinCoefficient,
       specialProteinCoefficient: this.data.targetPreferences.specialProteinCoefficient,
       ratioRanges: this.currentRatioRanges(),
@@ -472,6 +1003,7 @@ Page({
     }
     this.setData({
       hasResult: true,
+      primaryMode: solveInputs.mode,
       resultItems: result.items,
       achieved: result.achieved,
       comparisonTargets: result.comparisonTargets || {},
@@ -485,6 +1017,7 @@ Page({
     const resultItems = [...this.data.resultItems];
     const quantity = event.detail.value;
     const current = resultItems[index];
+    if (!current) return;
     resultItems[index] = {
       ...current,
       quantity,
@@ -495,7 +1028,8 @@ Page({
           / (Number(current.mixRatio?.powder) || 1),
           0
         )
-        : current.waterVolume
+        : current.waterVolume,
+      nutrition: buildNutritionFromQuantity(current, quantity)
     };
     const achieved = summarizeQuantities(resultItems);
     const macroRatioSummary = buildMacroRatioSummary(achieved, this.currentRatioRanges());
