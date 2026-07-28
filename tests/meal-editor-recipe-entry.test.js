@@ -116,7 +116,7 @@ test('recipe picker collects batch ingredient amounts and intake percent or gram
   assert.match(batchSource, /intakeMode/);
   assert.match(batchSource, /batchWeightG/);
   assert.match(batchSource, /ingredientsSnapshot/);
-  assert.match(batchSource, /navigateBack\(\{\s*delta:\s*2\s*\}\)/);
+  assert.match(batchSource, /navigateBack\(\{\s*delta:\s*editContext\s*\?\s*1\s*:\s*2\s*\}\)/);
   assert.doesNotMatch(batchTemplate, /原料用量/);
   assert.match(batchTemplate, /默认份量/);
   assert.match(batchTemplate, /上次份量/);
@@ -151,7 +151,9 @@ test('recipe picker collects batch ingredient amounts and intake percent or gram
   assert.match(batchTemplate, /nutrition-preview|summary-grid/);
   assert.match(batchTemplate, /ingredient-edit-line/);
   assert.match(batchTemplate, /unit-text/);
-  assert.match(batchSource, /intakeMode:\s*canUseGramsIntake\s*\?\s*'grams'\s*:\s*'percent'/);
+  assert.match(batchSource, /let intakeMode = canUseGramsIntake \? 'grams' : 'percent'/);
+  assert.match(batchSource, /if \(this\._editContext\)/);
+  assert.match(batchSource, /editMode === 'grams' && !canUseGramsIntake \? 'percent' : editMode/);
   assert.match(batchSource, /buildLiveIngredients/);
   assert.match(batchSource, /buildIntakeTargetPreview/);
   assert.match(batchSource, /intakeTargetPreview:\s*this\.buildIntakeTargetPreview\(\{[\s\S]*premiumProtein:\s*premiumSummary\.premiumProtein[\s\S]*\}\)/);
@@ -194,6 +196,10 @@ test('recipe picker collects batch ingredient amounts and intake percent or gram
 
 test('meal editor merges, saves, reloads and edits recipe rows without foodId', () => {
   const pageSource = fs.readFileSync(mealEditorPath, 'utf8');
+  const batchSource = fs.readFileSync(
+    path.join(__dirname, '..', 'miniprogram/pkg-records/recipe-batch/index.js'),
+    'utf8'
+  );
 
   assert.match(pageSource, /handleRecipePickerSelection/);
   assert.match(pageSource, /meal_recipe_picker_selection/);
@@ -202,8 +208,14 @@ test('meal editor merges, saves, reloads and edits recipe rows without foodId', 
   assert.match(pageSource, /batchNutrition/);
   assert.match(pageSource, /updateRecipeMealItemQuantity/);
   assert.match(pageSource, /saveLastBatchQuantities/);
-  assert.match(pageSource, /drawerStep:\s*'recipe-edit'/);
   assert.match(pageSource, /foodId:\s*''/);
+  // 编辑食谱：进入 recipe-batch，可改原料份量与实际摄入
+  assert.match(pageSource, /writeRecipeBatchEditContext/);
+  assert.match(pageSource, /meal_recipe_batch_edit_context/);
+  assert.match(pageSource, /recipe-batch\/index\?recipeId=.*mode=edit/);
+  assert.match(batchSource, /readRecipeBatchEditContext/);
+  assert.match(batchSource, /navigateBack\(\{\s*delta:\s*editContext\s*\?\s*1\s*:\s*2\s*\}\)/);
+  assert.match(batchSource, /originalIntakeId:\s*editContext\?\.originalIntakeId/);
   const recipeUpdateStart = pageSource.indexOf('updateRecipeMealItemQuantity(target, quantity');
   const recipeUpdateEnd = pageSource.indexOf('addOrUpdateRecipeMealItem', recipeUpdateStart);
   const recipeUpdateBody = pageSource.slice(recipeUpdateStart, recipeUpdateEnd);

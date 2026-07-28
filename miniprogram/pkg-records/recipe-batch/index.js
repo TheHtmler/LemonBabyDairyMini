@@ -25,6 +25,25 @@ const {
 
 const RECIPE_PICKER_SELECTION_KEY = 'meal_recipe_picker_selection';
 const RECIPE_DAY_PROTEIN_CONTEXT_KEY = 'meal_recipe_day_protein_context';
+const RECIPE_BATCH_EDIT_CONTEXT_KEY = 'meal_recipe_batch_edit_context';
+
+function readRecipeBatchEditContext() {
+  try {
+    const context = wx.getStorageSync(RECIPE_BATCH_EDIT_CONTEXT_KEY);
+    wx.removeStorageSync(RECIPE_BATCH_EDIT_CONTEXT_KEY);
+    if (!context || context.schemaVersion !== 1) return null;
+    return {
+      localId: context.localId || '',
+      originalIntakeId: context.originalIntakeId || '',
+      recipeId: context.recipeId || '',
+      ingredients: Array.isArray(context.ingredients) ? context.ingredients : [],
+      intakeMode: context.intakeMode === 'percent' ? 'percent' : 'grams',
+      intakeValue: context.intakeValue != null ? String(context.intakeValue) : ''
+    };
+  } catch (error) {
+    return null;
+  }
+}
 
 function readRecipeBatchTargetContext() {
   const empty = {
@@ -133,6 +152,7 @@ function buildCurrentNutritionDisplay(nutrition = {}, quantity) {
 Page({
   data: {
     loading: true,
+    isEditMode: false,
     recipeId: '',
     recipeName: '',
     draftIngredients: [],
@@ -176,10 +196,13 @@ Page({
 
   async onLoad(options = {}) {
     const recipeId = decodeURIComponent(options.recipeId || '');
+    const isEditMode = options.mode === 'edit';
     this.foodById = new Map();
     this._recipe = null;
     this._quantityDrafts = {};
     this._intakeDraft = '';
+    this._isEditMode = isEditMode;
+    this._editContext = null;
     this._targetContext = readRecipeBatchTargetContext();
     this._dayProteinContext = {
       naturalProtein: this._targetContext.dayNaturalProtein,
@@ -192,7 +215,11 @@ Page({
       return;
     }
 
-    this.setData({ loading: true, recipeId });
+    if (isEditMode) {
+      wx.setNavigationBarTitle({ title: '编辑食谱份量' });
+    }
+
+    this.setData({ loading: true, recipeId, isEditMode });
     this.refreshIntakeTargetPreview();
     await this.loadFoodCatalog();
     await this.loadRecipe(recipeId);
@@ -301,27 +328,49 @@ Page({
     }
 
     this._recipe = recipe;
+    const editContext = readRecipeBatchEditContext();
+    this._editContext = editContext && editContext.recipeId === recipe._id
+      ? editContext
+      : null;
+    const editQtyByFoodId = new Map(
+      (this._editContext?.ingredients || [])
+        .map((item = {}) => [String(item.foodId || '').trim(), item])
+        .filter(([foodId]) => !!foodId)
+    );
+
     const draftIngredients = (recipe.ingredients || []).map((item, index) => {
       const food = this.foodById.get(item.foodId) || null;
+      const editIngredient = editQtyByFoodId.get(String(item.foodId || '').trim());
       const snapshot = slimFoodSnapshot(
-        item.foodSnapshot && item.foodSnapshot.name
+        (editIngredient?.foodSnapshot && editIngredient.foodSnapshot.name
+          ? editIngredient.foodSnapshot
+          : null)
+        || (item.foodSnapshot && item.foodSnapshot.name
           ? item.foodSnapshot
-          : (food ? FoodModel.buildFoodSnapshot(food) : (item.foodSnapshot || {}))
+          : (food ? FoodModel.buildFoodSnapshot(food) : (item.foodSnapshot || {})))
       );
-      const unit = food?.baseUnit || item.unit || snapshot.nutritionBasis?.unit || 'g';
+      const unit = food?.baseUnit
+        || editIngredient?.unit
+        || item.unit
+        || snapshot.nutritionBasis?.unit
+        || 'g';
       const source = food || snapshot;
       const per100 = buildPer100Display(source, unit);
-      const defaultQuantity = Number(item.quantity) > 0 ? String(Number(item.quantity)) : '';
+      const editQuantity = Number(editIngredient?.quantity);
+      const defaultQuantity = editQuantity > 0
+        ? String(editQuantity)
+        : (Number(item.quantity) > 0 ? String(Number(item.quantity)) : '');
       const nutrition = defaultQuantity
         ? buildIngredientNutrition(source, Number(defaultQuantity) || 0)
         : emptyNutrition();
       const current = buildCurrentNutritionDisplay(nutrition, defaultQuantity);
       return {
         foodId: item.foodId || '',
-        foodName: food?.name || item.foodName || snapshot.name || `原料${index + 1}`,
+        foodName: food?.name || editIngredient?.foodName || item.foodName || snapshot.name || `原料${index + 1}`,
         unit,
         quantity: defaultQuantity,
-        proteinQuality: item.proteinQuality
+        proteinQuality: editIngredient?.proteinQuality
+          || item.proteinQuality
           || food?.proteinQuality
           || snapshot.proteinQuality
           || '',
@@ -341,12 +390,24 @@ Page({
     );
     const lastIngredients = readLastBatchQuantities(getBabyUid(), recipe._id);
     const lastFoodIds = new Set(lastIngredients.map((item) => item.foodId));
-    const hasLastQuantities = lastIngredients.length > 0
+    const hasLastQuantities = !this._editContext
+      && lastIngredients.length > 0
       && draftIngredients.some((item) => lastFoodIds.has(String(item.foodId || '').trim()));
     const liveCurrentByIndex = draftIngredients.map((item) => ({
       hasCurrentNutrition: !!item.hasCurrentNutrition,
       currentText: item.currentText || ''
     }));
+    let intakeMode = canUseGramsIntake ? 'grams' : 'percent';
+    let intakeValue = '';
+    if (this._editContext) {
+      const editMode = this._editContext.intakeMode === 'percent' ? 'percent' : 'grams';
+      intakeMode = editMode === 'grams' && !canUseGramsIntake ? 'percent' : editMode;
+      intakeValue = this._editContext.intakeValue || '';
+      if (intakeMode === 'percent' && editMode === 'grams' && !canUseGramsIntake) {
+        intakeValue = '';
+      }
+      this._intakeDraft = intakeValue;
+    }
     this.setData({
       loading: false,
       recipeId: recipe._id,
@@ -356,9 +417,8 @@ Page({
       hasDefaultQuantities,
       hasLastQuantities,
       showQtyActions: hasDefaultQuantities || hasLastQuantities || draftIngredients.length > 0,
-      // 默认按克数；含非克单位时回退百分比
-      intakeMode: canUseGramsIntake ? 'grams' : 'percent',
-      intakeValue: '',
+      intakeMode,
+      intakeValue,
       batchPreview: {
         totalWeightG: 0,
         totalProtein: '0.00',
@@ -854,9 +914,12 @@ Page({
       ? intake.eatenG
       : (intake.intakeMode === 'percent' ? intake.intakePercent : 0);
 
+    const editContext = this._editContext || null;
     wx.setStorageSync(RECIPE_PICKER_SELECTION_KEY, {
       items: [{
-        localId: `meal_recipe_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        localId: editContext?.localId
+          || `meal_recipe_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        originalIntakeId: editContext?.originalIntakeId || '',
         recipeId: recipe._id,
         recipeName: recipe.name,
         quantity,
@@ -876,7 +939,7 @@ Page({
 
     saveLastBatchQuantities(getBabyUid(), recipe._id, ingredientsSnapshot);
 
-    // 返回记本顿页：跳过选择食谱页
-    wx.navigateBack({ delta: 2 });
+    // 新增：返回时跳过选择食谱页；编辑：从记本顿直接进入，只回一层
+    wx.navigateBack({ delta: editContext ? 1 : 2 });
   }
 });

@@ -38,6 +38,7 @@ const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
 const RECIPE_PICKER_SELECTION_KEY = 'meal_recipe_picker_selection';
 const RECIPE_DAY_PROTEIN_CONTEXT_KEY = 'meal_recipe_day_protein_context';
+const RECIPE_BATCH_EDIT_CONTEXT_KEY = 'meal_recipe_batch_edit_context';
 
 function canLoadDailyTargetContext() {
   try {
@@ -245,6 +246,18 @@ function writeRecipeBatchTargetContext(context = {}) {
     targetPreferences: context.targetPreferences || {},
     dayNaturalProtein: Number(context.dayNaturalProtein) || 0,
     dayPremiumProtein: Number(context.dayPremiumProtein) || 0
+  });
+}
+
+function writeRecipeBatchEditContext(context = {}) {
+  wx.setStorageSync(RECIPE_BATCH_EDIT_CONTEXT_KEY, {
+    schemaVersion: 1,
+    localId: context.localId || '',
+    originalIntakeId: context.originalIntakeId || '',
+    recipeId: context.recipeId || '',
+    ingredients: Array.isArray(context.ingredients) ? context.ingredients : [],
+    intakeMode: context.intakeMode === 'percent' ? 'percent' : 'grams',
+    intakeValue: context.intakeValue != null ? String(context.intakeValue) : ''
   });
 }
 
@@ -964,11 +977,13 @@ Page({
       const ingredientsSnapshot = Array.isArray(selected.ingredientsSnapshot)
         ? selected.ingredientsSnapshot
         : [];
+      const existingIndex = items.findIndex(item => item.localId === localId);
+      const existingItem = existingIndex >= 0 ? items[existingIndex] : null;
       const nextItem = withPremiumProteinDisplay({
         localId,
-        originalIntakeId: '',
-        createdAt: null,
-        createdBy: '',
+        originalIntakeId: selected.originalIntakeId || existingItem?.originalIntakeId || '',
+        createdAt: existingItem?.createdAt || null,
+        createdBy: existingItem?.createdBy || '',
         foodId: '',
         food: null,
         foodSnapshot: {
@@ -1007,7 +1022,6 @@ Page({
           ingredientsSnapshot
         }
       });
-      const existingIndex = items.findIndex(item => item.localId === localId);
       if (existingIndex >= 0) {
         items[existingIndex] = nextItem;
       } else {
@@ -1438,24 +1452,62 @@ Page({
     });
   },
 
-  editMealItem(e) {
+  async editMealItem(e) {
     const { id } = e.currentTarget.dataset;
     const target = (this.data.mealDraft.items || []).find(item => item.localId === id);
     if (!target) return;
     if (target.sourceType === 'recipe') {
-      this.setData({
-        drawerVisible: true,
-        drawerStep: 'recipe-edit',
-        editingItemId: target.localId,
-        currentRecipeDraft: {
-          localId: target.localId,
-          recipeName: target.recipeName || target.nameSnapshot,
-          quantity: String(target.quantity),
-          nutritionPreview: buildRecipeNutritionPreview(target, target.quantity)
-            || (target.nutrition ? withProteinNutritionDisplay(target.nutrition) : null)
-        }
-      }, () => {
-        this.refreshDraftTargetPreview();
+      if (!target.recipeId) {
+        wx.showToast({ title: '缺少食谱信息，无法编辑', icon: 'none' });
+        return;
+      }
+      await this.ensureTargetContextLoaded();
+      const targetContext = this.data.targetContext || {};
+      const dayBase = this.data.dayProteinQualityBase || {
+        naturalProtein: 0,
+        premiumProtein: 0
+      };
+      const otherItems = (this.data.mealDraft.items || [])
+        .filter(item => item.localId !== target.localId);
+      const previous = summarizeMealItemsPremiumProtein([target]);
+      const draftBase = summarizeMealItemsPremiumProtein(otherItems);
+      const intakeMode = target.intakeMode === 'percent' ? 'percent' : 'grams';
+      const intakeValue = intakeMode === 'percent'
+        ? String(target.intakePercent || '')
+        : String(target.quantity || '');
+      writeRecipeBatchTargetContext({
+        currentSummary: targetContext.currentSummary || {},
+        previousSummary: summarizeFoodItems([target]),
+        baseMealSummary: summarizeFoodItems(otherItems),
+        weight: targetContext.weight,
+        targetPreferences: targetContext.targetPreferences || {},
+        dayNaturalProtein: Math.max(
+          0,
+          roundNumber(
+            (Number(dayBase.naturalProtein) || 0) - previous.naturalProtein + draftBase.naturalProtein,
+            2
+          )
+        ),
+        dayPremiumProtein: Math.max(
+          0,
+          roundNumber(
+            (Number(dayBase.premiumProtein) || 0) - previous.premiumProtein + draftBase.premiumProtein,
+            2
+          )
+        )
+      });
+      writeRecipeBatchEditContext({
+        localId: target.localId,
+        originalIntakeId: target.originalIntakeId || '',
+        recipeId: target.recipeId,
+        ingredients: target.ingredientsSnapshot
+          || target.recipeSource?.ingredientsSnapshot
+          || [],
+        intakeMode,
+        intakeValue
+      });
+      wx.navigateTo({
+        url: `/pkg-records/recipe-batch/index?recipeId=${encodeURIComponent(target.recipeId)}&mode=edit`
       });
       return;
     }

@@ -152,6 +152,6 @@
   </block>
 
   <view class="footer-actions" wx:if="{{!loading && recipeId}}">
-    <button class="confirm-btn" bindtap="confirmSelection">加入本顿</button>
+    <button class="confirm-btn" bindtap="confirmSelection">{{isEditMode ? '更新本顿食谱' : '加入本顿'}}</button>
   </view>
 </view>
