@@ -12,3 +12,14 @@ test('data-records page wires medicationDayStats into processMedicationData', ()
   assert.match(source, /medicationStats/);
   assert.match(source, /processMedicationData/);
 });
+
+test('applyDailyRecordTabDetails medication path calls processMedicationData', () => {
+  const source = fs.readFileSync(pageJs, 'utf8');
+  const fnMatch = source.match(/applyDailyRecordTabDetails\s*\([^)]*\)\s*\{([\s\S]*?)\n\s*\},/);
+  assert.ok(fnMatch, 'applyDailyRecordTabDetails function body should exist');
+  const body = fnMatch[1];
+  const medicationBranch = body.match(/if\s*\(\s*tab\s*===\s*['"]medication['"]\s*\)\s*\{([\s\S]*?)\n\s*\}/);
+  assert.ok(medicationBranch, 'medication branch should exist in applyDailyRecordTabDetails');
+  assert.match(medicationBranch[1], /processMedicationData/);
+  assert.doesNotMatch(medicationBranch[1], /medicationRecords:\s*details\.medicationRecords/);
+});

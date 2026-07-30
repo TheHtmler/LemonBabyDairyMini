@@ -4125,6 +4125,8 @@ function createDataRecordsPageConfig(options = {}) {
       foodMealGroups: [],
       legacyFoodIntakes: [],
       medicationRecords: [],
+      groupedMedicationRecords: [],
+      medicationStats: [],
       treatmentRecords: [],
       bowelRecords: [],
       groupedBowelRecords: [],
@@ -4234,11 +4236,8 @@ function createDataRecordsPageConfig(options = {}) {
     }
 
     if (tab === 'medication') {
-      this.setData({
-        medicationRecords: details.medicationRecords || [],
-        loadedRecordTabs,
-        loadingRecordTabs
-      });
+      this.processMedicationData(details.medicationRecords || []);
+      this.setData({ loadedRecordTabs, loadingRecordTabs });
       return;
     }
 
