@@ -32,6 +32,10 @@ test('medication tab renders stats row from medicationStats', () => {
   assert.match(template, /medicationStats/);
   assert.match(template, /medication-stat-pill/);
   assert.match(template, /dosageText/);
+  assert.match(template, /medication-stat-name/);
+  assert.match(template, /medication-stat-dose/);
+  assert.doesNotMatch(template, /medication-stat-label/);
+  assert.doesNotMatch(template, /medication-stat-value/);
 });
 
 test('medication stats styles exist', () => {

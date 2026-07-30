@@ -39,6 +39,7 @@ test('isOngoingSleep detects missing end', () => {
 
 test('formatDurationLabel', () => {
   assert.equal(formatDurationLabel(90), '1小时30分');
+  assert.equal(formatDurationLabel(60), '1小时');
   assert.equal(formatDurationLabel(45), '45分');
   assert.equal(formatDurationLabel(null), '');
 });

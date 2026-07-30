@@ -24,3 +24,14 @@ test('sleep-record page is registered in app.json', () => {
   assert.ok(recordsPackage);
   assert.ok(recordsPackage.pages.includes('sleep-record/index'));
 });
+
+test('data-records sleep tab shows durationLabel not raw minutes', () => {
+  const pageRoot = path.join(__dirname, '..', 'miniprogram', 'pages', 'data-records-v2');
+  const js = fs.readFileSync(path.join(pageRoot, 'index.js'), 'utf8');
+  const wxml = fs.readFileSync(path.join(pageRoot, 'index.wxml'), 'utf8');
+
+  assert.match(js, /formatSleepOverviewDuration/);
+  assert.match(js, /durationLabel/);
+  assert.match(wxml, /intakeOverview\.sleep\.durationLabel/);
+  assert.doesNotMatch(wxml, /intakeOverview\.sleep\.durationMinutes \|\| 0\}\} 分钟/);
+});

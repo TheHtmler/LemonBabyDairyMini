@@ -421,10 +421,19 @@ function createEmptyIntakeOverview() {
     },
     sleep: {
       durationMinutes: 0,
+      durationLabel: '0分',
       count: 0,
       ongoingCount: 0
     },
     treatment: createEmptyTreatmentOverview()
+  };
+}
+
+function formatSleepOverviewDuration(minutes) {
+  const durationMinutes = Number(minutes) || 0;
+  return {
+    durationMinutes,
+    durationLabel: formatDurationLabel(durationMinutes) || '0分'
   };
 }
 
@@ -4080,7 +4089,7 @@ function createDataRecordsPageConfig(options = {}) {
     };
     const sleep = summary.sleep || {};
     overview.sleep = {
-      durationMinutes: Number(sleep.totalDurationMinutes) || 0,
+      ...formatSleepOverviewDuration(sleep.totalDurationMinutes),
       count: Number(sleep.totalRecords) || Number(counts.sleep) || 0,
       ongoingCount: Number(sleep.ongoingCount) || 0
     };
@@ -4323,7 +4332,9 @@ function createDataRecordsPageConfig(options = {}) {
     );
     const ongoingSleepFromRecords = sleepRecordsToSet.filter(item => item.ongoing).length;
     intakeOverview.sleep = {
-      durationMinutes: Number(sleepFromSummary.totalDurationMinutes) || sleepDurationFromRecords,
+      ...formatSleepOverviewDuration(
+        Number(sleepFromSummary.totalDurationMinutes) || sleepDurationFromRecords
+      ),
       count: Number(sleepFromSummary.totalRecords) || sleepRecordsToSet.length,
       ongoingCount: Number(sleepFromSummary.ongoingCount) || ongoingSleepFromRecords
     };

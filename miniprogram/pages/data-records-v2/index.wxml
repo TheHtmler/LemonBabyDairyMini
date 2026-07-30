@@ -355,9 +355,11 @@
         </view>
         <view class="medication-stats-row" wx:if="{{!loadingRecordTabs.medication && medicationStats.length > 0}}">
           <view class="medication-stat-pill" wx:for="{{medicationStats}}" wx:key="key">
-            <text class="medication-stat-label">{{item.medicationName}}</text>
-            <text class="medication-stat-value" wx:if="{{item.totalDosage != null}}">{{item.dosageText}} {{item.unit}}</text>
-            <text class="medication-stat-value" wx:else>剂量单位不一</text>
+            <text class="medication-stat-name">{{item.medicationName}}</text>
+            <text class="medication-stat-sep">·</text>
+            <text class="medication-stat-dose" wx:if="{{item.totalDosage != null}}">{{item.dosageText}}{{item.unit}}</text>
+            <text class="medication-stat-dose" wx:else>单位不一</text>
+            <text class="medication-stat-sep">·</text>
             <text class="medication-stat-count">{{item.count}}次</text>
           </view>
         </view>
@@ -548,7 +550,7 @@
             </view>
             <view class="sleep-stat-pill">
               <text class="sleep-stat-label">总时长</text>
-              <text class="sleep-stat-value">{{intakeOverview.sleep.durationMinutes || 0}} 分钟</text>
+              <text class="sleep-stat-value">{{intakeOverview.sleep.durationLabel || '0分'}}</text>
             </view>
             <view class="sleep-stat-pill">
               <text class="sleep-stat-label">进行中</text>
