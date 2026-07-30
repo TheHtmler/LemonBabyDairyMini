@@ -62,6 +62,7 @@ const {
   formatDayMarkForDisplay,
   getColorName
 } = require('../../utils/dayCalendarMarkUtils');
+const { buildMedicationDayStats } = require('../../utils/medicationDayStats');
 
 // 母乳热量 67kcal/100ml
 // 特奶热量 69.5kcal/100ml
@@ -1519,6 +1520,7 @@ function createDataRecordsPageConfig(options = {}) {
     medicationRecords: [],
     treatmentRecords: [],
     groupedMedicationRecords: [], // 按药物名称分组的药物记录
+    medicationStats: [],
     bowelRecords: [], // 排便记录
     groupedBowelRecords: [], // 按类型分组的排便记录
     bowelStats: createEmptyBowelStats(),
@@ -4703,6 +4705,7 @@ function createDataRecordsPageConfig(options = {}) {
       medicationRecords: [],
       treatmentRecords: [],
       groupedMedicationRecords: [],
+      medicationStats: [],
       bowelRecords: [],
       groupedBowelRecords: [],
       hasRecord: false,
@@ -5793,7 +5796,8 @@ function createDataRecordsPageConfig(options = {}) {
     if (!medicationRecords || medicationRecords.length === 0) {
       this.setData({
         medicationRecords: [],
-        groupedMedicationRecords: []
+        groupedMedicationRecords: [],
+        medicationStats: []
       });
       return;
     }
@@ -5828,10 +5832,12 @@ function createDataRecordsPageConfig(options = {}) {
 
     // 使用MedicationRecordModel的分组功能
     const groupedMedicationRecords = MedicationRecordModel.groupRecordsByMedication(processedMedicationRecords);
-    
+    const medicationStats = buildMedicationDayStats(processedMedicationRecords);
+
     this.setData({
       medicationRecords: processedMedicationRecords,
-      groupedMedicationRecords: groupedMedicationRecords
+      groupedMedicationRecords: groupedMedicationRecords,
+      medicationStats: medicationStats
     });
   },
 
