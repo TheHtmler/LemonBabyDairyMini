@@ -51,6 +51,26 @@ test('mixed units in same group skip dosage total', () => {
   assert.equal(stats[0].unit, '');
 });
 
+test('blank unit mixed with concrete unit skips dosage total', () => {
+  const stats = buildMedicationDayStats([
+    { medicationId: 'm1', medicationName: '某药', dosage: 1, unit: 'ml' },
+    { medicationId: 'm1', medicationName: '某药', dosage: 2, unit: '' }
+  ]);
+  assert.equal(stats[0].count, 2);
+  assert.equal(stats[0].totalDosage, null);
+  assert.equal(stats[0].dosageText, '');
+  assert.equal(stats[0].unit, '');
+});
+
+test('all blank units still sum dosages', () => {
+  const stats = buildMedicationDayStats([
+    { medicationId: 'm1', medicationName: '某药', dosage: 1, unit: '' },
+    { medicationId: 'm1', medicationName: '某药', dosage: 2, unit: null }
+  ]);
+  assert.equal(stats[0].totalDosage, 3);
+  assert.equal(stats[0].count, 2);
+});
+
 test('invalid dosage treated as 0', () => {
   const stats = buildMedicationDayStats([
     { medicationId: 'm1', medicationName: 'B12', dosage: 'x', unit: 'ml' },

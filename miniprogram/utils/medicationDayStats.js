@@ -43,10 +43,9 @@ function buildMedicationDayStats(records) {
 
   return Array.from(groups.values())
     .map((group) => {
-      const uniqueUnits = [...new Set(group.units.filter(Boolean))];
-      const allBlank = group.units.every((u) => !u);
-      const sameUnit = allBlank || uniqueUnits.length <= 1;
-      const unit = sameUnit ? (uniqueUnits[0] || group.units[0] || '') : '';
+      const uniqueUnits = [...new Set(group.units)];
+      const sameUnit = uniqueUnits.length <= 1;
+      const unit = sameUnit ? (uniqueUnits[0] || '') : '';
       const totalDosage = sameUnit
         ? group.dosages.reduce((sum, d) => sum + d, 0)
         : null;
