@@ -2579,6 +2579,42 @@
   margin: 0 0 16rpx;
 }
 
+.medication-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin: 0 0 16rpx;
+}
+
+.medication-stat-pill {
+  flex: 1 1 calc(50% - 12rpx);
+  min-width: 200rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 238, 185, 0.72);
+  border: 1rpx solid rgba(255, 184, 0, 0.14);
+  box-sizing: border-box;
+}
+
+.medication-stat-label {
+  font-size: 22rpx;
+  color: #8d7344;
+}
+
+.medication-stat-value {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #8a6500;
+}
+
+.medication-stat-count {
+  font-size: 22rpx;
+  color: #a08a4a;
+}
+
 .water-stat-pill {
   flex: 1;
   display: flex;

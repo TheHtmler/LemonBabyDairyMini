@@ -353,6 +353,14 @@
             </view>
           </view>
         </view>
+        <view class="medication-stats-row" wx:if="{{!loadingRecordTabs.medication && medicationStats.length > 0}}">
+          <view class="medication-stat-pill" wx:for="{{medicationStats}}" wx:key="key">
+            <text class="medication-stat-label">{{item.medicationName}}</text>
+            <text class="medication-stat-value" wx:if="{{item.totalDosage != null}}">{{item.dosageText}} {{item.unit}}</text>
+            <text class="medication-stat-value" wx:else>剂量单位不一</text>
+            <text class="medication-stat-count">{{item.count}}次</text>
+          </view>
+        </view>
           <view class="empty-data" wx:if="{{loadingRecordTabs.medication}}">
             <view class="empty-text">加载中...</view>
           </view>
