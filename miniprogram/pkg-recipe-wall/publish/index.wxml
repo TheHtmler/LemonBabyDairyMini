@@ -49,17 +49,14 @@
     <view class="ing-empty" wx:if="{{!ingredients.length}}">还没有用料，请从食物库添加</view>
 
     <view class="ing-actions">
-      <button class="action-btn ghost" bindtap="openAdjustSheet">调整</button>
-      <button class="action-btn primary" bindtap="addIngredients">添加一行</button>
+      <text class="link" bindtap="openAdjustSheet">调整</text>
+      <text class="link" bindtap="addIngredients">添加一行</text>
     </view>
   </view>
 
   <!-- 5. 做法 -->
   <view class="panel">
-    <view class="label-row">
-      <text class="label">做法</text>
-      <text class="link" bindtap="addStep">+ 添加一步</text>
-    </view>
+    <view class="label">做法</view>
 
     <view class="step-block" wx:for="{{steps}}" wx:key="index">
       <view class="label-row">
@@ -84,6 +81,10 @@
         data-index="{{index}}"
         bindinput="onStepInput"
       />
+
+      <view class="step-add-row" wx:if="{{index === steps.length - 1}}">
+        <text class="link" bindtap="addStep">+ 添加一步</text>
+      </view>
     </view>
   </view>
 
