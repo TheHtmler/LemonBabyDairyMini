@@ -1,4 +1,14 @@
-const { formatRecipeWallAuthorLabel } = require('../../utils/recipeWallUtils');
+const {
+  formatRecipeWallAuthorLabel,
+  formatDifficultyLabel
+} = require('../../utils/recipeWallUtils');
+
+function formatNutri(value, digits = 2) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return digits === 0 ? '0' : '0.00';
+  if (digits === 0) return String(Math.round(num));
+  return (Math.round((num + Number.EPSILON) * 100) / 100).toFixed(digits);
+}
 
 Page({
   data: {
@@ -9,7 +19,10 @@ Page({
     post: null,
     authorLabel: '',
     liked: false,
-    likeCount: 0
+    likeCount: 0,
+    difficultyLabel: '',
+    cookingText: '',
+    nutrition: null
   },
 
   onLoad(query = {}) {
@@ -40,13 +53,23 @@ Page({
       }
 
       const post = result.post || {};
+      const total = post.totalNutrition || {};
+      const cookingMinutes = post.cookingMinutes;
       this.setData({
         loading: false,
         unavailable: false,
         post,
         authorLabel: formatRecipeWallAuthorLabel(post),
         liked: !!result.liked,
-        likeCount: Number(post.likeCount) || 0
+        likeCount: Number(post.likeCount) || 0,
+        difficultyLabel: formatDifficultyLabel(post.difficulty),
+        cookingText: cookingMinutes ? `${cookingMinutes} 分钟` : '',
+        nutrition: {
+          caloriesText: formatNutri(total.calories, 0),
+          proteinText: formatNutri(total.protein, 2),
+          carbsText: formatNutri(total.carbs, 2),
+          fatText: formatNutri(total.fat, 2)
+        }
       });
     } catch (error) {
       console.error('load recipe detail failed', error);

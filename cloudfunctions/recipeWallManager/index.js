@@ -110,9 +110,11 @@ async function publish(event, openid) {
   try {
     const textBlob = [
       data.title,
-      ...data.ingredients.map((item) => `${item.name}${item.amount}`),
+      data.description || '',
+      ...data.ingredients.map((item) => `${item.foodName || item.name}${item.amount}`),
       ...data.steps.map((step) => step.text),
-      ...data.tags
+      data.difficulty || '',
+      data.cookingMinutes ? `${data.cookingMinutes}分钟` : ''
     ].join('\n');
     await checkText(textBlob, openid);
     for (const fileID of fileIds) {

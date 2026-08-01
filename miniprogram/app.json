@@ -73,6 +73,7 @@
         "list/index",
         "detail/index",
         "publish/index",
+        "preview/index",
         "mine/index",
         "admin/index"
       ]

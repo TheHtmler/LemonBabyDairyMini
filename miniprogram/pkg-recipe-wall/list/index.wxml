@@ -24,7 +24,6 @@
       <view class="card-body">
         <view class="title-row">
           <text class="title">{{item.title}}</text>
-          <text class="tag" wx:if="{{item.tags[0]}}">{{item.tags[0]}}</text>
         </view>
         <text class="authorLabel">{{item.authorLabel}}</text>
         <view class="card-foot">

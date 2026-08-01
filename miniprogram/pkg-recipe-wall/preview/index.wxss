@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
   background: #FFFDF7;
-  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -17,7 +17,6 @@
   padding: 24rpx;
   background: #FFFFFF;
   border-radius: 24rpx;
-  box-shadow: 0 8rpx 24rpx rgba(255, 184, 0, 0.08);
   box-sizing: border-box;
 }
 
@@ -30,7 +29,7 @@
 
 .authorLabel {
   display: block;
-  margin-top: 12rpx;
+  margin-top: 10rpx;
   color: #A08A4A;
   font-size: 26rpx;
 }
@@ -49,6 +48,13 @@
   margin-top: 16rpx;
   color: #8A6A00;
   font-size: 24rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #5A4200;
+  margin-bottom: 16rpx;
 }
 
 .nutrition-grid {
@@ -78,40 +84,6 @@
   color: #A08A4A;
 }
 
-.like-row {
-  margin-top: 20rpx;
-}
-
-.like-btn {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  height: 76rpx;
-  line-height: 76rpx;
-  border-radius: 38rpx;
-  background: #FFF8E1;
-  color: #8A6A00;
-  font-size: 28rpx;
-  box-sizing: border-box;
-}
-
-.like-btn::after {
-  border: none;
-}
-
-.like-btn.liked {
-  background: #FFB800;
-  color: #5A4200;
-  font-weight: 600;
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #5A4200;
-  margin-bottom: 16rpx;
-}
-
 .ingredient {
   display: flex;
   justify-content: space-between;
@@ -120,13 +92,8 @@
   font-size: 28rpx;
 }
 
-.ing-name {
-  color: #333;
-}
-
-.ing-amount {
-  color: #999;
-}
+.ing-name { color: #333; }
+.ing-amount { color: #999; }
 
 .step {
   margin-bottom: 24rpx;
@@ -142,7 +109,7 @@
 
 .step-image {
   width: 100%;
-  height: 280rpx;
+  height: 260rpx;
   border-radius: 16rpx;
   background: #FFF8E1;
   margin-bottom: 10rpx;
@@ -155,22 +122,30 @@
   line-height: 1.6;
 }
 
-.state {
-  padding: 120rpx 40rpx;
-  text-align: center;
-  color: #999;
+.footer-actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 253, 247, 0.96);
+  box-sizing: border-box;
 }
 
-.empty-title {
-  display: block;
-  font-size: 34rpx;
+.save-btn {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 42rpx;
+  background: #FFB800;
   color: #5A4200;
+  font-size: 30rpx;
   font-weight: 600;
-  margin-bottom: 12rpx;
+  box-sizing: border-box;
 }
 
-.empty-tip {
-  display: block;
-  color: #A08A4A;
-  font-size: 26rpx;
+.save-btn::after {
+  border: none;
 }

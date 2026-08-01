@@ -1,0 +1,69 @@
+<view class="page" wx:if="{{draft}}">
+  <image
+    class="cover"
+    src="{{draft.coverTempPath || draft.coverFileId}}"
+    mode="aspectFill"
+    data-url="{{draft.coverFileId}}"
+    bindtap="previewImage"
+  />
+
+  <view class="panel">
+    <text class="title">{{draft.title}}</text>
+    <text class="authorLabel">{{authorLabel}}</text>
+    <text class="desc">{{draft.description}}</text>
+    <view class="meta-row" wx:if="{{cookingText || difficultyLabel}}">
+      <text wx:if="{{cookingText}}">⏱ {{cookingText}}</text>
+      <text wx:if="{{difficultyLabel}}">难度 {{difficultyLabel}}</text>
+    </view>
+  </view>
+
+  <view class="panel nutrition">
+    <view class="section-title">营养预估（整道）</view>
+    <view class="nutrition-grid">
+      <view class="nutri-item">
+        <text class="nutri-value">{{nutritionPreview.caloriesText}}</text>
+        <text class="nutri-label">热量 kcal</text>
+      </view>
+      <view class="nutri-item">
+        <text class="nutri-value">{{nutritionPreview.proteinText}}</text>
+        <text class="nutri-label">蛋白 g</text>
+      </view>
+      <view class="nutri-item">
+        <text class="nutri-value">{{nutritionPreview.carbsText}}</text>
+        <text class="nutri-label">碳水 g</text>
+      </view>
+      <view class="nutri-item">
+        <text class="nutri-value">{{nutritionPreview.fatText}}</text>
+        <text class="nutri-label">脂肪 g</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="section-title">用料</view>
+    <view class="ingredient" wx:for="{{draft.ingredients}}" wx:key="foodId">
+      <text class="ing-name">{{item.foodName}}</text>
+      <text class="ing-amount">{{item.quantity}}{{item.unit}}</text>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="section-title">做法</view>
+    <view class="step" wx:for="{{draft.steps}}" wx:key="index" wx:for-index="index">
+      <text class="step-index">第 {{index + 1}} 步</text>
+      <image
+        wx:if="{{item.imageTempPath || item.imageFileId}}"
+        class="step-image"
+        src="{{item.imageTempPath || item.imageFileId}}"
+        mode="aspectFill"
+        data-url="{{item.imageFileId}}"
+        bindtap="previewImage"
+      />
+      <text class="step-text">{{item.text}}</text>
+    </view>
+  </view>
+
+  <view class="footer-actions">
+    <button class="save-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onPublish">确认发布</button>
+  </view>
+</view>

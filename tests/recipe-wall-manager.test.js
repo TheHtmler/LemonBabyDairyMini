@@ -179,10 +179,13 @@ function loadRecipeWallManager({
 const validPublish = {
   action: 'publish',
   title: '南瓜泥',
+  description: '软糯辅食',
   coverFileId: 'cloud://c.png',
-  ingredients: [{ name: '南瓜', amount: '100g' }],
+  ingredients: [{ foodId: 'f1', foodName: '南瓜', quantity: 100, unit: 'g' }],
   steps: [{ text: '蒸熟捣碎' }],
-  tags: ['辅食'],
+  cookingMinutes: 15,
+  difficulty: 'easy',
+  totalNutrition: { calories: 80, protein: 1.2, carbs: 18, fat: 0.3 },
   babyName: '柠檬',
   authorDisplayName: '妈妈',
   babyUid: 'b1'

@@ -7,10 +7,18 @@ function read(rel) {
   return fs.readFileSync(path.resolve(__dirname, '..', rel), 'utf8');
 }
 
-test('app.json registers recipe-wall list subpackage page', () => {
-  const app = read('miniprogram/app.json');
-  assert.match(app, /pkg-recipe-wall/);
-  assert.match(app, /list\/index/);
+test('app.json registers recipe-wall pages including preview', () => {
+  const app = JSON.parse(read('miniprogram/app.json'));
+  const pkg = app.subPackages.find((item) => item.root === 'pkg-recipe-wall');
+  assert.ok(pkg);
+  assert.deepEqual(pkg.pages, [
+    'list/index',
+    'detail/index',
+    'publish/index',
+    'preview/index',
+    'mine/index',
+    'admin/index'
+  ]);
 });
 
 test('profile menu links to recipe wall under support group', () => {
@@ -29,19 +37,6 @@ test('list page loads via recipeWallManager list action', () => {
   assert.match(wxml, /likeCount/);
 });
 
-test('app.json registers all recipe-wall pages', () => {
-  const app = JSON.parse(read('miniprogram/app.json'));
-  const pkg = app.subPackages.find((item) => item.root === 'pkg-recipe-wall');
-  assert.ok(pkg);
-  assert.deepEqual(pkg.pages, [
-    'list/index',
-    'detail/index',
-    'publish/index',
-    'mine/index',
-    'admin/index'
-  ]);
-});
-
 test('detail page uses detail and toggleLike actions', () => {
   const js = read('miniprogram/pkg-recipe-wall/detail/index.js');
   const wxml = read('miniprogram/pkg-recipe-wall/detail/index.wxml');
@@ -49,14 +44,29 @@ test('detail page uses detail and toggleLike actions', () => {
   assert.match(js, /action:\s*['"]toggleLike['"]/);
   assert.match(wxml, /authorLabel/);
   assert.match(wxml, /内容不可用/);
+  assert.match(wxml, /营养预估/);
 });
 
-test('publish page validates tags and calls publish', () => {
+test('publish page uses food library and opens preview', () => {
   const js = read('miniprogram/pkg-recipe-wall/publish/index.js');
-  assert.match(js, /RECIPE_WALL_TAG_OPTIONS/);
+  const wxml = read('miniprogram/pkg-recipe-wall/publish/index.wxml');
+  assert.match(js, /from=recipe-wall/);
   assert.match(js, /validatePublishPayload/);
+  assert.match(js, /\/pkg-recipe-wall\/preview\/index/);
+  assert.match(js, /buildIngredientNutrition/);
+  assert.doesNotMatch(js, /RECIPE_WALL_TAG_OPTIONS/);
+  assert.match(wxml, /成品图片/);
+  assert.match(wxml, /菜谱描述/);
+  assert.match(wxml, /高级设置/);
+  assert.match(wxml, /上传步骤图（可选）/);
+});
+
+test('preview page publishes via cloud function', () => {
+  const js = read('miniprogram/pkg-recipe-wall/preview/index.js');
+  const wxml = read('miniprogram/pkg-recipe-wall/preview/index.wxml');
   assert.match(js, /action:\s*['"]publish['"]/);
-  assert.match(js, /wx\.cloud\.uploadFile/);
+  assert.match(wxml, /营养预估/);
+  assert.match(wxml, /确认发布/);
 });
 
 test('mine and admin pages support deleteOwn and takeDown', () => {
@@ -73,4 +83,9 @@ test('mine and admin pages support deleteOwn and takeDown', () => {
   assert.match(adminJs, /action:\s*['"]takeDown['"]/);
   assert.match(profileJs, /食谱墙管理/);
   assert.match(profileJs, /\/pkg-recipe-wall\/admin\/index/);
+});
+
+test('food picker treats recipe-wall as ingredient picker', () => {
+  const js = read('miniprogram/pkg-records/food-picker/index.js');
+  assert.match(js, /from === 'recipe-wall'/);
 });

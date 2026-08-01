@@ -175,8 +175,8 @@ Page({
 
   async onLoad(options = {}) {
     const from = String(options.from || '').trim();
-    this.pickerSource = from === 'recipe-management' ? 'recipe-management' : 'meal';
-    const isRecipeIngredientPicker = this.pickerSource === 'recipe-management';
+    const isRecipeIngredientPicker = from === 'recipe-management' || from === 'recipe-wall';
+    this.pickerSource = isRecipeIngredientPicker ? 'recipe-management' : 'meal';
     this.setData({
       isRecipeIngredientPicker,
       cartConfirmText: isRecipeIngredientPicker ? '添加到食谱' : '确定'

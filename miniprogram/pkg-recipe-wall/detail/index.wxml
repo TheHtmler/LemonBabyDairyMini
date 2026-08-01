@@ -16,11 +16,13 @@
     />
 
     <view class="panel">
-      <view class="title-row">
-        <text class="title">{{post.title}}</text>
-        <text class="tag" wx:if="{{post.tags[0]}}">{{post.tags[0]}}</text>
-      </view>
+      <text class="title">{{post.title}}</text>
       <text class="authorLabel">{{authorLabel}}</text>
+      <text class="desc" wx:if="{{post.description}}">{{post.description}}</text>
+      <view class="meta-row" wx:if="{{cookingText || difficultyLabel}}">
+        <text wx:if="{{cookingText}}">⏱ {{cookingText}}</text>
+        <text wx:if="{{difficultyLabel}}">难度 {{difficultyLabel}}</text>
+      </view>
 
       <view class="like-row">
         <button class="like-btn {{liked ? 'liked' : ''}}" bindtap="onToggleLike">
@@ -29,19 +31,40 @@
       </view>
     </view>
 
-    <view class="panel">
-      <view class="section-title">材料</view>
-      <view class="ingredient" wx:for="{{post.ingredients}}" wx:key="name">
-        <text class="ing-name">{{item.name}}</text>
-        <text class="ing-amount">{{item.amount}}</text>
+    <view class="panel" wx:if="{{nutrition}}">
+      <view class="section-title">营养预估（整道）</view>
+      <view class="nutrition-grid">
+        <view class="nutri-item">
+          <text class="nutri-value">{{nutrition.caloriesText}}</text>
+          <text class="nutri-label">热量 kcal</text>
+        </view>
+        <view class="nutri-item">
+          <text class="nutri-value">{{nutrition.proteinText}}</text>
+          <text class="nutri-label">蛋白 g</text>
+        </view>
+        <view class="nutri-item">
+          <text class="nutri-value">{{nutrition.carbsText}}</text>
+          <text class="nutri-label">碳水 g</text>
+        </view>
+        <view class="nutri-item">
+          <text class="nutri-value">{{nutrition.fatText}}</text>
+          <text class="nutri-label">脂肪 g</text>
+        </view>
       </view>
     </view>
 
     <view class="panel">
-      <view class="section-title">步骤</view>
+      <view class="section-title">用料</view>
+      <view class="ingredient" wx:for="{{post.ingredients}}" wx:key="foodId">
+        <text class="ing-name">{{item.foodName || item.name}}</text>
+        <text class="ing-amount">{{item.amount || (item.quantity + item.unit)}}</text>
+      </view>
+    </view>
+
+    <view class="panel">
+      <view class="section-title">做法</view>
       <view class="step" wx:for="{{post.steps}}" wx:key="index" wx:for-index="index">
         <text class="step-index">第 {{index + 1}} 步</text>
-        <text class="step-text">{{item.text}}</text>
         <image
           wx:if="{{item.imageFileId}}"
           class="step-image"
@@ -50,6 +73,7 @@
           data-url="{{item.imageFileId}}"
           bindtap="previewImage"
         />
+        <text class="step-text">{{item.text}}</text>
       </view>
     </view>
   </block>
