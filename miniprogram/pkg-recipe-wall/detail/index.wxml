@@ -1,0 +1,56 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中...</view>
+
+  <view wx:elif="{{unavailable}}" class="state">
+    <text class="empty-title">内容不可用</text>
+    <text class="empty-tip">{{message || '该食谱已下架或不存在'}}</text>
+  </view>
+
+  <block wx:elif="{{post}}">
+    <image
+      class="cover"
+      src="{{post.coverFileId}}"
+      mode="aspectFill"
+      data-url="{{post.coverFileId}}"
+      bindtap="previewImage"
+    />
+
+    <view class="panel">
+      <view class="title-row">
+        <text class="title">{{post.title}}</text>
+        <text class="tag" wx:if="{{post.tags[0]}}">{{post.tags[0]}}</text>
+      </view>
+      <text class="authorLabel">{{authorLabel}}</text>
+
+      <view class="like-row">
+        <button class="like-btn {{liked ? 'liked' : ''}}" bindtap="onToggleLike">
+          {{liked ? '已赞' : '点赞'}} · {{likeCount}}
+        </button>
+      </view>
+    </view>
+
+    <view class="panel">
+      <view class="section-title">材料</view>
+      <view class="ingredient" wx:for="{{post.ingredients}}" wx:key="name">
+        <text class="ing-name">{{item.name}}</text>
+        <text class="ing-amount">{{item.amount}}</text>
+      </view>
+    </view>
+
+    <view class="panel">
+      <view class="section-title">步骤</view>
+      <view class="step" wx:for="{{post.steps}}" wx:key="index" wx:for-index="index">
+        <text class="step-index">第 {{index + 1}} 步</text>
+        <text class="step-text">{{item.text}}</text>
+        <image
+          wx:if="{{item.imageFileId}}"
+          class="step-image"
+          src="{{item.imageFileId}}"
+          mode="aspectFill"
+          data-url="{{item.imageFileId}}"
+          bindtap="previewImage"
+        />
+      </view>
+    </view>
+  </block>
+</view>

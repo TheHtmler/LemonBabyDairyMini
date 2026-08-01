@@ -1,0 +1,63 @@
+<view class="page">
+  <view class="tip">{{tipText}}</view>
+
+  <view class="panel">
+    <view class="label">封面</view>
+    <view class="cover-box" bindtap="chooseCover">
+      <image wx:if="{{coverTempPath || coverFileId}}" class="cover" src="{{coverTempPath || coverFileId}}" mode="aspectFill" />
+      <text wx:else class="cover-placeholder">点击上传封面图</text>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="label">标题</view>
+    <input class="compact-input" maxlength="40" placeholder="例如：南瓜泥" value="{{title}}" bindinput="onTitleInput" />
+  </view>
+
+  <view class="panel">
+    <view class="label">标签（必选其一）</view>
+    <view class="tags">
+      <view
+        class="tag {{selectedTag === item ? 'active' : ''}}"
+        wx:for="{{tagOptions}}"
+        wx:key="*this"
+        data-tag="{{item}}"
+        bindtap="onSelectTag"
+      >{{item}}</view>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="label-row">
+      <text class="label">材料</text>
+      <text class="link" bindtap="addIngredient">+ 添加</text>
+    </view>
+    <view class="row" wx:for="{{ingredients}}" wx:key="index">
+      <input class="compact-input half" placeholder="食材" value="{{item.name}}" data-index="{{index}}" data-field="name" bindinput="onIngredientInput" />
+      <input class="compact-input half" placeholder="用量" value="{{item.amount}}" data-index="{{index}}" data-field="amount" bindinput="onIngredientInput" />
+      <text class="remove" data-index="{{index}}" bindtap="removeIngredient">删</text>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="label-row">
+      <text class="label">步骤</text>
+      <text class="link" bindtap="addStep">+ 添加</text>
+    </view>
+    <view class="step-block" wx:for="{{steps}}" wx:key="index">
+      <view class="label-row">
+        <text class="step-label">第 {{index + 1}} 步</text>
+        <text class="remove" data-index="{{index}}" bindtap="removeStep">删</text>
+      </view>
+      <textarea class="compact-textarea" maxlength="500" placeholder="写下做法" value="{{item.text}}" data-index="{{index}}" bindinput="onStepInput" />
+      <view class="step-image-box" data-index="{{index}}" bindtap="chooseStepImage">
+        <image wx:if="{{item.imageTempPath || item.imageFileId}}" class="step-image" src="{{item.imageTempPath || item.imageFileId}}" mode="aspectFill" />
+        <text wx:else class="cover-placeholder">可选配图</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer-actions">
+    <button class="save-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">发布到食谱墙</button>
+  </view>
+</view>

@@ -188,6 +188,14 @@ const MENU_GROUPS = [
         path: '/pkg-misc/developer-config/index',
         description: '公告、OCR 白名单等开发者配置',
         showForDeveloper: true
+      },
+      {
+        id: 24,
+        name: '食谱墙管理',
+        icon: 'setting',
+        path: '/pkg-recipe-wall/admin/index',
+        description: '下架违规食谱',
+        showForDeveloper: true
       }
     ]
   },

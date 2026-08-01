@@ -70,7 +70,11 @@
     {
       "root": "pkg-recipe-wall",
       "pages": [
-        "list/index"
+        "list/index",
+        "detail/index",
+        "publish/index",
+        "mine/index",
+        "admin/index"
       ]
     }
   ],
