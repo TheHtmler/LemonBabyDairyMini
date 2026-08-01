@@ -129,6 +129,13 @@ const MENU_GROUPS = [
         description: '查看急救卡与补液热量计算'
       },
       {
+        id: 23,
+        name: '食谱墙',
+        icon: 'add',
+        path: '/pkg-recipe-wall/list/index',
+        description: '分享宝宝辅食与低蛋白友好食谱'
+      },
+      {
         id: 12,
         name: '意见反馈',
         icon: 'info',

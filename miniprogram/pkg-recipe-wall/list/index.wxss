@@ -1,0 +1,153 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFFDF7 40%, #FFFFFF 100%);
+}
+
+.toolbar {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.tool-btn {
+  flex: 1;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 36rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.tool-btn::after {
+  border: none;
+}
+
+.tool-btn.primary {
+  background: #FFB800;
+  color: #5A4200;
+  font-weight: 600;
+}
+
+.tool-btn.ghost {
+  background: #FFFFFF;
+  color: #8A6A00;
+  border: 2rpx solid #FFE08A;
+}
+
+.state {
+  padding: 80rpx 24rpx;
+  text-align: center;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.empty-title {
+  display: block;
+  font-size: 34rpx;
+  color: #5A4200;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.empty-tip {
+  display: block;
+  color: #A08A4A;
+  margin-bottom: 28rpx;
+}
+
+.empty-btn {
+  max-width: 320rpx;
+  margin: 0 auto;
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 24rpx rgba(255, 184, 0, 0.12);
+}
+
+.cover {
+  width: 100%;
+  height: 320rpx;
+  background: #FFF3C4;
+  display: block;
+}
+
+.card-body {
+  padding: 20rpx 24rpx 24rpx;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.title {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.tag {
+  font-size: 22rpx;
+  color: #8A6A00;
+  background: #FFF3C4;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+}
+
+.authorLabel {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #A08A4A;
+}
+
+.card-foot {
+  margin-top: 16rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.like-btn {
+  min-width: 140rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: #FFF8E1;
+  color: #8A6A00;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  box-sizing: border-box;
+}
+
+.like-btn.liked {
+  background: #FFB800;
+  color: #5A4200;
+  font-weight: 600;
+}
+
+.likeCount {
+  font-variant-numeric: tabular-nums;
+}
+
+.tip {
+  padding: 24rpx;
+  font-size: 24rpx;
+}
