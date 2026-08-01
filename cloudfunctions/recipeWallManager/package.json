@@ -1,0 +1,9 @@
+{
+  "name": "recipeWallManager",
+  "version": "1.0.0",
+  "description": "食谱墙发布、点赞与内容安全管理",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}
