@@ -17,6 +17,12 @@ function displayNameCacheKey(babyUid, role) {
   return babyUid && role ? `personal_display_name_${babyUid}_${role}` : '';
 }
 
+function defaultDisplayName(role) {
+  if (role === 'creator') return '创建者';
+  if (role === 'participant') return '参与者';
+  return '';
+}
+
 function formatPreviewNumber(value, digits = 2) {
   const num = Number(value);
   if (!Number.isFinite(num)) return digits === 0 ? '0' : '0.00';
@@ -83,6 +89,7 @@ Page({
     authorDisplayName: '',
     authorAvatar: '',
     tipText: '',
+    authorReady: false,
     nutritionPreview: {
       caloriesText: '0',
       proteinText: '0.00',
@@ -102,25 +109,69 @@ Page({
     this.consumeIngredientSelection();
   },
 
-  loadAuthorContext() {
+  async loadRelationDisplayName(userRole, babyUid) {
+    const openid = getApp().globalData.openid || wx.getStorageSync('openid') || '';
+    if (!openid || !babyUid || !userRole) return '';
+
+    const collectionName = userRole === 'creator'
+      ? 'baby_creators'
+      : (userRole === 'participant' ? 'baby_participants' : '');
+    if (!collectionName) return '';
+
+    try {
+      const db = wx.cloud.database();
+      const res = await db.collection(collectionName).where({
+        _openid: openid,
+        babyUid
+      }).limit(1).get();
+      const relation = (res.data && res.data[0]) || null;
+      return String(relation?.displayName || '').trim();
+    } catch (error) {
+      console.error('读取食谱墙作者展示名失败:', error);
+      return '';
+    }
+  },
+
+  async loadAuthorContext() {
     const app = getApp();
     const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid') || '';
     const userRole = app.globalData.userRole || wx.getStorageSync('user_role') || '';
-    const babyInfo = app.globalData.babyInfo || wx.getStorageSync('baby_info') || {};
-    const babyName = (babyInfo.name || '').trim();
+    let babyInfo = app.globalData.babyInfo || wx.getStorageSync('baby_info') || {};
+
+    if (babyUid && app.getBabyInfo) {
+      babyInfo = await app.getBabyInfo({ refreshAvatar: false }).catch(() => babyInfo);
+    }
+
+    const babyName = String(babyInfo?.name || '').trim();
     const cacheKey = displayNameCacheKey(babyUid, userRole);
-    const authorDisplayName = String((cacheKey ? wx.getStorageSync(cacheKey) : '') || '').trim();
+    const cachedDisplayName = String((cacheKey ? wx.getStorageSync(cacheKey) : '') || '').trim();
+    const relationDisplayName = await this.loadRelationDisplayName(userRole, babyUid);
+    const creatorInfoName = userRole === 'creator'
+      ? String(babyInfo?.creatorInfo?.displayName || '').trim()
+      : '';
+
+    let authorDisplayName = relationDisplayName
+      || cachedDisplayName
+      || creatorInfoName
+      || defaultDisplayName(userRole);
+
+    if (relationDisplayName && cacheKey) {
+      try {
+        wx.setStorageSync(cacheKey, relationDisplayName);
+      } catch (error) {}
+    }
+
     const authorAvatar = app.globalData.userInfo?.avatarUrl || '';
-    const previewAuthorLabel = formatRecipeWallAuthorLabel({ babyName, authorDisplayName });
+    const authorReady = !!(babyUid && babyName && authorDisplayName);
 
     this.setData({
       babyUid,
       babyName,
       authorDisplayName,
       authorAvatar,
-      tipText: previewAuthorLabel
-        ? `发布后将展示为「${previewAuthorLabel}」`
-        : '请先完善宝宝昵称与个人展示名称后再发布'
+      authorReady,
+      // 身份齐全时不再展示 tip，避免「明明有身份还提示」
+      tipText: authorReady ? '' : '请先完善宝宝昵称与个人展示名称后再发布'
     });
   },
 
@@ -393,12 +444,23 @@ Page({
     };
   },
 
-  onPreview() {
-    if (!this.data.babyName || !this.data.authorDisplayName) {
+  async onPreview() {
+    if (!this.data.authorReady) {
+      await this.loadAuthorContext();
+    }
+    if (!this.data.babyUid || !this.data.babyName || !this.data.authorDisplayName) {
       wx.showModal({
         title: '请先完善资料',
         content: '发布需要宝宝昵称和个人展示名称（如妈妈/爸爸）',
-        showCancel: false
+        confirmText: '去完善',
+        success: (res) => {
+          if (!res.confirm) return;
+          if (!this.data.babyName) {
+            wx.navigateTo({ url: '/pkg-misc/baby-info/index?from=profile' });
+          } else {
+            wx.navigateTo({ url: '/pkg-misc/personal-info/index' });
+          }
+        }
       });
       return;
     }
@@ -417,3 +479,4 @@ Page({
     wx.navigateTo({ url: '/pkg-recipe-wall/preview/index' });
   }
 });
+

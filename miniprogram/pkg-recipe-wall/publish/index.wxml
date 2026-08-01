@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="tip">{{tipText}}</view>
+  <view class="tip" wx:if="{{tipText}}">{{tipText}}</view>
 
   <!-- 1. 成品图 -->
   <view class="panel">

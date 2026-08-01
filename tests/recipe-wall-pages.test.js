@@ -54,11 +54,14 @@ test('publish page uses food library and opens preview', () => {
   assert.match(js, /validatePublishPayload/);
   assert.match(js, /\/pkg-recipe-wall\/preview\/index/);
   assert.match(js, /buildIngredientNutrition/);
+  assert.match(js, /loadRelationDisplayName/);
+  assert.match(js, /baby_creators/);
   assert.doesNotMatch(js, /RECIPE_WALL_TAG_OPTIONS/);
   assert.match(wxml, /成品图片/);
   assert.match(wxml, /菜谱描述/);
   assert.match(wxml, /高级设置/);
   assert.match(wxml, /上传步骤图（可选）/);
+  assert.match(wxml, /wx:if="\{\{tipText\}\}"/);
 });
 
 test('preview page publishes via cloud function', () => {
