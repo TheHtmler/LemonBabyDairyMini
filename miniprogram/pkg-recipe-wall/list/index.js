@@ -1,6 +1,15 @@
 const { mapPostForCard } = require('../../utils/recipeWallUtils');
 
 const PAGE_SIZE = 10;
+const COVER_HEIGHTS = [280, 340, 300, 380];
+
+function withCoverHeight(card, index) {
+  return {
+    ...card,
+    coverHeight: COVER_HEIGHTS[index % COVER_HEIGHTS.length]
+  };
+}
+
 
 Page({
   data: {
@@ -50,9 +59,14 @@ Page({
         throw new Error(result.message || '加载失败');
       }
 
-      const cards = (result.list || []).map((post) => mapPostForCard(post, {
-        likedPostIds: (result.list || []).filter((item) => item.liked).map((item) => item._id)
-      }));
+      const likedPostIds = (result.list || [])
+        .filter((item) => item.liked)
+        .map((item) => item._id);
+      const baseOffset = reset ? 0 : this.data.posts.length;
+      const cards = (result.list || []).map((post, index) => withCoverHeight(
+        mapPostForCard(post, { likedPostIds }),
+        baseOffset + index
+      ));
 
       const posts = reset ? cards : this.data.posts.concat(cards);
       this.setData({

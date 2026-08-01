@@ -30,11 +30,16 @@ test('profile menu links to recipe wall under support group', () => {
 test('list page loads via recipeWallManager list action', () => {
   const js = read('miniprogram/pkg-recipe-wall/list/index.js');
   const wxml = read('miniprogram/pkg-recipe-wall/list/index.wxml');
+  const wxss = read('miniprogram/pkg-recipe-wall/list/index.wxss');
   assert.match(js, /recipeWallManager/);
   assert.match(js, /action:\s*['"]list['"]/);
   assert.match(js, /mapPostForCard/);
   assert.match(wxml, /authorLabel/);
   assert.match(wxml, /likeCount/);
+  assert.match(wxml, /我的发布/);
+  assert.match(wxml, /class="fab"/);
+  assert.match(wxss, /column-count:\s*2/);
+  assert.doesNotMatch(wxml, /tool-btn/);
 });
 
 test('detail page uses detail and toggleLike actions', () => {

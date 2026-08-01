@@ -1,7 +1,6 @@
 <view class="page">
-  <view class="toolbar">
-    <button class="tool-btn ghost" bindtap="goMine">我的</button>
-    <button class="tool-btn primary" bindtap="goPublish">发布</button>
+  <view class="top-bar">
+    <text class="mine-link" bindtap="goMine">我的发布</text>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中...</view>
@@ -9,10 +8,10 @@
   <view wx:elif="{{empty}}" class="state empty">
     <text class="empty-title">还没有食谱</text>
     <text class="empty-tip">来发布第一条辅食 / 低蛋白友好食谱吧</text>
-    <button class="tool-btn primary empty-btn" bindtap="goPublish">去发布</button>
+    <button class="empty-btn" bindtap="goPublish">去发布</button>
   </view>
 
-  <view wx:else class="feed">
+  <view wx:else class="waterfall">
     <view
       class="card"
       wx:for="{{posts}}"
@@ -20,11 +19,14 @@
       data-id="{{item.id}}"
       bindtap="goDetail"
     >
-      <image class="cover" src="{{item.coverFileId}}" mode="aspectFill" />
+      <image
+        class="cover"
+        style="height: {{item.coverHeight}}rpx;"
+        src="{{item.coverFileId}}"
+        mode="aspectFill"
+      />
       <view class="card-body">
-        <view class="title-row">
-          <text class="title">{{item.title}}</text>
-        </view>
+        <text class="title">{{item.title}}</text>
         <text class="authorLabel">{{item.authorLabel}}</text>
         <view class="card-foot">
           <view
@@ -32,14 +34,19 @@
             data-id="{{item.id}}"
             catchtap="onToggleLike"
           >
-            <text>{{item.liked ? '已赞' : '点赞'}}</text>
+            <text>{{item.liked ? '已赞' : '赞'}}</text>
             <text class="likeCount">{{item.likeCount}}</text>
           </view>
         </view>
       </view>
     </view>
+  </view>
 
-    <view class="state tip" wx:if="{{loadingMore}}">加载更多...</view>
-    <view class="state tip" wx:elif="{{!hasMore && posts.length}}">没有更多了</view>
+  <view class="state tip" wx:if="{{loadingMore}}">加载更多...</view>
+  <view class="state tip" wx:elif="{{!hasMore && posts.length}}">没有更多了</view>
+
+  <view class="fab" bindtap="goPublish">
+    <text class="fab-plus">+</text>
+    <text class="fab-text">发布</text>
   </view>
 </view>
