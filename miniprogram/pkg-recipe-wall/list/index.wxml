@@ -30,6 +30,7 @@
         bindtap="onSelectTag"
       >{{item.name}}</view>
     </scroll-view>
+    <text class="filter-tip">标签来自大家发布，也可直接搜索</text>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中...</view>

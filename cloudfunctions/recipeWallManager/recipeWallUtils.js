@@ -4,7 +4,10 @@ const DIFFICULTY_OPTIONS = [
   { value: 'hard', label: '较难' }
 ];
 
-const RECIPE_WALL_TAG_OPTIONS = ['辅食', '低蛋白', '特医友好', '加餐点心'];
+// 仅作快捷建议，不作为白名单限制
+const RECIPE_WALL_TAG_SUGGESTIONS = ['辅食', '低蛋白', '特医友好', '加餐点心', '蒸煮', '易消化'];
+const RECIPE_WALL_TAG_MAX_COUNT = 3;
+const RECIPE_WALL_TAG_MAX_LEN = 8;
 
 function trimText(value = '', maxLen = 0) {
   const text = String(value || '').trim();
@@ -24,16 +27,29 @@ function formatDifficultyLabel(value = '') {
   return found ? found.label : '';
 }
 
+function normalizeTagItem(raw = '') {
+  const text = String(raw || '')
+    .trim()
+    .replace(/^#+/, '')
+    .replace(/\s+/g, '');
+  if (!text) return null;
+  if (text.length > RECIPE_WALL_TAG_MAX_LEN) {
+    return text.slice(0, RECIPE_WALL_TAG_MAX_LEN);
+  }
+  return text;
+}
+
 function normalizeTags(rawTags = []) {
   const tags = (Array.isArray(rawTags) ? rawTags : [])
-    .map((tag) => trimText(tag, 20))
+    .map(normalizeTagItem)
     .filter(Boolean);
   const unique = [...new Set(tags)];
-  if (unique.length > 2) {
-    return { ok: false, message: '最多选择 2 个标签', tags: [] };
-  }
-  if (unique.some((tag) => !RECIPE_WALL_TAG_OPTIONS.includes(tag))) {
-    return { ok: false, message: '标签无效', tags: [] };
+  if (unique.length > RECIPE_WALL_TAG_MAX_COUNT) {
+    return {
+      ok: false,
+      message: `最多添加 ${RECIPE_WALL_TAG_MAX_COUNT} 个标签`,
+      tags: []
+    };
   }
   return { ok: true, tags: unique };
 }
@@ -214,9 +230,12 @@ function mapPostForCard(post = {}, options = {}) {
 
 module.exports = {
   DIFFICULTY_OPTIONS,
-  RECIPE_WALL_TAG_OPTIONS,
+  RECIPE_WALL_TAG_SUGGESTIONS,
+  RECIPE_WALL_TAG_MAX_COUNT,
+  RECIPE_WALL_TAG_MAX_LEN,
   formatRecipeWallAuthorLabel,
   formatDifficultyLabel,
+  normalizeTagItem,
   normalizeTags,
   buildSearchText,
   escapeRegExp,

@@ -35,6 +35,7 @@ test('list page loads via recipeWallManager list action', () => {
   assert.match(js, /action:\s*['"]list['"]/);
   assert.match(js, /keyword/);
   assert.match(js, /tag:/);
+  assert.match(js, /listTags/);
   assert.match(js, /mapPostForCard/);
   assert.match(wxml, /authorLabel/);
   assert.match(wxml, /likeCount/);
@@ -42,6 +43,7 @@ test('list page loads via recipeWallManager list action', () => {
   assert.match(wxml, /class="fab"/);
   assert.match(wxml, /搜索菜名、描述、食材/);
   assert.match(wxml, /filter-chip/);
+  assert.match(wxml, /标签来自大家发布/);
   assert.match(wxss, /column-count:\s*2/);
   assert.doesNotMatch(wxml, /tool-btn/);
 });
@@ -65,11 +67,13 @@ test('publish page uses food library and opens preview', () => {
   assert.match(js, /buildIngredientNutrition/);
   assert.match(js, /loadRelationDisplayName/);
   assert.match(js, /baby_creators/);
-  assert.match(js, /RECIPE_WALL_TAG_OPTIONS/);
+  assert.match(js, /RECIPE_WALL_TAG_SUGGESTIONS/);
   assert.match(js, /selectedTags/);
+  assert.match(js, /onAddCustomTag/);
   assert.match(wxml, /成品图片/);
   assert.match(wxml, /菜谱描述/);
-  assert.match(wxml, /标签（可选，最多 2 个）/);
+  assert.match(wxml, /自定义标签/);
+  assert.match(wxml, /快捷建议/);
   assert.match(wxml, /高级设置/);
   assert.match(wxml, /上传步骤图（可选）/);
   assert.match(wxml, /wx:if="\{\{tipText\}\}"/);

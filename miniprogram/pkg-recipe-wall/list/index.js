@@ -1,6 +1,6 @@
 const {
   mapPostForCard,
-  RECIPE_WALL_TAG_OPTIONS
+  RECIPE_WALL_TAG_SUGGESTIONS
 } = require('../../utils/recipeWallUtils');
 
 const PAGE_SIZE = 10;
@@ -11,6 +11,18 @@ function withCoverHeight(card, index) {
     ...card,
     coverHeight: COVER_HEIGHTS[index % COVER_HEIGHTS.length]
   };
+}
+
+function buildFilterTags(hotTags = []) {
+  const names = (hotTags || [])
+    .map((item) => (typeof item === 'string' ? item : item.name))
+    .map((name) => String(name || '').trim())
+    .filter(Boolean);
+
+  const unique = [...new Set(names.length ? names : RECIPE_WALL_TAG_SUGGESTIONS)];
+  return [{ name: '全部', value: '' }].concat(
+    unique.slice(0, 16).map((name) => ({ name, value: name }))
+  );
 }
 
 Page({
@@ -25,30 +37,50 @@ Page({
     keywordInput: '',
     keyword: '',
     selectedTag: '',
-    filterTags: [{ name: '全部', value: '' }].concat(
-      RECIPE_WALL_TAG_OPTIONS.map((name) => ({ name, value: name }))
-    )
+    filterTags: buildFilterTags([])
   },
 
   onLoad() {
+    this.loadFilterTags();
     this.loadList({ reset: true });
   },
 
   onShow() {
-    // 从发布页返回时刷新
     if (this._needsRefresh) {
       this._needsRefresh = false;
+      this.loadFilterTags();
       this.loadList({ reset: true });
     }
   },
 
   onPullDownRefresh() {
+    this.loadFilterTags();
     this.loadList({ reset: true, fromPull: true });
   },
 
   onReachBottom() {
     if (!this.data.hasMore || this.data.loadingMore) return;
     this.loadList({ reset: false });
+  },
+
+  async loadFilterTags() {
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'recipeWallManager',
+        data: { action: 'listTags' }
+      });
+      const result = res.result || {};
+      if (!result.ok) return;
+      const filterTags = buildFilterTags(result.tags || []);
+      const selectedStillVisible = filterTags.some((item) => item.value === this.data.selectedTag);
+      this.setData({
+        filterTags,
+        selectedTag: selectedStillVisible ? this.data.selectedTag : ''
+      });
+    } catch (error) {
+      console.error('load recipe wall tags failed', error);
+      this.setData({ filterTags: buildFilterTags([]) });
+    }
   },
 
   onKeywordInput(e) {

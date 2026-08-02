@@ -1,7 +1,10 @@
 const FoodModel = require('../../models/food');
 const {
   DIFFICULTY_OPTIONS,
-  RECIPE_WALL_TAG_OPTIONS,
+  RECIPE_WALL_TAG_SUGGESTIONS,
+  RECIPE_WALL_TAG_MAX_COUNT,
+  RECIPE_WALL_TAG_MAX_LEN,
+  normalizeTagItem,
   validatePublishPayload,
   formatRecipeWallAuthorLabel
 } = require('../../utils/recipeWallUtils');
@@ -84,9 +87,12 @@ Page({
     cookingMinutes: '',
     difficulty: '',
     difficultyOptions: DIFFICULTY_OPTIONS,
-    tagOptions: RECIPE_WALL_TAG_OPTIONS,
+    tagSuggestions: RECIPE_WALL_TAG_SUGGESTIONS,
     selectedTags: [],
     selectedTagSet: {},
+    customTagInput: '',
+    tagMaxCount: RECIPE_WALL_TAG_MAX_COUNT,
+    tagMaxLen: RECIPE_WALL_TAG_MAX_LEN,
     showAdjustSheet: false,
     babyUid: '',
     babyName: '',
@@ -260,22 +266,56 @@ Page({
     this.setData({ difficulty: this.data.difficulty === value ? '' : value });
   },
 
+  syncSelectedTags(selected = []) {
+    const selectedTagSet = {};
+    selected.forEach((name) => { selectedTagSet[name] = true; });
+    this.setData({ selectedTags: selected, selectedTagSet });
+  },
+
   onToggleTag(e) {
-    const tag = e.currentTarget.dataset.tag || '';
+    const tag = normalizeTagItem(e.currentTarget.dataset.tag || '');
     if (!tag) return;
     const selected = [...(this.data.selectedTags || [])];
     const index = selected.indexOf(tag);
     if (index >= 0) {
       selected.splice(index, 1);
-    } else if (selected.length >= 2) {
-      wx.showToast({ title: '最多选 2 个标签', icon: 'none' });
+    } else if (selected.length >= RECIPE_WALL_TAG_MAX_COUNT) {
+      wx.showToast({ title: `最多 ${RECIPE_WALL_TAG_MAX_COUNT} 个标签`, icon: 'none' });
       return;
     } else {
       selected.push(tag);
     }
-    const selectedTagSet = {};
-    selected.forEach((name) => { selectedTagSet[name] = true; });
-    this.setData({ selectedTags: selected, selectedTagSet });
+    this.syncSelectedTags(selected);
+  },
+
+  onCustomTagInput(e) {
+    this.setData({ customTagInput: e.detail.value || '' });
+  },
+
+  onAddCustomTag() {
+    const tag = normalizeTagItem(this.data.customTagInput);
+    if (!tag) {
+      wx.showToast({ title: '请输入标签', icon: 'none' });
+      return;
+    }
+    const selected = [...(this.data.selectedTags || [])];
+    if (selected.includes(tag)) {
+      this.setData({ customTagInput: '' });
+      return;
+    }
+    if (selected.length >= RECIPE_WALL_TAG_MAX_COUNT) {
+      wx.showToast({ title: `最多 ${RECIPE_WALL_TAG_MAX_COUNT} 个标签`, icon: 'none' });
+      return;
+    }
+    selected.push(tag);
+    this.syncSelectedTags(selected);
+    this.setData({ customTagInput: '' });
+  },
+
+  onRemoveSelectedTag(e) {
+    const tag = e.currentTarget.dataset.tag || '';
+    const selected = (this.data.selectedTags || []).filter((item) => item !== tag);
+    this.syncSelectedTags(selected);
   },
 
   toggleAdvanced() {

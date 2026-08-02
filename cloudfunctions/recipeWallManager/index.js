@@ -4,7 +4,11 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
-const { validatePublishPayload, escapeRegExp, RECIPE_WALL_TAG_OPTIONS } = require('./recipeWallUtils');
+const {
+  validatePublishPayload,
+  escapeRegExp,
+  normalizeTagItem
+} = require('./recipeWallUtils');
 
 const DEVELOPER_OPENIDS = [
   'oYCao7fijm22dyl6C-tcYJo_G69A'
@@ -146,10 +150,7 @@ async function publish(event, openid) {
 async function list(event, openid) {
   const { page, pageSize, skip } = clampPage(event.page, event.pageSize);
   const keyword = String(event.keyword || '').trim().slice(0, 40);
-  const tag = String(event.tag || '').trim();
-  if (tag && !RECIPE_WALL_TAG_OPTIONS.includes(tag)) {
-    return { ok: false, message: '标签无效' };
-  }
+  const tag = normalizeTagItem(event.tag || '');
 
   const conditions = [{ status: 'published' }];
   if (tag) {
@@ -188,6 +189,30 @@ async function list(event, openid) {
     keyword,
     tag
   };
+}
+
+async function listTags() {
+  const res = await db.collection('recipe_wall_posts')
+    .where({ status: 'published' })
+    .orderBy('createdAt', 'desc')
+    .limit(100)
+    .get();
+
+  const counts = new Map();
+  (res.data || []).forEach((post) => {
+    (post.tags || []).forEach((raw) => {
+      const tag = normalizeTagItem(raw);
+      if (!tag) return;
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    });
+  });
+
+  const tags = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh'))
+    .slice(0, 16)
+    .map(([name, count]) => ({ name, count }));
+
+  return { ok: true, tags };
 }
 
 async function listMine(event, openid) {
@@ -319,6 +344,7 @@ exports.main = async (event = {}) => {
   try {
     if (action === 'publish') return await publish(event, OPENID);
     if (action === 'list') return await list(event, OPENID);
+    if (action === 'listTags') return await listTags(event, OPENID);
     if (action === 'listMine') return await listMine(event, OPENID);
     if (action === 'adminList') return await adminList(event, OPENID);
     if (action === 'detail') return await detail(event, OPENID);

@@ -23,11 +23,29 @@
   </view>
 
   <view class="panel">
-    <view class="label">标签（可选，最多 2 个）</view>
+    <view class="label">标签（可选，最多 {{tagMaxCount}} 个）</view>
+    <view class="selected-tags" wx:if="{{selectedTags.length}}">
+      <view class="selected-tag" wx:for="{{selectedTags}}" wx:key="*this">
+        <text>#{{item}}</text>
+        <text class="selected-tag-remove" data-tag="{{item}}" bindtap="onRemoveSelectedTag">×</text>
+      </view>
+    </view>
+    <view class="custom-tag-row">
+      <input
+        class="compact-input custom-tag-input"
+        maxlength="{{tagMaxLen}}"
+        placeholder="自定义标签，如软食、外出便携"
+        value="{{customTagInput}}"
+        bindinput="onCustomTagInput"
+        bindconfirm="onAddCustomTag"
+      />
+      <text class="link" bindtap="onAddCustomTag">添加</text>
+    </view>
+    <view class="suggest-label">快捷建议</view>
     <view class="tags">
       <view
         class="tag {{selectedTagSet[item] ? 'active' : ''}}"
-        wx:for="{{tagOptions}}"
+        wx:for="{{tagSuggestions}}"
         wx:key="*this"
         data-tag="{{item}}"
         bindtap="onToggleTag"

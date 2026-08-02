@@ -282,8 +282,8 @@ test('list supports tag and keyword filters', async () => {
         _id: 'p1',
         status: 'published',
         title: '南瓜泥',
-        tags: ['辅食'],
-        searchText: '南瓜泥 软糯辅食 南瓜 辅食',
+        tags: ['软食'],
+        searchText: '南瓜泥 软糯辅食 南瓜 软食',
         createdAt: 3
       },
       {
@@ -297,7 +297,7 @@ test('list supports tag and keyword filters', async () => {
     ]
   });
 
-  const byTag = await main({ action: 'list', tag: '辅食' });
+  const byTag = await main({ action: 'list', tag: '软食' });
   assert.equal(byTag.ok, true);
   assert.equal(byTag.list.length, 1);
   assert.equal(byTag.list[0]._id, 'p1');
@@ -306,6 +306,21 @@ test('list supports tag and keyword filters', async () => {
   assert.equal(byKeyword.ok, true);
   assert.equal(byKeyword.list.length, 1);
   assert.equal(byKeyword.list[0]._id, 'p2');
+});
+
+test('listTags returns popular custom tags', async () => {
+  const { main } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [
+      { _id: 'p1', status: 'published', tags: ['软食', '辅食'], createdAt: 3 },
+      { _id: 'p2', status: 'published', tags: ['软食'], createdAt: 2 },
+      { _id: 'p3', status: 'published', tags: ['外出便携'], createdAt: 1 }
+    ]
+  });
+  const res = await main({ action: 'listTags' });
+  assert.equal(res.ok, true);
+  assert.equal(res.tags[0].name, '软食');
+  assert.equal(res.tags[0].count, 2);
 });
 
 test('toggleLike increments then decrements without going below zero', async () => {
