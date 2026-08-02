@@ -3,7 +3,7 @@
     <view class="header-top">
       <view class="brand">
         <text class="brand-title">食谱墙</text>
-        <text class="brand-sub">宝宝辅食与低蛋白灵感</text>
+        <text class="brand-sub">0-10 岁孩子的每日灵感</text>
       </view>
       <text class="mine-link" bindtap="goMine">我的发布</text>
     </view>
@@ -37,7 +37,7 @@
 
   <view wx:elif="{{empty}}" class="state empty">
     <text class="empty-title">{{keyword || selectedTag ? '没有符合条件的食谱' : '还没有食谱'}}</text>
-    <text class="empty-tip">{{keyword || selectedTag ? '换个关键词或标签试试' : '来发布第一条辅食 / 低蛋白友好食谱吧'}}</text>
+    <text class="empty-tip">{{keyword || selectedTag ? '换个关键词或标签试试' : '来分享 0-10 岁孩子的日常食谱吧'}}</text>
     <button class="empty-btn" wx:if="{{!keyword && !selectedTag}}" bindtap="goPublish">去发布</button>
   </view>
 

@@ -72,7 +72,7 @@ test('publish page uses food library and opens preview', () => {
   assert.match(js, /onAddCustomTag/);
   assert.match(wxml, /成品图片/);
   assert.match(wxml, /菜谱描述/);
-  assert.match(wxml, /自定义标签/);
+  assert.match(wxml, /自定义，如软食/);
   assert.match(wxml, /快捷建议/);
   assert.match(wxml, /高级设置/);
   assert.match(wxml, /上传步骤图（可选）/);

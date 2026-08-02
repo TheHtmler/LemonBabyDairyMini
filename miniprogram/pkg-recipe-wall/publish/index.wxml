@@ -34,7 +34,7 @@
       <input
         class="compact-input custom-tag-input"
         maxlength="{{tagMaxLen}}"
-        placeholder="自定义标签，如软食、外出便携"
+        placeholder="自定义，如软食、手指食物"
         value="{{customTagInput}}"
         bindinput="onCustomTagInput"
         bindconfirm="onAddCustomTag"
