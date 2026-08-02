@@ -6,9 +6,9 @@
 2. 建议索引：
    - `recipe_wall_posts`: `status` + `createdAt`
    - `recipe_wall_posts`: `_openid` + `createdAt`
-   - `recipe_wall_posts`: `status` + `tags` + `createdAt`（标签过滤）
    - `recipe_wall_posts`: `status` + `searchText`（若控制台支持文本检索/正则组合，按提示补）
    - `recipe_wall_likes`: `_openid` + `postId`（唯一更好）
+   - `recipe_wall_likes`: `_openid` + `createdAt`（「我赞过的」列表）
 3. 上传并部署云函数 `recipeWallManager`（开通内容安全 openapi：`security.msgSecCheck`、`security.imgSecCheck`）
 4. 云存储：登录用户可写自己的 `recipe-wall/**` 路径
 
@@ -33,8 +33,8 @@
 
 ## 发布页说明（当前）
 
-- 标签可选、可自定义（最多 3 个，每词最多 8 字）；建议词为 0-10 岁通用场景（辅食、软食、手指食物等），不是年龄段
-- 列表筛选项优先展示近期热门标签（`listTags`），无数据时回退通用建议词
+- 标签仅用于发布展示/搜索辅助（可选自定义）；广场页不做标签过滤
+- 广场过滤：`全部` / `我赞过的`；另支持关键词搜索
 - 发布时写入 `searchText`（标题+描述+食材+标签），供关键词搜索
 - 用料必须从食物库选择，营养按食物库数据估算
 - 调整用料支持上移 / 下移 / 删除（暂无拖拽）

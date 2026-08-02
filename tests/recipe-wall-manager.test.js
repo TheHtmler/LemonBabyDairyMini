@@ -274,7 +274,7 @@ test('list does not return taken_down posts', async () => {
   assert.equal(res.list[0]._id, 'p1');
 });
 
-test('list supports tag and keyword filters', async () => {
+test('list supports keyword filter', async () => {
   const { main } = loadRecipeWallManager({
     openid: 'user-1',
     posts: [
@@ -282,25 +282,18 @@ test('list supports tag and keyword filters', async () => {
         _id: 'p1',
         status: 'published',
         title: '南瓜泥',
-        tags: ['软食'],
-        searchText: '南瓜泥 软糯辅食 南瓜 软食',
+        searchText: '南瓜泥 软糯辅食 南瓜',
         createdAt: 3
       },
       {
         _id: 'p2',
         status: 'published',
         title: '低蛋白米糊',
-        tags: ['低蛋白'],
-        searchText: '低蛋白米糊 大米 低蛋白',
+        searchText: '低蛋白米糊 大米',
         createdAt: 2
       }
     ]
   });
-
-  const byTag = await main({ action: 'list', tag: '软食' });
-  assert.equal(byTag.ok, true);
-  assert.equal(byTag.list.length, 1);
-  assert.equal(byTag.list[0]._id, 'p1');
 
   const byKeyword = await main({ action: 'list', keyword: '米糊' });
   assert.equal(byKeyword.ok, true);
@@ -308,19 +301,25 @@ test('list supports tag and keyword filters', async () => {
   assert.equal(byKeyword.list[0]._id, 'p2');
 });
 
-test('listTags returns popular custom tags', async () => {
+test('list liked filter returns only liked published posts', async () => {
   const { main } = loadRecipeWallManager({
     openid: 'user-1',
     posts: [
-      { _id: 'p1', status: 'published', tags: ['软食', '辅食'], createdAt: 3 },
-      { _id: 'p2', status: 'published', tags: ['软食'], createdAt: 2 },
-      { _id: 'p3', status: 'published', tags: ['外出便携'], createdAt: 1 }
+      { _id: 'p1', status: 'published', title: 'A', searchText: 'a', createdAt: 3 },
+      { _id: 'p2', status: 'published', title: 'B', searchText: 'b', createdAt: 2 },
+      { _id: 'p3', status: 'taken_down', title: 'C', searchText: 'c', createdAt: 1 }
+    ],
+    likes: [
+      { _id: 'l1', _openid: 'user-1', postId: 'p2', createdAt: 20 },
+      { _id: 'l2', _openid: 'user-1', postId: 'p3', createdAt: 10 },
+      { _id: 'l3', _openid: 'user-1', postId: 'p1', createdAt: 5 }
     ]
   });
-  const res = await main({ action: 'listTags' });
+
+  const res = await main({ action: 'list', filter: 'liked' });
   assert.equal(res.ok, true);
-  assert.equal(res.tags[0].name, '软食');
-  assert.equal(res.tags[0].count, 2);
+  assert.deepEqual(res.list.map((item) => item._id), ['p2', 'p1']);
+  assert.equal(res.list.every((item) => item.liked), true);
 });
 
 test('toggleLike increments then decrements without going below zero', async () => {

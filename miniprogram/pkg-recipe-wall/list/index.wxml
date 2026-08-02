@@ -21,24 +21,23 @@
       <text class="search-action primary" bindtap="onSearchConfirm">搜索</text>
     </view>
 
-    <scroll-view class="tag-scroll" scroll-x enable-flex>
+    <view class="filter-row">
       <view
-        class="filter-chip {{selectedTag === item.value ? 'active' : ''}}"
-        wx:for="{{filterTags}}"
+        class="filter-chip {{filter === item.value ? 'active' : ''}}"
+        wx:for="{{filterOptions}}"
         wx:key="value"
         data-value="{{item.value}}"
-        bindtap="onSelectTag"
+        bindtap="onSelectFilter"
       >{{item.name}}</view>
-    </scroll-view>
-    <text class="filter-tip">标签来自大家发布，也可直接搜索</text>
+    </view>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中...</view>
 
   <view wx:elif="{{empty}}" class="state empty">
-    <text class="empty-title">{{keyword || selectedTag ? '没有符合条件的食谱' : '还没有食谱'}}</text>
-    <text class="empty-tip">{{keyword || selectedTag ? '换个关键词或标签试试' : '来分享 0-10 岁孩子的日常食谱吧'}}</text>
-    <button class="empty-btn" wx:if="{{!keyword && !selectedTag}}" bindtap="goPublish">去发布</button>
+    <text class="empty-title">{{keyword || filter === 'liked' ? '没有符合条件的食谱' : '还没有食谱'}}</text>
+    <text class="empty-tip">{{filter === 'liked' ? (keyword ? '换个关键词试试' : '去给喜欢的食谱点个赞吧') : (keyword ? '换个关键词试试' : '来分享 0-10 岁孩子的日常食谱吧')}}</text>
+    <button class="empty-btn" wx:if="{{!keyword && filter !== 'liked'}}" bindtap="goPublish">去发布</button>
   </view>
 
   <view wx:else class="waterfall">

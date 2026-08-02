@@ -6,8 +6,7 @@ const db = cloud.database();
 const _ = db.command;
 const {
   validatePublishPayload,
-  escapeRegExp,
-  normalizeTagItem
+  escapeRegExp
 } = require('./recipeWallUtils');
 
 const DEVELOPER_OPENIDS = [
@@ -147,15 +146,71 @@ async function publish(event, openid) {
   return { ok: true, postId: addRes._id };
 }
 
-async function list(event, openid) {
+async function listLiked(event, openid) {
   const { page, pageSize, skip } = clampPage(event.page, event.pageSize);
   const keyword = String(event.keyword || '').trim().slice(0, 40);
-  const tag = normalizeTagItem(event.tag || '');
+
+  const likeRes = await db.collection('recipe_wall_likes')
+    .where({ _openid: openid })
+    .orderBy('createdAt', 'desc')
+    .skip(skip)
+    .limit(pageSize)
+    .get();
+
+  const likeRows = likeRes.data || [];
+  const postIds = likeRows.map((row) => row.postId).filter(Boolean);
+  if (!postIds.length) {
+    return {
+      ok: true,
+      list: [],
+      hasMore: false,
+      page,
+      pageSize,
+      keyword,
+      filter: 'liked'
+    };
+  }
+
+  const postRes = await db.collection('recipe_wall_posts')
+    .where({
+      _id: _.in(postIds),
+      status: 'published'
+    })
+    .get();
+
+  let rows = postRes.data || [];
+  if (keyword) {
+    const matcher = new RegExp(escapeRegExp(keyword), 'i');
+    rows = rows.filter((row) => matcher.test(String(row.searchText || row.title || '')));
+  }
+
+  const postMap = new Map(rows.map((row) => [row._id, row]));
+  const list = postIds
+    .map((id) => postMap.get(id))
+    .filter(Boolean)
+    .map((row) => ({ ...row, liked: true }));
+
+  return {
+    ok: true,
+    list,
+    hasMore: likeRows.length === pageSize,
+    page,
+    pageSize,
+    keyword,
+    filter: 'liked'
+  };
+}
+
+async function list(event, openid) {
+  const filter = event.filter === 'liked' ? 'liked' : 'all';
+  if (filter === 'liked') {
+    return listLiked(event, openid);
+  }
+
+  const { page, pageSize, skip } = clampPage(event.page, event.pageSize);
+  const keyword = String(event.keyword || '').trim().slice(0, 40);
 
   const conditions = [{ status: 'published' }];
-  if (tag) {
-    conditions.push({ tags: tag });
-  }
   if (keyword) {
     conditions.push({
       searchText: db.RegExp({
@@ -187,32 +242,8 @@ async function list(event, openid) {
     page,
     pageSize,
     keyword,
-    tag
+    filter: 'all'
   };
-}
-
-async function listTags() {
-  const res = await db.collection('recipe_wall_posts')
-    .where({ status: 'published' })
-    .orderBy('createdAt', 'desc')
-    .limit(100)
-    .get();
-
-  const counts = new Map();
-  (res.data || []).forEach((post) => {
-    (post.tags || []).forEach((raw) => {
-      const tag = normalizeTagItem(raw);
-      if (!tag) return;
-      counts.set(tag, (counts.get(tag) || 0) + 1);
-    });
-  });
-
-  const tags = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh'))
-    .slice(0, 16)
-    .map(([name, count]) => ({ name, count }));
-
-  return { ok: true, tags };
 }
 
 async function listMine(event, openid) {
@@ -344,7 +375,6 @@ exports.main = async (event = {}) => {
   try {
     if (action === 'publish') return await publish(event, OPENID);
     if (action === 'list') return await list(event, OPENID);
-    if (action === 'listTags') return await listTags(event, OPENID);
     if (action === 'listMine') return await listMine(event, OPENID);
     if (action === 'adminList') return await adminList(event, OPENID);
     if (action === 'detail') return await detail(event, OPENID);

@@ -1,28 +1,17 @@
-const {
-  mapPostForCard,
-  RECIPE_WALL_TAG_SUGGESTIONS
-} = require('../../utils/recipeWallUtils');
+const { mapPostForCard } = require('../../utils/recipeWallUtils');
 
 const PAGE_SIZE = 10;
 const COVER_HEIGHTS = [280, 340, 300, 380];
+const FILTER_OPTIONS = [
+  { name: '全部', value: 'all' },
+  { name: '我赞过的', value: 'liked' }
+];
 
 function withCoverHeight(card, index) {
   return {
     ...card,
     coverHeight: COVER_HEIGHTS[index % COVER_HEIGHTS.length]
   };
-}
-
-function buildFilterTags(hotTags = []) {
-  const names = (hotTags || [])
-    .map((item) => (typeof item === 'string' ? item : item.name))
-    .map((name) => String(name || '').trim())
-    .filter(Boolean);
-
-  const unique = [...new Set(names.length ? names : RECIPE_WALL_TAG_SUGGESTIONS)];
-  return [{ name: '全部', value: '' }].concat(
-    unique.slice(0, 16).map((name) => ({ name, value: name }))
-  );
 }
 
 Page({
@@ -36,51 +25,28 @@ Page({
     empty: false,
     keywordInput: '',
     keyword: '',
-    selectedTag: '',
-    filterTags: buildFilterTags([])
+    filter: 'all',
+    filterOptions: FILTER_OPTIONS
   },
 
   onLoad() {
-    this.loadFilterTags();
     this.loadList({ reset: true });
   },
 
   onShow() {
     if (this._needsRefresh) {
       this._needsRefresh = false;
-      this.loadFilterTags();
       this.loadList({ reset: true });
     }
   },
 
   onPullDownRefresh() {
-    this.loadFilterTags();
     this.loadList({ reset: true, fromPull: true });
   },
 
   onReachBottom() {
     if (!this.data.hasMore || this.data.loadingMore) return;
     this.loadList({ reset: false });
-  },
-
-  async loadFilterTags() {
-    try {
-      const res = await wx.cloud.callFunction({
-        name: 'recipeWallManager',
-        data: { action: 'listTags' }
-      });
-      const result = res.result || {};
-      if (!result.ok) return;
-      const filterTags = buildFilterTags(result.tags || []);
-      const selectedStillVisible = filterTags.some((item) => item.value === this.data.selectedTag);
-      this.setData({
-        filterTags,
-        selectedTag: selectedStillVisible ? this.data.selectedTag : ''
-      });
-    } catch (error) {
-      console.error('load recipe wall tags failed', error);
-      this.setData({ filterTags: buildFilterTags([]) });
-    }
   },
 
   onKeywordInput(e) {
@@ -99,11 +65,10 @@ Page({
     this.loadList({ reset: true });
   },
 
-  onSelectTag(e) {
-    const value = e.currentTarget.dataset.value;
-    const next = value === undefined || value === null ? '' : String(value);
-    if (next === this.data.selectedTag) return;
-    this.setData({ selectedTag: next });
+  onSelectFilter(e) {
+    const value = e.currentTarget.dataset.value === 'liked' ? 'liked' : 'all';
+    if (value === this.data.filter) return;
+    this.setData({ filter: value });
     this.loadList({ reset: true });
   },
 
@@ -129,7 +94,7 @@ Page({
           page,
           pageSize: PAGE_SIZE,
           keyword: this.data.keyword || '',
-          tag: this.data.selectedTag || ''
+          filter: this.data.filter || 'all'
         }
       });
       const result = res.result || {};
@@ -192,10 +157,16 @@ Page({
     const keyLiked = `posts[${index}].liked`;
     const keyCount = `posts[${index}].likeCount`;
 
-    this.setData({
-      [keyLiked]: nextLiked,
-      [keyCount]: Math.max(0, prevCount + (nextLiked ? 1 : -1))
-    });
+    // 在「我赞过的」里取消赞：直接从列表移除
+    if (this.data.filter === 'liked' && prevLiked && !nextLiked) {
+      const posts = this.data.posts.filter((item) => item.id !== id);
+      this.setData({ posts, empty: posts.length === 0 });
+    } else {
+      this.setData({
+        [keyLiked]: nextLiked,
+        [keyCount]: Math.max(0, prevCount + (nextLiked ? 1 : -1))
+      });
+    }
 
     try {
       const res = await wx.cloud.callFunction({
@@ -203,12 +174,18 @@ Page({
         data: { action: 'toggleLike', postId: id }
       });
       if (!res.result?.ok) throw new Error(res.result?.message || '点赞失败');
-      this.setData({
-        [keyLiked]: res.result.liked,
-        [keyCount]: res.result.likeCount
-      });
+      if (!(this.data.filter === 'liked' && !res.result.liked)) {
+        this.setData({
+          [keyLiked]: res.result.liked,
+          [keyCount]: res.result.likeCount
+        });
+      }
     } catch (error) {
-      this.setData({ [keyLiked]: prevLiked, [keyCount]: prevCount });
+      if (this.data.filter === 'liked' && prevLiked) {
+        this.loadList({ reset: true });
+      } else {
+        this.setData({ [keyLiked]: prevLiked, [keyCount]: prevCount });
+      }
       wx.showToast({ title: '操作失败', icon: 'none' });
     }
   }
