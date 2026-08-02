@@ -4,20 +4,20 @@ const DIFFICULTY_OPTIONS = [
   { value: 'hard', label: '较难' }
 ];
 
-// 仅作快捷建议，不作为白名单限制；覆盖 0-10 岁常见阶段 + 场景
+// 仅作快捷建议，不作为白名单限制；面向 0-10 岁常见饮食场景的通用词
 const RECIPE_WALL_TAG_SUGGESTIONS = [
-  '0-6月',
-  '6-12月',
-  '1-2岁',
-  '2-3岁',
-  '3-6岁',
-  '6-10岁',
   '辅食',
   '低蛋白',
   '正餐',
   '加餐点心',
+  '粥糊',
+  '汤羹',
+  '软食',
+  '手指食物',
   '蒸煮',
-  '易消化'
+  '易消化',
+  '少盐少油',
+  '外出便携'
 ];
 const RECIPE_WALL_TAG_MAX_COUNT = 3;
 const RECIPE_WALL_TAG_MAX_LEN = 8;

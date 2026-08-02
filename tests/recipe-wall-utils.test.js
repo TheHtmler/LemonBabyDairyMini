@@ -46,9 +46,10 @@ test('validatePublishPayload accepts custom tags and builds searchText', () => {
   assert.deepEqual(good.data.tags, ['软食', '外出便携']);
   assert.match(good.data.searchText, /软食/);
   assert.equal(formatDifficultyLabel('easy'), '简单');
-  assert.ok(RECIPE_WALL_TAG_SUGGESTIONS.includes('0-6月'));
-  assert.ok(RECIPE_WALL_TAG_SUGGESTIONS.includes('6-10岁'));
+  assert.ok(RECIPE_WALL_TAG_SUGGESTIONS.includes('辅食'));
+  assert.ok(RECIPE_WALL_TAG_SUGGESTIONS.includes('手指食物'));
   assert.ok(!RECIPE_WALL_TAG_SUGGESTIONS.includes('特医友好'));
+  assert.ok(!RECIPE_WALL_TAG_SUGGESTIONS.includes('0-6月'));
 });
 
 test('validatePublishPayload rejects too many tags', () => {
