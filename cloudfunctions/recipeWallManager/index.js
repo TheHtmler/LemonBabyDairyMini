@@ -4,7 +4,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
-const { validatePublishPayload } = require('./recipeWallUtils');
+const { validatePublishPayload, escapeRegExp, RECIPE_WALL_TAG_OPTIONS } = require('./recipeWallUtils');
 
 const DEVELOPER_OPENIDS = [
   'oYCao7fijm22dyl6C-tcYJo_G69A'
@@ -111,6 +111,7 @@ async function publish(event, openid) {
     const textBlob = [
       data.title,
       data.description || '',
+      ...(data.tags || []),
       ...data.ingredients.map((item) => `${item.foodName || item.name}${item.amount}`),
       ...data.steps.map((step) => step.text),
       data.difficulty || '',
@@ -144,8 +145,28 @@ async function publish(event, openid) {
 
 async function list(event, openid) {
   const { page, pageSize, skip } = clampPage(event.page, event.pageSize);
+  const keyword = String(event.keyword || '').trim().slice(0, 40);
+  const tag = String(event.tag || '').trim();
+  if (tag && !RECIPE_WALL_TAG_OPTIONS.includes(tag)) {
+    return { ok: false, message: '标签无效' };
+  }
+
+  const conditions = [{ status: 'published' }];
+  if (tag) {
+    conditions.push({ tags: tag });
+  }
+  if (keyword) {
+    conditions.push({
+      searchText: db.RegExp({
+        regexp: escapeRegExp(keyword),
+        options: 'i'
+      })
+    });
+  }
+
+  const whereQuery = conditions.length === 1 ? conditions[0] : _.and(conditions);
   const res = await db.collection('recipe_wall_posts')
-    .where({ status: 'published' })
+    .where(whereQuery)
     .orderBy('createdAt', 'desc')
     .skip(skip)
     .limit(pageSize)
@@ -158,7 +179,15 @@ async function list(event, openid) {
     liked: likedSet.has(row._id)
   }));
 
-  return { ok: true, list, hasMore: rows.length === pageSize, page, pageSize };
+  return {
+    ok: true,
+    list,
+    hasMore: rows.length === pageSize,
+    page,
+    pageSize,
+    keyword,
+    tag
+  };
 }
 
 async function listMine(event, openid) {

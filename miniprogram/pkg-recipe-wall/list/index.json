@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "食谱墙",
   "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
   "usingComponents": {}
 }

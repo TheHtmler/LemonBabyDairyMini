@@ -22,6 +22,19 @@
     <textarea class="compact-textarea" maxlength="500" placeholder="简单介绍这道菜，适合什么阶段等" value="{{description}}" bindinput="onDescriptionInput" />
   </view>
 
+  <view class="panel">
+    <view class="label">标签（可选，最多 2 个）</view>
+    <view class="tags">
+      <view
+        class="tag {{selectedTagSet[item] ? 'active' : ''}}"
+        wx:for="{{tagOptions}}"
+        wx:key="*this"
+        data-tag="{{item}}"
+        bindtap="onToggleTag"
+      >{{item}}</view>
+    </view>
+  </view>
+
   <!-- 4. 用料 -->
   <view class="panel">
     <view class="label">用料</view>

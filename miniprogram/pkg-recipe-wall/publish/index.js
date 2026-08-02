@@ -1,6 +1,7 @@
 const FoodModel = require('../../models/food');
 const {
   DIFFICULTY_OPTIONS,
+  RECIPE_WALL_TAG_OPTIONS,
   validatePublishPayload,
   formatRecipeWallAuthorLabel
 } = require('../../utils/recipeWallUtils');
@@ -83,6 +84,9 @@ Page({
     cookingMinutes: '',
     difficulty: '',
     difficultyOptions: DIFFICULTY_OPTIONS,
+    tagOptions: RECIPE_WALL_TAG_OPTIONS,
+    selectedTags: [],
+    selectedTagSet: {},
     showAdjustSheet: false,
     babyUid: '',
     babyName: '',
@@ -254,6 +258,24 @@ Page({
   onSelectDifficulty(e) {
     const value = e.currentTarget.dataset.value || '';
     this.setData({ difficulty: this.data.difficulty === value ? '' : value });
+  },
+
+  onToggleTag(e) {
+    const tag = e.currentTarget.dataset.tag || '';
+    if (!tag) return;
+    const selected = [...(this.data.selectedTags || [])];
+    const index = selected.indexOf(tag);
+    if (index >= 0) {
+      selected.splice(index, 1);
+    } else if (selected.length >= 2) {
+      wx.showToast({ title: '最多选 2 个标签', icon: 'none' });
+      return;
+    } else {
+      selected.push(tag);
+    }
+    const selectedTagSet = {};
+    selected.forEach((name) => { selectedTagSet[name] = true; });
+    this.setData({ selectedTags: selected, selectedTagSet });
   },
 
   toggleAdvanced() {
@@ -428,6 +450,7 @@ Page({
         nutrition: buildIngredientNutrition(item.food || item.foodSnapshot || {}, Number(item.quantity) || 0)
       })),
       steps: this.data.steps,
+      tags: this.data.selectedTags || [],
       cookingMinutes: this.data.cookingMinutes,
       difficulty: this.data.difficulty,
       totalNutrition: nutrition.totalNutrition,

@@ -1,22 +1,102 @@
 .page {
   min-height: 100vh;
-  padding: 16rpx 20rpx calc(160rpx + env(safe-area-inset-bottom));
+  padding: 0 20rpx calc(160rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: linear-gradient(180deg, #FFF8E1 0%, #FFFDF7 40%, #FFFFFF 100%);
+  background: linear-gradient(180deg, #FFF3C4 0%, #FFFDF7 28%, #FFFFFF 100%);
 }
 
-.top-bar {
+.header {
+  padding: 20rpx 0 8rpx;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: linear-gradient(180deg, #FFF3C4 0%, #FFF8E1 70%, rgba(255, 253, 247, 0.96) 100%);
+}
+
+.header-top {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 12rpx;
-  min-height: 48rpx;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18rpx;
+}
+
+.brand-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #5A4200;
+  line-height: 1.2;
+}
+
+.brand-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #A08A4A;
 }
 
 .mine-link {
   font-size: 26rpx;
   color: #8A6A00;
   padding: 8rpx 4rpx;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 10rpx 10rpx 10rpx 20rpx;
+  background: #FFFFFF;
+  border-radius: 999rpx;
+  box-shadow: 0 6rpx 18rpx rgba(255, 184, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.search-input {
+  flex: 1;
+  height: 64rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.search-action {
+  font-size: 24rpx;
+  color: #A08A4A;
+  padding: 8rpx 10rpx;
+}
+
+.search-action.primary {
+  color: #5A4200;
+  font-weight: 600;
+  background: #FFE08A;
+  border-radius: 999rpx;
+  padding: 10rpx 18rpx;
+}
+
+.tag-scroll {
+  margin-top: 16rpx;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  padding: 0 22rpx;
+  margin-right: 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.85);
+  color: #8A6A00;
+  font-size: 24rpx;
+  box-sizing: border-box;
+}
+
+.filter-chip.active {
+  background: #FFB800;
+  color: #5A4200;
+  font-weight: 600;
 }
 
 .state {
@@ -61,6 +141,7 @@
 .waterfall {
   column-count: 2;
   column-gap: 16rpx;
+  margin-top: 8rpx;
 }
 
 .card {
@@ -72,10 +153,25 @@
   box-shadow: 0 8rpx 24rpx rgba(255, 184, 0, 0.1);
 }
 
+.cover-wrap {
+  position: relative;
+}
+
 .cover {
   width: 100%;
   background: #FFF3C4;
   display: block;
+}
+
+.cover-tag {
+  position: absolute;
+  left: 12rpx;
+  top: 12rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(90, 66, 0, 0.72);
+  color: #FFF8E1;
+  font-size: 20rpx;
 }
 
 .card-body {

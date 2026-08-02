@@ -6,6 +6,8 @@
 2. 建议索引：
    - `recipe_wall_posts`: `status` + `createdAt`
    - `recipe_wall_posts`: `_openid` + `createdAt`
+   - `recipe_wall_posts`: `status` + `tags` + `createdAt`（标签过滤）
+   - `recipe_wall_posts`: `status` + `searchText`（若控制台支持文本检索/正则组合，按提示补）
    - `recipe_wall_likes`: `_openid` + `postId`（唯一更好）
 3. 上传并部署云函数 `recipeWallManager`（开通内容安全 openapi：`security.msgSecCheck`、`security.imgSecCheck`）
 4. 云存储：登录用户可写自己的 `recipe-wall/**` 路径
@@ -31,7 +33,8 @@
 
 ## 发布页说明（当前）
 
-- 暂无标签；后续可按运营需要再加
+- 标签可选（最多 2 个）：辅食 / 低蛋白 / 特医友好 / 加餐点心；用于列表过滤
+- 发布时写入 `searchText`（标题+描述+食材+标签），供关键词搜索
 - 用料必须从食物库选择，营养按食物库数据估算
 - 调整用料支持上移 / 下移 / 删除（暂无拖拽）
 - 流程：填写 → 预览（含营养）→ 确认发布

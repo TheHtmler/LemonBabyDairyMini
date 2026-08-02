@@ -1,4 +1,7 @@
-const { mapPostForCard } = require('../../utils/recipeWallUtils');
+const {
+  mapPostForCard,
+  RECIPE_WALL_TAG_OPTIONS
+} = require('../../utils/recipeWallUtils');
 
 const PAGE_SIZE = 10;
 const COVER_HEIGHTS = [280, 340, 300, 380];
@@ -10,7 +13,6 @@ function withCoverHeight(card, index) {
   };
 }
 
-
 Page({
   data: {
     loading: true,
@@ -19,11 +21,25 @@ Page({
     posts: [],
     page: 1,
     hasMore: true,
-    empty: false
+    empty: false,
+    keywordInput: '',
+    keyword: '',
+    selectedTag: '',
+    filterTags: [{ name: '全部', value: '' }].concat(
+      RECIPE_WALL_TAG_OPTIONS.map((name) => ({ name, value: name }))
+    )
   },
 
   onLoad() {
     this.loadList({ reset: true });
+  },
+
+  onShow() {
+    // 从发布页返回时刷新
+    if (this._needsRefresh) {
+      this._needsRefresh = false;
+      this.loadList({ reset: true });
+    }
   },
 
   onPullDownRefresh() {
@@ -33,6 +49,30 @@ Page({
   onReachBottom() {
     if (!this.data.hasMore || this.data.loadingMore) return;
     this.loadList({ reset: false });
+  },
+
+  onKeywordInput(e) {
+    this.setData({ keywordInput: e.detail.value || '' });
+  },
+
+  onSearchConfirm() {
+    const keyword = String(this.data.keywordInput || '').trim();
+    this.setData({ keyword });
+    this.loadList({ reset: true });
+  },
+
+  onClearSearch() {
+    if (!this.data.keyword && !this.data.keywordInput) return;
+    this.setData({ keyword: '', keywordInput: '' });
+    this.loadList({ reset: true });
+  },
+
+  onSelectTag(e) {
+    const value = e.currentTarget.dataset.value;
+    const next = value === undefined || value === null ? '' : String(value);
+    if (next === this.data.selectedTag) return;
+    this.setData({ selectedTag: next });
+    this.loadList({ reset: true });
   },
 
   async loadList({ reset = false, fromPull = false } = {}) {
@@ -52,7 +92,13 @@ Page({
     try {
       const res = await wx.cloud.callFunction({
         name: 'recipeWallManager',
-        data: { action: 'list', page, pageSize: PAGE_SIZE }
+        data: {
+          action: 'list',
+          page,
+          pageSize: PAGE_SIZE,
+          keyword: this.data.keyword || '',
+          tag: this.data.selectedTag || ''
+        }
       });
       const result = res.result || {};
       if (!result.ok) {
@@ -88,6 +134,7 @@ Page({
   },
 
   goPublish() {
+    this._needsRefresh = true;
     wx.navigateTo({ url: '/pkg-recipe-wall/publish/index' });
   },
 

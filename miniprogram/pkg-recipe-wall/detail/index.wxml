@@ -17,6 +17,9 @@
 
     <view class="panel">
       <text class="title">{{post.title}}</text>
+      <view class="tag-row" wx:if="{{post.tags && post.tags.length}}">
+        <text class="tag" wx:for="{{post.tags}}" wx:key="*this">{{item}}</text>
+      </view>
       <text class="authorLabel">{{authorLabel}}</text>
       <text class="desc" wx:if="{{post.description}}">{{post.description}}</text>
       <view class="meta-row" wx:if="{{cookingText || difficultyLabel}}">

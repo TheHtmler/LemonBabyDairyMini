@@ -1,14 +1,43 @@
 <view class="page">
-  <view class="top-bar">
-    <text class="mine-link" bindtap="goMine">我的发布</text>
+  <view class="header">
+    <view class="header-top">
+      <view class="brand">
+        <text class="brand-title">食谱墙</text>
+        <text class="brand-sub">宝宝辅食与低蛋白灵感</text>
+      </view>
+      <text class="mine-link" bindtap="goMine">我的发布</text>
+    </view>
+
+    <view class="search-bar">
+      <input
+        class="search-input"
+        confirm-type="search"
+        placeholder="搜索菜名、描述、食材"
+        value="{{keywordInput}}"
+        bindinput="onKeywordInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <text class="search-action" wx:if="{{keyword || keywordInput}}" bindtap="onClearSearch">清除</text>
+      <text class="search-action primary" bindtap="onSearchConfirm">搜索</text>
+    </view>
+
+    <scroll-view class="tag-scroll" scroll-x enable-flex>
+      <view
+        class="filter-chip {{selectedTag === item.value ? 'active' : ''}}"
+        wx:for="{{filterTags}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="onSelectTag"
+      >{{item.name}}</view>
+    </scroll-view>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中...</view>
 
   <view wx:elif="{{empty}}" class="state empty">
-    <text class="empty-title">还没有食谱</text>
-    <text class="empty-tip">来发布第一条辅食 / 低蛋白友好食谱吧</text>
-    <button class="empty-btn" bindtap="goPublish">去发布</button>
+    <text class="empty-title">{{keyword || selectedTag ? '没有符合条件的食谱' : '还没有食谱'}}</text>
+    <text class="empty-tip">{{keyword || selectedTag ? '换个关键词或标签试试' : '来发布第一条辅食 / 低蛋白友好食谱吧'}}</text>
+    <button class="empty-btn" wx:if="{{!keyword && !selectedTag}}" bindtap="goPublish">去发布</button>
   </view>
 
   <view wx:else class="waterfall">
@@ -19,12 +48,15 @@
       data-id="{{item.id}}"
       bindtap="goDetail"
     >
-      <image
-        class="cover"
-        style="height: {{item.coverHeight}}rpx;"
-        src="{{item.coverFileId}}"
-        mode="aspectFill"
-      />
+      <view class="cover-wrap">
+        <image
+          class="cover"
+          style="height: {{item.coverHeight}}rpx;"
+          src="{{item.coverFileId}}"
+          mode="aspectFill"
+        />
+        <text class="cover-tag" wx:if="{{item.tagText}}">{{item.tagText}}</text>
+      </view>
       <view class="card-body">
         <text class="title">{{item.title}}</text>
         <text class="authorLabel">{{item.authorLabel}}</text>

@@ -6,9 +6,19 @@ const Module = require('node:module');
 const functionPath = path.join('cloudfunctions', 'recipeWallManager', 'index.js');
 
 function matchesQuery(item, query = {}) {
+  if (!query || typeof query !== 'object') return true;
+  if (Array.isArray(query.$and)) {
+    return query.$and.every((part) => matchesQuery(item, part));
+  }
   return Object.entries(query).every(([key, value]) => {
     if (value && typeof value === 'object' && Array.isArray(value.$in)) {
       return value.$in.includes(item[key]);
+    }
+    if (value && typeof value === 'object' && value.$regex) {
+      return new RegExp(value.$regex, value.$options || '').test(String(item[key] || ''));
+    }
+    if (Array.isArray(item[key]) && typeof value === 'string') {
+      return item[key].includes(value);
     }
     return item[key] === value;
   });
@@ -28,7 +38,13 @@ function createDbMock(seed = {}) {
     command: {
       in(list) {
         return { $in: list };
+      },
+      and(list) {
+        return { $and: list };
       }
+    },
+    RegExp({ regexp, options }) {
+      return { $regex: regexp, $options: options || '' };
     },
     collection(name) {
       if (!data[name]) data[name] = [];
@@ -256,6 +272,40 @@ test('list does not return taken_down posts', async () => {
   assert.equal(res.ok, true);
   assert.equal(res.list.length, 1);
   assert.equal(res.list[0]._id, 'p1');
+});
+
+test('list supports tag and keyword filters', async () => {
+  const { main } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [
+      {
+        _id: 'p1',
+        status: 'published',
+        title: '南瓜泥',
+        tags: ['辅食'],
+        searchText: '南瓜泥 软糯辅食 南瓜 辅食',
+        createdAt: 3
+      },
+      {
+        _id: 'p2',
+        status: 'published',
+        title: '低蛋白米糊',
+        tags: ['低蛋白'],
+        searchText: '低蛋白米糊 大米 低蛋白',
+        createdAt: 2
+      }
+    ]
+  });
+
+  const byTag = await main({ action: 'list', tag: '辅食' });
+  assert.equal(byTag.ok, true);
+  assert.equal(byTag.list.length, 1);
+  assert.equal(byTag.list[0]._id, 'p1');
+
+  const byKeyword = await main({ action: 'list', keyword: '米糊' });
+  assert.equal(byKeyword.ok, true);
+  assert.equal(byKeyword.list.length, 1);
+  assert.equal(byKeyword.list[0]._id, 'p2');
 });
 
 test('toggleLike increments then decrements without going below zero', async () => {

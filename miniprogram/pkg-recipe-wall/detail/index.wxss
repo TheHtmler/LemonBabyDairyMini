@@ -28,6 +28,21 @@
   color: #333;
 }
 
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+
+.tag {
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #FFF3C4;
+  color: #8A6A00;
+  font-size: 22rpx;
+}
+
 .authorLabel {
   display: block;
   margin-top: 12rpx;

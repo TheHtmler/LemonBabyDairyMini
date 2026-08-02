@@ -4,6 +4,8 @@ const DIFFICULTY_OPTIONS = [
   { value: 'hard', label: '较难' }
 ];
 
+const RECIPE_WALL_TAG_OPTIONS = ['辅食', '低蛋白', '特医友好', '加餐点心'];
+
 function trimText(value = '', maxLen = 0) {
   const text = String(value || '').trim();
   if (!maxLen) return text;
@@ -20,6 +22,41 @@ function formatRecipeWallAuthorLabel({ babyName = '', authorDisplayName = '' } =
 function formatDifficultyLabel(value = '') {
   const found = DIFFICULTY_OPTIONS.find((item) => item.value === value);
   return found ? found.label : '';
+}
+
+function normalizeTags(rawTags = []) {
+  const tags = (Array.isArray(rawTags) ? rawTags : [])
+    .map((tag) => trimText(tag, 20))
+    .filter(Boolean);
+  const unique = [...new Set(tags)];
+  if (unique.length > 2) {
+    return { ok: false, message: '最多选择 2 个标签', tags: [] };
+  }
+  if (unique.some((tag) => !RECIPE_WALL_TAG_OPTIONS.includes(tag))) {
+    return { ok: false, message: '标签无效', tags: [] };
+  }
+  return { ok: true, tags: unique };
+}
+
+function buildSearchText({
+  title = '',
+  description = '',
+  ingredients = [],
+  tags = []
+} = {}) {
+  const parts = [
+    title,
+    description,
+    ...(Array.isArray(ingredients) ? ingredients : []).map((item) => item.foodName || item.name || ''),
+    ...(Array.isArray(tags) ? tags : [])
+  ]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean);
+  return parts.join(' ').toLowerCase();
+}
+
+function escapeRegExp(value = '') {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function normalizeIngredient(raw = {}) {
@@ -96,6 +133,7 @@ function validatePublishPayload(input = {}) {
   const steps = (Array.isArray(input.steps) ? input.steps : [])
     .map(normalizeStep)
     .filter(Boolean);
+  const tagResult = normalizeTags(input.tags);
 
   const cookingMinutesRaw = input.cookingMinutes;
   let cookingMinutes = null;
@@ -123,6 +161,14 @@ function validatePublishPayload(input = {}) {
   }
   if (!steps.length) return { ok: false, message: '请至少添加一步做法' };
   if (!difficultyOk) return { ok: false, message: '烹饪难度无效' };
+  if (!tagResult.ok) return { ok: false, message: tagResult.message };
+
+  const searchText = buildSearchText({
+    title,
+    description,
+    ingredients,
+    tags: tagResult.tags
+  });
 
   return {
     ok: true,
@@ -132,6 +178,8 @@ function validatePublishPayload(input = {}) {
       coverFileId,
       ingredients,
       steps,
+      tags: tagResult.tags,
+      searchText,
       cookingMinutes,
       difficulty,
       totalNutrition,
@@ -148,6 +196,7 @@ function mapPostForCard(post = {}, options = {}) {
     ? options.likedPostIds
     : new Set(options.likedPostIds || []);
   const id = post._id || '';
+  const tags = Array.isArray(post.tags) ? post.tags : [];
   return {
     id,
     title: post.title || '',
@@ -157,14 +206,20 @@ function mapPostForCard(post = {}, options = {}) {
     liked: likedSet.has(id),
     status: post.status || '',
     description: post.description || '',
+    tags,
+    tagText: tags[0] || '',
     createdAt: post.createdAt || null
   };
 }
 
 module.exports = {
   DIFFICULTY_OPTIONS,
+  RECIPE_WALL_TAG_OPTIONS,
   formatRecipeWallAuthorLabel,
   formatDifficultyLabel,
+  normalizeTags,
+  buildSearchText,
+  escapeRegExp,
   normalizeIngredient,
   normalizeStep,
   normalizeTotalNutrition,

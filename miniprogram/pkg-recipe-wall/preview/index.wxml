@@ -9,6 +9,9 @@
 
   <view class="panel">
     <text class="title">{{draft.title}}</text>
+    <view class="tag-row" wx:if="{{draft.tags && draft.tags.length}}">
+      <text class="tag" wx:for="{{draft.tags}}" wx:key="*this">{{item}}</text>
+    </view>
     <text class="authorLabel">{{authorLabel}}</text>
     <text class="desc">{{draft.description}}</text>
     <view class="meta-row" wx:if="{{cookingText || difficultyLabel}}">
