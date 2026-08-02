@@ -410,13 +410,14 @@ Page({
   switchLibraryScope(e) {
     const { scope } = e.currentTarget.dataset || {};
     if (!scope || scope === this.data.activeLibraryScope) return;
+    // 切换库时保留搜索词，继续在新库筛选
+    const searchQuery = this.data.searchQuery || '';
     this.setData({
       activeLibraryScope: scope,
-      activeCategory: '',
-      searchQuery: ''
+      activeCategory: ''
     }, () => {
       this.updateGroupedFoods(this.data.foods || [], {
-        searchQuery: '',
+        searchQuery,
         activeCategory: ''
       });
     });

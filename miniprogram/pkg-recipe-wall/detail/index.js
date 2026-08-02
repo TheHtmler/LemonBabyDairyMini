@@ -20,6 +20,8 @@ Page({
     authorLabel: '',
     liked: false,
     likeCount: 0,
+    isOwner: false,
+    canEdit: false,
     difficultyLabel: '',
     cookingText: '',
     nutrition: null
@@ -55,6 +57,9 @@ Page({
       const post = result.post || {};
       const total = post.totalNutrition || {};
       const cookingMinutes = post.cookingMinutes;
+      const openid = getApp().globalData.openid || wx.getStorageSync('openid') || '';
+      const isOwner = !!(openid && (post.authorOpenid === openid || post._openid === openid));
+      const canEdit = isOwner && ['draft', 'published', 'taken_down'].includes(post.status);
       this.setData({
         loading: false,
         unavailable: false,
@@ -62,6 +67,8 @@ Page({
         authorLabel: formatRecipeWallAuthorLabel(post),
         liked: !!result.liked,
         likeCount: Number(post.likeCount) || 0,
+        isOwner,
+        canEdit,
         difficultyLabel: formatDifficultyLabel(post.difficulty),
         cookingText: cookingMinutes ? `${cookingMinutes} 分钟` : '',
         nutrition: {
@@ -79,6 +86,12 @@ Page({
         message: '内容不可用'
       });
     }
+  },
+
+  goEdit() {
+    if (!this.data.canEdit || !this.data.postId) return;
+    // 用 redirect 替换详情，避免 详情→编辑→预览 栈过深
+    wx.redirectTo({ url: `/pkg-recipe-wall/publish/index?id=${this.data.postId}` });
   },
 
   previewImage(e) {

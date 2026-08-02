@@ -649,14 +649,15 @@ Page({
     const { scope } = e.currentTarget.dataset || {};
     if (!scope || scope === this.data.activeLibraryScope) return;
     this.rememberLibraryScope(scope);
-    const foodCategories = this.buildFoodCategories(this.getFoodCatalog(), scope);
+    // 切换「我的 / 系统」时保留当前搜索词，继续在新库里搜
+    const query = this.data.foodSearchQuery || '';
+    const foodCategories = this.buildFoodCategories(this.getFoodCatalog(), scope, query);
     this.setData({
       activeLibraryScope: scope,
       foodCategories,
-      activeCategory: this.getNextActiveFoodCategory(foodCategories, ''),
-      foodSearchQuery: ''
+      activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
     }, () => {
-      this.filterFoodOptions('');
+      this.filterFoodOptions(query);
     });
   },
 

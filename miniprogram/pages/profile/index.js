@@ -76,6 +76,13 @@ const MENU_GROUPS = [
         description: '维护成品菜配方，按食用克数记录营养'
       },
       {
+        id: 23,
+        name: '食谱墙',
+        icon: 'add',
+        path: '/pkg-recipe-wall/list/index',
+        description: '分享宝宝辅食与低蛋白友好食谱'
+      },
+      {
         id: 22,
         name: '饮食调整换算',
         icon: 'nutrition',
@@ -119,7 +126,7 @@ const MENU_GROUPS = [
   },
   {
     id: 'support',
-    title: '帮助与社区',
+    title: '帮助与支持',
     items: [
       {
         id: 14,
@@ -127,13 +134,6 @@ const MENU_GROUPS = [
         icon: 'info',
         path: '/pkg-misc/emergency-support/index',
         description: '查看急救卡与补液热量计算'
-      },
-      {
-        id: 23,
-        name: '食谱墙',
-        icon: 'add',
-        path: '/pkg-recipe-wall/list/index',
-        description: '分享宝宝辅食与低蛋白友好食谱'
       },
       {
         id: 12,

@@ -7,6 +7,7 @@ const {
   buildSearchText,
   normalizeTagItem,
   validatePublishPayload,
+  normalizeDraftPayload,
   mapPostForCard
 } = require('../miniprogram/utils/recipeWallUtils');
 
@@ -52,6 +53,51 @@ test('validatePublishPayload accepts custom tags and builds searchText', () => {
   assert.ok(!RECIPE_WALL_TAG_SUGGESTIONS.includes('0-6月'));
 });
 
+test('normalizeDraftPayload requires title only', () => {
+  const empty = normalizeDraftPayload({ title: '  ' });
+  assert.equal(empty.ok, false);
+
+  const ok = normalizeDraftPayload({ title: '南瓜泥草稿' });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.data.title, '南瓜泥草稿');
+  assert.equal(ok.data.coverFileId, '');
+  assert.deepEqual(ok.data.ingredients, []);
+  assert.deepEqual(ok.data.steps, []);
+});
+
+test('validatePublishPayload asks for quantity when ingredient has no amount', () => {
+  const res = validatePublishPayload({
+    title: '南瓜泥',
+    description: '软糯',
+    coverFileId: 'cloud://c.png',
+    ingredients: [{ foodId: 'f1', foodName: '南瓜', quantity: 0, unit: 'g' }],
+    steps: [{ text: '蒸熟' }],
+    babyName: '柠檬',
+    authorDisplayName: '妈妈',
+    babyUid: 'b1'
+  });
+  assert.equal(res.ok, false);
+  assert.match(res.message, /份量/);
+});
+
+test('validatePublishPayload rejects missing quantity even if another ingredient is complete', () => {
+  const res = validatePublishPayload({
+    title: '南瓜泥',
+    description: '软糯',
+    coverFileId: 'cloud://c.png',
+    ingredients: [
+      { foodId: 'f1', foodName: '南瓜', quantity: 100, unit: 'g' },
+      { foodId: 'f2', foodName: '米粉', quantity: 0, unit: 'g' }
+    ],
+    steps: [{ text: '蒸熟' }],
+    babyName: '柠檬',
+    authorDisplayName: '妈妈',
+    babyUid: 'b1'
+  });
+  assert.equal(res.ok, false);
+  assert.match(res.message, /份量/);
+});
+
 test('validatePublishPayload rejects too many tags', () => {
   const res = validatePublishPayload({
     title: '菜',
@@ -77,7 +123,7 @@ test('buildSearchText joins title description ingredients and tags', () => {
   assert.equal(text, '南瓜泥 软糯 南瓜 辅食');
 });
 
-test('mapPostForCard builds authorLabel liked flag and tagText', () => {
+test('mapPostForCard builds authorLabel liked flag and coverTags', () => {
   const card = mapPostForCard({
     _id: 'p1',
     title: '南瓜泥',
@@ -86,10 +132,11 @@ test('mapPostForCard builds authorLabel liked flag and tagText', () => {
     authorDisplayName: '妈妈',
     likeCount: 3,
     status: 'published',
-    tags: ['软食', '低蛋白']
+    tags: ['软食', '低蛋白', '蒸煮']
   }, { likedPostIds: ['p1'] });
   assert.equal(card.authorLabel, '来自柠檬妈妈');
   assert.equal(card.liked, true);
   assert.equal(card.likeCount, 3);
   assert.equal(card.tagText, '软食');
+  assert.deepEqual(card.coverTags, ['软食', '低蛋白']);
 });

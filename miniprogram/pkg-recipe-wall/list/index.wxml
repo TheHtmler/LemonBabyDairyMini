@@ -1,29 +1,43 @@
 <view class="page">
+  <view class="bg-blob bg-blob-a"></view>
+  <view class="bg-blob bg-blob-b"></view>
+
   <view class="header">
-    <view class="header-top">
-      <view class="brand">
-        <text class="brand-title">食谱墙</text>
-        <text class="brand-sub">0-10 岁孩子的每日灵感</text>
+    <view class="hero">
+      <view class="hero-main">
+        <view class="lemon-mark">
+          <view class="lemon-body"></view>
+          <view class="lemon-leaf"></view>
+        </view>
+        <view class="hero-copy">
+          <text class="brand-title">食谱墙</text>
+          <text class="brand-sub">宝宝辅食灵感，一起分享收藏</text>
+        </view>
       </view>
-      <text class="mine-link" bindtap="goMine">我的发布</text>
     </view>
 
     <view class="search-bar">
+      <text class="search-ico">⌕</text>
       <input
         class="search-input"
         confirm-type="search"
-        placeholder="搜索菜名、描述、食材"
+        placeholder="搜菜名、描述或食材"
+        placeholder-class="search-ph"
         value="{{keywordInput}}"
         bindinput="onKeywordInput"
         bindconfirm="onSearchConfirm"
       />
-      <text class="search-action" wx:if="{{keyword || keywordInput}}" bindtap="onClearSearch">清除</text>
-      <text class="search-action primary" bindtap="onSearchConfirm">搜索</text>
+      <view
+        class="search-clear"
+        wx:if="{{keyword || keywordInput}}"
+        catchtap="onClearSearch"
+      >清除</view>
+      <view class="search-go" hover-class="press-soft" bindtap="onSearchConfirm">搜索</view>
     </view>
 
-    <view class="filter-row">
+    <view class="filter-seg">
       <view
-        class="filter-chip {{filter === item.value ? 'active' : ''}}"
+        class="filter-item {{filter === item.value ? 'active' : ''}}"
         wx:for="{{filterOptions}}"
         wx:key="value"
         data-value="{{item.value}}"
@@ -32,52 +46,152 @@
     </view>
   </view>
 
-  <view wx:if="{{loading}}" class="state">加载中...</view>
+  <view wx:if="{{loading}}" class="state">
+    <view class="loading-dot"></view>
+    <text>正在翻找好吃的…</text>
+  </view>
 
-  <view wx:elif="{{empty}}" class="state empty">
-    <text class="empty-title">{{keyword || filter === 'liked' ? '没有符合条件的食谱' : '还没有食谱'}}</text>
-    <text class="empty-tip">{{filter === 'liked' ? (keyword ? '换个关键词试试' : '去给喜欢的食谱点个赞吧') : (keyword ? '换个关键词试试' : '来分享 0-10 岁孩子的日常食谱吧')}}</text>
-    <button class="empty-btn" wx:if="{{!keyword && filter !== 'liked'}}" bindtap="goPublish">去发布</button>
+  <view wx:elif="{{empty}}" class="empty">
+    <view class="empty-art">
+      <view class="empty-lemon"></view>
+      <view class="empty-plate"></view>
+    </view>
+    <text class="empty-title">{{
+      filter === 'mine'
+        ? (keyword ? '没有符合条件的发布' : '还没有发布过')
+        : (keyword || filter === 'liked' ? '没有符合条件的食谱' : '墙还空着')
+    }}</text>
+    <text class="empty-tip">{{
+      filter === 'mine'
+        ? (keyword ? '换个关键词试试' : '来分享第一道宝宝食谱吧')
+        : (filter === 'liked'
+          ? (keyword ? '换个关键词试试' : '去给喜欢的食谱点个赞吧')
+          : (keyword ? '换个关键词试试' : '第一道菜，就由你来上墙'))
+    }}</text>
+    <button
+      class="empty-btn"
+      wx:if="{{!keyword && filter !== 'liked'}}"
+      hover-class="press-soft"
+      bindtap="goPublish"
+    >去发布</button>
   </view>
 
   <view wx:else class="waterfall">
-    <view
-      class="card"
-      wx:for="{{posts}}"
-      wx:key="id"
-      data-id="{{item.id}}"
-      bindtap="goDetail"
-    >
-      <view class="cover-wrap">
-        <image
-          class="cover"
-          style="height: {{item.coverHeight}}rpx;"
-          src="{{item.coverFileId}}"
-          mode="aspectFill"
-        />
-        <text class="cover-tag" wx:if="{{item.tagText}}">{{item.tagText}}</text>
+    <view class="waterfall-col">
+      <view
+        class="card"
+        wx:for="{{leftPosts}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        hover-class="card-press"
+        bindtap="goDetail"
+      >
+        <view class="cover-wrap">
+          <image
+            class="cover"
+            style="height: {{item.coverHeight}}rpx;"
+            src="{{item.coverFileId}}"
+            mode="aspectFill"
+          />
+          <view class="cover-shade"></view>
+          <view class="cover-tags" wx:if="{{item.coverTags && item.coverTags.length}}">
+            <text class="cover-tag" wx:for="{{item.coverTags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+          </view>
+          <text
+            class="cover-status {{item.status === 'taken_down' ? 'down' : (item.status === 'draft' ? 'draft' : '')}}"
+            wx:if="{{filter === 'mine'}}"
+          >{{item.statusText}}</text>
+        </view>
+        <view class="card-body">
+          <text class="title">{{item.title}}</text>
+          <text class="authorLabel">{{item.authorLabel}}</text>
+          <view class="card-foot">
+            <view
+              class="edit-btn"
+              wx:if="{{filter === 'mine'}}"
+              data-id="{{item.id}}"
+              catchtap="goEdit"
+            >编辑</view>
+            <view
+              class="delete-btn"
+              wx:if="{{filter === 'mine'}}"
+              data-id="{{item.id}}"
+              catchtap="onDeleteOwn"
+            >删除</view>
+            <view
+              class="like-btn {{item.liked ? 'liked' : ''}}"
+              wx:if="{{item.status !== 'draft'}}"
+              data-id="{{item.id}}"
+              catchtap="onToggleLike"
+            >
+              <view class="like-icon {{item.liked ? 'on' : ''}}"></view>
+              <text class="likeCount">{{item.likeCount}}</text>
+            </view>
+          </view>
+        </view>
       </view>
-      <view class="card-body">
-        <text class="title">{{item.title}}</text>
-        <text class="authorLabel">{{item.authorLabel}}</text>
-        <view class="card-foot">
-          <view
-            class="like-btn {{item.liked ? 'liked' : ''}}"
-            data-id="{{item.id}}"
-            catchtap="onToggleLike"
-          >
-            <text>{{item.liked ? '已赞' : '赞'}}</text>
-            <text class="likeCount">{{item.likeCount}}</text>
+    </view>
+
+    <view class="waterfall-col">
+      <view
+        class="card"
+        wx:for="{{rightPosts}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        hover-class="card-press"
+        bindtap="goDetail"
+      >
+        <view class="cover-wrap">
+          <image
+            class="cover"
+            style="height: {{item.coverHeight}}rpx;"
+            src="{{item.coverFileId}}"
+            mode="aspectFill"
+          />
+          <view class="cover-shade"></view>
+          <view class="cover-tags" wx:if="{{item.coverTags && item.coverTags.length}}">
+            <text class="cover-tag" wx:for="{{item.coverTags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+          </view>
+          <text
+            class="cover-status {{item.status === 'taken_down' ? 'down' : (item.status === 'draft' ? 'draft' : '')}}"
+            wx:if="{{filter === 'mine'}}"
+          >{{item.statusText}}</text>
+        </view>
+        <view class="card-body">
+          <text class="title">{{item.title}}</text>
+          <text class="authorLabel">{{item.authorLabel}}</text>
+          <view class="card-foot">
+            <view
+              class="edit-btn"
+              wx:if="{{filter === 'mine'}}"
+              data-id="{{item.id}}"
+              catchtap="goEdit"
+            >编辑</view>
+            <view
+              class="delete-btn"
+              wx:if="{{filter === 'mine'}}"
+              data-id="{{item.id}}"
+              catchtap="onDeleteOwn"
+            >删除</view>
+            <view
+              class="like-btn {{item.liked ? 'liked' : ''}}"
+              wx:if="{{item.status !== 'draft'}}"
+              data-id="{{item.id}}"
+              catchtap="onToggleLike"
+            >
+              <view class="like-icon {{item.liked ? 'on' : ''}}"></view>
+              <text class="likeCount">{{item.likeCount}}</text>
+            </view>
           </view>
         </view>
       </view>
     </view>
   </view>
 
-  <view class="state tip" wx:if="{{loadingMore}}">加载更多...</view>
-  <view class="state tip" wx:elif="{{!hasMore && posts.length}}">没有更多了</view>
+  <view class="state tip" wx:if="{{loadingMore}}">继续加载…</view>
+  <view class="state tip" wx:elif="{{!hasMore && posts.length}}">已经到底啦</view>
 
-  <view class="fab" bindtap="goPublish">
+  <view class="fab" hover-class="press-soft" bindtap="goPublish">
     <text class="fab-plus">+</text>
     <text class="fab-text">发布</text>
   </view>

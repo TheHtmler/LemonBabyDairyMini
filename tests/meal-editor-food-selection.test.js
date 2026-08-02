@@ -191,6 +191,35 @@ test('meal editor persists meal batches through food_intake_records v2 model', (
   assert.doesNotMatch(source, /db\.collection\('feeding_records'\)\.doc\(targetId\)\.update\(\{\s*data:\s*\{[\s\S]*?intakes:\s*updatedIntakes/);
 });
 
+test('food picker keeps search query when switching library tabs', () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const instance = createPageInstance(page, {
+      foodCatalog: [systemFood, mineFood],
+      activeLibraryScope: 'mine',
+      activeCategory: '谷类及制品',
+      foodSearchQuery: '南瓜',
+      recentFoodOptionsByScope: {
+        mine: [mineFood],
+        system: [systemFood]
+      }
+    });
+    instance.setData({
+      foodCategories: instance.buildFoodCategories([systemFood, mineFood], 'mine', '南瓜'),
+      foodSearchQuery: '南瓜'
+    });
+    instance.filterFoodOptions('南瓜');
+
+    instance.switchLibraryScope({ currentTarget: { dataset: { scope: 'system' } } });
+    assert.equal(instance.data.activeLibraryScope, 'system');
+    assert.equal(instance.data.foodSearchQuery, '南瓜');
+  } finally {
+    restoreWx();
+  }
+});
+
 test('food picker recent category filters recent foods inside each library tab', () => {
   const storage = {};
   const restoreWx = installWxMock(storage);

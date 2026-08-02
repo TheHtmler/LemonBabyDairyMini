@@ -50,14 +50,16 @@ function createDbMock(seed = {}) {
       if (!data[name]) data[name] = [];
       return {
         where(query) {
+          const filtered = () => (data[name] || []).filter((item) => matchesQuery(item, query));
           const chain = {
             orderBy() { return chain; },
             skip() { return chain; },
             limit() { return chain; },
             async get() {
-              return {
-                data: (data[name] || []).filter((item) => matchesQuery(item, query))
-              };
+              return { data: filtered() };
+            },
+            async count() {
+              return { total: filtered().length };
             },
             async update({ data: updateData }) {
               const rows = data[name] || [];
@@ -110,10 +112,10 @@ function createDbMock(seed = {}) {
           return { data: data[name] || [] };
         },
         async add({ data: addData }) {
+          // 贴近真实云函数：不会自动注入调用方 _openid
           const row = {
             _id: `${name}-${data[name].length + 1}`,
-            ...addData,
-            _openid: addData._openid || db.__openid || ''
+            ...addData
           };
           data[name].push(row);
           writes.adds.push({ collectionName: name, data: addData });
@@ -239,6 +241,7 @@ test('publish writes published post when security passes', async () => {
   assert.equal(res.ok, true);
   assert.ok(res.postId);
   assert.equal(data.recipe_wall_posts[0].status, 'published');
+  assert.equal(data.recipe_wall_posts[0].authorOpenid, 'user-1');
   assert.equal(data.recipe_wall_posts[0].babyName, '柠檬');
   assert.equal(data.recipe_wall_posts[0].authorDisplayName, '妈妈');
   assert.equal(data.recipe_wall_posts[0].likeCount, 0);
@@ -310,9 +313,9 @@ test('list liked filter returns only liked published posts', async () => {
       { _id: 'p3', status: 'taken_down', title: 'C', searchText: 'c', createdAt: 1 }
     ],
     likes: [
-      { _id: 'l1', _openid: 'user-1', postId: 'p2', createdAt: 20 },
-      { _id: 'l2', _openid: 'user-1', postId: 'p3', createdAt: 10 },
-      { _id: 'l3', _openid: 'user-1', postId: 'p1', createdAt: 5 }
+      { _id: 'l1', userOpenid: 'user-1', postId: 'p2', createdAt: 20 },
+      { _id: 'l2', userOpenid: 'user-1', postId: 'p3', createdAt: 10 },
+      { _id: 'l3', userOpenid: 'user-1', postId: 'p1', createdAt: 5 }
     ]
   });
 
@@ -320,6 +323,55 @@ test('list liked filter returns only liked published posts', async () => {
   assert.equal(res.ok, true);
   assert.deepEqual(res.list.map((item) => item._id), ['p2', 'p1']);
   assert.equal(res.list.every((item) => item.liked), true);
+});
+
+test('list mine filter returns author posts including taken_down', async () => {
+  const { main } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [
+      {
+        _id: 'p1',
+        authorOpenid: 'user-1',
+        status: 'published',
+        title: '我的南瓜',
+        searchText: '我的南瓜 南瓜',
+        createdAt: 3
+      },
+      {
+        _id: 'p2',
+        authorOpenid: 'user-1',
+        status: 'taken_down',
+        title: '已下架米糊',
+        searchText: '已下架米糊 米糊',
+        createdAt: 2
+      },
+      {
+        _id: 'p3',
+        authorOpenid: 'other',
+        status: 'published',
+        title: '别人的菜',
+        searchText: '别人的菜',
+        createdAt: 1
+      },
+      {
+        _id: 'p4',
+        _openid: 'user-1',
+        status: 'published',
+        title: '仅_openid旧帖',
+        searchText: '仅_openid旧帖',
+        createdAt: 4
+      }
+    ]
+  });
+
+  const res = await main({ action: 'list', filter: 'mine' });
+  assert.equal(res.ok, true);
+  assert.equal(res.filter, 'mine');
+  assert.deepEqual(res.list.map((item) => item._id), ['p4', 'p1', 'p2']);
+
+  const byKeyword = await main({ action: 'list', filter: 'mine', keyword: '米糊' });
+  assert.equal(byKeyword.ok, true);
+  assert.deepEqual(byKeyword.list.map((item) => item._id), ['p2']);
 });
 
 test('toggleLike increments then decrements without going below zero', async () => {
@@ -338,6 +390,37 @@ test('toggleLike increments then decrements without going below zero', async () 
   assert.equal(liked.liked, true);
   assert.equal(liked.likeCount, 1);
   assert.equal(data.recipe_wall_likes.length, 1);
+  assert.equal(data.recipe_wall_likes[0].userOpenid, 'user-1');
+
+  const unliked = await main({ action: 'toggleLike', postId: 'p1' });
+  assert.equal(unliked.ok, true);
+  assert.equal(unliked.liked, false);
+  assert.equal(unliked.likeCount, 0);
+  assert.equal(data.recipe_wall_likes.length, 0);
+});
+
+test('toggleLike cleans orphan likes without user identity then toggles correctly', async () => {
+  const { main, data } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [{
+      _id: 'p1',
+      status: 'published',
+      likeCount: 3,
+      _openid: 'author'
+    }],
+    likes: [
+      { _id: 'orphan-1', postId: 'p1', createdAt: 1 },
+      { _id: 'orphan-2', postId: 'p1', createdAt: 2 },
+      { _id: 'orphan-3', postId: 'p1', createdAt: 3 }
+    ]
+  });
+
+  const liked = await main({ action: 'toggleLike', postId: 'p1' });
+  assert.equal(liked.ok, true);
+  assert.equal(liked.liked, true);
+  assert.equal(liked.likeCount, 1);
+  assert.equal(data.recipe_wall_likes.length, 1);
+  assert.equal(data.recipe_wall_likes[0].userOpenid, 'user-1');
 
   const unliked = await main({ action: 'toggleLike', postId: 'p1' });
   assert.equal(unliked.ok, true);
@@ -398,4 +481,116 @@ test('detail hides taken_down from non-owner but allows owner', async () => {
   const visible = await owner.main({ action: 'detail', postId: 'p1' });
   assert.equal(visible.ok, true);
   assert.equal(visible.post.title, '隐藏');
+});
+
+test('saveDraft requires title and stores draft status', async () => {
+  const { main, data } = loadRecipeWallManager({ openid: 'user-1' });
+  const rejected = await main({ action: 'saveDraft', title: '' });
+  assert.equal(rejected.ok, false);
+
+  const saved = await main({ action: 'saveDraft', title: '草稿南瓜' });
+  assert.equal(saved.ok, true);
+  assert.ok(saved.postId);
+  assert.equal(data.recipe_wall_posts[0].status, 'draft');
+  assert.equal(data.recipe_wall_posts[0].authorOpenid, 'user-1');
+  assert.equal(data.recipe_wall_posts[0].title, '草稿南瓜');
+});
+
+test('saveDraft updates existing draft and rejects published', async () => {
+  const { main, data } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [{
+      _id: 'd1',
+      authorOpenid: 'user-1',
+      status: 'draft',
+      title: '旧标题',
+      likeCount: 0
+    }]
+  });
+
+  const updated = await main({ action: 'saveDraft', postId: 'd1', title: '新标题' });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.postId, 'd1');
+  assert.equal(data.recipe_wall_posts[0].title, '新标题');
+
+  const publishedCtx = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [{
+      _id: 'p1',
+      authorOpenid: 'user-1',
+      status: 'published',
+      title: '已发',
+      likeCount: 0
+    }]
+  });
+  const denied = await publishedCtx.main({ action: 'saveDraft', postId: 'p1', title: '改回草稿' });
+  assert.equal(denied.ok, false);
+});
+
+test('publish with draft postId promotes to published', async () => {
+  const { main, data } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [{
+      _id: 'd1',
+      authorOpenid: 'user-1',
+      status: 'draft',
+      title: '旧',
+      likeCount: 0
+    }]
+  });
+
+  const res = await main({ ...validPublish, postId: 'd1' });
+  assert.equal(res.ok, true);
+  assert.equal(res.postId, 'd1');
+  assert.equal(data.recipe_wall_posts.length, 1);
+  assert.equal(data.recipe_wall_posts[0].status, 'published');
+  assert.equal(data.recipe_wall_posts[0].title, '南瓜泥');
+});
+
+test('publish with published postId overlays content and keeps likes', async () => {
+  const { main, data } = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [{
+      _id: 'p1',
+      authorOpenid: 'user-1',
+      status: 'published',
+      title: '旧标题',
+      likeCount: 7
+    }]
+  });
+
+  const res = await main({ ...validPublish, postId: 'p1', title: '新标题南瓜泥' });
+  assert.equal(res.ok, true);
+  assert.equal(res.postId, 'p1');
+  assert.equal(data.recipe_wall_posts.length, 1);
+  assert.equal(data.recipe_wall_posts[0].status, 'published');
+  assert.equal(data.recipe_wall_posts[0].title, '新标题南瓜泥');
+  assert.equal(data.recipe_wall_posts[0].likeCount, 7);
+});
+
+test('getOwn returns owner post and rejects others', async () => {
+  const owner = loadRecipeWallManager({
+    openid: 'user-1',
+    posts: [{
+      _id: 'd1',
+      authorOpenid: 'user-1',
+      status: 'draft',
+      title: '我的草稿'
+    }]
+  });
+  const ok = await owner.main({ action: 'getOwn', postId: 'd1' });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.post.title, '我的草稿');
+
+  const other = loadRecipeWallManager({
+    openid: 'user-2',
+    posts: [{
+      _id: 'd1',
+      authorOpenid: 'user-1',
+      status: 'draft',
+      title: '我的草稿'
+    }]
+  });
+  const denied = await other.main({ action: 'getOwn', postId: 'd1' });
+  assert.equal(denied.ok, false);
 });

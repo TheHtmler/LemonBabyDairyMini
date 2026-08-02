@@ -5,6 +5,10 @@
   box-sizing: border-box;
 }
 
+.page.has-bar {
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+}
+
 .cover {
   width: 100%;
   height: 420rpx;
@@ -93,31 +97,105 @@
   color: #A08A4A;
 }
 
-.like-row {
-  margin-top: 20rpx;
-}
-
-.like-btn {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  height: 76rpx;
-  line-height: 76rpx;
-  border-radius: 38rpx;
-  background: #FFF8E1;
-  color: #8A6A00;
-  font-size: 28rpx;
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 253, 247, 0.96);
+  border-top: 1rpx solid rgba(255, 184, 0, 0.18);
   box-sizing: border-box;
 }
 
-.like-btn::after {
-  border: none;
+.like-bar {
+  flex: 1;
+  height: 84rpx;
+  border-radius: 42rpx;
+  background: #FFF8E1;
+  border: 2rpx solid rgba(255, 184, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  color: #8A6200;
+  box-sizing: border-box;
 }
 
-.like-btn.liked {
-  background: #FFB800;
-  color: #5A4200;
-  font-weight: 600;
+.like-bar.liked {
+  background: linear-gradient(135deg, #FFE08A, #FFD45A);
+  border-color: transparent;
+  color: #3F2C00;
+  font-weight: 700;
+}
+
+.like-bar-text {
+  font-size: 28rpx;
+}
+
+.like-num {
+  font-size: 28rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-spacer {
+  flex: 1;
+}
+
+.edit-bar {
+  min-width: 168rpx;
+  height: 84rpx;
+  padding: 0 28rpx;
+  border-radius: 42rpx;
+  background: linear-gradient(145deg, #FFD86A, #FFB800);
+  color: #3F2C00;
+  font-size: 28rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.like-icon {
+  width: 32rpx;
+  height: 30rpx;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.like-icon::before,
+.like-icon::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 17rpx;
+  height: 28rpx;
+  border-radius: 17rpx 17rpx 0 0;
+  background: #C4A86A;
+}
+
+.like-icon::before {
+  left: 16rpx;
+  transform: rotate(-45deg);
+  transform-origin: 0 100%;
+}
+
+.like-icon::after {
+  left: 0;
+  transform: rotate(45deg);
+  transform-origin: 100% 100%;
+}
+
+.like-icon.on::before,
+.like-icon.on::after,
+.like-bar.liked .like-icon::before,
+.like-bar.liked .like-icon::after {
+  background: #E85D4C;
 }
 
 .section-title {

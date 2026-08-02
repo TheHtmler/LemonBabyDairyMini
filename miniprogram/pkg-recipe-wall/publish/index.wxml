@@ -1,29 +1,67 @@
 <view class="page">
+  <view class="hero-card">
+    <view class="hero-main">
+      <view class="hero-badge">新菜</view>
+      <view class="hero-copy">
+        <text class="hero-title">写下这道菜</text>
+        <text class="hero-subtitle">成品图 + 用料 + 步骤，填好即可上墙</text>
+      </view>
+    </view>
+  </view>
+
   <view class="tip" wx:if="{{tipText}}">{{tipText}}</view>
 
   <!-- 1. 成品图 -->
   <view class="panel">
-    <view class="label">成品图片</view>
-    <view class="cover-box" bindtap="chooseCover">
+    <view class="section-head">
+      <view class="section-index">1</view>
+      <view class="section-titles">
+        <text class="section-title">成品图片</text>
+        <text class="section-tip">选一张最好看的成品照做封面</text>
+      </view>
+    </view>
+    <view class="cover-box {{coverTempPath || coverFileId ? 'has-image' : ''}}" hover-class="press-soft" bindtap="chooseCover">
       <image wx:if="{{coverTempPath || coverFileId}}" class="cover" src="{{coverTempPath || coverFileId}}" mode="aspectFill" />
-      <text wx:else class="cover-placeholder">点击上传做好的成品</text>
+      <view wx:else class="cover-empty">
+        <view class="cover-camera"></view>
+        <text class="cover-placeholder">点击上传做好的成品</text>
+        <text class="cover-hint">建议横图或方图，清晰更好看</text>
+      </view>
     </view>
   </view>
 
   <!-- 2. 标题 -->
   <view class="panel">
-    <view class="label">菜谱标题</view>
+    <view class="section-head">
+      <view class="section-index">2</view>
+      <view class="section-titles">
+        <text class="section-title">菜谱标题</text>
+        <text class="section-tip">简洁好记，方便搜索</text>
+      </view>
+    </view>
     <input class="compact-input" maxlength="40" placeholder="例如：南瓜泥" value="{{title}}" bindinput="onTitleInput" />
   </view>
 
   <!-- 3. 描述 -->
   <view class="panel">
-    <view class="label">菜谱描述</view>
+    <view class="section-head">
+      <view class="section-index">3</view>
+      <view class="section-titles">
+        <text class="section-title">菜谱描述</text>
+        <text class="section-tip">适合什么阶段、口感如何</text>
+      </view>
+    </view>
     <textarea class="compact-textarea" maxlength="500" placeholder="简单介绍这道菜，适合什么阶段等" value="{{description}}" bindinput="onDescriptionInput" />
   </view>
 
   <view class="panel">
-    <view class="label">标签（可选，最多 {{tagMaxCount}} 个）</view>
+    <view class="section-head">
+      <view class="section-index">#</view>
+      <view class="section-titles">
+        <text class="section-title">标签（可选）</text>
+        <text class="section-tip">最多 {{tagMaxCount}} 个，便于发现</text>
+      </view>
+    </view>
     <view class="selected-tags" wx:if="{{selectedTags.length}}">
       <view class="selected-tag" wx:for="{{selectedTags}}" wx:key="*this">
         <text>#{{item}}</text>
@@ -39,7 +77,7 @@
         bindinput="onCustomTagInput"
         bindconfirm="onAddCustomTag"
       />
-      <text class="link" bindtap="onAddCustomTag">添加</text>
+      <view class="link-btn" hover-class="press-soft" bindtap="onAddCustomTag">添加</view>
     </view>
     <view class="suggest-label">快捷建议</view>
     <view class="tags">
@@ -55,7 +93,13 @@
 
   <!-- 4. 用料 -->
   <view class="panel">
-    <view class="label">用料</view>
+    <view class="section-head">
+      <view class="section-index">4</view>
+      <view class="section-titles">
+        <text class="section-title">用料</text>
+        <text class="section-tip">从食物库选择，自动估算营养</text>
+      </view>
+    </view>
     <view class="ing-head">
       <text class="ing-col-name">食材</text>
       <text class="ing-col-qty">份量</text>
@@ -80,24 +124,32 @@
     <view class="ing-empty" wx:if="{{!ingredients.length}}">还没有用料，请从食物库添加</view>
 
     <view class="ing-actions">
-      <text class="link" bindtap="openAdjustSheet">调整</text>
-      <text class="link" bindtap="addIngredients">添加一行</text>
+      <view class="ghost-btn" hover-class="press-soft" bindtap="openAdjustSheet">调整顺序</view>
+      <view class="ghost-btn primary" hover-class="press-soft" bindtap="addIngredients">添加食材</view>
     </view>
   </view>
 
   <!-- 5. 做法 -->
   <view class="panel">
-    <view class="label">做法</view>
+    <view class="section-head">
+      <view class="section-index">5</view>
+      <view class="section-titles">
+        <text class="section-title">做法</text>
+        <text class="section-tip">一步一张图更好跟做</text>
+      </view>
+    </view>
 
-    <view class="step-block" wx:for="{{steps}}" wx:key="index">
+    <view class="step-block" id="step-block-{{index}}" wx:for="{{steps}}" wx:key="index">
       <view class="label-row">
-        <text class="step-label">第 {{index + 1}} 步</text>
+        <view class="step-badge">第 {{index + 1}} 步</view>
         <text class="remove" wx:if="{{steps.length > 1}}" data-index="{{index}}" bindtap="removeStep">删除</text>
       </view>
 
-      <view class="step-image-box" data-index="{{index}}" bindtap="chooseStepImage">
+      <view class="step-image-box {{item.imageTempPath || item.imageFileId ? 'has-image' : ''}}" data-index="{{index}}" bindtap="chooseStepImage">
         <image wx:if="{{item.imageTempPath || item.imageFileId}}" class="step-image" src="{{item.imageTempPath || item.imageFileId}}" mode="aspectFill" />
-        <text wx:else class="cover-placeholder">上传步骤图（可选）</text>
+        <view wx:else class="step-empty">
+          <text class="cover-placeholder">上传步骤图（可选）</text>
+        </view>
       </view>
       <view class="step-image-actions" wx:if="{{item.imageTempPath || item.imageFileId}}">
         <text class="link" data-index="{{index}}" bindtap="chooseStepImage">换图</text>
@@ -105,16 +157,22 @@
       </view>
 
       <textarea
-        class="compact-textarea"
+        class="compact-textarea step-text"
         maxlength="500"
         placeholder="写下这一步的做法"
         value="{{item.text}}"
         data-index="{{index}}"
+        adjust-position="{{false}}"
+        cursor-spacing="{{24}}"
+        hold-keyboard="{{true}}"
+        show-confirm-bar="{{false}}"
+        bindfocus="onStepFocus"
+        bindblur="onStepBlur"
         bindinput="onStepInput"
       />
 
       <view class="step-add-row" wx:if="{{index === steps.length - 1}}">
-        <text class="link" bindtap="addStep">+ 添加一步</text>
+        <view class="ghost-btn primary" hover-class="press-soft" bindtap="addStep">+ 添加一步</view>
       </view>
     </view>
   </view>
@@ -122,13 +180,19 @@
   <!-- 6. 高级设置 -->
   <view class="panel">
     <view class="advanced-entry" bindtap="toggleAdvanced">
-      <text class="label">高级设置</text>
+      <view class="section-head compact">
+        <view class="section-index soft">···</view>
+        <view class="section-titles">
+          <text class="section-title">高级设置</text>
+          <text class="section-tip">时长与难度，可稍后补充</text>
+        </view>
+      </view>
       <text class="link">{{showAdvanced ? '收起' : '展开'}}</text>
     </view>
     <view wx:if="{{showAdvanced}}" class="advanced-body">
-      <view class="label">烹饪时长（分钟）</view>
+      <text class="field-label">烹饪时长（分钟）</text>
       <input class="compact-input" type="number" placeholder="例如 20" value="{{cookingMinutes}}" bindinput="onCookingMinutesInput" />
-      <view class="label" style="margin-top: 20rpx;">烹饪难度</view>
+      <text class="field-label spaced">烹饪难度</text>
       <view class="tags">
         <view
           class="tag {{difficulty === item.value ? 'active' : ''}}"
@@ -141,20 +205,53 @@
     </view>
   </view>
 
-  <view class="nutrition-bar">
-    <text>预估营养：热 {{nutritionPreview.caloriesText}} · 蛋白 {{nutritionPreview.proteinText}}g · 碳 {{nutritionPreview.carbsText}}g · 脂 {{nutritionPreview.fatText}}g</text>
+  <view class="nutrition-card">
+    <text class="nutrition-title">预估营养</text>
+    <view class="nutrition-grid">
+      <view class="nutrition-item">
+        <text class="nutrition-value">{{nutritionPreview.caloriesText}}</text>
+        <text class="nutrition-label">热量</text>
+      </view>
+      <view class="nutrition-item">
+        <text class="nutrition-value">{{nutritionPreview.proteinText}}</text>
+        <text class="nutrition-label">蛋白 g</text>
+      </view>
+      <view class="nutrition-item">
+        <text class="nutrition-value">{{nutritionPreview.carbsText}}</text>
+        <text class="nutrition-label">碳水 g</text>
+      </view>
+      <view class="nutrition-item">
+        <text class="nutrition-value">{{nutritionPreview.fatText}}</text>
+        <text class="nutrition-label">脂肪 g</text>
+      </view>
+    </view>
   </view>
 
-  <view class="footer-actions">
-    <button class="save-btn" bindtap="onPreview">预览</button>
+  <view class="footer-actions {{focusedStepIndex >= 0 ? 'keyboard-open' : ''}}">
+    <button
+      class="draft-btn"
+      wx:if="{{canSaveDraft}}"
+      hover-class="press-soft"
+      loading="{{savingDraft}}"
+      disabled="{{savingDraft}}"
+      bindtap="onSaveDraft"
+    >存草稿</button>
+    <button
+      class="save-btn"
+      hover-class="press-soft"
+      loading="{{submitting}}"
+      disabled="{{submitting || savingDraft}}"
+      bindtap="onPreview"
+    >{{submitBtnText}}</button>
   </view>
 </view>
 
 <!-- 调整用料弹层：排序 / 删除 -->
 <view class="sheet-mask" wx:if="{{showAdjustSheet}}" bindtap="closeAdjustSheet"></view>
 <view class="sheet" wx:if="{{showAdjustSheet}}">
+  <view class="sheet-handle"></view>
   <view class="sheet-title">调整用料</view>
-  <view class="sheet-tip">可上移、下移或删除；暂不支持拖拽</view>
+  <view class="sheet-tip">可上移、下移或删除</view>
   <view class="sheet-item" wx:for="{{ingredients}}" wx:key="foodId">
     <text class="sheet-name">{{index + 1}}. {{item.foodName}}</text>
     <view class="sheet-ops">
@@ -163,5 +260,5 @@
       <text class="sheet-btn danger" data-index="{{index}}" bindtap="removeIngredient">删除</text>
     </view>
   </view>
-  <button class="sheet-close" bindtap="closeAdjustSheet">完成</button>
+  <button class="sheet-close" hover-class="press-soft" bindtap="closeAdjustSheet">完成</button>
 </view>

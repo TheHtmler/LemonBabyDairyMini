@@ -49,6 +49,71 @@ Page({
     wx.previewImage({ current: url, urls });
   },
 
+  buildPublishPayload(validated = {}) {
+    // 只传必要字段；不传 foodSnapshot，避免包体过大/序列化失败
+    return {
+      title: validated.title || '',
+      description: validated.description || '',
+      coverFileId: validated.coverFileId || '',
+      ingredients: (validated.ingredients || []).map((item) => ({
+        foodId: item.foodId || '',
+        foodName: item.foodName || item.name || '',
+        name: item.foodName || item.name || '',
+        quantity: Number(item.quantity) || 0,
+        unit: item.unit || 'g',
+        amount: item.amount || '',
+        nutrition: item.nutrition
+          ? {
+            calories: Number(item.nutrition.calories) || 0,
+            protein: Number(item.nutrition.protein) || 0,
+            carbs: Number(item.nutrition.carbs) || 0,
+            fat: Number(item.nutrition.fat) || 0,
+            naturalProtein: Number(item.nutrition.naturalProtein) || 0,
+            specialProtein: Number(item.nutrition.specialProtein) || 0,
+            fiber: Number(item.nutrition.fiber) || 0,
+            sodium: Number(item.nutrition.sodium) || 0
+          }
+          : null
+      })),
+      steps: (validated.steps || []).map((step) => ({
+        text: step.text || '',
+        imageFileId: step.imageFileId || ''
+      })),
+      tags: validated.tags || [],
+      searchText: validated.searchText || '',
+      cookingMinutes: validated.cookingMinutes == null ? null : validated.cookingMinutes,
+      difficulty: validated.difficulty || '',
+      totalNutrition: {
+        calories: Number(validated.totalNutrition?.calories) || 0,
+        protein: Number(validated.totalNutrition?.protein) || 0,
+        carbs: Number(validated.totalNutrition?.carbs) || 0,
+        fat: Number(validated.totalNutrition?.fat) || 0
+      },
+      babyName: validated.babyName || '',
+      authorDisplayName: validated.authorDisplayName || '',
+      babyUid: validated.babyUid || '',
+      authorAvatar: validated.authorAvatar || ''
+    };
+  },
+
+  showPublishError(error) {
+    const raw = String(error.errMsg || error.message || '发布失败');
+    console.error('publish failed', error);
+    let content = raw;
+    if (/FUNCTION_NOT_FOUND|-501000/i.test(raw)) {
+      content = '未找到云函数 recipeWallManager，请在开发者工具上传并部署';
+    } else if (/timeout|TIMED_OUT|-504002/i.test(raw)) {
+      content = '云函数超时。请重新部署（已把超时调到 60s），并尽量压缩图片后重试';
+    } else if (/cloud\.function|callFunction:fail/i.test(raw)) {
+      content = `云函数调用失败：${raw.slice(0, 160)}\n\n请确认：\n1. 已上传部署 recipeWallManager\n2. 已创建集合 recipe_wall_posts\n3. 云函数已开通内容安全权限`;
+    }
+    wx.showModal({
+      title: '发布失败',
+      content: content.slice(0, 300),
+      showCancel: false
+    });
+  },
+
   async onPublish() {
     if (this.data.submitting || !this.data.draft?.validated) return;
     const checked = validatePublishPayload(this.data.draft.validated);
@@ -58,29 +123,35 @@ Page({
     }
 
     this.setData({ submitting: true });
+    wx.showLoading({ title: '发布中', mask: true });
     try {
       const res = await wx.cloud.callFunction({
         name: 'recipeWallManager',
-        data: { action: 'publish', ...checked.data }
+        data: {
+          action: 'publish',
+          postId: this.data.draft.postId || '',
+          ...this.buildPublishPayload(checked.data)
+        }
       });
-      const result = res.result || {};
+      const result = res.result;
+      if (!result) {
+        throw new Error('云函数无响应，请重新上传部署 recipeWallManager');
+      }
       if (!result.ok) throw new Error(result.message || '发布失败');
 
       try {
         wx.removeStorageSync(RECIPE_WALL_DRAFT_KEY);
       } catch (e) {}
 
-      wx.showToast({ title: '发布成功', icon: 'success' });
+      const isEdit = !!this.data.draft.postId;
+      wx.showToast({ title: isEdit ? '已保存' : '发布成功', icon: 'success' });
       setTimeout(() => {
-        if (result.postId) {
-          wx.redirectTo({ url: `/pkg-recipe-wall/detail/index?id=${result.postId}` });
-        } else {
-          wx.navigateBack({ delta: 2 });
-        }
+        wx.redirectTo({ url: '/pkg-recipe-wall/list/index' });
       }, 400);
     } catch (error) {
-      wx.showToast({ title: error.message || '发布失败', icon: 'none' });
+      this.showPublishError(error);
     } finally {
+      wx.hideLoading();
       this.setData({ submitting: false });
     }
   }

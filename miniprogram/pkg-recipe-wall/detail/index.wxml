@@ -1,4 +1,4 @@
-<view class="page">
+<view class="page {{post && !unavailable ? 'has-bar' : ''}}">
   <view wx:if="{{loading}}" class="state">加载中...</view>
 
   <view wx:elif="{{unavailable}}" class="state">
@@ -25,12 +25,6 @@
       <view class="meta-row" wx:if="{{cookingText || difficultyLabel}}">
         <text wx:if="{{cookingText}}">⏱ {{cookingText}}</text>
         <text wx:if="{{difficultyLabel}}">难度 {{difficultyLabel}}</text>
-      </view>
-
-      <view class="like-row">
-        <button class="like-btn {{liked ? 'liked' : ''}}" bindtap="onToggleLike">
-          {{liked ? '已赞' : '点赞'}} · {{likeCount}}
-        </button>
       </view>
     </view>
 
@@ -78,6 +72,20 @@
         />
         <text class="step-text">{{item.text}}</text>
       </view>
+    </view>
+
+    <view class="bottom-bar">
+      <view
+        class="like-bar {{liked ? 'liked' : ''}}"
+        wx:if="{{post.status !== 'draft'}}"
+        bindtap="onToggleLike"
+      >
+        <view class="like-icon {{liked ? 'on' : ''}}"></view>
+        <text class="like-bar-text">{{liked ? '已赞' : '点赞'}}</text>
+        <text class="like-num">{{likeCount}}</text>
+      </view>
+      <view class="bar-spacer" wx:else></view>
+      <view class="edit-bar" wx:if="{{canEdit}}" bindtap="goEdit">编辑</view>
     </view>
   </block>
 </view>

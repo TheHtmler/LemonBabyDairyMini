@@ -4,7 +4,7 @@ const DIFFICULTY_OPTIONS = [
   { value: 'hard', label: '较难' }
 ];
 
-// 仅作快捷建议，不作为白名单限制；面向 0-10 岁常见饮食场景的通用词
+// 仅作快捷建议，不作为白名单限制；辅食/日常喂养场景通用词
 const RECIPE_WALL_TAG_SUGGESTIONS = [
   '辅食',
   '低蛋白',
@@ -131,6 +131,116 @@ function normalizeStep(raw = {}) {
   return { text, imageFileId };
 }
 
+function normalizeDraftIngredient(raw = {}) {
+  const foodId = trimText(raw.foodId, 64);
+  const foodName = trimText(raw.foodName || raw.name, 40);
+  if (!foodName) return null;
+  const unit = trimText(raw.unit, 10) || 'g';
+  const quantityNum = Math.max(0, Number(raw.quantity) || 0);
+  const nutrition = raw.nutrition && typeof raw.nutrition === 'object'
+    ? {
+      calories: Number(raw.nutrition.calories) || 0,
+      protein: Number(raw.nutrition.protein) || 0,
+      carbs: Number(raw.nutrition.carbs) || 0,
+      fat: Number(raw.nutrition.fat) || 0,
+      naturalProtein: Number(raw.nutrition.naturalProtein) || 0,
+      specialProtein: Number(raw.nutrition.specialProtein) || 0,
+      fiber: Number(raw.nutrition.fiber) || 0,
+      sodium: Number(raw.nutrition.sodium) || 0
+    }
+    : null;
+  const foodSnapshot = raw.foodSnapshot && typeof raw.foodSnapshot === 'object'
+    ? raw.foodSnapshot
+    : null;
+  return {
+    foodId,
+    foodName,
+    name: foodName,
+    quantity: quantityNum,
+    unit,
+    amount: `${quantityNum}${unit}`,
+    nutrition,
+    foodSnapshot
+  };
+}
+
+function normalizeDraftStep(raw = {}) {
+  const text = trimText(raw.text, 500);
+  const imageFileId = trimText(raw.imageFileId, 300);
+  if (!text && !imageFileId) return null;
+  return { text, imageFileId };
+}
+
+/** 存草稿：仅标题必填，其余字段宽松 normalize */
+function normalizeDraftPayload(input = {}) {
+  const title = trimText(input.title, 40);
+  if (!title) return { ok: false, message: '请填写标题' };
+
+  const description = trimText(input.description, 500);
+  const coverFileId = trimText(input.coverFileId, 300);
+  const babyName = trimText(input.babyName, 20);
+  const authorDisplayName = trimText(input.authorDisplayName, 12);
+  const babyUid = trimText(input.babyUid, 64);
+  const authorAvatar = trimText(input.authorAvatar, 300);
+  const ingredients = (Array.isArray(input.ingredients) ? input.ingredients : [])
+    .map(normalizeDraftIngredient)
+    .filter(Boolean);
+  const steps = (Array.isArray(input.steps) ? input.steps : [])
+    .map(normalizeDraftStep)
+    .filter(Boolean);
+
+  let tagResult = normalizeTags(input.tags);
+  if (!tagResult.ok) {
+    const tags = (Array.isArray(input.tags) ? input.tags : [])
+      .map(normalizeTagItem)
+      .filter(Boolean);
+    tagResult = { ok: true, tags: [...new Set(tags)].slice(0, RECIPE_WALL_TAG_MAX_COUNT) };
+  }
+
+  const cookingMinutesRaw = input.cookingMinutes;
+  let cookingMinutes = null;
+  if (cookingMinutesRaw !== '' && cookingMinutesRaw !== null && cookingMinutesRaw !== undefined) {
+    const minutes = Math.round(Number(cookingMinutesRaw));
+    if (Number.isFinite(minutes) && minutes > 0) {
+      cookingMinutes = Math.min(24 * 60, minutes);
+    }
+  }
+
+  const difficulty = trimText(input.difficulty, 20);
+  const difficultyOk = !difficulty || DIFFICULTY_OPTIONS.some((item) => item.value === difficulty);
+  if (!difficultyOk) {
+    // 草稿忽略非法难度
+  }
+  const safeDifficulty = difficultyOk ? difficulty : '';
+  const totalNutrition = normalizeTotalNutrition(input.totalNutrition);
+  const searchText = buildSearchText({
+    title,
+    description,
+    ingredients,
+    tags: tagResult.tags
+  });
+
+  return {
+    ok: true,
+    data: {
+      title,
+      description,
+      coverFileId,
+      ingredients,
+      steps,
+      tags: tagResult.tags,
+      searchText,
+      cookingMinutes,
+      difficulty: safeDifficulty,
+      totalNutrition,
+      babyName,
+      authorDisplayName,
+      babyUid,
+      authorAvatar
+    }
+  };
+}
+
 function normalizeTotalNutrition(raw = {}) {
   if (!raw || typeof raw !== 'object') {
     return {
@@ -184,7 +294,22 @@ function validatePublishPayload(input = {}) {
   if (!coverFileId) return { ok: false, message: '请上传成品图片' };
   if (!title) return { ok: false, message: '请填写标题' };
   if (!description) return { ok: false, message: '请填写菜谱描述' };
-  if (!ingredients.length) return { ok: false, message: '请至少添加一种用料（从食物库选择）' };
+
+  // 任一已选用料缺份量都拦截（不能只靠 normalize 后 length，否则会 silently 丢掉未填份量的项）
+  const rawIngredients = Array.isArray(input.ingredients) ? input.ingredients : [];
+  const hasIngredientWithoutQty = rawIngredients.some((item) => {
+    const name = trimText(item.foodName || item.name, 40);
+    const foodId = trimText(item.foodId, 64);
+    if (!name && !foodId) return false;
+    const qty = Math.max(0, Number(item.quantity) || 0);
+    return !(qty > 0);
+  });
+  if (hasIngredientWithoutQty) {
+    return { ok: false, message: '请填写用料份量' };
+  }
+  if (!ingredients.length) {
+    return { ok: false, message: '请至少添加一种用料（从食物库选择）' };
+  }
   if (ingredients.some((item) => !item.foodId)) {
     return { ok: false, message: '用料需从食物库选择' };
   }
@@ -225,7 +350,11 @@ function mapPostForCard(post = {}, options = {}) {
     ? options.likedPostIds
     : new Set(options.likedPostIds || []);
   const id = post._id || '';
-  const tags = Array.isArray(post.tags) ? post.tags : [];
+  const tags = (Array.isArray(post.tags) ? post.tags : [])
+    .map((tag) => String(tag || '').trim())
+    .filter(Boolean);
+  // 封面角标：卡片空间有限，最多展示前 2 个用户标签
+  const coverTags = tags.slice(0, 2);
   return {
     id,
     title: post.title || '',
@@ -236,7 +365,8 @@ function mapPostForCard(post = {}, options = {}) {
     status: post.status || '',
     description: post.description || '',
     tags,
-    tagText: tags[0] || '',
+    coverTags,
+    tagText: coverTags[0] || '',
     createdAt: post.createdAt || null
   };
 }
@@ -255,6 +385,7 @@ module.exports = {
   normalizeIngredient,
   normalizeStep,
   normalizeTotalNutrition,
+  normalizeDraftPayload,
   validatePublishPayload,
   mapPostForCard
 };

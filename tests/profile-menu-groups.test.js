@@ -25,7 +25,7 @@ test('profile menu is grouped by functional modules', () => {
   assert.ok(groups.length >= 5);
   assert.deepEqual(
     groups.map((group) => group.title),
-    ['账号与宝宝', '喂养管理', '数据与成长', '帮助与社区', '关于', '开发者', '账号操作']
+    ['账号与宝宝', '喂养管理', '数据与成长', '帮助与支持', '关于', '开发者', '账号操作']
   );
 
   const accountGroup = groups.find((group) => group.id === 'account');

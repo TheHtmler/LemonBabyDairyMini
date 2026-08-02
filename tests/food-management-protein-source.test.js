@@ -262,7 +262,7 @@ test('food management separates system and mine libraries before grouping', () =
 
   instance.switchLibraryScope({ currentTarget: { dataset: { scope: 'system' } } });
   assert.equal(instance.data.activeLibraryScope, 'system');
-  assert.equal(instance.data.searchQuery, '');
+  assert.equal(instance.data.searchQuery, '小麦');
   assert.deepEqual(instance.data.activeFoods.map(item => item._id), ['sys-1']);
 });
 

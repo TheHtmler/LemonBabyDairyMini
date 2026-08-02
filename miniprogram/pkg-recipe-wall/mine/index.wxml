@@ -1,22 +1,3 @@
 <view class="page">
-  <view wx:if="{{loading}}" class="state">加载中...</view>
-
-  <view wx:elif="{{empty}}" class="state">
-    <text class="empty-title">还没有发布过</text>
-    <text class="empty-tip">去食谱墙分享第一条食谱吧</text>
-  </view>
-
-  <view wx:else class="list">
-    <view class="card" wx:for="{{posts}}" wx:key="id">
-      <image class="cover" src="{{item.coverFileId}}" mode="aspectFill" data-id="{{item.id}}" bindtap="goDetail" />
-      <view class="body">
-        <view class="title-row">
-          <text class="title" data-id="{{item.id}}" bindtap="goDetail">{{item.title}}</text>
-          <text class="status {{item.status === 'taken_down' ? 'down' : ''}}">{{item.statusText}}</text>
-        </view>
-        <text class="meta">{{item.authorLabel}} · 赞 {{item.likeCount}}</text>
-        <button class="delete-btn" data-id="{{item.id}}" bindtap="onDelete">删除</button>
-      </view>
-    </view>
-  </view>
+  <view class="state">正在跳转…</view>
 </view>
