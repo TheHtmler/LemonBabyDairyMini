@@ -31,6 +31,8 @@
 
 - 用户：`我的` → `喂养管理` → `食谱墙`
 - 开发者：`我的` → `食谱墙管理`
+- **当前状态**：入口已隐藏（`miniprogram/config/features.js` → `RECIPE_WALL_MENU_VISIBLE = false`）  
+  原因：个人主体未开放 UGC/社交类目。换企业主体并完成类目后，改为 `true` 再发版即可恢复。
 
 ## 发布页说明（当前）
 

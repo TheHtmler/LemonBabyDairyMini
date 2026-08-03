@@ -43,3 +43,14 @@ test('app.json no longer registers onboarding page after profile cleanup', () =>
   assert.ok(!appConfig.pages.includes('pages/onboarding/index'));
   assert.ok(!fs.existsSync('miniprogram/pages/onboarding/index.js'));
 });
+
+test('recipe wall profile entries stay defined but gated by features config', () => {
+  const page = loadProfilePage();
+  const features = fs.readFileSync('miniprogram/config/features.js', 'utf8');
+  assert.match(features, /RECIPE_WALL_MENU_VISIBLE\s*=\s*false/);
+
+  const feeding = page.data.menuGroups.find((group) => group.id === 'feeding');
+  const developer = page.data.menuGroups.find((group) => group.id === 'developer');
+  assert.ok(feeding.items.some((item) => item.name === '食谱墙' && item.recipeWallEntry));
+  assert.ok(developer.items.some((item) => item.name === '食谱墙管理' && item.recipeWallEntry));
+});
