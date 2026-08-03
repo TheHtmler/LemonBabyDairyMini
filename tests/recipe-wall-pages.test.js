@@ -23,14 +23,44 @@ test('app.json registers recipe-wall pages including preview', () => {
 
 test('profile menu links to recipe wall under feeding group', () => {
   const js = read('miniprogram/pages/profile/index.js');
+  const features = read('miniprogram/config/features.js');
   const feedingStart = js.indexOf("id: 'feeding'");
   const supportStart = js.indexOf("id: 'support'");
   assert.ok(feedingStart >= 0 && supportStart > feedingStart);
   const feedingBlock = js.slice(feedingStart, supportStart);
   assert.match(feedingBlock, /name:\s*['"]食谱墙['"]/);
   assert.match(feedingBlock, /\/pkg-recipe-wall\/list\/index/);
+  assert.match(feedingBlock, /recipeWallEntry:\s*true/);
+  assert.match(js, /RECIPE_WALL_MENU_VISIBLE/);
+  assert.match(features, /RECIPE_WALL_MENU_VISIBLE\s*=\s*false/);
   const supportBlock = js.slice(supportStart, js.indexOf("id: 'about'"));
   assert.doesNotMatch(supportBlock, /name:\s*['"]食谱墙['"]/);
+});
+
+test('recipe wall menu entries are hidden while feature flag is off', () => {
+  const page = (() => {
+    const pagePath = require.resolve('../miniprogram/pages/profile/index.js');
+    delete require.cache[pagePath];
+    delete require.cache[require.resolve('../miniprogram/config/features.js')];
+    let pageConfig = null;
+    const previousPage = global.Page;
+    global.Page = (config) => {
+      pageConfig = config;
+    };
+    require(pagePath);
+    global.Page = previousPage;
+    return pageConfig;
+  })();
+
+  const { RECIPE_WALL_MENU_VISIBLE } = require('../miniprogram/config/features');
+  assert.equal(RECIPE_WALL_MENU_VISIBLE, false);
+
+  const source = read('miniprogram/pages/profile/index.js');
+  // canShowMenuItem 会按 recipeWallEntry 过滤；可见菜单不应包含食谱墙
+  assert.match(source, /item\.recipeWallEntry && !RECIPE_WALL_MENU_VISIBLE/);
+  assert.ok(page.data.menuGroups.some((group) => (
+    (group.items || []).some((item) => item.name === '食谱墙' && item.recipeWallEntry)
+  )));
 });
 
 test('list page loads via recipeWallManager list action', () => {
