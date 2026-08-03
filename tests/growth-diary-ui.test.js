@@ -72,8 +72,10 @@ test('growth diary supports short video media pick and list covers', () => {
   assert.match(diaryJs, /hasVideo\s*\?\s*\['image'\]\s*:\s*\['image',\s*'video'\]/);
   assert.match(diaryJs, /listPreviewFileIds/);
   assert.match(diaryJs, /MAX_VIDEO_DURATION_SEC/);
+  assert.match(diaryJs, /maxVideoDurationSec:\s*MAX_VIDEO_DURATION_SEC/);
   assert.doesNotMatch(diaryJs, /resolveCloudTempUrls\([^\)]*videoFileId/);
   assert.match(diaryWxml, /form\.media/);
+  assert.match(diaryWxml, /maxVideoDurationSec/);
   assert.match(diaryWxml, /mediaThumbs/);
   assert.match(diaryWxml, /video-badge/);
   assert.match(detailWxml, /<video/);

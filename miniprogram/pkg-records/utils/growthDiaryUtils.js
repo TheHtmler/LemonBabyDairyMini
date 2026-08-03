@@ -3,8 +3,8 @@ const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
 const MAX_DIARY_PHOTOS = 3;
 const MAX_DIARY_MEDIA = 3;
 const MAX_DIARY_VIDEOS = 1;
-const MAX_VIDEO_DURATION_SEC = 15;
-const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_DURATION_SEC = 30;
+const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
 const MAX_AUTHOR_ROLE_LEN = 5;
 const DIARY_ROLE_PRESETS = ['妈妈', '爸爸', '奶奶', '爷爷', '外婆', '外公'];
 

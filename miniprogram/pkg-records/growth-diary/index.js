@@ -132,6 +132,7 @@ Page({
     showForm: false,
     editingId: '',
     maxMedia: MAX_DIARY_MEDIA,
+    maxVideoDurationSec: MAX_VIDEO_DURATION_SEC,
     maxRoleLen: MAX_AUTHOR_ROLE_LEN,
     rolePresets: DIARY_ROLE_PRESETS,
     isCreator: false,

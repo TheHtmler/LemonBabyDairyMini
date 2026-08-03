@@ -53,7 +53,8 @@ function validateDiaryVideoLocal({
     return { ok: false, message: '无法读取视频大小' };
   }
   if (size > MAX_VIDEO_BYTES) {
-    return { ok: false, message: '视频不能超过 10MB' };
+    const maxMb = Math.round(MAX_VIDEO_BYTES / (1024 * 1024));
+    return { ok: false, message: `视频不能超过 ${maxMb}MB` };
   }
   if (requireCover && !String(coverLocalPath || '').trim()) {
     return { ok: false, message: '无法生成封面，请换一段视频' };

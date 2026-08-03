@@ -31,8 +31,8 @@ test('MAX_DIARY_PHOTOS is 3', () => {
 test('media caps match short-video design', () => {
   assert.equal(MAX_DIARY_MEDIA, 3);
   assert.equal(MAX_DIARY_VIDEOS, 1);
-  assert.equal(MAX_VIDEO_DURATION_SEC, 15);
-  assert.equal(MAX_VIDEO_BYTES, 10 * 1024 * 1024);
+  assert.equal(MAX_VIDEO_DURATION_SEC, 30);
+  assert.equal(MAX_VIDEO_BYTES, 20 * 1024 * 1024);
 });
 
 test('normalizeMedia maps legacy photos to image media', () => {

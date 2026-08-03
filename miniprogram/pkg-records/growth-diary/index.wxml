@@ -127,7 +127,7 @@
       </view>
 
       <view class="form-item">
-        <text class="form-label">配图/视频（最多 {{maxMedia}} 个，视频限 1 个且 ≤15 秒）</text>
+        <text class="form-label">配图/视频（最多 {{maxMedia}} 个，视频限 1 个且 ≤{{maxVideoDurationSec}} 秒）</text>
         <view class="photo-grid">
           <view class="photo-item" wx:for="{{form.media}}" wx:key="key">
             <image class="photo-thumb" src="{{item.previewUrl}}" mode="aspectFill" />
