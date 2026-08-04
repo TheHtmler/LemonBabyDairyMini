@@ -890,14 +890,14 @@
 
 .protein-amount-grid {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 12rpx;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.7fr) minmax(0, 1.15fr);
+  gap: 10rpx;
   align-items: stretch;
 }
 
 .protein-amount-item {
   min-width: 0;
-  padding: 14rpx 12rpx 12rpx;
+  padding: 14rpx 10rpx 12rpx;
   border-radius: 16rpx;
   background: #FFF9E8;
   border: 1rpx solid #F4E8C3;
@@ -907,6 +907,7 @@
   align-items: flex-start;
   justify-content: flex-start;
   text-align: left;
+  overflow: hidden;
 }
 
 .protein-amount-label {
@@ -921,33 +922,37 @@
 .protein-amount-value-row {
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0;
+  flex-wrap: nowrap;
+  max-width: 100%;
   min-height: 36rpx;
+  white-space: nowrap;
 }
 
 .protein-amount-grams {
-  font-size: 30rpx;
+  font-size: 28rpx;
   color: #2F2A12;
   font-weight: 700;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .protein-amount-ratio {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #9B8A5F;
   font-weight: 500;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .protein-amount-nested {
   margin-top: 8rpx;
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
-  width: 100%;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .protein-amount-nested-label {
