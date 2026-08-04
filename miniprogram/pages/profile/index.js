@@ -1,5 +1,4 @@
 const { isDeveloperOpenid } = require('../../config/developer');
-const { RECIPE_WALL_MENU_VISIBLE } = require('../../config/features');
 
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 const CREATOR_CANCEL_CONFIRM_TEXT = '确认注销';
@@ -11,8 +10,6 @@ function canShowMenuItem(item = {}, context = {}) {
   if (item.showForCreator && userRole !== 'creator') return false;
   if (item.showForParticipant && userRole !== 'participant') return false;
   if (item.showForDeveloper && !isDeveloper) return false;
-  // 食谱墙入口：个人主体阶段隐藏，企业主体后再开（见 config/features.js）
-  if (item.recipeWallEntry && !RECIPE_WALL_MENU_VISIBLE) return false;
   return true;
 }
 
@@ -77,14 +74,6 @@ const MENU_GROUPS = [
         icon: 'add',
         path: '/pkg-records/recipe-management/index',
         description: '维护成品菜配方，按食用克数记录营养'
-      },
-      {
-        id: 23,
-        name: '食谱墙',
-        icon: 'add',
-        path: '/pkg-recipe-wall/list/index',
-        description: '分享宝宝辅食与低蛋白友好食谱',
-        recipeWallEntry: true
       },
       {
         id: 22,
@@ -192,15 +181,6 @@ const MENU_GROUPS = [
         path: '/pkg-misc/developer-config/index',
         description: '公告、OCR 白名单等开发者配置',
         showForDeveloper: true
-      },
-      {
-        id: 24,
-        name: '食谱墙管理',
-        icon: 'setting',
-        path: '/pkg-recipe-wall/admin/index',
-        description: '下架违规食谱',
-        showForDeveloper: true,
-        recipeWallEntry: true
       }
     ]
   },

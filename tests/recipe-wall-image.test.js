@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
   RECIPE_WALL_IMAGE_MAX_BYTES,
   compressRecipeWallImage
-} = require('../miniprogram/pkg-recipe-wall/utils/recipeWallImage');
+} = require('../deferred/pkg-recipe-wall/utils/recipeWallImage');
 
 test('compressRecipeWallImage keeps small images unchanged', async () => {
   const res = await compressRecipeWallImage('wxfile://small.jpg', {

@@ -76,7 +76,16 @@
   "compileType": "miniprogram",
   "srcMiniprogramRoot": "miniprogram/",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "pkg-recipe-wall"
+      },
+      {
+        "type": "file",
+        "value": "utils/recipeWallUtils.js"
+      }
+    ],
     "include": []
   },
   "editorSetting": {

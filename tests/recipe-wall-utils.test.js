@@ -9,7 +9,7 @@ const {
   validatePublishPayload,
   normalizeDraftPayload,
   mapPostForCard
-} = require('../miniprogram/utils/recipeWallUtils');
+} = require('../deferred/utils/recipeWallUtils');
 
 test('formatRecipeWallAuthorLabel joins baby name and display name', () => {
   assert.equal(
