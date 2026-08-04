@@ -391,6 +391,96 @@ test('data-analysis exposes premium and regular protein ratio chart data from in
   assert.equal(instance.data.chartData.regularProteinRatio[0], 60);
   assert.equal(instance.data.statistics.avgPremiumProteinRatio, 40);
   assert.equal(instance.data.statistics.avgRegularProteinRatio, 60);
+  assert.deepEqual(instance.data.statistics.proteinAmountRows, [
+    { key: 'total', label: '总蛋白', gramsText: '5g', ratioText: '' },
+    {
+      key: 'natural',
+      label: '天然蛋白',
+      gramsText: '5g',
+      ratioText: '100%',
+      nested: { label: '优质蛋白', gramsText: '2g', ratioText: '40%' }
+    },
+    { key: 'special', label: '特殊蛋白', gramsText: '0g', ratioText: '0%' }
+  ]);
+  assert.equal(instance.data.statistics.proteinAmountFootnote, '天然/特殊占总蛋白 · 优质占天然');
+});
+
+test('data-analysis averages protein amount rows across protein days', () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page);
+  const startDate = new Date('2026-03-20T00:00:00+08:00');
+  const endDate = new Date('2026-03-21T00:00:00+08:00');
+
+  withMutedConsole(() => instance.processAnalysisData([
+    {
+      date: startDate,
+      basicInfo: { weight: 5 },
+      intakes: [
+        {
+          type: 'food',
+          quantity: '10',
+          proteinQuality: 'premium',
+          nutrition: { calories: 10, protein: 2 },
+          naturalProtein: 2,
+          specialProtein: 0
+        },
+        {
+          type: 'food',
+          quantity: '10',
+          proteinQuality: 'regular',
+          nutrition: { calories: 10, protein: 2 },
+          naturalProtein: 2,
+          specialProtein: 0
+        },
+        {
+          type: 'food',
+          quantity: '10',
+          proteinSource: 'special',
+          nutrition: { calories: 10, protein: 2 },
+          naturalProtein: 0,
+          specialProtein: 2
+        }
+      ]
+    },
+    {
+      date: endDate,
+      basicInfo: { weight: 5 },
+      intakes: [
+        {
+          type: 'food',
+          quantity: '10',
+          proteinQuality: 'premium',
+          nutrition: { calories: 10, protein: 4 },
+          naturalProtein: 4,
+          specialProtein: 0
+        },
+        {
+          type: 'food',
+          quantity: '10',
+          proteinSource: 'special',
+          nutrition: { calories: 10, protein: 4 },
+          naturalProtein: 0,
+          specialProtein: 4
+        }
+      ]
+    }
+  ], startDate, endDate));
+
+  // Day1: total 6 (natural 4 / special 2 / premium 2)
+  // Day2: total 8 (natural 4 / special 4 / premium 4)
+  // avg: total 7, natural 4, special 3, premium 3
+  // natural 4/7≈57.1%, special 3/7≈42.9%, premium 3/4=75%
+  assert.deepEqual(instance.data.statistics.proteinAmountRows, [
+    { key: 'total', label: '总蛋白', gramsText: '7g', ratioText: '' },
+    {
+      key: 'natural',
+      label: '天然蛋白',
+      gramsText: '4g',
+      ratioText: '57.1%',
+      nested: { label: '优质蛋白', gramsText: '3g', ratioText: '75%' }
+    },
+    { key: 'special', label: '特殊蛋白', gramsText: '3g', ratioText: '42.9%' }
+  ]);
 });
 
 test('data-analysis computes average macro energy ratios for overview', () => {

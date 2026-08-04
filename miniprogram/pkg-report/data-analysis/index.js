@@ -114,6 +114,54 @@ function calculateMacroEnergyRatios({ protein = 0, carbs = 0, fat = 0 } = {}) {
   };
 }
 
+function formatProteinAmountDisplay(value, precision = 2) {
+  const num = roundNumber(Number(value) || 0, precision);
+  return Number.isInteger(num) ? String(num) : String(num);
+}
+
+const PROTEIN_AMOUNT_FOOTNOTE = '天然/特殊占总蛋白 · 优质占天然';
+
+function buildProteinAmountRows({
+  avgTotalProtein = 0,
+  avgNaturalProtein = 0,
+  avgPremiumProtein = 0,
+  avgSpecialProtein = 0
+} = {}) {
+  const total = roundNumber(Number(avgTotalProtein) || 0, 2);
+  const natural = roundNumber(Number(avgNaturalProtein) || 0, 2);
+  const premium = roundNumber(Number(avgPremiumProtein) || 0, 2);
+  const special = roundNumber(Number(avgSpecialProtein) || 0, 2);
+  const naturalRatio = total > 0 ? roundNumber((natural / total) * 100, 1) : 0;
+  const specialRatio = total > 0 ? roundNumber((special / total) * 100, 1) : 0;
+  const premiumRatio = natural > 0 ? roundNumber((premium / natural) * 100, 1) : 0;
+
+  return [
+    {
+      key: 'total',
+      label: '总蛋白',
+      gramsText: `${formatProteinAmountDisplay(total)}g`,
+      ratioText: ''
+    },
+    {
+      key: 'natural',
+      label: '天然蛋白',
+      gramsText: `${formatProteinAmountDisplay(natural)}g`,
+      ratioText: `${formatProteinAmountDisplay(naturalRatio, 1)}%`,
+      nested: {
+        label: '优质蛋白',
+        gramsText: `${formatProteinAmountDisplay(premium)}g`,
+        ratioText: `${formatProteinAmountDisplay(premiumRatio, 1)}%`
+      }
+    },
+    {
+      key: 'special',
+      label: '特殊蛋白',
+      gramsText: `${formatProteinAmountDisplay(special)}g`,
+      ratioText: `${formatProteinAmountDisplay(specialRatio, 1)}%`
+    }
+  ];
+}
+
 function calculateAgeInMonths(birthday, referenceDate = new Date()) {
   if (!birthday) return null;
   const birthDate = new Date(birthday);
@@ -713,6 +761,13 @@ Page({
       avgTotalProteinCoefficient: 0, // 平均总蛋白系数
       avgPremiumProteinRatio: 0, // 平均优质蛋白占比
       avgRegularProteinRatio: 0, // 平均普通蛋白占比
+      avgPremiumProtein: 0, // 平均优质蛋白克重 (g/日)
+      avgRegularProtein: 0, // 平均普通蛋白克重 (g/日)
+      avgTotalProtein: 0, // 平均总蛋白克重 (g/日)
+      avgNaturalProtein: 0, // 平均天然蛋白克重 (g/日)
+      avgSpecialProtein: 0, // 平均特殊蛋白克重 (g/日)
+      proteinAmountRows: [], // 蛋白结构克重/比例行
+      proteinAmountFootnote: PROTEIN_AMOUNT_FOOTNOTE,
       avgProteinEnergyRatio: 0, // 平均蛋白供能比
       avgCarbsEnergyRatio: 0, // 平均碳水供能比
       avgFatEnergyRatio: 0, // 平均脂肪供能比
@@ -1473,7 +1528,12 @@ Page({
     let coefficientDays = 0;
     let totalPremiumProteinRatio = 0;
     let totalRegularProteinRatio = 0;
+    let totalPremiumProtein = 0;
+    let totalRegularProtein = 0;
+    let totalNaturalProteinGrams = 0;
+    let totalSpecialProteinGrams = 0;
     let proteinQualityDays = 0;
+    let proteinAmountDays = 0;
     let totalProteinEnergyRatio = 0;
     let totalCarbsEnergyRatio = 0;
     let totalFatEnergyRatio = 0;
@@ -1577,7 +1637,17 @@ Page({
         if (dayQualityProtein > 0) {
           totalPremiumProteinRatio += dayPremiumProteinRatio;
           totalRegularProteinRatio += dayRegularProteinRatio;
+          totalRegularProtein += Number(summary.regularProtein) || 0;
           proteinQualityDays++;
+        }
+
+        const dayNaturalProteinGrams = Number(summary.naturalProtein) || 0;
+        const daySpecialProteinGrams = Number(summary.specialProtein) || 0;
+        if (dayNaturalProteinGrams > 0 || daySpecialProteinGrams > 0) {
+          totalNaturalProteinGrams += dayNaturalProteinGrams;
+          totalSpecialProteinGrams += daySpecialProteinGrams;
+          totalPremiumProtein += Number(summary.premiumProtein) || 0;
+          proteinAmountDays++;
         }
 
         if (macroRatios.protein > 0 || macroRatios.carbs > 0 || macroRatios.fat > 0) {
@@ -1643,6 +1713,25 @@ Page({
     const avgRegularProteinRatio = proteinQualityDays > 0
       ? roundNumber(totalRegularProteinRatio / proteinQualityDays, 1)
       : 0;
+    const avgRegularProtein = proteinQualityDays > 0
+      ? roundNumber(totalRegularProtein / proteinQualityDays, 2)
+      : 0;
+    const avgNaturalProtein = proteinAmountDays > 0
+      ? roundNumber(totalNaturalProteinGrams / proteinAmountDays, 2)
+      : 0;
+    const avgSpecialProteinAmount = proteinAmountDays > 0
+      ? roundNumber(totalSpecialProteinGrams / proteinAmountDays, 2)
+      : 0;
+    const avgPremiumProtein = proteinAmountDays > 0
+      ? roundNumber(totalPremiumProtein / proteinAmountDays, 2)
+      : 0;
+    const avgTotalProtein = roundNumber(avgNaturalProtein + avgSpecialProteinAmount, 2);
+    const proteinAmountRows = buildProteinAmountRows({
+      avgTotalProtein,
+      avgNaturalProtein,
+      avgPremiumProtein,
+      avgSpecialProtein: avgSpecialProteinAmount
+    });
     const avgProteinEnergyRatio = macroRatioDays > 0
       ? roundNumber(totalProteinEnergyRatio / macroRatioDays, 1)
       : 0;
@@ -1698,6 +1787,13 @@ Page({
         avgTotalProteinCoefficient,
         avgPremiumProteinRatio,
         avgRegularProteinRatio,
+        avgPremiumProtein,
+        avgRegularProtein,
+        avgTotalProtein,
+        avgNaturalProtein,
+        avgSpecialProtein: avgSpecialProteinAmount,
+        proteinAmountRows,
+        proteinAmountFootnote: PROTEIN_AMOUNT_FOOTNOTE,
         avgProteinEnergyRatio,
         avgCarbsEnergyRatio,
         avgFatEnergyRatio,

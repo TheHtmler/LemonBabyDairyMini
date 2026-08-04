@@ -867,6 +867,128 @@
   gap: 16rpx;
 }
 
+.stat-mini-grid.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+}
+
+.stat-mini-grid.cols-3 .stat-item {
+  padding: 16rpx 12rpx;
+}
+
+.stat-mini-grid.cols-3 .stat-value {
+  font-size: 32rpx;
+}
+
+.stat-mini-grid.cols-3 .stat-range {
+  font-size: 18rpx;
+}
+
+.protein-amount-block {
+  margin-top: 16rpx;
+}
+
+.protein-amount-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 12rpx;
+  align-items: stretch;
+}
+
+.protein-amount-item {
+  min-width: 0;
+  padding: 14rpx 12rpx 12rpx;
+  border-radius: 16rpx;
+  background: #FFF9E8;
+  border: 1rpx solid #F4E8C3;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.protein-amount-label {
+  display: block;
+  width: 100%;
+  font-size: 20rpx;
+  color: #8D805F;
+  margin-bottom: 8rpx;
+  white-space: nowrap;
+}
+
+.protein-amount-value-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0;
+  min-height: 36rpx;
+}
+
+.protein-amount-grams {
+  font-size: 30rpx;
+  color: #2F2A12;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.protein-amount-ratio {
+  font-size: 20rpx;
+  color: #9B8A5F;
+  font-weight: 500;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.protein-amount-nested {
+  margin-top: 8rpx;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.protein-amount-nested-label {
+  font-size: 20rpx;
+  color: #7A6A3A;
+  line-height: 1.3;
+}
+
+.protein-amount-nested-grams {
+  font-size: 22rpx;
+  color: #2F7D32;
+  font-weight: 700;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.protein-amount-nested-ratio {
+  font-size: 18rpx;
+  color: #8AA88B;
+  font-weight: 500;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.protein-amount-footnote {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: #9B8A5F;
+  text-align: left;
+}
+
+.protein-amount-item.natural .protein-amount-grams {
+  color: #3F8F4A;
+}
+
+.protein-amount-item.special .protein-amount-grams {
+  color: #2F6FBF;
+}
+
 .stat-item {
   background: #FFF9E8;
   border: 1rpx solid #F4E8C3;

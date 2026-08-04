@@ -31,7 +31,18 @@ test('data-analysis page uses grouped dashboard layout', () => {
   assert.match(wxml, /\{\{statistics\.treatmentCalorieRatio\}\}%/);
   assert.match(wxml, /stat-section-title">蛋白结构/);
   assert.match(wxml, /天然蛋白目标：\{\{referenceRanges\.naturalProteinCoefficient\}\}/);
+  assert.match(wxml, /protein-amount-grid/);
+  assert.match(wxml, /proteinAmountRows/);
+  assert.match(wxml, /gramsText/);
+  assert.match(wxml, /ratioText/);
+  assert.match(wxml, /item\.nested/);
+  assert.match(wxml, /protein-amount-ratio/);
+  assert.match(wxml, /proteinAmountFootnote/);
+  assert.doesNotMatch(wxml, /普通蛋白/);
+  assert.doesNotMatch(wxml, /\{\{statistics\.avgRegularProteinRatio\}\}/);
   assert.match(wxml, /stat-section-title">营养供能比例/);
+  assert.match(wxml, /stat-mini-grid cols-3/);
+  assert.match(wxss, /\.stat-mini-grid\.cols-3\s*\{/);
   assert.match(wxml, /\{\{referenceRanges\.proteinEnergy\}\}/);
   assert.match(wxml, /\{\{referenceRanges\.carbsEnergy\}\}/);
   assert.match(wxml, /\{\{referenceRanges\.fatEnergy\}\}/);

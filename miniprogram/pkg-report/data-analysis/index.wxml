@@ -143,19 +143,28 @@
               <text class="stat-value">{{statistics.avgProteinRatio}}</text>
               <text class="stat-range">天然:特殊，特奶按医嘱补充</text>
             </view>
-            <view class="stat-item">
-              <text class="stat-label">优质蛋白</text>
-              <text class="stat-value natural">{{statistics.avgPremiumProteinRatio}}<text class="stat-unit">%</text></text>
+          </view>
+          <view class="protein-amount-block" wx:if="{{statistics.proteinAmountRows.length}}">
+            <view class="protein-amount-grid">
+              <view class="protein-amount-item {{item.key}}" wx:for="{{statistics.proteinAmountRows}}" wx:key="key">
+                <text class="protein-amount-label">{{item.label}}</text>
+                <view class="protein-amount-value-row">
+                  <text class="protein-amount-grams">{{item.gramsText}}</text>
+                  <text class="protein-amount-ratio" wx:if="{{item.ratioText}}">/{{item.ratioText}}</text>
+                </view>
+                <view class="protein-amount-nested" wx:if="{{item.nested}}">
+                  <text class="protein-amount-nested-label">{{item.nested.label}}：</text>
+                  <text class="protein-amount-nested-grams">{{item.nested.gramsText}}</text>
+                  <text class="protein-amount-nested-ratio">/{{item.nested.ratioText}}</text>
+                </view>
+              </view>
             </view>
-            <view class="stat-item">
-              <text class="stat-label">普通蛋白</text>
-              <text class="stat-value regular">{{statistics.avgRegularProteinRatio}}<text class="stat-unit">%</text></text>
-            </view>
+            <text class="protein-amount-footnote">{{statistics.proteinAmountFootnote}}</text>
           </view>
         </view>
         <view class="stat-section">
           <text class="stat-section-title">营养供能比例</text>
-          <view class="stat-mini-grid">
+          <view class="stat-mini-grid cols-3">
             <view class="stat-item">
               <text class="stat-label">蛋白</text>
               <text class="stat-value">{{statistics.avgProteinEnergyRatio}}<text class="stat-unit">%</text></text>
