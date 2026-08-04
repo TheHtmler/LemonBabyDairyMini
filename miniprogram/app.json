@@ -66,17 +66,6 @@
         "diet-adjust-calculator/index",
         "about/index"
       ]
-    },
-    {
-      "root": "pkg-recipe-wall",
-      "pages": [
-        "list/index",
-        "detail/index",
-        "publish/index",
-        "preview/index",
-        "mine/index",
-        "admin/index"
-      ]
     }
   ],
   "window": {

@@ -3,70 +3,25 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const RECIPE_WALL_ROOT = 'deferred/pkg-recipe-wall';
+
 function read(rel) {
   return fs.readFileSync(path.resolve(__dirname, '..', rel), 'utf8');
 }
 
-test('app.json registers recipe-wall pages including preview', () => {
-  const app = JSON.parse(read('miniprogram/app.json'));
-  const pkg = app.subPackages.find((item) => item.root === 'pkg-recipe-wall');
-  assert.ok(pkg);
-  assert.deepEqual(pkg.pages, [
-    'list/index',
-    'detail/index',
-    'publish/index',
-    'preview/index',
-    'mine/index',
-    'admin/index'
-  ]);
-});
-
-test('profile menu links to recipe wall under feeding group', () => {
-  const js = read('miniprogram/pages/profile/index.js');
-  const features = read('miniprogram/config/features.js');
-  const feedingStart = js.indexOf("id: 'feeding'");
-  const supportStart = js.indexOf("id: 'support'");
-  assert.ok(feedingStart >= 0 && supportStart > feedingStart);
-  const feedingBlock = js.slice(feedingStart, supportStart);
-  assert.match(feedingBlock, /name:\s*['"]食谱墙['"]/);
-  assert.match(feedingBlock, /\/pkg-recipe-wall\/list\/index/);
-  assert.match(feedingBlock, /recipeWallEntry:\s*true/);
-  assert.match(js, /RECIPE_WALL_MENU_VISIBLE/);
-  assert.match(features, /RECIPE_WALL_MENU_VISIBLE\s*=\s*false/);
-  const supportBlock = js.slice(supportStart, js.indexOf("id: 'about'"));
-  assert.doesNotMatch(supportBlock, /name:\s*['"]食谱墙['"]/);
-});
-
-test('recipe wall menu entries are hidden while feature flag is off', () => {
-  const page = (() => {
-    const pagePath = require.resolve('../miniprogram/pages/profile/index.js');
-    delete require.cache[pagePath];
-    delete require.cache[require.resolve('../miniprogram/config/features.js')];
-    let pageConfig = null;
-    const previousPage = global.Page;
-    global.Page = (config) => {
-      pageConfig = config;
-    };
-    require(pagePath);
-    global.Page = previousPage;
-    return pageConfig;
-  })();
-
-  const { RECIPE_WALL_MENU_VISIBLE } = require('../miniprogram/config/features');
-  assert.equal(RECIPE_WALL_MENU_VISIBLE, false);
-
-  const source = read('miniprogram/pages/profile/index.js');
-  // canShowMenuItem 会按 recipeWallEntry 过滤；可见菜单不应包含食谱墙
-  assert.match(source, /item\.recipeWallEntry && !RECIPE_WALL_MENU_VISIBLE/);
-  assert.ok(page.data.menuGroups.some((group) => (
-    (group.items || []).some((item) => item.name === '食谱墙' && item.recipeWallEntry)
-  )));
+test('deferred recipe-wall package keeps page set for later restore', () => {
+  assert.ok(fs.existsSync(`${RECIPE_WALL_ROOT}/list/index.js`));
+  assert.ok(fs.existsSync(`${RECIPE_WALL_ROOT}/detail/index.js`));
+  assert.ok(fs.existsSync(`${RECIPE_WALL_ROOT}/publish/index.js`));
+  assert.ok(fs.existsSync(`${RECIPE_WALL_ROOT}/preview/index.js`));
+  assert.ok(fs.existsSync(`${RECIPE_WALL_ROOT}/mine/index.js`));
+  assert.ok(fs.existsSync(`${RECIPE_WALL_ROOT}/admin/index.js`));
 });
 
 test('list page loads via recipeWallManager list action', () => {
-  const js = read('miniprogram/pkg-recipe-wall/list/index.js');
-  const wxml = read('miniprogram/pkg-recipe-wall/list/index.wxml');
-  const wxss = read('miniprogram/pkg-recipe-wall/list/index.wxss');
+  const js = read(`${RECIPE_WALL_ROOT}/list/index.js`);
+  const wxml = read(`${RECIPE_WALL_ROOT}/list/index.wxml`);
+  const wxss = read(`${RECIPE_WALL_ROOT}/list/index.wxss`);
   assert.match(js, /recipeWallManager/);
   assert.match(js, /action:\s*['"]list['"]/);
   assert.match(js, /keyword/);
@@ -98,8 +53,8 @@ test('list page loads via recipeWallManager list action', () => {
 });
 
 test('detail page uses detail and toggleLike actions', () => {
-  const js = read('miniprogram/pkg-recipe-wall/detail/index.js');
-  const wxml = read('miniprogram/pkg-recipe-wall/detail/index.wxml');
+  const js = read(`${RECIPE_WALL_ROOT}/detail/index.js`);
+  const wxml = read(`${RECIPE_WALL_ROOT}/detail/index.wxml`);
   assert.match(js, /action:\s*['"]detail['"]/);
   assert.match(js, /action:\s*['"]toggleLike['"]/);
   assert.match(js, /goEdit/);
@@ -113,8 +68,8 @@ test('detail page uses detail and toggleLike actions', () => {
 });
 
 test('publish page uses food library and publishes directly', () => {
-  const js = read('miniprogram/pkg-recipe-wall/publish/index.js');
-  const wxml = read('miniprogram/pkg-recipe-wall/publish/index.wxml');
+  const js = read(`${RECIPE_WALL_ROOT}/publish/index.js`);
+  const wxml = read(`${RECIPE_WALL_ROOT}/publish/index.wxml`);
   assert.match(js, /from=recipe-wall/);
   assert.match(js, /validatePublishPayload/);
   assert.match(js, /normalizeDraftPayload/);
@@ -148,8 +103,8 @@ test('publish page uses food library and publishes directly', () => {
 });
 
 test('preview page remains as legacy confirm publisher', () => {
-  const js = read('miniprogram/pkg-recipe-wall/preview/index.js');
-  const wxml = read('miniprogram/pkg-recipe-wall/preview/index.wxml');
+  const js = read(`${RECIPE_WALL_ROOT}/preview/index.js`);
+  const wxml = read(`${RECIPE_WALL_ROOT}/preview/index.wxml`);
   assert.match(js, /action:\s*['"]publish['"]/);
   assert.match(js, /postId/);
   assert.match(wxml, /营养预估/);
@@ -157,16 +112,13 @@ test('preview page remains as legacy confirm publisher', () => {
 });
 
 test('mine page redirects to list mine tab; admin supports takeDown', () => {
-  const mineJs = read('miniprogram/pkg-recipe-wall/mine/index.js');
-  const adminJs = read('miniprogram/pkg-recipe-wall/admin/index.js');
-  const profileJs = read('miniprogram/pages/profile/index.js');
+  const mineJs = read(`${RECIPE_WALL_ROOT}/mine/index.js`);
+  const adminJs = read(`${RECIPE_WALL_ROOT}/admin/index.js`);
 
   assert.match(mineJs, /filter=mine/);
   assert.match(mineJs, /redirectTo/);
   assert.match(adminJs, /action:\s*['"]adminList['"]/);
   assert.match(adminJs, /action:\s*['"]takeDown['"]/);
-  assert.match(profileJs, /食谱墙管理/);
-  assert.match(profileJs, /\/pkg-recipe-wall\/admin\/index/);
 });
 
 test('food picker treats recipe-wall as ingredient picker', () => {
