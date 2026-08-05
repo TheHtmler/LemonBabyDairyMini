@@ -360,7 +360,8 @@ return {
 displayDate: normalizeValue(input.formattedSelectedDate, '--'),
 heroBadges: [
 { label: '体重', value: normalizeValue(input.weight, '--'), unit: 'kg', field: 'weight' },
-{ label: '身高', value: normalizeValue(input.height, '--'), unit: 'cm', field: 'height' }
+{ label: '身高', value: normalizeValue(input.height, '--'), unit: 'cm', field: 'height' },
+{ label: '头围', value: normalizeValue(input.headCircumference, '--'), unit: 'cm', field: 'headCircumference' }
 ],
 topMetrics: [
 {

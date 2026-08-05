@@ -48,15 +48,28 @@
               <text class="summary-mark-link-arrow">›</text>
             </view>
           </view>
-          <view class="hero-badges">
-            <view class="hero-badge" wx:for="{{summaryPreview.heroBadges}}" wx:key="label">
-              <view class="hero-badge-head">
-                <text class="hero-badge-label">{{item.label}}</text>
-                <view class="hero-badge-edit" wx:if="{{item.field && !isSelectedFuture}}" bindtap="openBasicInfoEditor" data-field="{{item.field}}" data-label="{{item.label}}" data-unit="{{item.unit}}">
-                  <image class="hero-badge-edit-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
+          <view class="body-metrics">
+            <view
+              class="body-metric"
+              wx:for="{{summaryPreview.heroBadges}}"
+              wx:key="field"
+              bindtap="openBasicInfoEditor"
+              data-field="{{item.field}}"
+              data-label="{{item.label}}"
+              data-unit="{{item.unit}}"
+              hover-class="body-metric-hover"
+              hover-stay-time="60"
+            >
+              <view class="body-metric-head">
+                <text class="body-metric-label">{{item.label}}</text>
+                <view class="body-metric-edit" wx:if="{{item.field && !isSelectedFuture}}">
+                  <image class="body-metric-edit-icon" src="/images/icons/edit.svg" mode="aspectFit"></image>
                 </view>
               </view>
-              <text class="hero-badge-value">{{item.value}}{{item.unit}}</text>
+              <view class="body-metric-value-row">
+                <text class="body-metric-value">{{item.value}}</text>
+                <text class="body-metric-unit">{{item.unit}}</text>
+              </view>
             </view>
           </view>
         </view>

@@ -28,6 +28,7 @@ function createEmptyBasicInfoSnapshot(source = 'empty') {
   return {
     weight: '',
     height: '',
+    headCircumference: '',
     naturalProteinCoefficient: '',
     specialProteinCoefficient: '',
     calorieCoefficient: '',
@@ -71,7 +72,7 @@ function buildGrowthCoefficientFields(growthData = {}) {
 
 function mergeMissingBasicInfo(primary = {}, fallback = {}) {
   const merged = { ...primary };
-  ['weight', 'height', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient'].forEach((key) => {
+  ['weight', 'height', 'headCircumference', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient'].forEach((key) => {
     if (!hasBasicInfoValue(merged[key]) && hasBasicInfoValue(fallback[key])) {
       merged[key] = fallback[key];
     }
@@ -114,6 +115,7 @@ function normalizeGrowthRecordSnapshot(record = {}, source = 'v2_growth_record')
     {
       weight: record.weight || '',
       height: record.height || record.length || '',
+      headCircumference: record.headCircumference || record.head || '',
       naturalProteinCoefficient: record.naturalProteinCoefficient || '',
       specialProteinCoefficient: record.specialProteinCoefficient || '',
       calorieCoefficient: record.calorieCoefficient || ''
@@ -125,7 +127,21 @@ function normalizeGrowthRecordSnapshot(record = {}, source = 'v2_growth_record')
 function getGrowthMetricValue(record = {}, metric) {
   if (metric === 'weight') return record.weight;
   if (metric === 'height') return record.height ?? record.length;
+  if (metric === 'headCircumference') return record.headCircumference ?? record.head;
   return undefined;
+}
+
+function pickGrowthMeasurementValue(growthData = {}, key, existing = null, aliases = []) {
+  if (Object.prototype.hasOwnProperty.call(growthData, key)) {
+    return growthData[key] || '';
+  }
+  for (let i = 0; i < aliases.length; i += 1) {
+    const alias = aliases[i];
+    if (Object.prototype.hasOwnProperty.call(growthData, alias)) {
+      return growthData[alias] || '';
+    }
+  }
+  return existing?.[key] || '';
 }
 
 function hasGrowthMetricChanged(point = {}, previousRecord = {}) {
@@ -205,7 +221,7 @@ async function propagateGrowthFieldsForward({
   nextValues = {},
   operatorOpenid = ''
 } = {}) {
-  const fields = ['weight', 'height']
+  const fields = ['weight', 'height', 'headCircumference']
     .filter((field) => (
       hasBasicInfoValue(nextValues[field]) &&
       hasBasicInfoValue(previousValues[field]) &&
@@ -393,6 +409,7 @@ async function queryBabyInfoInitialSnapshot(babyUid) {
     {
       weight: babyInfo.weight || '',
       height: babyInfo.height || '',
+      headCircumference: babyInfo.headCircumference || '',
       naturalProteinCoefficient: babyInfo.naturalProteinCoefficient || '',
       specialProteinCoefficient: babyInfo.specialProteinCoefficient || '',
       calorieCoefficient: babyInfo.calorieCoefficient || ''
@@ -516,11 +533,15 @@ class FeedingRecordV2Model {
     const latestPreviousGrowthRecord = await queryLatestPreviousGrowthRecord(babyUid, date);
     const previousGrowthRecord = existing || latestPreviousGrowthRecord;
     const payload = {
-      weight: growthData.weight || '',
-      height: growthData.height || growthData.length || '',
-      headCircumference: growthData.headCircumference || '',
-      notes: growthData.notes || '',
-      changes: growthData.changes || '',
+      weight: pickGrowthMeasurementValue(growthData, 'weight', existing),
+      height: pickGrowthMeasurementValue(growthData, 'height', existing, ['length']),
+      headCircumference: pickGrowthMeasurementValue(growthData, 'headCircumference', existing, ['head']),
+      notes: Object.prototype.hasOwnProperty.call(growthData, 'notes')
+        ? (growthData.notes || '')
+        : (existing?.notes || ''),
+      changes: Object.prototype.hasOwnProperty.call(growthData, 'changes')
+        ? (growthData.changes || '')
+        : (existing?.changes || ''),
       ...buildGrowthCoefficientFields(growthData)
     };
     const source = growthData.source || 'data_records_v2';

@@ -194,13 +194,16 @@ Page({
     babyAgeMonthsText: '',
     babyDays: 0,
 
-    // 体重 / 身高
+    // 体重 / 身高 / 头围
     weight: '',
     height: '',
+    headCircumference: '',
     showWeightModal: false,
     weightInput: '',
     showHeightModal: false,
     heightInput: '',
+    showHeadCircumferenceModal: false,
+    headCircumferenceInput: '',
 
     // 今日营养：未设置目标时展示实际摄入；设置后展示目标进度。
     nutrition: { calories: 0, caloriesPerKg: 0, naturalProtein: 0, specialProtein: 0, totalProtein: 0 },
@@ -629,6 +632,7 @@ Page({
 
     const weight = basicInfo.weight || '';
     const height = basicInfo.height || '';
+    const headCircumference = basicInfo.headCircumference || '';
     const foodCount = dashboard.buildFoodMealCount(daily.foodIntakeRecords || []);
     const nutrition = dashboard.buildNutritionSummary({ macroSummary, weight });
     const babyUid = getBabyUid();
@@ -680,6 +684,7 @@ Page({
     this.setData({
       weight,
       height,
+      headCircumference,
       foodCount,
       nutrition,
       nutritionTarget,
@@ -848,10 +853,11 @@ Page({
       wx.showLoading({ title: '保存中...' });
       const today = todayKey();
       // 体重写入 v2 成长记录，与数据记录页一致；
-      // 同时带上当前身高，避免 upsert 把同一条成长记录里的身高覆盖为空。
+      // 同时带上当前身高/头围，避免 upsert 把同一条成长记录里的其它体格值覆盖为空。
       await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, today, {
         weight: value,
-        height: this.data.height || ''
+        height: this.data.height || '',
+        headCircumference: this.data.headCircumference || ''
       });
       await this.updateBabyInfoFields({ weight: value });
       await DailySummaryV2Model.markDirty(babyUid, today);
@@ -896,10 +902,11 @@ Page({
     try {
       wx.showLoading({ title: '保存中...' });
       const today = todayKey();
-      // 身高写入 v2 成长记录；带上当前体重，避免覆盖同条记录的体重。
+      // 身高写入 v2 成长记录；带上当前体重/头围，避免覆盖同条记录的其它体格值。
       await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, today, {
         height: value,
-        weight: this.data.weight || ''
+        weight: this.data.weight || '',
+        headCircumference: this.data.headCircumference || ''
       });
       await this.updateBabyInfoFields({ height: value });
       await DailySummaryV2Model.markDirty(babyUid, today);
@@ -910,6 +917,57 @@ Page({
     } catch (error) {
       wx.hideLoading();
       console.error('保存身高失败:', error);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
+  },
+
+  // === 头围 ===
+  openHeadCircumferenceModal() {
+    this.setData({
+      showHeadCircumferenceModal: true,
+      headCircumferenceInput: this.data.headCircumference || ''
+    });
+  },
+
+  onHeadCircumferenceModalInput(e) {
+    this.setData({ headCircumferenceInput: e.detail.value });
+  },
+
+  closeHeadCircumferenceModal() {
+    this.setData({ showHeadCircumferenceModal: false });
+  },
+
+  async saveHeadCircumferenceModal() {
+    const value = String(this.data.headCircumferenceInput || '').trim();
+    if (!validation.validateData({ headCircumference: value }, {
+      headCircumference: { required: true, type: 'number', min: 0, message: '请输入有效头围' }
+    })) {
+      return;
+    }
+
+    const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
+    if (!babyUid) {
+      wx.showToast({ title: '未找到宝宝信息', icon: 'none' });
+      return;
+    }
+
+    try {
+      wx.showLoading({ title: '保存中...' });
+      const today = todayKey();
+      await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, today, {
+        headCircumference: value,
+        weight: this.data.weight || '',
+        height: this.data.height || ''
+      });
+      await this.updateBabyInfoFields({ headCircumference: value });
+      await DailySummaryV2Model.markDirty(babyUid, today);
+      this.setData({ showHeadCircumferenceModal: false, headCircumference: value });
+      await this.loadDashboard({ silent: true });
+      wx.hideLoading();
+      wx.showToast({ title: '头围已记录', icon: 'success' });
+    } catch (error) {
+      wx.hideLoading();
+      console.error('保存头围失败:', error);
       wx.showToast({ title: '保存失败', icon: 'none' });
     }
   },

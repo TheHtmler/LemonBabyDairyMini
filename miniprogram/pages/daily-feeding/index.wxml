@@ -54,14 +54,36 @@
   <view class="card hero-nutri">
     <view class="card-head">
       <text class="card-title">{{nutritionTarget.hasAnyTarget ? '今日目标进度' : '今日营养摄入'}}</text>
-      <view class="metric-chips">
-        <view class="weight-chip" catchtap="openWeightModal" hover-class="press-soft" hover-stay-time="60">
-          <text>体重 {{weight ? weight : '--'}}kg</text>
-          <text class="weight-edit">✎</text>
+      <view class="body-metrics">
+        <view class="body-metric" catchtap="openWeightModal" hover-class="body-metric-hover" hover-stay-time="60">
+          <view class="body-metric-head">
+            <text class="body-metric-label">体重</text>
+            <text class="body-metric-edit">✎</text>
+          </view>
+          <view class="body-metric-value-row">
+            <text class="body-metric-value">{{weight ? weight : '--'}}</text>
+            <text class="body-metric-unit">kg</text>
+          </view>
         </view>
-        <view class="weight-chip alt" catchtap="openHeightModal" hover-class="press-soft" hover-stay-time="60">
-          <text>身高 {{height ? height : '--'}}cm</text>
-          <text class="weight-edit">✎</text>
+        <view class="body-metric" catchtap="openHeightModal" hover-class="body-metric-hover" hover-stay-time="60">
+          <view class="body-metric-head">
+            <text class="body-metric-label">身高</text>
+            <text class="body-metric-edit">✎</text>
+          </view>
+          <view class="body-metric-value-row">
+            <text class="body-metric-value">{{height ? height : '--'}}</text>
+            <text class="body-metric-unit">cm</text>
+          </view>
+        </view>
+        <view class="body-metric" catchtap="openHeadCircumferenceModal" hover-class="body-metric-hover" hover-stay-time="60">
+          <view class="body-metric-head">
+            <text class="body-metric-label">头围</text>
+            <text class="body-metric-edit">✎</text>
+          </view>
+          <view class="body-metric-value-row">
+            <text class="body-metric-value">{{headCircumference ? headCircumference : '--'}}</text>
+            <text class="body-metric-unit">cm</text>
+          </view>
         </view>
       </view>
     </view>
@@ -202,6 +224,9 @@
           </view>
           <view class="qa" bindtap="openHeightModal" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic height">📏</view><text class="qa-nm">量身高</text>
+          </view>
+          <view class="qa" bindtap="openHeadCircumferenceModal" hover-class="press-pop" hover-stay-time="60">
+            <view class="qa-ic head">🫧</view><text class="qa-nm">量头围</text>
           </view>
           <view class="qa" data-url="/pkg-records/growth-diary/index" bindtap="onNavigate" hover-class="press-pop" hover-stay-time="60">
             <view class="qa-ic diary">📔</view><text class="qa-nm">成长日记</text>
@@ -394,6 +419,21 @@
       <view class="wm-actions">
         <view class="wm-btn cancel" catchtap="closeHeightModal">取消</view>
         <view class="wm-btn confirm" catchtap="saveHeightModal">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 头围编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{showHeadCircumferenceModal}}" catchtap="closeHeadCircumferenceModal">
+    <view class="weight-modal" catchtap="stopBubble">
+      <text class="wm-title">记录今日头围</text>
+      <view class="wm-input-row">
+        <input class="wm-input" type="digit" value="{{headCircumferenceInput}}" placeholder="请输入头围" focus="{{showHeadCircumferenceModal}}" bindinput="onHeadCircumferenceModalInput" />
+        <text class="wm-unit">cm</text>
+      </view>
+      <view class="wm-actions">
+        <view class="wm-btn cancel" catchtap="closeHeadCircumferenceModal">取消</view>
+        <view class="wm-btn confirm" catchtap="saveHeadCircumferenceModal">保存</view>
       </view>
     </view>
   </view>

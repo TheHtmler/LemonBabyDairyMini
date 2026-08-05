@@ -23,6 +23,7 @@ function createEmptyBasicInfo() {
   return {
     weight: '',
     height: '',
+    headCircumference: '',
     naturalProteinCoefficient: '',
     specialProteinCoefficient: '',
     calorieCoefficient: ''
@@ -389,6 +390,7 @@ function normalizeBasicInfoFields(source = {}) {
   return {
     weight: source.weight || '',
     height: source.height || source.length || '',
+    headCircumference: source.headCircumference || source.head || '',
     naturalProteinCoefficient: source.naturalProteinCoefficient || '',
     specialProteinCoefficient: source.specialProteinCoefficient || '',
     calorieCoefficient: source.calorieCoefficient || ''
@@ -398,7 +400,7 @@ function normalizeBasicInfoFields(source = {}) {
 // 用 fallback 仅补齐 primary 中缺失的字段，已有值不被覆盖。
 function fillMissingBasicInfo(primary = {}, fallback = {}) {
   const merged = { ...primary };
-  ['weight', 'height', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient']
+  ['weight', 'height', 'headCircumference', 'naturalProteinCoefficient', 'specialProteinCoefficient', 'calorieCoefficient']
     .forEach((key) => {
       if (!hasBasicInfoValue(merged[key]) && hasBasicInfoValue(fallback[key])) {
         merged[key] = fallback[key];

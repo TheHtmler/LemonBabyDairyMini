@@ -12,19 +12,79 @@ const FeedingRecordV2Model = require('../../models/feedingRecordV2');
 
 const standards = require('./_data/wst423-2022-0-36');
 
+const CARRY_FORWARD_SOURCES = new Set([
+  'daily_record_v2_carry_forward',
+  'carry_forward_backfill'
+]);
+
+function formatMetricText(value, unit) {
+  if (value === '' || value === null || value === undefined) return '';
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  const text = Number.isInteger(num) ? String(num) : String(Number(num.toFixed(2)));
+  return `${text}${unit}`;
+}
+
+function formatMonthAgeText(monthAge) {
+  if (monthAge === null || monthAge === undefined || Number.isNaN(Number(monthAge))) return '';
+  const months = Math.max(0, Math.floor(Number(monthAge)));
+  if (months <= 0) return '不足1月';
+  return `${months}月龄`;
+}
+
+function createEmptyMeasurement() {
+  return {
+    date: '',
+    weight: '',
+    length: '',
+    head: '',
+    notes: ''
+  };
+}
+
+function formatDayText(dateKey = '') {
+  const matched = String(dateKey).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!matched) return dateKey;
+  return `${Number(matched[3])}日`;
+}
+
+function formatMonthTitle(monthKey = '') {
+  const matched = String(monthKey).match(/^(\d{4})-(\d{2})$/);
+  if (!matched) return monthKey;
+  return `${matched[1]}年${Number(matched[2])}月`;
+}
+
+function toMonthKey(dateLike) {
+  const key = growthChartUtils.formatDateKey(dateLike);
+  return key ? key.slice(0, 7) : '';
+}
+
+function shiftMonthKey(monthKey = '', delta = 0) {
+  const matched = String(monthKey).match(/^(\d{4})-(\d{2})$/);
+  if (!matched) return '';
+  const date = new Date(Number(matched[1]), Number(matched[2]) - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function compareMonthKey(left = '', right = '') {
+  return String(left).localeCompare(String(right));
+}
+
 Page({
   data: {
     babyInfo: {},
     chartInfoText: '',
     growthRecords: [],
+    measurementList: [],
+    currentMonthItems: [],
+    selectedMonthKey: '',
+    selectedMonthTitle: '',
+    canPrevMonth: false,
+    canNextMonth: false,
+    measurementListLoading: true,
     showMeasurementForm: false,
-    newMeasurement: {
-      date: '',
-      weight: '',
-      length: '',
-      head: '',
-      notes: ''
-    },
+    editingMeasurementId: '',
+    newMeasurement: createEmptyMeasurement(),
     ec: {
       lazyLoad: true
     }
@@ -52,8 +112,149 @@ Page({
   },
 
   async refreshData() {
-    await this.loadGrowthRecords();
+    await Promise.all([
+      this.loadGrowthRecords(),
+      this.loadMeasurementList()
+    ]);
     this.updateChartInfo();
+  },
+
+  todayKey() {
+    return growthChartUtils.formatDateKey(new Date());
+  },
+
+  getMeasurementMonthBounds() {
+    const todayMonth = toMonthKey(new Date());
+    const birthdayMonth = toMonthKey(this.data.babyInfo?.birthday);
+    const minMonth = birthdayMonth || todayMonth;
+    const maxMonth = todayMonth;
+    if (minMonth && maxMonth && compareMonthKey(minMonth, maxMonth) > 0) {
+      return { minMonth: maxMonth, maxMonth };
+    }
+    return { minMonth, maxMonth };
+  },
+
+  buildMonthViewState(monthKey, measurementList = this.data.measurementList) {
+    const { minMonth, maxMonth } = this.getMeasurementMonthBounds();
+    let nextMonthKey = monthKey || maxMonth || toMonthKey(new Date());
+    if (minMonth && compareMonthKey(nextMonthKey, minMonth) < 0) nextMonthKey = minMonth;
+    if (maxMonth && compareMonthKey(nextMonthKey, maxMonth) > 0) nextMonthKey = maxMonth;
+
+    const currentMonthItems = (measurementList || [])
+      .filter((item) => String(item.date || '').startsWith(`${nextMonthKey}-`))
+      .map((item) => ({
+        ...item,
+        dayText: formatDayText(item.date)
+      }));
+
+    return {
+      selectedMonthKey: nextMonthKey,
+      selectedMonthTitle: formatMonthTitle(nextMonthKey),
+      currentMonthItems,
+      canPrevMonth: !!(minMonth && compareMonthKey(nextMonthKey, minMonth) > 0),
+      canNextMonth: !!(maxMonth && compareMonthKey(nextMonthKey, maxMonth) < 0)
+    };
+  },
+
+  applySelectedMonth(monthKey) {
+    this.setData(this.buildMonthViewState(monthKey, this.data.measurementList));
+  },
+
+  onPrevMonth() {
+    if (!this.data.canPrevMonth) return;
+    this.applySelectedMonth(shiftMonthKey(this.data.selectedMonthKey, -1));
+  },
+
+  onNextMonth() {
+    if (!this.data.canNextMonth) return;
+    this.applySelectedMonth(shiftMonthKey(this.data.selectedMonthKey, 1));
+  },
+
+  formatMeasurementListItem(record = {}) {
+    const date = growthChartUtils.formatDateKey(record.date || record.recordDate);
+    const weightText = formatMetricText(record.weight, 'kg');
+    const lengthText = formatMetricText(record.height ?? record.length, 'cm');
+    const headText = formatMetricText(record.headCircumference ?? record.head, 'cm');
+    if (!date || (!weightText && !lengthText && !headText)) {
+      return null;
+    }
+    const monthAge = this.data.babyInfo?.birthday
+      ? growthUtils.calculateAgeMonths(this.data.babyInfo.birthday, date)
+      : null;
+    return {
+      id: record._id || `${date}_${record.source || 'growth'}`,
+      date,
+      dateText: date,
+      monthAgeText: formatMonthAgeText(monthAge),
+      weight: record.weight || '',
+      length: (record.height ?? record.length) || '',
+      head: (record.headCircumference ?? record.head) || '',
+      weightText,
+      lengthText,
+      headText,
+      notes: record.notes || ''
+    };
+  },
+
+  async loadMeasurementList() {
+    this.setData({ measurementListLoading: true });
+    try {
+      const babyUid = getBabyUid();
+      if (!babyUid) {
+        this.setData({
+          measurementList: [],
+          currentMonthItems: [],
+          selectedMonthKey: '',
+          selectedMonthTitle: '',
+          canPrevMonth: false,
+          canNextMonth: false,
+          measurementListLoading: false
+        });
+        return;
+      }
+      const db = wx.cloud.database();
+      const batchSize = 20;
+      let allRecords = [];
+      let skip = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const batch = await db.collection('growth_records_v2')
+          .where({
+            babyUid,
+            status: 'active'
+          })
+          .orderBy('date', 'desc')
+          .skip(skip)
+          .limit(batchSize)
+          .get();
+        allRecords = allRecords.concat(batch.data || []);
+        hasMore = (batch.data || []).length === batchSize;
+        skip += batchSize;
+      }
+
+      const measurementList = allRecords
+        .filter((record) => !CARRY_FORWARD_SOURCES.has(record.source))
+        .map((record) => this.formatMeasurementListItem(record))
+        .filter(Boolean);
+
+      const preferredMonth = this.data.selectedMonthKey || toMonthKey(new Date());
+      this.setData({
+        measurementList,
+        measurementListLoading: false,
+        ...this.buildMonthViewState(preferredMonth, measurementList)
+      });
+    } catch (error) {
+      console.warn('加载测量列表失败:', error);
+      this.setData({
+        measurementList: [],
+        currentMonthItems: [],
+        selectedMonthKey: '',
+        selectedMonthTitle: '',
+        canPrevMonth: false,
+        canNextMonth: false,
+        measurementListLoading: false
+      });
+    }
   },
 
   updateChartInfo() {
@@ -288,13 +489,37 @@ Page({
 
   openMeasurementForm() {
     this.setData({
-      showMeasurementForm: true
+      showMeasurementForm: true,
+      editingMeasurementId: '',
+      newMeasurement: {
+        ...createEmptyMeasurement(),
+        date: this.todayKey()
+      }
     });
   },
 
   closeForms() {
     this.setData({
-      showMeasurementForm: false
+      showMeasurementForm: false,
+      editingMeasurementId: '',
+      newMeasurement: createEmptyMeasurement()
+    });
+  },
+
+  onMeasurementItemTap(e) {
+    const { id } = e.currentTarget.dataset || {};
+    const item = (this.data.measurementList || []).find((record) => record.id === id);
+    if (!item) return;
+    this.setData({
+      showMeasurementForm: true,
+      editingMeasurementId: item.id,
+      newMeasurement: {
+        date: item.date || '',
+        weight: item.weight === null || item.weight === undefined ? '' : String(item.weight),
+        length: item.length === null || item.length === undefined ? '' : String(item.length),
+        head: item.head === null || item.head === undefined ? '' : String(item.head),
+        notes: item.notes || ''
+      }
     });
   },
 
@@ -350,16 +575,15 @@ Page({
       });
       await this.updateBabyInfoFromMeasurement(payload);
       this.setData({
-        newMeasurement: {
-          date: '',
-          weight: '',
-          length: '',
-          head: '',
-          notes: ''
-        },
-        showMeasurementForm: false
+        newMeasurement: createEmptyMeasurement(),
+        showMeasurementForm: false,
+        editingMeasurementId: '',
+        selectedMonthKey: toMonthKey(newMeasurement.date) || this.data.selectedMonthKey
       });
-      await this.loadGrowthRecords();
+      await Promise.all([
+        this.loadGrowthRecords(),
+        this.loadMeasurementList()
+      ]);
       this.renderChart();
       wx.showToast({ title: '记录成功', icon: 'success' });
     } catch (error) {
@@ -374,6 +598,8 @@ Page({
       const updates = {};
       if (payload.weight) updates.weight = payload.weight;
       if (payload.length) updates.height = payload.length;
+      if (payload.head) updates.headCircumference = payload.head;
+      if (Object.keys(updates).length === 0) return;
       const db = wx.cloud.database();
       const res = await db.collection('baby_info').where({ babyUid }).limit(1).get();
       if (res.data && res.data[0]) {

@@ -482,6 +482,33 @@ test('upsertGrowthRecordForDate updates coefficients without wiping existing one
   assert.equal(Object.prototype.hasOwnProperty.call(writes.updateData, 'calorieCoefficient'), false);
 });
 
+test('upsertGrowthRecordForDate preserves existing head circumference on partial weight update', async () => {
+  const { db, writes } = createDbMock({
+    growthRecordsV2Data: [
+      {
+        _id: 'growth-1',
+        babyUid: 'baby-1',
+        date: '2026-05-22',
+        status: 'active',
+        weight: 5.1,
+        height: 58,
+        headCircumference: 38.5
+      }
+    ]
+  });
+  const model = loadFreshModel(db);
+
+  await model.upsertGrowthRecordForDate('baby-1', '2026-05-22', {
+    operatorOpenid: 'openid-editor',
+    weight: 5.4,
+    height: 58
+  });
+
+  assert.equal(writes.updateData.weight, 5.4);
+  assert.equal(writes.updateData.height, 58);
+  assert.equal(writes.updateData.headCircumference, 38.5);
+});
+
 test('upsertGrowthRecordForDate propagates changed weight until the next explicit different weight', async () => {
   const { db, writes } = createDbMock({
     growthRecordsV2Data: [

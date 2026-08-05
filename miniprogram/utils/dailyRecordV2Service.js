@@ -351,6 +351,7 @@ function normalizeGrowthRecordBasicInfo(record = {}) {
   return {
     weight: record.weight || '',
     height: record.height || record.length || '',
+    headCircumference: record.headCircumference || record.head || '',
     naturalProteinCoefficient: record.naturalProteinCoefficient || '',
     specialProteinCoefficient: record.specialProteinCoefficient || '',
     calorieCoefficient: record.calorieCoefficient || ''
@@ -378,11 +379,14 @@ async function ensureGrowthRecordForDate(babyUid, date, eventRecords = {}) {
     return eventRecords;
   }
 
-  // 只顺延体重/身高这类“真实测量值”，绝不顺延蛋白/热量系数：
+  // 只顺延体重/身高/头围这类“真实测量值”，绝不顺延蛋白/热量系数：
   // 系数属于设定，不应被自动写进当天成长记录，否则会出现“今天没记录却带出昨天系数”。
   const nextBasicInfo = {
     weight: hasValue(snapshot.weight) ? snapshot.weight : currentBasicInfo.weight,
-    height: hasValue(snapshot.height) ? snapshot.height : currentBasicInfo.height
+    height: hasValue(snapshot.height) ? snapshot.height : currentBasicInfo.height,
+    headCircumference: hasValue(snapshot.headCircumference)
+      ? snapshot.headCircumference
+      : currentBasicInfo.headCircumference
   };
 
   await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, date, {

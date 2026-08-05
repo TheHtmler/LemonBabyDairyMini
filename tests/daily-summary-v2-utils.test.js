@@ -413,6 +413,7 @@ test('basicInfo prefers growth_records_v2 over milk record snapshots', () => {
   assert.deepEqual(summary.basicInfo, {
     weight: '6.2',
     height: '61',
+    headCircumference: '',
     naturalProteinCoefficient: '1.1',
     specialProteinCoefficient: '0.8',
     calorieCoefficient: '95'
@@ -455,6 +456,7 @@ test('basicInfo recovers missing coefficients from milk snapshot when growth rec
   assert.deepEqual(summary.basicInfo, {
     weight: '6.2',
     height: '61',
+    headCircumference: '',
     naturalProteinCoefficient: '1.2',
     specialProteinCoefficient: '0.8',
     calorieCoefficient: '95'

@@ -12,6 +12,7 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
     formattedSelectedDate: '2026年3月28日',
     weight: '5.2',
     height: '58',
+    headCircumference: '38.5',
     totalMilk: 720,
     naturalMilkType: 'breast',
     dailyCaloriesTotal: 685,
@@ -73,7 +74,8 @@ test('buildDataRecordsSummaryPreview maps summary data into compact dashboard se
   assert.equal(preview.displayDate, '2026年3月28日');
   assert.deepEqual(preview.heroBadges, [
     { label: '体重', value: '5.2', unit: 'kg', field: 'weight' },
-    { label: '身高', value: '58', unit: 'cm', field: 'height' }
+    { label: '身高', value: '58', unit: 'cm', field: 'height' },
+    { label: '头围', value: '38.5', unit: 'cm', field: 'headCircumference' }
   ]);
   assert.deepEqual(preview.topMetrics, [
     { label: '总热量', value: '685', unit: 'kcal', detail: '奶 440 · 食物 160 · 治疗 85' },

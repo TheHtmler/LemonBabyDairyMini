@@ -296,9 +296,12 @@ page {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12rpx;
   margin-bottom: 22rpx;
 }
 .card-title {
+  flex: 1;
+  min-width: 0;
   font-size: 30rpx;
   font-weight: 700;
   color: #333;
@@ -321,34 +324,65 @@ page {
   color: #B0B0B0;
 }
 
-/* 营养达成 */
-.metric-chips {
+/* 体格三格：总宽对齐原两个 weight-chip 约占位 */
+.body-metrics {
   display: flex;
-  align-items: center;
-  gap: 10rpx;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-shrink: 0;
+  width: 340rpx;
+  border-radius: 18rpx;
+  background: #FFF9EB;
+  border: 1rpx solid rgba(255, 184, 0, 0.18);
+  overflow: hidden;
+  box-sizing: border-box;
 }
-.weight-chip {
+.body-metric {
+  flex: 1;
+  min-width: 0;
+  padding: 10rpx 8rpx;
+  box-sizing: border-box;
+}
+.body-metric + .body-metric {
+  border-left: 1rpx solid rgba(255, 184, 0, 0.14);
+}
+.body-metric-hover {
+  background: rgba(255, 184, 0, 0.1);
+}
+.body-metric-head {
   display: flex;
   align-items: center;
-  gap: 6rpx;
-  font-size: 23rpx;
+  justify-content: space-between;
+  gap: 2rpx;
+}
+.body-metric-label {
+  font-size: 20rpx;
   color: #B07D00;
-  background: #FFF3D6;
-  padding: 8rpx 16rpx;
-  border-radius: 999rpx;
+  line-height: 1.2;
 }
-.weight-chip.alt {
-  color: #2E9E6B;
-  background: #E7F7EF;
-}
-.weight-chip.alt .weight-edit {
-  color: #2E9E6B;
-}
-.weight-edit {
-  font-size: 22rpx;
+.body-metric-edit {
+  font-size: 20rpx;
   color: #D9A400;
+  line-height: 1;
+}
+.body-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 2rpx;
+  margin-top: 4rpx;
+  min-width: 0;
+}
+.body-metric-value {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #3A3326;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.body-metric-unit {
+  font-size: 18rpx;
+  color: #B0A48A;
+  flex-shrink: 0;
 }
 .target-empty {
   display: flex;
@@ -914,6 +948,7 @@ page {
 .qa-ic.mark { background: #FFF3D6; }
 .qa-ic.weight { background: #FFE9ED; }
 .qa-ic.height { background: #E3F6F5; }
+.qa-ic.head { background: #EAF0FF; }
 .qa-ic.remind { background: #FFF0E0; }
 .qa-ic.report { background: #FFF0E0; }
 .qa-ic.powder { background: #F0EBFF; }
@@ -1770,7 +1805,7 @@ page {
    transition 写在基础元素上，按下/松开两个方向都平滑 */
 .baby-card,
 .sleep-ongoing-banner,
-.weight-chip,
+.body-metric,
 .calc-btn,
 .qa,
 .me {

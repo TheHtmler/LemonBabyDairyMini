@@ -1557,8 +1557,10 @@ function createDataRecordsPageConfig(options = {}) {
     // 生长数据
     weight: '--',
     height: '--',
+    headCircumference: '--',
     weightSource: 'empty',
     heightSource: 'empty',
+    headCircumferenceSource: 'empty',
     naturalProteinCoefficientInput: '',
     specialProteinCoefficientInput: '',
     // 蛋白质系数
@@ -4101,6 +4103,7 @@ function createDataRecordsPageConfig(options = {}) {
     const basicInfo = summary.basicInfo || {};
     const recordWeight = basicInfo.weight || '';
     const recordHeight = basicInfo.height || '';
+    const recordHeadCircumference = basicInfo.headCircumference || '';
     const macroSummary = summary.macroSummary || {};
     const intakeOverview = this.buildIntakeOverviewFromDailySummary(summary);
     const proteinSummaryDisplay = this.buildProteinSummaryDisplayFromMacroSummary(macroSummary, intakeOverview);
@@ -4151,8 +4154,10 @@ function createDataRecordsPageConfig(options = {}) {
       proteinSummaryDisplay,
       weight: recordWeight || '--',
       height: recordHeight || '--',
+      headCircumference: recordHeadCircumference || '--',
       weightSource: recordWeight ? 'record' : 'empty',
       heightSource: recordHeight ? 'record' : 'empty',
+      headCircumferenceSource: recordHeadCircumference ? 'record' : 'empty',
       naturalProteinCoefficientInput: basicInfo.naturalProteinCoefficient || '',
       specialProteinCoefficientInput: basicInfo.specialProteinCoefficient || '',
       totalNaturalMilk: Math.round(intakeOverview.milk.normal.volume || 0),
@@ -4174,6 +4179,7 @@ function createDataRecordsPageConfig(options = {}) {
         proteinSummaryDisplay,
         weight: recordWeight || '--',
         height: recordHeight || '--',
+        headCircumference: recordHeadCircumference || '--',
         totalMilk,
         dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
         caloriePerKg: calorieMetrics.caloriePerKg,
@@ -4311,6 +4317,7 @@ function createDataRecordsPageConfig(options = {}) {
     const basicInfo = serviceResult.basicInfo || serviceResult.summary?.basicInfo || record.basicInfo || {};
     const recordWeight = basicInfo.weight || '';
     const recordHeight = basicInfo.height || '';
+    const recordHeadCircumference = basicInfo.headCircumference || '';
     const treatmentRecordsToSet = formatTreatmentRecords(serviceResult.treatmentRecords || []);
     const medicationRecordsToSet = serviceResult.medicationRecords || [];
     const bowelRecordsToSet = serviceResult.bowelRecords || [];
@@ -4384,8 +4391,10 @@ function createDataRecordsPageConfig(options = {}) {
       sleepRecords: sleepRecordsToSet,
       weight: recordWeight || '--',
       height: recordHeight || '--',
+      headCircumference: recordHeadCircumference || '--',
       weightSource: recordWeight ? 'record' : 'empty',
       heightSource: recordHeight ? 'record' : 'empty',
+      headCircumferenceSource: recordHeadCircumference ? 'record' : 'empty',
       naturalProteinCoefficientInput: basicInfo.naturalProteinCoefficient || '',
       specialProteinCoefficientInput: basicInfo.specialProteinCoefficient || '',
       intakeOverview,
@@ -4414,6 +4423,7 @@ function createDataRecordsPageConfig(options = {}) {
         proteinSummaryDisplay,
         weight: recordWeight || '--',
         height: recordHeight || '--',
+        headCircumference: recordHeadCircumference || '--',
         totalMilk,
         dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
         caloriePerKg: calorieMetrics.caloriePerKg,
@@ -4439,14 +4449,17 @@ function createDataRecordsPageConfig(options = {}) {
       includeFallbacks: false,
       includeProfileInitial: true
     });
+    const sourceTag = snapshot.source === 'v2_growth_record' ? 'record' : 'history-feeding';
     return {
       weight: snapshot.weight || '',
       height: snapshot.height || '',
+      headCircumference: snapshot.headCircumference || '',
       naturalProteinCoefficient: snapshot.naturalProteinCoefficient || '',
       specialProteinCoefficient: snapshot.specialProteinCoefficient || '',
       calorieCoefficient: snapshot.calorieCoefficient || '',
-      weightSource: snapshot.weight ? (snapshot.source === 'v2_growth_record' ? 'record' : 'history-feeding') : 'empty',
-      heightSource: snapshot.height ? (snapshot.source === 'v2_growth_record' ? 'record' : 'history-feeding') : 'empty'
+      weightSource: snapshot.weight ? sourceTag : 'empty',
+      heightSource: snapshot.height ? sourceTag : 'empty',
+      headCircumferenceSource: snapshot.headCircumference ? sourceTag : 'empty'
     };
   },
 
@@ -4533,6 +4546,7 @@ function createDataRecordsPageConfig(options = {}) {
         const basicInfoSnapshot = this.resolveBasicInfoSnapshot(record, dateStr, historicalBasicInfoSnapshot);
         const recordWeight = basicInfoSnapshot.weight;
         const recordHeight = basicInfoSnapshot.height;
+        const recordHeadCircumference = basicInfoSnapshot.headCircumference;
 
         const macroSummary = calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
         const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
@@ -4540,6 +4554,7 @@ function createDataRecordsPageConfig(options = {}) {
 
         const weightForCalorie = recordWeight;
         const heightForDisplay = recordHeight;
+        const headCircumferenceForDisplay = recordHeadCircumference;
         const calorieMetrics = this.computeCalorieMetrics({
           totalCalories: macroSummary.calories,
           weight: weightForCalorie,
@@ -4567,8 +4582,10 @@ function createDataRecordsPageConfig(options = {}) {
           bowelRecords: bowelRecordsToSet,
           weight: weightForCalorie || '--',
           height: heightForDisplay || '--',
+          headCircumference: headCircumferenceForDisplay || '--',
           weightSource: basicInfoSnapshot.weightSource,
           heightSource: basicInfoSnapshot.heightSource,
+          headCircumferenceSource: basicInfoSnapshot.headCircumferenceSource,
           naturalProteinCoefficientInput: record.basicInfo?.naturalProteinCoefficient || '',
           specialProteinCoefficientInput: record.basicInfo?.specialProteinCoefficient || '',
           intakeOverview,
@@ -4584,6 +4601,7 @@ function createDataRecordsPageConfig(options = {}) {
             proteinSummaryDisplay,
             weight: weightForCalorie || '--',
             height: heightForDisplay || '--',
+            headCircumference: headCircumferenceForDisplay || '--',
             totalMilk: (intakeOverview?.milk?.normal?.volume || 0) + (intakeOverview?.milk?.special?.volume || 0),
             dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
             caloriePerKg: calorieMetrics.caloriePerKg,
@@ -4607,6 +4625,7 @@ function createDataRecordsPageConfig(options = {}) {
         const basicInfoSnapshot = this.resolveBasicInfoSnapshot({}, dateStr, historicalBasicInfoSnapshot);
         const defaultWeight = basicInfoSnapshot.weight || '--';
         const defaultHeight = basicInfoSnapshot.height || '--';
+        const defaultHeadCircumference = basicInfoSnapshot.headCircumference || '--';
         const calorieMetrics = this.computeCalorieMetrics({
           totalCalories: treatmentRecordsToSet.reduce((sum, record) => sum + (Number(record.summary?.totalCalories) || 0), 0),
           weight: basicInfoSnapshot.weight,
@@ -4638,8 +4657,10 @@ function createDataRecordsPageConfig(options = {}) {
           bowelRecords: bowelRecordsToSet,
           weight: defaultWeight,
           height: defaultHeight,
+          headCircumference: defaultHeadCircumference,
           weightSource: basicInfoSnapshot.weightSource,
           heightSource: basicInfoSnapshot.heightSource,
+          headCircumferenceSource: basicInfoSnapshot.headCircumferenceSource,
           hasRecord: medicationRecordsToSet.length > 0 || treatmentRecordsToSet.length > 0 || bowelRecordsToSet.length > 0, // 如果有药物/治疗/排便记录，也算有记录
           feedingRecords: [],
           totalNaturalMilk: 0,
@@ -4665,6 +4686,7 @@ function createDataRecordsPageConfig(options = {}) {
             proteinSummaryDisplay,
             weight: defaultWeight,
             height: defaultHeight,
+            headCircumference: defaultHeadCircumference,
             totalMilk: 0,
             dailyCaloriesTotal: calorieMetrics.dailyCaloriesTotal,
             caloriePerKg: calorieMetrics.caloriePerKg,
@@ -5774,6 +5796,13 @@ function createDataRecordsPageConfig(options = {}) {
             fallbackUpdates.height = babyInfo.height || '--';
             fallbackUpdates.heightSource = babyInfo.height ? 'global' : 'empty';
           }
+          if (
+            (this.data.headCircumference === '--' || this.data.headCircumference === '')
+            && this.data.headCircumferenceSource !== 'record'
+          ) {
+            fallbackUpdates.headCircumference = babyInfo.headCircumference || '--';
+            fallbackUpdates.headCircumferenceSource = babyInfo.headCircumference ? 'global' : 'empty';
+          }
         }
 
         // 生日加载后重算热量区间，确保「推荐系数范围」按当前宝宝年龄匹配，并同步刷新汇总概览
@@ -6770,24 +6799,70 @@ function createDataRecordsPageConfig(options = {}) {
     const basicInfo = record?.basicInfo || {};
     const recordWeight = basicInfo.weight !== undefined ? basicInfo.weight : record?.weight;
     const recordHeight = basicInfo.height !== undefined ? basicInfo.height : record?.height;
+    const recordHeadCircumference = basicInfo.headCircumference !== undefined
+      ? basicInfo.headCircumference
+      : record?.headCircumference;
     const globalWeight = this.data.babyInfo?.weight ?? '';
     const globalHeight = this.data.babyInfo?.height ?? '';
+    const globalHeadCircumference = this.data.babyInfo?.headCircumference ?? '';
     const allowGlobalFallback = this.isTodayDate(dateStr);
 
     const hasRecordWeight = recordWeight !== undefined && recordWeight !== null && recordWeight !== '';
     const hasRecordHeight = recordHeight !== undefined && recordHeight !== null && recordHeight !== '';
+    const hasRecordHeadCircumference = recordHeadCircumference !== undefined
+      && recordHeadCircumference !== null
+      && recordHeadCircumference !== '';
     const hasGlobalWeight = globalWeight !== undefined && globalWeight !== null && globalWeight !== '';
     const hasGlobalHeight = globalHeight !== undefined && globalHeight !== null && globalHeight !== '';
+    const hasGlobalHeadCircumference = globalHeadCircumference !== undefined
+      && globalHeadCircumference !== null
+      && globalHeadCircumference !== '';
+
+    const pickFallback = (hasRecord, recordValue, historicalValue, historicalSource, hasGlobal, globalValue) => {
+      if (hasRecord) {
+        return { value: recordValue, source: 'record' };
+      }
+      if (historicalValue !== '' && historicalValue !== undefined && historicalValue !== null) {
+        return { value: historicalValue, source: historicalSource || 'empty' };
+      }
+      if (allowGlobalFallback && hasGlobal) {
+        return { value: globalValue, source: 'global' };
+      }
+      return { value: '', source: 'empty' };
+    };
+
+    const weightResolved = pickFallback(
+      hasRecordWeight,
+      recordWeight,
+      historicalSnapshot.weight,
+      historicalSnapshot.weightSource,
+      hasGlobalWeight,
+      globalWeight
+    );
+    const heightResolved = pickFallback(
+      hasRecordHeight,
+      recordHeight,
+      historicalSnapshot.height,
+      historicalSnapshot.heightSource,
+      hasGlobalHeight,
+      globalHeight
+    );
+    const headResolved = pickFallback(
+      hasRecordHeadCircumference,
+      recordHeadCircumference,
+      historicalSnapshot.headCircumference,
+      historicalSnapshot.headCircumferenceSource,
+      hasGlobalHeadCircumference,
+      globalHeadCircumference
+    );
 
     return {
-      weight: hasRecordWeight ? recordWeight : (historicalSnapshot.weight !== '' && historicalSnapshot.weight !== undefined && historicalSnapshot.weight !== null
-        ? historicalSnapshot.weight
-        : (allowGlobalFallback && hasGlobalWeight ? globalWeight : '')),
-      height: hasRecordHeight ? recordHeight : (historicalSnapshot.height !== '' && historicalSnapshot.height !== undefined && historicalSnapshot.height !== null
-        ? historicalSnapshot.height
-        : (allowGlobalFallback && hasGlobalHeight ? globalHeight : '')),
-      weightSource: hasRecordWeight ? 'record' : (historicalSnapshot.weightSource || (allowGlobalFallback && hasGlobalWeight ? 'global' : 'empty')),
-      heightSource: hasRecordHeight ? 'record' : (historicalSnapshot.heightSource || (allowGlobalFallback && hasGlobalHeight ? 'global' : 'empty'))
+      weight: weightResolved.value,
+      height: heightResolved.value,
+      headCircumference: headResolved.value,
+      weightSource: weightResolved.source,
+      heightSource: heightResolved.source,
+      headCircumferenceSource: headResolved.source
     };
   },
 
@@ -6798,10 +6873,16 @@ function createDataRecordsPageConfig(options = {}) {
     const heightValue = Object.prototype.hasOwnProperty.call(updates, 'height')
       ? updates.height
       : (this.data.heightSource === 'record' && this.isNumberValue(this.data.height) ? Number(this.data.height) : '');
+    const headCircumferenceValue = Object.prototype.hasOwnProperty.call(updates, 'headCircumference')
+      ? updates.headCircumference
+      : (this.data.headCircumferenceSource === 'record' && this.isNumberValue(this.data.headCircumference)
+        ? Number(this.data.headCircumference)
+        : '');
 
     return {
       weight: weightValue,
       height: heightValue,
+      headCircumference: headCircumferenceValue,
       naturalProteinCoefficient: this.data.naturalProteinCoefficientInput || '',
       specialProteinCoefficient: this.data.specialProteinCoefficientInput || '',
       ...updates
@@ -6823,6 +6904,7 @@ function createDataRecordsPageConfig(options = {}) {
     return {
       weight: pickNumberLike('weight'),
       height: pickNumberLike('height'),
+      headCircumference: pickNumberLike('headCircumference'),
       naturalProteinCoefficient: Object.prototype.hasOwnProperty.call(updates, 'naturalProteinCoefficient')
         ? updates.naturalProteinCoefficient
         : (this.data.naturalProteinCoefficientInput || ''),
@@ -6858,6 +6940,7 @@ function createDataRecordsPageConfig(options = {}) {
       formattedSelectedDate: overrides.formattedSelectedDate ?? this.data.formattedSelectedDate,
       weight: overrides.weight ?? this.data.weight,
       height: overrides.height ?? this.data.height,
+      headCircumference: overrides.headCircumference ?? this.data.headCircumference,
       totalMilk: overrides.totalMilk ?? this.data.totalMilk,
       dailyCaloriesTotal: overrides.dailyCaloriesTotal ?? this.data.dailyCaloriesTotal,
       caloriePerKg: overrides.caloriePerKg ?? this.data.caloriePerKg,
@@ -6990,7 +7073,7 @@ function createDataRecordsPageConfig(options = {}) {
     const { field = '', label = '', unit = '' } = e.currentTarget.dataset || {};
     if (!field) return;
     if (this.data.isSelectedFuture) {
-      wx.showToast({ title: '未来日期不可编辑身高体重', icon: 'none' });
+      wx.showToast({ title: '未来日期不可编辑体格数据', icon: 'none' });
       return;
     }
     const currentValue = this.data[field];
@@ -7036,9 +7119,12 @@ function createDataRecordsPageConfig(options = {}) {
     }
 
     const nextValue = roundNumber(parsed, 2);
+    const sourceField = editingField === 'weight'
+      ? 'weightSource'
+      : (editingField === 'height' ? 'heightSource' : 'headCircumferenceSource');
     const nextState = {
       [editingField]: nextValue,
-      ...(editingField === 'weight' ? { weightSource: 'record' } : { heightSource: 'record' })
+      [sourceField]: 'record'
     };
 
     if (editingField === 'weight') {
@@ -7098,7 +7184,7 @@ function createDataRecordsPageConfig(options = {}) {
           this.calculateTotalMilk(this.data.feedingRecords || []);
         }
       } else {
-        this.updateSummaryPreview({ height: nextValue });
+        this.updateSummaryPreview({ [editingField]: nextValue });
       }
       wx.hideLoading();
       wx.showToast({ title: `${editingLabel}已保存`, icon: 'success' });
@@ -7153,7 +7239,11 @@ function createDataRecordsPageConfig(options = {}) {
       if (result?.recordId && !this.data.growthRecordId) {
         this.setData({ growthRecordId: result.recordId });
       }
-      if (Object.prototype.hasOwnProperty.call(updates, 'weight') || Object.prototype.hasOwnProperty.call(updates, 'height')) {
+      if (
+        Object.prototype.hasOwnProperty.call(updates, 'weight')
+        || Object.prototype.hasOwnProperty.call(updates, 'height')
+        || Object.prototype.hasOwnProperty.call(updates, 'headCircumference')
+      ) {
         await this.markFuturePrerecordSummariesDirty(babyUid, selectedDate);
       }
       return;

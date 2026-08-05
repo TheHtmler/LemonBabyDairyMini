@@ -21,32 +21,127 @@
   </view>
 
   <view class="form-card" wx:if="{{showMeasurementForm}}">
-    <view class="form-title">新增测量记录</view>
+    <view class="form-title">{{editingMeasurementId ? '编辑测量记录' : '新增测量记录'}}</view>
+
     <view class="form-item">
-      <text class="form-label">测量日期</text>
+      <text class="field-label">测量日期</text>
       <picker mode="date" value="{{newMeasurement.date}}" bindchange="onMeasurementDateChange">
-        <view class="picker-value">{{newMeasurement.date || '请选择日期'}}</view>
+        <view class="compact-picker {{newMeasurement.date ? '' : 'placeholder'}}">
+          {{newMeasurement.date || '请选择日期'}}
+        </view>
       </picker>
     </view>
-    <view class="form-item">
-      <text class="form-label">体重 (kg)</text>
-      <input class="form-input" type="digit" data-field="weight" value="{{newMeasurement.weight}}" placeholder="例如 7.2" bindinput="onMeasurementInput" />
+
+    <view class="measure-grid">
+      <view class="form-item">
+        <text class="field-label">体重 (kg)</text>
+        <input
+          class="compact-input"
+          type="digit"
+          data-field="weight"
+          value="{{newMeasurement.weight}}"
+          placeholder="例如 7.2"
+          bindinput="onMeasurementInput"
+        />
+      </view>
+      <view class="form-item">
+        <text class="field-label">身长 (cm)</text>
+        <input
+          class="compact-input"
+          type="digit"
+          data-field="length"
+          value="{{newMeasurement.length}}"
+          placeholder="例如 68.5"
+          bindinput="onMeasurementInput"
+        />
+      </view>
+      <view class="form-item">
+        <text class="field-label">头围 (cm)</text>
+        <input
+          class="compact-input"
+          type="digit"
+          data-field="head"
+          value="{{newMeasurement.head}}"
+          placeholder="例如 43.0"
+          bindinput="onMeasurementInput"
+        />
+      </view>
     </view>
+
     <view class="form-item">
-      <text class="form-label">身长 (cm)</text>
-      <input class="form-input" type="digit" data-field="length" value="{{newMeasurement.length}}" placeholder="例如 68.5" bindinput="onMeasurementInput" />
+      <text class="field-label">备注</text>
+      <input
+        class="compact-input"
+        type="text"
+        data-field="notes"
+        value="{{newMeasurement.notes}}"
+        placeholder="可选，例如测量时状态"
+        bindinput="onMeasurementInput"
+      />
     </view>
-    <view class="form-item">
-      <text class="form-label">头围 (cm)</text>
-      <input class="form-input" type="digit" data-field="head" value="{{newMeasurement.head}}" placeholder="例如 43.0" bindinput="onMeasurementInput" />
-    </view>
-    <view class="form-item">
-      <text class="form-label">备注</text>
-      <input class="form-input" type="text" data-field="notes" value="{{newMeasurement.notes}}" placeholder="可选" bindinput="onMeasurementInput" />
-    </view>
+
     <view class="form-actions">
       <button class="action-btn ghost" bindtap="closeForms">取消</button>
       <button class="action-btn primary" bindtap="saveMeasurement">保存</button>
+    </view>
+  </view>
+
+  <view class="list-card">
+    <view class="list-header">
+      <text class="list-title">测量记录</text>
+      <text class="list-count" wx:if="{{!measurementListLoading && measurementList.length}}">共 {{measurementList.length}} 条</text>
+    </view>
+
+    <view class="month-switcher" wx:if="{{!measurementListLoading}}">
+      <view
+        class="month-nav-btn {{canPrevMonth ? '' : 'disabled'}}"
+        bindtap="onPrevMonth"
+        hover-class="{{canPrevMonth ? 'month-nav-btn-hover' : ''}}"
+        hover-stay-time="60"
+      >〈</view>
+      <text class="month-switcher-title">{{selectedMonthTitle}}</text>
+      <view
+        class="month-nav-btn {{canNextMonth ? '' : 'disabled'}}"
+        bindtap="onNextMonth"
+        hover-class="{{canNextMonth ? 'month-nav-btn-hover' : ''}}"
+        hover-stay-time="60"
+      >〉</view>
+    </view>
+
+    <view class="list-loading" wx:if="{{measurementListLoading}}">
+      <view class="list-loading-dot"></view>
+      <text class="list-loading-text">正在加载测量记录...</text>
+    </view>
+
+    <view class="empty-list" wx:elif="{{!currentMonthItems.length}}">
+      <text class="empty-text">本月还没有测量记录</text>
+      <text class="empty-tip">可左右切换月份，或点击上方「新增测量」</text>
+    </view>
+
+    <view class="measure-list" wx:else>
+      <view
+        class="measure-item"
+        wx:for="{{currentMonthItems}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onMeasurementItemTap"
+        hover-class="measure-item-hover"
+        hover-stay-time="60"
+      >
+        <view class="measure-item-main">
+          <view class="measure-item-date-row">
+            <text class="measure-item-date">{{item.dayText}}</text>
+            <text class="measure-item-age" wx:if="{{item.monthAgeText}}">{{item.monthAgeText}}</text>
+          </view>
+          <view class="measure-item-metrics">
+            <text class="measure-chip" wx:if="{{item.weightText}}">体重 {{item.weightText}}</text>
+            <text class="measure-chip alt" wx:if="{{item.lengthText}}">身长 {{item.lengthText}}</text>
+            <text class="measure-chip head" wx:if="{{item.headText}}">头围 {{item.headText}}</text>
+          </view>
+          <text class="measure-item-notes" wx:if="{{item.notes}}">{{item.notes}}</text>
+        </view>
+        <text class="measure-item-arrow">›</text>
+      </view>
     </view>
   </view>
 </view>
