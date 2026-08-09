@@ -433,6 +433,85 @@ test('onShow refreshes formula powders without wiping the current milk entries',
   assert.equal(page.data.milkEntries[0].volume, '60');
 });
 
+test('onShow syncs create-mode weight and target preview after weight changes elsewhere', async () => {
+  const { pageConfig } = loadV2Page({
+    resolveBasicInfoSnapshot: async () => ({
+      weight: 5.8,
+      height: 60,
+      naturalProteinCoefficient: 1.2,
+      specialProteinCoefficient: 1.5,
+      calorieCoefficient: 100,
+      source: 'growth_record'
+    })
+  });
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    editorMode: 'create',
+    selectedDate: '2026-05-20',
+    weight: '4.35',
+    naturalProteinCoefficientInput: '1.2',
+    specialProteinCoefficientInput: '1.5',
+    calorieCoefficientInput: '100',
+    milkEntries: [],
+    existingRecords: [],
+    targetContext: {
+      currentSummary: {},
+      weight: '4.35',
+      targetPreferences: {
+        naturalProteinCoefficient: 1.2,
+        specialProteinCoefficient: 1.5,
+        calorieCoefficient: 100
+      }
+    }
+  });
+
+  await page.onShow();
+
+  assert.equal(page.data.weight, '5.8');
+  assert.equal(page.data.targetContext.weight, 5.8);
+  assert.equal(page.data.targetPreview.proteinRows[0].target, 6.96);
+  assert.equal(page.data.targetPreview.proteinRows[1].target, 8.7);
+});
+
+test('onShow refreshes target preview weight in edit mode without overwriting snapshot weight', async () => {
+  const { pageConfig } = loadV2Page({
+    resolveBasicInfoSnapshot: async () => ({
+      weight: 5.8,
+      height: 60,
+      naturalProteinCoefficient: 1.2,
+      specialProteinCoefficient: 1.5,
+      calorieCoefficient: 100,
+      source: 'growth_record'
+    })
+  });
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    editorMode: 'edit',
+    selectedDate: '2026-05-20',
+    weight: '5.4',
+    naturalProteinCoefficientInput: '1.2',
+    specialProteinCoefficientInput: '1.5',
+    calorieCoefficientInput: '100',
+    milkEntries: [],
+    existingRecords: [],
+    targetContext: {
+      currentSummary: {},
+      weight: '5.4',
+      targetPreferences: {
+        naturalProteinCoefficient: 1.2,
+        specialProteinCoefficient: 1.5,
+        calorieCoefficient: 100
+      }
+    }
+  });
+
+  await page.onShow();
+
+  assert.equal(page.data.weight, '5.4');
+  assert.equal(page.data.targetContext.weight, 5.8);
+  assert.equal(page.data.targetPreview.proteinRows[0].target, 6.96);
+});
+
 test('navigateToGoalPlanner opens the standalone planner with date and edit context', () => {
   const { pageConfig, calls } = loadV2Page();
   const page = createPageInstance(pageConfig, {

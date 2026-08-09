@@ -477,18 +477,42 @@ Page({
 
   async refreshTargetContextFromPreferences() {
     if (!this.data.babyUid) return;
+
+    // 体重可能在首页/算奶页被改过；页面仍在栈内时只会走 onShow，需重新解析当日基础信息。
+    let latestBasicInfo = null;
+    try {
+      latestBasicInfo = await resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
+        includeFallbacks: false,
+        includeProfileInitial: true,
+        carryForwardMissing: true
+      });
+    } catch (error) {
+      console.warn('刷新当日体重失败，沿用页面缓存:', error);
+    }
+
     const targetContext = await this.loadTargetContext({
-      weight: this.data.weight,
-      naturalProteinCoefficient: this.data.naturalProteinCoefficientInput,
-      specialProteinCoefficient: this.data.specialProteinCoefficientInput,
-      calorieCoefficient: this.data.calorieCoefficientInput
+      weight: latestBasicInfo?.weight || this.data.weight,
+      naturalProteinCoefficient: latestBasicInfo?.naturalProteinCoefficient || this.data.naturalProteinCoefficientInput,
+      specialProteinCoefficient: latestBasicInfo?.specialProteinCoefficient || this.data.specialProteinCoefficientInput,
+      calorieCoefficient: latestBasicInfo?.calorieCoefficient || this.data.calorieCoefficientInput
     }, this.data.existingRecords || []);
-    this.setData({
+
+    const patch = {
       targetContext,
       naturalProteinCoefficientInput: targetContext.targetPreferences?.naturalProteinCoefficient || this.data.naturalProteinCoefficientInput,
       specialProteinCoefficientInput: targetContext.targetPreferences?.specialProteinCoefficient || this.data.specialProteinCoefficientInput,
       calorieCoefficientInput: targetContext.targetPreferences?.calorieCoefficient || this.data.calorieCoefficientInput
-    }, () => {
+    };
+
+    // 新建时同步最新体重，避免目标预览/保存快照仍用旧值；编辑模式保留记录快照体重。
+    if (this.data.editorMode !== 'edit') {
+      const nextWeight = toInputValue(targetContext.weight || latestBasicInfo?.weight);
+      if (nextWeight) {
+        patch.weight = nextWeight;
+      }
+    }
+
+    this.setData(patch, () => {
       this.refreshNutritionPreview();
     });
   },
@@ -1258,11 +1282,13 @@ Page({
     const nutritionPreview = withProteinDisplay(buildNutritionSummary(components));
     const targetContext = this.data.targetContext || {};
     const previousSummary = this.getEditingPreviousSummary();
+    // 目标提醒与首页一致：优先用当日目标上下文体重，避免页面缓存体重盖住刚改过的值。
+    const previewWeight = targetContext.weight || this.data.weight;
     const targetPreview = buildEntryTargetPreview({
       currentSummary: targetContext.currentSummary || this.summarizeRecordsForTarget(this.data.existingRecords || []),
       draftSummary: nutritionPreview,
       previousSummary,
-      weight: this.data.weight || targetContext.weight,
+      weight: previewWeight,
       targetPreferences: targetContext.targetPreferences || {},
       includeCalories: true
     });
@@ -1272,7 +1298,7 @@ Page({
     ), 0);
     const consumedCalories = Number.isFinite(dailyConsumedCalories) ? dailyConsumedCalories : fallbackConsumedCalories;
     const effectiveConsumedCalories = Math.max(0, consumedCalories - (Number(previousSummary.calories) || 0));
-    const weight = Number(this.data.weight || targetContext.weight);
+    const weight = Number(previewWeight);
     const calorieCoefficient = Number(this.data.calorieCoefficientInput || targetContext.targetPreferences?.calorieCoefficient);
     const hasGoal = Number.isFinite(weight) && weight > 0 && Number.isFinite(calorieCoefficient) && calorieCoefficient > 0;
     const calorieGoal = hasGoal ? Math.round(weight * calorieCoefficient) : '';
