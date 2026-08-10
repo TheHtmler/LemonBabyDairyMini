@@ -8,6 +8,7 @@ const TREATMENT_ITEM_CATEGORIES = [
   { value: 'levocarnitine', label: '左卡尼丁' },
   { value: 'arginine', label: '精氨酸' },
   { value: 'sodium_bicarbonate', label: '碳酸氢钠' },
+  { value: 'sodium_chloride', label: '氯化钠' },
   { value: 'custom', label: '自定义药物' }
 ];
 
@@ -61,7 +62,7 @@ function getDefaultTreatmentGroupName(index = 0) {
 
 function getDefaultTreatmentUnit(category = '') {
   if (!category) return 'ml';
-  if (category === 'sodium_bicarbonate') return 'ml';
+  if (category === 'sodium_bicarbonate' || category === 'sodium_chloride') return 'ml';
   if (category === 'levocarnitine' || category === 'arginine') return 'mg';
   if (category === 'dextrose_10' || category === 'dextrose_5') return 'ml';
   return 'ml';

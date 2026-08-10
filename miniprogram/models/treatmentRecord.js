@@ -206,6 +206,7 @@ class TreatmentRecordModel {
       return { success: false, message: error.message || '获取失败', data: null };
     }
   }
+
 }
 
 module.exports = new TreatmentRecordModel();
