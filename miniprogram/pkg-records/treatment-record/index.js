@@ -26,6 +26,25 @@ const {
 
 const FIXED_CATEGORY_OPTIONS = TREATMENT_ITEM_CATEGORIES.filter(item => item.value !== 'custom');
 
+const QUICK_ADD_OPTIONS = [
+  { value: 'dextrose_10', shortLabel: '10%糖' },
+  { value: 'dextrose_5', shortLabel: '5%糖' },
+  { value: 'levocarnitine', shortLabel: '左卡' },
+  { value: 'arginine', shortLabel: '精氨酸' },
+  { value: 'sodium_bicarbonate', shortLabel: '碳氢' },
+  { value: 'sodium_chloride', shortLabel: '氯化钠' },
+  { value: 'other', shortLabel: '其他' }
+];
+
+const OTHER_ADD_OPTIONS = [
+  { value: 'custom', label: '自定义' }
+];
+
+function getCurrentTimeValue() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
 function canLoadDailyTargetContext() {
   try {
     const wxApi = typeof wx !== 'undefined' ? wx : null;
@@ -39,6 +58,12 @@ function canLoadDailyTargetContext() {
 function getTodayDateKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function formatDateDisplay(dateKey = '') {
+  const parts = String(dateKey).split('-').map(Number);
+  if (parts.length < 3 || !parts[1] || !parts[2]) return dateKey || '';
+  return `${parts[1]}月${parts[2]}日`;
 }
 
 function normalizeNumericInput(value) {
@@ -63,6 +88,38 @@ function withProteinDisplay(summary = {}) {
   };
 }
 
+function isDextroseCategory(category = '') {
+  return category === 'dextrose_10' || category === 'dextrose_5';
+}
+
+function buildGroupCollapsedSummary(group = {}) {
+  const items = Array.isArray(group.items) ? group.items : [];
+  if (items.length === 0) {
+    return {
+      summaryMain: '未添加药物',
+      summarySub: '点击展开编辑'
+    };
+  }
+
+  const fluidIndex = items.findIndex(item => isDextroseCategory(item.category));
+  const fluid = fluidIndex >= 0 ? items[fluidIndex] : items[0];
+  const fluidName = fluid.name || getTreatmentCategoryLabel(fluid.category) || '药物';
+  const fluidAmount = fluid.amount === '' || fluid.amount === undefined || fluid.amount === null
+    ? ''
+    : `${fluid.amount}${fluid.unit || ''}`;
+  const summaryMain = fluidAmount ? `${fluidName} ${fluidAmount}` : fluidName;
+
+  const otherNames = items
+    .filter((_, index) => index !== (fluidIndex >= 0 ? fluidIndex : 0))
+    .map(item => item.name || getTreatmentCategoryLabel(item.category))
+    .filter(Boolean);
+
+  return {
+    summaryMain,
+    summarySub: otherNames.length > 0 ? otherNames.join(' · ') : '暂无其他药物'
+  };
+}
+
 function normalizeGroupForForm(group = {}, index = 0) {
   const baseGroup = createTreatmentGroup(index, 'dextrose_10');
   const items = Array.isArray(group.items) && group.items.length > 0
@@ -82,23 +139,46 @@ function normalizeGroupForForm(group = {}, index = 0) {
     }))
     : [];
 
-  return {
+  const normalized = {
     ...baseGroup,
     ...group,
     name: group.name || baseGroup.name,
     items,
+    expanded: group.expanded !== false,
     summary: calculateTreatmentGroupSummary({ items })
   };
+  const collapsed = buildGroupCollapsedSummary(normalized);
+  return {
+    ...normalized,
+    summaryMain: collapsed.summaryMain,
+    summarySub: collapsed.summarySub
+  };
+}
+
+function createDefaultGroup(index = 0) {
+  return normalizeGroupForForm({
+    ...createTreatmentGroup(index, 'dextrose_10'),
+    items: [createTreatmentItem('dextrose_10')],
+    expanded: true
+  }, index);
+}
+
+function areAllGroupsExpanded(groups = []) {
+  const list = Array.isArray(groups) ? groups : [];
+  return list.length > 0 && list.every(group => group && group.expanded !== false);
 }
 
 Page({
   data: {
     recordId: '',
     dateKey: '',
+    dateDisplay: '',
     isEdit: false,
     saving: false,
+    allGroupsExpanded: true,
     categoryOptions: FIXED_CATEGORY_OPTIONS,
     unitOptions: TREATMENT_ITEM_UNITS,
+    quickAddOptions: QUICK_ADD_OPTIONS,
     form: {
       recordType: 'iv',
       startTime: '',
@@ -120,6 +200,7 @@ Page({
     const recordId = options.id || '';
     this.setData({
       dateKey,
+      dateDisplay: formatDateDisplay(dateKey),
       recordId,
       isEdit: !!recordId
     });
@@ -130,15 +211,15 @@ Page({
       return;
     }
 
-    const defaultType = 'iv';
-    const groups = [normalizeGroupForForm(createTreatmentGroup(0, 'dextrose_10'), 0)];
+    const groups = [createDefaultGroup(0)];
     this.setData({
       form: {
-        recordType: defaultType,
-        startTime: '',
+        recordType: 'iv',
+        startTime: getCurrentTimeValue(),
         notes: '',
         groups
       },
+      allGroupsExpanded: areAllGroupsExpanded(groups),
       summary: withProteinDisplay(calculateTreatmentRecordSummary(groups))
     }, () => {
       this.refreshTargetPreview();
@@ -193,15 +274,18 @@ Page({
             items: record.items || []
           }];
       const groups = sourceGroups.map((group, index) => normalizeGroupForForm(group, index));
+      const dateKey = record.dateKey || this.data.dateKey;
 
       this.setData({
-        dateKey: record.dateKey || this.data.dateKey,
+        dateKey,
+        dateDisplay: formatDateDisplay(dateKey),
         form: {
           recordType: record.recordType || 'iv',
           startTime: record.startTime || '',
           notes: record.notes || '',
           groups
         },
+        allGroupsExpanded: areAllGroupsExpanded(groups),
         summary: withProteinDisplay(calculateTreatmentRecordSummary(groups)),
         originalTreatmentSummary: summarizeTreatmentGroups(groups)
       }, () => {
@@ -218,12 +302,13 @@ Page({
   setFormData(nextForm) {
     const safeGroups = Array.isArray(nextForm.groups) && nextForm.groups.length > 0
       ? nextForm.groups.map((group, index) => normalizeGroupForForm(group, index))
-      : [normalizeGroupForForm(createTreatmentGroup(0, 'dextrose_10'), 0)];
+      : [createDefaultGroup(0)];
     this.setData({
       form: {
         ...nextForm,
         groups: safeGroups
       },
+      allGroupsExpanded: areAllGroupsExpanded(safeGroups),
       summary: withProteinDisplay(calculateTreatmentRecordSummary(safeGroups))
     }, () => {
       this.refreshTargetPreview();
@@ -232,7 +317,10 @@ Page({
 
   onDateChange(e) {
     const dateKey = e.detail.value;
-    this.setData({ dateKey }, async () => {
+    this.setData({
+      dateKey,
+      dateDisplay: formatDateDisplay(dateKey)
+    }, async () => {
       await this.loadTargetContext(dateKey);
       this.refreshTargetPreview();
     });
@@ -267,6 +355,34 @@ Page({
     this.setFormData({
       ...this.data.form,
       startTime: e.detail.value
+    });
+  },
+
+  toggleGroupExpanded(e) {
+    const groupIndex = Number(e.currentTarget.dataset.groupIndex);
+    if (!Number.isFinite(groupIndex)) return;
+    const groups = [...(this.data.form.groups || [])];
+    if (!groups[groupIndex]) return;
+    groups[groupIndex] = {
+      ...groups[groupIndex],
+      expanded: !groups[groupIndex].expanded
+    };
+    this.setFormData({
+      ...this.data.form,
+      groups
+    });
+  },
+
+  toggleAllGroups() {
+    const groups = [...(this.data.form.groups || [])];
+    if (!groups.length) return;
+    const expandAll = !areAllGroupsExpanded(groups);
+    this.setFormData({
+      ...this.data.form,
+      groups: groups.map(group => ({
+        ...group,
+        expanded: expandAll
+      }))
     });
   },
 
@@ -319,7 +435,7 @@ Page({
 
   addTreatmentGroup() {
     const groups = [...(this.data.form.groups || [])];
-    groups.push(normalizeGroupForForm(createTreatmentGroup(groups.length, 'dextrose_10'), groups.length));
+    groups.push(createDefaultGroup(groups.length));
     this.setFormData({
       ...this.data.form,
       groups
@@ -340,29 +456,44 @@ Page({
     });
   },
 
-  addTreatmentItem(e) {
-    const groupIndex = Number(e.currentTarget.dataset.groupIndex);
-    this.updateGroup(groupIndex, group => {
+  createItemByCategory(category) {
+    if (category === 'custom') {
       return {
-        ...group,
-        items: [...(group.items || []), createTreatmentItem('')]
+        ...createTreatmentItem('custom'),
+        category: 'custom',
+        categoryIndex: -1,
+        name: ''
       };
-    });
+    }
+    return createTreatmentItem(category);
   },
 
-  addCustomTreatmentItem(e) {
+  appendItemToGroup(groupIndex, category) {
+    this.updateGroup(groupIndex, group => ({
+      ...group,
+      items: [...(group.items || []), this.createItemByCategory(category)]
+    }));
+  },
+
+  onQuickAdd(e) {
     const groupIndex = Number(e.currentTarget.dataset.groupIndex);
-    this.updateGroup(groupIndex, group => {
-      return {
-        ...group,
-        items: [...(group.items || []), {
-          ...createTreatmentItem('custom'),
-          category: 'custom',
-          categoryIndex: -1,
-          name: ''
-        }]
-      };
-    });
+    const category = e.currentTarget.dataset.category;
+    if (category === 'other') {
+      if (OTHER_ADD_OPTIONS.length === 1) {
+        this.appendItemToGroup(groupIndex, OTHER_ADD_OPTIONS[0].value);
+        return;
+      }
+      wx.showActionSheet({
+        itemList: OTHER_ADD_OPTIONS.map(item => item.label),
+        success: (res) => {
+          const option = OTHER_ADD_OPTIONS[res.tapIndex];
+          if (!option) return;
+          this.appendItemToGroup(groupIndex, option.value);
+        }
+      });
+      return;
+    }
+    this.appendItemToGroup(groupIndex, category);
   },
 
   removeTreatmentItem(e) {
@@ -370,10 +501,6 @@ Page({
     const itemIndex = Number(e.currentTarget.dataset.itemIndex);
     this.updateGroup(groupIndex, group => {
       const items = [...(group.items || [])];
-      if (items.length === 1) {
-        wx.showToast({ title: '每组至少保留一项', icon: 'none' });
-        return group;
-      }
       items.splice(itemIndex, 1);
       return {
         ...group,
@@ -421,15 +548,6 @@ Page({
     this.updateItem(groupIndex, itemIndex, item => ({
       ...item,
       [field]: nextValue
-    }));
-  },
-
-  onItemCountSwitch(e) {
-    const groupIndex = Number(e.currentTarget.dataset.groupIndex);
-    const itemIndex = Number(e.currentTarget.dataset.itemIndex);
-    this.updateItem(groupIndex, itemIndex, item => ({
-      ...item,
-      countInNutrition: !!e.detail.value
     }));
   },
 
@@ -489,10 +607,6 @@ Page({
       wx.showToast({ title: '请填写自定义药物名称', icon: 'none' });
       return;
     }
-    if (!form.startTime) {
-      wx.showToast({ title: '请填写开始时间', icon: 'none' });
-      return;
-    }
 
     this.setData({ saving: true });
     wx.showLoading({ title: '保存中...' });
@@ -501,7 +615,7 @@ Page({
       const payload = {
         date: dateKey,
         recordType: form.recordType,
-        startTime: form.startTime,
+        startTime: form.startTime || '',
         notes: form.notes,
         groups
       };
