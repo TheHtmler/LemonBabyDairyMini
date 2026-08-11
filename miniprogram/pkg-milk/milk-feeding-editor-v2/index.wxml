@@ -249,7 +249,7 @@
     <view class="partial-intake-toggle" bindtap="togglePartialIntakePanel">
       <view class="partial-intake-toggle-copy">
         <text class="partial-intake-title">没喝完？按瓶内刻度折算</text>
-        <text class="partial-intake-sub">全喝完可忽略</text>
+        <text class="partial-intake-sub">不用折算可忽略</text>
       </view>
       <text class="partial-intake-chevron">{{partialIntakeExpanded ? '收起' : '展开'}}</text>
     </view>
@@ -261,7 +261,7 @@
           <input class="field-input" type="digit" value="{{preparedFinalVolumeInput}}" disabled="{{showAddMilkPanel}}" bindinput="onPreparedFinalVolumeInput" />
           <text class="field-unit">ml</text>
         </view>
-        <text class="partial-intake-restore" wx:if="{{preparedFinalVolumeTouched}}" catchtap="onRestoreEstimatedFinalVolume">恢复估算</text>
+        <text class="partial-intake-restore" wx:if="{{preparedFinalVolumeTouched}}" catchtap="onRestoreEstimatedFinalVolume">用估算值</text>
       </view>
       <view class="partial-intake-row">
         <text class="partial-intake-label">还剩</text>
@@ -272,7 +272,9 @@
       </view>
       <view class="partial-intake-quick">
         <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverHalf">剩一半</view>
-        <view class="partial-intake-chip" catchtap="onPartialIntakeQuickFinished">全喝完</view>
+        <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverThird">剩1/3</view>
+        <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverQuarter">剩1/4</view>
+        <view class="partial-intake-chip partial-intake-chip-muted" catchtap="onPartialIntakeQuickClear">清空</view>
       </view>
       <view class="partial-intake-preview" wx:if="{{partialIntakePreview.actualVolumeText}}">
         <text class="partial-intake-preview-main">{{partialIntakePreview.actualVolumeText}}</text>

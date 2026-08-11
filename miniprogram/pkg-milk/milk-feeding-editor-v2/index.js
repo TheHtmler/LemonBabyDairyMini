@@ -1318,7 +1318,9 @@ Page({
   syncPartialIntakeDefaults() {
     const estimated = this.getEstimatedFinalVolume();
     const patch = { estimatedFinalVolume: estimated };
-    if (!this.data.preparedFinalVolumeTouched) {
+    const hasLeftover = this.data.leftoverVolumeInput !== '' && Number(this.data.leftoverVolumeInput) > 0;
+    // 已展开，或正在按剩余折算时，才自动回填冲后体积；清空后保持空，避免又被写回
+    if (!this.data.preparedFinalVolumeTouched && (this.data.partialIntakeExpanded || hasLeftover)) {
       patch.preparedFinalVolumeInput = estimated > 0 ? `${estimated}` : '';
     }
     this.setData(patch, () => {
@@ -1423,29 +1425,61 @@ Page({
     });
   },
 
-  onPartialIntakeQuickLeftoverHalf() {
+  applyPartialIntakeLeftoverFraction(fraction) {
     const preparedComponents = this.buildCurrentComponents();
-    const finalVol = this.resolvePreparedFinalVolume(preparedComponents);
+    let finalVol = this.resolvePreparedFinalVolume(preparedComponents);
+    if (!(finalVol > 0)) {
+      finalVol = estimatePreparedFinalVolume(preparedComponents);
+    }
     if (!(finalVol > 0)) {
       wxApi.showToast({ title: '请先填写冲后瓶内总量', icon: 'none' });
       return;
     }
-    const half = Math.round(finalVol / 2);
-    this.setData({
+    const leftover = Math.round(finalVol * fraction);
+    if (!(leftover > 0) || leftover >= finalVol) {
+      wxApi.showToast({ title: '剩余无效，请改冲后总量', icon: 'none' });
+      return;
+    }
+    const patch = {
       partialIntakeExpanded: true,
-      leftoverVolumeInput: `${half}`,
-      preparedFinalVolumeInput: this.data.preparedFinalVolumeInput || `${finalVol}`
-    }, () => {
+      leftoverVolumeInput: `${leftover}`
+    };
+    if (!this.data.preparedFinalVolumeInput) {
+      patch.preparedFinalVolumeInput = `${finalVol}`;
+    }
+    this.setData(patch, () => {
       this.refreshPartialIntakePreview();
       this.refreshNutritionPreview({ skipPartialSync: true });
     });
   },
 
-  onPartialIntakeQuickFinished() {
+  onPartialIntakeQuickLeftoverHalf() {
+    this.applyPartialIntakeLeftoverFraction(0.5);
+  },
+
+  onPartialIntakeQuickLeftoverThird() {
+    this.applyPartialIntakeLeftoverFraction(1 / 3);
+  },
+
+  onPartialIntakeQuickLeftoverQuarter() {
+    this.applyPartialIntakeLeftoverFraction(0.25);
+  },
+
+  // 清空折算：不按比例；冲后体积一并清掉，下次展开再带估算
+  onPartialIntakeQuickClear() {
+    const estimated = this.getEstimatedFinalVolume();
     this.setData({
-      leftoverVolumeInput: ''
+      leftoverVolumeInput: '',
+      preparedFinalVolumeInput: '',
+      preparedFinalVolumeTouched: false,
+      partialIntakeExpanded: false,
+      estimatedFinalVolume: estimated,
+      partialIntakePreview: {
+        actualVolumeText: '',
+        summaryText: '',
+        error: ''
+      }
     }, () => {
-      this.refreshPartialIntakePreview();
       this.refreshNutritionPreview({ skipPartialSync: true });
     });
   },

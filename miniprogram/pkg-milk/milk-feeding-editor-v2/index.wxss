@@ -778,6 +778,7 @@
 
 .partial-intake-quick {
   display: flex;
+  flex-wrap: wrap;
   gap: 12rpx;
   margin: 4rpx 0 12rpx;
 }
@@ -789,6 +790,11 @@
   border: 1rpx solid rgba(214, 173, 92, 0.18);
   font-size: 22rpx;
   color: #6d5728;
+}
+
+.partial-intake-chip-muted {
+  background: rgba(245, 240, 230, 0.95);
+  color: #8a7c60;
 }
 
 .partial-intake-preview {

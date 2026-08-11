@@ -1698,9 +1698,43 @@ test('partial intake panel copy stays low-key and notes placeholder is generic',
   assert.match(wxml, /没喝完？按瓶内刻度折算/);
   assert.match(wxml, /冲后瓶内约/);
   assert.match(wxml, /还剩/);
+  assert.match(wxml, /剩一半/);
+  assert.match(wxml, /剩1\/3/);
+  assert.match(wxml, /剩1\/4/);
+  assert.match(wxml, /catchtap="onPartialIntakeQuickClear"/);
+  assert.match(wxml, />清空</);
   assert.match(wxml, /placeholder="可选备注"/);
   assert.doesNotMatch(wxml, /喝奶状态 \/ 剩余量/);
   assert.doesNotMatch(wxml, /高级设置/);
+  assert.doesNotMatch(wxml, /全喝完/);
+});
+
+test('onPartialIntakeQuickClear clears bottle volume and leftover', () => {
+  const { pageConfig } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    partialIntakeExpanded: true,
+    preparedFinalVolumeInput: '155',
+    preparedFinalVolumeTouched: true,
+    leftoverVolumeInput: '55',
+    milkEntries: [
+      {
+        localId: 'breast-1',
+        kind: 'breast_milk',
+        volume: '60'
+      }
+    ],
+    nutritionSettings: {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67
+    }
+  });
+
+  page.onPartialIntakeQuickClear();
+
+  assert.equal(page.data.leftoverVolumeInput, '');
+  assert.equal(page.data.preparedFinalVolumeInput, '');
+  assert.equal(page.data.preparedFinalVolumeTouched, false);
+  assert.equal(page.data.partialIntakeExpanded, false);
 });
 
 test('saveFeedingRecord omits partial fields when leftover is empty', async () => {
