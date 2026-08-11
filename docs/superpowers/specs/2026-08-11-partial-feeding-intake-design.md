@@ -1,7 +1,7 @@
 # 部分喝奶按比例折算设计
 
 日期：2026-08-11  
-状态：待审阅  
+状态：已确认  
 分支：`feat/partial-feeding-intake-design`
 
 ## 背景
