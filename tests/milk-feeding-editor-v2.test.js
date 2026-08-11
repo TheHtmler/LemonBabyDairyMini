@@ -1692,3 +1692,185 @@ test('saving a system powder feeding records its source provenance in the snapsh
   assert.equal(component.sourceType, 'system');
   assert.equal(component.sourcePowderCode, 'SF_SPECIAL_1');
 });
+
+test('partial intake panel copy stays low-key and notes placeholder is generic', () => {
+  const wxml = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.wxml', 'utf8');
+  assert.match(wxml, /没喝完？按瓶内刻度折算/);
+  assert.match(wxml, /冲后瓶内约/);
+  assert.match(wxml, /还剩/);
+  assert.match(wxml, /placeholder="可选备注"/);
+  assert.doesNotMatch(wxml, /喝奶状态 \/ 剩余量/);
+  assert.doesNotMatch(wxml, /高级设置/);
+});
+
+test('saveFeedingRecord omits partial fields when leftover is empty', async () => {
+  const { pageConfig, calls } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    selectedDate: '2026-05-20',
+    startTime: '08:30',
+    leftoverVolumeInput: '',
+    preparedFinalVolumeInput: '155',
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶 A',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        proteinRole: 'natural',
+        mixRatio: { powder: 14.2, water: 130 },
+        nutritionPer100g: { protein: 10.6, calories: 505, fat: 26, carbs: 55, fiber: 0 }
+      }
+    ],
+    milkEntries: [
+      {
+        localId: 'regular-1',
+        kind: 'formula_powder',
+        powderId: 'regular-a',
+        waterVolume: 130,
+        powderWeight: 14.2,
+        ratioMode: 'standard',
+        powderPickerIndex: 0
+      }
+    ]
+  });
+
+  await page.saveFeedingRecord();
+
+  assert.equal(calls.saved.formulaComponents[0].powderWeight, 14.2);
+  assert.equal(calls.saved.preparedComponents, undefined);
+  assert.equal(calls.saved.leftoverVolume, undefined);
+  assert.equal(calls.saved.intakeRatio, undefined);
+});
+
+test('saveFeedingRecord scales components by bottle final volume leftover', async () => {
+  const { pageConfig, calls } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    selectedDate: '2026-05-20',
+    startTime: '08:30',
+    leftoverVolumeInput: '55',
+    preparedFinalVolumeInput: '155',
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶 A',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        proteinRole: 'natural',
+        mixRatio: { powder: 14.2, water: 130 },
+        nutritionPer100g: { protein: 10.6, calories: 505, fat: 26, carbs: 55, fiber: 0 }
+      }
+    ],
+    milkEntries: [
+      {
+        localId: 'regular-1',
+        kind: 'formula_powder',
+        powderId: 'regular-a',
+        waterVolume: 130,
+        powderWeight: 14.2,
+        ratioMode: 'standard',
+        powderPickerIndex: 0
+      }
+    ]
+  });
+
+  await page.saveFeedingRecord();
+
+  assert.equal(calls.saved.consumedBottleVolume, 100);
+  assert.equal(calls.saved.leftoverVolume, 55);
+  assert.equal(calls.saved.preparedFinalVolume, 155);
+  assert.equal(calls.saved.preparedComponents[0].powderWeight, 14.2);
+  assert.equal(calls.saved.formulaComponents[0].powderWeight, 9.16);
+  assert.equal(calls.saved.nutritionSummary.totalPowderWeight, 9.16);
+});
+
+test('saveFeedingRecord blocks full-bottle leftover', async () => {
+  const { pageConfig, calls } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    selectedDate: '2026-05-20',
+    startTime: '08:30',
+    leftoverVolumeInput: '60',
+    preparedFinalVolumeInput: '60',
+    nutritionSettings: {
+      natural_milk_protein: 1.1,
+      natural_milk_calories: 67
+    },
+    milkEntries: [
+      {
+        localId: 'breast-1',
+        kind: 'breast_milk',
+        volume: '60'
+      }
+    ]
+  });
+
+  await page.saveFeedingRecord();
+
+  assert.equal(calls.saved, null);
+  assert.equal(calls.updated, null);
+  assert.equal(calls.toasts[0].title, '还剩整瓶时请删除本顿或改剩余');
+});
+
+test('applyEditingRecord hydrates prepared amounts and expands partial intake', () => {
+  const { pageConfig } = loadV2Page();
+  const page = createPageInstance(pageConfig, {
+    editorMode: 'edit',
+    editingRecordId: 'v2-partial',
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶 A',
+        category: 'regular_formula',
+        proteinRole: 'natural',
+        mixRatio: { powder: 14.2, water: 130 },
+        nutritionPer100g: { protein: 10.6, calories: 505, fat: 0, carbs: 0, fiber: 0 }
+      }
+    ]
+  });
+
+  page.applyEditingRecord({
+    _id: 'v2-partial',
+    startTime: '09:10',
+    notes: '',
+    leftoverVolume: 55,
+    preparedFinalVolume: 155,
+    preparedComponents: [
+      {
+        kind: 'formula_powder',
+        powderId: 'regular-a',
+        powderName: '普奶 A',
+        category: 'regular_formula',
+        proteinRole: 'natural',
+        waterVolume: 130,
+        powderWeight: 14.2,
+        ratioMode: 'standard',
+        mixRatioSnapshot: { powder: 14.2, water: 130 },
+        nutritionSnapshot: { protein: 10.6, calories: 505, fat: 0, carbs: 0, fiber: 0 }
+      }
+    ],
+    formulaComponents: [
+      {
+        kind: 'formula_powder',
+        powderId: 'regular-a',
+        powderName: '普奶 A',
+        category: 'regular_formula',
+        proteinRole: 'natural',
+        waterVolume: 83.87,
+        powderWeight: 9.16,
+        ratioMode: 'standard',
+        mixRatioSnapshot: { powder: 14.2, water: 130 },
+        nutritionSnapshot: { protein: 10.6, calories: 505, fat: 0, carbs: 0, fiber: 0 }
+      }
+    ],
+    nutritionSummary: { totalPowderWeight: 9.16 }
+  });
+
+  assert.equal(page.data.partialIntakeExpanded, true);
+  assert.equal(page.data.leftoverVolumeInput, '55');
+  assert.equal(page.data.preparedFinalVolumeInput, '155');
+  assert.equal(page.data.milkEntries.length, 1);
+  assert.equal(Number(page.data.milkEntries[0].powderWeight), 14.2);
+  assert.equal(Number(page.data.milkEntries[0].waterVolume), 130);
+});

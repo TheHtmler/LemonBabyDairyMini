@@ -33,7 +33,10 @@ const ADD_MILK_CATEGORY_LABELS = {
 const {
   buildBreastMilkComponent,
   buildFormulaPowderComponent,
-  buildNutritionSummary
+  buildNutritionSummary,
+  estimatePreparedFinalVolume,
+  buildPartialIntakePreview,
+  buildPartialIntakeSavePayload
 } = require('../../utils/feedingRecordV2Utils');
 const {
   buildUpcomingReminderCandidates
@@ -330,7 +333,17 @@ Page({
     recentDefaultsLoaded: false,
     recentDefaultText: '',
     notes: '',
-    loading: false
+    loading: false,
+    partialIntakeExpanded: false,
+    preparedFinalVolumeInput: '',
+    leftoverVolumeInput: '',
+    preparedFinalVolumeTouched: false,
+    estimatedFinalVolume: 0,
+    partialIntakePreview: {
+      actualVolumeText: '',
+      summaryText: '',
+      error: ''
+    }
   },
 
   async onLoad(options = {}) {
@@ -1227,8 +1240,10 @@ Page({
   },
 
   applyEditingRecord(record = {}) {
-    const components = Array.isArray(record.formulaComponents) ? record.formulaComponents : [];
-    const milkEntries = components
+    const preparedComponents = Array.isArray(record.preparedComponents) && record.preparedComponents.length
+      ? record.preparedComponents
+      : (Array.isArray(record.formulaComponents) ? record.formulaComponents : []);
+    const milkEntries = preparedComponents
       .filter((component) => component.kind === 'breast_milk' || component.kind === 'formula_powder')
       .map((component) => this.createEntryFromComponent(component));
     const basicInfo = record.basicInfoSnapshot || {};
@@ -1238,6 +1253,11 @@ Page({
       : buildDateTime(record.date || this.data.selectedDate, record.startTime || this.data.startTime);
     this._originalReminderSourceKey = recordId ? `milk:${recordId}` : '';
     this._originalReminderDueAtMs = Number.isNaN(originalDueAt.getTime()) ? 0 : originalDueAt.getTime();
+    const leftover = Number(record.leftoverVolume);
+    const expanded = Number.isFinite(leftover) && leftover > 0;
+    const finalVol = record.preparedFinalVolume !== undefined && record.preparedFinalVolume !== null && record.preparedFinalVolume !== ''
+      ? toInputValue(record.preparedFinalVolume)
+      : '';
 
     this.setData({
       editingRecordId: recordId,
@@ -1251,7 +1271,11 @@ Page({
       calorieCoefficientInput: toInputValue(basicInfo.calorieCoefficient || this.data.calorieCoefficientInput),
       milkEntries: this.normalizeMilkEntries(milkEntries),
       recentDefaultsLoaded: false,
-      recentDefaultText: ''
+      recentDefaultText: '',
+      partialIntakeExpanded: expanded,
+      leftoverVolumeInput: expanded ? toInputValue(leftover) : '',
+      preparedFinalVolumeInput: finalVol,
+      preparedFinalVolumeTouched: expanded && !!finalVol
     }, () => {
       this.refreshNutritionPreview();
     });
@@ -1277,9 +1301,184 @@ Page({
       .filter(Boolean);
   },
 
-  refreshNutritionPreview() {
-    const components = this.buildCurrentComponents();
-    const nutritionPreview = withProteinDisplay(buildNutritionSummary(components));
+  getEstimatedFinalVolume() {
+    return estimatePreparedFinalVolume(this.buildCurrentComponents());
+  },
+
+  resolvePreparedFinalVolume(preparedComponents) {
+    if (this.data.preparedFinalVolumeInput !== '') {
+      const typed = Number(this.data.preparedFinalVolumeInput);
+      if (Number.isFinite(typed) && typed > 0) {
+        return typed;
+      }
+    }
+    return estimatePreparedFinalVolume(preparedComponents);
+  },
+
+  syncPartialIntakeDefaults() {
+    const estimated = this.getEstimatedFinalVolume();
+    const patch = { estimatedFinalVolume: estimated };
+    if (!this.data.preparedFinalVolumeTouched) {
+      patch.preparedFinalVolumeInput = estimated > 0 ? `${estimated}` : '';
+    }
+    this.setData(patch, () => {
+      this.refreshPartialIntakePreview();
+    });
+  },
+
+  refreshPartialIntakePreview() {
+    const preparedComponents = this.buildCurrentComponents();
+    const estimated = estimatePreparedFinalVolume(preparedComponents);
+    const leftoverRaw = this.data.leftoverVolumeInput;
+    const hasLeftover = leftoverRaw !== '' && Number(leftoverRaw) > 0;
+
+    if (!(estimated > 0) && !(Number(this.data.preparedFinalVolumeInput) > 0)) {
+      this.setData({
+        estimatedFinalVolume: estimated,
+        partialIntakePreview: {
+          actualVolumeText: '',
+          summaryText: '',
+          error: ''
+        }
+      });
+      return;
+    }
+
+    if (!hasLeftover) {
+      this.setData({
+        estimatedFinalVolume: estimated,
+        partialIntakePreview: {
+          actualVolumeText: this.data.partialIntakeExpanded ? '按全喝完计算' : '',
+          summaryText: '',
+          error: ''
+        }
+      });
+      return;
+    }
+
+    const preview = buildPartialIntakePreview({
+      components: preparedComponents,
+      preparedFinalVolume: this.resolvePreparedFinalVolume(preparedComponents),
+      leftoverVolume: leftoverRaw
+    });
+
+    if (!preview.ok) {
+      this.setData({
+        estimatedFinalVolume: estimated,
+        partialIntakePreview: {
+          actualVolumeText: '',
+          summaryText: '',
+          error: preview.error || ''
+        }
+      });
+      return;
+    }
+
+    const percent = Math.round((preview.intakeRatio || 0) * 100);
+    this.setData({
+      estimatedFinalVolume: estimated,
+      partialIntakePreview: {
+        actualVolumeText: `实喝 ${preview.actualVolume} ml（约 ${percent}%）`,
+        summaryText: `天然蛋白 ${formatProteinText(preview.nutritionSummary.naturalProtein)}g · 特殊蛋白 ${formatProteinText(preview.nutritionSummary.specialProtein)}g`,
+        error: ''
+      }
+    });
+  },
+
+  togglePartialIntakePanel() {
+    const nextExpanded = !this.data.partialIntakeExpanded;
+    const patch = { partialIntakeExpanded: nextExpanded };
+    if (nextExpanded && !this.data.preparedFinalVolumeTouched) {
+      const estimated = this.getEstimatedFinalVolume();
+      if (estimated > 0) {
+        patch.preparedFinalVolumeInput = `${estimated}`;
+        patch.estimatedFinalVolume = estimated;
+      }
+    }
+    this.setData(patch, () => {
+      this.refreshPartialIntakePreview();
+    });
+  },
+
+  onPreparedFinalVolumeInput(event) {
+    this.setData({
+      preparedFinalVolumeInput: event.detail.value,
+      preparedFinalVolumeTouched: true
+    }, () => {
+      this.refreshPartialIntakePreview();
+      this.refreshNutritionPreview({ skipPartialSync: true });
+    });
+  },
+
+  onLeftoverVolumeInput(event) {
+    const leftoverVolumeInput = event.detail.value;
+    const leftover = Number(leftoverVolumeInput);
+    const patch = { leftoverVolumeInput };
+    if (Number.isFinite(leftover) && leftover > 0) {
+      patch.partialIntakeExpanded = true;
+    }
+    this.setData(patch, () => {
+      this.refreshPartialIntakePreview();
+      this.refreshNutritionPreview({ skipPartialSync: true });
+    });
+  },
+
+  onPartialIntakeQuickLeftoverHalf() {
+    const preparedComponents = this.buildCurrentComponents();
+    const finalVol = this.resolvePreparedFinalVolume(preparedComponents);
+    if (!(finalVol > 0)) {
+      wxApi.showToast({ title: '请先填写冲后瓶内总量', icon: 'none' });
+      return;
+    }
+    const half = Math.round(finalVol / 2);
+    this.setData({
+      partialIntakeExpanded: true,
+      leftoverVolumeInput: `${half}`,
+      preparedFinalVolumeInput: this.data.preparedFinalVolumeInput || `${finalVol}`
+    }, () => {
+      this.refreshPartialIntakePreview();
+      this.refreshNutritionPreview({ skipPartialSync: true });
+    });
+  },
+
+  onPartialIntakeQuickFinished() {
+    this.setData({
+      leftoverVolumeInput: ''
+    }, () => {
+      this.refreshPartialIntakePreview();
+      this.refreshNutritionPreview({ skipPartialSync: true });
+    });
+  },
+
+  onRestoreEstimatedFinalVolume() {
+    const estimated = this.getEstimatedFinalVolume();
+    this.setData({
+      preparedFinalVolumeTouched: false,
+      preparedFinalVolumeInput: estimated > 0 ? `${estimated}` : '',
+      estimatedFinalVolume: estimated
+    }, () => {
+      this.refreshPartialIntakePreview();
+      this.refreshNutritionPreview({ skipPartialSync: true });
+    });
+  },
+
+  refreshNutritionPreview(options = {}) {
+    const preparedComponents = this.buildCurrentComponents();
+    const leftoverRaw = this.data.leftoverVolumeInput;
+    const hasLeftover = leftoverRaw !== '' && Number(leftoverRaw) > 0;
+    let componentsForPreview = preparedComponents;
+    if (hasLeftover) {
+      const preview = buildPartialIntakePreview({
+        components: preparedComponents,
+        preparedFinalVolume: this.resolvePreparedFinalVolume(preparedComponents),
+        leftoverVolume: leftoverRaw
+      });
+      if (preview.ok) {
+        componentsForPreview = preview.scaledComponents;
+      }
+    }
+
+    const nutritionPreview = withProteinDisplay(buildNutritionSummary(componentsForPreview));
     const targetContext = this.data.targetContext || {};
     const previousSummary = this.getEditingPreviousSummary();
     // 目标提醒与首页一致：优先用当日目标上下文体重，避免页面缓存体重盖住刚改过的值。
@@ -1313,6 +1512,10 @@ Page({
         consumedCalories: Math.round(effectiveConsumedCalories),
         remainingBefore,
         remainingAfter
+      }
+    }, () => {
+      if (!options.skipPartialSync) {
+        this.syncPartialIntakeDefaults();
       }
     });
   },
@@ -1399,13 +1602,25 @@ Page({
       return false;
     }
 
-    const formulaComponents = this.buildCurrentComponents();
-    if (!formulaComponents.length) {
+    const preparedComponents = this.buildCurrentComponents();
+    if (!preparedComponents.length) {
       wxApi.showToast({ title: '至少记录一种奶', icon: 'none' });
       return false;
     }
 
-    const nutritionSummary = buildNutritionSummary(formulaComponents);
+    const preparedFinalVolume = this.data.preparedFinalVolumeInput !== ''
+      ? Number(this.data.preparedFinalVolumeInput)
+      : estimatePreparedFinalVolume(preparedComponents);
+    const partial = buildPartialIntakeSavePayload({
+      preparedComponents,
+      preparedFinalVolume,
+      leftoverVolume: this.data.leftoverVolumeInput
+    });
+    if (partial.error) {
+      wxApi.showToast({ title: partial.error, icon: 'none' });
+      return false;
+    }
+
     const payload = {
       babyUid: this.data.babyUid,
       date: this.data.selectedDate,
@@ -1413,10 +1628,17 @@ Page({
       endTime: this.data.endTime || '',
       startDateTime: buildDateTime(this.data.selectedDate, this.data.startTime),
       endDateTime: this.data.endTime ? buildDateTime(this.data.selectedDate, this.data.endTime) : null,
-      formulaComponents,
-      nutritionSummary,
+      formulaComponents: partial.formulaComponents,
+      nutritionSummary: partial.nutritionSummary,
       basicInfoSnapshot: this.buildBasicInfoSnapshot(),
-      notes: this.data.notes || ''
+      notes: this.data.notes || '',
+      ...(partial.preparedComponents ? {
+        preparedComponents: partial.preparedComponents,
+        preparedFinalVolume: partial.preparedFinalVolume,
+        leftoverVolume: partial.leftoverVolume,
+        intakeRatio: partial.intakeRatio,
+        consumedBottleVolume: partial.consumedBottleVolume
+      } : {})
     };
 
     try {

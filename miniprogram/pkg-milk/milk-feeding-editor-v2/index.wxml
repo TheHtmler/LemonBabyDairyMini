@@ -245,13 +245,50 @@
     </view>
   </view>
 
+  <view class="section-card secondary-card partial-intake-card" wx:if="{{estimatedFinalVolume > 0 || milkEntries.length}}">
+    <view class="partial-intake-toggle" bindtap="togglePartialIntakePanel">
+      <view class="partial-intake-toggle-copy">
+        <text class="partial-intake-title">没喝完？按瓶内刻度折算</text>
+        <text class="partial-intake-sub">全喝完可忽略</text>
+      </view>
+      <text class="partial-intake-chevron">{{partialIntakeExpanded ? '收起' : '展开'}}</text>
+    </view>
+    <view wx:if="{{partialIntakeExpanded}}" class="partial-intake-body">
+      <text class="partial-intake-help">按瓶刻度填；粉会占体积，通常比加水量略多</text>
+      <view class="partial-intake-row">
+        <text class="partial-intake-label">冲后瓶内约</text>
+        <view class="field-input-shell primary-input-shell partial-intake-shell">
+          <input class="field-input" type="digit" value="{{preparedFinalVolumeInput}}" disabled="{{showAddMilkPanel}}" bindinput="onPreparedFinalVolumeInput" />
+          <text class="field-unit">ml</text>
+        </view>
+        <text class="partial-intake-restore" wx:if="{{preparedFinalVolumeTouched}}" catchtap="onRestoreEstimatedFinalVolume">恢复估算</text>
+      </view>
+      <view class="partial-intake-row">
+        <text class="partial-intake-label">还剩</text>
+        <view class="field-input-shell primary-input-shell partial-intake-shell">
+          <input class="field-input" type="digit" value="{{leftoverVolumeInput}}" disabled="{{showAddMilkPanel}}" bindinput="onLeftoverVolumeInput" />
+          <text class="field-unit">ml</text>
+        </view>
+      </view>
+      <view class="partial-intake-quick">
+        <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverHalf">剩一半</view>
+        <view class="partial-intake-chip" catchtap="onPartialIntakeQuickFinished">全喝完</view>
+      </view>
+      <view class="partial-intake-preview" wx:if="{{partialIntakePreview.actualVolumeText}}">
+        <text class="partial-intake-preview-main">{{partialIntakePreview.actualVolumeText}}</text>
+        <text class="partial-intake-preview-sub" wx:if="{{partialIntakePreview.summaryText}}">{{partialIntakePreview.summaryText}}</text>
+      </view>
+      <text class="partial-intake-error" wx:if="{{partialIntakePreview.error}}">{{partialIntakePreview.error}}</text>
+    </view>
+  </view>
+
   <view class="section-card secondary-card notes-card compact-notes-card">
     <view class="panel-header compact-panel-header">
       <view class="panel-title-wrap">
         <text class="section-eyebrow">备注</text>
       </view>
     </view>
-    <textarea class="notes-input compact-notes-input" value="{{notes}}" disabled="{{showAddMilkPanel}}" placeholder="喝奶状态 / 剩余量" bindinput="onNotesInput" />
+    <textarea class="notes-input compact-notes-input" value="{{notes}}" disabled="{{showAddMilkPanel}}" placeholder="可选备注" bindinput="onNotesInput" />
   </view>
 
   <view class="footer-bar">
