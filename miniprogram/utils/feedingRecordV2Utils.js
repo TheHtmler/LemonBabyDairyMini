@@ -199,9 +199,184 @@ function normalizeFeedingRecordV2(record = {}, options = {}) {
   };
 }
 
+function estimatePreparedFinalVolume(components = []) {
+  return roundValue((components || []).reduce((sum, component) => {
+    if (component?.kind === 'breast_milk') {
+      return sum + toNumber(component.volume);
+    }
+    if (component?.kind === 'formula_powder') {
+      return sum + toNumber(component.waterVolume);
+    }
+    return sum;
+  }, 0));
+}
+
+function scaleFormulaComponents(components = [], ratio) {
+  const r = toNumber(ratio, 1);
+  return (components || []).map((component) => {
+    if (!component || typeof component !== 'object') {
+      return component;
+    }
+    if (component.kind === 'breast_milk') {
+      return {
+        ...component,
+        volume: roundValue(toNumber(component.volume) * r)
+      };
+    }
+    if (component.kind === 'formula_powder') {
+      return {
+        ...component,
+        waterVolume: roundValue(toNumber(component.waterVolume) * r),
+        powderWeight: roundValue(toNumber(component.powderWeight) * r)
+      };
+    }
+    return { ...component };
+  });
+}
+
+function buildPartialIntakePreview({
+  components,
+  preparedFinalVolume,
+  leftoverVolume
+} = {}) {
+  const prepared = Array.isArray(components) ? components : [];
+  const finalVol = toNumber(preparedFinalVolume);
+  const leftoverRaw = leftoverVolume === '' || leftoverVolume === null || leftoverVolume === undefined
+    ? 0
+    : toNumber(leftoverVolume);
+
+  if (finalVol <= 0) {
+    return {
+      ok: false,
+      error: '请填写冲后瓶内总量',
+      preparedFinalVolume: finalVol,
+      leftoverVolume: leftoverRaw,
+      actualVolume: 0,
+      intakeRatio: 1,
+      scaledComponents: prepared,
+      nutritionSummary: buildNutritionSummary(prepared)
+    };
+  }
+  if (leftoverRaw < 0) {
+    return {
+      ok: false,
+      error: '剩余不能为负数',
+      preparedFinalVolume: roundValue(finalVol),
+      leftoverVolume: leftoverRaw,
+      actualVolume: 0,
+      intakeRatio: 1,
+      scaledComponents: prepared,
+      nutritionSummary: buildNutritionSummary(prepared)
+    };
+  }
+  if (leftoverRaw > finalVol) {
+    return {
+      ok: false,
+      error: '剩余不能大于冲后瓶内总量',
+      preparedFinalVolume: roundValue(finalVol),
+      leftoverVolume: leftoverRaw,
+      actualVolume: 0,
+      intakeRatio: 1,
+      scaledComponents: prepared,
+      nutritionSummary: buildNutritionSummary(prepared)
+    };
+  }
+  if (leftoverRaw === finalVol && leftoverRaw > 0) {
+    return {
+      ok: false,
+      error: '还剩整瓶时请删除本顿或改剩余',
+      preparedFinalVolume: roundValue(finalVol),
+      leftoverVolume: leftoverRaw,
+      actualVolume: 0,
+      intakeRatio: 0,
+      scaledComponents: scaleFormulaComponents(prepared, 0),
+      nutritionSummary: buildNutritionSummary(scaleFormulaComponents(prepared, 0))
+    };
+  }
+
+  const actualVolume = roundValue(finalVol - leftoverRaw);
+  const intakeRatio = finalVol > 0 ? actualVolume / finalVol : 1;
+  const scaledComponents = leftoverRaw > 0
+    ? scaleFormulaComponents(prepared, intakeRatio)
+    : prepared;
+
+  return {
+    ok: true,
+    error: '',
+    preparedFinalVolume: roundValue(finalVol),
+    leftoverVolume: roundValue(leftoverRaw),
+    actualVolume,
+    intakeRatio: roundValue(intakeRatio, 4),
+    scaledComponents,
+    nutritionSummary: buildNutritionSummary(scaledComponents)
+  };
+}
+
+function buildPartialIntakeSavePayload({
+  preparedComponents,
+  preparedFinalVolume,
+  leftoverVolume
+} = {}) {
+  const leftoverRaw = leftoverVolume === '' || leftoverVolume === null || leftoverVolume === undefined
+    ? 0
+    : toNumber(leftoverVolume);
+  const prepared = Array.isArray(preparedComponents) ? preparedComponents : [];
+
+  if (!(leftoverRaw > 0)) {
+    return {
+      formulaComponents: prepared,
+      nutritionSummary: buildNutritionSummary(prepared)
+    };
+  }
+
+  const estimated = estimatePreparedFinalVolume(prepared);
+  const finalVol = preparedFinalVolume === '' || preparedFinalVolume === null || preparedFinalVolume === undefined
+    ? estimated
+    : toNumber(preparedFinalVolume, estimated);
+  const preview = buildPartialIntakePreview({
+    components: prepared,
+    preparedFinalVolume: finalVol,
+    leftoverVolume: leftoverRaw
+  });
+
+  if (!preview.ok) {
+    return { error: preview.error };
+  }
+
+  return {
+    formulaComponents: preview.scaledComponents,
+    nutritionSummary: preview.nutritionSummary,
+    preparedComponents: prepared,
+    preparedFinalVolume: preview.preparedFinalVolume,
+    leftoverVolume: preview.leftoverVolume,
+    intakeRatio: preview.intakeRatio,
+    consumedBottleVolume: preview.actualVolume
+  };
+}
+
+function formatPartialIntakeLabel(input = {}) {
+  const leftover = toNumber(input.leftoverVolume);
+  if (!(leftover > 0)) {
+    return '';
+  }
+  const prepared = toNumber(input.preparedFinalVolume);
+  const consumed = input.consumedBottleVolume !== undefined && input.consumedBottleVolume !== ''
+    ? toNumber(input.consumedBottleVolume)
+    : roundValue(prepared - leftover);
+  if (!(prepared > 0) || !(consumed >= 0)) {
+    return '';
+  }
+  return `冲后 ${roundValue(prepared)} · 喝 ${roundValue(consumed)}（剩 ${roundValue(leftover)}）`;
+}
+
 module.exports = {
   buildBreastMilkComponent,
   buildFormulaPowderComponent,
   buildNutritionSummary,
-  normalizeFeedingRecordV2
+  normalizeFeedingRecordV2,
+  estimatePreparedFinalVolume,
+  scaleFormulaComponents,
+  buildPartialIntakePreview,
+  buildPartialIntakeSavePayload,
+  formatPartialIntakeLabel
 };

@@ -5,7 +5,11 @@ const {
   buildBreastMilkComponent,
   buildFormulaPowderComponent,
   buildNutritionSummary,
-  normalizeFeedingRecordV2
+  normalizeFeedingRecordV2,
+  estimatePreparedFinalVolume,
+  scaleFormulaComponents,
+  buildPartialIntakeSavePayload,
+  formatPartialIntakeLabel
 } = require('../miniprogram/utils/feedingRecordV2Utils');
 
 test('buildBreastMilkComponent saves volume and a per-100ml nutrition snapshot', () => {
@@ -220,4 +224,108 @@ test('normalizeFeedingRecordV2 keeps active records display-ready and hides arch
   assert.equal(normalized.id, 'record-1');
   assert.equal(normalized.title, '08:30 喂奶');
   assert.equal(normalized.nutritionSummary.totalVolume, 60);
+});
+
+test('estimatePreparedFinalVolume sums breast volume and powder waterVolume', () => {
+  const components = [
+    { kind: 'breast_milk', volume: 0, nutritionSnapshot: {} },
+    {
+      kind: 'formula_powder',
+      waterVolume: 130,
+      powderWeight: 14.2,
+      proteinRole: 'natural',
+      nutritionSnapshot: { protein: 10, calories: 500, fat: 0, carbs: 0, fiber: 0 }
+    },
+    {
+      kind: 'formula_powder',
+      waterVolume: 0,
+      powderWeight: 5.27,
+      proteinRole: 'special',
+      nutritionSnapshot: { protein: 0, calories: 400, fat: 0, carbs: 0, fiber: 0 }
+    }
+  ];
+  assert.equal(estimatePreparedFinalVolume(components), 130);
+});
+
+test('scaleFormulaComponents scales water and powder by same ratio', () => {
+  const scaled = scaleFormulaComponents(
+    [{
+      kind: 'formula_powder',
+      waterVolume: 130,
+      powderWeight: 14.2,
+      proteinRole: 'natural',
+      nutritionSnapshot: { protein: 10, calories: 500, fat: 0, carbs: 0, fiber: 0 }
+    }],
+    100 / 155
+  );
+  assert.equal(scaled[0].waterVolume, 83.87);
+  assert.equal(scaled[0].powderWeight, 9.16);
+});
+
+test('buildPartialIntakeSavePayload uses bottle final volume as denominator', () => {
+  const prepared = [{
+    kind: 'formula_powder',
+    powderName: '普奶',
+    waterVolume: 130,
+    powderWeight: 14.2,
+    proteinRole: 'natural',
+    nutritionSnapshot: { protein: 10.6, calories: 505, fat: 26, carbs: 55, fiber: 0 }
+  }];
+  const result = buildPartialIntakeSavePayload({
+    preparedComponents: prepared,
+    preparedFinalVolume: 155,
+    leftoverVolume: 55
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.intakeRatio, 0.6452);
+  assert.equal(result.consumedBottleVolume, 100);
+  assert.equal(result.leftoverVolume, 55);
+  assert.equal(result.preparedFinalVolume, 155);
+  assert.equal(result.formulaComponents[0].powderWeight, 9.16);
+  assert.equal(result.nutritionSummary.totalPowderWeight, 9.16);
+});
+
+test('buildPartialIntakeSavePayload omits partial fields when leftover is 0', () => {
+  const prepared = [{
+    kind: 'formula_powder',
+    waterVolume: 130,
+    powderWeight: 14.2,
+    proteinRole: 'natural',
+    nutritionSnapshot: { protein: 10, calories: 500, fat: 0, carbs: 0, fiber: 0 }
+  }];
+  const result = buildPartialIntakeSavePayload({
+    preparedComponents: prepared,
+    preparedFinalVolume: 155,
+    leftoverVolume: 0
+  });
+  assert.equal(result.formulaComponents[0].powderWeight, 14.2);
+  assert.equal(result.preparedComponents, undefined);
+  assert.equal(result.leftoverVolume, undefined);
+  assert.equal(result.intakeRatio, undefined);
+});
+
+test('buildPartialIntakeSavePayload rejects full bottle leftover', () => {
+  const result = buildPartialIntakeSavePayload({
+    preparedComponents: [{ kind: 'breast_milk', volume: 60, nutritionSnapshot: {} }],
+    preparedFinalVolume: 60,
+    leftoverVolume: 60
+  });
+  assert.equal(result.error, '还剩整瓶时请删除本顿或改剩余');
+});
+
+test('buildPartialIntakeSavePayload rejects leftover greater than final volume', () => {
+  const result = buildPartialIntakeSavePayload({
+    preparedComponents: [{ kind: 'breast_milk', volume: 60, nutritionSnapshot: {} }],
+    preparedFinalVolume: 60,
+    leftoverVolume: 61
+  });
+  assert.equal(result.error, '剩余不能大于冲后瓶内总量');
+});
+
+test('formatPartialIntakeLabel', () => {
+  assert.equal(
+    formatPartialIntakeLabel({ preparedFinalVolume: 155, leftoverVolume: 55, consumedBottleVolume: 100 }),
+    '冲后 155 · 喝 100（剩 55）'
+  );
+  assert.equal(formatPartialIntakeLabel({ leftoverVolume: 0 }), '');
 });
