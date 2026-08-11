@@ -302,6 +302,7 @@ test('buildPartialIntakeSavePayload omits partial fields when leftover is 0', ()
   assert.equal(result.preparedComponents, undefined);
   assert.equal(result.leftoverVolume, undefined);
   assert.equal(result.intakeRatio, undefined);
+  assert.equal(result.clearPartialIntakeFields, true);
 });
 
 test('buildPartialIntakeSavePayload rejects full bottle leftover', () => {

@@ -323,9 +323,11 @@ function buildPartialIntakeSavePayload({
   const prepared = Array.isArray(preparedComponents) ? preparedComponents : [];
 
   if (!(leftoverRaw > 0)) {
+    // 全喝完 / 撤回折算：营养按冲配量；编辑保存时需清掉旧的剩余字段（见 clearPartialIntakeFields）
     return {
       formulaComponents: prepared,
-      nutritionSummary: buildNutritionSummary(prepared)
+      nutritionSummary: buildNutritionSummary(prepared),
+      clearPartialIntakeFields: true
     };
   }
 

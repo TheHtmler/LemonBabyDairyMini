@@ -1631,15 +1631,33 @@ Page({
       formulaComponents: partial.formulaComponents,
       nutritionSummary: partial.nutritionSummary,
       basicInfoSnapshot: this.buildBasicInfoSnapshot(),
-      notes: this.data.notes || '',
-      ...(partial.preparedComponents ? {
-        preparedComponents: partial.preparedComponents,
-        preparedFinalVolume: partial.preparedFinalVolume,
-        leftoverVolume: partial.leftoverVolume,
-        intakeRatio: partial.intakeRatio,
-        consumedBottleVolume: partial.consumedBottleVolume
-      } : {})
+      notes: this.data.notes || ''
     };
+
+    if (partial.preparedComponents) {
+      payload.preparedComponents = partial.preparedComponents;
+      payload.preparedFinalVolume = partial.preparedFinalVolume;
+      payload.leftoverVolume = partial.leftoverVolume;
+      payload.intakeRatio = partial.intakeRatio;
+      payload.consumedBottleVolume = partial.consumedBottleVolume;
+    } else if (partial.clearPartialIntakeFields && this.data.editorMode === 'edit') {
+      // update 只会改传入字段；不显式 remove 的话，旧的「还剩」会残留，撤回无效
+      const remove = wxApi.cloud?.database?.()?.command?.remove;
+      if (typeof remove === 'function') {
+        const unset = remove();
+        payload.preparedComponents = unset;
+        payload.preparedFinalVolume = unset;
+        payload.leftoverVolume = unset;
+        payload.intakeRatio = unset;
+        payload.consumedBottleVolume = unset;
+      } else {
+        payload.leftoverVolume = 0;
+        payload.intakeRatio = 1;
+        payload.preparedComponents = null;
+        payload.preparedFinalVolume = null;
+        payload.consumedBottleVolume = null;
+      }
+    }
 
     try {
       wxApi.showLoading({ title: '保存中' });

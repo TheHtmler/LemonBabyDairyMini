@@ -1743,6 +1743,85 @@ test('saveFeedingRecord omits partial fields when leftover is empty', async () =
   assert.equal(calls.saved.intakeRatio, undefined);
 });
 
+test('saveFeedingRecord clears leftover fields when undoing partial intake in edit mode', async () => {
+  const { pageConfig, calls, wxStub } = loadV2Page();
+  const removeToken = { __remove: true };
+  wxStub.cloud.database = () => ({
+    command: {
+      remove: () => removeToken,
+      lt(value) {
+        return { value };
+      }
+    },
+    serverDate() {
+      return '__server_date__';
+    },
+    collection() {
+      return {
+        where() {
+          return {
+            orderBy() {
+              return this;
+            },
+            limit() {
+              return this;
+            },
+            get: async () => ({ data: [] })
+          };
+        },
+        doc() {
+          return {
+            update: async () => ({})
+          };
+        },
+        add: async () => ({ _id: 'v2-record-1' })
+      };
+    }
+  });
+
+  const page = createPageInstance(pageConfig, {
+    babyUid: 'baby-1',
+    selectedDate: '2026-05-20',
+    startTime: '08:30',
+    editorMode: 'edit',
+    editingRecordId: 'v2-partial',
+    leftoverVolumeInput: '',
+    preparedFinalVolumeInput: '155',
+    formulaPowders: [
+      {
+        id: 'regular-a',
+        name: '普奶 A',
+        category: 'regular_formula',
+        categoryShortLabel: '普',
+        proteinRole: 'natural',
+        mixRatio: { powder: 14.2, water: 130 },
+        nutritionPer100g: { protein: 10.6, calories: 505, fat: 26, carbs: 55, fiber: 0 }
+      }
+    ],
+    milkEntries: [
+      {
+        localId: 'regular-1',
+        kind: 'formula_powder',
+        powderId: 'regular-a',
+        waterVolume: 130,
+        powderWeight: 14.2,
+        ratioMode: 'standard',
+        powderPickerIndex: 0
+      }
+    ]
+  });
+
+  await page.saveFeedingRecord();
+
+  assert.equal(calls.updated.recordId, 'v2-partial');
+  assert.equal(calls.updated.data.formulaComponents[0].powderWeight, 14.2);
+  assert.equal(calls.updated.data.leftoverVolume, removeToken);
+  assert.equal(calls.updated.data.preparedComponents, removeToken);
+  assert.equal(calls.updated.data.preparedFinalVolume, removeToken);
+  assert.equal(calls.updated.data.intakeRatio, removeToken);
+  assert.equal(calls.updated.data.consumedBottleVolume, removeToken);
+});
+
 test('saveFeedingRecord scales components by bottle final volume leftover', async () => {
   const { pageConfig, calls } = loadV2Page();
   const page = createPageInstance(pageConfig, {
