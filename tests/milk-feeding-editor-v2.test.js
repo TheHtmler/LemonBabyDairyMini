@@ -1702,7 +1702,7 @@ test('partial intake panel copy stays low-key and notes placeholder is generic',
   assert.match(wxml, /剩1\/3/);
   assert.match(wxml, /剩1\/4/);
   assert.match(wxml, /catchtap="onPartialIntakeQuickClear"/);
-  assert.match(wxml, />清空</);
+  assert.match(wxml, /清空（喝完啦）/);
   assert.match(wxml, /placeholder="可选备注"/);
   assert.doesNotMatch(wxml, /喝奶状态 \/ 剩余量/);
   assert.doesNotMatch(wxml, /高级设置/);

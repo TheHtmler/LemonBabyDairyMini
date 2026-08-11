@@ -274,7 +274,7 @@
         <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverHalf">剩一半</view>
         <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverThird">剩1/3</view>
         <view class="partial-intake-chip" catchtap="onPartialIntakeQuickLeftoverQuarter">剩1/4</view>
-        <view class="partial-intake-chip partial-intake-chip-muted" catchtap="onPartialIntakeQuickClear">清空</view>
+        <view class="partial-intake-chip partial-intake-chip-muted" catchtap="onPartialIntakeQuickClear">清空（喝完啦）</view>
       </view>
       <view class="partial-intake-preview" wx:if="{{partialIntakePreview.actualVolumeText}}">
         <text class="partial-intake-preview-main">{{partialIntakePreview.actualVolumeText}}</text>
