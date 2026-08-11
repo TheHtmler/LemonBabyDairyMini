@@ -83,6 +83,7 @@ Component({
     timeText: '--:--',
     milkSummaryText: '',
     milkSummaryItems: [],
+    partialIntakeText: '',
     metricItems: []
   },
   observers: {
@@ -140,6 +141,7 @@ Component({
         timeText,
         milkSummaryItems,
         milkSummaryText: milkSummaryItems.length ? '' : milkSegments.join(' · '),
+        partialIntakeText: record.partialIntakeText || '',
         metricItems
       });
     }

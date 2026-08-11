@@ -5,6 +5,7 @@ const {
   PROTEIN_ROLES,
   buildCategoryBadgeStyle
 } = require('./formulaPowderUtils');
+const { formatPartialIntakeLabel } = require('./feedingRecordV2Utils');
 
 function toNumber(value) {
   const num = Number(value);
@@ -250,6 +251,12 @@ function createFeedingDisplayFromV2(record = {}) {
       .map(buildComponentSummarySegment)
       .filter(Boolean)
       .join(' · '),
+    partialIntakeText: formatPartialIntakeLabel({
+      preparedFinalVolume: record.preparedFinalVolume,
+      leftoverVolume: record.leftoverVolume,
+      consumedBottleVolume: record.consumedBottleVolume,
+      intakeRatio: record.intakeRatio
+    }),
     nutritionDisplay: {
       calories: roundValue(summary.calories),
       carbs: roundValue(summary.carbs),

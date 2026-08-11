@@ -14,6 +14,9 @@
     <view class="milk-summary-row" wx:if="{{milkSummaryText}}">
       <text class="milk-summary">{{milkSummaryText}}</text>
     </view>
+    <view class="partial-intake-row" wx:if="{{partialIntakeText}}">
+      <text class="partial-intake-text">{{partialIntakeText}}</text>
+    </view>
     <view class="metric-row">
       <block wx:for="{{metricItems}}" wx:key="index">
         <text class="detail">{{item.text}}</text>

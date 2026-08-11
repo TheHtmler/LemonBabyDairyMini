@@ -85,6 +85,19 @@
   margin-bottom: 4rpx;
 }
 
+.partial-intake-row {
+  display: block;
+  min-width: 0;
+  margin-bottom: 6rpx;
+}
+
+.partial-intake-text {
+  display: block;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: #9a8454;
+}
+
 .milk-summary {
   display: block;
   font-size: 26rpx;

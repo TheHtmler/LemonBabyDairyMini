@@ -99,6 +99,20 @@ test('feeding-record-item hides zero-value milk entries in the summary line', ()
   assert.equal(instance.data.milkSummaryText, '母乳 60ml');
 });
 
+test('feeding-record-item shows partial intake secondary line', () => {
+  const component = loadFeedingRecordItem();
+  const instance = createComponentInstance(component);
+
+  instance.updateDisplay({
+    formattedStartTime: '09:30',
+    milkSummaryItems: [{ badge: '普', name: '普奶', amountText: '84ml', badgeClass: 'regular', badgeStyle: '' }],
+    partialIntakeText: '冲后 155 · 喝 100（剩 55）',
+    nutritionDisplay: { calories: 100, carbs: 10, fat: 5 }
+  });
+
+  assert.equal(instance.data.partialIntakeText, '冲后 155 · 喝 100（剩 55）');
+});
+
 test('feeding-record-item keeps the milk summary on a single line with ellipsis', () => {
   const wxml = fs.readFileSync('miniprogram/components/feeding-record-item/feeding-record-item.wxml', 'utf8');
   const wxss = fs.readFileSync('miniprogram/components/feeding-record-item/feeding-record-item.wxss', 'utf8');
