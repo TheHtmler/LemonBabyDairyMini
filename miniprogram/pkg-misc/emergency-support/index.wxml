@@ -29,6 +29,21 @@
     <text class="calculator-desc">用于快速换算补液中的葡萄糖热量，不含脂肪乳、氨基酸或口服摄入。</text>
 
     <view class="input-group">
+      <text class="input-label">热量换算标准</text>
+      <view class="preset-row">
+        <view
+          class="preset-chip {{glucoseCalorieKey === item.key ? 'active' : ''}}"
+          wx:for="{{glucoseCalorieOptions}}"
+          wx:key="key"
+          data-value="{{item.value}}"
+          bindtap="onGlucoseCoefficientTap"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="input-group">
       <text class="input-label">体重 (kg)</text>
       <input
         class="input-control"
@@ -109,9 +124,9 @@
     <view class="formula-card">
       <text class="formula-title">换算公式</text>
       <text class="formula-line">葡萄糖克数 = 浓度(%) × 液量(mL) / 100</text>
-      <text class="formula-line">热量(kcal) = 葡萄糖克数 × 3.4</text>
+      <text class="formula-line">热量(kcal) = 葡萄糖克数 × {{glucoseCalorieCoefficient}}</text>
       <text class="formula-line">GIR (mg/kg/min) = 浓度(%) × 速度(mL/h) × 10 / 体重(kg) / 60</text>
-      <text class="formula-note">注：静脉葡萄糖补液按 3.4 kcal/g 估算，不按口服碳水 4 kcal/g 计算。</text>
+      <text class="formula-note">注：当前按 {{glucoseCalorieCoefficient}} kcal/g 估算。肠外营养常用 3.4，口服碳水常用 4。</text>
     </view>
 
     <view class="notice-card">

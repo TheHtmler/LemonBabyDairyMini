@@ -81,6 +81,20 @@ test('creating a treatment record marks the daily summary dirty', async () => {
     const result = await treatmentModel.create(validTreatmentData());
     assert.equal(result.success, true);
     assert.deepEqual(calls.markDirty, [{ babyUid: 'baby-1', dateKey: '2026-06-01' }]);
+    assert.equal(calls.adds[0].glucoseCalorieCoefficient, 3.4);
+  } finally {
+    restore();
+  }
+});
+
+test('creating a treatment record persists an explicit glucose calorie coefficient', async () => {
+  const { treatmentModel, calls, restore } = loadTreatmentModel();
+  try {
+    const result = await treatmentModel.create(validTreatmentData({
+      glucoseCalorieCoefficient: 4
+    }));
+    assert.equal(result.success, true);
+    assert.equal(calls.adds[0].glucoseCalorieCoefficient, 4);
   } finally {
     restore();
   }

@@ -1,3 +1,18 @@
+const { getBabyUid } = require('../../utils/index');
+const {
+  getGlucoseCalorieCoefficient,
+  saveGlucoseCalorieCoefficient
+} = require('../../utils/glucoseCaloriePreference');
+const {
+  DEFAULT_GLUCOSE_CALORIE_COEFFICIENT,
+  GLUCOSE_CALORIE_OPTIONS,
+  normalizeGlucoseCalorieCoefficient,
+  formatGlucoseCalorieKey,
+  calculateDextroseFluidCalories,
+  buildDextroseConcentrationReference,
+  buildDextroseCalculationExamples
+} = require('../../utils/treatmentUtils');
+
 Page({
   data: {
     supportCards: [
@@ -14,24 +29,11 @@ Page({
       { label: '12.5%', value: '12.5' },
       { label: '20%', value: '20' }
     ],
-    concentrationReference: [
-      { label: 'D5', concentration: '5%', kcalPerMl: '0.17', note: '100 mL 约 17 kcal' },
-      { label: 'D10', concentration: '10%', kcalPerMl: '0.34', note: '100 mL 约 34 kcal' },
-      { label: 'D12.5', concentration: '12.5%', kcalPerMl: '0.425', note: '100 mL 约 42.5 kcal' },
-      { label: 'D20', concentration: '20%', kcalPerMl: '0.68', note: '100 mL 约 68 kcal' }
-    ],
-    calculationExamples: [
-      {
-        title: '例 1',
-        description: 'D10 500 mL',
-        result: '葡萄糖 50 g，约 170 kcal'
-      },
-      {
-        title: '例 2',
-        description: '10 kg，D10 40 mL/h',
-        result: 'GIR 约 6.67 mg/kg/min'
-      }
-    ],
+    glucoseCalorieOptions: GLUCOSE_CALORIE_OPTIONS,
+    glucoseCalorieCoefficient: DEFAULT_GLUCOSE_CALORIE_COEFFICIENT,
+    glucoseCalorieKey: formatGlucoseCalorieKey(DEFAULT_GLUCOSE_CALORIE_COEFFICIENT),
+    concentrationReference: buildDextroseConcentrationReference(DEFAULT_GLUCOSE_CALORIE_COEFFICIENT),
+    calculationExamples: buildDextroseCalculationExamples(DEFAULT_GLUCOSE_CALORIE_COEFFICIENT),
     selectedPreset: '10',
     calculatorForm: {
       weight: '',
@@ -46,6 +48,39 @@ Page({
       kcalPerMl: 0,
       gir: 0
     }
+  },
+
+  async onLoad() {
+    await this.loadGlucoseCaloriePreference();
+  },
+
+  async onShow() {
+    await this.loadGlucoseCaloriePreference();
+  },
+
+  async loadGlucoseCaloriePreference() {
+    const coefficient = await getGlucoseCalorieCoefficient(getBabyUid());
+    this.applyGlucoseCalorieCoefficient(coefficient, { persist: false });
+  },
+
+  applyGlucoseCalorieCoefficient(coefficient, { persist = false } = {}) {
+    const nextCoefficient = normalizeGlucoseCalorieCoefficient(coefficient);
+    this.setData({
+      glucoseCalorieCoefficient: nextCoefficient,
+      glucoseCalorieKey: formatGlucoseCalorieKey(nextCoefficient),
+      concentrationReference: buildDextroseConcentrationReference(nextCoefficient),
+      calculationExamples: buildDextroseCalculationExamples(nextCoefficient)
+    });
+    this.calculateFluidCalories();
+    if (persist) {
+      saveGlucoseCalorieCoefficient(getBabyUid(), nextCoefficient);
+    }
+  },
+
+  async onGlucoseCoefficientTap(e) {
+    const nextCoefficient = normalizeGlucoseCalorieCoefficient(e.currentTarget.dataset.value);
+    if (nextCoefficient === this.data.glucoseCalorieCoefficient) return;
+    this.applyGlucoseCalorieCoefficient(nextCoefficient, { persist: true });
   },
 
   handleCardTap(e) {
@@ -99,28 +134,21 @@ Page({
   },
 
   calculateFluidCalories() {
-    const weight = Number(this.data.calculatorForm.weight) || 0;
-    const concentration = Number(this.data.calculatorForm.concentration) || 0;
-    const volume = Number(this.data.calculatorForm.volume) || 0;
-    const rate = Number(this.data.calculatorForm.rate) || 0;
-
-    const dextroseGrams = volume > 0 && concentration > 0
-      ? (concentration * volume) / 100
-      : 0;
-    const totalCalories = dextroseGrams * 3.4;
-    const kcalPerKg = weight > 0 ? totalCalories / weight : 0;
-    const kcalPerMl = concentration > 0 ? concentration * 0.034 : 0;
-    const gir = weight > 0 && concentration > 0 && rate > 0
-      ? (concentration * rate * 10) / weight / 60
-      : 0;
+    const result = calculateDextroseFluidCalories({
+      weight: this.data.calculatorForm.weight,
+      concentration: this.data.calculatorForm.concentration,
+      volume: this.data.calculatorForm.volume,
+      rate: this.data.calculatorForm.rate,
+      coefficient: this.data.glucoseCalorieCoefficient
+    });
 
     this.setData({
       calculatorResult: {
-        dextroseGrams: this.roundTo(dextroseGrams, 1),
-        totalCalories: this.roundTo(totalCalories, 1),
-        kcalPerKg: this.roundTo(kcalPerKg, 1),
-        kcalPerMl: this.roundTo(kcalPerMl, 3),
-        gir: this.roundTo(gir, 2)
+        dextroseGrams: this.roundTo(result.dextroseGrams, 1),
+        totalCalories: this.roundTo(result.totalCalories, 1),
+        kcalPerKg: this.roundTo(result.kcalPerKg, 1),
+        kcalPerMl: this.roundTo(result.kcalPerMl, 3),
+        gir: this.roundTo(result.gir, 2)
       }
     });
   },

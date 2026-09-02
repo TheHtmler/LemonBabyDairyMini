@@ -16,6 +16,18 @@ const TREATMENT_ITEM_UNITS = ['ml', 'mg', 'g', 'ug', '袋', '支', '片', '剂']
 
 const DEFAULT_NUTRITION_CATEGORIES = ['dextrose_10', 'dextrose_5'];
 
+const DEXTROSE_CONCENTRATION = {
+  dextrose_10: 0.1,
+  dextrose_5: 0.05
+};
+
+const DEFAULT_GLUCOSE_CALORIE_COEFFICIENT = 3.4;
+
+const GLUCOSE_CALORIE_OPTIONS = [
+  { value: 3.4, key: '3.4', label: '3.4 肠外', desc: '肠外营养常用' },
+  { value: 4, key: '4', label: '4 口服', desc: '口服碳水常用' }
+];
+
 function roundNumber(value, precision = 2) {
   const num = Number(value);
   if (Number.isNaN(num)) return 0;
@@ -32,6 +44,114 @@ function roundCalories(value) {
 function toNumber(value) {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
+}
+
+function isValidGlucoseCalorieCoefficient(value) {
+  const num = Number(value);
+  return num === 3.4 || num === 4;
+}
+
+function normalizeGlucoseCalorieCoefficient(value) {
+  return isValidGlucoseCalorieCoefficient(value)
+    ? Number(value)
+    : DEFAULT_GLUCOSE_CALORIE_COEFFICIENT;
+}
+
+function formatGlucoseCalorieKey(value) {
+  return String(normalizeGlucoseCalorieCoefficient(value));
+}
+
+function formatGlucoseCalorieNote(value) {
+  const coefficient = normalizeGlucoseCalorieCoefficient(value);
+  return coefficient === 4
+    ? '当前按口服碳水口径：1 g 葡萄糖约 4 kcal。'
+    : '当前按肠外营养口径：1 g 葡萄糖约 3.4 kcal。';
+}
+
+function getDextroseConcentration(category = '') {
+  return DEXTROSE_CONCENTRATION[category] || 0;
+}
+
+function deriveTreatmentItemNutrition(item = {}, coefficient = DEFAULT_GLUCOSE_CALORIE_COEFFICIENT) {
+  const nextItem = { ...item };
+  const amount = Number(nextItem.amount) || 0;
+  const concentration = getDextroseConcentration(nextItem.category);
+  if (!amount || nextItem.unit !== 'ml' || !concentration) {
+    return nextItem;
+  }
+  const carbsG = Number((amount * concentration).toFixed(2));
+  nextItem.carbsG = carbsG;
+  nextItem.calories = Number((carbsG * normalizeGlucoseCalorieCoefficient(coefficient)).toFixed(2));
+  if (!nextItem.proteinG) nextItem.proteinG = 0;
+  if (!nextItem.fatG) nextItem.fatG = 0;
+  return nextItem;
+}
+
+function calculateDextroseFluidCalories({
+  weight = 0,
+  concentration = 0,
+  volume = 0,
+  rate = 0,
+  coefficient = DEFAULT_GLUCOSE_CALORIE_COEFFICIENT
+} = {}) {
+  const safeWeight = Number(weight) || 0;
+  const safeConcentration = Number(concentration) || 0;
+  const safeVolume = Number(volume) || 0;
+  const safeRate = Number(rate) || 0;
+  const coef = normalizeGlucoseCalorieCoefficient(coefficient);
+  const dextroseGrams = safeVolume > 0 && safeConcentration > 0
+    ? (safeConcentration * safeVolume) / 100
+    : 0;
+  const totalCalories = dextroseGrams * coef;
+  return {
+    dextroseGrams,
+    totalCalories,
+    kcalPerKg: safeWeight > 0 ? totalCalories / safeWeight : 0,
+    kcalPerMl: safeConcentration > 0 ? (safeConcentration / 100) * coef : 0,
+    gir: safeWeight > 0 && safeConcentration > 0 && safeRate > 0
+      ? (safeConcentration * safeRate * 10) / safeWeight / 60
+      : 0,
+    coefficient: coef
+  };
+}
+
+function formatDisplayNumber(value, digits = 1) {
+  return String(roundNumber(value, digits));
+}
+
+function buildDextroseConcentrationReference(coefficient = DEFAULT_GLUCOSE_CALORIE_COEFFICIENT) {
+  const coef = normalizeGlucoseCalorieCoefficient(coefficient);
+  return [
+    { label: 'D5', concentration: 5 },
+    { label: 'D10', concentration: 10 },
+    { label: 'D12.5', concentration: 12.5 },
+    { label: 'D20', concentration: 20 }
+  ].map(item => {
+    const kcalPerMl = (item.concentration / 100) * coef;
+    const kcalPer100 = item.concentration * coef;
+    return {
+      label: item.label,
+      concentration: `${item.concentration}%`,
+      kcalPerMl: formatDisplayNumber(kcalPerMl, 3),
+      note: `100 mL 约 ${formatDisplayNumber(kcalPer100, 1)} kcal`
+    };
+  });
+}
+
+function buildDextroseCalculationExamples(coefficient = DEFAULT_GLUCOSE_CALORIE_COEFFICIENT) {
+  const coef = normalizeGlucoseCalorieCoefficient(coefficient);
+  return [
+    {
+      title: '例 1',
+      description: 'D10 500 mL',
+      result: `葡萄糖 50 g，约 ${formatDisplayNumber(50 * coef, 0)} kcal`
+    },
+    {
+      title: '例 2',
+      description: '10 kg，D10 40 mL/h',
+      result: 'GIR 约 6.67 mg/kg/min'
+    }
+  ];
 }
 
 function shouldCountInNutrition(item = {}) {
@@ -264,6 +384,17 @@ module.exports = {
   TREATMENT_ITEM_CATEGORIES,
   TREATMENT_ITEM_UNITS,
   DEFAULT_NUTRITION_CATEGORIES,
+  DEFAULT_GLUCOSE_CALORIE_COEFFICIENT,
+  GLUCOSE_CALORIE_OPTIONS,
+  isValidGlucoseCalorieCoefficient,
+  normalizeGlucoseCalorieCoefficient,
+  formatGlucoseCalorieKey,
+  formatGlucoseCalorieNote,
+  getDextroseConcentration,
+  deriveTreatmentItemNutrition,
+  calculateDextroseFluidCalories,
+  buildDextroseConcentrationReference,
+  buildDextroseCalculationExamples,
   shouldCountInNutrition,
   getTreatmentTypeLabel,
   getTreatmentCategoryLabel,
