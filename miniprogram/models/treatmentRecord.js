@@ -2,7 +2,8 @@ const {
   calculateTreatmentRecordSummary,
   calculateTreatmentGroupSummary,
   shouldCountInNutrition,
-  getDefaultTreatmentGroupName
+  getDefaultTreatmentGroupName,
+  normalizeGlucoseCalorieCoefficient
 } = require('../utils/treatmentUtils');
 const DailySummaryV2Model = require('./dailySummaryV2');
 
@@ -88,7 +89,8 @@ class TreatmentRecordModel {
       startTime,
       startDateTime: startTime ? this.buildDateTime(dateKey, startTime) : null,
       groups,
-      summary
+      summary,
+      glucoseCalorieCoefficient: normalizeGlucoseCalorieCoefficient(data.glucoseCalorieCoefficient)
     };
   }
 

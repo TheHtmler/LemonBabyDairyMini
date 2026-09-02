@@ -154,7 +154,19 @@
   />
 
   <view class="calc-note">
-    <text>葡萄糖热量按肠外营养口径估算：1 g 葡萄糖约 3.4 kcal。</text>
+    <view class="calc-note-head">
+      <text class="calc-note-title">葡萄糖热量换算</text>
+      <view class="coef-row">
+        <view
+          class="coef-chip {{glucoseCalorieKey === item.key ? 'active' : ''}}"
+          wx:for="{{glucoseCalorieOptions}}"
+          wx:key="key"
+          data-value="{{item.value}}"
+          bindtap="onGlucoseCoefficientTap"
+        >{{item.label}}</view>
+      </view>
+    </view>
+    <text>{{glucoseCalorieNote}}</text>
   </view>
 
   <view class="footer-actions">

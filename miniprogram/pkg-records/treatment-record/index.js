@@ -12,8 +12,19 @@ const {
   withDayPremiumFromDailySummary
 } = require('../../utils/nutritionTargetPreview');
 const {
+  getGlucoseCalorieCoefficient,
+  saveGlucoseCalorieCoefficient
+} = require('../../utils/glucoseCaloriePreference');
+const {
   TREATMENT_ITEM_CATEGORIES,
   TREATMENT_ITEM_UNITS,
+  DEFAULT_GLUCOSE_CALORIE_COEFFICIENT,
+  GLUCOSE_CALORIE_OPTIONS,
+  isValidGlucoseCalorieCoefficient,
+  normalizeGlucoseCalorieCoefficient,
+  formatGlucoseCalorieKey,
+  formatGlucoseCalorieNote,
+  deriveTreatmentItemNutrition,
   createTreatmentItem,
   createTreatmentGroup,
   calculateTreatmentGroupSummary,
@@ -179,6 +190,10 @@ Page({
     categoryOptions: FIXED_CATEGORY_OPTIONS,
     unitOptions: TREATMENT_ITEM_UNITS,
     quickAddOptions: QUICK_ADD_OPTIONS,
+    glucoseCalorieOptions: GLUCOSE_CALORIE_OPTIONS,
+    glucoseCalorieCoefficient: DEFAULT_GLUCOSE_CALORIE_COEFFICIENT,
+    glucoseCalorieKey: formatGlucoseCalorieKey(DEFAULT_GLUCOSE_CALORIE_COEFFICIENT),
+    glucoseCalorieNote: formatGlucoseCalorieNote(DEFAULT_GLUCOSE_CALORIE_COEFFICIENT),
     form: {
       recordType: 'iv',
       startTime: '',
@@ -204,6 +219,7 @@ Page({
       recordId,
       isEdit: !!recordId
     });
+    await this.loadGlucoseCaloriePreference();
     await this.loadTargetContext(dateKey);
 
     if (recordId) {
@@ -275,10 +291,14 @@ Page({
           }];
       const groups = sourceGroups.map((group, index) => normalizeGroupForForm(group, index));
       const dateKey = record.dateKey || this.data.dateKey;
+      const coefficient = isValidGlucoseCalorieCoefficient(record.glucoseCalorieCoefficient)
+        ? normalizeGlucoseCalorieCoefficient(record.glucoseCalorieCoefficient)
+        : DEFAULT_GLUCOSE_CALORIE_COEFFICIENT;
 
       this.setData({
         dateKey,
         dateDisplay: formatDateDisplay(dateKey),
+        ...this.buildGlucoseCalorieView(coefficient),
         form: {
           recordType: record.recordType || 'iv',
           startTime: record.startTime || '',
@@ -386,28 +406,44 @@ Page({
     });
   },
 
+  buildGlucoseCalorieView(coefficient = DEFAULT_GLUCOSE_CALORIE_COEFFICIENT) {
+    const nextCoefficient = normalizeGlucoseCalorieCoefficient(coefficient);
+    return {
+      glucoseCalorieCoefficient: nextCoefficient,
+      glucoseCalorieKey: formatGlucoseCalorieKey(nextCoefficient),
+      glucoseCalorieNote: formatGlucoseCalorieNote(nextCoefficient)
+    };
+  },
+
+  async loadGlucoseCaloriePreference() {
+    const coefficient = await getGlucoseCalorieCoefficient(getBabyUid());
+    this.setData(this.buildGlucoseCalorieView(coefficient));
+  },
+
+  applyGlucoseCalorieCoefficient(coefficient) {
+    const nextCoefficient = normalizeGlucoseCalorieCoefficient(coefficient);
+    const groups = (this.data.form.groups || []).map((group, index) => {
+      const items = (group.items || []).map(item => (
+        deriveTreatmentItemNutrition(item, nextCoefficient)
+      ));
+      return normalizeGroupForForm({ ...group, items }, index);
+    });
+    this.setData(this.buildGlucoseCalorieView(nextCoefficient));
+    this.setFormData({
+      ...this.data.form,
+      groups
+    });
+  },
+
+  async onGlucoseCoefficientTap(e) {
+    const nextCoefficient = normalizeGlucoseCalorieCoefficient(e.currentTarget.dataset.value);
+    if (nextCoefficient === this.data.glucoseCalorieCoefficient) return;
+    this.applyGlucoseCalorieCoefficient(nextCoefficient);
+    await saveGlucoseCalorieCoefficient(getBabyUid(), nextCoefficient);
+  },
+
   deriveNutritionForItem(item = {}) {
-    const nextItem = { ...item };
-    const amount = Number(nextItem.amount) || 0;
-    const isMl = nextItem.unit === 'ml';
-    if (!amount || !isMl) {
-      return nextItem;
-    }
-    if (nextItem.category === 'dextrose_10') {
-      const carbsG = Number((amount * 0.1).toFixed(2));
-      nextItem.carbsG = carbsG;
-      nextItem.calories = Number((carbsG * 3.4).toFixed(2));
-      if (!nextItem.proteinG) nextItem.proteinG = 0;
-      if (!nextItem.fatG) nextItem.fatG = 0;
-    }
-    if (nextItem.category === 'dextrose_5') {
-      const carbsG = Number((amount * 0.05).toFixed(2));
-      nextItem.carbsG = carbsG;
-      nextItem.calories = Number((carbsG * 3.4).toFixed(2));
-      if (!nextItem.proteinG) nextItem.proteinG = 0;
-      if (!nextItem.fatG) nextItem.fatG = 0;
-    }
-    return nextItem;
+    return deriveTreatmentItemNutrition(item, this.data.glucoseCalorieCoefficient);
   },
 
   updateGroup(groupIndex, updater) {
@@ -617,7 +653,8 @@ Page({
         recordType: form.recordType,
         startTime: form.startTime || '',
         notes: form.notes,
-        groups
+        groups,
+        glucoseCalorieCoefficient: this.data.glucoseCalorieCoefficient
       };
       const result = isEdit
         ? await TreatmentRecordModel.update(recordId, payload)

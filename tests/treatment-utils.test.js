@@ -7,7 +7,12 @@ const {
   mergeTreatmentIntoOverview,
   createEmptyTreatmentOverview,
   formatTreatmentRecordsForDisplay,
-  TREATMENT_ITEM_UNITS
+  TREATMENT_ITEM_UNITS,
+  normalizeGlucoseCalorieCoefficient,
+  deriveTreatmentItemNutrition,
+  calculateDextroseFluidCalories,
+  buildDextroseConcentrationReference,
+  buildDextroseCalculationExamples
 } = require('../miniprogram/utils/treatmentUtils');
 
 test('summarizeTreatmentRecords only counts nutrition-enabled items', () => {
@@ -296,4 +301,83 @@ test('summarizeTreatmentRecords counts only ml items as treatment fluid volume',
 
 test('treatment unit options include 剂 for unclear medication units', () => {
   assert.equal(TREATMENT_ITEM_UNITS.includes('剂'), true);
+});
+
+test('normalizeGlucoseCalorieCoefficient only accepts 3.4 and 4', () => {
+  assert.equal(normalizeGlucoseCalorieCoefficient(4), 4);
+  assert.equal(normalizeGlucoseCalorieCoefficient('4'), 4);
+  assert.equal(normalizeGlucoseCalorieCoefficient(3.4), 3.4);
+  assert.equal(normalizeGlucoseCalorieCoefficient('3.4'), 3.4);
+  assert.equal(normalizeGlucoseCalorieCoefficient(''), 3.4);
+  assert.equal(normalizeGlucoseCalorieCoefficient(3.7), 3.4);
+});
+
+test('deriveTreatmentItemNutrition uses the selected glucose calorie coefficient', () => {
+  const dextrose10 = {
+    category: 'dextrose_10',
+    amount: 100,
+    unit: 'ml'
+  };
+  const dextrose5 = {
+    category: 'dextrose_5',
+    amount: 200,
+    unit: 'ml'
+  };
+
+  assert.deepEqual(deriveTreatmentItemNutrition(dextrose10, 3.4), {
+    ...dextrose10,
+    carbsG: 10,
+    calories: 34,
+    proteinG: 0,
+    fatG: 0
+  });
+  assert.deepEqual(deriveTreatmentItemNutrition(dextrose10, 4), {
+    ...dextrose10,
+    carbsG: 10,
+    calories: 40,
+    proteinG: 0,
+    fatG: 0
+  });
+  assert.deepEqual(deriveTreatmentItemNutrition(dextrose5, 4), {
+    ...dextrose5,
+    carbsG: 10,
+    calories: 40,
+    proteinG: 0,
+    fatG: 0
+  });
+  assert.equal(deriveTreatmentItemNutrition({
+    category: 'arginine',
+    amount: 1.2,
+    unit: 'ml'
+  }, 4).calories, undefined);
+});
+
+test('dextrose fluid calorie helpers follow the selected coefficient', () => {
+  const parenteral = calculateDextroseFluidCalories({
+    weight: 10,
+    concentration: 10,
+    volume: 500,
+    rate: 40,
+    coefficient: 3.4
+  });
+  const oral = calculateDextroseFluidCalories({
+    weight: 10,
+    concentration: 10,
+    volume: 500,
+    rate: 40,
+    coefficient: 4
+  });
+
+  assert.equal(parenteral.dextroseGrams, 50);
+  assert.equal(parenteral.totalCalories, 170);
+  assert.equal(parenteral.kcalPerMl, 0.34);
+  assert.equal(oral.totalCalories, 200);
+  assert.equal(oral.kcalPerMl, 0.4);
+  assert.equal(parenteral.gir.toFixed(2), '6.67');
+
+  const reference = buildDextroseConcentrationReference(4);
+  assert.equal(reference[0].kcalPerMl, '0.2');
+  assert.equal(reference[0].note, '100 mL 约 20 kcal');
+  assert.equal(buildDextroseCalculationExamples(4)[0].result, '葡萄糖 50 g，约 200 kcal');
+  assert.equal(buildDextroseCalculationExamples(3.4)[0].result, '葡萄糖 50 g，约 170 kcal');
 });
