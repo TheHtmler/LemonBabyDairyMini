@@ -135,6 +135,8 @@ async function rebuildByDate(babyUid, date, sourceData = {}) {
   return upsertSummary(summary);
 }
 
+const CLIENT_QUERY_PAGE_SIZE = 20;
+
 function estimateDateRangeLimit(startDate, endDate) {
   const [sy, sm, sd] = String(startDate).split('-').map(Number);
   const [ey, em, ed] = String(endDate).split('-').map(Number);
@@ -147,6 +149,10 @@ function estimateDateRangeLimit(startDate, endDate) {
   return Math.max(1, Math.min(days, 366));
 }
 
+function isSameRecordId(left, right) {
+  return !!(left && right && left._id && left._id === right._id);
+}
+
 async function getRange(babyUid, startDate, endDate) {
   const where = {
     babyUid,
@@ -156,18 +162,54 @@ async function getRange(babyUid, startDate, endDate) {
     where.date = db.command.gte(startDate).and(db.command.lte(endDate));
   }
 
-  let query = dailySummaryCollection
-    .where(where)
-    .orderBy('date', 'asc');
+  const maxRecords = estimateDateRangeLimit(startDate, endDate);
+  const maxPages = Math.ceil(maxRecords / CLIENT_QUERY_PAGE_SIZE) + 1;
+  const all = [];
+  let skip = 0;
 
-  if (typeof query.limit === 'function') {
-    query = query.limit(estimateDateRangeLimit(startDate, endDate));
+  for (let page = 0; page < maxPages; page += 1) {
+    let query = dailySummaryCollection
+      .where(where)
+      .orderBy('date', 'asc');
+
+    if (typeof query.skip === 'function') {
+      query = query.skip(skip);
+    }
+    if (typeof query.limit === 'function') {
+      query = query.limit(CLIENT_QUERY_PAGE_SIZE);
+    }
+
+    const res = await query.get();
+    const batch = res.data || [];
+    if (batch.length === 0) {
+      break;
+    }
+    if (all.length > 0 && isSameRecordId(all[0], batch[0])) {
+      break;
+    }
+
+    all.push(...batch);
+    if (batch.length < CLIENT_QUERY_PAGE_SIZE) {
+      break;
+    }
+    if (typeof query.skip !== 'function') {
+      break;
+    }
+    skip += batch.length;
   }
 
-  const res = await query.get();
-
-  return (res.data || [])
-    .filter((summary) => summary.date >= startDate && summary.date <= endDate);
+  const seen = new Set();
+  return all.filter((summary) => {
+    if (!summary || summary.date < startDate || summary.date > endDate) {
+      return false;
+    }
+    const key = summary._id || summary.date;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 module.exports = {

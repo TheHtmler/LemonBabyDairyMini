@@ -1408,6 +1408,30 @@ test('getDailySummariesForRange pushes date range into daily_summary_v2 query', 
   }
 });
 
+test('getDailySummariesForRange pages beyond the 20-record client limit', async () => {
+  const dailySummaryData = Array.from({ length: 25 }, (_, index) => {
+    const day = String(index + 1).padStart(2, '0');
+    return {
+      _id: `summary-${day}`,
+      babyUid: 'baby-1',
+      date: `2026-05-${day}`,
+      status: 'active',
+      isDirty: false
+    };
+  });
+  const { db, calls } = createDbMock({ dailySummaryData });
+  const { service, restore } = loadFreshService(db);
+
+  try {
+    const summaries = await service.getDailySummariesForRange('baby-1', '2026-05-01', '2026-05-25');
+    assert.equal(summaries.length, 25);
+    assert.deepEqual(summaries.map(summary => summary.date), dailySummaryData.map(item => item.date));
+    assert.equal(calls.collectionReads.filter(name => name === 'daily_summary_v2').length, 2);
+  } finally {
+    restore();
+  }
+});
+
 test('getDailySummariesForRange rebuildMissing 会刷新干净但全空的占位汇总', async () => {
   const { db } = createDbMock({
     dailySummaryData: [

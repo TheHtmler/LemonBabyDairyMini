@@ -32,17 +32,17 @@
           <view class="picker-hero-copy">
             <text class="picker-kicker">数据分析区间</text>
             <text class="picker-title">选择日期范围</text>
-            <text class="picker-mode-hint">也可以直接使用近一周、近两周、近一个月快捷入口。</text>
+            <text class="picker-mode-hint">也可以直接使用近一周、近两周、近一个月、近三个月快捷入口。</text>
           </view>
           <view class="picker-hero-mark">
-            <text class="picker-hero-number">31</text>
+            <text class="picker-hero-number">90</text>
             <text class="picker-hero-unit">天内</text>
           </view>
           <view class="picker-close" bindtap="onCloseDatePicker">✕</view>
         </view>
         <view class="picker-content">
           <view class="range-picker-content">
-            <text class="range-picker-hint">最多选择 31 天，结束日期不能晚于今天，确认后再加载数据。</text>
+            <text class="range-picker-hint">最多选择 90 天，结束日期不能晚于今天，确认后再加载数据。</text>
             <view class="range-field">
               <text class="range-field-label">开始日期</text>
               <picker mode="date" value="{{pickerRangeStartKey}}" end="{{todayDateKey}}" bindchange="onRangeStartChange">

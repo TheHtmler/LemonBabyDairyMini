@@ -53,7 +53,9 @@ test('data-analysis page uses grouped dashboard layout', () => {
   assert.match(wxml, /近一周/);
   assert.match(wxml, /近两周/);
   assert.match(wxml, /近一个月/);
+  assert.match(wxml, /近三个月/);
   assert.match(wxml, /自定义/);
+  assert.match(wxml, /最多选择 90 天/);
   assert.match(wxml, /picker-hero/);
   assert.match(wxml, /picker-mode-hint/);
   assert.doesNotMatch(wxml, /◀|▶/);

@@ -31,12 +31,15 @@ const FAT_RATIO_POPUP_LINES = [
   '1-2岁: 30%-35%',
   '>6岁: 25%-30%'
 ];
-const MAX_CUSTOM_RANGE_DAYS = 31;
+const MAX_CUSTOM_RANGE_DAYS = 90;
+const CLIENT_QUERY_PAGE_SIZE = 20;
+const IN_QUERY_BATCH_SIZE = 20;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const RANGE_PRESETS = [
   { key: 'last7', label: '近一周', days: 7 },
   { key: 'last14', label: '近两周', days: 14 },
-  { key: 'last30', label: '近一个月', days: 30 }
+  { key: 'last30', label: '近一个月', days: 30 },
+  { key: 'last90', label: '近三个月', days: 90 }
 ];
 const DEFAULT_RANGE_PRESET = 'last7';
 
@@ -392,10 +395,6 @@ function buildAnalysisSummaryFromDailySummary(summary = {}) {
   };
 }
 
-function isFreshDailySummary(summary = {}) {
-  return !!summary?.date && summary.isDirty !== true;
-}
-
 function normalizeAnalysisFoodIntake(record = {}) {
   const nutrition = record.nutrition || {};
   const protein = Number(nutrition.protein) || 0;
@@ -463,6 +462,29 @@ function summaryNeedsMilkRecordFallback(summary = {}) {
   const milk = summary.milk || {};
   const totalVolume = Number(milk.totalVolume) || 0;
   return (milkCount > 0 || totalVolume > 0) && !hasSummaryMilkVolumeSplit(summary);
+}
+
+function analysisSummaryNeedsRawDetails(summary) {
+  if (!summary) return true;
+  if (summary.isDirty === true) return true;
+  if (summaryNeedsMilkRecordFallback(summary)) return true;
+  return !hasDailySummaryNutritionContent(summary);
+}
+
+function collectAnalysisFallbackDateKeys(dateKeys = [], summaryByDate = new Map()) {
+  return (Array.isArray(dateKeys) ? dateKeys : []).filter((dateKey) => (
+    analysisSummaryNeedsRawDetails(summaryByDate.get(dateKey))
+  ));
+}
+
+function chunkArray(items = [], size = IN_QUERY_BATCH_SIZE) {
+  const list = Array.isArray(items) ? items : [];
+  const chunkSize = Math.max(1, Number(size) || IN_QUERY_BATCH_SIZE);
+  const chunks = [];
+  for (let index = 0; index < list.length; index += chunkSize) {
+    chunks.push(list.slice(index, index + chunkSize));
+  }
+  return chunks;
 }
 
 function buildMilkSummaryFeeding(summary = {}) {
@@ -912,10 +934,12 @@ Page({
       this.updateDateRangeText(startDate, endDate);
       
       // 从数据库查询数据
-      const [records, treatmentRecords] = await Promise.all([
-        this.fetchFeedingRecords(startDate, endDate),
-        this.fetchTreatmentRecords(startDate, endDate)
-      ]);
+      const records = await this.fetchFeedingRecords(startDate, endDate);
+      const treatmentRecords = await this.fetchTreatmentRecords(
+        startDate,
+        endDate,
+        this.analysisFallbackDateKeys
+      );
       const basicInfoSnapshots = await this.loadAnalysisBasicInfoSnapshots(startDate, endDate, records);
       
       // 处理数据
@@ -1023,6 +1047,7 @@ Page({
 
   // 从数据库获取喂养记录
   async fetchFeedingRecords(startDate, endDate) {
+    this.analysisFallbackDateKeys = [];
     try {
       const db = wx.cloud.database();
       const _ = db.command;
@@ -1052,9 +1077,18 @@ Page({
         rebuildStaleSchema: true
       });
       const dateKeys = this.generateDateList(queryStartDate, queryEndDate).map(date => this.formatDateKey(date));
-      const freshSummaryRecords = (summaryRecords || []).filter(isFreshDailySummary);
-      const allDateSet = new Set(dateKeys);
-      const rawRecords = await this.loadRawAnalysisRecordsForRange(babyUid, startKey, endKey, allDateSet);
+      const summaryByDate = new Map();
+      (summaryRecords || []).forEach(summary => {
+        const dateKey = normalizeDateKey(summary.date);
+        if (dateKey === 'unknown') return;
+        summaryByDate.set(dateKey, summary);
+      });
+      const fallbackDateKeys = collectAnalysisFallbackDateKeys(dateKeys, summaryByDate);
+      this.analysisFallbackDateKeys = fallbackDateKeys;
+      const fallbackDateSet = new Set(fallbackDateKeys);
+      const rawRecords = fallbackDateKeys.length > 0
+        ? await this.loadRawAnalysisRecordsForRange(babyUid, startKey, endKey, fallbackDateSet)
+        : [];
       const rawMilkDateSet = new Set();
       const rawFoodDateSet = new Set();
       rawRecords.forEach(record => {
@@ -1068,7 +1102,7 @@ Page({
       });
 
       const mergedMap = new Map();
-      freshSummaryRecords
+      (summaryRecords || [])
         .map(summary => {
           const dateKey = normalizeDateKey(summary.date);
           const includeMilkSummary = !rawMilkDateSet.has(dateKey) && !summaryNeedsMilkRecordFallback(summary);
@@ -1142,93 +1176,98 @@ Page({
     }
   },
 
-  // 读取区间内的 v2 喂奶记录（奶统计数据源）。失败时返回空数组，奶统计自动降级回旧数据，避免崩溃。
-  async loadV2MilkRecordsForRange(babyUid, startKey, endKey) {
-    if (!babyUid || !startKey || !endKey) {
+  buildAnalysisDateCondition(command, dateKeys, startKey, endKey) {
+    if (Array.isArray(dateKeys) && dateKeys.length > 0 && typeof command?.in === 'function') {
+      return dateKeys.length === 1 ? dateKeys[0] : command.in(dateKeys);
+    }
+    if (command?.gte && command?.lte && startKey && endKey) {
+      return command.gte(startKey).and(command.lte(endKey));
+    }
+    return null;
+  },
+
+  async loadPagedRecordsByDateCondition(collectionName, whereObj, orderField = 'date') {
+    const db = wx.cloud.database();
+    if (typeof db.collection !== 'function') {
+      return [];
+    }
+    const maxPages = 50;
+    let all = [];
+    let skip = 0;
+    for (let page = 0; page < maxPages; page += 1) {
+      const res = await db.collection(collectionName)
+        .where(whereObj)
+        .orderBy(orderField, 'asc')
+        .skip(skip)
+        .limit(CLIENT_QUERY_PAGE_SIZE)
+        .get();
+      const batch = res.data || [];
+      all = all.concat(batch);
+      skip += batch.length;
+      if (batch.length < CLIENT_QUERY_PAGE_SIZE) {
+        break;
+      }
+    }
+    return all;
+  },
+
+  async loadRecordsForAnalysisDates(collectionName, babyUid, startKey, endKey, dateKeys = null) {
+    if (!babyUid) {
+      return [];
+    }
+    if (Array.isArray(dateKeys) && dateKeys.length === 0) {
       return [];
     }
     try {
       const db = wx.cloud.database();
-      const _ = db.command;
-      if (typeof db.collection !== 'function' || !_?.gte || !_?.lte) {
+      const command = db.command;
+      if (typeof db.collection !== 'function' || !command) {
         return [];
       }
-      const MAX_LIMIT = 20;
-      let all = [];
-      let skip = 0;
-      let hasMore = true;
-      while (hasMore) {
-        const res = await db.collection('feeding_records_v2')
-          .where({
-            babyUid,
-            status: 'active',
-            date: _.gte(startKey).and(_.lte(endKey))
-          })
-          .orderBy('date', 'asc')
-          .skip(skip)
-          .limit(MAX_LIMIT)
-          .get();
-        const batch = res.data || [];
-        all = all.concat(batch);
-        skip += batch.length;
-        if (batch.length < MAX_LIMIT) {
-          hasMore = false;
+
+      const keyBatches = Array.isArray(dateKeys) && dateKeys.length > 0 && typeof command.in === 'function'
+        ? chunkArray(dateKeys, IN_QUERY_BATCH_SIZE)
+        : [null];
+
+      const all = [];
+      for (const keyBatch of keyBatches) {
+        const dateCondition = this.buildAnalysisDateCondition(command, keyBatch, startKey, endKey);
+        if (!dateCondition) {
+          continue;
         }
+        const batch = await this.loadPagedRecordsByDateCondition(collectionName, {
+          babyUid,
+          status: 'active',
+          date: dateCondition
+        });
+        all.push(...batch);
       }
       return all;
     } catch (error) {
-      console.warn('加载 v2 喂奶记录失败，奶统计降级为旧数据:', error);
+      console.warn(`加载分析记录失败 (${collectionName})，将降级使用已有汇总:`, error);
       return [];
     }
   },
 
-  async loadFoodIntakeRecordsForRange(babyUid, startKey, endKey) {
-    if (!babyUid || !startKey || !endKey) {
-      return [];
-    }
-    try {
-      const db = wx.cloud.database();
-      const _ = db.command;
-      if (typeof db.collection !== 'function' || !_?.gte || !_?.lte) {
-        return [];
-      }
-      const MAX_LIMIT = 20;
-      let all = [];
-      let skip = 0;
-      let hasMore = true;
-      while (hasMore) {
-        const res = await db.collection('food_intake_records')
-          .where({
-            babyUid,
-            status: 'active',
-            date: _.gte(startKey).and(_.lte(endKey))
-          })
-          .orderBy('date', 'asc')
-          .skip(skip)
-          .limit(MAX_LIMIT)
-          .get();
-        const batch = res.data || [];
-        all = all.concat(batch);
-        skip += batch.length;
-        if (batch.length < MAX_LIMIT) {
-          hasMore = false;
-        }
-      }
-      return all.map(normalizeAnalysisFoodIntake);
-    } catch (error) {
-      console.warn('加载区间食物记录失败，食物统计将仅使用汇总数据:', error);
-      return [];
-    }
+  // 读取需要兜底的 v2 喂奶记录。失败时返回空数组，奶统计自动降级回汇总，避免崩溃。
+  async loadV2MilkRecordsForRange(babyUid, startKey, endKey, dateKeys = null) {
+    return this.loadRecordsForAnalysisDates('feeding_records_v2', babyUid, startKey, endKey, dateKeys);
+  },
+
+  async loadFoodIntakeRecordsForRange(babyUid, startKey, endKey, dateKeys = null) {
+    const records = await this.loadRecordsForAnalysisDates('food_intake_records', babyUid, startKey, endKey, dateKeys);
+    return records.map(normalizeAnalysisFoodIntake);
   },
 
   async loadRawAnalysisRecordsForRange(babyUid, startKey, endKey, targetDateSet = new Set()) {
-    if (!babyUid || !startKey || !endKey || targetDateSet.size === 0) {
+    const dateKeys = Array.from(targetDateSet || []).filter(Boolean);
+    if (!babyUid || dateKeys.length === 0) {
       return [];
     }
     try {
       const [v2MilkRecords, foodIntakeRecords] = await Promise.all([
-        this.loadV2MilkRecordsForRange(babyUid, startKey, endKey),
-        this.loadFoodIntakeRecordsForRange(babyUid, startKey, endKey)
+        this.loadV2MilkRecordsForRange(babyUid, startKey, endKey, dateKeys),
+        this.loadFoodIntakeRecordsForRange(babyUid, startKey, endKey, dateKeys)
       ]);
 
       const mergedMap = new Map();
@@ -1265,8 +1304,12 @@ Page({
     }
   },
 
-  async fetchTreatmentRecords(startDate, endDate) {
+  async fetchTreatmentRecords(startDate, endDate, dateKeys) {
     try {
+      if (Array.isArray(dateKeys) && dateKeys.length === 0) {
+        return [];
+      }
+
       const db = wx.cloud.database();
       const _ = db.command;
       const app = getApp();
@@ -1283,6 +1326,9 @@ Page({
       const startKey = this.formatDateKey(queryStartDate);
       const endKey = this.formatDateKey(queryEndDate);
       const pageSize = 20;
+      const fallbackDateKeys = Array.isArray(dateKeys)
+        ? dateKeys.filter(key => typeof key === 'string' && key)
+        : [];
 
       const fetchPaged = async (whereObj, orderField) => {
         let allData = [];
@@ -1307,16 +1353,24 @@ Page({
         return allData;
       };
 
-      const [dateRecords, dateKeyRecords] = await Promise.all([
-        fetchPaged({
+      const dateKeyCondition = fallbackDateKeys.length > 0 && typeof _?.in === 'function'
+        ? (fallbackDateKeys.length === 1 ? fallbackDateKeys[0] : _.in(fallbackDateKeys))
+        : _.gte(startKey).and(_.lte(endKey));
+      const [dateRecords, dateKeyRecords] = fallbackDateKeys.length > 0 && typeof _?.in === 'function'
+        ? [[], await fetchPaged({
           babyUid,
-          date: _.gte(queryStartDate).and(_.lte(queryEndDate))
-        }, 'date'),
-        fetchPaged({
-          babyUid,
-          dateKey: _.gte(startKey).and(_.lte(endKey))
-        }, 'dateKey')
-      ]);
+          dateKey: dateKeyCondition
+        }, 'dateKey')]
+        : await Promise.all([
+          fetchPaged({
+            babyUid,
+            date: _.gte(queryStartDate).and(_.lte(queryEndDate))
+          }, 'date'),
+          fetchPaged({
+            babyUid,
+            dateKey: dateKeyCondition
+          }, 'dateKey')
+        ]);
 
       const mergedMap = new Map();
       dateRecords.concat(dateKeyRecords).forEach(record => {
@@ -1333,33 +1387,54 @@ Page({
     }
   },
 
-  async fetchRecordsByDateUpperBound(collectionName, babyUid, dateField, endDate, extraWhere = {}) {
+  async fetchPagedWhere(collectionName, whereObj, orderField, orderDir = 'asc') {
     const db = wx.cloud.database();
-    const _ = db.command;
-    const pageSize = 100;
+    const maxPages = 50;
     let skip = 0;
-    let hasMore = true;
     let allData = [];
 
-    while (hasMore) {
-      const res = await db.collection(collectionName)
-        .where({
-          babyUid,
-          [dateField]: _.lte(endDate),
-          ...extraWhere
-        })
-        .orderBy(dateField, 'desc')
-        .skip(skip)
-        .limit(pageSize)
-        .get();
-
+    for (let page = 0; page < maxPages; page += 1) {
+      let query = db.collection(collectionName).where(whereObj);
+      if (orderField && typeof query.orderBy === 'function') {
+        query = query.orderBy(orderField, orderDir);
+      }
+      if (typeof query.skip === 'function') {
+        query = query.skip(skip);
+      }
+      if (typeof query.limit === 'function') {
+        query = query.limit(CLIENT_QUERY_PAGE_SIZE);
+      }
+      const res = await query.get();
       const batch = res.data || [];
       allData = allData.concat(batch);
       skip += batch.length;
-      hasMore = batch.length === pageSize;
+      if (batch.length < CLIENT_QUERY_PAGE_SIZE) {
+        break;
+      }
     }
 
     return allData;
+  },
+
+  async fetchLatestRecordBefore(collectionName, babyUid, dateField, beforeValue, extraWhere = {}) {
+    const db = wx.cloud.database();
+    const _ = db.command;
+    if (!babyUid || !dateField || !beforeValue || !_?.lt) {
+      return null;
+    }
+    let query = db.collection(collectionName).where({
+      babyUid,
+      [dateField]: _.lt(beforeValue),
+      ...extraWhere
+    });
+    if (typeof query.orderBy === 'function') {
+      query = query.orderBy(dateField, 'desc');
+    }
+    if (typeof query.limit === 'function') {
+      query = query.limit(1);
+    }
+    const res = await query.get();
+    return (res.data || [])[0] || null;
   },
 
   buildAnalysisBasicInfoSnapshots(startDate, endDate, feedingRecords = [], growthRecords = []) {
@@ -1440,13 +1515,30 @@ Page({
         return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, records, []);
       }
 
+      const queryStartDate = new Date(startDate);
+      queryStartDate.setHours(0, 0, 0, 0);
       const queryEndDate = new Date(endDate);
       queryEndDate.setHours(23, 59, 59, 999);
-      // 每日体重在 v2 升级后写入 growth_records_v2（含历史回填），手动测量仍在 growth_records
-      const [dailyWeightHistory, growthHistory] = await Promise.all([
-        this.fetchRecordsByDateUpperBound('growth_records_v2', babyUid, 'date', queryEndDate, { status: 'active' }),
-        this.fetchRecordsByDateUpperBound('growth_records', babyUid, 'recordDate', queryEndDate)
+      const startKey = this.formatDateKey(queryStartDate);
+      const endKey = this.formatDateKey(queryEndDate);
+      const db = wx.cloud.database();
+      const _ = db.command;
+      // 只取区间内体重 + 开始日前最近一条，避免把出生至今的历史整表拉回
+      const [dailyInRange, dailyBefore, growthInRange, growthBefore] = await Promise.all([
+        this.fetchPagedWhere('growth_records_v2', {
+          babyUid,
+          date: _?.gte && _?.lte ? _.gte(startKey).and(_.lte(endKey)) : startKey,
+          status: 'active'
+        }, 'date', 'asc'),
+        this.fetchLatestRecordBefore('growth_records_v2', babyUid, 'date', startKey, { status: 'active' }),
+        this.fetchPagedWhere('growth_records', {
+          babyUid,
+          recordDate: _?.gte && _?.lte ? _.gte(queryStartDate).and(_.lte(queryEndDate)) : queryStartDate
+        }, 'recordDate', 'asc'),
+        this.fetchLatestRecordBefore('growth_records', babyUid, 'recordDate', queryStartDate)
       ]);
+      const dailyWeightHistory = dailyBefore ? [dailyBefore, ...dailyInRange] : dailyInRange;
+      const growthHistory = growthBefore ? [growthBefore, ...growthInRange] : growthInRange;
       return this.buildAnalysisBasicInfoSnapshots(startDate, endDate, dailyWeightHistory, growthHistory);
     } catch (error) {
       console.warn('加载历史体重快照失败，降级使用当前范围记录:', error);
@@ -2249,7 +2341,7 @@ Page({
 
     if (getInclusiveDayCount(startDate, endDate) > MAX_CUSTOM_RANGE_DAYS) {
       wx.showToast({
-        title: '最多选择31天',
+        title: '最多选择90天',
         icon: 'none'
       });
       return;
@@ -2275,7 +2367,9 @@ Page({
 
   getChartXAxisLabelInterval() {
     const rangeDays = Number(this.data.statistics?.rangeDays) || 0;
-    return rangeDays > 14 ? 5 : 1;
+    if (rangeDays > 60) return 10;
+    if (rangeDays > 14) return 5;
+    return 1;
   },
 
   // 初始化奶量统计图表
