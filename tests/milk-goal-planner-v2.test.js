@@ -141,6 +141,7 @@ function loadPlannerPage(options = {}) {
   const treatmentModel = require(treatmentModelPath);
   const utilsModule = require(utilsPath);
   const previousGetNutritionProfileSettings = profileModel.getNutritionProfileSettings;
+  const previousEnsureNutritionProfileSettings = profileModel.ensureNutritionProfileSettings;
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousGetRecentDayMealCount = feedingRecordV2Model.getRecentDayMealCount;
   const previousResolveBasicInfoSnapshot = feedingRecordV2Model.resolveBasicInfoSnapshot;
@@ -156,6 +157,9 @@ function loadPlannerPage(options = {}) {
   });
 
   profileModel.getNutritionProfileSettings = options.getNutritionProfileSettings || (async () => ({ formulaPowders: [] }));
+  profileModel.ensureNutritionProfileSettings = options.ensureNutritionProfileSettings
+    || options.getNutritionProfileSettings
+    || (async () => ({ formulaPowders: [] }));
   feedingRecordV2Model.getRecordsByDate = options.getRecordsByDate || (async () => []);
   feedingRecordV2Model.getRecentDayMealCount = options.getRecentDayMealCount || (async () => 0);
   feedingRecordV2Model.resolveBasicInfoSnapshot = options.resolveBasicInfoSnapshot || (async () => ({
@@ -179,6 +183,7 @@ function loadPlannerPage(options = {}) {
   require(pagePath);
 
   profileModel.getNutritionProfileSettings = previousGetNutritionProfileSettings;
+  profileModel.ensureNutritionProfileSettings = previousEnsureNutritionProfileSettings;
   feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
   feedingRecordV2Model.getRecentDayMealCount = previousGetRecentDayMealCount;
   feedingRecordV2Model.resolveBasicInfoSnapshot = previousResolveBasicInfoSnapshot;

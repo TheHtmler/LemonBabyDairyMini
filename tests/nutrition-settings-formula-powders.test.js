@@ -320,7 +320,7 @@ test('nutrition profile settings v2 page exposes formula powder profiles without
 
   assert.match(source, /activeView:\s*'mother'/);
   assert.match(source, /require\('\.\.\/\.\.\/models\/nutritionProfile'\)/);
-  assert.match(source, /getNutritionProfileSettings\(babyUid,\s*\{\s*includeLegacyFallback:\s*false/s);
+  assert.match(source, /ensureNutritionProfileSettings\(babyUid,\s*\{\s*throwOnError:\s*true/s);
   assert.match(source, /updateNutritionProfileSettings\(babyUid,\s*newSettings\)/);
   assert.match(source, /POWDER_CATEGORY_META/);
   assert.doesNotMatch(source, /getNutritionSettings\(babyUid\)/);

@@ -34,6 +34,20 @@ test('buildBreastMilkComponent saves volume and a per-100ml nutrition snapshot',
   });
 });
 
+test('buildBreastMilkComponent falls back to default per-100ml nutrition when profile is unbound', () => {
+  const component = buildBreastMilkComponent(100, {});
+
+  assert.deepEqual(component.nutritionSnapshot, {
+    protein: 1.1,
+    calories: 67,
+    fat: 4,
+    carbs: 6.8,
+    fiber: 0
+  });
+  assert.equal(buildNutritionSummary([component]).calories, 67);
+  assert.equal(buildNutritionSummary([component]).naturalProtein, 1.1);
+});
+
 test('buildFormulaPowderComponent saves formula profile, mix ratio, and category badge snapshot', () => {
   const component = buildFormulaPowderComponent(
     {

@@ -28,6 +28,14 @@ function nutritionPer100mlFromSettings(settings = {}) {
   };
 }
 
+const DEFAULT_BREAST_MILK_SETTINGS = {
+  natural_milk_protein: 1.1,
+  natural_milk_calories: 67,
+  natural_milk_fat: 4,
+  natural_milk_carbs: 6.8,
+  natural_milk_fiber: 0
+};
+
 function createEmptyLegacySettings() {
   return {
     natural_milk_protein: '',
@@ -56,6 +64,40 @@ function createEmptyLegacySettings() {
     formulaPowders: [],
     mixingPlans: [],
     activeMixingPlanId: ''
+  };
+}
+
+function pickSettingNumber(value, fallback) {
+  if (value === '' || value === undefined || value === null) {
+    return fallback;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function resolveNutritionProfileSeedSettings(legacySettings = {}) {
+  return {
+    ...legacySettings,
+    natural_milk_protein: pickSettingNumber(
+      legacySettings.natural_milk_protein,
+      DEFAULT_BREAST_MILK_SETTINGS.natural_milk_protein
+    ),
+    natural_milk_calories: pickSettingNumber(
+      legacySettings.natural_milk_calories,
+      DEFAULT_BREAST_MILK_SETTINGS.natural_milk_calories
+    ),
+    natural_milk_fat: pickSettingNumber(
+      legacySettings.natural_milk_fat,
+      DEFAULT_BREAST_MILK_SETTINGS.natural_milk_fat
+    ),
+    natural_milk_carbs: pickSettingNumber(
+      legacySettings.natural_milk_carbs,
+      DEFAULT_BREAST_MILK_SETTINGS.natural_milk_carbs
+    ),
+    natural_milk_fiber: pickSettingNumber(
+      legacySettings.natural_milk_fiber,
+      DEFAULT_BREAST_MILK_SETTINGS.natural_milk_fiber
+    )
   };
 }
 
@@ -244,6 +286,53 @@ class MilkNutritionProfileModel {
         throw error;
       }
       return null;
+    }
+  }
+
+  async ensureNutritionProfileSettings(babyUid, options = {}) {
+    if (!babyUid) {
+      return null;
+    }
+
+    try {
+      const existing = await getFirstDocument(
+        milkNutritionProfileCollection,
+        babyUid,
+        'milk_nutrition_profiles'
+      );
+      if (existing) {
+        return this.profileDocumentToNutritionSettings(existing);
+      }
+
+      const babyRes = await getFirstDocument(babyInfoCollection, babyUid, 'baby_info');
+      const seedSettings = resolveNutritionProfileSeedSettings(
+        options.seedSettings || babyRes?.nutritionSettings || {}
+      );
+      const success = await this.updateNutritionProfileSettings(babyUid, seedSettings);
+      if (!success && options.throwOnError === true) {
+        throw new Error('确保配奶营养档案失败');
+      }
+
+      const settings = this.profileDocumentToNutritionSettings(
+        this.buildProfileDataFromSettings(babyUid, seedSettings)
+      );
+      console.info('[NutritionProfile] ensureNutritionProfileSettings created default profile', {
+        babyUid,
+        protein: settings.natural_milk_protein,
+        calories: settings.natural_milk_calories
+      });
+      return settings;
+    } catch (error) {
+      console.error('确保配奶营养档案失败：', error);
+      if (options.throwOnError === true) {
+        throw error;
+      }
+      return this.profileDocumentToNutritionSettings(
+        this.buildProfileDataFromSettings(
+          babyUid,
+          resolveNutritionProfileSeedSettings(options.seedSettings || {})
+        )
+      );
     }
   }
 

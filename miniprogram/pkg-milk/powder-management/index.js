@@ -1,5 +1,6 @@
 const PowderCatalogModel = require('../models/powderCatalog');
 const NutritionModel = require('../../models/nutrition');
+const MilkNutritionProfileModel = require('../../models/nutritionProfile');
 const SystemPowderIndex = require('../utils/systemPowderIndex');
 const {
   buildVirtualBreastMilkPowder,
@@ -279,7 +280,8 @@ Page({
       let breastMilkSettings = {};
       if (babyUid) {
         try {
-          breastMilkSettings = await NutritionModel.getNutritionSettings(babyUid);
+          // 引导弹窗点「去设置」后即使取消，也要先把默认母乳档案绑到 babyUid。
+          breastMilkSettings = await this.ensureBoundNutritionProfile(babyUid);
         } catch (error) {
           console.warn('加载母乳参数失败，使用默认值:', error);
         }
@@ -582,7 +584,18 @@ Page({
     });
   },
 
-  hideAddModal() {
+  async ensureBoundNutritionProfile(babyUid = this.data.babyUid || getBabyUid()) {
+    if (!babyUid) {
+      return {};
+    }
+    if (typeof MilkNutritionProfileModel.ensureNutritionProfileSettings === 'function') {
+      return await MilkNutritionProfileModel.ensureNutritionProfileSettings(babyUid) || {};
+    }
+    return await NutritionModel.getNutritionSettings(babyUid) || {};
+  },
+
+  async hideAddModal() {
+    const dismissedBreastMilkEditor = !!this.data.editingBreastMilk;
     this.setData({
       showAddModal: false,
       energyKjInput: '',
@@ -592,6 +605,13 @@ Page({
       powderDraft: createEmptyPowderDraft(),
       ...buildPowderTypeState(POWDER_CATEGORIES.REGULAR_FORMULA)
     });
+    if (dismissedBreastMilkEditor) {
+      try {
+        await this.ensureBoundNutritionProfile();
+      } catch (error) {
+        console.warn('取消母乳设置时绑定默认档案失败（已忽略）:', error);
+      }
+    }
   },
 
   parseNumber(value) {

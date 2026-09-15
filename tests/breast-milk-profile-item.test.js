@@ -89,4 +89,5 @@ test('powder management exposes breast milk as a fixed item in my library UI', (
   assert.match(wxml, /系统预设/);
   assert.match(wxml, /item\.isVirtualBreastMilk/);
   assert.match(wxml, /nutritionBasisUnit/);
+  assert.match(source, /ensureNutritionProfileSettings/);
 });

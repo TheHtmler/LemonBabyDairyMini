@@ -416,6 +416,20 @@ Page({
     return (babyInfos[0] && babyInfos[0].babyUid) || '';
   },
 
+  async ensureMilkNutritionProfile(babyUid, nutritionSettings) {
+    if (!babyUid) return;
+    try {
+      const MilkNutritionProfileModel = require('../../models/nutritionProfile');
+      if (typeof MilkNutritionProfileModel.ensureNutritionProfileSettings === 'function') {
+        await MilkNutritionProfileModel.ensureNutritionProfileSettings(babyUid, {
+          seedSettings: nutritionSettings
+        });
+      }
+    } catch (error) {
+      console.warn('绑定默认配奶档案失败（已忽略）:', error);
+    }
+  },
+
   // 创建默认的配奶设置
   createDefaultNutritionSettings() {
     return {
@@ -619,6 +633,8 @@ Page({
       
       // 保存全局宝宝信息
       await this.app.cacheBabyInfo(babyInfo);
+      // 新用户建档时同步绑定 milk_nutrition_profiles，避免喂奶页能看到系统母乳但算不出营养。
+      await this.ensureMilkNutritionProfile(babyUid, nutritionSettings);
 
       // 头像已随保存上传落库：同步到本页数据并清掉待上传标记
       this.setData({

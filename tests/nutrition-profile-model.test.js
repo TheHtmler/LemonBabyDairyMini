@@ -612,6 +612,101 @@ test('getNutritionProfileSettings uses the newest v2 profile when duplicate prof
   assert.equal(settings.formulaPowders[0].id, 'regular-a');
 });
 
+test('ensureNutritionProfileSettings binds default breast milk to babyUid when profile is missing', async () => {
+  const { db, writes } = createDbMock({
+    profileData: [],
+    babyInfoData: []
+  });
+  const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
+
+  const settings = await MilkNutritionProfileModel.ensureNutritionProfileSettings('baby-new');
+
+  assert.equal(writes.profileAdd.babyUid, 'baby-new');
+  assert.deepEqual(writes.profileAdd.breastMilk.nutritionPer100ml, {
+    protein: 1.1,
+    calories: 67,
+    fat: 4,
+    carbs: 6.8,
+    fiber: 0
+  });
+  assert.deepEqual(writes.profileAdd.formulaPowders, []);
+  assert.equal(settings.natural_milk_protein, 1.1);
+  assert.equal(settings.natural_milk_calories, 67);
+  assert.equal(writes.profileUpdate, null);
+});
+
+test('ensureNutritionProfileSettings seeds missing profile from baby_info nutrition settings', async () => {
+  const { db, writes } = createDbMock({
+    profileData: [],
+    babyInfoData: [
+      {
+        _id: 'baby-doc-1',
+        babyUid: 'baby-1',
+        nutritionSettings: {
+          natural_milk_protein: '1.3',
+          natural_milk_calories: '70',
+          natural_milk_fat: '4.2',
+          natural_milk_carbs: '7.1',
+          natural_milk_fiber: '0'
+        }
+      }
+    ]
+  });
+  const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
+
+  const settings = await MilkNutritionProfileModel.ensureNutritionProfileSettings('baby-1');
+
+  assert.equal(writes.profileAdd.babyUid, 'baby-1');
+  assert.deepEqual(writes.profileAdd.breastMilk.nutritionPer100ml, {
+    protein: 1.3,
+    calories: 70,
+    fat: 4.2,
+    carbs: 7.1,
+    fiber: 0
+  });
+  assert.equal(settings.natural_milk_protein, 1.3);
+  assert.equal(settings.natural_milk_calories, 70);
+});
+
+test('ensureNutritionProfileSettings does not overwrite an existing v2 profile', async () => {
+  const { db, writes } = createDbMock({
+    profileData: [
+      {
+        _id: 'profile-doc-1',
+        babyUid: 'baby-1',
+        breastMilk: {
+          nutritionPer100ml: {
+            protein: 1.25,
+            calories: 66,
+            fat: 3.8,
+            carbs: 7,
+            fiber: 0
+          }
+        },
+        formulaPowders: [
+          {
+            id: 'special-a',
+            name: '特奶A',
+            category: 'special_formula',
+            proteinRole: 'special',
+            status: 'active',
+            nutritionPer100g: { protein: 13.1, calories: 500 },
+            mixRatio: { powder: 13.5, water: 90 }
+          }
+        ]
+      }
+    ]
+  });
+  const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
+
+  const settings = await MilkNutritionProfileModel.ensureNutritionProfileSettings('baby-1');
+
+  assert.equal(writes.profileAdd, null);
+  assert.equal(writes.profileUpdate, null);
+  assert.equal(settings.natural_milk_protein, 1.25);
+  assert.equal(settings.formulaPowders[0].id, 'special-a');
+});
+
 test('NutritionModel.getNutritionSettings prefers milk_nutrition_profiles and returns compatible settings', async () => {
   const { db, writes } = createDbMock({
     profileData: [

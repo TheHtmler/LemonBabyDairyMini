@@ -148,8 +148,7 @@ Page({
       }
 
       console.info('[NutritionProfileSettings] load start', { babyUid });
-      const settings = await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid, {
-        includeLegacyFallback: false,
+      const settings = await MilkNutritionProfileModel.ensureNutritionProfileSettings(babyUid, {
         throwOnError: true
       });
       console.info('[NutritionProfileSettings] load result', {

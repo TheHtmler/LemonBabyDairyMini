@@ -18,3 +18,32 @@ test('baby info setup guides new creators to nutrition profile settings v2', () 
   assert.match(homeSource, /url:\s*'\/pkg-milk\/powder-management\/index\?editBreastMilk=1'/);
   assert.doesNotMatch(homeSource, /url:\s*`\/pages\/nutrition-settings\/index\?fromSetup=true`/);
 });
+
+test('baby info save binds default milk nutrition profile to the new babyUid', () => {
+  const source = fs.readFileSync('miniprogram/pkg-misc/baby-info/index.js', 'utf8');
+
+  assert.match(source, /MilkNutritionProfileModel/);
+  assert.match(source, /ensureNutritionProfileSettings\(babyUid/);
+});
+
+test('skipping or cancelling nutrition setup still binds default breast milk to babyUid', () => {
+  const babyInfoSource = fs.readFileSync('miniprogram/pkg-misc/baby-info/index.js', 'utf8');
+  const powderSource = fs.readFileSync('miniprogram/pkg-milk/powder-management/index.js', 'utf8');
+  const editorSource = fs.readFileSync('miniprogram/pkg-milk/milk-feeding-editor-v2/index.js', 'utf8');
+
+  // 点「稍后设置」不会再走配奶页，所以必须在弹窗出现前就绑定档案。
+  const bindAt = babyInfoSource.indexOf('ensureMilkNutritionProfile');
+  const setupModalAt = babyInfoSource.indexOf('完善配奶设置');
+  assert.ok(bindAt > 0, 'baby info save should bind the milk profile');
+  assert.ok(setupModalAt > bindAt, 'profile bind must happen before the setup modal');
+  assert.match(babyInfoSource, /cancelText:\s*'稍后设置'/);
+
+  // 点「去设置」弹出母乳编辑后再取消，也不能只依赖保存母乳参数才落库。
+  assert.match(powderSource, /editBreastMilk/);
+  assert.match(powderSource, /ensureNutritionProfileSettings/);
+  assert.match(powderSource, /hideAddModal/);
+  assert.match(powderSource, /dismissedBreastMilkEditor|editingBreastMilk/);
+
+  // 喂奶页再兜一层，避免跳过引导后选母乳仍算成 0。
+  assert.match(editorSource, /ensureNutritionProfileSettings/);
+});

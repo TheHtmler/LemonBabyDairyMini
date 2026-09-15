@@ -132,6 +132,7 @@ function loadV2Page(options = {}) {
   const powderCatalogModel = require(powderCatalogPath);
   const utilsModule = require(utilsPath);
   const previousGetNutritionProfileSettings = profileModel.getNutritionProfileSettings;
+  const previousEnsureNutritionProfileSettings = profileModel.ensureNutritionProfileSettings;
   const previousAddRecord = feedingRecordV2Model.addRecord;
   const previousUpdateRecord = feedingRecordV2Model.updateRecord;
   const previousMarkDirty = dailySummaryV2Model.markDirty;
@@ -142,13 +143,17 @@ function loadV2Page(options = {}) {
   const previousResolvePowderImageUrls = powderCatalogModel.resolvePowderImageUrls;
   const previousGetBabyUid = utilsModule.getBabyUid;
 
-  profileModel.getNutritionProfileSettings = options.getNutritionProfileSettings || (async () => ({
+  const defaultNutritionSettings = {
     natural_milk_protein: 1.1,
     natural_milk_calories: 67,
     natural_milk_fat: 4,
     natural_milk_carbs: 6.8,
     formulaPowders: []
-  }));
+  };
+  profileModel.getNutritionProfileSettings = options.getNutritionProfileSettings || (async () => defaultNutritionSettings);
+  profileModel.ensureNutritionProfileSettings = options.ensureNutritionProfileSettings
+    || options.getNutritionProfileSettings
+    || (async () => defaultNutritionSettings);
   feedingRecordV2Model.addRecord = options.addRecord || (async (data) => {
     calls.saved = data;
     return { _id: 'v2-record-1' };
@@ -183,6 +188,7 @@ function loadV2Page(options = {}) {
   require(pagePath);
 
   profileModel.getNutritionProfileSettings = previousGetNutritionProfileSettings;
+  profileModel.ensureNutritionProfileSettings = previousEnsureNutritionProfileSettings;
   feedingRecordV2Model.addRecord = previousAddRecord;
   feedingRecordV2Model.updateRecord = previousUpdateRecord;
   dailySummaryV2Model.markDirty = previousMarkDirty;
@@ -206,6 +212,7 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
 
   assert.match(source, /feedingRecordV2Model/);
   assert.match(source, /MilkNutritionProfileModel/);
+  assert.match(source, /ensureNutritionProfileSettings/);
   assert.match(source, /buildFormulaPowderComponent/);
   assert.doesNotMatch(source, /findOrCreateDailyRecord/);
   assert.doesNotMatch(source, /collection\(['"]feeding_records['"]\)/);
@@ -306,11 +313,11 @@ test('milk feeding v2 page renders v1-style editor with a unified optional compo
 });
 
 test('onLoad reads active formula powders and basic info for v2 only', async () => {
-  let profileOptions = null;
+  let ensuredBabyUid = '';
   let basicInfoOptions = null;
   const { pageConfig } = loadV2Page({
-    getNutritionProfileSettings: async (babyUid, options) => {
-      profileOptions = options;
+    ensureNutritionProfileSettings: async (babyUid) => {
+      ensuredBabyUid = babyUid;
       return {
       natural_milk_protein: 1.1,
       natural_milk_calories: 67,
@@ -350,8 +357,52 @@ test('onLoad reads active formula powders and basic info for v2 only', async () 
   assert.equal(page.data.weight, '5.2');
   assert.equal(page.data.calorieCoefficientInput, '100');
   assert.deepEqual(page.data.milkEntries, []);
-  assert.deepEqual(profileOptions, { includeLegacyFallback: false });
+  assert.equal(ensuredBabyUid, 'baby-1');
   assert.deepEqual(basicInfoOptions, { includeFallbacks: false, includeProfileInitial: true, carryForwardMissing: true });
+});
+
+test('new user can record breast milk after the default profile is bound to babyUid', async () => {
+  let ensuredBabyUid = '';
+  const { pageConfig, calls } = loadV2Page({
+    ensureNutritionProfileSettings: async (babyUid) => {
+      ensuredBabyUid = babyUid;
+      return {
+        natural_milk_protein: 1.1,
+        natural_milk_calories: 67,
+        natural_milk_fat: 4,
+        natural_milk_carbs: 6.8,
+        natural_milk_fiber: 0,
+        formulaPowders: []
+      };
+    },
+    getNutritionProfileSettings: async () => null
+  });
+  const page = createPageInstance(pageConfig);
+  await page.onLoad({ date: '2026-05-20' });
+
+  page.addMilkEntry();
+  page.toggleAddMilkOption({
+    currentTarget: { dataset: { key: 'breast_milk' } }
+  });
+  page.confirmAddMilkPanel();
+  page.onMilkEntryInput({
+    currentTarget: { dataset: { index: 0, field: 'volume' } },
+    detail: { value: '100' }
+  });
+
+  assert.equal(ensuredBabyUid, 'baby-1');
+  assert.equal(page.data.nutritionPreview.calories, 67);
+  assert.equal(page.data.nutritionPreview.naturalProtein, 1.1);
+
+  await page.saveFeedingRecord();
+  const breast = (calls.saved.formulaComponents || []).find((item) => item.kind === 'breast_milk');
+  assert.deepEqual(breast.nutritionSnapshot, {
+    protein: 1.1,
+    calories: 67,
+    fat: 4,
+    carbs: 6.8,
+    fiber: 0
+  });
 });
 
 test('onLoad sets the navigation title from create or edit mode', async () => {

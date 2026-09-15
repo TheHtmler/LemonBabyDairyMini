@@ -21,6 +21,9 @@ const {
 } = require('../../utils/formulaPowderUtils');
 
 const getNutritionProfileSettings = MilkNutritionProfileModel.getNutritionProfileSettings.bind(MilkNutritionProfileModel);
+const ensureNutritionProfileSettings = typeof MilkNutritionProfileModel.ensureNutritionProfileSettings === 'function'
+  ? MilkNutritionProfileModel.ensureNutritionProfileSettings.bind(MilkNutritionProfileModel)
+  : getNutritionProfileSettings;
 const getV2RecordsByDate = FeedingRecordV2Model.getRecordsByDate.bind(FeedingRecordV2Model);
 const getRecentV2Record = FeedingRecordV2Model.getRecentRecord.bind(FeedingRecordV2Model);
 const getRecentDayMealCount = FeedingRecordV2Model.getRecentDayMealCount.bind(FeedingRecordV2Model);
@@ -318,7 +321,7 @@ Page({
   async reloadFormulaPowders() {
     if (!this.data.babyUid) return;
     try {
-      const settings = await getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false });
+      const settings = await ensureNutritionProfileSettings(this.data.babyUid);
       const formulaPowders = this.enrichPlannerPowders(((settings && settings.formulaPowders) || [])
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED));
       this.setData({
@@ -341,7 +344,7 @@ Page({
     this.setData({ loading: true });
     try {
       const [settings, basicInfo, records, recentRecord, foodIntakes, treatmentResult, recentDayMealCount] = await Promise.all([
-        getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
+        ensureNutritionProfileSettings(this.data.babyUid),
         resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
           includeFallbacks: false,
           includeProfileInitial: true

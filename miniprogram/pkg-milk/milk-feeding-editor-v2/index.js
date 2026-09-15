@@ -46,6 +46,9 @@ const {
 } = require('../../utils/reminderSubscriptionPrompt');
 
 const getNutritionProfileSettings = MilkNutritionProfileModel.getNutritionProfileSettings.bind(MilkNutritionProfileModel);
+const ensureNutritionProfileSettings = typeof MilkNutritionProfileModel.ensureNutritionProfileSettings === 'function'
+  ? MilkNutritionProfileModel.ensureNutritionProfileSettings.bind(MilkNutritionProfileModel)
+  : getNutritionProfileSettings;
 const getSystemPowders = PowderCatalogModel.getSystemPowders.bind(PowderCatalogModel);
 // 测试桩可能没有该方法，兜底为原样返回
 const resolvePowderImageUrls = typeof PowderCatalogModel.resolvePowderImageUrls === 'function'
@@ -388,7 +391,7 @@ Page({
 
     try {
       const [settings, basicInfo, records, systemPowders] = await Promise.all([
-        getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
+        ensureNutritionProfileSettings(this.data.babyUid),
         resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
           includeFallbacks: false,
           includeProfileInitial: true,
@@ -615,7 +618,7 @@ Page({
     if (!this.data.babyUid) return;
     try {
       const [settings, systemPowders] = await Promise.all([
-        getNutritionProfileSettings(this.data.babyUid, { includeLegacyFallback: false }),
+        ensureNutritionProfileSettings(this.data.babyUid),
         this.loadSystemSelectablePowders()
       ]);
       const minePowders = ((settings && settings.formulaPowders) || [])

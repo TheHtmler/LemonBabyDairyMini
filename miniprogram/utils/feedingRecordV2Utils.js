@@ -18,6 +18,14 @@ function roundValue(value, precision = 2) {
   return Math.round((num + Number.EPSILON) * multiplier) / multiplier;
 }
 
+const DEFAULT_BREAST_MILK_NUTRITION = {
+  natural_milk_protein: 1.1,
+  natural_milk_calories: 67,
+  natural_milk_fat: 4,
+  natural_milk_carbs: 6.8,
+  natural_milk_fiber: 0
+};
+
 function normalizeNutritionSnapshot(nutrition = {}) {
   return {
     protein: toNumber(nutrition.protein),
@@ -63,11 +71,11 @@ function buildBreastMilkComponent(volume, settings = {}) {
     kind: 'breast_milk',
     volume: roundValue(volume),
     nutritionSnapshot: normalizeNutritionSnapshot({
-      protein: settings.natural_milk_protein,
-      calories: settings.natural_milk_calories,
-      fat: settings.natural_milk_fat,
-      carbs: settings.natural_milk_carbs,
-      fiber: settings.natural_milk_fiber
+      protein: toNumber(settings.natural_milk_protein, DEFAULT_BREAST_MILK_NUTRITION.natural_milk_protein),
+      calories: toNumber(settings.natural_milk_calories, DEFAULT_BREAST_MILK_NUTRITION.natural_milk_calories),
+      fat: toNumber(settings.natural_milk_fat, DEFAULT_BREAST_MILK_NUTRITION.natural_milk_fat),
+      carbs: toNumber(settings.natural_milk_carbs, DEFAULT_BREAST_MILK_NUTRITION.natural_milk_carbs),
+      fiber: toNumber(settings.natural_milk_fiber, DEFAULT_BREAST_MILK_NUTRITION.natural_milk_fiber)
     })
   };
 }
@@ -372,6 +380,7 @@ function formatPartialIntakeLabel(input = {}) {
 }
 
 module.exports = {
+  DEFAULT_BREAST_MILK_NUTRITION,
   buildBreastMilkComponent,
   buildFormulaPowderComponent,
   buildNutritionSummary,
