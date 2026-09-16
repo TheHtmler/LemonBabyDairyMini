@@ -162,7 +162,12 @@ Page({
   },
 
   async ensureFoodCatalog() {
-    if (this._foodCatalogReady && this.foodById && this.foodById.size > 0) {
+    if (
+      this._foodCatalogReady
+      && this.foodById
+      && this.foodById.size > 0
+      && !FoodModel.hasCatalogChanged(this._seenCatalogGeneration)
+    ) {
       return this.foodCatalog;
     }
     if (this._foodCatalogPromise) return this._foodCatalogPromise;
@@ -183,6 +188,7 @@ Page({
     });
     this.foodCatalog = foods || [];
     this.foodById = new Map(this.foodCatalog.map(food => [food._id, food]));
+    this._seenCatalogGeneration = FoodModel.getCatalogGeneration();
     return this.foodCatalog;
   },
 
@@ -480,29 +486,39 @@ Page({
     const existingIds = new Set(
       (this.data.form.ingredients || []).map(item => item.foodId).filter(Boolean)
     );
-    const missingIds = [];
-    const added = selection.foodIds
-      .filter(id => id && !existingIds.has(id))
-      .map((id) => {
-        const food = this.foodById?.get(id);
-        if (!food) {
-          missingIds.push(id);
-          return null;
-        }
-        return this.hydrateIngredient({
-          foodId: food._id,
-          foodName: food.name,
-          unit: food.baseUnit || 'g',
-          quantity: 0,
-          foodSnapshot: FoodModel.buildFoodSnapshot(food),
-          food
-        }, (this.data.form.ingredients || []).length);
-      })
-      .filter(Boolean)
-      .map((item, index) => ({
-        ...item,
-        sortOrder: (this.data.form.ingredients || []).length + index
-      }));
+    const resolveAddedIngredients = () => {
+      const missingIds = [];
+      const added = selection.foodIds
+        .filter(id => id && !existingIds.has(id))
+        .map((id) => {
+          const food = this.foodById?.get(id);
+          if (!food) {
+            missingIds.push(id);
+            return null;
+          }
+          return this.hydrateIngredient({
+            foodId: food._id,
+            foodName: food.name,
+            unit: food.baseUnit || 'g',
+            quantity: 0,
+            foodSnapshot: FoodModel.buildFoodSnapshot(food),
+            food
+          }, (this.data.form.ingredients || []).length);
+        })
+        .filter(Boolean)
+        .map((item, index) => ({
+          ...item,
+          sortOrder: (this.data.form.ingredients || []).length + index
+        }));
+      return { added, missingIds };
+    };
+
+    let { added, missingIds } = resolveAddedIngredients();
+    if (missingIds.length) {
+      this._foodCatalogReady = false;
+      await this.ensureFoodCatalog();
+      ({ added, missingIds } = resolveAddedIngredients());
+    }
 
     if (!added.length) {
       if (missingIds.length) {

@@ -82,6 +82,7 @@ test('recipe ingredients use an isolated food picker selection flow', () => {
   assert.match(pageSource, /recipe_ingredient_picker_selection/);
   assert.match(pickerSource, /from === 'recipe-management'/);
   assert.match(pickerSource, /recipe_ingredient_picker_selection/);
+  assert.match(pageSource, /hasCatalogChanged\(this\._seenCatalogGeneration\)/);
   assert.match(pickerSource, /添加到食谱/);
   assert.match(pickerTemplate, /回到食谱页可预填默认份量|预填默认份量/);
 });

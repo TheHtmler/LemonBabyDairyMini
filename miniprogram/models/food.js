@@ -7,6 +7,19 @@ class FoodModel {
   constructor() {
     this.collection = db.collection('food_catalog');
     this._systemFoodsEnsured = false;
+    this._catalogGeneration = 0;
+  }
+
+  markCatalogDirty() {
+    this._catalogGeneration = (Number(this._catalogGeneration) || 0) + 1;
+  }
+
+  getCatalogGeneration() {
+    return Number(this._catalogGeneration) || 0;
+  }
+
+  hasCatalogChanged(seenGeneration) {
+    return typeof seenGeneration === 'number' && seenGeneration !== this.getCatalogGeneration();
   }
 
   /**
@@ -191,6 +204,7 @@ class FoodModel {
         data: payload
       });
 
+      this.markCatalogDirty();
       return res._id;
     } catch (error) {
       console.error('创建食物失败:', error);
@@ -257,6 +271,7 @@ class FoodModel {
           updatedAt: db.serverDate()
         }
       });
+      this.markCatalogDirty();
       return res._id;
     } catch (error) {
       console.error('创建系统食物快照失败:', error);
@@ -289,6 +304,7 @@ class FoodModel {
       if (removed === 0) {
         throw new Error('未找到可删除的自定义食物');
       }
+      this.markCatalogDirty();
       return true;
     } catch (error) {
       console.error('删除食物失败:', error);
@@ -334,6 +350,7 @@ class FoodModel {
       if (updated === 0) {
         throw new Error('未找到可更新的自定义食物');
       }
+      this.markCatalogDirty();
       return true;
     } catch (error) {
       console.error('更新食物失败:', error);

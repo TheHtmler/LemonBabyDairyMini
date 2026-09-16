@@ -268,7 +268,10 @@ test('FoodModel reads available foods each time so custom food changes are alway
     await FoodModel.getAvailableFoods('baby-1');
     assert.equal(mock.calls.queryGets, 2, '第二次同宝宝读取也应重新查询自定义食物');
 
+    const generationBefore = FoodModel.getCatalogGeneration();
     await FoodModel.createFood({ name: '新米糊', babyUid: 'baby-1' });
+    assert.equal(FoodModel.getCatalogGeneration(), generationBefore + 1);
+    assert.equal(FoodModel.hasCatalogChanged(generationBefore), true);
     await FoodModel.getAvailableFoods('baby-1');
     assert.equal(mock.calls.queryGets, 3, '写入后下一次读取仍应查询最新自定义食物');
   } finally {

@@ -583,17 +583,13 @@ Page({
     if (!this.hasLoadedCatalog) {
       return;
     }
-    const hasRecipePickerSelection = this.handleRecipePickerSelection();
-    const hasFoodPickerSelection = this.handleFoodPickerSelection();
-    await this.reloadTargetContextAndPreviews();
-    if (hasRecipePickerSelection || hasFoodPickerSelection) {
-      return;
-    }
-    // 仅从食物管理返回（可能新增/改图）时重载目录；普通 onShow 不换链不读库
-    if (this._foodCatalogDirty) {
-      this._foodCatalogDirty = false;
+    // 快捷去添加食物后，必须先刷新目录再消费选择结果，否则会按旧目录误报「未找到所选食物」
+    if (this._foodCatalogDirty || FoodModel.hasCatalogChanged(this._seenCatalogGeneration)) {
       await this.loadFoodCatalog();
     }
+    this.handleRecipePickerSelection();
+    await this.handleFoodPickerSelection();
+    await this.reloadTargetContextAndPreviews();
   },
 
   async loadTargetContext() {
@@ -735,6 +731,8 @@ Page({
         return (a.name || '').localeCompare(b.name || '');
         });
       this.setFoodCatalog(catalog);
+      this._foodCatalogDirty = false;
+      this._seenCatalogGeneration = FoodModel.getCatalogGeneration();
     } catch (error) {
       console.error('加载食物库失败:', error);
       this.setFoodCatalog([]);
@@ -1043,13 +1041,18 @@ Page({
     return true;
   },
 
-  handleFoodPickerSelection() {
+  async handleFoodPickerSelection() {
     const selection = wx.getStorageSync(FOOD_PICKER_SELECTION_KEY);
     const selectedItems = readFoodSelectionItems(selection);
     const selectedFoodIds = readFoodSelectionIds(selection);
     if (!selectedFoodIds.length) return false;
     wx.removeStorageSync(FOOD_PICKER_SELECTION_KEY);
-    const selectedFoods = selectedFoodIds.map(id => this.getFoodById(id)).filter(Boolean);
+    const resolveSelectedFoods = () => selectedFoodIds.map(id => this.getFoodById(id)).filter(Boolean);
+    let selectedFoods = resolveSelectedFoods();
+    if (selectedFoods.length < selectedFoodIds.length) {
+      await this.loadFoodCatalog();
+      selectedFoods = resolveSelectedFoods();
+    }
     if (!selectedFoods.length) {
       wx.showToast({ title: '未找到所选食物，请重新选择', icon: 'none' });
       return false;
