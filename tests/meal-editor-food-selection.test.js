@@ -1288,12 +1288,134 @@ test('meal editor keeps loaded food catalog outside page data', async () => {
 
 test('food picker loads latest catalog directly without local catalog cache', () => {
   const source = fs.readFileSync(require.resolve('../miniprogram/pkg-records/food-picker/index.js'), 'utf8');
-  const onLoadBlock = source.match(/async onLoad\(\) \{[\s\S]*?\n  \},\n\n  async onShow/)[0];
+  const onLoadBlock = source.match(/async onLoad\([^)]*\) \{[\s\S]*?\n  \},\n\n  async onShow/)[0];
 
   assert.match(onLoadBlock, /await this\.loadFoodCatalog\(\)/);
   assert.doesNotMatch(source, /meal_food_picker_catalog_cache/);
   assert.doesNotMatch(source, /loadCachedFoodCatalog/);
   assert.doesNotMatch(source, /cacheFoodCatalog/);
+});
+
+test('food picker reloads catalog after shortcut add-food and skips unchanged onShow', async () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const picker = createPageInstance(page, {
+      activeLibraryScope: 'system'
+    });
+    let loadCount = 0;
+    picker.loadFoodCatalog = async () => {
+      loadCount += 1;
+      picker._foodCatalogDirty = false;
+      picker._seenCatalogGeneration = 1;
+    };
+
+    picker.navigateToFoodManagement();
+    assert.match(storage.__navigateTo, /openAdd=1&from=food-picker/);
+    assert.equal(picker._foodCatalogDirty, true);
+
+    await picker.onShow();
+    assert.equal(loadCount, 1);
+
+    picker._foodCatalogDirty = false;
+    picker._seenCatalogGeneration = 0;
+    await picker.onShow();
+    assert.equal(loadCount, 1);
+
+    const FoodModel = require('../miniprogram/models/food');
+    picker._seenCatalogGeneration = FoodModel.getCatalogGeneration();
+    picker.setData({ activeLibraryScope: 'system' });
+    FoodModel.markCatalogDirty();
+    await picker.onShow();
+    assert.equal(loadCount, 2);
+    assert.equal(picker.data.activeLibraryScope, 'mine');
+  } finally {
+    restoreWx();
+  }
+});
+
+test('food picker keeps current cart when reloading catalog after shortcut add', () => {
+  const storage = {};
+  const restoreWx = installWxMock(storage);
+  try {
+    const page = loadPage('../miniprogram/pkg-records/food-picker/index.js');
+    const picker = createPageInstance(page, {
+      selectedFoodCart: [mineFood]
+    });
+    picker.setFoodCatalog([systemFood, mineFood]);
+    picker.pendingSelectedFoodIds = ['sys-1'];
+    picker.filterFoodOptions = () => {};
+
+    picker.restoreSelectedFoodCartFromIds();
+    assert.deepEqual(picker.data.selectedFoodCart.map(item => item._id).sort(), ['mine-1', 'sys-1']);
+    assert.deepEqual(picker.pendingSelectedFoodIds, []);
+
+    picker.restoreSelectedFoodCartFromIds();
+    assert.deepEqual(picker.data.selectedFoodCart.map(item => item._id).sort(), ['mine-1', 'sys-1']);
+  } finally {
+    restoreWx();
+  }
+});
+
+test('meal editor reloads stale catalog instead of saying newly added food is missing', async () => {
+  const newFood = {
+    ...mineFood,
+    _id: 'mine-new',
+    name: '新加的南瓜泥'
+  };
+  const storage = {
+    [FOOD_PICKER_SELECTION_KEY]: {
+      schemaVersion: 3,
+      items: [{ foodId: 'mine-new', quantity: 40 }]
+    }
+  };
+  const restoreWx = installWxMock(storage);
+  let FoodModel;
+  let previousGetAvailableFoods;
+  let previousResolveFoodImageUrls;
+  try {
+    const mealPage = loadPage('../miniprogram/pkg-records/meal-editor/index.js');
+    FoodModel = require('../miniprogram/models/food');
+    previousGetAvailableFoods = FoodModel.getAvailableFoods;
+    previousResolveFoodImageUrls = FoodModel.resolveFoodImageUrls;
+    FoodModel.getAvailableFoods = async () => [mineFood, newFood];
+    FoodModel.resolveFoodImageUrls = async foods => foods;
+
+    const meal = createPageInstance(mealPage, {
+      mealDraft: {
+        mealTime: '08:30',
+        mealLabel: '早餐',
+        mealNote: '',
+        items: []
+      }
+    });
+    meal.setFoodCatalog([mineFood]);
+    meal.hasLoadedCatalog = true;
+    meal._seenCatalogGeneration = FoodModel.getCatalogGeneration();
+    meal.reloadTargetContextAndPreviews = async () => {};
+    meal.refreshMealTargetPreview = () => {};
+
+    let toastTitle = '';
+    global.wx.showToast = options => {
+      toastTitle = options.title || '';
+    };
+
+    await meal.onShow();
+
+    assert.equal(toastTitle.includes('未找到所选食物'), false);
+    assert.equal(meal.data.mealDraft.items.length, 1);
+    assert.equal(meal.data.mealDraft.items[0].foodId, 'mine-new');
+    assert.equal(meal.data.mealDraft.items[0].nameSnapshot, '新加的南瓜泥');
+    assert.equal(meal.data.mealDraft.items[0].quantity, 40);
+    assert.equal(storage[FOOD_PICKER_SELECTION_KEY], undefined);
+  } finally {
+    if (FoodModel) {
+      FoodModel.getAvailableFoods = previousGetAvailableFoods;
+      FoodModel.resolveFoodImageUrls = previousResolveFoodImageUrls;
+    }
+    restoreWx();
+  }
 });
 
 test('meal editor navigates to full page food picker and food picker is registered', () => {
@@ -1365,7 +1487,7 @@ test('meal editor navigates to full page food picker and food picker is register
   assert.match(pickerWxml, /value="\{\{item\.quantity\}\}"/);
   assert.match(pickerWxml, /nutritionPreview/);
   assert.match(pickerWxml, /蛋白 \{\{item\.nutritionPreview\.protein/);
-  assert.match(pickerWxml, /输入份量后计算蛋白/);
+  assert.match(pickerWxml, /输入份量后计算营养/);
   assert.match(pickerWxml, /没有想要的食物？/);
   assert.match(pickerWxml, /去添加/);
   assert.match(pickerWxml, /已选食物/);
@@ -1394,6 +1516,9 @@ test('meal editor navigates to full page food picker and food picker is register
   assert.match(pickerJs, /pendingFoodIds/);
   assert.match(pickerJs, /writeFoodSelectionItems/);
   assert.match(pickerJs, /schemaVersion:\s*3/);
+  assert.match(pickerJs, /navigateToFoodManagement\(\) \{[\s\S]*this\._foodCatalogDirty = true/);
+  assert.match(pickerJs, /shouldReloadFoodCatalog/);
+  assert.match(mealJs, /await this\.handleFoodPickerSelection\(\)/);
   assert.match(pickerJs, /quantityDraftValues/);
   assert.match(pickerJs, /refreshQuantityPreview/);
   assert.match(pickerJs, /\[`quantityDrafts\[\$\{draftIndex\}\]\.quantity`\]/);

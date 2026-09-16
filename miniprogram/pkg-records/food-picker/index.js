@@ -195,7 +195,19 @@ Page({
   },
 
   async onShow() {
+    if (this.shouldReloadFoodCatalog()) {
+      if (FoodModel.hasCatalogChanged(this._seenCatalogGeneration)) {
+        this.setData({ activeLibraryScope: 'mine' });
+        this.rememberLibraryScope('mine');
+      }
+      await this.loadFoodCatalog({ silent: true });
+    }
     await this.refreshQuantityTargetPreferences();
+  },
+
+  shouldReloadFoodCatalog() {
+    return this._foodCatalogDirty === true
+      || FoodModel.hasCatalogChanged(this._seenCatalogGeneration);
   },
 
   onUnload() {
@@ -265,6 +277,8 @@ Page({
       });
       const catalog = this.formatFoodCatalog(foods || []);
       this.setFoodCatalog(catalog);
+      this._foodCatalogDirty = false;
+      this._seenCatalogGeneration = FoodModel.getCatalogGeneration();
       const foodCategories = this.buildFoodCategories(catalog, this.data.activeLibraryScope);
       this.setData({
         foodCategories,
@@ -442,7 +456,10 @@ Page({
   },
 
   restoreSelectedFoodCartFromIds() {
-    const ids = Array.isArray(this.pendingSelectedFoodIds) ? this.pendingSelectedFoodIds : [];
+    const pendingIds = Array.isArray(this.pendingSelectedFoodIds) ? this.pendingSelectedFoodIds : [];
+    const currentIds = (this.data.selectedFoodCart || []).map(item => item._id).filter(Boolean);
+    const ids = [...new Set([...pendingIds, ...currentIds])];
+    this.pendingSelectedFoodIds = [];
     if (!ids.length) return;
     const selectedFoodCart = ids.map(id => this.getFoodById(id)).filter(Boolean);
     this.setData({ selectedFoodCart }, () => {
@@ -1197,6 +1214,7 @@ Page({
   },
 
   navigateToFoodManagement() {
+    this._foodCatalogDirty = true;
     wx.navigateTo({
       url: '/pkg-milk/food-management/index?openAdd=1&from=food-picker'
     });
