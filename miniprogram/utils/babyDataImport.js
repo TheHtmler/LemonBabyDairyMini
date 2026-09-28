@@ -26,6 +26,32 @@ function getDb() {
   return wx.cloud.database();
 }
 
+// recipe / foodCategory 模型在分包（pkg-records / pkg-milk）内；
+// 小程序分包按需下载，主包代码同步 require 分包模块前必须确保分包已下载，
+// 否则报 module 'pkg-records/models/recipe.js' is not defined。
+let modelSubpackagesReady = null;
+function ensureModelSubpackages() {
+  if (modelSubpackagesReady) return modelSubpackagesReady;
+  if (typeof wx === 'undefined' || typeof wx.loadSubpackage !== 'function') {
+    // 单元测试等无分包概念的环境直接放行
+    modelSubpackagesReady = Promise.resolve();
+    return modelSubpackagesReady;
+  }
+  modelSubpackagesReady = Promise.all(
+    ['pkg-records', 'pkg-milk'].map((name) => new Promise((resolve, reject) => {
+      wx.loadSubpackage({
+        name,
+        success: () => resolve(),
+        fail: () => reject(new Error(`加载分包 ${name} 失败，请检查网络后重试`))
+      });
+    }))
+  ).catch((error) => {
+    modelSubpackagesReady = null; // 失败允许下次重试
+    throw error;
+  });
+  return modelSubpackagesReady;
+}
+
 // 客户端单次 get 最多 20 条，skip 分页拉全量
 async function fetchAllByBabyUid(collectionName, babyUid) {
   if (!babyUid) return [];
@@ -293,6 +319,11 @@ async function importBabyData(sourceBabyUid, targetBabyUid, types = {}, options 
   const enabled = (key) => types[key] !== undefined ? !!types[key] : DEFAULT_IMPORT_TYPES.includes(key);
   const summary = {};
   const db = getDb();
+
+  // 食谱/食物分类的模型在分包内，先确保分包已下载再 require
+  if (enabled('recipes') || enabled('categories')) {
+    await ensureModelSubpackages();
+  }
 
   let foodIdMap = null;
   if (enabled('foods')) {
