@@ -6,10 +6,12 @@ const AVATAR_SECURITY_RISK_MESSAGE = '头像含有违规内容，请更换后再
 const AVATAR_SECURITY_CHECK_FAILED_MESSAGE = '头像安全检测失败，请稍后重试';
 
 function canShowMenuItem(item = {}, context = {}) {
-  const { userRole = '', isDeveloper = false } = context;
+  const { userRole = '', isDeveloper = false, accessibleBabyCount = 0 } = context;
   if (item.showForCreator && userRole !== 'creator') return false;
   if (item.showForParticipant && userRole !== 'participant') return false;
   if (item.showForDeveloper && !isDeveloper) return false;
+  // 同步数据需要至少两个可访问宝宝才有意义
+  if (item.showWhenMultipleBabies && accessibleBabyCount < 2) return false;
   return true;
 }
 
@@ -46,7 +48,8 @@ const MENU_GROUPS = [
         name: '同步数据',
         icon: 'baby',
         action: 'syncData',
-        description: '从其他宝宝复制食物、食谱和奶粉到当前宝宝'
+        description: '从其他宝宝复制食物、食谱和奶粉到当前宝宝',
+        showWhenMultipleBabies: true
       },
       {
         id: 15,
@@ -242,7 +245,8 @@ Page({
     latestAvatarUrl: '',
     lastSafeAvatarUrl: '',
     uploadingAvatar: false,
-    showSyncPanel: false // 「同步数据」底部弹层
+    showSyncPanel: false, // 「同步数据」底部弹层
+    accessibleBabyCount: 0 // 可访问宝宝数量（≥2 才显示「同步数据」菜单）
   },
 
   onLoad: function () {
@@ -253,12 +257,32 @@ Page({
 
     this.refreshIdentityState();
     this.getBabyInfo();
+    this.loadAccessibleBabyCount();
   },
 
   onShow: function () {
     this.refreshIdentityState();
+    this.loadAccessibleBabyCount();
     if (this.data.uploadingAvatar) return;
     this.getBabyInfo();
+  },
+
+  // 加载可访问宝宝数量：≥2 时「同步数据」菜单才显示，数量变化后重建菜单
+  async loadAccessibleBabyCount() {
+    try {
+      const app = getApp();
+      if (app && app.openidReady && typeof app.openidReady.then === 'function') {
+        await app.openidReady;
+      }
+      const { listAccessibleBabies } = require('../../utils/babyAccount');
+      const count = (await listAccessibleBabies()).length;
+      if (count !== this.data.accessibleBabyCount) {
+        this.setData({ accessibleBabyCount: count });
+        this.refreshIdentityState();
+      }
+    } catch (error) {
+      console.warn('加载可访问宝宝数量失败:', error);
+    }
   },
 
   refreshIdentityState() {
@@ -269,7 +293,11 @@ Page({
     this.setData({
       userRole,
       isDeveloper,
-      visibleMenuGroups: buildVisibleMenuGroups(this.data.menuGroups, { userRole, isDeveloper })
+      visibleMenuGroups: buildVisibleMenuGroups(this.data.menuGroups, {
+        userRole,
+        isDeveloper,
+        accessibleBabyCount: this.data.accessibleBabyCount
+      })
     });
     return { app, userRole, openid };
   },

@@ -2,29 +2,59 @@
   <view class="sync-title" wx:if="{{showTitle}}">从其他宝宝同步数据</view>
   <view class="sync-card" wx:if="{{sources.length > 0}}">
     <view class="sync-tip">把来源宝宝的库数据一次性复制到{{targetLabel}}，复制后各宝宝数据独立、互不影响。</view>
-    <view class="sync-item">
-      <view class="sync-label">来源宝宝</view>
-      <picker mode="selector" range="{{sourceNames}}" value="{{sourceIndex}}" bindchange="onSourceChange">
-        <view class="sync-picker">
-          {{sourceNames[sourceIndex]}}
-          <text class="sync-arrow">▼</text>
+
+    <!-- 来源宝宝 -->
+    <view class="sync-section-label">来源宝宝</view>
+    <picker mode="selector" range="{{sourceNames}}" value="{{sourceIndex}}" bindchange="onSourceChange">
+      <view class="sync-picker">
+        <text class="sync-picker-name">{{sourceNames[sourceIndex]}}</text>
+        <text class="sync-arrow">▼</text>
+      </view>
+    </picker>
+
+    <!-- 同步内容：每项带说明 -->
+    <view class="sync-section-label">同步内容</view>
+    <view class="sync-option-list">
+      <view
+        class="sync-option {{types[item.key] ? 'checked' : ''}}"
+        wx:for="{{typeOptions}}"
+        wx:key="key"
+        data-type="{{item.key}}"
+        bindtap="onToggleType"
+        hover-class="sync-option-hover"
+      >
+        <view class="sync-option-icon">{{item.icon}}</view>
+        <view class="sync-option-main">
+          <view class="sync-option-name">{{item.name}}</view>
+          <view class="sync-option-desc">{{item.desc}}</view>
         </view>
-      </picker>
+        <view class="sync-option-check">{{types[item.key] ? '✓' : ''}}</view>
+      </view>
     </view>
-    <view class="sync-types">
-      <view class="sync-type {{types.foods ? 'checked' : ''}}" data-type="foods" bindtap="onToggleType">食物库</view>
-      <view class="sync-type {{types.recipes ? 'checked' : ''}}" data-type="recipes" bindtap="onToggleType">食谱</view>
-      <view class="sync-type {{types.powders ? 'checked' : ''}}" data-type="powders" bindtap="onToggleType">奶粉档案</view>
-      <view class="sync-type {{types.categories ? 'checked' : ''}}" data-type="categories" bindtap="onToggleType">食物分类</view>
-      <view class="sync-type {{types.nutrition ? 'checked' : ''}}" data-type="nutrition" bindtap="onToggleType">配奶营养参数</view>
-    </view>
-    <view class="sync-label sync-strategy-label">已有同名数据时</view>
-    <view class="sync-types">
-      <view class="sync-type {{strategy === 'skip' ? 'checked' : ''}}" data-strategy="skip" bindtap="onStrategyChange">只补充新数据</view>
-      <view class="sync-type {{strategy === 'overwrite' ? 'checked' : ''}}" data-strategy="overwrite" bindtap="onStrategyChange">覆盖为来源宝宝的版本</view>
-    </view>
-    <view class="sync-hint" wx:if="{{strategy === 'overwrite'}}">覆盖会更新{{targetLabel}}已有条目的内容，但不会删除多出来的数据。</view>
     <view class="sync-hint" wx:if="{{types.nutrition}}">配奶营养参数仅含母乳成分，不含天然蛋白系数（因宝宝而异），同步后请到配奶设置确认。</view>
+
+    <!-- 冲突策略：每项带说明 -->
+    <view class="sync-section-label">已有同名数据时</view>
+    <view class="sync-option-list">
+      <view
+        class="sync-option {{strategy === item.key ? 'checked' : ''}}"
+        wx:for="{{strategyOptions}}"
+        wx:key="key"
+        data-strategy="{{item.key}}"
+        bindtap="onStrategyChange"
+        hover-class="sync-option-hover"
+      >
+        <view class="sync-option-main">
+          <view class="sync-option-name">
+            {{item.name}}
+            <text class="sync-option-tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+          </view>
+          <view class="sync-option-desc">{{item.desc}}</view>
+        </view>
+        <view class="sync-option-check">{{strategy === item.key ? '✓' : ''}}</view>
+      </view>
+    </view>
+
     <view class="sync-hint" wx:if="{{!showRunButton}}">保存并创建新宝宝后，将自动同步勾选的数据。</view>
     <button class="sync-run-btn" wx:if="{{showRunButton}}" bindtap="runImport" disabled="{{importing}}">{{importing ? '同步中...' : '立即同步'}}</button>
   </view>
