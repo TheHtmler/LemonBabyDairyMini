@@ -44,6 +44,8 @@ Page({
     importSourceNames: [],
     importSourceIndex: 0,
     importTypes: { foods: true, recipes: true, powders: true, categories: true, nutrition: false },
+    // 冲突策略：skip=只补充新数据（默认）；overwrite=已有条目覆盖为来源宝宝的版本
+    conflictStrategy: 'skip',
     importing: false
   },
 
@@ -116,6 +118,8 @@ Page({
         firstLogin: options.firstLogin === 'true'
       });
     }
+    // 从库管理页的「有更新」横幅跳入时，预选来源宝宝
+    this._presetImportSource = (options && options.importFrom) || '';
   },
   
   // 处理用户角色
@@ -184,12 +188,16 @@ Page({
         : (this.app.globalData.babyUid || wx.getStorageSync('baby_uid') || '');
       const sources = (await listAccessibleBabies())
         .filter((baby) => baby.babyUid && baby.babyUid !== currentBabyUid);
+      // 支持从库管理页横幅带 importFrom 参数预选来源宝宝
+      const presetIndex = this._presetImportSource
+        ? sources.findIndex((baby) => baby.babyUid === this._presetImportSource)
+        : -1;
       this.setData({
         importSources: sources,
         importSourceNames: sources.map((baby) => (
           baby.role === 'participant' ? `${baby.name}（参与）` : baby.name
         )),
-        importSourceIndex: 0
+        importSourceIndex: presetIndex >= 0 ? presetIndex : 0
       });
     } catch (error) {
       console.warn('加载导入来源宝宝失败:', error);
@@ -205,6 +213,12 @@ Page({
     const { type } = e.currentTarget.dataset;
     if (!type || !(type in (this.data.importTypes || {}))) return;
     this.setData({ [`importTypes.${type}`]: !this.data.importTypes[type] });
+  },
+
+  onConflictStrategyChange(e) {
+    const { strategy } = e.currentTarget.dataset;
+    if (strategy !== 'skip' && strategy !== 'overwrite') return;
+    this.setData({ conflictStrategy: strategy });
   },
 
   selectedImportTypes() {
@@ -233,7 +247,9 @@ Page({
     wx.showLoading({ title: '正在导入数据...', mask: true });
     try {
       const { importBabyData, formatImportSummary } = require('../../utils/babyDataImport');
-      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes);
+      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes, {
+        conflictStrategy: this.data.conflictStrategy
+      });
       wx.hideLoading();
       await this.showImportResultModal('数据导入完成', formatImportSummary(summary));
     } catch (error) {
@@ -261,7 +277,9 @@ Page({
     wx.showLoading({ title: '正在导入数据...', mask: true });
     try {
       const { importBabyData, formatImportSummary } = require('../../utils/babyDataImport');
-      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes);
+      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes, {
+        conflictStrategy: this.data.conflictStrategy
+      });
       wx.hideLoading();
       await this.showImportResultModal('数据导入完成', formatImportSummary(summary));
     } catch (error) {

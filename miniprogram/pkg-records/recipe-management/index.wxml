@@ -9,6 +9,9 @@
             <text class="manage-kicker">维护</text>
             <text class="manage-title">食谱管理</text>
             <text class="manage-desc">保存常做菜的原料组合；记本顿时再填用量。</text>
+            <view class="library-update-hint" wx:if="{{libraryUpdateHint}}" bindtap="onLibraryUpdateHintTap" hover-class="press-soft">
+              <text>「{{libraryUpdateHint.name}}」的食谱有更新，去同步 ›</text>
+            </view>
           </view>
           <view class="manage-hero-stat" wx:if="{{recipeCount > 0}}">
             <text class="manage-stat-num">{{recipeCount}}</text>

@@ -110,6 +110,8 @@ Page({
     proteinTypeTouched: false,
     proteinTypeRecommendationText: '',
     babyUid: '',
+    // 曾经导入过的来源宝宝的库更新提示（{ babyUid, name }），无则为 null
+    libraryUpdateHint: null,
     editingFoodId: '',
     editingFoodName: '',
     editingFoodIsSystemSource: false,
@@ -140,6 +142,28 @@ Page({
 
   async onShow() {
     await this.loadCustomCategories();
+    this.loadLibraryUpdateHint();
+  },
+
+  // 曾经从其他宝宝导入过数据时，检查来源宝宝的库是否有新变化，有则提示可再同步
+  async loadLibraryUpdateHint() {
+    try {
+      const babyUid = this.data.babyUid || getBabyUid();
+      if (!babyUid) return;
+      const { getLibraryUpdateHints } = require('../../utils/babyDataImport');
+      const hints = await getLibraryUpdateHints(babyUid, 'food_catalog');
+      this.setData({ libraryUpdateHint: hints[0] || null });
+    } catch (error) {
+      this.setData({ libraryUpdateHint: null });
+    }
+  },
+
+  onLibraryUpdateHintTap() {
+    const hint = this.data.libraryUpdateHint;
+    if (!hint || !hint.babyUid) return;
+    wx.navigateTo({
+      url: `/pkg-misc/baby-info/index?from=library&importFrom=${hint.babyUid}`
+    });
   },
 
   async loadFoods() {

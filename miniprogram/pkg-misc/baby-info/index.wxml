@@ -177,6 +177,12 @@
           <view class="import-type {{importTypes.categories ? 'checked' : ''}}" data-type="categories" bindtap="onToggleImportType">食物分类</view>
           <view class="import-type {{importTypes.nutrition ? 'checked' : ''}}" data-type="nutrition" bindtap="onToggleImportType">配奶营养参数</view>
         </view>
+        <view class="item-label import-strategy-label">已有同名数据时</view>
+        <view class="import-types">
+          <view class="import-type {{conflictStrategy === 'skip' ? 'checked' : ''}}" data-strategy="skip" bindtap="onConflictStrategyChange">只补充新数据</view>
+          <view class="import-type {{conflictStrategy === 'overwrite' ? 'checked' : ''}}" data-strategy="overwrite" bindtap="onConflictStrategyChange">覆盖为来源宝宝的版本</view>
+        </view>
+        <view class="import-hint" wx:if="{{conflictStrategy === 'overwrite'}}">覆盖会更新{{createMode ? '新宝宝' : '当前宝宝'}}已有条目的内容，但不会删除多出来的数据。</view>
         <view class="import-hint" wx:if="{{importTypes.nutrition}}">配奶营养参数仅含母乳成分，不含天然蛋白系数（因宝宝而异），导入后请到配奶设置确认。</view>
         <view class="import-hint" wx:if="{{createMode}}">保存并创建新宝宝后，将自动导入勾选的数据。</view>
         <button class="import-now-btn" wx:if="{{!createMode}}" bindtap="onImportNow" disabled="{{importing}}">{{importing ? '导入中...' : '立即导入'}}</button>

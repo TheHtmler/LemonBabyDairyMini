@@ -13,7 +13,9 @@ function installWxMock(seed = {}) {
     recipe_catalog: [...(seed.recipe_catalog || [])],
     food_categories: [...(seed.food_categories || [])],
     milk_nutrition_profiles: [...(seed.milk_nutrition_profiles || [])],
-    baby_info: [...(seed.baby_info || [])]
+    baby_info: [...(seed.baby_info || [])],
+    baby_creators: [...(seed.baby_creators || [])],
+    baby_participants: [...(seed.baby_participants || [])]
   };
   const storage = {};
   let idSeq = 0;
@@ -234,11 +236,11 @@ test('import copies foods, recipes, categories, powders and nutrition into an em
       foods: true, recipes: true, powders: true, categories: true, nutrition: true
     });
 
-    assert.deepEqual(summary.foods, { imported: 2, skipped: 0, failed: 0 });
-    assert.deepEqual(summary.recipes, { imported: 1, skipped: 1, failed: 0 }, '归档食谱不导入');
-    assert.deepEqual(summary.categories, { imported: 1, skipped: 0, failed: 0 });
-    assert.deepEqual(summary.powders, { imported: 1, skipped: 0, failed: 0 }, '归档奶粉不导入');
-    assert.deepEqual(summary.nutrition, { imported: 1 });
+    assert.deepEqual(summary.foods, { imported: 2, updated: 0, skipped: 0, failed: 0 });
+    assert.deepEqual(summary.recipes, { imported: 1, updated: 0, skipped: 1, failed: 0 }, '归档食谱不导入');
+    assert.deepEqual(summary.categories, { imported: 1, updated: 0, skipped: 0, failed: 0 });
+    assert.deepEqual(summary.powders, { imported: 1, updated: 0, skipped: 0, failed: 0 }, '归档奶粉不导入');
+    assert.deepEqual(summary.nutrition, { imported: 1, updated: 0 });
 
     // 食物归属目标宝宝且相互隔离
     const targetFoods = mock.stores.food_catalog.filter((food) => food.babyUid === 'baby-b');
@@ -371,19 +373,175 @@ test('import rejects invalid source/target combinations', async () => {
   }
 });
 
+test('overwrite strategy updates existing items in place and keeps target ids', async () => {
+  const mock = installWxMock({
+    food_catalog: [
+      ...SOURCE_FOODS.map((food) => ({ ...food })),
+      // 目标宝宝已有同 key 食物（内容旧一些），覆盖时应原地更新且保留 _id
+      {
+        _id: 'target-food-1',
+        babyUid: 'baby-b',
+        sharedBabyUids: ['baby-b'],
+        name: '蛋黄泥',
+        category: '蛋类',
+        nutritionBasis: { quantity: 100, unit: 'g' },
+        nutritionPerBasis: { calories: 111, protein: 1, fat: 1, carbs: 1, fiber: 0, sodium: 1 }
+      }
+    ],
+    recipe_catalog: [
+      {
+        _id: 'recipe-1',
+        babyUid: 'baby-a',
+        recordType: 'recipe',
+        status: 'active',
+        name: '蛋黄小麦糊',
+        notes: '新版做法',
+        ingredients: [
+          { foodId: 'food-1', foodName: '蛋黄泥', quantity: 50, unit: 'g', foodSnapshot: { name: '蛋黄泥' } }
+        ]
+      },
+      {
+        _id: 'target-recipe-1',
+        babyUid: 'baby-b',
+        recordType: 'recipe',
+        status: 'active',
+        name: '蛋黄小麦糊',
+        notes: '旧版做法',
+        usageCount: 7,
+        ingredients: [
+          { foodId: 'target-food-1', foodName: '蛋黄泥', quantity: 30, unit: 'g', foodSnapshot: { name: '蛋黄泥' } }
+        ]
+      }
+    ],
+    milk_nutrition_profiles: [
+      {
+        _id: 'profile-a',
+        babyUid: 'baby-a',
+        breastMilk: { nutritionPer100ml: { protein: 1.3 } },
+        formulaPowders: [
+          { id: 'powder-a1', name: '纽迪希亚一段', status: 'active', sourceSystemPowderId: 'SYS_P1', nutritionPer100g: { protein: 13.5 } }
+        ]
+      },
+      {
+        _id: 'profile-b',
+        babyUid: 'baby-b',
+        breastMilk: { nutritionPer100ml: { protein: 1.1 } },
+        formulaPowders: [
+          { id: 'powder-b1', name: '纽迪希亚一段', status: 'active', sourceSystemPowderId: 'SYS_P1', nutritionPer100g: { protein: 13.1 } }
+        ]
+      }
+    ]
+  });
+  const { importBabyData } = loadImportModule(mock);
+
+  try {
+    const summary = await importBabyData('baby-a', 'baby-b', {
+      foods: true, recipes: true, powders: true, categories: false, nutrition: false
+    }, { conflictStrategy: 'overwrite' });
+
+    assert.equal(summary.foods.imported, 1, '小麦快照是新增');
+    assert.equal(summary.foods.updated, 1, '蛋黄泥命中同 key 被更新');
+    const targetFood = mock.stores.food_catalog.find((food) => food._id === 'target-food-1');
+    assert.equal(targetFood.nutritionPerBasis.protein, 13, '内容已更新为来源版本');
+    assert.equal(targetFood._id, 'target-food-1', '目标食物 _id 不变，已有引用不断链');
+    assert.equal(targetFood.babyUid, 'baby-b');
+
+    assert.equal(summary.recipes.updated, 1);
+    const targetRecipe = mock.stores.recipe_catalog.find((recipe) => recipe._id === 'target-recipe-1');
+    assert.equal(targetRecipe.notes, '新版做法', '食谱内容已更新');
+    assert.equal(targetRecipe.usageCount, 7, '使用统计保留');
+    assert.equal(targetRecipe.ingredients[0].foodId, 'target-food-1', '原料重连到目标宝宝食物');
+
+    assert.equal(summary.powders.updated, 1);
+    const targetProfile = mock.stores.milk_nutrition_profiles.find((profile) => profile._id === 'profile-b');
+    assert.equal(targetProfile.formulaPowders.length, 1, '覆盖不产生重复奶粉');
+    assert.equal(targetProfile.formulaPowders[0].id, 'powder-b1', '奶粉 id 保留');
+    assert.equal(targetProfile.formulaPowders[0].nutritionPer100g.protein, 13.5, '奶粉营养数据已更新');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('library update hints only appear for previously imported sources with newer changes', async () => {
+  const seed = {
+    baby_info: [
+      { babyUid: 'baby-a', name: '柠檬' },
+      { babyUid: 'baby-b', name: '弟弟' },
+      { babyUid: 'baby-c', name: '邻居宝宝' }
+    ],
+    baby_creators: [{ _openid: 'openid-1', babyUid: 'baby-b' }],
+    baby_participants: [
+      { _openid: 'openid-1', babyUid: 'baby-a' },
+      { _openid: 'openid-1', babyUid: 'baby-c' }
+    ],
+    food_catalog: [
+      { _id: 'f-a', babyUid: 'baby-a', name: '蛋黄泥', updatedAt: '2026-09-10T00:00:00.000Z' },
+      { _id: 'f-c', babyUid: 'baby-c', name: '米糊', updatedAt: '2026-09-10T00:00:00.000Z' }
+    ]
+  };
+
+  // 情况 1：从 baby-a 导入过且 baby-a 之后有更新 → 提示；baby-c 从未导入过 → 不提示
+  let mock = installWxMock(seed);
+  let module1 = loadImportModule(mock);
+  try {
+    mock.storage['baby_import_log_baby-b'] = { 'baby-a': new Date('2026-09-01T00:00:00.000Z').getTime() };
+    const hints = await module1.getLibraryUpdateHints('baby-b', 'food_catalog');
+    assert.equal(hints.length, 1);
+    assert.equal(hints[0].babyUid, 'baby-a');
+    assert.equal(hints[0].name, '柠檬');
+  } finally {
+    mock.restore();
+  }
+
+  // 情况 2：导入时间晚于来源最新更新 → 不提示
+  mock = installWxMock(seed);
+  module1 = loadImportModule(mock);
+  try {
+    mock.storage['baby_import_log_baby-b'] = { 'baby-a': new Date('2026-09-20T00:00:00.000Z').getTime() };
+    const hints = await module1.getLibraryUpdateHints('baby-b', 'food_catalog');
+    assert.equal(hints.length, 0);
+  } finally {
+    mock.restore();
+  }
+
+  // 情况 3：从未导入过任何来源 → 完全不打扰
+  mock = installWxMock(seed);
+  module1 = loadImportModule(mock);
+  try {
+    const hints = await module1.getLibraryUpdateHints('baby-b', 'food_catalog');
+    assert.equal(hints.length, 0);
+  } finally {
+    mock.restore();
+  }
+});
+
+test('importBabyData records last-import time for update hints', async () => {
+  const mock = installWxMock({
+    food_catalog: SOURCE_FOODS.map((food) => ({ ...food }))
+  });
+  const { importBabyData } = loadImportModule(mock);
+
+  try {
+    await importBabyData('baby-a', 'baby-b', { foods: true, recipes: false, powders: false, categories: false, nutrition: false });
+    const log = mock.storage['baby_import_log_baby-b'];
+    assert.ok(log && log['baby-a'] > 0, '导入完成后应记录来源宝宝的上次导入时间');
+  } finally {
+    mock.restore();
+  }
+});
+
 test('formatImportSummary renders per-type counts', async () => {
   const mock = installWxMock({});
   const { formatImportSummary } = loadImportModule(mock);
 
   try {
     const text = formatImportSummary({
-      foods: { imported: 3, skipped: 1, failed: 0 },
-      recipes: { imported: 0, skipped: 2, failed: 1 },
+      foods: { imported: 3, updated: 2, skipped: 1, failed: 0 },
+      recipes: { imported: 0, updated: 0, skipped: 2, failed: 1 },
       nutrition: { imported: 1 }
     });
-    assert.match(text, /食物库 3 项/);
-    assert.match(text, /跳过重复 1/);
-    assert.match(text, /食谱 0 项，跳过重复 2，失败 1/);
+    assert.match(text, /食物库：新增 3，更新 2，跳过重复 1/);
+    assert.match(text, /食谱：跳过重复 2，失败 1/);
     assert.match(text, /配奶营养参数已导入/);
     assert.equal(formatImportSummary({}), '没有需要导入的数据');
   } finally {

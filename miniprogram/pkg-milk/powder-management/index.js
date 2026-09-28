@@ -191,6 +191,8 @@ Page({
   data: {
     loading: false,
     babyUid: '',
+    // 曾经导入过的来源宝宝的奶粉档案更新提示（{ babyUid, name }），无则为 null
+    libraryUpdateHint: null,
     breastMilkSettings: {},
     powders: [],
     groupedPowders: [],
@@ -264,12 +266,33 @@ Page({
     this._powdersDirty = true;
   },
 
+  // 曾经从其他宝宝导入过奶粉档案时，检查来源宝宝的配奶档案是否有新变化
+  async loadLibraryUpdateHint(babyUid) {
+    try {
+      if (!babyUid) return;
+      const { getLibraryUpdateHints } = require('../../utils/babyDataImport');
+      const hints = await getLibraryUpdateHints(babyUid, 'milk_nutrition_profiles');
+      this.setData({ libraryUpdateHint: hints[0] || null });
+    } catch (error) {
+      this.setData({ libraryUpdateHint: null });
+    }
+  },
+
+  onLibraryUpdateHintTap() {
+    const hint = this.data.libraryUpdateHint;
+    if (!hint || !hint.babyUid) return;
+    wx.navigateTo({
+      url: `/pkg-misc/baby-info/index?from=library&importFrom=${hint.babyUid}`
+    });
+  },
+
   async loadPowders(options = {}) {
     try {
       this.setData({ loading: true });
       await waitForAppInitialization();
       const babyUid = this.data.babyUid || getBabyUid();
       this.setData({ babyUid: babyUid || '' });
+      this.loadLibraryUpdateHint(babyUid);
 
       const { systemPowders, userPowders } = await PowderCatalogModel.getAvailablePowders(babyUid);
       // 合并后一次换链，配合 cloudTempUrlCache 命中则接近 0 次存储调用
