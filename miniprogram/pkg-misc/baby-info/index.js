@@ -38,15 +38,8 @@ Page({
     // 等点「保存」生成 babyUid 后再随表单一起上传落库。
     pendingAvatarPath: '',
     createMode: false,
-    // 从其他宝宝导入数据（可选）：来源宝宝列表与勾选的数据类型。
-    // 一次性复制，复制后各宝宝数据独立、互不影响。
-    importSources: [],
-    importSourceNames: [],
-    importSourceIndex: 0,
-    importTypes: { foods: true, recipes: true, powders: true, categories: true, nutrition: false },
-    // 冲突策略：skip=只补充新数据（默认）；overwrite=已有条目覆盖为来源宝宝的版本
-    conflictStrategy: 'skip',
-    importing: false
+    // 从库管理页「有更新」横幅跳入时预选同步来源宝宝（透传给 baby-sync-panel 组件）
+    presetImportSource: ''
   },
 
   onLoad(options) {
@@ -76,7 +69,8 @@ Page({
   onShow() {
     if (this.app && !this.isCreateMode()) {
       this.loadBabyInfo();
-      this.loadImportSources();
+      const syncPanel = this.selectComponent('#syncPanel');
+      if (syncPanel) syncPanel.refresh();
     }
   },
 
@@ -118,8 +112,8 @@ Page({
         firstLogin: options.firstLogin === 'true'
       });
     }
-    // 从库管理页的「有更新」横幅跳入时，预选来源宝宝
-    this._presetImportSource = (options && options.importFrom) || '';
+    // 从库管理页的「有更新」横幅跳入时，预选同步来源宝宝
+    this.setData({ presetImportSource: (options && options.importFrom) || '' });
   },
   
   // 处理用户角色
@@ -172,122 +166,9 @@ Page({
       if (!this.isCreateMode()) {
         await this.loadBabyInfo();
       }
-      // create 模式下来源是全部可访问宝宝；编辑模式下排除当前宝宝
-      await this.loadImportSources();
+      // 同步来源宝宝列表由 baby-sync-panel 组件自行加载（create 模式不排除任何宝宝）
     } catch (error) {
       console.error('初始化失败:', error);
-    }
-  },
-
-  // 加载可作为导入来源的其他宝宝（凡是当前账号能访问的宝宝，其数据都可以作为来源）
-  async loadImportSources() {
-    try {
-      const { listAccessibleBabies } = require('../../utils/babyAccount');
-      const currentBabyUid = this.isCreateMode()
-        ? ''
-        : (this.app.globalData.babyUid || wx.getStorageSync('baby_uid') || '');
-      const sources = (await listAccessibleBabies())
-        .filter((baby) => baby.babyUid && baby.babyUid !== currentBabyUid);
-      // 支持从库管理页横幅带 importFrom 参数预选来源宝宝
-      const presetIndex = this._presetImportSource
-        ? sources.findIndex((baby) => baby.babyUid === this._presetImportSource)
-        : -1;
-      this.setData({
-        importSources: sources,
-        importSourceNames: sources.map((baby) => (
-          baby.role === 'participant' ? `${baby.name}（参与）` : baby.name
-        )),
-        importSourceIndex: presetIndex >= 0 ? presetIndex : 0
-      });
-    } catch (error) {
-      console.warn('加载导入来源宝宝失败:', error);
-      this.setData({ importSources: [], importSourceNames: [], importSourceIndex: 0 });
-    }
-  },
-
-  onImportSourceChange(e) {
-    this.setData({ importSourceIndex: Number(e.detail.value) || 0 });
-  },
-
-  onToggleImportType(e) {
-    const { type } = e.currentTarget.dataset;
-    if (!type || !(type in (this.data.importTypes || {}))) return;
-    this.setData({ [`importTypes.${type}`]: !this.data.importTypes[type] });
-  },
-
-  onConflictStrategyChange(e) {
-    const { strategy } = e.currentTarget.dataset;
-    if (strategy !== 'skip' && strategy !== 'overwrite') return;
-    this.setData({ conflictStrategy: strategy });
-  },
-
-  selectedImportTypes() {
-    const types = this.data.importTypes || {};
-    return Object.keys(types).filter((key) => types[key]);
-  },
-
-  showImportResultModal(title, content) {
-    return new Promise((resolve) => {
-      wx.showModal({
-        title,
-        content: content || '没有需要导入的数据',
-        showCancel: false,
-        confirmText: '知道了',
-        success: resolve,
-        fail: resolve
-      });
-    });
-  },
-
-  // create 模式：新宝宝保存成功后执行勾选的导入；导入失败不阻塞进入首页，
-  // 因为 babyDataImport 幂等，之后可在宝宝信息页重新执行。
-  async runImportForNewBaby(targetBabyUid) {
-    const source = this.data.importSources[this.data.importSourceIndex];
-    if (!source || !source.babyUid || !this.selectedImportTypes().length) return;
-    wx.showLoading({ title: '正在导入数据...', mask: true });
-    try {
-      const { importBabyData, formatImportSummary } = require('../../utils/babyDataImport');
-      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes, {
-        conflictStrategy: this.data.conflictStrategy
-      });
-      wx.hideLoading();
-      await this.showImportResultModal('数据导入完成', formatImportSummary(summary));
-    } catch (error) {
-      wx.hideLoading();
-      console.error('新宝宝数据导入失败:', error);
-      await this.showImportResultModal(
-        '数据导入未完成',
-        '宝宝已创建成功；可稍后在「宝宝信息管理」页重新执行从其他宝宝导入数据。'
-      );
-    }
-  },
-
-  // 编辑模式：对当前宝宝立即执行导入（可重复执行，重复数据自动跳过）
-  async onImportNow() {
-    if (this.data.importing) return;
-    const source = this.data.importSources[this.data.importSourceIndex];
-    const targetBabyUid = this.data.babyInfo.babyUid
-      || this.app.globalData.babyUid
-      || wx.getStorageSync('baby_uid');
-    if (!source || !source.babyUid || !targetBabyUid || !this.selectedImportTypes().length) {
-      wx.showToast({ title: '请选择来源宝宝和导入内容', icon: 'none' });
-      return;
-    }
-    this.setData({ importing: true });
-    wx.showLoading({ title: '正在导入数据...', mask: true });
-    try {
-      const { importBabyData, formatImportSummary } = require('../../utils/babyDataImport');
-      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes, {
-        conflictStrategy: this.data.conflictStrategy
-      });
-      wx.hideLoading();
-      await this.showImportResultModal('数据导入完成', formatImportSummary(summary));
-    } catch (error) {
-      wx.hideLoading();
-      console.error('导入数据失败:', error);
-      wx.showToast({ title: '导入失败，请重试', icon: 'none' });
-    } finally {
-      this.setData({ importing: false });
     }
   },
 
@@ -859,8 +740,12 @@ Page({
       if (this.isCreateMode()) {
         const { switchToBaby } = require('../../utils/babyAccount');
         switchToBaby({ babyUid, role: 'creator' });
-        // 创建者勾选了「从其他宝宝导入数据」时，在此一次性复制；复制后各宝宝数据隔离
-        await this.runImportForNewBaby(babyUid);
+        // 创建者勾选了「从其他宝宝同步数据」时，在此一次性复制；复制后各宝宝数据隔离。
+        // 同步失败不阻塞进入首页，babyDataImport 幂等，之后可重新执行。
+        const syncPanel = this.selectComponent('#syncPanel');
+        if (syncPanel) {
+          await syncPanel.runImportForTarget(babyUid);
+        }
         wx.switchTab({
           url: '/pages/daily-feeding/index',
           fail: () => this.navigateToMainPage()

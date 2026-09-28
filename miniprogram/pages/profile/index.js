@@ -42,6 +42,13 @@ const MENU_GROUPS = [
         showForCreator: true
       },
       {
+        id: 24,
+        name: '同步数据',
+        icon: 'baby',
+        action: 'syncData',
+        description: '从其他宝宝复制食物、食谱和奶粉到当前宝宝'
+      },
+      {
         id: 15,
         name: '个人信息',
         icon: 'info',
@@ -234,7 +241,8 @@ Page({
     avatarCropSrc: '',
     latestAvatarUrl: '',
     lastSafeAvatarUrl: '',
-    uploadingAvatar: false
+    uploadingAvatar: false,
+    showSyncPanel: false // 「同步数据」底部弹层
   },
 
   onLoad: function () {
@@ -685,11 +693,26 @@ Page({
       this.handleCreatorAccountCancellation();
     } else if (item.action === 'unbindParticipant') {
       this.handleParticipantUnbind();
+    } else if (item.action === 'syncData') {
+      this.openSyncPanel();
     } else if (item.path) {
       wx.navigateTo({
         url: item.path
       });
     }
+  },
+
+  // 「同步数据」菜单：打开底部弹层，从其他宝宝复制库数据到当前宝宝
+  openSyncPanel() {
+    this.setData({ showSyncPanel: true });
+  },
+
+  closeSyncPanel() {
+    this.setData({ showSyncPanel: false });
+  },
+
+  onSyncPanelDone() {
+    this.closeSyncPanel();
   },
 
   showConfirmModal(options = {}) {

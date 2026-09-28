@@ -574,4 +574,69 @@
 
 .refresh-btn:active {
   background: rgba(255, 255, 255, 0.25);
-} 
+}
+
+/* 「同步数据」底部弹层 */
+.sync-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 100;
+}
+
+.sync-mask.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sync-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #FFFDF4;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  z-index: 101;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.sync-sheet.show {
+  transform: translateY(0);
+}
+
+.sync-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.sync-sheet-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.sync-sheet-close {
+  font-size: 32rpx;
+  color: #999;
+  padding: 8rpx 16rpx;
+  line-height: 1;
+}
+
+.sync-sheet-subtitle {
+  font-size: 24rpx;
+  color: #8A6A12;
+  margin-bottom: 20rpx;
+}

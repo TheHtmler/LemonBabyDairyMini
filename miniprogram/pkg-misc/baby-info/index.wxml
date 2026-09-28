@@ -156,38 +156,14 @@
       </view>
     </view>
 
-    <!-- 从其他宝宝导入数据（存在其他可访问宝宝时显示；一次性复制，复制后数据隔离） -->
-    <view class="form-group" wx:if="{{importSources.length > 0}}">
-      <view class="form-title">从其他宝宝导入数据（可选）</view>
-      <view class="import-card">
-        <view class="import-tip">把来源宝宝的库数据一次性复制到{{createMode ? '新宝宝' : '当前宝宝'}}，复制后各宝宝数据独立、互不影响。</view>
-        <view class="form-item">
-          <view class="item-label">来源宝宝</view>
-          <picker mode="selector" range="{{importSourceNames}}" value="{{importSourceIndex}}" bindchange="onImportSourceChange">
-            <view class="picker">
-              {{importSourceNames[importSourceIndex]}}
-              <text class="arrow">▼</text>
-            </view>
-          </picker>
-        </view>
-        <view class="import-types">
-          <view class="import-type {{importTypes.foods ? 'checked' : ''}}" data-type="foods" bindtap="onToggleImportType">食物库</view>
-          <view class="import-type {{importTypes.recipes ? 'checked' : ''}}" data-type="recipes" bindtap="onToggleImportType">食谱</view>
-          <view class="import-type {{importTypes.powders ? 'checked' : ''}}" data-type="powders" bindtap="onToggleImportType">奶粉档案</view>
-          <view class="import-type {{importTypes.categories ? 'checked' : ''}}" data-type="categories" bindtap="onToggleImportType">食物分类</view>
-          <view class="import-type {{importTypes.nutrition ? 'checked' : ''}}" data-type="nutrition" bindtap="onToggleImportType">配奶营养参数</view>
-        </view>
-        <view class="item-label import-strategy-label">已有同名数据时</view>
-        <view class="import-types">
-          <view class="import-type {{conflictStrategy === 'skip' ? 'checked' : ''}}" data-strategy="skip" bindtap="onConflictStrategyChange">只补充新数据</view>
-          <view class="import-type {{conflictStrategy === 'overwrite' ? 'checked' : ''}}" data-strategy="overwrite" bindtap="onConflictStrategyChange">覆盖为来源宝宝的版本</view>
-        </view>
-        <view class="import-hint" wx:if="{{conflictStrategy === 'overwrite'}}">覆盖会更新{{createMode ? '新宝宝' : '当前宝宝'}}已有条目的内容，但不会删除多出来的数据。</view>
-        <view class="import-hint" wx:if="{{importTypes.nutrition}}">配奶营养参数仅含母乳成分，不含天然蛋白系数（因宝宝而异），导入后请到配奶设置确认。</view>
-        <view class="import-hint" wx:if="{{createMode}}">保存并创建新宝宝后，将自动导入勾选的数据。</view>
-        <button class="import-now-btn" wx:if="{{!createMode}}" bindtap="onImportNow" disabled="{{importing}}">{{importing ? '导入中...' : '立即导入'}}</button>
-      </view>
-    </view>
+    <!-- 从其他宝宝同步数据（存在其他可访问宝宝时显示；一次性复制，复制后数据隔离） -->
+    <baby-sync-panel
+      id="syncPanel"
+      target-baby-uid="{{createMode ? '' : babyInfo.babyUid}}"
+      target-label="{{createMode ? '新宝宝' : '当前宝宝'}}"
+      show-run-button="{{!createMode}}"
+      preset-source-uid="{{presetImportSource}}"
+    />
   </view>
   
   <view class="footer">

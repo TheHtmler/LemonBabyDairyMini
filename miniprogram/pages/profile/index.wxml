@@ -57,3 +57,21 @@
   bind:close="hideAvatarCropper"
   bind:confirm="onAvatarCropped"
 />
+
+<!-- 「同步数据」底部弹层：从其他宝宝复制库数据到当前宝宝 -->
+<view class="sync-mask {{showSyncPanel ? 'show' : ''}}" bindtap="closeSyncPanel"></view>
+<view class="sync-sheet {{showSyncPanel ? 'show' : ''}}">
+  <view class="sync-sheet-header">
+    <text class="sync-sheet-title">同步数据</text>
+    <text class="sync-sheet-close" bindtap="closeSyncPanel">✕</text>
+  </view>
+  <view class="sync-sheet-subtitle">把其他宝宝的食物库、食谱等数据复制到「{{babyInfo.name || '当前宝宝'}}」</view>
+  <baby-sync-panel
+    wx:if="{{showSyncPanel}}"
+    target-baby-uid="{{babyInfo.babyUid}}"
+    show-run-button
+    show-title="{{false}}"
+    show-empty-hint
+    bind:done="onSyncPanelDone"
+  />
+</view>

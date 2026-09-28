@@ -1,0 +1,132 @@
+/* 宝宝数据同步面板（样式与宝宝信息页表单卡片保持一致） */
+.sync-group {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.sync-title {
+  padding-left: 20rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.2);
+  position: relative;
+}
+
+.sync-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8rpx;
+  width: 8rpx;
+  height: 28rpx;
+  background-color: #FFB800;
+  border-radius: 4rpx;
+}
+
+.sync-card {
+  background: #FFFDF4;
+  border: 1rpx solid #FFE9A8;
+  border-radius: 20rpx;
+  padding: 24rpx;
+}
+
+.sync-tip {
+  font-size: 24rpx;
+  color: #8A6A12;
+  line-height: 1.5;
+  margin-bottom: 16rpx;
+}
+
+.sync-item {
+  margin-bottom: 16rpx;
+}
+
+.sync-label {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.sync-picker {
+  height: 80rpx;
+  background-color: #f5f5f5;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2rpx solid transparent;
+  box-sizing: border-box;
+}
+
+.sync-arrow {
+  color: #999;
+  font-size: 24rpx;
+  margin-left: 10rpx;
+}
+
+.sync-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.sync-type {
+  font-size: 26rpx;
+  color: #8A6A12;
+  background: #fff;
+  border: 1rpx solid #EBD9A0;
+  border-radius: 32rpx;
+  padding: 10rpx 28rpx;
+  line-height: 1.4;
+}
+
+.sync-type.checked {
+  color: #fff;
+  background: #FFB800;
+  border-color: #FFB800;
+}
+
+.sync-hint {
+  font-size: 22rpx;
+  color: #B08A1E;
+  line-height: 1.5;
+  margin-top: 16rpx;
+}
+
+.sync-strategy-label {
+  margin-top: 20rpx;
+}
+
+.sync-run-btn {
+  width: 100%;
+  margin: 20rpx 0 0;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 80rpx;
+  background-color: #FFB800;
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 40rpx;
+  border: none;
+  text-align: center;
+}
+
+.sync-run-btn::after {
+  border: none;
+}
+
+.sync-run-btn[disabled] {
+  background-color: #e0e0e0;
+  color: #fff;
+}
