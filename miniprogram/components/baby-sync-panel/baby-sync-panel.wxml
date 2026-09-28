@@ -31,7 +31,6 @@
         <view class="sync-option-check">{{types[item.key] ? '✓' : ''}}</view>
       </view>
     </view>
-    <view class="sync-hint" wx:if="{{types.nutrition}}">母乳成分参数同步后请到配奶设置确认；天然蛋白系数因宝宝而异（医嘱），不会同步。</view>
 
     <!-- 冲突策略：每项带说明 -->
     <view class="sync-section-label">已有同名数据时</view>
