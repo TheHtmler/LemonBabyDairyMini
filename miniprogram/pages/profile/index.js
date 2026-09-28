@@ -40,7 +40,7 @@ const MENU_GROUPS = [
         name: '添加宝宝',
         icon: 'baby',
         path: '/pkg-misc/baby-info/index?mode=create',
-        description: '再建一份档案，可从已有宝宝导入食物、食谱和奶粉',
+        description: '给另一个宝宝建档，食物、食谱、奶粉库可搬过来，不用重录',
         showForCreator: true
       },
       {

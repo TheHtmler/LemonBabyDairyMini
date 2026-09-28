@@ -1,7 +1,7 @@
 <view class="container">
   <view class="header">
     <text class="title">{{createMode ? '添加宝宝' : (firstLogin ? '完善宝宝信息' : '宝宝信息管理')}}</text>
-    <text class="subtitle">{{createMode ? '可从已有宝宝导入食物、食谱和奶粉，各宝宝数据互不影响' : (firstLogin ? '首次使用需要完善以下信息' : '您可以随时更新宝宝的成长数据')}}</text>
+    <text class="subtitle">{{createMode ? '食物、食谱、奶粉库可从其他宝宝搬过来，各宝宝数据互不影响' : (firstLogin ? '首次使用需要完善以下信息' : '您可以随时更新宝宝的成长数据')}}</text>
   </view>
   
   <view class="form-container">
