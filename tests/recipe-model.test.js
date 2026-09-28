@@ -5,7 +5,7 @@ const path = require('node:path');
 
 test('recipe model targets recipe_catalog with soft delete and usage fields', () => {
   const source = fs.readFileSync(
-    path.join(__dirname, '..', 'miniprogram/pkg-records/models/recipe.js'),
+    path.join(__dirname, '..', 'miniprogram/models/recipe.js'),
     'utf8'
   );
   assert.match(source, /recipe_catalog/);
@@ -41,7 +41,7 @@ test('recipe model targets recipe_catalog with soft delete and usage fields', ()
 
 test('recipe model guards every existing-document write by babyUid', () => {
   const source = fs.readFileSync(
-    path.join(__dirname, '..', 'miniprogram/pkg-records/models/recipe.js'),
+    path.join(__dirname, '..', 'miniprogram/models/recipe.js'),
     'utf8'
   );
 

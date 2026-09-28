@@ -8,6 +8,17 @@
   flex-direction: column;
 }
 
+.library-update-hint {
+  margin: 16rpx 24rpx 0;
+  padding: 16rpx 24rpx;
+  background: #FFF6D8;
+  border: 1rpx solid #FFE9A8;
+  border-radius: 16rpx;
+  color: #8A6A12;
+  font-size: 26rpx;
+  line-height: 1.4;
+}
+
 .powder-data-disclaimer {
   margin: 0 16rpx 12rpx;
   padding: 12rpx 16rpx;

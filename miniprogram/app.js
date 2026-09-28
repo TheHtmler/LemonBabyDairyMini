@@ -272,84 +272,65 @@ App({
       
       console.log('开始查询用户角色，openid:', openid);
       const db = wx.cloud.database();
-      
-      // 首先检查是否是创建者
+      const storedBabyUid = this.globalData.babyUid || wx.getStorageSync('baby_uid') || '';
+
       console.log('检查用户是否为创建者...');
       const creatorResult = await db.collection('baby_creators').where({
         _openid: openid
       }).get();
-      
-      if (creatorResult.data && creatorResult.data.length > 0) {
-        console.log('从数据库识别用户为创建者');
-        const detectedRole = 'creator';
-        
-        // 从数据库获取创建者相关信息
-        const creatorInfo = creatorResult.data[0];
-        
-        // 检查是否完成宝宝信息（从数据库验证）
-        const babyInfoValid = await this.validateBabyInfoFromDB(openid, creatorInfo.babyUid);
-        
-        if (babyInfoValid) {
-          // 保存到本地缓存和全局状态
-          this.globalData.userRole = detectedRole;
-          wx.setStorageSync('user_role', detectedRole);
-          wx.setStorageSync('has_selected_role', true);
-          
-          // 同时保存创建者相关信息
-          if (creatorInfo.phone) {
-            wx.setStorageSync('creator_phone', creatorInfo.phone);
-            this.globalData.creatorPhone = creatorInfo.phone;
-          }
-          if (creatorInfo.babyUid) {
-            wx.setStorageSync('baby_uid', creatorInfo.babyUid);
-            this.globalData.babyUid = creatorInfo.babyUid;
-          }
-          
-          console.log('===app.getUserRole结束：从数据库获取创建者（已完成宝宝信息）===');
-          return detectedRole;
-        } else {
-          console.log('数据库中的创建者关系未完成宝宝信息，继续检查参与者关系');
-        }
-      }
-      
-      // 然后检查是否是参与者
-      console.log('检查用户是否为参与者...');
       const participantResult = await db.collection('baby_participants').where({
         _openid: openid
       }).get();
-      
-      if (participantResult.data && participantResult.data.length > 0) {
-        console.log('从数据库识别用户为参与者');
-        const detectedRole = 'participant';
-        
-        // 从数据库获取参与者相关信息
-        const participantInfo = participantResult.data[0];
-        
-        // 检查是否完成宝宝信息（从数据库验证）
-        const babyInfoValid = await this.validateBabyInfoFromDB(openid, participantInfo.babyUid);
-        
-        if (babyInfoValid) {
-          // 保存到本地缓存和全局状态
-          this.globalData.userRole = detectedRole;
-          wx.setStorageSync('user_role', detectedRole);
-          wx.setStorageSync('has_selected_role', true);
-          
-          // 同时保存参与者相关信息
-          if (participantInfo.creatorPhone) {
-            wx.setStorageSync('bound_creator_phone', participantInfo.creatorPhone);
-            this.globalData.creatorPhone = participantInfo.creatorPhone;
-          }
-          if (participantInfo.babyUid) {
-            wx.setStorageSync('baby_uid', participantInfo.babyUid);
-            this.globalData.babyUid = participantInfo.babyUid;
-          }
-          
-          console.log('===app.getUserRole结束：从数据库获取参与者（已完成宝宝信息）===');
-          return detectedRole;
-        } else {
-          console.log('===app.getUserRole结束：从数据库获取参与者（未完成宝宝信息）===');
-          return null;
+
+      const bindings = [];
+      const validBabyInfoMap = new Map();
+      for (const creatorInfo of creatorResult.data || []) {
+        if (!creatorInfo?.babyUid) continue;
+        const babyInfo = await this.fetchCompleteBabyInfo(creatorInfo.babyUid);
+        if (!babyInfo) continue;
+        validBabyInfoMap.set(creatorInfo.babyUid, babyInfo);
+        bindings.push({ ...creatorInfo, role: 'creator' });
+      }
+      for (const participantInfo of participantResult.data || []) {
+        if (!participantInfo?.babyUid) continue;
+        if (bindings.some((item) => item.babyUid === participantInfo.babyUid)) continue;
+        const babyInfo = await this.fetchCompleteBabyInfo(participantInfo.babyUid);
+        if (!babyInfo) continue;
+        validBabyInfoMap.set(participantInfo.babyUid, babyInfo);
+        bindings.push({ ...participantInfo, role: 'participant' });
+      }
+
+      const activeBinding = bindings.find((item) => item.babyUid === storedBabyUid)
+        || bindings.find((item) => item.role === 'creator')
+        || bindings[0]
+        || null;
+      if (activeBinding) {
+        const detectedRole = activeBinding.role;
+        this.globalData.userRole = detectedRole;
+        wx.setStorageSync('user_role', detectedRole);
+        wx.setStorageSync('has_selected_role', true);
+        if (detectedRole === 'creator' && activeBinding.phone) {
+          wx.setStorageSync('creator_phone', activeBinding.phone);
+          this.globalData.creatorPhone = activeBinding.phone;
         }
+        if (detectedRole === 'participant' && activeBinding.creatorPhone) {
+          wx.setStorageSync('bound_creator_phone', activeBinding.creatorPhone);
+          this.globalData.creatorPhone = activeBinding.creatorPhone;
+        }
+        wx.setStorageSync('baby_uid', activeBinding.babyUid);
+        this.globalData.babyUid = activeBinding.babyUid;
+        wx.setStorageSync('baby_info_completed', true);
+        // 只缓存最终选中宝宝的信息；校验阶段不再逐个写缓存，避免多宝宝时张冠李戴
+        const activeBabyInfo = validBabyInfoMap.get(activeBinding.babyUid);
+        if (activeBabyInfo) {
+          try {
+            await this.cacheBabyInfo(activeBabyInfo, { forceRefresh: true });
+          } catch (cacheError) {
+            console.warn('缓存当前宝宝信息失败（已忽略）:', cacheError);
+          }
+        }
+        console.log('===app.getUserRole结束：恢复宝宝', activeBinding.babyUid, detectedRole, '===');
+        return detectedRole;
       }
       
       // 数据库中也没有找到用户角色信息
@@ -469,6 +450,30 @@ App({
     wx.setStorageSync('baby_info', normalizedBabyInfo);
 
     return normalizedBabyInfo;
+  },
+
+  /**
+   * 轻量校验宝宝信息是否完整（无副作用）
+   * 与 validateBabyInfoFromDB 不同：不写本地缓存、不改全局状态，
+   * 供多宝宝场景下逐个校验绑定关系时使用，避免缓存被刷成最后一个校验的宝宝。
+   * @returns {Promise<Object|null>} 信息完整时返回 baby_info 文档，否则 null
+   */
+  async fetchCompleteBabyInfo(babyUid) {
+    try {
+      if (!babyUid) return null;
+      const db = wx.cloud.database();
+      const babyInfoResult = await db.collection('baby_info').where({
+        babyUid: babyUid
+      }).get();
+      const babyInfo = babyInfoResult.data && babyInfoResult.data[0];
+      if (babyInfo && babyInfo.name && babyInfo.birthday && babyInfo.weight) {
+        return babyInfo;
+      }
+      return null;
+    } catch (error) {
+      console.error('fetchCompleteBabyInfo失败:', babyUid, error);
+      return null;
+    }
   },
 
   /**
@@ -637,7 +642,11 @@ App({
       // 首先检查本地缓存
       const babyUid = this.globalData.babyUid || wx.getStorageSync('baby_uid');
       const babyInfoCompleted = wx.getStorageSync('baby_info_completed');
-      if (!forceDb && this.globalData.babyInfo) {
+      // 多宝宝场景：缓存必须属于当前宝宝，否则视为脏缓存丢弃（切换宝宝后旧缓存会张冠李戴）
+      const isStaleCache = (cached) => !!(
+        cached && cached.babyUid && babyUid && cached.babyUid !== babyUid
+      );
+      if (!forceDb && this.globalData.babyInfo && !isStaleCache(this.globalData.babyInfo)) {
         console.log('从全局缓存获取宝宝信息');
         return refreshAvatar
           ? await this.cacheBabyInfo(this.globalData.babyInfo, { forceRefresh: forceRefreshAvatar })
@@ -646,7 +655,7 @@ App({
       if (!forceDb && babyUid && babyInfoCompleted) {
         // 尝试从本地缓存获取完整信息
         const cachedBabyInfo = wx.getStorageSync('baby_info');
-        if (cachedBabyInfo) {
+        if (cachedBabyInfo && !isStaleCache(cachedBabyInfo)) {
           console.log('从本地缓存获取宝宝信息');
           return refreshAvatar
             ? await this.cacheBabyInfo(cachedBabyInfo, { forceRefresh: forceRefreshAvatar })

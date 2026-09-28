@@ -48,6 +48,14 @@ function loadMiniProgramApp({ storage = {}, creators = [], participants = [], ba
   };
   const sandbox = {
     console,
+    // app.js 顶部有模块级 require('./utils/...')（跨分包共享工具显式引用），
+    // vm 沙箱里需要提供相对 miniprogram/ 解析的 require，否则整段源码无法求值。
+    require(id) {
+      if (typeof id === 'string' && id.startsWith('.')) {
+        return require(path.resolve(__dirname, '..', 'miniprogram', id));
+      }
+      return require(id);
+    },
     App(config) {
       appConfig = config;
     },

@@ -6,10 +6,12 @@ const AVATAR_SECURITY_RISK_MESSAGE = '头像含有违规内容，请更换后再
 const AVATAR_SECURITY_CHECK_FAILED_MESSAGE = '头像安全检测失败，请稍后重试';
 
 function canShowMenuItem(item = {}, context = {}) {
-  const { userRole = '', isDeveloper = false } = context;
+  const { userRole = '', isDeveloper = false, accessibleBabyCount = 0 } = context;
   if (item.showForCreator && userRole !== 'creator') return false;
   if (item.showForParticipant && userRole !== 'participant') return false;
   if (item.showForDeveloper && !isDeveloper) return false;
+  // 同步数据需要至少两个可访问宝宝才有意义
+  if (item.showWhenMultipleBabies && accessibleBabyCount < 2) return false;
   return true;
 }
 
@@ -32,6 +34,22 @@ const MENU_GROUPS = [
         name: '宝宝信息',
         icon: 'baby',
         path: '/pkg-misc/baby-info/index?from=profile'
+      },
+      {
+        id: 23,
+        name: '添加宝宝',
+        icon: 'baby',
+        path: '/pkg-misc/baby-info/index?mode=create',
+        description: '给另一个宝宝建档，食物、食谱、奶粉库可搬过来，不用重录',
+        showForCreator: true
+      },
+      {
+        id: 24,
+        name: '同步数据',
+        icon: 'baby',
+        action: 'syncData',
+        description: '从其他宝宝复制食物、食谱和奶粉到当前宝宝',
+        showWhenMultipleBabies: true
       },
       {
         id: 15,
@@ -226,7 +244,9 @@ Page({
     avatarCropSrc: '',
     latestAvatarUrl: '',
     lastSafeAvatarUrl: '',
-    uploadingAvatar: false
+    uploadingAvatar: false,
+    showSyncPanel: false, // 「同步数据」底部弹层
+    accessibleBabyCount: 0 // 可访问宝宝数量（≥2 才显示「同步数据」菜单）
   },
 
   onLoad: function () {
@@ -237,12 +257,32 @@ Page({
 
     this.refreshIdentityState();
     this.getBabyInfo();
+    this.loadAccessibleBabyCount();
   },
 
   onShow: function () {
     this.refreshIdentityState();
+    this.loadAccessibleBabyCount();
     if (this.data.uploadingAvatar) return;
     this.getBabyInfo();
+  },
+
+  // 加载可访问宝宝数量：≥2 时「同步数据」菜单才显示，数量变化后重建菜单
+  async loadAccessibleBabyCount() {
+    try {
+      const app = getApp();
+      if (app && app.openidReady && typeof app.openidReady.then === 'function') {
+        await app.openidReady;
+      }
+      const { listAccessibleBabies } = require('../../utils/babyAccount');
+      const count = (await listAccessibleBabies()).length;
+      if (count !== this.data.accessibleBabyCount) {
+        this.setData({ accessibleBabyCount: count });
+        this.refreshIdentityState();
+      }
+    } catch (error) {
+      console.warn('加载可访问宝宝数量失败:', error);
+    }
   },
 
   refreshIdentityState() {
@@ -253,7 +293,11 @@ Page({
     this.setData({
       userRole,
       isDeveloper,
-      visibleMenuGroups: buildVisibleMenuGroups(this.data.menuGroups, { userRole, isDeveloper })
+      visibleMenuGroups: buildVisibleMenuGroups(this.data.menuGroups, {
+        userRole,
+        isDeveloper,
+        accessibleBabyCount: this.data.accessibleBabyCount
+      })
     });
     return { app, userRole, openid };
   },
@@ -677,11 +721,56 @@ Page({
       this.handleCreatorAccountCancellation();
     } else if (item.action === 'unbindParticipant') {
       this.handleParticipantUnbind();
+    } else if (item.action === 'syncData') {
+      this.openSyncPanel();
     } else if (item.path) {
       wx.navigateTo({
         url: item.path
       });
     }
+  },
+
+  // 宝宝卡片右侧「切换宝宝」：与首页一致的 ActionSheet 交互
+  async openBabySwitcher() {
+    try {
+      const {
+        listAccessibleBabies,
+        switchToBaby,
+        getCurrentBabyUid
+      } = require('../../utils/babyAccount');
+      const babies = await listAccessibleBabies();
+      if (babies.length <= 1) return;
+      const currentBabyUid = getCurrentBabyUid();
+      wx.showActionSheet({
+        itemList: babies.slice(0, 6).map((baby) => (
+          baby.babyUid === currentBabyUid ? `${baby.name}（当前）` : baby.name
+        )),
+        success: async ({ tapIndex }) => {
+          const baby = babies[tapIndex];
+          if (!baby || baby.babyUid === currentBabyUid) return;
+          switchToBaby(baby);
+          // 整体重载到首页：其他已加载的 tab 页持有旧宝宝的页面级状态，
+          // 局部刷新当前页无法覆盖，reLaunch 销毁所有页面后按新宝宝重建
+          wx.showToast({ title: `已切换到「${baby.name}」`, icon: 'none' });
+          wx.reLaunch({ url: '/pages/daily-feeding/index' });
+        }
+      });
+    } catch (error) {
+      console.error('切换宝宝失败:', error);
+    }
+  },
+
+  // 「同步数据」菜单：打开底部弹层，从其他宝宝复制库数据到当前宝宝
+  openSyncPanel() {
+    this.setData({ showSyncPanel: true });
+  },
+
+  closeSyncPanel() {
+    this.setData({ showSyncPanel: false });
+  },
+
+  onSyncPanelDone() {
+    this.closeSyncPanel();
   },
 
   showConfirmModal(options = {}) {
@@ -695,9 +784,10 @@ Page({
   },
 
   async handleCreatorAccountCancellation() {
+    const babyName = (this.data.babyInfo && this.data.babyInfo.name) || '当前宝宝';
     const firstConfirm = await this.showConfirmModal({
       title: '确认注销账号？',
-      content: '注销后将永久删除宝宝资料、喂养/用药/成长等历史记录，并解除所有参与者访问。此操作不可恢复。',
+      content: `注销后将永久删除「${babyName}」的资料、喂养/用药/成长等历史记录，并解除该宝宝的所有参与者访问。此操作不可恢复。你名下的其他宝宝不受影响。`,
       confirmText: '继续注销',
       confirmColor: '#D93026',
       cancelText: '取消'
@@ -777,8 +867,21 @@ Page({
         throw new Error(result?.message || errorTitle);
       }
 
+      const { listAccessibleBabies, switchToBaby } = require('../../utils/babyAccount');
+      const { pickNextBaby } = require('../../utils/babyBindings');
+      let nextBaby = null;
+      try {
+        nextBaby = pickNextBaby(await listAccessibleBabies(), babyUid);
+      } catch (error) {
+        console.warn('查找其他宝宝失败:', error);
+      }
+
       this.clearLocalStorage();
       this.resetGlobalData();
+      if (nextBaby) {
+        switchToBaby(nextBaby);
+        app.globalData.isLoggedIn = true;
+      }
 
       wx.hideLoading();
       wx.showToast({
@@ -788,7 +891,7 @@ Page({
         success: () => {
           setTimeout(() => {
             wx.reLaunch({
-              url: '/pages/role-selection/index'
+              url: nextBaby ? '/pages/daily-feeding/index' : '/pages/role-selection/index'
             });
           }, 1200);
         }

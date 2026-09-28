@@ -89,29 +89,13 @@ function loadFunctionWithMockCloud({ db, openid, deletedFiles = [] }) {
 }
 
 test('accountCleanup lets creator hard delete baby scoped data and relations', async () => {
+  // 集合列表直接读云函数导出的 BABY_SCOPED_COLLECTIONS，避免测试与实现两份拷贝漂移漏项
+  const probe = loadFunctionWithMockCloud({ db: createDbMock({}).db, openid: 'creator-openid', deletedFiles: [] });
   const babyScopedCollections = [
     'baby_info',
     'baby_creators',
     'baby_participants',
-    'feeding_records',
-    'feeding_records_v2',
-    'food_intake_records',
-    'medication_records',
-    'treatment_records',
-    'bowel_records',
-    'water_records',
-    'sleep_records',
-    'growth_records',
-    'growth_records_v2',
-    'growth_milestones',
-    'growth_diary',
-    'medications',
-    'nutrition_settings',
-    'milk_nutrition_profiles',
-    'recipe_catalog',
-    'daily_summary_v2',
-    'participant_unbind_logs',
-    'audit_logs'
+    ...probe._internal.BABY_SCOPED_COLLECTIONS
   ];
   const initialData = Object.fromEntries(babyScopedCollections.map((name) => ([
     name,

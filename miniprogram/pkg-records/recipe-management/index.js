@@ -1,4 +1,4 @@
-const RecipeModel = require('../models/recipe');
+const RecipeModel = require('../../models/recipe');
 const FoodModel = require('../../models/food');
 const {
   matchRecipeBySearch,
@@ -124,6 +124,8 @@ Page({
     filteredRecipes: [],
     recipeCount: 0,
     filteredCount: 0,
+    // 曾经导入过的来源宝宝的食谱库更新提示（{ babyUid, name }），无则为 null
+    libraryUpdateHint: null,
     recipeId: '',
     recipe: null,
     form: {
@@ -159,6 +161,28 @@ Page({
 
   onShow() {
     this.consumeIngredientSelection();
+    this.loadLibraryUpdateHint();
+  },
+
+  // 曾经从其他宝宝导入过食谱时，检查来源宝宝的食谱库是否有新变化
+  async loadLibraryUpdateHint() {
+    try {
+      const babyUid = getBabyUid();
+      if (!babyUid) return;
+      const { getLibraryUpdateHints } = require('../../utils/babyDataImport');
+      const hints = await getLibraryUpdateHints(babyUid, 'recipe_catalog');
+      this.setData({ libraryUpdateHint: hints[0] || null });
+    } catch (error) {
+      this.setData({ libraryUpdateHint: null });
+    }
+  },
+
+  onLibraryUpdateHintTap() {
+    const hint = this.data.libraryUpdateHint;
+    if (!hint || !hint.babyUid) return;
+    wx.navigateTo({
+      url: `/pkg-misc/baby-info/index?from=library&importFrom=${hint.babyUid}`
+    });
   },
 
   async ensureFoodCatalog() {

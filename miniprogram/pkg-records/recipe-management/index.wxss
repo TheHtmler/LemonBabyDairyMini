@@ -835,3 +835,14 @@ page {
 .ghost-btn::after {
   border: none;
 }
+
+.library-update-hint {
+  margin-top: 16rpx;
+  padding: 14rpx 20rpx;
+  background: #FFF6D8;
+  border: 1rpx solid #FFE9A8;
+  border-radius: 16rpx;
+  color: #8A6A12;
+  font-size: 24rpx;
+  line-height: 1.4;
+}

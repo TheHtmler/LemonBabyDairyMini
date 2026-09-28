@@ -50,6 +50,10 @@ const ensureNutritionProfileSettings = typeof MilkNutritionProfileModel.ensureNu
   ? MilkNutritionProfileModel.ensureNutritionProfileSettings.bind(MilkNutritionProfileModel)
   : getNutritionProfileSettings;
 const getSystemPowders = PowderCatalogModel.getSystemPowders.bind(PowderCatalogModel);
+// 模块加载时绑定，与 getSystemPowders 一致：便于测试桩注入，也避免运行时属性被替换
+const getUserPowders = typeof PowderCatalogModel.getUserPowders === 'function'
+  ? PowderCatalogModel.getUserPowders.bind(PowderCatalogModel)
+  : async () => [];
 // 测试桩可能没有该方法，兜底为原样返回
 const resolvePowderImageUrls = typeof PowderCatalogModel.resolvePowderImageUrls === 'function'
   ? PowderCatalogModel.resolvePowderImageUrls.bind(PowderCatalogModel)
@@ -402,7 +406,7 @@ Page({
         this.loadSystemSelectablePowders()
       ]);
       const targetContext = await this.loadTargetContext(basicInfo || {}, records || []);
-      const minePowders = ((settings && settings.formulaPowders) || [])
+      const minePowders = (await getUserPowders(this.data.babyUid))
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
         .map(enrichMinePowder);
 
@@ -621,7 +625,7 @@ Page({
         ensureNutritionProfileSettings(this.data.babyUid),
         this.loadSystemSelectablePowders()
       ]);
-      const minePowders = ((settings && settings.formulaPowders) || [])
+      const minePowders = (await getUserPowders(this.data.babyUid))
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
         .map(enrichMinePowder);
       const formulaPowders = await resolvePowderImageUrls(mergeSelectablePowders(minePowders, systemPowders));

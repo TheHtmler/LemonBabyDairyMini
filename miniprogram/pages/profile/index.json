@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "avatar-cropper": "/components/avatar-cropper/avatar-cropper"
+    "avatar-cropper": "/components/avatar-cropper/avatar-cropper",
+    "baby-sync-panel": "/components/baby-sync-panel/baby-sync-panel"
   }
 }

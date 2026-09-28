@@ -29,6 +29,7 @@
         <view class="baby-greet">{{greetingText}}</view>
         <view class="baby-name-row">
           <text class="baby-name">{{babyName || '柠檬宝宝'}}</text>
+          <text class="baby-switch-hint" wx:if="{{canSwitchBaby}}">切换</text>
           <text class="baby-gender {{babyGenderClass}}" wx:if="{{babyGender}}">{{babyGender}}</text>
         </view>
         <view class="baby-sub">

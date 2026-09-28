@@ -44,6 +44,43 @@ function createDbMock(data = {}) {
   };
 }
 
+test('adding a baby keeps the form empty instead of loading the current baby', () => {
+  const page = loadBabyInfoPage();
+  let loaded = false;
+  const instance = {
+    ...page,
+    data: { ...page.data, createMode: true },
+    _createMode: true,
+    app: {},
+    loadBabyInfo() {
+      loaded = true;
+    }
+  };
+
+  instance.onShow();
+
+  assert.equal(loaded, false);
+  assert.equal(instance.createEmptyBabyInfo().name, '');
+  assert.equal(instance.createEmptyBabyInfo().babyUid, '');
+  assert.equal(instance.createEmptyBabyInfo().birthday, '');
+});
+
+test('repeated create saves reuse the same babyUid and ignore taps while saving', () => {
+  const page = loadBabyInfoPage();
+  const instance = {
+    ...page,
+    data: { ...page.data, isFormValid: true, isFormSubmitting: false },
+    _saving: true
+  };
+
+  instance.saveBabyInfo();
+  const first = instance.resolveCreateBabyUid();
+  const second = instance.resolveCreateBabyUid();
+
+  assert.equal(first, second);
+  assert.match(first, /^baby_/);
+});
+
 test('baby info save reuses existing creator babyUid before generating a new one', async () => {
   const page = loadBabyInfoPage();
   const db = createDbMock({

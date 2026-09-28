@@ -8,6 +8,8 @@ const BABY_SCOPED_COLLECTIONS = [
   'feeding_records',
   'feeding_records_v2',
   'food_intake_records',
+  'food_catalog',
+  'food_categories',
   'medication_records',
   'treatment_records',
   'bowel_records',

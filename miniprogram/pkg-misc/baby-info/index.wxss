@@ -396,4 +396,6 @@
   font-size: 24rpx;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.4;
-} 
+}
+
+/* 从其他宝宝同步数据：样式见 /components/baby-sync-panel */

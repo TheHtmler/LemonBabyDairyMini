@@ -1,5 +1,8 @@
 <page-meta page-style="{{showAddModal ? 'overflow: hidden;' : ''}}" />
 <view class="container">
+  <view class="library-update-hint" wx:if="{{libraryUpdateHint}}" bindtap="onLibraryUpdateHintTap" hover-class="press-soft">
+    <text>「{{libraryUpdateHint.name}}」的奶粉档案有更新，去同步 ›</text>
+  </view>
   <view class="powder-data-disclaimer">
     <text class="disclaimer-title">免责声明</text>
     <text class="disclaimer-text">系统奶粉数据来自公开营养资料，仅供参考；实际使用前请结合包装标识、医嘱或检测结果校准成分。</text>

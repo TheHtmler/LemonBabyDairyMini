@@ -1,0 +1,236 @@
+/* 宝宝数据同步面板（容器/标题样式与宝宝信息页表单卡片保持一致） */
+.sync-group {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 184, 0, 0.15);
+  border: 2rpx solid rgba(255, 184, 0, 0.2);
+}
+
+.sync-title {
+  padding-left: 20rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid rgba(255, 184, 0, 0.2);
+  position: relative;
+}
+
+.sync-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8rpx;
+  width: 8rpx;
+  height: 28rpx;
+  background-color: #FFB800;
+  border-radius: 4rpx;
+}
+
+/* 扁平模式：去掉外层卡片包裹（底部弹层等已有容器的场景） */
+.sync-group.plain {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.sync-tip {
+  font-size: 24rpx;
+  color: #8A6A12;
+  line-height: 1.5;
+  margin-bottom: 8rpx;
+}
+
+/* 来源宝宝加载中 */
+.sync-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+}
+
+.sync-loading-spinner {
+  width: 36rpx;
+  height: 36rpx;
+  border: 4rpx solid #FFE9A8;
+  border-top-color: #FFB800;
+  border-radius: 50%;
+  margin-right: 16rpx;
+  animation: sync-spin 0.8s linear infinite;
+}
+
+.sync-loading-text {
+  font-size: 26rpx;
+  color: #B08A1E;
+}
+
+@keyframes sync-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 分区小标题 */
+.sync-section-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8A6A12;
+  margin: 24rpx 0 12rpx;
+}
+
+/* 来源宝宝选择器 */
+.sync-picker {
+  height: 80rpx;
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2rpx solid #EBD9A0;
+  box-sizing: border-box;
+}
+
+.sync-picker-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sync-arrow {
+  color: #999;
+  font-size: 24rpx;
+  margin-left: 10rpx;
+}
+
+/* 选项列表（数据类型 / 冲突策略共用） */
+.sync-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.sync-option {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 2rpx solid #EBD9A0;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+.sync-option-hover {
+  opacity: 0.85;
+}
+
+.sync-option.checked {
+  background: #FFF6D8;
+  border-color: #FFB800;
+}
+
+.sync-option-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  background: #FFF6D8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.sync-option.checked .sync-option-icon {
+  background: #FFE9A8;
+}
+
+.sync-option-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sync-option-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+}
+
+.sync-option-tag {
+  font-size: 20rpx;
+  font-weight: normal;
+  color: #fff;
+  background: #FFB800;
+  border-radius: 16rpx;
+  padding: 2rpx 12rpx;
+  margin-left: 12rpx;
+  line-height: 1.4;
+}
+
+.sync-option-desc {
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.5;
+  margin-top: 4rpx;
+}
+
+/* 右侧勾选圆点 */
+.sync-option-check {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 2rpx solid #D8C58E;
+  box-sizing: border-box;
+  margin-left: 16rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #fff;
+  line-height: 1;
+}
+
+.sync-option.checked .sync-option-check {
+  background: #FFB800;
+  border-color: #FFB800;
+}
+
+.sync-hint {
+  font-size: 22rpx;
+  color: #B08A1E;
+  line-height: 1.5;
+  margin-top: 16rpx;
+}
+
+.sync-run-btn {
+  width: 100%;
+  margin: 24rpx 0 0;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 80rpx;
+  background-color: #FFB800;
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 40rpx;
+  border: none;
+  text-align: center;
+}
+
+.sync-run-btn::after {
+  border: none;
+}
+
+.sync-run-btn[disabled] {
+  background-color: #e0e0e0;
+  color: #fff;
+}
