@@ -62,5 +62,5 @@
     <view class="sync-hint" wx:if="{{!showRunButton}}">保存并创建新宝宝后，将自动同步勾选的数据。</view>
     <button class="sync-run-btn" wx:if="{{showRunButton}}" bindtap="runImport" disabled="{{importing}}">{{importing ? '同步中...' : '立即同步'}}</button>
   </block>
-  <view class="sync-tip" wx:else>暂无可同步的来源宝宝。添加或加入另一个宝宝后，可在这里同步食物库、食谱和奶粉档案。</view>
+  <view class="sync-tip" wx:else>暂无可同步的来源宝宝。添加或加入另一个宝宝后，可在这里同步食物库、食谱和奶粉库。</view>
 </view>

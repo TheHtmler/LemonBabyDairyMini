@@ -7,7 +7,7 @@
 const IMPORT_TYPE_LABELS = {
   foods: '食物库',
   recipes: '食谱',
-  powders: '奶粉档案',
+  powders: '奶粉库',
   categories: '食物分类',
   nutrition: '母乳成分参数'
 };

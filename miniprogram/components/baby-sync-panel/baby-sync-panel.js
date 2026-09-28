@@ -27,15 +27,15 @@ Component({
     sourceNames: [],
     sourceIndex: 0,
     loading: true, // 来源宝宝列表加载中（弹层场景显示 loading 态，避免先闪空态）
-    types: { foods: true, recipes: true, powders: true, categories: true },
+    types: { foods: true, recipes: true, powders: true },
     // 可同步的数据类型说明（key 对应 types 字段）。
+    // 食物分类（categories）是食物库的组织方式，随食物库一起同步（见 getSelection）；
     // 母乳成分参数（nutrition）有系统默认值、极少修改，不在面板展示；
-    // 底层 importBabyData 仍支持，需要时可代码开启。
+    // 底层 importBabyData 对两者仍支持，需要时可代码开启。
     typeOptions: [
-      { key: 'foods', icon: '🍎', name: '食物库', desc: '自定义食物及其营养参数，记录辅食时可直接选用' },
+      { key: 'foods', icon: '🍎', name: '食物库', desc: '自定义食物、食物分类及营养参数，记录辅食时可直接选用' },
       { key: 'recipes', icon: '🥣', name: '食谱', desc: '成品菜配方与原料配比，按食用克数记录营养' },
-      { key: 'powders', icon: '🍼', name: '奶粉档案', desc: '我的奶粉与冲配比例，配奶计算时使用' },
-      { key: 'categories', icon: '🗂️', name: '食物分类', desc: '自定义食物分类，食物库按分类归档整理' }
+      { key: 'powders', icon: '🍼', name: '奶粉库', desc: '我的奶粉与冲配比例，配奶计算时使用' }
     ],
     // 冲突策略：skip=只补充新数据（默认）；overwrite=已有条目覆盖为来源宝宝的版本
     strategy: 'skip',
@@ -138,7 +138,8 @@ Component({
     getSelection() {
       return {
         source: this.data.sources[this.data.sourceIndex] || null,
-        types: { ...this.data.types },
+        // 食物分类是食物库的组织方式，跟随食物库一起同步
+        types: { ...this.data.types, categories: this.data.types.foods },
         strategy: this.data.strategy
       };
     },
