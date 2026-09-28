@@ -200,6 +200,8 @@ test('import copies foods, recipes, categories, powders and nutrition into an em
         recordType: 'recipe',
         status: 'active',
         name: '蛋黄小麦糊',
+        usageCount: 5,
+        lastUsedAt: '2026-09-01T00:00:00.000Z',
         ingredients: [
           { foodId: 'food-1', foodName: '蛋黄泥', quantity: 30, unit: 'g', foodSnapshot: { name: '蛋黄泥' } },
           { foodId: 'food-2', foodName: '小麦-家庭修订', quantity: 20, unit: 'g', foodSnapshot: { name: '小麦-家庭修订' } }
@@ -255,6 +257,8 @@ test('import copies foods, recipes, categories, powders and nutrition into an em
     assert.equal(targetRecipes.length, 1);
     const copied = targetRecipes[0];
     assert.equal(copied.name, '蛋黄小麦糊');
+    assert.equal(copied.usageCount || 0, 0, '使用统计属于来源宝宝的喂养历史，导入后必须清零');
+    assert.ok(!copied.lastUsedAt, 'lastUsedAt 不应带到新宝宝');
     const targetFoodIds = targetFoods.map((food) => food._id);
     assert.ok(copied.ingredients.every((ingredient) => targetFoodIds.includes(ingredient.foodId)),
       '原料 foodId 应重连到目标宝宝的新食物，而不是残留来源宝宝的 _id');

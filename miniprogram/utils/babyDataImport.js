@@ -171,7 +171,10 @@ async function importRecipes(db, sourceBabyUid, targetBabyUid, foodIdMap, strate
       const result = await RecipeModel.create({
         ...recipe,
         babyUid: targetBabyUid,
-        ingredients
+        ingredients,
+        // 使用统计属于来源宝宝的喂养历史，不能带到新宝宝（否则会显示"被用过 N 次"）
+        usageCount: 0,
+        lastUsedAt: null
       });
       if (!result || result.success === false) {
         throw new Error((result && result.message) || '创建食谱失败');
