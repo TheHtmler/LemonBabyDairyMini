@@ -26,6 +26,7 @@ Component({
     sources: [],
     sourceNames: [],
     sourceIndex: 0,
+    loading: true, // 来源宝宝列表加载中（弹层场景显示 loading 态，避免先闪空态）
     types: { foods: true, recipes: true, powders: true, categories: true },
     // 可同步的数据类型说明（key 对应 types 字段）。
     // 母乳成分参数（nutrition）有系统默认值、极少修改，不在面板展示；
@@ -52,8 +53,11 @@ Component({
   },
 
   observers: {
-    // 目标宝宝异步加载完成后，来源列表要重新排除目标
+    // 目标宝宝异步加载完成后，来源列表要重新排除目标；
+    // 与上次加载使用的目标一致则跳过，避免列表闪 loading
     'targetBabyUid': function () {
+      const target = this.data.targetBabyUid || '';
+      if (target && target === this._loadedTarget) return;
       this.loadSources();
     },
     'presetSourceUid': function () {
@@ -63,25 +67,36 @@ Component({
 
   methods: {
     async loadSources() {
+      this.setData({ loading: true });
       try {
         const app = getApp();
         if (app && app.openidReady && typeof app.openidReady.then === 'function') {
           await app.openidReady;
         }
         const { listAccessibleBabies } = require('../../utils/babyAccount');
-        const target = this.data.targetBabyUid || '';
+        // 编辑/弹层场景（showRunButton）目标是当前宝宝，必须从来源里排除；
+        // targetBabyUid 属性可能因页面异步加载尚未传入，兜底取全局当前宝宝。
+        // 添加宝宝场景（!showRunButton）目标尚未创建，来源为全部可访问宝宝，不排除。
+        const target = !this.data.showRunButton
+          ? ''
+          : (this.data.targetBabyUid
+            || (app && app.globalData && app.globalData.babyUid)
+            || wx.getStorageSync('baby_uid')
+            || '');
         const sources = (await listAccessibleBabies())
           .filter((baby) => baby.babyUid && baby.babyUid !== target);
+        this._loadedTarget = target;
         this.setData({
           sources,
           sourceNames: sources.map((baby) => (
             baby.role === 'participant' ? `${baby.name}（参与）` : baby.name
-          ))
+          )),
+          loading: false
         });
         this.applyPresetSource();
       } catch (error) {
         console.warn('加载同步来源宝宝失败:', error);
-        this.setData({ sources: [], sourceNames: [], sourceIndex: 0 });
+        this.setData({ sources: [], sourceNames: [], sourceIndex: 0, loading: false });
       }
     },
 
@@ -159,6 +174,10 @@ Component({
     async runImportForTarget(targetBabyUid) {
       const { source, types, strategy } = this.getSelection();
       if (!source || !source.babyUid) return false;
+      if (source.babyUid === targetBabyUid) {
+        wx.showToast({ title: '来源宝宝与当前宝宝相同，请重新选择', icon: 'none' });
+        return false;
+      }
       if (!this.selectedTypes().length) {
         wx.showToast({ title: '请选择要同步的内容', icon: 'none' });
         return false;
@@ -180,7 +199,7 @@ Component({
         console.error('数据同步失败:', error);
         await this.showResultModal(
           '数据同步未完成',
-          '可稍后重新执行同步；已同步的数据不会重复。'
+          `原因：${(error && error.message) || '未知错误'}。可稍后重新执行同步；已同步的数据不会重复。`
         );
         return false;
       } finally {

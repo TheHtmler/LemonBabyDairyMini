@@ -1,6 +1,11 @@
 <view class="sync-group {{plain ? 'plain' : ''}}" wx:if="{{sources.length > 0 || showEmptyHint}}">
   <view class="sync-title" wx:if="{{showTitle}}">从其他宝宝同步数据</view>
-  <block wx:if="{{sources.length > 0}}">
+  <!-- 加载中：避免先闪「暂无可同步」空态再变成选项 -->
+  <view class="sync-loading" wx:if="{{loading}}">
+    <view class="sync-loading-spinner"></view>
+    <text class="sync-loading-text">正在加载来源宝宝...</text>
+  </view>
+  <block wx:elif="{{sources.length > 0}}">
     <view class="sync-tip" wx:if="{{!plain}}">把来源宝宝的库数据一次性复制到{{targetLabel}}，复制后各宝宝数据独立、互不影响。</view>
 
     <!-- 来源宝宝 -->
