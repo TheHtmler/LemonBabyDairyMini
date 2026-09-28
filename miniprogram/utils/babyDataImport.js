@@ -9,7 +9,7 @@ const IMPORT_TYPE_LABELS = {
   recipes: '食谱',
   powders: '奶粉档案',
   categories: '食物分类',
-  nutrition: '配奶营养参数'
+  nutrition: '母乳成分参数'
 };
 
 const DEFAULT_IMPORT_TYPES = ['foods', 'recipes', 'powders', 'categories'];

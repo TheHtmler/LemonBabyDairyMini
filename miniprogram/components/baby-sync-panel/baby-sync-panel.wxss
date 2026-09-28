@@ -30,11 +30,13 @@
   border-radius: 4rpx;
 }
 
-.sync-card {
-  background: #FFFDF4;
-  border: 1rpx solid #FFE9A8;
-  border-radius: 20rpx;
-  padding: 24rpx;
+/* 扁平模式：去掉外层卡片包裹（底部弹层等已有容器的场景） */
+.sync-group.plain {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
 }
 
 .sync-tip {

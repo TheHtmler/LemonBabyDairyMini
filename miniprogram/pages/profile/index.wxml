@@ -15,6 +15,12 @@
       </view>
       <text class="baby-birthday" wx:if="{{babyInfo.birthday}}">{{babyInfo.birthday}}</text>
     </view>
+
+    <!-- 切换宝宝入口（多个可访问宝宝时显示） -->
+    <view class="baby-switch-entry" wx:if="{{accessibleBabyCount > 1}}" bindtap="openBabySwitcher">
+      <text class="baby-switch-entry-text">切换宝宝</text>
+      <image class="baby-switch-entry-arrow" src="/images/icons/arrow-right.svg" mode="aspectFit"></image>
+    </view>
   </view>
 
   <!-- 菜单列表 -->
@@ -65,12 +71,13 @@
     <text class="sync-sheet-title">同步数据</text>
     <text class="sync-sheet-close" bindtap="closeSyncPanel">✕</text>
   </view>
-  <view class="sync-sheet-subtitle">把其他宝宝的食物库、食谱等数据复制到「{{babyInfo.name || '当前宝宝'}}」</view>
+  <view class="sync-sheet-subtitle">把来源宝宝的库数据复制到「{{babyInfo.name || '当前宝宝'}}」，复制后各宝宝数据独立、互不影响</view>
   <baby-sync-panel
     wx:if="{{showSyncPanel}}"
     target-baby-uid="{{babyInfo.babyUid}}"
     show-run-button
     show-title="{{false}}"
+    plain
     show-empty-hint
     bind:done="onSyncPanelDone"
   />

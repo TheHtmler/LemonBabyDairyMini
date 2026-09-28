@@ -65,6 +65,33 @@
   flex-direction: column;
 }
 
+/* 宝宝卡片右侧「切换宝宝」入口 */
+.baby-switch-entry {
+  display: flex;
+  align-items: center;
+  background: #FFF6D8;
+  border: 1rpx solid #FFE9A8;
+  border-radius: 32rpx;
+  padding: 12rpx 20rpx;
+  margin-left: 20rpx;
+  flex-shrink: 0;
+}
+
+.baby-switch-entry:active {
+  background: #FFE9A8;
+}
+
+.baby-switch-entry-text {
+  font-size: 24rpx;
+  color: #8A6A12;
+}
+
+.baby-switch-entry-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  margin-left: 6rpx;
+}
+
 .login-status {
   font-size: 32rpx;
   font-weight: bold;

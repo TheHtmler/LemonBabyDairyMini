@@ -1,7 +1,7 @@
-<view class="sync-group" wx:if="{{sources.length > 0 || showEmptyHint}}">
+<view class="sync-group {{plain ? 'plain' : ''}}" wx:if="{{sources.length > 0 || showEmptyHint}}">
   <view class="sync-title" wx:if="{{showTitle}}">从其他宝宝同步数据</view>
-  <view class="sync-card" wx:if="{{sources.length > 0}}">
-    <view class="sync-tip">把来源宝宝的库数据一次性复制到{{targetLabel}}，复制后各宝宝数据独立、互不影响。</view>
+  <block wx:if="{{sources.length > 0}}">
+    <view class="sync-tip" wx:if="{{!plain}}">把来源宝宝的库数据一次性复制到{{targetLabel}}，复制后各宝宝数据独立、互不影响。</view>
 
     <!-- 来源宝宝 -->
     <view class="sync-section-label">来源宝宝</view>
@@ -31,7 +31,7 @@
         <view class="sync-option-check">{{types[item.key] ? '✓' : ''}}</view>
       </view>
     </view>
-    <view class="sync-hint" wx:if="{{types.nutrition}}">配奶营养参数仅含母乳成分，不含天然蛋白系数（因宝宝而异），同步后请到配奶设置确认。</view>
+    <view class="sync-hint" wx:if="{{types.nutrition}}">母乳成分参数同步后请到配奶设置确认；天然蛋白系数因宝宝而异（医嘱），不会同步。</view>
 
     <!-- 冲突策略：每项带说明 -->
     <view class="sync-section-label">已有同名数据时</view>
@@ -57,8 +57,6 @@
 
     <view class="sync-hint" wx:if="{{!showRunButton}}">保存并创建新宝宝后，将自动同步勾选的数据。</view>
     <button class="sync-run-btn" wx:if="{{showRunButton}}" bindtap="runImport" disabled="{{importing}}">{{importing ? '同步中...' : '立即同步'}}</button>
-  </view>
-  <view class="sync-card" wx:else>
-    <view class="sync-tip">暂无可同步的来源宝宝。添加或加入另一个宝宝后，可在这里同步食物库、食谱和奶粉档案。</view>
-  </view>
+  </block>
+  <view class="sync-tip" wx:else>暂无可同步的来源宝宝。添加或加入另一个宝宝后，可在这里同步食物库、食谱和奶粉档案。</view>
 </view>

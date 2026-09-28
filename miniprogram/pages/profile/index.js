@@ -730,6 +730,37 @@ Page({
     }
   },
 
+  // 宝宝卡片右侧「切换宝宝」：与首页一致的 ActionSheet 交互
+  async openBabySwitcher() {
+    try {
+      const {
+        listAccessibleBabies,
+        switchToBaby,
+        getCurrentBabyUid
+      } = require('../../utils/babyAccount');
+      const babies = await listAccessibleBabies();
+      if (babies.length <= 1) return;
+      const currentBabyUid = getCurrentBabyUid();
+      wx.showActionSheet({
+        itemList: babies.slice(0, 6).map((baby) => (
+          baby.babyUid === currentBabyUid ? `${baby.name}（当前）` : baby.name
+        )),
+        success: async ({ tapIndex }) => {
+          const baby = babies[tapIndex];
+          if (!baby || baby.babyUid === currentBabyUid) return;
+          switchToBaby(baby);
+          // 清掉上一个宝宝的头像缓存，再强制刷新宝宝信息
+          this.setData({ latestAvatarUrl: '', lastSafeAvatarUrl: '' });
+          await this.getBabyInfo(true);
+          // 角色可能随宝宝变化（creator/participant 菜单不同），重建菜单
+          this.refreshIdentityState();
+        }
+      });
+    } catch (error) {
+      console.error('切换宝宝失败:', error);
+    }
+  },
+
   // 「同步数据」菜单：打开底部弹层，从其他宝宝复制库数据到当前宝宝
   openSyncPanel() {
     this.setData({ showSyncPanel: true });

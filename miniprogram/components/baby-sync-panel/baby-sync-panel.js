@@ -14,6 +14,8 @@ Component({
     showRunButton: { type: Boolean, value: false },
     // 是否显示区块标题（弹层场景自带标题，可关闭）
     showTitle: { type: Boolean, value: true },
+    // 扁平模式：去掉外层卡片包裹（用于底部弹层等已有容器的场景，避免层层嵌套）
+    plain: { type: Boolean, value: false },
     // 没有来源宝宝时是否显示空态提示（弹层场景需要；表单场景整体隐藏）
     showEmptyHint: { type: Boolean, value: false },
     // 预选来源宝宝（库管理页「有更新」横幅跳入时传入）
@@ -31,7 +33,7 @@ Component({
       { key: 'recipes', icon: '🥣', name: '食谱', desc: '成品菜配方与原料配比，按食用克数记录营养' },
       { key: 'powders', icon: '🍼', name: '奶粉档案', desc: '我的奶粉与冲配比例，配奶计算时使用' },
       { key: 'categories', icon: '🗂️', name: '食物分类', desc: '自定义食物分类，食物库按分类归档整理' },
-      { key: 'nutrition', icon: '⚙️', name: '配奶营养参数', desc: '母乳成分等配奶参数，不含天然蛋白系数' }
+      { key: 'nutrition', icon: '🥛', name: '母乳成分参数', desc: '母乳的蛋白/热量等浓度，用于计算每顿奶的营养' }
     ],
     // 冲突策略：skip=只补充新数据（默认）；overwrite=已有条目覆盖为来源宝宝的版本
     strategy: 'skip',

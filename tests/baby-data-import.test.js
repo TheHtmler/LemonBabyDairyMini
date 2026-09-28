@@ -542,7 +542,7 @@ test('formatImportSummary renders per-type counts', async () => {
     });
     assert.match(text, /食物库：新增 3，更新 2，跳过重复 1/);
     assert.match(text, /食谱：跳过重复 2，失败 1/);
-    assert.match(text, /配奶营养参数已导入/);
+    assert.match(text, /母乳成分参数已导入/);
     assert.equal(formatImportSummary({}), '没有需要导入的数据');
   } finally {
     mock.restore();
