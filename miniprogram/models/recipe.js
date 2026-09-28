@@ -4,18 +4,18 @@
  * 不参与 daily_summary_v2 失效
  */
 
-const FoodModel = require('../../models/food');
+const FoodModel = require('./food');
 const {
   buildCreateAuditFields,
   buildUpdateAuditFields,
   resolveOperatorOpenid,
   stripProtectedAuditFields
-} = require('../../utils/auditFields');
+} = require('../utils/auditFields');
 const {
   emptyNutrition,
   buildIngredientNutrition,
   summarizeRecipeNutrition
-} = require('../../utils/recipeNutritionUtils');
+} = require('../utils/recipeNutritionUtils');
 
 function isWeightUnit(unit) {
   const normalized = String(unit || '').toLowerCase();

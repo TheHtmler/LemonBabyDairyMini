@@ -160,8 +160,8 @@ function loadImportModule(mock) {
     '../miniprogram/utils/babyDataImport.js',
     '../miniprogram/models/food.js',
     '../miniprogram/models/nutritionProfile.js',
-    '../miniprogram/pkg-records/models/recipe.js',
-    '../miniprogram/pkg-milk/models/foodCategory.js'
+    '../miniprogram/models/recipe.js',
+    '../miniprogram/models/foodCategory.js'
   ].map((id) => require.resolve(id));
   paths.forEach((modulePath) => delete require.cache[modulePath]);
   return require('../miniprogram/utils/babyDataImport.js');
@@ -549,37 +549,14 @@ test('formatImportSummary renders per-type counts', async () => {
   }
 });
 
-// 回归：recipe/foodCategory 模型在分包（pkg-records/pkg-milk）内，
-// 主包同步 require 前必须先 wx.loadSubpackage，否则真机报 module is not defined
-test('import preloads model subpackages before requiring them', async () => {
-  const mock = installWxMock({});
-  const loadedSubpackages = [];
-  global.wx.loadSubpackage = ({ name, success }) => {
-    loadedSubpackages.push(name);
-    if (success) success();
-  };
-  try {
-    const { importBabyData } = loadImportModule(mock);
-    await importBabyData('baby-a', 'baby-b', { foods: false, recipes: true, categories: true, powders: false });
-    assert.deepEqual([...loadedSubpackages].sort(), ['pkg-milk', 'pkg-records']);
-  } finally {
-    mock.restore();
-  }
-});
-
-// 不需要食谱/分类时（仅食物+奶粉，模型都在主包）不应触发分包加载
-test('import skips subpackage preload when only main-package models are needed', async () => {
-  const mock = installWxMock({});
-  let loadSubpackageCalled = false;
-  global.wx.loadSubpackage = ({ success }) => {
-    loadSubpackageCalled = true;
-    if (success) success();
-  };
-  try {
-    const { importBabyData } = loadImportModule(mock);
-    await importBabyData('baby-a', 'baby-b', { foods: true, recipes: false, categories: false, powders: true });
-    assert.equal(loadSubpackageCalled, false);
-  } finally {
-    mock.restore();
-  }
+// 回归：recipe/foodCategory 模型必须在主包 models/ 目录——
+// 主包（utils/babyDataImport）同步 require 分包模块在真机报 module is not defined
+test('recipe and foodCategory models live in the main package', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..', 'miniprogram');
+  assert.ok(fs.existsSync(path.join(root, 'models/recipe.js')), 'models/recipe.js 应在主包');
+  assert.ok(fs.existsSync(path.join(root, 'models/foodCategory.js')), 'models/foodCategory.js 应在主包');
+  assert.ok(!fs.existsSync(path.join(root, 'pkg-records/models/recipe.js')), '分包内不应再有 recipe.js');
+  assert.ok(!fs.existsSync(path.join(root, 'pkg-milk/models/foodCategory.js')), '分包内不应再有 foodCategory.js');
 });

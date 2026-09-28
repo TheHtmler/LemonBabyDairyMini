@@ -1,4 +1,4 @@
-const RecipeModel = require('../models/recipe');
+const RecipeModel = require('../../models/recipe');
 const { matchRecipeBySearch } = require('../../utils/recipeNutritionUtils');
 const { readRecipeCache } = RecipeModel;
 

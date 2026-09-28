@@ -1,4 +1,4 @@
-const RecipeModel = require('../models/recipe');
+const RecipeModel = require('../../models/recipe');
 const FoodModel = require('../../models/food');
 const {
   matchRecipeBySearch,
