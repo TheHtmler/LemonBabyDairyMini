@@ -36,7 +36,15 @@ Page({
     uploadingAvatar: false,
     // 新用户首次填写、尚未生成 babyUid 时，先把裁剪后的本地头像暂存这里，
     // 等点「保存」生成 babyUid 后再随表单一起上传落库。
-    pendingAvatarPath: ''
+    pendingAvatarPath: '',
+    createMode: false,
+    // 从其他宝宝导入数据（可选）：来源宝宝列表与勾选的数据类型。
+    // 一次性复制，复制后各宝宝数据独立、互不影响。
+    importSources: [],
+    importSourceNames: [],
+    importSourceIndex: 0,
+    importTypes: { foods: true, recipes: true, powders: true, categories: true, nutrition: false },
+    importing: false
   },
 
   onLoad(options) {
@@ -45,6 +53,16 @@ Page({
     
     // 处理重定向URL
     this.handleRedirect(options);
+    this._createMode = !!(options && options.mode === 'create');
+    if (this._createMode) {
+      this.setData({
+        createMode: true,
+        showInviteCode: false,
+        isFormValid: false,
+        babyInfo: this.createEmptyBabyInfo()
+      });
+      wx.setNavigationBarTitle({ title: '添加宝宝' });
+    }
     
     // 处理用户角色
     this.handleUserRole(options);
@@ -54,9 +72,32 @@ Page({
   },
 
   onShow() {
-    if (this.app) {
+    if (this.app && !this.isCreateMode()) {
       this.loadBabyInfo();
+      this.loadImportSources();
     }
+  },
+
+  isCreateMode() {
+    return this._createMode === true || this.data.createMode === true;
+  },
+
+  createEmptyBabyInfo() {
+    return {
+      name: '',
+      gender: 'male',
+      birthday: '',
+      weight: '',
+      height: '',
+      condition: 'MMA',
+      notes: '',
+      avatarUrl: '',
+      avatarFileId: '',
+      babyUid: '',
+      inviteCode: '',
+      inviteCodeExpiry: null,
+      nutritionSettings: null
+    };
   },
 
   getAvatarCacheKey(babyUid) {
@@ -96,10 +137,11 @@ Page({
         userRole: role
       });
       
-      // 统一设置页面标题
-      wx.setNavigationBarTitle({
-        title: '完善宝宝信息'
-      });
+      if (!this.isCreateMode()) {
+        wx.setNavigationBarTitle({
+          title: '完善宝宝信息'
+        });
+      }
     }
   },
   
@@ -123,9 +165,111 @@ Page({
       // 顺序执行初始化操作
       await this.checkLoginStatus();
       await this.checkUserPermission();
-      await this.loadBabyInfo();
+      if (!this.isCreateMode()) {
+        await this.loadBabyInfo();
+      }
+      // create 模式下来源是全部可访问宝宝；编辑模式下排除当前宝宝
+      await this.loadImportSources();
     } catch (error) {
       console.error('初始化失败:', error);
+    }
+  },
+
+  // 加载可作为导入来源的其他宝宝（凡是当前账号能访问的宝宝，其数据都可以作为来源）
+  async loadImportSources() {
+    try {
+      const { listAccessibleBabies } = require('../../utils/babyAccount');
+      const currentBabyUid = this.isCreateMode()
+        ? ''
+        : (this.app.globalData.babyUid || wx.getStorageSync('baby_uid') || '');
+      const sources = (await listAccessibleBabies())
+        .filter((baby) => baby.babyUid && baby.babyUid !== currentBabyUid);
+      this.setData({
+        importSources: sources,
+        importSourceNames: sources.map((baby) => (
+          baby.role === 'participant' ? `${baby.name}（参与）` : baby.name
+        )),
+        importSourceIndex: 0
+      });
+    } catch (error) {
+      console.warn('加载导入来源宝宝失败:', error);
+      this.setData({ importSources: [], importSourceNames: [], importSourceIndex: 0 });
+    }
+  },
+
+  onImportSourceChange(e) {
+    this.setData({ importSourceIndex: Number(e.detail.value) || 0 });
+  },
+
+  onToggleImportType(e) {
+    const { type } = e.currentTarget.dataset;
+    if (!type || !(type in (this.data.importTypes || {}))) return;
+    this.setData({ [`importTypes.${type}`]: !this.data.importTypes[type] });
+  },
+
+  selectedImportTypes() {
+    const types = this.data.importTypes || {};
+    return Object.keys(types).filter((key) => types[key]);
+  },
+
+  showImportResultModal(title, content) {
+    return new Promise((resolve) => {
+      wx.showModal({
+        title,
+        content: content || '没有需要导入的数据',
+        showCancel: false,
+        confirmText: '知道了',
+        success: resolve,
+        fail: resolve
+      });
+    });
+  },
+
+  // create 模式：新宝宝保存成功后执行勾选的导入；导入失败不阻塞进入首页，
+  // 因为 babyDataImport 幂等，之后可在宝宝信息页重新执行。
+  async runImportForNewBaby(targetBabyUid) {
+    const source = this.data.importSources[this.data.importSourceIndex];
+    if (!source || !source.babyUid || !this.selectedImportTypes().length) return;
+    wx.showLoading({ title: '正在导入数据...', mask: true });
+    try {
+      const { importBabyData, formatImportSummary } = require('../../utils/babyDataImport');
+      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes);
+      wx.hideLoading();
+      await this.showImportResultModal('数据导入完成', formatImportSummary(summary));
+    } catch (error) {
+      wx.hideLoading();
+      console.error('新宝宝数据导入失败:', error);
+      await this.showImportResultModal(
+        '数据导入未完成',
+        '宝宝已创建成功；可稍后在「宝宝信息管理」页重新执行从其他宝宝导入数据。'
+      );
+    }
+  },
+
+  // 编辑模式：对当前宝宝立即执行导入（可重复执行，重复数据自动跳过）
+  async onImportNow() {
+    if (this.data.importing) return;
+    const source = this.data.importSources[this.data.importSourceIndex];
+    const targetBabyUid = this.data.babyInfo.babyUid
+      || this.app.globalData.babyUid
+      || wx.getStorageSync('baby_uid');
+    if (!source || !source.babyUid || !targetBabyUid || !this.selectedImportTypes().length) {
+      wx.showToast({ title: '请选择来源宝宝和导入内容', icon: 'none' });
+      return;
+    }
+    this.setData({ importing: true });
+    wx.showLoading({ title: '正在导入数据...', mask: true });
+    try {
+      const { importBabyData, formatImportSummary } = require('../../utils/babyDataImport');
+      const summary = await importBabyData(source.babyUid, targetBabyUid, this.data.importTypes);
+      wx.hideLoading();
+      await this.showImportResultModal('数据导入完成', formatImportSummary(summary));
+    } catch (error) {
+      wx.hideLoading();
+      console.error('导入数据失败:', error);
+      wx.showToast({ title: '导入失败，请重试', icon: 'none' });
+    } finally {
+      this.setData({ importing: false });
     }
   },
 
@@ -192,6 +336,7 @@ Page({
 
   // 加载宝宝信息
   async loadBabyInfo() {
+    if (this.isCreateMode()) return;
     try {
       // 获取babyUid
       const babyUid = this.app.globalData.babyUid || wx.getStorageSync('baby_uid');
@@ -358,6 +503,13 @@ Page({
     return formData.name && formData.weight && formData.birthday;
   },
 
+  resolveCreateBabyUid() {
+    if (!this._createdBabyUid) {
+      this._createdBabyUid = this.generateBabyUid();
+    }
+    return this._createdBabyUid;
+  },
+
   // 生成唯一宝宝ID
   generateBabyUid() {
     // 生成时间戳+随机数作为唯一ID
@@ -455,7 +607,7 @@ Page({
 
   // 保存宝宝信息
   async saveBabyInfo() {
-    if (this.data.isFormSubmitting) {
+    if (this._saving || this.data.isFormSubmitting) {
       return;
     }
 
@@ -468,6 +620,7 @@ Page({
       return;
     }
 
+    this._saving = true;
     this.setData({ isFormSubmitting: true });
 
     wx.showLoading({
@@ -528,7 +681,9 @@ Page({
       }
 
       // 使用现有的宝宝UID；本地丢失时先从云端创建者关系恢复，最后才生成新的。
-      const babyUid = await this.resolveBabyUidForSave(db, openid) || this.generateBabyUid();
+      const babyUid = this.isCreateMode()
+        ? this.resolveCreateBabyUid()
+        : (await this.resolveBabyUidForSave(db, openid) || this.generateBabyUid());
       console.log('使用宝宝ID:', babyUid);
 
       // 头像处理：新用户在 onAvatarCropped 时把本地头像暂存到 pendingAvatarPath，
@@ -601,37 +756,74 @@ Page({
       if (this.data.userRole === 'creator') {
         // 查询是否已存在创建者记录
         const creatorRes = await db.collection('baby_creators').where({
-          _openid: openid
+          _openid: openid,
+          babyUid
         }).get();
 
-        if (creatorRes.data && creatorRes.data.length > 0) {
-          // 更新现有创建者记录
+        if (!this.isCreateMode() && creatorRes.data && creatorRes.data.length > 0) {
           await db.collection('baby_creators').doc(creatorRes.data[0]._id).update({
             data: {
               updatedAt: db.serverDate(),
-              babyUid: babyUid // 添加关联的宝宝UID
+              babyUid
             }
           });
+        } else if (!this.isCreateMode()) {
+          const existingCreatorRes = await db.collection('baby_creators').where({
+            _openid: openid
+          }).limit(1).get();
+          if (existingCreatorRes.data && existingCreatorRes.data.length > 0 && !existingCreatorRes.data[0].babyUid) {
+            await db.collection('baby_creators').doc(existingCreatorRes.data[0]._id).update({
+              data: {
+                updatedAt: db.serverDate(),
+                babyUid
+              }
+            });
+          } else if (!(existingCreatorRes.data && existingCreatorRes.data.length > 0)) {
+            await db.collection('baby_creators').add({
+              data: {
+                babyUid,
+                createdAt: db.serverDate(),
+                updatedAt: db.serverDate()
+              }
+            });
+          } else {
+            await db.collection('baby_creators').doc(existingCreatorRes.data[0]._id).update({
+              data: {
+                updatedAt: db.serverDate(),
+                babyUid
+              }
+            });
+          }
         } else {
-          // 创建新的创建者记录（_openid会自动添加）
-          await db.collection('baby_creators').add({
-            data: {
-              babyUid: babyUid, // 添加关联的宝宝UID
-              createdAt: db.serverDate(),
-              updatedAt: db.serverDate()
-            }
-          });
+          // create 模式：babyUid 在页面实例上复用，若上次保存在后续环节（如数据导入）失败，
+          // 重试时创建者记录可能已存在，此时更新而不是重复添加。
+          if (creatorRes.data && creatorRes.data.length > 0) {
+            await db.collection('baby_creators').doc(creatorRes.data[0]._id).update({
+              data: {
+                updatedAt: db.serverDate(),
+                babyUid
+              }
+            });
+          } else {
+            await db.collection('baby_creators').add({
+              data: {
+                babyUid,
+                createdAt: db.serverDate(),
+                updatedAt: db.serverDate()
+              }
+            });
+          }
         }
-        
-        // 保存宝宝UID到本地
-        wx.setStorageSync('baby_uid', babyUid);
-        this.app.globalData.babyUid = babyUid;
+
+        if (!this.isCreateMode()) {
+          wx.setStorageSync('baby_uid', babyUid);
+          this.app.globalData.babyUid = babyUid;
+        }
       }
 
       // 设置宝宝信息已完成标志
       wx.setStorageSync('baby_info_completed', true);
-      
-      // 保存全局宝宝信息
+
       await this.app.cacheBabyInfo(babyInfo);
       // 新用户建档时同步绑定 milk_nutrition_profiles，避免喂奶页能看到系统母乳但算不出营养。
       await this.ensureMilkNutritionProfile(babyUid, nutritionSettings);
@@ -645,13 +837,24 @@ Page({
       });
 
       wx.hideLoading();
-      
+
+      if (this.isCreateMode()) {
+        const { switchToBaby } = require('../../utils/babyAccount');
+        switchToBaby({ babyUid, role: 'creator' });
+        // 创建者勾选了「从其他宝宝导入数据」时，在此一次性复制；复制后各宝宝数据隔离
+        await this.runImportForNewBaby(babyUid);
+        wx.switchTab({
+          url: '/pages/daily-feeding/index',
+          fail: () => this.navigateToMainPage()
+        });
+        return;
+      }
+
       // 显示成功提示，然后询问是否前往设置营养参数
       wx.showToast({
         title: '保存成功',
         icon: 'success',
         success: () => {
-          // 只有创建者角色才引导去完善配奶设置信息
           if (this.data.userRole === 'creator') {
             const confirmContent = '建议完善天然蛋白浓度与奶粉档案，是否立即前往配奶设置？';
             wx.showModal({
@@ -689,7 +892,10 @@ Page({
         }
       });
       
-      this.setData({ isFormSubmitting: false });
+      if (!this.isCreateMode()) {
+        this._saving = false;
+        this.setData({ isFormSubmitting: false });
+      }
     } catch (error) {
       console.error('保存宝宝信息失败:', error);
       wx.hideLoading();
@@ -715,6 +921,7 @@ Page({
         duration: 3000
       });
       
+      this._saving = false;
       this.setData({ isFormSubmitting: false });
     }
   },

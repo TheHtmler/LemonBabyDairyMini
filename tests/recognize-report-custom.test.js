@@ -27,6 +27,23 @@ function loadFunctionWithMockCloud({ downloadFileImpl, requestCustomOcrImpl, env
       return {
         DYNAMIC_CURRENT_ENV: 'test-env',
         init() {},
+        getWXContext() {
+          return { OPENID: 'test-openid' };
+        },
+        // 云函数模块加载时即调用 cloud.database() 读取特性开关配置，mock 需支持；
+        // 特性开关默认返回 scope=all 放行，与测试聚焦的 OCR 主流程保持一致
+        database() {
+          const queryApi = {
+            where() { return queryApi; },
+            limit() { return queryApi; },
+            async get() { return { data: [{ key: 'report_ocr_access', scope: 'all' }] }; }
+          };
+          return {
+            collection() {
+              return queryApi;
+            }
+          };
+        },
         async downloadFile({ fileID }) {
           if (downloadFileImpl) {
             return downloadFileImpl({ fileID });

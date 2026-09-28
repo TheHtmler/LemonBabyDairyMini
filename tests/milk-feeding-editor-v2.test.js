@@ -140,6 +140,7 @@ function loadV2Page(options = {}) {
   const previousGetRecordsByDate = feedingRecordV2Model.getRecordsByDate;
   const previousGetRecentRecord = feedingRecordV2Model.getRecentRecord;
   const previousGetSystemPowders = powderCatalogModel.getSystemPowders;
+  const previousGetUserPowders = powderCatalogModel.getUserPowders;
   const previousResolvePowderImageUrls = powderCatalogModel.resolvePowderImageUrls;
   const previousGetBabyUid = utilsModule.getBabyUid;
 
@@ -177,6 +178,15 @@ function loadV2Page(options = {}) {
   feedingRecordV2Model.getRecordsByDate = options.getRecordsByDate || (async () => []);
   feedingRecordV2Model.getRecentRecord = options.getRecentRecord || (async () => null);
   powderCatalogModel.getSystemPowders = options.getSystemPowders || (async () => []);
+  // 页面已改为通过 PowderCatalogModel.getUserPowders 读取「我的奶粉」（多宝宝共享库合并），
+  // 默认从 ensureNutritionProfileSettings 的 mock 数据推导，保持各用例原有数据来源不变。
+  // 注意必须捕获 mock 引用：harness 在 require 页面后会把 profileModel 恢复原实现，
+  // 若闭包里按属性访问 profileModel.ensureNutritionProfileSettings 会拿到原实现。
+  const ensureSettingsMock = profileModel.ensureNutritionProfileSettings;
+  powderCatalogModel.getUserPowders = options.getUserPowders || (async (babyUid) => {
+    const settings = await ensureSettingsMock(babyUid);
+    return ((settings && settings.formulaPowders) || []);
+  });
   powderCatalogModel.resolvePowderImageUrls = options.resolvePowderImageUrls || (async (powders) => powders);
   utilsModule.getBabyUid = options.getBabyUid || (() => 'baby-1');
 
@@ -196,6 +206,7 @@ function loadV2Page(options = {}) {
   feedingRecordV2Model.getRecordsByDate = previousGetRecordsByDate;
   feedingRecordV2Model.getRecentRecord = previousGetRecentRecord;
   powderCatalogModel.getSystemPowders = previousGetSystemPowders;
+  powderCatalogModel.getUserPowders = previousGetUserPowders;
   powderCatalogModel.resolvePowderImageUrls = previousResolvePowderImageUrls;
   utilsModule.getBabyUid = previousGetBabyUid;
   global.Page = previousPage;

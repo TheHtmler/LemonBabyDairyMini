@@ -213,6 +213,13 @@ page {
   font-weight: 700;
   color: #333;
 }
+.baby-switch-hint {
+  font-size: 20rpx;
+  color: #C4A035;
+  background: #FFF6D8;
+  padding: 2rpx 12rpx;
+  border-radius: 10rpx;
+}
 .baby-gender {
   font-size: 20rpx;
   color: #8A8A8A;

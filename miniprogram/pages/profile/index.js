@@ -34,6 +34,14 @@ const MENU_GROUPS = [
         path: '/pkg-misc/baby-info/index?from=profile'
       },
       {
+        id: 23,
+        name: '添加宝宝',
+        icon: 'baby',
+        path: '/pkg-misc/baby-info/index?mode=create',
+        description: '再建一份档案，可从已有宝宝导入食物、食谱和奶粉',
+        showForCreator: true
+      },
+      {
         id: 15,
         name: '个人信息',
         icon: 'info',
@@ -695,9 +703,10 @@ Page({
   },
 
   async handleCreatorAccountCancellation() {
+    const babyName = (this.data.babyInfo && this.data.babyInfo.name) || '当前宝宝';
     const firstConfirm = await this.showConfirmModal({
       title: '确认注销账号？',
-      content: '注销后将永久删除宝宝资料、喂养/用药/成长等历史记录，并解除所有参与者访问。此操作不可恢复。',
+      content: `注销后将永久删除「${babyName}」的资料、喂养/用药/成长等历史记录，并解除该宝宝的所有参与者访问。此操作不可恢复。你名下的其他宝宝不受影响。`,
       confirmText: '继续注销',
       confirmColor: '#D93026',
       cancelText: '取消'
@@ -777,8 +786,21 @@ Page({
         throw new Error(result?.message || errorTitle);
       }
 
+      const { listAccessibleBabies, switchToBaby } = require('../../utils/babyAccount');
+      const { pickNextBaby } = require('../../utils/babyBindings');
+      let nextBaby = null;
+      try {
+        nextBaby = pickNextBaby(await listAccessibleBabies(), babyUid);
+      } catch (error) {
+        console.warn('查找其他宝宝失败:', error);
+      }
+
       this.clearLocalStorage();
       this.resetGlobalData();
+      if (nextBaby) {
+        switchToBaby(nextBaby);
+        app.globalData.isLoggedIn = true;
+      }
 
       wx.hideLoading();
       wx.showToast({
@@ -788,7 +810,7 @@ Page({
         success: () => {
           setTimeout(() => {
             wx.reLaunch({
-              url: '/pages/role-selection/index'
+              url: nextBaby ? '/pages/daily-feeding/index' : '/pages/role-selection/index'
             });
           }, 1200);
         }

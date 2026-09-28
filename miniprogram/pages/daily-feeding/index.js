@@ -347,6 +347,11 @@ Page({
   async refreshDashboardOnShow() {
     if (!this.shouldRefreshDashboardOnShow()) return;
     const babyUid = (app.globalData && app.globalData.babyUid) || wx.getStorageSync('baby_uid');
+    // 宝宝已切换（如从添加宝宝页“切换过去”）：头部姓名/头像/月龄也要跟着换
+    const babySwitched = !!(this._lastDashboardBabyUid && this._lastDashboardBabyUid !== babyUid);
+    if (babySwitched) {
+      await this.initBabyInfoCache();
+    }
     const shouldRebuildTrend = this.hasPendingHomeDashboardDirty(babyUid);
     await this.loadDashboard({ silent: true, rebuildTrend: false });
     this.loadDeferredDashboardParts({ rebuildMissing: shouldRebuildTrend });
@@ -498,6 +503,9 @@ Page({
         babyAgeMonthsText: birthday ? formatBabyAgeText(birthday) : '',
         babyDays: birthday ? this.calculateBabyDays(birthday) : 0
       });
+      const { listAccessibleBabies } = require('../../utils/babyAccount');
+      const babies = await listAccessibleBabies();
+      this.setData({ canSwitchBaby: babies.length > 1 });
     } catch (error) {
       console.error('初始化宝宝信息失败:', error);
     }
@@ -1392,7 +1400,38 @@ Page({
   },
 
   navigateToBabyInfo() {
-    wx.navigateTo({ url: '/pkg-misc/baby-info/index?from=daily-feeding' });
+    this.openBabySwitcher();
+  },
+
+  async openBabySwitcher() {
+    try {
+      const {
+        listAccessibleBabies,
+        switchToBaby,
+        getCurrentBabyUid
+      } = require('../../utils/babyAccount');
+      const babies = await listAccessibleBabies();
+      if (babies.length <= 1) {
+        wx.navigateTo({ url: '/pkg-misc/baby-info/index?from=daily-feeding' });
+        return;
+      }
+      const currentBabyUid = getCurrentBabyUid();
+      wx.showActionSheet({
+        itemList: babies.slice(0, 6).map((baby) => (
+          baby.babyUid === currentBabyUid ? `${baby.name}（当前）` : baby.name
+        )),
+        success: async ({ tapIndex }) => {
+          const baby = babies[tapIndex];
+          if (!baby || baby.babyUid === currentBabyUid) return;
+          switchToBaby(baby);
+          await this.initBabyInfoCache();
+          await this.loadDashboard({ silent: true });
+        }
+      });
+    } catch (error) {
+      console.error('切换宝宝失败:', error);
+      wx.navigateTo({ url: '/pkg-misc/baby-info/index?from=daily-feeding' });
+    }
   },
 
   navigateToMilkFeedingEditor() {
