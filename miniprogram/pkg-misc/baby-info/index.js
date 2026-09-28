@@ -746,7 +746,9 @@ Page({
         if (syncPanel) {
           await syncPanel.runImportForTarget(babyUid);
         }
-        wx.switchTab({
+        // 已 switchToBaby 到新宝宝：reLaunch 销毁所有页面（含已加载的 tab 页），
+        // 避免旧宝宝的页面级状态残留（switchTab 不会销毁已加载的 tab 页）
+        wx.reLaunch({
           url: '/pages/daily-feeding/index',
           fail: () => this.navigateToMainPage()
         });

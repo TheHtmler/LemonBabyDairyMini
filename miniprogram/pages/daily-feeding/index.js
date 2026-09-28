@@ -1424,8 +1424,10 @@ Page({
           const baby = babies[tapIndex];
           if (!baby || baby.babyUid === currentBabyUid) return;
           switchToBaby(baby);
-          await this.initBabyInfoCache();
-          await this.loadDashboard({ silent: true });
+          // 整体重载而不是当前页局部刷新：其他已加载的 tab 页（数据记录/报告分析）
+          // 都持有旧宝宝的页面级状态，只有 reLaunch 销毁所有页面才能保证不串数据
+          wx.showToast({ title: `已切换到「${baby.name}」`, icon: 'none' });
+          wx.reLaunch({ url: '/pages/daily-feeding/index' });
         }
       });
     } catch (error) {

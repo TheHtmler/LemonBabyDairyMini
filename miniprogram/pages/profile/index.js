@@ -749,11 +749,10 @@ Page({
           const baby = babies[tapIndex];
           if (!baby || baby.babyUid === currentBabyUid) return;
           switchToBaby(baby);
-          // 清掉上一个宝宝的头像缓存，再强制刷新宝宝信息
-          this.setData({ latestAvatarUrl: '', lastSafeAvatarUrl: '' });
-          await this.getBabyInfo(true);
-          // 角色可能随宝宝变化（creator/participant 菜单不同），重建菜单
-          this.refreshIdentityState();
+          // 整体重载到首页：其他已加载的 tab 页持有旧宝宝的页面级状态，
+          // 局部刷新当前页无法覆盖，reLaunch 销毁所有页面后按新宝宝重建
+          wx.showToast({ title: `已切换到「${baby.name}」`, icon: 'none' });
+          wx.reLaunch({ url: '/pages/daily-feeding/index' });
         }
       });
     } catch (error) {
