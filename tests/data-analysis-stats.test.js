@@ -630,7 +630,7 @@ test('data-analysis marks today as default chart crosshair index', async () => {
   assert.equal(instance.data.chartData.defaultCrosshairIndex, 1);
 });
 
-test('data-analysis leaves default chart crosshair unset when today is outside range', async () => {
+test('data-analysis falls back to latest in-range day for default crosshair when today is outside range', async () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
   const startDate = new Date('2026-05-01T00:00:00+08:00');
@@ -640,7 +640,7 @@ test('data-analysis leaves default chart crosshair unset when today is outside r
     withMutedConsole(() => instance.processAnalysisData([], startDate, endDate));
   });
 
-  assert.equal(instance.data.chartData.defaultCrosshairIndex, -1);
+  assert.equal(instance.data.chartData.defaultCrosshairIndex, 2);
 });
 
 test('data-analysis load includes treatment-only records as analysis data', async () => {
@@ -707,15 +707,15 @@ test('data-analysis uses selected range date to show one fat energy reference', 
   assert.equal(instance.data.referenceRanges.fatEnergy, '1-2岁: 30%-35%');
 });
 
-test('data-analysis defaults to recent 7 days instead of natural week', async () => {
+test('data-analysis defaults to recent 7 days ending yesterday instead of natural week', async () => {
   const page = loadDataAnalysisPage();
   const instance = createPageInstance(page);
 
   await withFixedNow('2026-06-15T12:00:00+08:00', () => {
     const range = instance.calculateDateRange();
 
-    assert.equal(instance.formatDateKey(range.startDate), '2026-06-09');
-    assert.equal(instance.formatDateKey(range.endDate), '2026-06-15');
+    assert.equal(instance.formatDateKey(range.startDate), '2026-06-08');
+    assert.equal(instance.formatDateKey(range.endDate), '2026-06-14');
   });
 });
 
@@ -740,8 +740,8 @@ test('data-analysis applies recent range presets through date range state', asyn
 
     assert.equal(instance.data.rangePreset, 'last14');
     assert.equal(instance.data.customRangeActive, false);
-    assert.equal(instance.formatDateKey(range.startDate), '2026-06-02');
-    assert.equal(instance.formatDateKey(range.endDate), '2026-06-15');
+    assert.equal(instance.formatDateKey(range.startDate), '2026-06-01');
+    assert.equal(instance.formatDateKey(range.endDate), '2026-06-14');
     assert.equal(loadCalls, 1);
   });
 });
@@ -766,8 +766,8 @@ test('data-analysis applies recent 90-day range preset', async () => {
     const range = instance.calculateDateRange();
 
     assert.equal(instance.data.rangePreset, 'last90');
-    assert.equal(instance.formatDateKey(range.startDate), '2026-03-18');
-    assert.equal(instance.formatDateKey(range.endDate), '2026-06-15');
+    assert.equal(instance.formatDateKey(range.startDate), '2026-03-17');
+    assert.equal(instance.formatDateKey(range.endDate), '2026-06-14');
     assert.equal(loadCalls, 1);
   });
 });
@@ -924,6 +924,21 @@ test('data-analysis uses custom date range when enabled', async () => {
 
     instance.updateDateRangeText(customRange.startDate, customRange.endDate);
     assert.equal(instance.data.dateRangeText, '2026年5月3日 - 2026年5月20日');
+  });
+});
+
+test('data-analysis custom date range still supports ending at today', async () => {
+  const page = loadDataAnalysisPage();
+  const instance = createPageInstance(page, {
+    customRangeActive: true,
+    customRangeStartKey: '2026-06-13',
+    customRangeEndKey: '2026-06-15'
+  });
+
+  await withFixedNow('2026-06-15T12:00:00+08:00', () => {
+    const customRange = instance.calculateDateRange();
+    assert.equal(instance.formatDateKey(customRange.startDate), '2026-06-13');
+    assert.equal(instance.formatDateKey(customRange.endDate), '2026-06-15');
   });
 });
 

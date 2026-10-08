@@ -90,7 +90,9 @@ function getRangePresetConfig(preset) {
 
 function calculateRecentDateRange(days, referenceDate = new Date()) {
   const safeDays = Math.max(1, Number(days) || 1);
+  // 快捷区间统计到昨天（T-1）为止：当天数据往往还没记完，纳入会拉低均值/趋势
   const endDate = new Date(referenceDate);
+  endDate.setDate(endDate.getDate() - 1);
   endDate.setHours(23, 59, 59, 999);
   const startDate = new Date(endDate);
   startDate.setDate(endDate.getDate() - safeDays + 1);
@@ -1842,7 +1844,9 @@ Page({
     const hasCalorieSourceBreakdown = totalCal > 0;
     const totalDaysInRange = dateList.length || 0;
     const todayKey = this.formatDateKey(new Date());
-    const defaultCrosshairIndex = dateKeys.indexOf(todayKey);
+    const todayIndex = dateKeys.indexOf(todayKey);
+    // 今天不在范围内时（快捷区间统计到 T-1），准星默认落在区间内最近一天
+    const defaultCrosshairIndex = todayIndex >= 0 ? todayIndex : dateKeys.length - 1;
     
     // 计算平均蛋白质系数比例
     let avgProteinRatio = `${avgNaturalProteinCoef}:${avgSpecialProteinCoef}`;
