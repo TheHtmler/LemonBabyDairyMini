@@ -235,6 +235,16 @@ test('buildNutritionTargetState：蛋白目标需要天然和特殊系数都设�
   assert.equal(state.rows[0].pctText, '62.5%');
   assert.equal(state.rows[1].targetText, '3.20g');
   assert.equal(state.rows[1].remainingText, '1.20g');
+  assert.equal(state.activeGoal.coefText, '1.25 g/kg');
+  assert.deepEqual(state.coefficientChips.map((chip) => chip.key), ['natural', 'special', 'calorie']);
+  assert.equal(state.coefficientChips[0].actualText, '0.75');
+  assert.equal(state.coefficientChips[0].targetText, '1.20');
+  assert.equal(state.coefficientChips[0].targetLine, '目标 1.20');
+  assert.equal(state.coefficientChips[1].actualText, '0.50');
+  assert.equal(state.coefficientChips[1].targetLine, '目标 0.80');
+  assert.equal(state.coefficientChips[2].actualText, '100');
+  assert.equal(state.coefficientChips[2].hasTarget, false);
+  assert.equal(state.coefficientChips[2].targetLine, '未设目标');
 });
 
 test('buildNutritionTargetState：热量目标只需要热量系数并按首选维度展示', () => {
@@ -260,6 +270,11 @@ test('buildNutritionTargetState：热量目标只需要热量系数并按首选�
   assert.equal(calorieOnly.rows[0].targetText, '480kcal');
   assert.equal(calorieOnly.rows[0].remainingText, '80kcal');
   assert.equal(calorieOnly.rows[0].pctText, '83.3%');
+  assert.equal(calorieOnly.activeGoal.coefText, '100 kcal/kg');
+  assert.equal(calorieOnly.coefficientChips[2].actualText, '100');
+  assert.equal(calorieOnly.coefficientChips[2].targetLine, '目标 120');
+  assert.equal(calorieOnly.coefficientChips[0].hasTarget, false);
+  assert.equal(calorieOnly.coefficientChips[0].targetLine, '未设目标');
 
   const proteinPreferred = buildNutritionTargetState({
     macroSummary: { naturalProtein: 3, specialProtein: 2, calories: 400 },

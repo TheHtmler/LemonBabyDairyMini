@@ -106,6 +106,7 @@
           <view class="ring-hole">
             <text class="ring-big target-pct-text">{{nutritionTarget.activeGoal.pctText || '0.0%'}}</text>
             <text class="ring-unit">{{nutritionTarget.activeGoal.label}}</text>
+            <text class="ring-perkg">{{nutritionTarget.activeGoal.coefText}}</text>
           </view>
         </view>
         <text class="ring-status ring-status-below {{nutritionTarget.activeGoal.status}}" wx:if="{{nutritionTarget.hasAnyTarget}}">{{nutritionTarget.activeGoal.statusText}}</text>
@@ -162,6 +163,16 @@
           </view>
           <text class="target-helper {{item.status}}">{{item.helperText}}</text>
         </view>
+      </view>
+    </view>
+    <view class="coef-strip" wx:if="{{nutritionTarget.hasAnyTarget}}">
+      <view class="coef-chip {{item.tone}}" wx:for="{{nutritionTarget.coefficientChips}}" wx:key="key">
+        <text class="coef-chip-label">{{item.label}}</text>
+        <view class="coef-chip-value-row">
+          <text class="coef-chip-actual">{{item.actualText}}</text>
+          <text class="coef-chip-unit">{{item.unit}}</text>
+        </view>
+        <text class="coef-chip-target {{item.hasTarget ? '' : 'unset'}}">{{item.targetLine}}</text>
       </view>
     </view>
     <view class="target-empty" wx:if="{{!nutritionTarget.hasAnyTarget}}" catchtap="openNutritionTargetSetup" hover-class="press-soft" hover-stay-time="60">

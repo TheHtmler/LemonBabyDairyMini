@@ -458,6 +458,11 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
   };
   const activeGoal = mode === 'protein' ? protein.total : (mode === 'calorie' ? calorie : null);
   const activeMeta = buildGoalProgressMeta(activeGoal);
+  const coefficientChips = buildCoefficientChips(actual, {
+    natural: naturalCoef,
+    special: specialCoef,
+    calorie: calorieCoef
+  }, configuredModes);
   const rows = mode === 'protein'
     ? [
       buildTargetRow('naturalProtein', '天然蛋白', protein.natural, 'g', 'nat'),
@@ -480,6 +485,9 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
       label: mode === 'protein' ? '总蛋白' : '热量',
       unit: mode === 'protein' ? 'g' : 'kcal',
       pctText: formatPercentText(activeGoal.pct),
+      coefText: mode === 'protein'
+        ? `${actual.totalProteinPerKgText} g/kg`
+        : `${actual.caloriesPerKg} kcal/kg`,
       valueText: `${formatUnitValue(activeGoal.actual, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
       targetText: `${formatUnitValue(activeGoal.target, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
       actualText: `已摄入 ${formatUnitValue(activeGoal.actual, mode === 'protein' ? 'g' : 'kcal')}${mode === 'protein' ? 'g' : 'kcal'}`,
@@ -487,9 +495,65 @@ function buildNutritionTargetState({ macroSummary = {}, weight = 0, targetPrefer
     } : null,
     protein,
     calorie,
+    coefficientChips,
     rows,
     setupCtaText: hasAnyTarget ? '设置目标' : '设置目标'
   };
+}
+
+/**
+ * 目标环下方的系数条：天然 / 特殊 / 热量同时展示。
+ * 实际系数 = 今日摄入 ÷ 体重；目标系数来自用户设置，没设就标「未设目标」。
+ */
+function buildCoefficientChips(actual = {}, coefficients = {}, configuredModes = {}) {
+  const items = [
+    {
+      key: 'natural',
+      label: '天然',
+      tone: 'nat',
+      actualText: actual.naturalProteinPerKgText || '0.00',
+      targetValue: coefficients.natural,
+      unit: 'g/kg',
+      precision: 2,
+      hasTarget: configuredModes.protein === true
+    },
+    {
+      key: 'special',
+      label: '特殊',
+      tone: 'spe',
+      actualText: actual.specialProteinPerKgText || '0.00',
+      targetValue: coefficients.special,
+      unit: 'g/kg',
+      precision: 2,
+      hasTarget: configuredModes.protein === true
+    },
+    {
+      key: 'calorie',
+      label: '热量',
+      tone: 'cal',
+      actualText: String(actual.caloriesPerKg || 0),
+      targetValue: coefficients.calorie,
+      unit: 'kcal/kg',
+      precision: 0,
+      hasTarget: configuredModes.calorie === true
+    }
+  ];
+
+  return items.map((item) => {
+    const targetText = item.precision === 0
+      ? String(round(item.targetValue, 0))
+      : formatFixed(item.targetValue, item.precision);
+    return {
+      key: item.key,
+      label: item.label,
+      tone: item.tone,
+      unit: item.unit,
+      actualText: item.actualText,
+      targetText,
+      hasTarget: item.hasTarget,
+      targetLine: item.hasTarget ? `目标 ${targetText}` : '未设目标'
+    };
+  });
 }
 
 /**

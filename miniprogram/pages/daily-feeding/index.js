@@ -212,6 +212,7 @@ Page({
       hasAnyTarget: false,
       configuredModes: { protein: false, calorie: false },
       activeGoal: null,
+      coefficientChips: [],
       rows: []
     },
     targetSettingsModalVisible: false,
