@@ -811,6 +811,62 @@ page {
 .target-helper.over {
   color: #D46B2C;
 }
+.coef-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+.coef-chip {
+  min-width: 0;
+  background: #FFFDF5;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  border-radius: 16rpx;
+  padding: 12rpx 8rpx 10rpx;
+  text-align: center;
+}
+.coef-chip-label {
+  display: block;
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #8A8A8A;
+  line-height: 1.2;
+}
+.coef-chip.nat .coef-chip-label,
+.coef-chip.nat .coef-chip-actual { color: #F59E0B; }
+.coef-chip.spe .coef-chip-label,
+.coef-chip.spe .coef-chip-actual { color: #5B9DF9; }
+.coef-chip.cal .coef-chip-label,
+.coef-chip.cal .coef-chip-actual { color: #FF7A1A; }
+.coef-chip-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4rpx;
+  margin-top: 4rpx;
+}
+.coef-chip-actual {
+  font-size: 30rpx;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.coef-chip-unit {
+  font-size: 16rpx;
+  font-weight: 600;
+  color: #B0B0B0;
+}
+.coef-chip-target {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #B07A00;
+  line-height: 1.2;
+}
+.coef-chip-target.unset {
+  color: #C4C4C4;
+  font-weight: 600;
+}
 
 /* 喂养进度 */
 .feed-top {
