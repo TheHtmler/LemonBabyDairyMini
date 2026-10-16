@@ -27,6 +27,8 @@
     {
       "root": "pkg-milk",
       "pages": [
+        "search/index",
+        "nutrition-scan/index",
         "milk-feeding-editor-v2/index",
         "milk-goal-planner-v2/index",
         "nutrition-profile-settings/index",

@@ -1,0 +1,16 @@
+[
+  {
+    "recordId": "format-example",
+    "identity": { "name": "格式示例，不能作为营养参考", "aliases": [], "preparation": "dry_powder", "brand": "示例品牌", "series": "示例系列", "stage": "1段", "barcode": "" },
+    "basis": { "quantity": 100, "unit": "g", "material": "dry_powder" },
+    "nutrients": {
+      "calories": { "value": null, "state": "missing", "unit": "kcal", "definition": "unknown" },
+      "protein": { "value": null, "state": "missing", "unit": "g", "definition": "protein" },
+      "fat": { "value": null, "state": "missing", "unit": "g", "definition": "fat" },
+      "carbs": { "value": null, "state": "missing", "unit": "g", "definition": "unknown" },
+      "fiber": { "value": null, "state": "missing", "unit": "g", "definition": "unknown" },
+      "sodium": { "value": null, "state": "missing", "unit": "mg", "definition": "sodium" }
+    },
+    "source": { "verified": false, "dataType": "format_example" }
+  }
+]

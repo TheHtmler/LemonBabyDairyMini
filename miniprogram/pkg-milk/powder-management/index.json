@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "奶粉管理",
-  "usingComponents": {}
+  "usingComponents": {
+    "nutrition-recognition": "../components/nutrition-recognition/index"
+  }
 }

@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "扫描识别",
+  "navigationBarBackgroundColor": "#FFF9E6",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "nutrition-recognition": "../components/nutrition-recognition/index"
+  }
+}

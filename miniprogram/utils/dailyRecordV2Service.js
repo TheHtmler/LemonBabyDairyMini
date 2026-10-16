@@ -123,7 +123,7 @@ async function loadLegacyFoodIntakes(babyUid, date) {
   return extractLegacyFoodIntakes(dedupeById(results));
 }
 
-async function loadEventRecords(babyUid, date) {
+async function loadEventRecords(babyUid, date, options = {}) {
   const [
     milkRecords,
     foodIntakeRecords,
@@ -144,16 +144,20 @@ async function loadEventRecords(babyUid, date) {
     loadGrowthRecords(babyUid, date)
   ]);
 
+  const unwrap = result => {
+    if (options.readOnly === true && result?.success === false) throw new Error(result.message || '当日记录读取失败，请重试');
+    return unwrapResult(result);
+  };
   return {
-    milkRecords: unwrapResult(milkRecords),
-    foodIntakeRecords: unwrapResult(foodIntakeRecords),
+    milkRecords: unwrap(milkRecords),
+    foodIntakeRecords: unwrap(foodIntakeRecords),
     usesLegacyFoodIntakes: false,
-    medicationRecords: unwrapResult(medicationResult),
-    treatmentRecords: unwrapResult(treatmentResult),
-    bowelRecords: unwrapResult(bowelRecords),
-    waterRecords: unwrapResult(waterResult),
-    sleepRecords: unwrapResult(sleepResult),
-    growthRecords: unwrapResult(growthRecords)
+    medicationRecords: unwrap(medicationResult),
+    treatmentRecords: unwrap(treatmentResult),
+    bowelRecords: unwrap(bowelRecords),
+    waterRecords: unwrap(waterResult),
+    sleepRecords: unwrap(sleepResult),
+    growthRecords: unwrap(growthRecords)
   };
 }
 
@@ -362,7 +366,7 @@ function shouldCarryForwardBasicInfo(currentBasicInfo = {}, snapshot = {}) {
   return getBodyMeasurementCompleteness(snapshot) > getBodyMeasurementCompleteness(currentBasicInfo);
 }
 
-async function ensureGrowthRecordForDate(babyUid, date, eventRecords = {}) {
+async function ensureGrowthRecordForDate(babyUid, date, eventRecords = {}, options = {}) {
   const growthRecords = Array.isArray(eventRecords.growthRecords) ? eventRecords.growthRecords : [];
   const currentGrowthRecord = growthRecords.find((record = {}) => (record.status || 'active') === 'active') || null;
   const currentBasicInfo = normalizeGrowthRecordBasicInfo(currentGrowthRecord || {});
@@ -389,10 +393,12 @@ async function ensureGrowthRecordForDate(babyUid, date, eventRecords = {}) {
       : currentBasicInfo.headCircumference
   };
 
-  await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, date, {
-    ...nextBasicInfo,
-    source: 'daily_record_v2_carry_forward'
-  });
+  if (options.readOnly !== true) {
+    await FeedingRecordV2Model.upsertGrowthRecordForDate(babyUid, date, {
+      ...nextBasicInfo,
+      source: 'daily_record_v2_carry_forward'
+    });
+  }
   return {
     ...eventRecords,
     growthRecords: [
@@ -446,6 +452,12 @@ function invalidateDailyRecordCache(babyUid, date) {
 }
 
 async function getDailyRecordV2(babyUid, date, options = {}) {
+  // 搜索只读原始事件并临时计算，不因查询创建成长记录或写回汇总缓存。
+  if (options.readOnly === true) {
+    const events = await ensureGrowthRecordForDate(babyUid, date, await loadEventRecords(babyUid, date, options), options);
+    const summary = buildDailySummaryV2({ babyUid, date, ...events });
+    return buildServiceResult(babyUid, date, events, summary);
+  }
   const cacheKey = dailyRecordCacheKey(babyUid, date);
   // 先只读 1 条当天 summary 作为「变更探测」（含 isDirty 与客户端版本戳 rev）。
   const cachedSummary = await DailySummaryV2Model.getByDate(babyUid, date);

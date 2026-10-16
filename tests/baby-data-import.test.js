@@ -23,7 +23,8 @@ function installWxMock(seed = {}) {
   const command = {
     eq: (value) => ({ $eq: value }),
     in: (value) => ({ $in: value }),
-    or: (conditions) => ({ $or: conditions }),
+    or: (...conditions) => ({ $or: conditions.flat() }),
+    exists: (value) => ({ $exists: value }),
     addToSet: (value) => ({ $addToSet: value }),
     remove: () => ({ $remove: true })
   };
@@ -31,6 +32,12 @@ function installWxMock(seed = {}) {
   function matchesCondition(doc, condition = {}) {
     return Object.entries(condition).every(([key, expected]) => {
       const actual = doc[key];
+      if (expected && Object.prototype.hasOwnProperty.call(expected, '$or')) {
+        return expected.$or.some(item => matchesCondition(doc, { [key]: item }));
+      }
+      if (expected && Object.prototype.hasOwnProperty.call(expected, '$exists')) {
+        return (actual !== undefined) === expected.$exists;
+      }
       if (expected && Object.prototype.hasOwnProperty.call(expected, '$eq')) {
         return actual === expected.$eq;
       }

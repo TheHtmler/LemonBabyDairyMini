@@ -1,6 +1,7 @@
 const FoodModel = require('../../models/food');
 const FoodCategoryModel = require('../../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
+const { normalizeCategoryName } = require('../components/nutrition-recognition/lib/core/classification');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
 const DEFAULT_CATEGORY_SUGGESTIONS = [
   '主食及谷薯',
@@ -89,6 +90,9 @@ Page({
     categoryNavScrollIntoView: '',
     foodPanelScrollTop: 0,
     showAddModal: false,
+    savingNutrition: false,
+    formSessionId: 0,
+    editingVersion: 0,
     formData: createEmptyFormData(),
     energyKjInput: '',
     foodImagePreviewUrl: '',
@@ -131,6 +135,13 @@ Page({
 
       await this.loadCustomCategories();
       await this.loadFoods();
+      if (options.searchId) {
+        if (options.searchBabyUid && (options.searchBabyUid !== getBabyUid() || options.searchBabyUid !== babyUid)) throw new Error('宝宝已切换，请重新搜索');
+        const target = this.data.foods.find(x => x._id === options.searchId && (options.searchScope !== 'system' || x.isSystem));
+        if (!target) throw new Error('资料已删除或不可访问，请刷新搜索');
+        this.setData({ activeLibraryScope: target.isSystem ? 'system' : 'mine' });
+        this.showEditModal({ currentTarget: { dataset: { id: target._id } } });
+      }
       if (this.shouldOpenAddModal) {
         this.shouldOpenAddModal = false;
         this.showAddModal();
@@ -138,6 +149,11 @@ Page({
     } catch (error) {
       handleError(error, { title: '加载食物失败' });
     }
+  },
+
+  async onRecognitionRecovered(event) {
+    if (event.detail.babyUid !== this.data.babyUid || event.detail.babyUid !== getBabyUid()) return;
+    this.hideAddModal(true); await this.loadFoods();
   },
 
   async onShow() {
@@ -218,6 +234,7 @@ Page({
             isSystem: !!food.isSystem,
             isCustom: !food.isSystem,
             isSystemSnapshot: !!food.isSystemSnapshot,
+            usesModelEstimate: Object.values(food.recognitionMeta?.fieldSources || {}).includes('model_estimate'),
             sourceType: food.sourceType || (food.isSystem ? 'system' : (food.isSystemSnapshot ? 'user_override' : 'user_custom')),
             libraryScope: food.libraryScope || (food.isSystem ? 'system' : 'mine'),
             nutritionBasis: food.nutritionBasis || {
@@ -448,15 +465,7 @@ Page({
   },
 
   normalizeCategoryValue(value) {
-    const text = (value || '').toString().trim();
-    if (!text) {
-      return DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯';
-    }
-    const lower = text.toLowerCase();
-    if (lower === 'milk' || text === '奶类') return '乳类及制品';
-    if (lower === 'food') return DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯';
-    if (text === '辅食') return '婴幼儿辅食';
-    return text;
+    return normalizeCategoryName((value || '').toString()) || DEFAULT_CATEGORY_SUGGESTIONS[0] || '主食及谷薯';
   },
 
   mergeCategorySuggestions(additionalCategories = [], options = {}) {
@@ -589,6 +598,8 @@ Page({
         unit: baseUnit
       },
       nutritionPerBasis: this.buildNutritionPayload(formData),
+      rawNutrition: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].map(field => [field, formData[field]])),
+      touchedNutritionFields: Object.keys(this._touchedNutritionFields || {}),
       proteinSource: this.getProteinTypeOption(formData.proteinTypeIndex).value,
       proteinQuality: this.getProteinTypeOption(formData.proteinTypeIndex).quality,
       foodType: 'food',
@@ -619,13 +630,13 @@ Page({
       categoryLevel2: food.categoryLevel2 || '',
       unit: food.nutritionBasis?.unit || food.baseUnit || '',
       baseQuantity: String(food.nutritionBasis?.quantity != null ? food.nutritionBasis.quantity : (food.baseQuantity != null ? food.baseQuantity : 100)),
-      calories: nutrition.calories != null ? String(nutrition.calories) : '',
+      calories: !(food.recognitionMeta?.missingFields || []).includes('calories') && nutrition.calories != null ? String(nutrition.calories) : '',
       image: food.image || '',
-      protein: nutrition.protein != null ? String(nutrition.protein) : '',
-      carbs: nutrition.carbs != null ? String(nutrition.carbs) : '',
-      fat: nutrition.fat != null ? String(nutrition.fat) : '',
-      fiber: nutrition.fiber != null ? String(nutrition.fiber) : '',
-      sodium: nutrition.sodium != null ? String(nutrition.sodium) : '',
+      protein: !(food.recognitionMeta?.missingFields || []).includes('protein') && nutrition.protein != null ? String(nutrition.protein) : '',
+      carbs: !(food.recognitionMeta?.missingFields || []).includes('carbs') && nutrition.carbs != null ? String(nutrition.carbs) : '',
+      fat: !(food.recognitionMeta?.missingFields || []).includes('fat') && nutrition.fat != null ? String(nutrition.fat) : '',
+      fiber: !(food.recognitionMeta?.missingFields || []).includes('fiber') && nutrition.fiber != null ? String(nutrition.fiber) : '',
+      sodium: !(food.recognitionMeta?.missingFields || []).includes('sodium') && nutrition.sodium != null ? String(nutrition.sodium) : '',
       proteinTypeIndex: typeIndex >= 0 ? typeIndex : -1
     };
   },
@@ -639,8 +650,10 @@ Page({
       return;
     }
 
+    this._touchedNutritionFields = {};
     this.setData({
       showAddModal: true,
+      formSessionId: this.data.formSessionId + 1,
       energyKjInput: '',
       foodImagePreviewUrl: '',
       customCategoryInput: '',
@@ -648,6 +661,7 @@ Page({
       showCategoryCreator: false,
       showUnitCreator: false,
       editingFoodId: '',
+      editingVersion: 0,
       editingFoodName: '',
       editingFoodIsSystemSource: false,
       editingSourceSystemFoodId: '',
@@ -669,9 +683,12 @@ Page({
       return;
     }
     const formData = this.buildFormDataFromFood(target);
+    this._touchedNutritionFields = {};
     this.setData({
       showAddModal: true,
+      formSessionId: this.data.formSessionId + 1,
       editingFoodId: target._id,
+      editingVersion: target.isSystem ? 0 : Number(target.version || 0),
       editingFoodName: target.name || '',
       editingFoodIsSystemSource: !!target.isSystem,
       editingSourceSystemFoodId: target.isSystem ? target._id : (target.sourceSystemFoodId || ''),
@@ -689,13 +706,16 @@ Page({
     });
   },
 
-  hideAddModal() {
+  hideAddModal(force) {
+    if (this._saving && force !== true) return;
+    this._touchedNutritionFields = {};
     this.setData({
       showAddModal: false,
       energyKjInput: '',
       foodImagePreviewUrl: '',
       uploadingFoodImage: false,
       editingFoodId: '',
+      editingVersion: 0,
       editingFoodName: '',
       editingFoodIsSystemSource: false,
       editingSourceSystemFoodId: '',
@@ -713,9 +733,39 @@ Page({
 
   onInputChange(e) {
     const { field } = e.currentTarget.dataset;
+    if (NUTRITION_NUMBER_FIELDS.includes(field)) {
+      this._touchedNutritionFields = { ...(this._touchedNutritionFields || {}), [field]: true };
+    }
     this.setData({
       [`formData.${field}`]: e.detail.value
     });
+    this.selectComponent('#nutritionRecognition')?.markManual(field, e.detail.value);
+  },
+
+  startNutritionRecognition() {
+    if (!this.data.savingNutrition) this.selectComponent('#nutritionRecognition')?.startRecognition();
+  },
+
+  onNutritionCategoryCreated(e) {
+    if (e.detail.babyUid !== this.data.babyUid) return;
+    const name = String(e.detail.name || '').trim();
+    if (!name) return;
+    const customCategories = Array.from(new Set((this.data.customCategories || []).concat(name)));
+    this.setData({ customCategories,
+      categorySuggestions: this.mergeCategorySuggestions((this.data.categorySuggestions || []).concat(name), { customCategories }) });
+  },
+
+  onNutritionPatch(e) {
+    const patch = e.detail.patch || {};
+    const updates = {};
+    Object.keys(patch).forEach(field => { updates['formData.' + field] = field === 'proteinTypeIndex' ? Number(patch[field]) : String(patch[field]); });
+    if (patch.unit) updates.unitPickerIndex = this.getUnitPickerIndex(patch.unit);
+    if (patch.category) updates.categoryPickerIndex = this.getCategoryPickerIndex(patch.category);
+    if (patch.proteinTypeIndex != null) { updates.proteinTypeTouched = true; updates.proteinTypeRecommendationText = ''; }
+    (e.detail.manualFields || []).forEach(field => {
+      if (NUTRITION_NUMBER_FIELDS.includes(field)) this._touchedNutritionFields = { ...(this._touchedNutritionFields || {}), [field]: true };
+    });
+    this.setData(updates);
   },
 
   onEnergyKjInput(e) {
@@ -732,9 +782,11 @@ Page({
     }
 
     const kcalValue = this.roundNumber(kjValue / 4.184, 2);
+    this._touchedNutritionFields = { ...(this._touchedNutritionFields || {}), calories: true };
     this.setData({
       'formData.calories': String(kcalValue)
     });
+    this.selectComponent('#nutritionRecognition')?.markManual('calories', String(kcalValue));
     wx.showToast({ title: '已换算为 kcal', icon: 'success' });
   },
 
@@ -859,6 +911,7 @@ Page({
       unitPickerIndex: index,
       'formData.unit': value
     });
+    this.selectComponent('#nutritionRecognition')?.markManual('unit', value);
   },
 
   toggleUnitCreator() {
@@ -889,6 +942,7 @@ Page({
         'formData.unit': value,
         unitSuggestions: currentSuggestions
       });
+      this.selectComponent('#nutritionRecognition')?.markManual('unit', value);
       wx.showToast({ title: '单位已存在', icon: 'none' });
       return;
     }
@@ -901,6 +955,7 @@ Page({
       unitPickerIndex: this.getUnitPickerIndex(value, nextSuggestions),
       'formData.unit': value
     });
+    this.selectComponent('#nutritionRecognition')?.markManual('unit', value);
     wx.showToast({ title: '单位已添加', icon: 'success' });
   },
 
@@ -1036,10 +1091,15 @@ Page({
   },
 
   async saveFood() {
+    const recognition = this.selectComponent('#nutritionRecognition');
+    if (this._saving || recognition?.isBusy()) return;
+    if (recognition?.hasPendingSave()) { wx.showToast({ title: '请先恢复上次保存状态', icon: 'none' }); return; }
     if (!this.validateForm()) {
       return;
     }
 
+    this._saving = true;
+    this.setData({ savingNutrition: true });
     try {
       wx.showLoading({ title: '保存中...' });
       const babyUid = this.data.babyUid || getBabyUid();
@@ -1051,12 +1111,18 @@ Page({
 
       const editingId = this.data.editingFoodId;
 
-      if (editingId && this.data.editingFoodIsSystemSource) {
+      if (recognition?.hasSession()) {
+        await recognition.confirm({
+          targetId: this.data.editingFoodIsSystemSource ? '' : editingId,
+          sourceSystemFoodId: this.data.editingSourceSystemFoodId || '', form: newFood
+        });
+        FoodModel.markCatalogDirty(babyUid);
+      } else if (editingId && this.data.editingFoodIsSystemSource) {
         const sourceFood = (this.data.foods || []).find(item => item._id === this.data.editingSourceSystemFoodId || item._id === editingId);
         await FoodModel.createSystemFoodSnapshot(sourceFood, newFood, babyUid);
       } else if (editingId) {
         const { createdBy, babyUid: payloadBabyUid, ...updatePayload } = newFood;
-        await FoodModel.updateFood(editingId, updatePayload, babyUid);
+        await FoodModel.updateFood(editingId, { ...updatePayload, expectedVersion: this.data.editingVersion }, babyUid);
       } else {
         await FoodModel.createFood(newFood);
       }
@@ -1077,11 +1143,14 @@ Page({
         icon: 'success'
       });
 
-      this.hideAddModal();
+      this.hideAddModal(true);
       await this.loadFoods();
     } catch (error) {
       wx.hideLoading();
       handleError(error, { title: '保存失败' });
+    } finally {
+      this._saving = false;
+      this.setData({ savingNutrition: false });
     }
   },
 

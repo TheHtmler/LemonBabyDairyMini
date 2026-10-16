@@ -1,9 +1,10 @@
+const { indexNutrientStates } = require('./search-core/nutrition');
 const db = wx.cloud.database();
 
 const META_COLLECTION = 'system_food_catalog_meta';
 const FOOD_COLLECTION = 'food_catalog';
 const META_KEY = 'system_food_index';
-const INDEX_SCHEMA_VERSION = 1;
+const INDEX_SCHEMA_VERSION = 2;
 const STORAGE_KEYS = {
   version: 'system_food_index_version',
   total: 'system_food_index_total',
@@ -33,6 +34,8 @@ const INDEX_FIELDS = {
   categoryLevel2Code: true,
   nutritionBasis: true,
   nutritionPerBasis: true,
+  nutrientStates: true,
+  recognitionMeta: true,
   proteinSource: true,
   proteinQuality: true,
   alias: true,
@@ -93,6 +96,7 @@ function toIndexItem(food = {}) {
       unit: nutritionBasis.unit || 'g'
     },
     nutritionPerBasis: normalizeNutrition(food.nutritionPerBasis || food.nutritionPerUnit || {}),
+    nutrientStates: indexNutrientStates(food, food.nutritionPerBasis || food.nutritionPerUnit || {}, nutritionBasis),
     proteinSource: food.proteinSource || 'natural',
     proteinQuality: food.proteinQuality || '',
     aliasText: food.aliasText || (Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || '')),

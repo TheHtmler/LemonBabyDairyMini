@@ -1,3 +1,4 @@
+const { currentContext, invalidateSearchForBaby } = require('../../utils/searchSession');
 // 获取某月的天数
 function getDaysInMonth(year, month) {
   return new Date(year, month, 0).getDate();
@@ -2056,6 +2057,7 @@ function createDataRecordsPageConfig(options = {}) {
           const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
 
           if (this.data.recordId) {
+            const mutationBabyUid = getBabyUid();
             await db.collection('feeding_records').doc(this.data.recordId).update({
               data: {
                 intakes: remainingIntakes,
@@ -2063,6 +2065,7 @@ function createDataRecordsPageConfig(options = {}) {
                 updatedAt: db.serverDate()
               }
             });
+            invalidateSearchForBaby(mutationBabyUid, 'legacy_intake_deleted');
           }
 
           this.setData({
@@ -2655,6 +2658,7 @@ function createDataRecordsPageConfig(options = {}) {
           updatedAt: db.serverDate()
         }
       });
+      invalidateSearchForBaby(record.babyUid, 'legacy_intake_deleted');
     }
   },
 
@@ -2697,6 +2701,7 @@ function createDataRecordsPageConfig(options = {}) {
           const updatedSummary = calculateMacroSummary(remainingIntakes, this.data.feedings, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
           const updatedOverview = calculateIntakeOverview(this.data.feedings || [], remainingIntakes, this.data.weight, this.data.nutritionSettings || {}, this.data.treatmentRecords || []);
           if (this.data.recordId) {
+            const mutationBabyUid = getBabyUid();
             await db.collection('feeding_records').doc(this.data.recordId).update({
               data: {
                 intakes: remainingIntakes,
@@ -2704,6 +2709,7 @@ function createDataRecordsPageConfig(options = {}) {
                 updatedAt: db.serverDate()
               }
             });
+            invalidateSearchForBaby(mutationBabyUid, 'legacy_intake_deleted');
           }
           this.setData({
             intakes: remainingIntakes,
@@ -2881,6 +2887,7 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   async initializePage(formattedDate) {
+    this._initializingRecords = true;
     try {
       wx.showLoading({ title: '加载中...', mask: true });
 
@@ -2906,21 +2913,25 @@ function createDataRecordsPageConfig(options = {}) {
         await this.loadNutritionSettings();
       }
       // 复用初始化期间的全屏 loading，等数据真正加载完成再关闭（silent 避免重复开关 loading）
-      await this.fetchDailyRecords(formattedDate, { silent: true });
+      this.consumeSearchLocator();
+      await this.fetchDailyRecords(this.data.selectedDate || formattedDate, { silent: true });
       await this.refreshDayMarkIndicators();
     } catch (error) {
       console.error('data-records 初始化失败:', error);
     } finally {
+      this._initializingRecords = false;
       wx.hideLoading();
       this.maybeOpenDayMarkFormFromFlag();
     }
   },
 
   onShow: async function() {
+    const fromSearch = this.consumeSearchLocator();
+    if (this._initializingRecords) return;
     if (!this.data.selectedDate) {
       return;
     }
-    if (this.consumeSkipNextOnShowRefresh(this.data.selectedDate)) {
+    if (!fromSearch && this.consumeSkipNextOnShowRefresh(this.data.selectedDate)) {
       this.maybeOpenDayMarkFormFromFlag();
       return;
     }
@@ -2932,6 +2943,20 @@ function createDataRecordsPageConfig(options = {}) {
     }
     await this.fetchDailyRecords(this.data.selectedDate);
     this.maybeOpenDayMarkFormFromFlag();
+  },
+
+  consumeSearchLocator() {
+    const app = getApp(); const locator = app.globalData && app.globalData.pendingSearchLocator;
+    if (!locator) return false;
+    app.globalData.pendingSearchLocator = null;
+    const context = currentContext();
+    if (locator.babyUid !== context.babyUid || locator.accountKey !== context.accountKey || Date.now() - locator.createdAt > 300000 || !/^\d{4}-\d{2}-\d{2}$/.test(locator.date || '')) {
+      wx.showToast({ title: '搜索定位已失效，请重新搜索', icon: 'none' }); return false;
+    }
+    const index = this.initDateList(parseDateKey(locator.date));
+    this.setData({ selectedDate: locator.date, formattedSelectedDate: this.formatDisplayDate(locator.date), selectedDateIndex: index, currentDateId: index >= 0 ? `date-${index}` : '', isSelectedToday: locator.date === this.formatDate(new Date()), isSelectedFuture: isFutureDateKey(locator.date) });
+    this.initCalendar(Number(locator.date.slice(0, 4)), Number(locator.date.slice(5, 7)));
+    wx.showToast({ title: '已打开对应日期，请查看当日记录', icon: 'none' }); return true;
   },
 
   maybeOpenDayMarkFormFromFlag() {
@@ -5458,6 +5483,7 @@ function createDataRecordsPageConfig(options = {}) {
           updatedAt: db.serverDate()
         }
       });
+      invalidateSearchForBaby(babyUid, 'legacy_feeding_created');
 
       wx.hideLoading();
       wx.showToast({
@@ -5706,6 +5732,7 @@ function createDataRecordsPageConfig(options = {}) {
 
         const updatedFeedings = (this.data.feedingRecords || []).filter((_, i) => i !== deleteIndex);
 
+        const mutationBabyUid = getBabyUid();
         const db = wx.cloud.database();
         await db.collection('feeding_records').doc(recordId).update({
           data: {
@@ -5713,6 +5740,7 @@ function createDataRecordsPageConfig(options = {}) {
             updatedAt: db.serverDate()
           }
         });
+        invalidateSearchForBaby(mutationBabyUid, 'legacy_feeding_deleted');
         }
 
       } else if (deleteType === 'medication') {
@@ -6159,6 +6187,7 @@ function createDataRecordsPageConfig(options = {}) {
             updatedAt: db.serverDate()
           }
         });
+        invalidateSearchForBaby(babyUid, 'legacy_feeding_updated');
         
         console.log('编辑喂奶记录数据库更新结果:', updateResult);
         

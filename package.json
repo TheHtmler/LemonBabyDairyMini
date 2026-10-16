@@ -1,5 +1,10 @@
 {
   "scripts": {
+    "build:search": "node scripts/build-search-functions.js",
+    "check:search": "node scripts/build-search-functions.js --check",
+    "check:miniprogram-imports": "node scripts/check-miniprogram-imports.js",
+    "build:nutrition": "node scripts/build-nutrition-functions.js",
+    "check:nutrition": "node scripts/build-nutrition-functions.js --check",
     "check:babyinfo-duplicates": "node scripts/check-babyinfo-duplicates.js",
     "check:caregiver-roles": "node scripts/check-caregiver-roles.js"
   },
@@ -7,6 +12,7 @@
     "wx-server-sdk": "^3.0.1"
   },
   "devDependencies": {
-    "@cloudbase/node-sdk": "^3.16.0"
+    "@cloudbase/node-sdk": "^3.16.0",
+    "acorn": "8.15.0"
   }
 }

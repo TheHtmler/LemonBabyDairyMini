@@ -1,3 +1,4 @@
+const { indexNutrientStates } = require('../../utils/search-core/nutrition');
 const {
   POWDER_CATEGORIES,
   getDefaultProteinRole,
@@ -8,7 +9,7 @@ const {
 const META_COLLECTION = 'system_powder_catalog_meta';
 const POWDER_COLLECTION = 'powder_catalog';
 const META_KEY = 'system_powder_index';
-const INDEX_SCHEMA_VERSION = 1;
+const INDEX_SCHEMA_VERSION = 2;
 const STORAGE_KEYS = {
   version: 'system_powder_index_version',
   total: 'system_powder_index_total',
@@ -32,6 +33,8 @@ const INDEX_FIELDS = {
   stage: true,
   image: true,
   nutritionPer100g: true,
+  nutrientStates: true,
+  recognitionMeta: true,
   mixRatio: true,
   alias: true,
   description: true,
@@ -78,6 +81,7 @@ function normalizeSystemPowderItem(item = {}, index = 0) {
     stage: item.stage || '',
     image: item.image || '',
     nutritionPer100g: normalizeNutritionPer100g(item.nutritionPer100g || {}),
+    nutrientStates: indexNutrientStates(item, item.nutritionPer100g || {}, { quantity: 100, unit: 'g', material: 'dry_powder' }),
     mixRatio: normalizeMixRatio(item.mixRatio || {}),
     alias: Array.isArray(item.alias) ? item.alias : [],
     description: item.description || '',

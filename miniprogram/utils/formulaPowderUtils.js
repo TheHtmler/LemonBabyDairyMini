@@ -89,7 +89,8 @@ function normalizeNutritionPer100g(nutrition = {}) {
     calories: toNumber(nutrition.calories),
     fat: toNumber(nutrition.fat),
     carbs: toNumber(nutrition.carbs),
-    fiber: toNumber(nutrition.fiber)
+    fiber: toNumber(nutrition.fiber),
+    ...(nutrition.sodium != null && Number.isFinite(Number(nutrition.sodium)) ? { sodium: Number(nutrition.sodium) } : {})
   };
 }
 
@@ -130,6 +131,8 @@ function normalizeFormulaPowders(powders = []) {
       return {
         id,
         name,
+        ...(powder.recognitionMeta ? { recognitionMeta: powder.recognitionMeta } : {}),
+        ...(powder.nutrientStates ? { nutrientStates: JSON.parse(JSON.stringify(powder.nutrientStates)) } : {}),
         category,
         proteinRole,
         nutritionPer100g: normalizeNutritionPer100g(powder.nutritionPer100g),

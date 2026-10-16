@@ -134,11 +134,11 @@ function buildPowderDraftFromSystem(powder = {}) {
     category: powder.category || POWDER_CATEGORIES.REGULAR_FORMULA,
     proteinRole: powder.proteinRole || PROTEIN_ROLES.NATURAL,
     nutritionPer100g: {
-      protein: `${powder.nutritionPer100g?.protein ?? ''}`,
-      calories: `${powder.nutritionPer100g?.calories ?? ''}`,
-      fat: `${powder.nutritionPer100g?.fat ?? ''}`,
-      carbs: `${powder.nutritionPer100g?.carbs ?? ''}`,
-      fiber: `${powder.nutritionPer100g?.fiber ?? ''}`
+      protein: `${(powder.recognitionMeta?.missingFields || []).includes('protein') ? '' : powder.nutritionPer100g?.protein ?? ''}`,
+      calories: `${(powder.recognitionMeta?.missingFields || []).includes('calories') ? '' : powder.nutritionPer100g?.calories ?? ''}`,
+      fat: `${(powder.recognitionMeta?.missingFields || []).includes('fat') ? '' : powder.nutritionPer100g?.fat ?? ''}`,
+      carbs: `${(powder.recognitionMeta?.missingFields || []).includes('carbs') ? '' : powder.nutritionPer100g?.carbs ?? ''}`,
+      fiber: `${(powder.recognitionMeta?.missingFields || []).includes('fiber') ? '' : powder.nutritionPer100g?.fiber ?? ''}`
     },
     mixRatio: {
       powder: `${powder.mixRatio?.powder ?? ''}`,
@@ -181,6 +181,8 @@ function enrichPowderItem(powder = {}) {
     nutritionBasisQuantity: powder.nutritionBasisQuantity || 100,
     metaPath: powder.brandStageText || [powder.brand, powder.stage].filter(Boolean).join(' · ') || categoryMeta.label,
     nutritionPer100g: nutrition,
+    missingNutrition: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber'].map(field =>
+      [field, (powder.recognitionMeta?.missingFields || []).includes(field)])),
     mixRatio,
     showMixRatio: !isBreastMilk,
     mixRatioText: isBreastMilk ? '无需冲配' : `${mixRatio.powder || 0}g : ${mixRatio.water || 0}ml`
@@ -212,6 +214,9 @@ Page({
     powderPanelScrollTop: 0,
     powderPlaceholderImage: POWDER_PLACEHOLDER_IMAGE,
     showAddModal: false,
+    savingNutrition: false,
+    formSessionId: 0,
+    editingVersion: 0,
     powderTypeOptions: POWDER_TYPE_OPTIONS,
     powderTypeIndex: 0,
     powderTypeLabel: POWDER_TYPE_OPTIONS[0].label,
@@ -231,6 +236,14 @@ Page({
       const babyUid = getBabyUid();
       this.setData({ babyUid: babyUid || '' });
       await this.loadPowders();
+      if (options.searchId) {
+        if (options.searchBabyUid && (options.searchBabyUid !== getBabyUid() || options.searchBabyUid !== babyUid)) throw new Error('宝宝已切换，请重新搜索');
+        const target = this.data.powders.find(x => [x.powderId, x._id, x.powderCode].includes(options.searchId) && (!options.searchScope || x.libraryScope === options.searchScope));
+        if (!target) throw new Error('资料已删除或不可访问，请刷新搜索');
+        this.setData({ activeLibraryScope: target.libraryScope });
+        const event = { currentTarget: { dataset: { id: target.libraryScope === 'system' ? target.powderCode || target._id : target.powderId || target._id } } };
+        if (target.libraryScope === 'system') this.showSystemSaveModal(event); else this.showEditModal(event);
+      }
       if (this.shouldOpenBreastMilk) {
         this.shouldOpenBreastMilk = false;
         this.openBreastMilkEditor();
@@ -250,6 +263,11 @@ Page({
     }
     this.setData({ activeLibraryScope: 'mine' });
     this.showEditModal({ currentTarget: { dataset: { id: breastMilk.powderId || breastMilk._id } } });
+  },
+
+  async onRecognitionRecovered(event) {
+    if (event.detail.babyUid !== this.data.babyUid || event.detail.babyUid !== getBabyUid()) return;
+    this.hideAddModal(true); await this.loadPowders();
   },
 
   async onShow() {
@@ -294,12 +312,6 @@ Page({
       this.setData({ babyUid: babyUid || '' });
       this.loadLibraryUpdateHint(babyUid);
 
-      const { systemPowders, userPowders } = await PowderCatalogModel.getAvailablePowders(babyUid);
-      // 合并后一次换链，配合 cloudTempUrlCache 命中则接近 0 次存储调用
-      const resolvedAll = await PowderCatalogModel.resolvePowderImageUrls([
-        ...(systemPowders || []),
-        ...(userPowders || [])
-      ]);
       let breastMilkSettings = {};
       if (babyUid) {
         try {
@@ -309,6 +321,11 @@ Page({
           console.warn('加载母乳参数失败，使用默认值:', error);
         }
       }
+      // 完成首次建档后再读取列表和版本，避免表单持有建档前的版本0。
+      const { systemPowders, userPowders } = await PowderCatalogModel.getAvailablePowders(babyUid);
+      const resolvedAll = await PowderCatalogModel.resolvePowderImageUrls([
+        ...(systemPowders || []), ...(userPowders || [])
+      ]);
       const powders = resolvedAll.map(enrichPowderItem);
 
       this.applyPowderList(powders, { ...options, breastMilkSettings });
@@ -519,6 +536,8 @@ Page({
       : activeCategory;
     this.setData({
       showAddModal: true,
+      formSessionId: this.data.formSessionId + 1,
+      editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
       energyKjInput: '',
       editingPowderIsSystemSource: false,
       editingSourceSystemPowderId: '',
@@ -541,6 +560,8 @@ Page({
 
     this.setData({
       showAddModal: true,
+      formSessionId: this.data.formSessionId + 1,
+      editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
       energyKjInput: '',
       editingPowderIsSystemSource: true,
       editingSourceSystemPowderId: systemPowder.powderCode || systemPowder._id || '',
@@ -559,6 +580,8 @@ Page({
     if (isVirtualBreastMilkPowder(powder)) {
       this.setData({
         showAddModal: true,
+      formSessionId: this.data.formSessionId + 1,
+      editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
         energyKjInput: '',
         editingPowderIsSystemSource: false,
         editingSourceSystemPowderId: '',
@@ -576,6 +599,8 @@ Page({
 
     this.setData({
       showAddModal: true,
+      formSessionId: this.data.formSessionId + 1,
+      editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
       energyKjInput: '',
       editingPowderIsSystemSource: false,
       editingSourceSystemPowderId: '',
@@ -586,11 +611,11 @@ Page({
         category: powder.category,
         proteinRole: powder.proteinRole,
         nutritionPer100g: {
-          protein: `${powder.nutritionPer100g?.protein ?? ''}`,
-          calories: `${powder.nutritionPer100g?.calories ?? ''}`,
-          fat: `${powder.nutritionPer100g?.fat ?? ''}`,
-          carbs: `${powder.nutritionPer100g?.carbs ?? ''}`,
-          fiber: `${powder.nutritionPer100g?.fiber ?? ''}`
+          protein: `${(powder.recognitionMeta?.missingFields || []).includes('protein') ? '' : powder.nutritionPer100g?.protein ?? ''}`,
+          calories: `${(powder.recognitionMeta?.missingFields || []).includes('calories') ? '' : powder.nutritionPer100g?.calories ?? ''}`,
+          fat: `${(powder.recognitionMeta?.missingFields || []).includes('fat') ? '' : powder.nutritionPer100g?.fat ?? ''}`,
+          carbs: `${(powder.recognitionMeta?.missingFields || []).includes('carbs') ? '' : powder.nutritionPer100g?.carbs ?? ''}`,
+          fiber: `${(powder.recognitionMeta?.missingFields || []).includes('fiber') ? '' : powder.nutritionPer100g?.fiber ?? ''}`
         },
         mixRatio: {
           powder: `${powder.mixRatio?.powder ?? ''}`,
@@ -617,7 +642,8 @@ Page({
     return await NutritionModel.getNutritionSettings(babyUid) || {};
   },
 
-  async hideAddModal() {
+  async hideAddModal(force) {
+    if (this._saving && force !== true) return;
     const dismissedBreastMilkEditor = !!this.data.editingBreastMilk;
     this.setData({
       showAddModal: false,
@@ -660,6 +686,39 @@ Page({
     });
   },
 
+  onPowderInput(e) {
+    const field = e.currentTarget.dataset.field;
+    const path = field === 'name' ? 'name' : field === 'ratioPowder' ? 'mixRatio.powder' :
+      field === 'ratioWater' ? 'mixRatio.water' : 'nutritionPer100g.' + field;
+    this.setData({ ['powderDraft.' + path]: e.detail.value });
+    this.selectComponent('#nutritionRecognition')?.markManual(field, e.detail.value);
+  },
+
+  startNutritionRecognition() {
+    if (!this.data.savingNutrition) this.selectComponent('#nutritionRecognition')?.startRecognition();
+  },
+
+  onNutritionPatch(e) {
+    const patch = e.detail.patch || {};
+    const updates = {};
+    Object.keys(patch).forEach(field => {
+      if (field === 'mixRatio') {
+        updates['powderDraft.mixRatio'] = { powder: String(patch.mixRatio.powder), water: String(patch.mixRatio.water) };
+        return;
+      }
+      if (field === 'category') {
+        updates['powderDraft.category'] = patch.category;
+        updates['powderDraft.proteinRole'] = patch.category === POWDER_CATEGORIES.SPECIAL_FORMULA ? PROTEIN_ROLES.SPECIAL :
+          patch.category === POWDER_CATEGORIES.ENERGY_SUPPLEMENT ? PROTEIN_ROLES.NONE : PROTEIN_ROLES.NATURAL;
+        Object.assign(updates, buildPowderTypeState(patch.category));
+        return;
+      }
+      const path = field === 'name' ? field : 'nutritionPer100g.' + field;
+      updates['powderDraft.' + path] = String(patch[field]);
+    });
+    this.setData(updates);
+  },
+
   applyKjToKcal() {
     const kjValue = this.parseNumber(this.data.energyKjInput);
     if (kjValue === null || kjValue < 0) {
@@ -671,6 +730,7 @@ Page({
     this.setData({
       'powderDraft.nutritionPer100g.calories': String(kcalValue)
     });
+    this.selectComponent('#nutritionRecognition')?.markManual('calories', String(kcalValue));
     wx.showToast({ title: '已换算为 kcal', icon: 'success' });
   },
 
@@ -726,6 +786,16 @@ Page({
   },
 
   async savePowderDraft(e) {
+    const recognition = this.selectComponent('#nutritionRecognition');
+    if (this._saving || recognition?.isBusy()) return;
+    if (recognition?.hasPendingSave()) { wx.showToast({ title: '请先恢复上次保存状态', icon: 'none' }); return; }
+    this._saving = true;
+    this.setData({ savingNutrition: true });
+    try { await this.persistPowderDraft(e, recognition); }
+    finally { this._saving = false; this.setData({ savingNutrition: false }); }
+  },
+
+  async persistPowderDraft(e, recognition) {
     const values = e.detail.value || {};
     const isBreastMilk = !!this.data.editingBreastMilk;
     const requiredError = this.validatePowderDraftRequired(values, { isBreastMilk });
@@ -755,7 +825,7 @@ Page({
           title: result.message || '保存成功',
           icon: 'success'
         });
-        this.hideAddModal();
+        this.hideAddModal(true);
         await this.loadPowders({ keepScope: true });
       } catch (error) {
         wx.hideLoading();
@@ -787,6 +857,8 @@ Page({
       sourceSystemPowderId: isSystemSource
         ? (this.data.editingSourceSystemPowderId || current.sourceSystemPowderId || '')
         : (current.sourceSystemPowderId || ''),
+      expectedVersion: this.data.editingVersion,
+      rawNutrition: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber'].map(field => [field, values[field]])),
       createdAt: current.createdAt || getServerDate()
     };
 
@@ -796,7 +868,10 @@ Page({
 
     try {
       wx.showLoading({ title: '保存中...', mask: true });
-      const result = await PowderCatalogModel.saveUserPowder(babyUid, draft);
+      const result = recognition?.hasSession() ? await recognition.confirm({
+        targetId: isSystemSource ? '' : current.id || '',
+        sourceSystemPowderId: draft.sourceSystemPowderId || '', form: draft
+      }) : await PowderCatalogModel.saveUserPowder(babyUid, draft);
       wx.hideLoading();
       wx.showToast({
         title: result.message || '保存成功',
@@ -807,7 +882,7 @@ Page({
         return;
       }
 
-      this.hideAddModal();
+      this.hideAddModal(true);
       await this.loadPowders({ keepScope: true });
     } catch (error) {
       wx.hideLoading();

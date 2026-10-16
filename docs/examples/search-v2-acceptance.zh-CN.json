@@ -1,0 +1,1061 @@
+{
+  "title": "自然语言搜索版本2人工验收语料",
+  "status": "设计目标，尚未实施或运行真实模型；不作为通过报告",
+  "referenceTime": "2026-10-15T08:00:00Z",
+  "timeZone": "Asia/Shanghai",
+  "instructions": [
+    "这些是人工验收输入和期望语义，不是新增的项目单元测试。",
+    "所有资料、数值、药名和日期均为合成验收场景，不代表用户真实记录或营养建议。",
+    "按真实模型、实体解析、执行结果和界面状态分别记账；模拟模型通过不能记作真实模型通过。",
+    "有多个待补项时先补当前最关键项；不能为达命中率丢掉时间、否定、单位或比较。",
+    "对未写entityIds的案例按场景解析对象，不要求模型编造或输出ID。",
+    "多个正确但表述不同的提示可接受；对象、操作、单位、日期和计算口径必须一致。"
+  ],
+  "scenarios": {
+    "base": {
+      "babyUid": "fixture-baby-a",
+      "medications": [
+        {
+          "id": "med-left",
+          "name": "左卡尼丁",
+          "aliases": [],
+          "frequencyDays": 1,
+          "frequencyTimes": 2,
+          "dosage": 2,
+          "unit": "ml",
+          "notes": "示例备注"
+        },
+        {
+          "id": "med-vitamin-d",
+          "name": "维生素D",
+          "frequencyDays": 1,
+          "frequencyTimes": 1,
+          "dosage": 1,
+          "unit": "滴"
+        }
+      ],
+      "leftMedicationRecords": [
+        {
+          "id": "dose-a",
+          "date": "2026-10-11",
+          "time": "09:00",
+          "amount": 1,
+          "unit": "ml"
+        },
+        {
+          "id": "dose-b",
+          "date": "2026-10-13",
+          "time": "09:00",
+          "amount": 2,
+          "unit": "ml"
+        },
+        {
+          "id": "dose-c",
+          "date": "2026-10-15",
+          "time": "09:00",
+          "amount": 2,
+          "unit": "ml"
+        }
+      ],
+      "naturalProteinDailyCoefficients": {
+        "2026-10-05": 0.6,
+        "2026-10-06": 0.6,
+        "2026-10-07": 0.6,
+        "2026-10-08": 0.6,
+        "2026-10-09": 1.0,
+        "2026-10-10": 1.2,
+        "2026-10-11": 1.4,
+        "2026-10-12": null,
+        "2026-10-13": 1.0,
+        "2026-10-14": 1.2,
+        "2026-10-15": 1.4
+      },
+      "coefficientBasis": "各已知日有效体重7kg，实际天然蛋白摄入=该日系数×7；10月12日没有可计算记录。其他营养不参与这些案例。",
+      "yesterdayMilkEvents": [
+        {
+          "id": "milk-a",
+          "recordedVolume": 90,
+          "consumedBottleVolume": 100,
+          "unit": "ml"
+        },
+        {
+          "id": "milk-b",
+          "recordedVolume": 180,
+          "consumedBottleVolume": 200,
+          "unit": "ml"
+        }
+      ],
+      "yesterdayWaterEvents": [
+        {
+          "id": "water-a",
+          "volumeMl": 100
+        },
+        {
+          "id": "water-b",
+          "volumeMl": 50
+        }
+      ],
+      "catalogNote": "准备我的和系统青菜、名称为低蛋白米的食物、带品牌圣元的奶粉和已知鸡蛋ID的食谱。营养筛选样本应含阈值上下、恰等于阈值与营养缺失各类，不能只填必命中数据。",
+      "latestMilkComponents": "最近一条喂奶记录的组分保存当时的粉种名称与用量快照；当前粉库修改不得改变这些答案。"
+    },
+    "ambiguous_medications": {
+      "extends": "base",
+      "addMedication": {
+        "id": "med-left-capsule",
+        "name": "左卡尼丁胶囊",
+        "frequencyDays": 1,
+        "frequencyTimes": 1
+      }
+    },
+    "missing_frequency": {
+      "extends": "base",
+      "change": "med-left的结构化频率和文字频率均缺失"
+    },
+    "historical_medication_only": {
+      "extends": "base",
+      "change": "移除当前左卡药物资料，保留名称左卡尼丁、药物ID为deleted-med-left的历史服药记录"
+    },
+    "mixed_medication_units": {
+      "extends": "base",
+      "addRecord": {
+        "id": "dose-mg",
+        "medicationId": "med-left",
+        "date": "2026-10-14",
+        "amount": 2,
+        "unit": "mg"
+      }
+    },
+    "powder_without_prepared_basis": {
+      "extends": "base",
+      "change": "圣元奶粉只保存每100克干粉营养，无可验证冲调液营养或比例"
+    },
+    "no_effective_weight": {
+      "extends": "base",
+      "change": "所有可顺延体重都缺失，今天保留正数实际摄入；配置目标系数99不可拿来回答"
+    },
+    "known_zero": {
+      "extends": "base",
+      "change": "昨天有效体重7kg，有完整可核验饮食记录且明确天然蛋白为0"
+    },
+    "milk_without_actual_bottle_volume": {
+      "extends": "base",
+      "change": "昨天奶记录只有配奶水量，没有成品实际体积或可验证换算依据"
+    },
+    "complete_recipe_ingredients": {
+      "extends": "base",
+      "change": "各候选食谱完整声明全部配料和引用的食物ID；鸡蛋ID为food-egg"
+    },
+    "context_left_count_last_week": {
+      "extends": "base",
+      "context": {
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "entityIds": [
+          "med-left"
+        ],
+        "measure": "records.count",
+        "periods": [
+          {
+            "startDate": "2026-10-09",
+            "endDateExclusive": "2026-10-16"
+          }
+        ]
+      }
+    },
+    "context_two_medications": {
+      "extends": "ambiguous_medications",
+      "context": {
+        "confirmedEntityId": "med-left",
+        "candidateIds": [
+          "med-left",
+          "med-left-capsule"
+        ],
+        "operation": "catalog.read",
+        "measure": "medication.frequency"
+      }
+    },
+    "expired_context": {
+      "extends": "base",
+      "context": "已有上下文超过30分钟，不能沿用"
+    },
+    "changed_baby_context": {
+      "extends": "base",
+      "context": "上轮宝宝A，本轮已切换宝宝B；旧令牌不得复用，不能露出宝宝A对象"
+    },
+    "ai_unavailable": {
+      "extends": "base",
+      "change": "模型额度或配置不可用，纯名称仍可查；本案例不得伪装为没有数据；本例自由问句没有被确定性语法完整覆盖，必须避免错误降级。"
+    },
+    "source_failed": {
+      "extends": "base",
+      "change": "服药记录来源读取抛错，不把读取失败当空集合"
+    },
+    "forbidden_baby": {
+      "extends": "base",
+      "change": "当前账号不具有目标宝宝访问权"
+    }
+  },
+  "cases": [
+    {
+      "id": "S001",
+      "query": "左卡尼丁",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "medication",
+        "entityIds": [
+          "med-left"
+        ]
+      }
+    },
+    {
+      "id": "S002",
+      "query": "左卡",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "medication",
+        "entityIds": [
+          "med-left"
+        ]
+      }
+    },
+    {
+      "id": "S003",
+      "query": "左卡摄入频率",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left"
+        ],
+        "subjectMode": "configured",
+        "value": "每日2次"
+      }
+    },
+    {
+      "id": "S004",
+      "query": "左卡摄入频次",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left"
+        ],
+        "subjectMode": "configured",
+        "value": "每日2次"
+      }
+    },
+    {
+      "id": "S005",
+      "query": "左卡服用频次",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left"
+        ],
+        "subjectMode": "configured",
+        "value": "每日2次"
+      }
+    },
+    {
+      "id": "S006",
+      "query": "左卡一天几次",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left"
+        ],
+        "subjectMode": "configured",
+        "value": "每日2次"
+      }
+    },
+    {
+      "id": "S007",
+      "query": "左卡一天几回",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left"
+        ],
+        "subjectMode": "configured",
+        "value": "每日2次"
+      }
+    },
+    {
+      "id": "S008",
+      "query": "帮我看看左卡是隔多长时间吃一次的",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left"
+        ],
+        "subjectMode": "configured",
+        "value": "每日2次"
+      }
+    },
+    {
+      "id": "S009",
+      "query": "左卡的用量是多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.dosage",
+        "entityIds": [
+          "med-left"
+        ],
+        "value": 2,
+        "unit": "ml"
+      }
+    },
+    {
+      "id": "S010",
+      "query": "维生素D一天吃几次",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-vitamin-d"
+        ],
+        "value": "每日1次"
+      }
+    },
+    {
+      "id": "S011",
+      "query": "左卡有啥备注",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.notes",
+        "entityIds": [
+          "med-left"
+        ],
+        "value": "示例备注"
+      }
+    },
+    {
+      "id": "S012",
+      "query": "左卡一共吃了几次",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "measure": "records.count",
+        "entityIds": [
+          "med-left"
+        ],
+        "period": {
+          "startDate": "2026-09-16",
+          "endDateExclusive": "2026-10-16"
+        },
+        "value": 3
+      }
+    },
+    {
+      "id": "S013",
+      "query": "近七天左卡吃了几回",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "measure": "records.count",
+        "value": 3,
+        "period": {
+          "startDate": "2026-10-09",
+          "endDateExclusive": "2026-10-16"
+        }
+      }
+    },
+    {
+      "id": "S014",
+      "query": "过去一周左卡总共吃了多少毫升",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "measure": "medication.amount",
+        "value": 5,
+        "unit": "ml"
+      }
+    },
+    {
+      "id": "S015",
+      "query": "上次吃左卡是什么时候",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.list",
+        "domain": "medication",
+        "aggregation": "latest",
+        "date": "2026-10-15",
+        "time": "09:00",
+        "mustNotLimitToLast30Days": true
+      }
+    },
+    {
+      "id": "S016",
+      "query": "最近一周左卡实际服用频次",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "measure": "records.count",
+        "value": 3,
+        "recordedDays": 3,
+        "mustNotUseConfiguredFrequency": true
+      }
+    },
+    {
+      "id": "S017",
+      "query": "最近一周左卡吃了几次",
+      "scenario": "ambiguous_medications",
+      "expected": {
+        "status": "needs_clarification",
+        "questionSlot": "entity",
+        "candidateIds": [
+          "med-left",
+          "med-left-capsule"
+        ]
+      }
+    },
+    {
+      "id": "S018",
+      "query": "左卡摄入频次",
+      "scenario": "missing_frequency",
+      "expected": {
+        "status": "missing_data",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "missingFields": [
+          "frequency"
+        ],
+        "mustNotInventValue": true
+      }
+    },
+    {
+      "id": "S019",
+      "query": "上次吃左卡是什么时候",
+      "scenario": "historical_medication_only",
+      "expected": {
+        "status": "ready",
+        "operation": "records.list",
+        "domain": "medication",
+        "aggregation": "latest",
+        "entityIds": [
+          "deleted-med-left"
+        ],
+        "mustNotRequireActiveCatalogDocument": true
+      }
+    },
+    {
+      "id": "S020",
+      "query": "过去一周左卡总共用了多少",
+      "scenario": "mixed_medication_units",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "measure": "medication.amount",
+        "groups": [
+          {
+            "value": 5,
+            "unit": "ml"
+          },
+          {
+            "value": 2,
+            "unit": "mg"
+          }
+        ],
+        "mustNotConvertUsingCurrentConcentration": true
+      }
+    },
+    {
+      "id": "S021",
+      "query": "蛋白低于10g的食物",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "food",
+        "filters": [
+          {
+            "field": "nutrition.protein",
+            "operator": "lt",
+            "value": 10,
+            "unit": "g",
+            "basisQuantity": 100,
+            "basisUnit": "g"
+          }
+        ],
+        "mustNotTreatWholeSentenceAsName": true
+      }
+    },
+    {
+      "id": "S022",
+      "query": "有没有蛋白质少于十克的菜",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "food",
+        "filters": [
+          {
+            "field": "nutrition.protein",
+            "operator": "lt",
+            "value": 10,
+            "unit": "g",
+            "basisQuantity": 100,
+            "basisUnit": "g"
+          }
+        ],
+        "mustNotTreatWholeSentenceAsName": true
+      }
+    },
+    {
+      "id": "S023",
+      "query": "帮我找每100克蛋白质不到10克的食物",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "food",
+        "filters": [
+          {
+            "field": "nutrition.protein",
+            "operator": "lt",
+            "value": 10,
+            "unit": "g",
+            "basisQuantity": 100,
+            "basisUnit": "g"
+          }
+        ],
+        "mustNotTreatWholeSentenceAsName": true
+      }
+    },
+    {
+      "id": "S024",
+      "query": "我的青菜",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "food",
+        "source": "mine",
+        "entityMention": "青菜"
+      }
+    },
+    {
+      "id": "S025",
+      "query": "系统里的青菜",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "food",
+        "source": "system",
+        "entityMention": "青菜"
+      }
+    },
+    {
+      "id": "S026",
+      "query": "青菜的蛋白质含量是多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "food",
+        "measure": "nutrition.protein",
+        "basisQuantity": 100,
+        "basisUnit": "g"
+      }
+    },
+    {
+      "id": "S027",
+      "query": "低蛋白米",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "food",
+        "entityMention": "低蛋白米",
+        "mustNotStripNutrientWordFromName": true
+      }
+    },
+    {
+      "id": "S028",
+      "query": "奶粉蛋白质含量",
+      "scenario": "base",
+      "expected": {
+        "status": "needs_clarification",
+        "questionSlot": "entity"
+      }
+    },
+    {
+      "id": "S029",
+      "query": "圣元冲好以后100毫升多少蛋白",
+      "scenario": "powder_without_prepared_basis",
+      "expected": {
+        "status": "missing_data",
+        "operation": "catalog.read",
+        "domain": "powder",
+        "measure": "nutrition.protein",
+        "basisQuantity": 100,
+        "basisUnit": "ml",
+        "material": "prepared_formula",
+        "mustNotUseDryPowderValue": true
+      }
+    },
+    {
+      "id": "S030",
+      "query": "圣元奶粉每100克干粉有多少蛋白",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "powder",
+        "measure": "nutrition.protein",
+        "basisQuantity": 100,
+        "basisUnit": "g",
+        "material": "dry_powder"
+      }
+    },
+    {
+      "id": "S031",
+      "query": "圣元奶粉蛋白质含量",
+      "scenario": "base",
+      "expected": {
+        "status": "needs_clarification",
+        "questionSlot": "powderBasis"
+      }
+    },
+    {
+      "id": "S032",
+      "query": "上周吃过的青菜有哪些",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.list",
+        "domain": "diet",
+        "entityMention": "青菜",
+        "period": {
+          "startDate": "2026-10-05",
+          "endDateExclusive": "2026-10-12"
+        },
+        "deduplicateEntities": true
+      }
+    },
+    {
+      "id": "S033",
+      "query": "上周吃过、蛋白低于1g的食物",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.list",
+        "domain": "diet",
+        "useHistoricalSnapshots": true,
+        "filters": [
+          {
+            "field": "nutrition.protein",
+            "operator": "lt",
+            "value": 1,
+            "unit": "g",
+            "basisQuantity": 100,
+            "basisUnit": "g"
+          }
+        ]
+      }
+    },
+    {
+      "id": "S034",
+      "query": "最近一周的天然蛋白系数",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.series",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "period": {
+          "startDate": "2026-10-09",
+          "endDateExclusive": "2026-10-16"
+        },
+        "mustUseSameMetricProvider": true
+      }
+    },
+    {
+      "id": "S035",
+      "query": "最近七天每天的天然蛋白摄入系数",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.series",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "period": {
+          "startDate": "2026-10-09",
+          "endDateExclusive": "2026-10-16"
+        },
+        "mustUseSameMetricProvider": true
+      }
+    },
+    {
+      "id": "S036",
+      "query": "看看过去一个礼拜天然蛋白系数每天多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.series",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "period": {
+          "startDate": "2026-10-09",
+          "endDateExclusive": "2026-10-16"
+        },
+        "mustUseSameMetricProvider": true
+      }
+    },
+    {
+      "id": "S037",
+      "query": "这周天然蛋白系数的平均值是多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.aggregate",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "aggregation": "mean_daily",
+        "value": 1.2,
+        "unit": "g/kg/d",
+        "knownDays": 3,
+        "requestedDays": 4
+      }
+    },
+    {
+      "id": "S038",
+      "query": "上周天然蛋白比这周多吗",
+      "scenario": "base",
+      "expected": {
+        "status": "needs_clarification",
+        "questionSlot": "aggregation",
+        "options": [
+          "日均",
+          "总量"
+        ]
+      }
+    },
+    {
+      "id": "S039",
+      "query": "这周天然蛋白系数的日均比上周高多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.compare",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "aggregation": "mean_daily",
+        "mustDiscloseCoverageAndCurrentDay": true
+      }
+    },
+    {
+      "id": "S040",
+      "query": "最近的天然蛋白摄入系数",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.series",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "aggregation": "latest",
+        "date": "2026-10-15"
+      }
+    },
+    {
+      "id": "S041",
+      "query": "今天的天然蛋白系数",
+      "scenario": "no_effective_weight",
+      "expected": {
+        "status": "missing_data",
+        "operation": "metrics.series",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "missingFields": [
+          "weight"
+        ],
+        "mustNotReturnZeroOrTarget": true
+      }
+    },
+    {
+      "id": "S042",
+      "query": "昨天的天然蛋白系数",
+      "scenario": "known_zero",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.series",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "value": 0,
+        "unit": "g/kg/d",
+        "mustPreserveVerifiedZero": true
+      }
+    },
+    {
+      "id": "S043",
+      "query": "最近七天的天然蛋白系数平均一下",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "metrics.aggregate",
+        "domain": "intake",
+        "measure": "metrics.natural_protein_coefficient",
+        "aggregation": "mean_daily",
+        "value": 1.2,
+        "knownDays": 6,
+        "requestedDays": 7
+      }
+    },
+    {
+      "id": "S044",
+      "query": "最近一顿奶用了哪些粉",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.list",
+        "domain": "milk",
+        "measure": "milk.components",
+        "aggregation": "latest",
+        "mustUseEventSnapshot": true
+      }
+    },
+    {
+      "id": "S045",
+      "query": "昨天一共喝了多少奶",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "milk",
+        "measure": "milk.recorded_volume",
+        "value": 270,
+        "unit": "ml",
+        "label": "已记录奶量",
+        "mustDiscloseVolumeBasis": true
+      }
+    },
+    {
+      "id": "S046",
+      "query": "昨天实际喝进去的成品奶量是多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "milk",
+        "measure": "milk.consumed_volume",
+        "value": 300,
+        "unit": "ml"
+      }
+    },
+    {
+      "id": "S047",
+      "query": "昨天实际喝进去的成品奶量是多少",
+      "scenario": "milk_without_actual_bottle_volume",
+      "expected": {
+        "status": "missing_data",
+        "operation": "records.aggregate",
+        "domain": "milk",
+        "measure": "milk.consumed_volume",
+        "mustNotReplaceWithWaterVolume": true
+      }
+    },
+    {
+      "id": "S048",
+      "query": "昨天喝水多少",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "water",
+        "measure": "water.volume",
+        "value": 150,
+        "unit": "ml",
+        "mustExcludeFormulaWaterAndTreatmentFluid": true
+      }
+    },
+    {
+      "id": "S049",
+      "query": "查一下喝水记录",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "records.list",
+        "domain": "water",
+        "mustNotSearchFoodNames": true
+      }
+    },
+    {
+      "id": "S050",
+      "query": "打开记录喝水",
+      "scenario": "base",
+      "expected": {
+        "status": "ready",
+        "operation": "feature.open",
+        "domain": "feature",
+        "featureId": "water"
+      }
+    },
+    {
+      "id": "S051",
+      "query": "不含奶的食谱",
+      "scenario": "base",
+      "expected": {
+        "status": "needs_clarification",
+        "questionSlot": "excludedIngredientScope",
+        "mustNotUseNameOnlyExclusion": true
+      }
+    },
+    {
+      "id": "S052",
+      "query": "不含鸡蛋的食谱",
+      "scenario": "complete_recipe_ingredients",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.search",
+        "domain": "recipe",
+        "filters": [
+          {
+            "field": "recipe.ingredients",
+            "operator": "excludes",
+            "entityId": "food-egg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "S053",
+      "query": "蛋白低于1克或者脂肪低于2克的食物",
+      "scenario": "base",
+      "expected": {
+        "status": "unsupported",
+        "reason": "unsupported_logic",
+        "mustNotExecuteAsAnd": true
+      }
+    },
+    {
+      "id": "S054",
+      "query": "换成上个月",
+      "scenario": "context_left_count_last_week",
+      "expected": {
+        "status": "ready",
+        "operation": "records.aggregate",
+        "domain": "medication",
+        "measure": "records.count",
+        "entityIds": [
+          "med-left"
+        ],
+        "period": {
+          "startDate": "2026-09-01",
+          "endDateExclusive": "2026-10-01"
+        },
+        "mustPreservePreviousOperationAndMeasure": true
+      }
+    },
+    {
+      "id": "S055",
+      "query": "那另一种呢",
+      "scenario": "context_two_medications",
+      "expected": {
+        "status": "ready",
+        "operation": "catalog.read",
+        "domain": "medication",
+        "measure": "medication.frequency",
+        "entityIds": [
+          "med-left-capsule"
+        ]
+      }
+    },
+    {
+      "id": "S056",
+      "query": "那另一种呢",
+      "scenario": "expired_context",
+      "expected": {
+        "status": "needs_clarification",
+        "questionSlot": "entity",
+        "mustNotGuess": true
+      }
+    },
+    {
+      "id": "S057",
+      "query": "换成上个月",
+      "scenario": "changed_baby_context",
+      "expected": {
+        "status": "needs_clarification",
+        "reason": "context_changed",
+        "mustNotReusePreviousBabyEntity": true
+      }
+    },
+    {
+      "id": "S058",
+      "query": "想知道过去一周左卡实际吃了几回",
+      "scenario": "ai_unavailable",
+      "expected": {
+        "status": "unavailable",
+        "reason": "semantic_service_unavailable",
+        "mustNotReportNoRecords": true
+      }
+    },
+    {
+      "id": "S059",
+      "query": "过去一周左卡吃了几次",
+      "scenario": "source_failed",
+      "expected": {
+        "status": "unavailable",
+        "reason": "source_unavailable",
+        "mustNotReturnZeroOrPartialTotal": true
+      }
+    },
+    {
+      "id": "S060",
+      "query": "左卡摄入频次",
+      "scenario": "forbidden_baby",
+      "expected": {
+        "status": "unavailable",
+        "reason": "FORBIDDEN",
+        "mustNotReturnCandidatesOrValues": true
+      }
+    }
+  ]
+}

@@ -146,6 +146,7 @@ Page({
     this._foodCatalogPromise = null;
     // 食物库首次可能要拉系统索引（几十秒），不阻塞食谱列表/新建页
     this.ensureFoodCatalog();
+    if (options.searchBabyUid && options.searchBabyUid !== getBabyUid()) { wx.showToast({ title: '宝宝已切换，请重新搜索', icon: 'none' }); return; }
     if (options.id) {
       await this.openRecipe(options.id, options.mode === 'edit' ? 'edit' : 'detail');
       return;
@@ -379,6 +380,7 @@ Page({
       return;
     }
     const recipe = result.data;
+    if (recipe.babyUid !== getBabyUid() || recipe.status === 'deleted' || recipe.deletedAt) { this.setData({ loading: false }); wx.showToast({ title: '食谱已变化或无访问权限', icon: 'none' }); return; }
     const ingredients = (recipe.ingredients || []).map((ingredient, index) =>
       this.hydrateIngredient(ingredient, index)
     );

@@ -14,6 +14,13 @@ function createDbMock(overrides = {}) {
   const profileData = overrides.profileData || [];
   const babyInfoData = overrides.babyInfoData || [];
   const compatData = overrides.compatData || [];
+  function matches(value, expected) {
+    if (!expected || typeof expected !== 'object') return value === expected;
+    if ('$or' in expected) return expected.$or.some(item => matches(value, item));
+    if ('$exists' in expected) return (value !== undefined) === expected.$exists;
+    if ('$eq' in expected) return value === expected.$eq;
+    return false;
+  }
 
   function queryResult(data) {
     let resultData = [...data];
@@ -33,20 +40,25 @@ function createDbMock(overrides = {}) {
       limit() {
         return this;
       },
-      get: async () => ({ data: resultData })
+      get: async () => ({ data: resultData }),
+      update: async ({ data }) => {
+        writes.profileUpdate = data;
+        writes.profileUpdateId = resultData[0]?._id || '';
+        return overrides.profileUpdateResult || { stats: { updated: resultData.length } };
+      }
     };
   }
 
   const db = {
-    command: {},
+    command: { eq: value => ({ $eq: value }), exists: value => ({ $exists: value }), or: (...items) => ({ $or: items }) },
     serverDate() {
       return '__server_date__';
     },
     collection(name) {
       if (name === 'milk_nutrition_profiles') {
         return {
-          where() {
-            return queryResult(profileData);
+          where(conditions) {
+            return queryResult(profileData.filter(item => Object.entries(conditions).every(([key, expected]) => matches(item[key], expected))));
           },
           doc(id) {
             return {
@@ -334,7 +346,7 @@ test('updateNutritionProfileSettings writes the single canonical profile in plac
   const { db, writes } = createDbMock({
     profileUpdateResult: {
       stats: {
-        updated: 0
+        updated: 1
       }
     },
     profileData: [
@@ -349,6 +361,8 @@ test('updateNutritionProfileSettings writes the single canonical profile in plac
   const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
 
   const success = await MilkNutritionProfileModel.updateNutritionProfileSettings('baby-1', {
+    _profileId: 'profile-doc-1',
+    _profileVersion: 0,
     formulaPowders: [
       {
         id: 'regular-a',
@@ -369,6 +383,7 @@ test('updateNutritionProfileSettings writes the single canonical profile in plac
   assert.equal(success, true);
   assert.equal(writes.profileUpdateId, 'profile-doc-1');
   assert.equal(writes.profileUpdate.formulaPowders.length, 1);
+  assert.equal(writes.profileUpdate.version, 1);
   // 不再因为写入受阻而新建副本，始终以 babyUid 的单一权威文档为准
   assert.equal(writes.profileAdd, null);
   assert.deepEqual(writes.profileRemovedIds, []);
@@ -405,6 +420,8 @@ test('updateNutritionProfileSettings consolidates duplicate baby profiles into o
   const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
 
   const success = await MilkNutritionProfileModel.updateNutritionProfileSettings('baby-1', {
+    _profileId: 'profile-new',
+    _profileVersion: 0,
     formulaPowders: [
       {
         id: 'regular-a',
@@ -424,7 +441,7 @@ test('updateNutritionProfileSettings consolidates duplicate baby profiles into o
   assert.deepEqual(writes.profileRemovedIds.sort(), ['profile-mid', 'profile-old']);
 });
 
-test('updateNutritionProfileSettings treats zero updated count as success when profile content is unchanged', async () => {
+test('营养档案条件更新零条时返回版本冲突，不新建覆盖副本', async () => {
   const existingProfile = {
     _id: 'profile-doc-1',
     babyUid: 'baby-1',
@@ -471,7 +488,9 @@ test('updateNutritionProfileSettings treats zero updated count as success when p
   });
   const MilkNutritionProfileModel = loadFresh('../miniprogram/models/nutritionProfile.js', db);
 
-  const success = await MilkNutritionProfileModel.updateNutritionProfileSettings('baby-1', {
+  await assert.rejects(MilkNutritionProfileModel.updateNutritionProfileSettings('baby-1', {
+    _profileId: existingProfile._id,
+    _profileVersion: 0,
     natural_milk_protein: 1.1,
     formulaPowders: [
       {
@@ -490,9 +509,7 @@ test('updateNutritionProfileSettings treats zero updated count as success when p
         }
       }
     ]
-  });
-
-  assert.equal(success, true);
+  }), { code: 'VERSION_CONFLICT' });
   assert.equal(writes.profileUpdate.formulaPowders.length, 1);
   assert.equal(writes.profileAdd, null);
 });

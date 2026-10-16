@@ -5,6 +5,7 @@ const {
   normalizeFormulaPowders
 } = require('../../utils/formulaPowderUtils');
 
+const { updatePowderProvenance } = require('../../utils/nutritionProvenance');
 const db = wx.cloud.database();
 
 function createId(prefix) {
@@ -55,6 +56,8 @@ class PowderCatalogModel {
         includeLegacyFallback: true,
         throwOnError: false
       });
+      this._profileVersions = this._profileVersions || {};
+      this._profileVersions[babyUid] = Number(settings && settings._profileVersion || 0);
       const powders = normalizeFormulaPowders(settings?.formulaPowders || [])
         .filter((powder) => powder.status === POWDER_STATUSES.ACTIVE);
 
@@ -63,6 +66,10 @@ class PowderCatalogModel {
       console.error('获取用户奶粉档案失败:', error);
       return [];
     }
+  }
+
+  getProfileVersion(babyUid) {
+    return Number(this._profileVersions && this._profileVersions[babyUid] || 0);
   }
 
   async getAvailablePowders(babyUid, options = {}) {
@@ -127,7 +134,7 @@ class PowderCatalogModel {
     return await MilkNutritionProfileModel.getNutritionProfileSettings(babyUid, {
       includeLegacyFallback: true,
       throwOnError: true
-    }) || { formulaPowders: [] };
+    }) || { formulaPowders: [], _profileId: '', _profileVersion: 0 };
   }
 
   async saveUserPowder(babyUid, draft = {}) {
@@ -136,6 +143,9 @@ class PowderCatalogModel {
     }
 
     const settings = await this._getWritableSettings(babyUid);
+    if (draft.expectedVersion !== undefined && Number(settings._profileVersion || 0) !== draft.expectedVersion) {
+      throw new Error('营养档案已变化，请重新打开表单');
+    }
     const powders = normalizeFormulaPowders(settings.formulaPowders || []);
     const now = db.serverDate();
     const powderId = draft.id || createId('powder');
@@ -159,6 +169,7 @@ class PowderCatalogModel {
 
     const nextPowder = {
       id: powderId,
+      ...(existing && existing.recognitionMeta ? { recognitionMeta: updatePowderProvenance(existing.recognitionMeta, existing, draft) } : {}),
       name: (draft.name || '').trim(),
       category: draft.category,
       proteinRole: draft.proteinRole,

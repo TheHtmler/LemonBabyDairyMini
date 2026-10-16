@@ -1,5 +1,8 @@
+const { invalidateSearchForBaby } = require('../utils/searchSession');
 // 食物数据模型，支持自定义食物库与营养计算
 const SystemFoodIndex = require('../utils/systemFoodIndex');
+const { updateManualProvenance } = require('../utils/nutritionProvenance');
+const { stableHash } = require('../utils/nutritionHash');
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -10,7 +13,8 @@ class FoodModel {
     this._catalogGeneration = 0;
   }
 
-  markCatalogDirty() {
+  markCatalogDirty(babyUid) {
+    invalidateSearchForBaby(babyUid);
     this._catalogGeneration = (Number(this._catalogGeneration) || 0) + 1;
   }
 
@@ -197,6 +201,7 @@ class FoodModel {
         ...foodData,
         sharedBabyUids
       });
+      payload.version = 1;
       payload.createdAt = db.serverDate();
       payload.updatedAt = db.serverDate();
 
@@ -204,7 +209,8 @@ class FoodModel {
         data: payload
       });
 
-      this.markCatalogDirty();
+      this.markCatalogDirty(foodData.babyUid);
+      sharedBabyUids.forEach(invalidateSearchForBaby);
       return res._id;
     } catch (error) {
       console.error('创建食物失败:', error);
@@ -260,18 +266,20 @@ class FoodModel {
       if (existing.data && existing.data.length > 0) {
         const existingId = existing.data[0]._id;
         const { createdAt, createdBy, ...updatePayload } = snapshotPayload;
-        await this.updateFood(existingId, updatePayload, babyUid);
+        await this.updateFood(existingId, { ...updatePayload, expectedVersion: Number(existing.data[0].version || 0) }, babyUid);
         return existingId;
       }
 
       const res = await this.collection.add({
         data: {
           ...snapshotPayload,
+          _id: stableHash('food-source:' + babyUid + ':' + sourceFood._id),
+          version: 1,
           createdAt: db.serverDate(),
           updatedAt: db.serverDate()
         }
       });
-      this.markCatalogDirty();
+      this.markCatalogDirty(babyUid);
       return res._id;
     } catch (error) {
       console.error('创建系统食物快照失败:', error);
@@ -304,7 +312,7 @@ class FoodModel {
       if (removed === 0) {
         throw new Error('未找到可删除的自定义食物');
       }
-      this.markCatalogDirty();
+      this.markCatalogDirty(babyUid);
       return true;
     } catch (error) {
       console.error('删除食物失败:', error);
@@ -332,12 +340,47 @@ class FoodModel {
     try {
       const payload = this._normalizeFoodForWrite(foodData);
       payload.updatedAt = db.serverDate();
+      const currentRes = await this.collection.doc(foodId).get();
+      const current = currentRes.data;
+      if (!current || current.isSystem || current.babyUid !== babyUid) throw new Error('未找到可更新的自定义食物');
+      const expectedVersion = foodData.expectedVersion;
+      if (!Number.isInteger(expectedVersion) || expectedVersion < 0) throw new Error('缺少读取时的食物版本，请重新打开表单');
+      delete payload.expectedVersion;
+      if (Number(current.version || 0) !== expectedVersion) throw new Error('食物已被其他监护人修改，请重新打开表单');
+      const basisChanged = payload.nutritionBasis && (payload.nutritionBasis.unit !== current.nutritionBasis?.unit ||
+        payload.nutritionBasis.quantity !== current.nutritionBasis?.quantity);
+      if (current.recognitionMeta && !basisChanged) {
+        const before = current.nutritionPerBasis || {};
+        const displayed = this._normalizeNutrition(before);
+        const submitted = foodData.rawNutrition || foodData.nutritionPerBasis || foodData.nutritionPerUnit || {};
+        const touched = foodData.touchedNutritionFields || [];
+        // 表单显示的舍入值未被编辑时，保留数据库精度和原来源。
+        Object.keys(displayed).forEach(field => {
+          const value = submitted[field];
+          if (!touched.includes(field) && current.recognitionMeta.fieldSources?.[field] &&
+              value != null && String(value).trim() !== '' && before[field] != null &&
+              Number.isFinite(Number(before[field])) && Number(value) === displayed[field]) {
+            payload.nutritionPerBasis[field] = Number(before[field]);
+          }
+        });
+      }
+      if (current.recognitionMeta) payload.recognitionMeta = updateManualProvenance(current.recognitionMeta,
+        current.nutritionPerBasis, payload.nutritionPerBasis, basisChanged, foodData.rawNutrition, foodData.touchedNutritionFields);
+      if (basisChanged && payload.recognitionMeta) payload.recognitionMeta.finalBasis = {
+        ...payload.nutritionBasis, material: 'food'
+      };
+      if (payload.recognitionMeta && payload.name && payload.name !== current.name) {
+        payload.recognitionMeta.comparisonStatus = 'stale';
+        payload.recognitionMeta.identityEdited = true;
+      }
+      payload.version = expectedVersion + 1;
       delete payload.sharedBabyUids;
 
       const res = await this.collection
         .where({
           _id: foodId,
-          babyUid: _.eq(babyUid)
+          babyUid: _.eq(babyUid),
+          version: expectedVersion === 0 ? _.or(_.eq(0), _.exists(false)) : _.eq(expectedVersion)
         })
         .update({
           data: {
@@ -348,9 +391,9 @@ class FoodModel {
 
       const updated = res?.stats?.updated || 0;
       if (updated === 0) {
-        throw new Error('未找到可更新的自定义食物');
+        throw new Error('食物版本已变化，请重新打开表单');
       }
-      this.markCatalogDirty();
+      this.markCatalogDirty(babyUid);
       return true;
     } catch (error) {
       console.error('更新食物失败:', error);
@@ -435,6 +478,9 @@ class FoodModel {
     delete payload.baseQuantity;
     delete payload.baseUnit;
     delete payload.aliasText;
+    delete payload.rawNutrition;
+    delete payload.touchedNutritionFields;
+    delete payload.expectedVersion;
 
     return payload;
   }
@@ -446,6 +492,8 @@ class FoodModel {
       category: formatted.category || '',
       categoryLevel1: formatted.categoryLevel1 || formatted.category || '',
       categoryLevel2: formatted.categoryLevel2 || '',
+      ...(formatted.recognitionMeta ? { recognitionMeta: JSON.parse(JSON.stringify(formatted.recognitionMeta)) } : {}),
+      ...(formatted.nutrientStates ? { nutrientStates: JSON.parse(JSON.stringify(formatted.nutrientStates)) } : {}),
       nutritionBasis: formatted.nutritionBasis,
       nutritionPerBasis: formatted.nutritionPerBasis,
       proteinSource: formatted.proteinSource || 'natural',
@@ -507,6 +555,8 @@ class FoodModel {
       baseUnit: nutritionBasis.unit,
       baseQuantity: nutritionBasis.quantity,
       nutritionPerUnit: nutritionPerBasis,
+      missingNutrition: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].map(field =>
+        [field, (food.recognitionMeta?.missingFields || []).includes(field)])),
       proteinSource: food.proteinSource || 'natural',
       proteinQuality: food.proteinQuality || '',
       nutritionSource: food.nutritionSource || (isSystem ? 'system' : 'manual'),

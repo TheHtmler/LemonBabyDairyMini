@@ -1,0 +1,311 @@
+{
+  "title": "2026-10-15当前页面分流基线",
+  "method": "实际页面控制器、共享解析函数与功能表；查询执行与模型被替换为仅记录调用的离线边界，不访问生产数据或真实模型。",
+  "limitations": "只证明分流及生成条件，不代表真实命中率或模型准确率。",
+  "rows": [
+    {
+      "question": "青菜",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "food",
+        "powder",
+        "recipe",
+        "medication",
+        "food",
+        "powder",
+        "recipe"
+      ],
+      "keyword": "青菜",
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "蛋白低于10g的食物",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "food"
+      ],
+      "keyword": "",
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "有没有蛋白质少于十克的菜",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "food"
+      ],
+      "keyword": "有没有少于十克的菜",
+      "fields": [
+        "protein"
+      ],
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "最近一周的天然蛋白系数",
+      "route": "metric",
+      "scope": [],
+      "period": {
+        "kind": "last_n_days",
+        "days": 7
+      }
+    },
+    {
+      "question": "最近七天每天的天然蛋白摄入系数",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "这周天然蛋白系数的平均值是多少",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "上周天然蛋白比这周多吗",
+      "route": "execute",
+      "intent": "search_diet_records",
+      "scope": [
+        "food",
+        "powder",
+        "recipe"
+      ],
+      "keyword": "天然蛋白比这周多吗",
+      "period": {
+        "kind": "previous_calendar_week"
+      }
+    },
+    {
+      "question": "左卡的摄入频率",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "medication"
+      ],
+      "keyword": "左卡",
+      "fields": [
+        "frequency"
+      ],
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "左卡一天几回",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "帮我看看左卡要隔多长时间吃一次",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "过去一周左卡一共用了多少毫升",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "上次吃左卡是什么时候",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "左卡最近吃得勤不勤",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "左卡的服用次数和剂量",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "medication"
+      ],
+      "keyword": "左卡",
+      "fields": [
+        "intakeCount",
+        "dosage"
+      ],
+      "period": {
+        "kind": "last_n_days",
+        "days": 30
+      }
+    },
+    {
+      "question": "奶粉的蛋白质含量",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "圣元冲好以后100毫升多少蛋白",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "food"
+      ],
+      "keyword": "圣元冲好以后100毫升",
+      "fields": [
+        "protein"
+      ],
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "上周吃过的青菜有哪些",
+      "route": "execute",
+      "intent": "find_consumed_foods",
+      "scope": [
+        "food",
+        "powder",
+        "recipe"
+      ],
+      "keyword": "青菜有哪些",
+      "period": {
+        "kind": "previous_calendar_week"
+      }
+    },
+    {
+      "question": "最近一顿奶用了哪些粉",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "昨天一共喝了多少奶",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "我这周喝水多少",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "查一下喝水记录",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "food",
+        "powder",
+        "recipe",
+        "medication",
+        "food",
+        "powder",
+        "recipe"
+      ],
+      "keyword": "查一下喝水记录",
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "上周吃过、蛋白低于1g的食物",
+      "route": "execute",
+      "intent": "find_consumed_foods",
+      "scope": [
+        "food"
+      ],
+      "keyword": "",
+      "period": {
+        "kind": "previous_calendar_week"
+      }
+    },
+    {
+      "question": "不含奶的食谱",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "recipe"
+      ],
+      "keyword": "不含奶",
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "我的青菜",
+      "route": "model",
+      "scope": []
+    },
+    {
+      "question": "换成上个月",
+      "route": "execute",
+      "intent": "search_catalog",
+      "scope": [
+        "food",
+        "powder",
+        "recipe",
+        "medication",
+        "food",
+        "powder",
+        "recipe"
+      ],
+      "keyword": "换成上个月",
+      "period": {
+        "kind": "all"
+      }
+    },
+    {
+      "question": "那另一种呢",
+      "route": "model",
+      "scope": []
+    }
+  ],
+  "userConfirmed": {
+    "fullName": "左卡尼丁",
+    "shortName": "左卡",
+    "nameSearch": "全称和简称均可搜到",
+    "failedQuestion": "左卡摄入频次",
+    "limitation": "来自用户反馈；未获取该请求的真实模型响应或线上配置"
+  },
+  "targetedLocalReproduction": [
+    {
+      "query": "左卡摄入频率",
+      "attributePlan": {
+        "keyword": "左卡",
+        "field": "frequency"
+      },
+      "nextRoute": "execute"
+    },
+    {
+      "query": "左卡摄入频次",
+      "attributePlan": null,
+      "catalogPlan": null,
+      "needsSemanticSearch": true,
+      "nextRoute": "model"
+    },
+    {
+      "query": "左卡服用频次",
+      "attributePlan": {
+        "keyword": "左卡",
+        "field": "frequency"
+      },
+      "nextRoute": "execute"
+    },
+    {
+      "query": "左卡一天几次",
+      "attributePlan": {
+        "keyword": "左卡",
+        "field": "frequency"
+      },
+      "nextRoute": "execute"
+    }
+  ],
+  "syntheticDataExecution": {
+    "fixtureName": "左卡尼丁",
+    "queries": [
+      "左卡尼丁",
+      "左卡",
+      "左卡摄入频率",
+      "左卡的摄入频率"
+    ],
+    "result": "实际处理器均命中该合成资料；属性计划返回合成的已保存频率，未访问用户真实药物。"
+  }
+}

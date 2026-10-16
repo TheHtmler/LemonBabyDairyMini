@@ -180,13 +180,20 @@ test('powder catalog model can add system powder to nutrition profile', async ()
           },
           collection(name) {
             const queryApi = {
-              where() {
+              where(conditions) {
                 return {
                   async get() {
                     if (name === 'milk_nutrition_profiles') {
                       return { data: profileDoc ? [profileDoc] : [] };
                     }
                     return { data: [] };
+                  },
+                  async update({ data }) {
+                    const matched = profileDoc && Object.entries(conditions).every(([key, expected]) => profileDoc[key] === expected);
+                    if (!matched) return { stats: { updated: 0 } };
+                    writes.push({ type: 'update', id: profileDoc._id, data });
+                    profileDoc = { ...profileDoc, ...data };
+                    return { stats: { updated: 1 } };
                   }
                 };
               },
@@ -211,7 +218,7 @@ test('powder catalog model can add system powder to nutrition profile', async ()
             };
             return queryApi;
           },
-          command: {}
+          command: { eq: value => value, exists: value => ({ $exists: value }), or: (...items) => ({ $or: items }) }
         };
       }
     }

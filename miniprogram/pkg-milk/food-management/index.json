@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "食物管理",
-  "enablePullDownRefresh": false
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "nutrition-recognition": "../components/nutrition-recognition/index"
+  }
 }

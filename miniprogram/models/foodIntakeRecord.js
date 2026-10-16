@@ -1,3 +1,4 @@
+const { invalidateSearchForBaby } = require('../utils/searchSession');
 const db = wx.cloud.database();
 const foodIntakeCollection = db.collection('food_intake_records');
 const DB_READ_BATCH_SIZE = 20;
@@ -10,6 +11,7 @@ const {
   stripProtectedAuditFields
 } = require('../utils/auditFields');
 const { recordHardDelete } = require('./auditLog');
+const { copyRecognitionMetaForSnapshot } = require('../utils/nutritionProvenance');
 
 function serverDate() {
   return db.serverDate();
@@ -79,12 +81,15 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
   const nutritionPerBasis = normalizeNutritionPerBasis(
     foodSnapshot.nutritionPerBasis || foodSnapshot.nutritionPer100g
   );
+  const recognitionMeta = copyRecognitionMetaForSnapshot(foodSnapshot.recognitionMeta);
 
   return {
     name: foodSnapshot.name || fallbackName || '',
     category: foodSnapshot.category || '',
     categoryLevel1: foodSnapshot.categoryLevel1 || foodSnapshot.category || '',
     categoryLevel2: foodSnapshot.categoryLevel2 || '',
+    ...(recognitionMeta ? { recognitionMeta } : {}),
+    ...(foodSnapshot.nutrientStates ? { nutrientStates: JSON.parse(JSON.stringify(foodSnapshot.nutrientStates)) } : {}),
     nutritionBasis,
     proteinSource: foodSnapshot.proteinSource || 'natural',
     proteinQuality: foodSnapshot.proteinQuality || '',
@@ -283,6 +288,7 @@ async function createFoodIntake(data = {}) {
       })
     }
   });
+  invalidateSearchForBaby(data.babyUid);
   return res;
 }
 
@@ -297,11 +303,13 @@ async function updateFoodIntake(recordId, data = {}) {
       })
     }
   });
+  invalidateSearchForBaby(data.babyUid);
   return true;
 }
 
 async function deleteFoodIntake(recordId, options = {}) {
   await foodIntakeCollection.doc(recordId).remove();
+  invalidateSearchForBaby(options.babyUid);
   await recordHardDelete({
     db,
     collectionName: 'food_intake_records',
@@ -326,6 +334,7 @@ async function softDeleteFoodIntake(recordId, options = {}) {
       })
     }
   });
+  invalidateSearchForBaby(options.babyUid);
   return true;
 }
 

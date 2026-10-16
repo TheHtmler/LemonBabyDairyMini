@@ -1,3 +1,4 @@
+const { invalidateSearchForBaby } = require('../utils/searchSession');
 /**
  * 食谱目录数据模型
  * 管理 recipe_catalog：原料组合模板；可选默认份量，记本顿时可预填并修改
@@ -5,6 +6,7 @@
  */
 
 const FoodModel = require('./food');
+const { copyRecognitionMetaForSnapshot } = require('../utils/nutritionProvenance');
 const {
   buildCreateAuditFields,
   buildUpdateAuditFields,
@@ -62,11 +64,13 @@ function normalizeNutrition(nutrition = {}) {
 function sanitizeFoodSnapshot(snapshot = {}) {
   const basis = snapshot.nutritionBasis || {};
   const perBasis = snapshot.nutritionPerBasis || {};
+  const recognitionMeta = copyRecognitionMetaForSnapshot(snapshot.recognitionMeta);
   return {
     name: snapshot.name || '',
     category: snapshot.category || '',
     categoryLevel1: snapshot.categoryLevel1 || snapshot.category || '',
     categoryLevel2: snapshot.categoryLevel2 || '',
+    ...(recognitionMeta ? { recognitionMeta } : {}),
     nutritionBasis: {
       quantity: toNumber(basis.quantity, 100),
       unit: basis.unit || 'g'
@@ -164,6 +168,7 @@ function writeRecipeCache(babyUid, recipes = []) {
 }
 
 function upsertRecipeCache(babyUid, recipe) {
+  invalidateSearchForBaby(babyUid);
   if (!babyUid || !recipe || !recipe._id) return;
   const current = readRecipeCache(babyUid);
   const next = normalizeRecipe(recipe);
@@ -177,6 +182,7 @@ function upsertRecipeCache(babyUid, recipe) {
 }
 
 function removeRecipeCache(babyUid, recipeId) {
+  invalidateSearchForBaby(babyUid);
   if (!babyUid || !recipeId) return;
   writeRecipeCache(
     babyUid,

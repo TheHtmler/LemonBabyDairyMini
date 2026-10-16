@@ -1,0 +1,3202 @@
+{
+  "title": "自然问句模型优先与请求语专项离线证据",
+  "date": "2026-10-16",
+  "realModelCalls": 0,
+  "wechatStarted": false,
+  "deployed": false,
+  "note": "全部数据为固定日期的合成场景；模型为受控模拟，不能代表真实模型理解准确率。",
+  "reports": {
+    "requestEnvelopeBefore": {
+      "title": "问句外壳专项离线核对",
+      "realModelCalls": 0,
+      "modelCalls": 32,
+      "results": [
+        {
+          "query": "最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查一下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查下最近的天然蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "帮我查一下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "请帮我查下最近的天然蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "能帮我查一下最近的天然蛋白摄入系数吗？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "麻烦你，帮我看看最近的天然蛋白摄入系数呢",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "我想了解一下最近的天然蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "请问：最近的天然蛋白摄入系数？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "查找一下最近的天然蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": true,
+          "ready": false
+        },
+        {
+          "query": "看一看最近的天然蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查一下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查下最近的特殊蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "帮我查一下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "请帮我查下最近的特殊蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "能帮我查一下最近的特殊蛋白摄入系数吗？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "麻烦你，帮我看看最近的特殊蛋白摄入系数呢",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "我想了解一下最近的特殊蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "请问：最近的特殊蛋白摄入系数？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "查找一下最近的特殊蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": true,
+          "ready": false
+        },
+        {
+          "query": "看一看最近的特殊蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查一下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查下最近的总蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "帮我查一下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "请帮我查下最近的总蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "能帮我查一下最近的总蛋白摄入系数吗？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "麻烦你，帮我看看最近的总蛋白摄入系数呢",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "我想了解一下最近的总蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "请问：最近的总蛋白摄入系数？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "查找一下最近的总蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": true,
+          "ready": false
+        },
+        {
+          "query": "看一看最近的总蛋白摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查一下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查下最近的热量摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "帮我查一下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": false,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "请帮我查下最近的热量摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "能帮我查一下最近的热量摄入系数吗？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "麻烦你，帮我看看最近的热量摄入系数呢",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "我想了解一下最近的热量摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "请问：最近的热量摄入系数？",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "查找一下最近的热量摄入系数",
+          "v2Same": false,
+          "legacySame": true,
+          "ready": false
+        },
+        {
+          "query": "看一看最近的热量摄入系数",
+          "v2Same": false,
+          "legacySame": false,
+          "ready": false
+        },
+        {
+          "query": "左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下左卡摄入频次",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "帮我查一下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下左卡摄入频次",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "能帮我查一下左卡摄入频次吗？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "麻烦你，帮我看看左卡摄入频次呢",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "我想了解一下左卡摄入频次",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "请问：左卡摄入频次？",
+          "v2Same": false,
+          "hasPlan": true
+        },
+        {
+          "query": "查找一下左卡摄入频次",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "看一看左卡摄入频次",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下蛋白低于10g的食物",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "帮我查一下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下蛋白低于10g的食物",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "能帮我查一下蛋白低于10g的食物吗？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "麻烦你，帮我看看蛋白低于10g的食物呢",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "我想了解一下蛋白低于10g的食物",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "请问：蛋白低于10g的食物？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "查找一下蛋白低于10g的食物",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "看一看蛋白低于10g的食物",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下记录喝水",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "帮我查一下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下记录喝水",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "能帮我查一下记录喝水吗？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "麻烦你，帮我看看记录喝水呢",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "我想了解一下记录喝水",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "请问：记录喝水？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "查找一下记录喝水",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "看一看记录喝水",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下最近七天的天然蛋白系数平均一下",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "帮我查一下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下最近七天的天然蛋白系数平均一下",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "能帮我查一下最近七天的天然蛋白系数平均一下吗？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "麻烦你，帮我看看最近七天的天然蛋白系数平均一下呢",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "我想了解一下最近七天的天然蛋白系数平均一下",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "请问：最近七天的天然蛋白系数平均一下？",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "查找一下最近七天的天然蛋白系数平均一下",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "看一看最近七天的天然蛋白系数平均一下",
+          "v2Same": false,
+          "hasPlan": false
+        },
+        {
+          "query": "查一下天然蛋白摄入系数低于1的日期",
+          "mustDelegate": true
+        },
+        {
+          "query": "查一下最近天然蛋白摄入系数比上周高多少",
+          "mustDelegate": true
+        },
+        {
+          "query": "查一下蛋白低于1克或者脂肪低于2克的食物",
+          "mustDelegate": true
+        },
+        {
+          "query": "能帮我查一下左卡应该吃多少吗",
+          "mustDelegate": true
+        },
+        {
+          "query": "请问天然蛋白摄入系数的目标应该是多少",
+          "mustDelegate": true
+        },
+        {
+          "query": "查一下最近的天然蛋白摄入系数，不要查奶粉",
+          "mustDelegate": true
+        },
+        {
+          "query": "查一下最近的天然蛋白摄入系数并且列出左卡用量",
+          "mustDelegate": false
+        }
+      ],
+      "passed": 22,
+      "total": 95
+    },
+    "requestEnvelopeAfter": {
+      "title": "问句外壳专项离线核对",
+      "realModelCalls": 0,
+      "modelCalls": 51,
+      "results": [
+        {
+          "query": "最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查一下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "帮我查一下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "请帮我查下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "能帮我查一下最近的天然蛋白摄入系数吗？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "麻烦你，帮我看看最近的天然蛋白摄入系数呢",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "我想了解一下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "请问：最近的天然蛋白摄入系数？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查找一下最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "看一看最近的天然蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.natural_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查一下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "帮我查一下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "请帮我查下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "能帮我查一下最近的特殊蛋白摄入系数吗？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "麻烦你，帮我看看最近的特殊蛋白摄入系数呢",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "我想了解一下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "请问：最近的特殊蛋白摄入系数？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查找一下最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "看一看最近的特殊蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.special_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查一下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "帮我查一下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "请帮我查下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "能帮我查一下最近的总蛋白摄入系数吗？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "麻烦你，帮我看看最近的总蛋白摄入系数呢",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "我想了解一下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "请问：最近的总蛋白摄入系数？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "查找一下最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "看一看最近的总蛋白摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.total_protein_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 1.4
+        },
+        {
+          "query": "最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查一下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "帮我查一下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "请帮我查下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "能帮我查一下最近的热量摄入系数吗？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "麻烦你，帮我看看最近的热量摄入系数呢",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "我想了解一下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "请问：最近的热量摄入系数？",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "查找一下最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "看一看最近的热量摄入系数",
+          "v2Same": true,
+          "legacySame": true,
+          "ready": true,
+          "kind": "series",
+          "measure": "metrics.calorie_coefficient",
+          "firstDate": "2026-10-15",
+          "firstValue": 0
+        },
+        {
+          "query": "左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "帮我查一下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "能帮我查一下左卡摄入频次吗？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "麻烦你，帮我看看左卡摄入频次呢",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "我想了解一下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请问：左卡摄入频次？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查找一下左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "看一看左卡摄入频次",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "帮我查一下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "能帮我查一下蛋白低于10g的食物吗？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "麻烦你，帮我看看蛋白低于10g的食物呢",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "我想了解一下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请问：蛋白低于10g的食物？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查找一下蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "看一看蛋白低于10g的食物",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "帮我查一下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "能帮我查一下记录喝水吗？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "麻烦你，帮我看看记录喝水呢",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "我想了解一下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请问：记录喝水？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查找一下记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "看一看记录喝水",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "帮我查一下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请帮我查下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "能帮我查一下最近七天的天然蛋白系数平均一下吗？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "麻烦你，帮我看看最近七天的天然蛋白系数平均一下呢",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "我想了解一下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "请问：最近七天的天然蛋白系数平均一下？",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查找一下最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "看一看最近七天的天然蛋白系数平均一下",
+          "v2Same": true,
+          "hasPlan": true
+        },
+        {
+          "query": "查一下天然蛋白摄入系数低于1的日期",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        },
+        {
+          "query": "查一下最近天然蛋白摄入系数比上周高多少",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        },
+        {
+          "query": "查一下蛋白低于1克或者脂肪低于2克的食物",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        },
+        {
+          "query": "能帮我查一下左卡应该吃多少吗",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        },
+        {
+          "query": "请问天然蛋白摄入系数的目标应该是多少",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        },
+        {
+          "query": "查一下最近的天然蛋白摄入系数，不要查奶粉",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        },
+        {
+          "query": "查一下最近的天然蛋白摄入系数并且列出左卡用量",
+          "mustDelegate": true,
+          "reasonCode": "MODEL_UNAVAILABLE"
+        }
+      ],
+      "passed": 95,
+      "total": 95
+    },
+    "semanticFirst": {
+      "title": "自然问句模型优先专项离线验收",
+      "realModelCalls": 0,
+      "total": 10,
+      "passed": 10,
+      "note": "模型为受控模拟；验证实际编排、请求和执行，不代表真实模型准确率。",
+      "results": [
+        {
+          "label": "完整自然问句先交模型，原句不改写成关键词",
+          "passed": true
+        },
+        {
+          "label": "真实全名和简称直查不占模型调用",
+          "passed": true
+        },
+        {
+          "label": "词法规则能识别的句子也优先使用模型理解",
+          "passed": true
+        },
+        {
+          "label": "模型错误增加或条件时重试一次，重试仍传完整原句",
+          "passed": true
+        },
+        {
+          "label": "连续错误不无限重试，明确完整语法才允许有标识的降级",
+          "passed": true
+        },
+        {
+          "label": "关闭模型时常见明确请求可降级，复杂请求不伪装成功",
+          "passed": true
+        },
+        {
+          "label": "真实OR条件不会因降级变成AND查询",
+          "passed": true
+        },
+        {
+          "label": "手动控件和已确认上下文不重复调用模型",
+          "passed": true
+        },
+        {
+          "label": "未完成的模型请求不被规则绕过",
+          "passed": true
+        },
+        {
+          "label": "没有权限时不调用模型也不读取候选",
+          "passed": true
+        }
+      ]
+    },
+    "acceptance": {
+      "title": "搜索 V2 离线合成场景验收",
+      "referenceTime": "2026-10-15T08:00:00Z",
+      "realModelCalls": 0,
+      "note": "模拟模型输出只核对意图协议、真实实体和执行链路，不计为模型理解准确率。没有连接云端或微信工具。",
+      "total": 60,
+      "passed": 60,
+      "results": [
+        {
+          "id": "S001",
+          "query": "左卡尼丁",
+          "scenario": "base",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S002",
+          "query": "左卡",
+          "scenario": "base",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S003",
+          "query": "左卡摄入频率",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S004",
+          "query": "左卡摄入频次",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S005",
+          "query": "左卡服用频次",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S006",
+          "query": "左卡一天几次",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S007",
+          "query": "左卡一天几回",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S008",
+          "query": "帮我看看左卡是隔多长时间吃一次的",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S009",
+          "query": "左卡的用量是多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S010",
+          "query": "维生素D一天吃几次",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S011",
+          "query": "左卡有啥备注",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S012",
+          "query": "左卡一共吃了几次",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S013",
+          "query": "近七天左卡吃了几回",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S014",
+          "query": "过去一周左卡总共吃了多少毫升",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S015",
+          "query": "上次吃左卡是什么时候",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "最近日期",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S016",
+          "query": "最近一周左卡实际服用频次",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S017",
+          "query": "最近一周左卡吃了几次",
+          "scenario": "ambiguous_medications",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "追问",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S018",
+          "query": "左卡摄入频次",
+          "scenario": "missing_frequency",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "missing_data",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S019",
+          "query": "上次吃左卡是什么时候",
+          "scenario": "historical_medication_only",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S020",
+          "query": "过去一周左卡总共用了多少",
+          "scenario": "mixed_medication_units",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "单位分组 ml",
+              "passed": true
+            },
+            {
+              "label": "单位分组 mg",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S021",
+          "query": "蛋白低于10g的食物",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "严格边界与缺值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S022",
+          "query": "有没有蛋白质少于十克的菜",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "严格边界与缺值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S023",
+          "query": "帮我找每100克蛋白质不到10克的食物",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "严格边界与缺值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S024",
+          "query": "我的青菜",
+          "scenario": "base",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S025",
+          "query": "系统里的青菜",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S026",
+          "query": "青菜的蛋白质含量是多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S027",
+          "query": "低蛋白米",
+          "scenario": "base",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S028",
+          "query": "奶粉蛋白质含量",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "追问",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S029",
+          "query": "圣元冲好以后100毫升多少蛋白",
+          "scenario": "powder_without_prepared_basis",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "missing_data",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S030",
+          "query": "圣元奶粉每100克干粉有多少蛋白",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S031",
+          "query": "圣元奶粉蛋白质含量",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "追问",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S032",
+          "query": "上周吃过的青菜有哪些",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S033",
+          "query": "上周吃过、蛋白低于1g的食物",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "历史快照",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S034",
+          "query": "最近一周的天然蛋白系数",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S035",
+          "query": "最近七天每天的天然蛋白摄入系数",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S036",
+          "query": "看看过去一个礼拜天然蛋白系数每天多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S037",
+          "query": "这周天然蛋白系数的平均值是多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "有效天数",
+              "passed": true
+            },
+            {
+              "label": "覆盖天数",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S038",
+          "query": "上周天然蛋白比这周多吗",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "追问",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S039",
+          "query": "这周天然蛋白系数的日均比上周高多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "比较与覆盖",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S040",
+          "query": "最近的天然蛋白摄入系数",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "最近日期",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S041",
+          "query": "今天的天然蛋白系数",
+          "scenario": "no_effective_weight",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "missing_data",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S042",
+          "query": "昨天的天然蛋白系数",
+          "scenario": "known_zero",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S043",
+          "query": "最近七天的天然蛋白系数平均一下",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "有效天数",
+              "passed": true
+            },
+            {
+              "label": "覆盖天数",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S044",
+          "query": "最近一顿奶用了哪些粉",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "历史粉种",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S045",
+          "query": "昨天一共喝了多少奶",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S046",
+          "query": "昨天实际喝进去的成品奶量是多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S047",
+          "query": "昨天实际喝进去的成品奶量是多少",
+          "scenario": "milk_without_actual_bottle_volume",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "missing_data",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S048",
+          "query": "昨天喝水多少",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "返回值",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S049",
+          "query": "查一下喝水记录",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S050",
+          "query": "打开记录喝水",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S051",
+          "query": "不含奶的食谱",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "追问",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S052",
+          "query": "不含鸡蛋的食谱",
+          "scenario": "complete_recipe_ingredients",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "配料身份与缺失",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S053",
+          "query": "蛋白低于1克或者脂肪低于2克的食物",
+          "scenario": "base",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "unsupported",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S054",
+          "query": "换成上个月",
+          "scenario": "context_left_count_last_week",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "no_records",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "日期范围",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S055",
+          "query": "那另一种呢",
+          "scenario": "context_two_medications",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "ready",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "操作与分类",
+              "passed": true
+            },
+            {
+              "label": "指标",
+              "passed": true
+            },
+            {
+              "label": "对象身份",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S056",
+          "query": "那另一种呢",
+          "scenario": "expired_context",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "追问",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S057",
+          "query": "换成上个月",
+          "scenario": "changed_baby_context",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "needs_clarification",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S058",
+          "query": "想知道过去一周左卡实际吃了几回",
+          "scenario": "ai_unavailable",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "unavailable",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S059",
+          "query": "过去一周左卡吃了几次",
+          "scenario": "source_failed",
+          "mode": "模拟模型草稿＋真实编译执行",
+          "modelCalls": 1,
+          "status": "unavailable",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        },
+        {
+          "id": "S060",
+          "query": "左卡摄入频次",
+          "scenario": "forbidden_baby",
+          "mode": "确定性语法／真实名称／上下文",
+          "modelCalls": 0,
+          "status": "FORBIDDEN",
+          "passed": true,
+          "checks": [
+            {
+              "label": "状态",
+              "passed": true
+            },
+            {
+              "label": "业务只读",
+              "passed": true
+            }
+          ]
+        }
+      ]
+    },
+    "boundaries": {
+      "title": "搜索 V2 离线边界验收",
+      "realModelCalls": 0,
+      "total": 25,
+      "passed": 25,
+      "results": [
+        {
+          "label": "低蛋白缺阈值先追问，数字补充后执行",
+          "passed": true
+        },
+        {
+          "label": "重名统计只接受该轮候选，选择后得到真实药物记录",
+          "passed": true
+        },
+        {
+          "label": "无对象属性追问后不再重复追问对象",
+          "passed": true
+        },
+        {
+          "label": "奶粉基准追问后保留真实对象且不拿干粉充冲调液",
+          "passed": true
+        },
+        {
+          "label": "部分奶营养summary不自动补成真实0",
+          "passed": true
+        },
+        {
+          "label": "指定食物摄入汇总不合计其它食物",
+          "passed": true
+        },
+        {
+          "label": "摄入sum遇缺日期或营养依据不报完整合计",
+          "passed": true
+        },
+        {
+          "label": "用药无名称用量汇总按药物分组",
+          "passed": true
+        },
+        {
+          "label": "比较保留另一时间段独有单位，不合并成完整差值",
+          "passed": true
+        },
+        {
+          "label": "快照缺奶量不把规范化0当真实已记录体积",
+          "passed": true
+        },
+        {
+          "label": "未来事件排除且Date存储日期正常查询",
+          "passed": true
+        },
+        {
+          "label": "日期不合法和不适用条件拒绝执行",
+          "passed": true
+        },
+        {
+          "label": "90天统计预算与全部历史预算明确失败",
+          "passed": true
+        },
+        {
+          "label": "不执行模型追加ID或答案，格式修复只重试一次",
+          "passed": true
+        },
+        {
+          "label": "坏JSON模型响应可有限修复",
+          "passed": true
+        },
+        {
+          "label": "模型已用两次调用时不再格式重试",
+          "passed": true
+        },
+        {
+          "label": "模型未保留均值/否定条件时不执行残缺查询",
+          "passed": true
+        },
+        {
+          "label": "幂等重试返回相同结果，同编号换内容被拒绝",
+          "passed": true
+        },
+        {
+          "label": "三页列表不中断；跨上下文分页、期间更新会拒绝",
+          "passed": true
+        },
+        {
+          "label": "资料名称无模型配置仍可用；跨宝宝资料不泄漏",
+          "passed": true
+        },
+        {
+          "label": "同名新资料不会遮蔽已删除对象的历史记录",
+          "passed": true
+        },
+        {
+          "label": "牛奶和奶粉排除使用真实粉种ID，不遗漏品牌名",
+          "passed": true
+        },
+        {
+          "label": "治疗能量沿用共享汇总，缺依据时不补成0",
+          "passed": true
+        },
+        {
+          "label": "模型把OR改为AND时仍由服务端拒绝",
+          "passed": true
+        },
+        {
+          "label": "旧喂奶记录打开原日期，未来子事件不进入结果",
+          "passed": true
+        }
+      ]
+    },
+    "page": {
+      "title": "搜索 V2 页面离线贯通验收",
+      "total": 8,
+      "passed": 8,
+      "results": [
+        {
+          "label": "实际服务模块、页面控制器和统一服务端贯通",
+          "passed": true
+        },
+        {
+          "label": "从频率答案转实际次数，再打开服药明细",
+          "passed": true
+        },
+        {
+          "label": "自然语言日期追问沿用已确认对象和操作",
+          "passed": true
+        },
+        {
+          "label": "指标页展示有效日期、真实数值及缺失日",
+          "passed": true
+        },
+        {
+          "label": "日期与高级筛选默认折叠，可显式展开",
+          "passed": true
+        },
+        {
+          "label": "三页指标翻页保留全部先前数据",
+          "passed": true
+        },
+        {
+          "label": "迟到请求不覆盖新查询",
+          "passed": true
+        },
+        {
+          "label": "切换宝宝清空结果、历史和上下文",
+          "passed": true
+        }
+      ],
+      "realModelCalls": 0
+    }
+  }
+}

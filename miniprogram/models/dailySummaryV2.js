@@ -1,3 +1,4 @@
+const { invalidateSearchForBaby } = require('../utils/searchSession');
 const {
   buildDailySummaryV2,
   normalizeDailySummaryV2
@@ -97,6 +98,7 @@ async function upsertSummary(summary = {}) {
 }
 
 async function markDirty(babyUid, date) {
+  invalidateSearchForBaby(babyUid);
   markHomeDashboardDirty(babyUid, date);
 
   const query = dailySummaryCollection.where({

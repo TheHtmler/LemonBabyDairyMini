@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const { indexNutrientStates } = require('./lib/search');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -19,6 +20,8 @@ const INDEX_FIELDS = {
   stage: true,
   image: true,
   nutritionPer100g: true,
+  nutrientStates: true,
+  recognitionMeta: true,
   mixRatio: true,
   alias: true,
   description: true,
@@ -52,7 +55,8 @@ function normalizeNutrition(nutrition = {}) {
     calories: Number(nutrition.calories) || 0,
     fat: Number(nutrition.fat) || 0,
     carbs: Number(nutrition.carbs) || 0,
-    fiber: Number(nutrition.fiber) || 0
+    fiber: Number(nutrition.fiber) || 0,
+    ...(nutrition.sodium != null && Number.isFinite(Number(nutrition.sodium)) ? { sodium: Number(nutrition.sodium) } : {})
   };
 }
 
@@ -86,6 +90,7 @@ function toIndexItem(powder = {}) {
     stage: powder.stage || '',
     image: powder.image || '',
     nutritionPer100g: normalizeNutrition(powder.nutritionPer100g || {}),
+    nutrientStates: indexNutrientStates(powder, powder.nutritionPer100g || {}, { quantity: 100, unit: 'g', material: 'dry_powder' }),
     mixRatio: normalizeMixRatio(powder.mixRatio || {}),
     alias: Array.isArray(powder.alias) ? powder.alias : [],
     description: powder.description || '',
@@ -127,7 +132,7 @@ exports.main = async (event = {}) => {
     returned: index.length,
     nextStart,
     hasMore: nextStart !== null,
-    indexSchemaVersion: Number(event.indexSchemaVersion) || 1,
+    indexSchemaVersion: 2,
     index
   };
 };

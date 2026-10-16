@@ -16,6 +16,8 @@ const {
   validation
 } = require('../../utils/index');
 const dashboard = require('../../utils/homeDashboard');
+const searchService = require('../../utils/searchService');
+const { currentContext } = require('../../utils/searchSession');
 const {
   readNutritionTargetPreferences,
   getNutritionTargetPreferences,
@@ -258,6 +260,7 @@ Page({
     currentModalNotes: '',
 
     // 公告
+    homeSearchEnabled: true, homeScanEnabled: true, releaseNoticeUnread: false,
     releaseNoticeVisible: true,
     releaseNoticeText: DEFAULT_RELEASE_NOTICE_TEXT,
 
@@ -310,6 +313,7 @@ Page({
       await this.refreshDashboardOnShow();
     }
     this.loadReleaseNotice();
+    this.loadSearchCapabilities();
     this.maybeOpenMedicationModalFromFlag();
   },
 
@@ -401,7 +405,12 @@ Page({
   },
 
   onHide() { this.hideMedUndo(); this.closeMedPanel(); if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer); },
-  onUnload() { this.hideMedUndo(); this.closeMedPanel(); if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer); },
+  onUnload() {
+    this._searchCapabilityEpoch = (this._searchCapabilityEpoch || 0) + 1;
+    this.hideMedUndo();
+    this.closeMedPanel();
+    if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer);
+  },
 
   async onPullDownRefresh() {
     try {
@@ -464,6 +473,56 @@ Page({
     return shouldSkip;
   },
 
+  async loadSearchCapabilities() {
+    const epoch = this._searchCapabilityEpoch = (this._searchCapabilityEpoch || 0) + 1;
+    let context = null;
+    const isCurrent = () => {
+      const current = currentContext();
+      return epoch === this._searchCapabilityEpoch && (!context || (
+        current.babyUid === context.babyUid && current.accountKey === context.accountKey
+      ));
+    };
+    try {
+      await waitForAppInitialization();
+      if (epoch !== this._searchCapabilityEpoch) return;
+      context = currentContext();
+      if (!context.babyUid || !context.accountKey) {
+        this._searchCapabilityContext = null;
+        this.setData({ homeSearchEnabled: false, homeScanEnabled: false });
+        return;
+      }
+      const previous = this._searchCapabilityContext;
+      if (!previous || previous.babyUid !== context.babyUid || previous.accountKey !== context.accountKey) {
+        // 通用入口默认开放；具体识别能力由扫描页独立核对。
+        this.setData({ homeSearchEnabled: true, homeScanEnabled: true });
+      }
+      this._searchCapabilityContext = context;
+      const result = await searchService.capabilities({ babyUid: context.babyUid });
+      if (!isCurrent()) return;
+      this.setData({ homeSearchEnabled: result.flags.home_search_enabled !== false, homeScanEnabled: result.flags.nutrition_scan_enabled !== false });
+    } catch (error) {
+      if (!isCurrent()) return;
+      const code = error && (error.code || error.errCode) || 'SEARCH_FAILED';
+      // 请求失败不等于功能关闭；仅明确拒绝访问时收起入口。
+      if (code === 'FORBIDDEN' || code === 'FEATURE_DISABLED') {
+        this.setData({ homeSearchEnabled: false, homeScanEnabled: false });
+      }
+      console.warn('[daily-feeding] loadSearchCapabilities failed', code);
+    }
+  },
+  openHomeSearch() { if (this.data.homeSearchEnabled) wx.navigateTo({ url: '/pkg-milk/search/index' }); },
+  openHomeEntry() { return this.data.homeSearchEnabled ? this.openHomeSearch() : this.openHomeScan(); },
+  openHomeScan() { if (this.data.homeScanEnabled) wx.navigateTo({ url: '/pkg-milk/nutrition-scan/index' }); },
+  noticeReadKey(text) {
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619);
+    return 'home_notice_read:' + currentContext().accountKey + ':' + (hash >>> 0).toString(16);
+  },
+  showReleaseNotice() {
+    const text = this.data.releaseNoticeText || '';
+    wx.showModal({ title: '更新公告', content: text, showCancel: false, confirmText: '知道了' });
+    wx.setStorageSync(this.noticeReadKey(text), true); this.setData({ releaseNoticeUnread: false });
+  },
   async loadReleaseNotice() {
     try {
       const res = await wx.cloud.callFunction({
@@ -474,7 +533,8 @@ Page({
       if (!res?.result?.ok || !notice) return;
       this.setData({
         releaseNoticeVisible: notice.visible !== false,
-        releaseNoticeText: notice.text || DEFAULT_RELEASE_NOTICE_TEXT
+        releaseNoticeText: notice.text || DEFAULT_RELEASE_NOTICE_TEXT,
+        releaseNoticeUnread: !wx.getStorageSync(this.noticeReadKey(notice.text || DEFAULT_RELEASE_NOTICE_TEXT))
       });
     } catch (error) {
       console.warn('[daily-feeding] loadReleaseNotice failed', error);

@@ -10,16 +10,15 @@
     </view>
   </view>
 
-  <!-- 公告（单行跑马灯，与旧版一致） -->
-  <view class="notice" wx:if="{{releaseNoticeVisible && releaseNoticeText}}">
-    <view class="notice-fixed"><text class="notice-prefix">公告</text></view>
-    <view class="notice-marquee">
-      <view class="notice-track">
-        <text class="notice-copy">{{releaseNoticeText}}</text>
-        <text class="notice-copy">{{releaseNoticeText}}</text>
-      </view>
-    </view>
+  <view class="home-search-row" wx:if="{{homeSearchEnabled || homeScanEnabled}}">
+    <button class="home-search-entry" bindtap="openHomeEntry" hover-class="home-search-pressed" aria-label="{{homeSearchEnabled ? '搜索食物、记录、功能' : '拍照识别食物与奶粉'}}">
+      <view wx:if="{{homeSearchEnabled}}" class="ss-icon ss-icon-search" aria-hidden="true"></view>
+      <view wx:else class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view>
+      <text class="home-search-text">{{homeSearchEnabled ? '搜索食物、记录、功能' : '拍照识别食物与奶粉'}}</text>
+    </button>
+    <button wx:if="{{homeSearchEnabled && homeScanEnabled}}" class="home-scan-entry" catchtap="openHomeScan" hover-class="home-search-pressed" aria-label="拍照识别食物或奶粉"><view class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view></button>
   </view>
+  <view class="home-notice-row" wx:if="{{releaseNoticeVisible && releaseNoticeText}}"><button class="home-notice-link" bindtap="showReleaseNotice"><view wx:if="{{releaseNoticeUnread}}" class="home-notice-dot"></view><text>查看更新</text><text>›</text></button></view>
 
   <!-- 宝宝卡（问候语并入卡片内部） -->
   <view class="hero">

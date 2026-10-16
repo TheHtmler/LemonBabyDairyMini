@@ -2,6 +2,7 @@
 const app = getApp();
 const NutritionModel = require('../../models/nutrition');
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
+const { updatePowderProvenance } = require('../../utils/nutritionProvenance');
 const {
   POWDER_CATEGORIES,
   POWDER_CATEGORY_META,
@@ -251,7 +252,8 @@ Page({
     this.setData({
       activeView: 'powders',
       showPowderModal: true,
-      powderDraft: clone(powder),
+      powderDraft: { ...clone(powder), nutritionPer100g: Object.fromEntries(Object.entries(powder.nutritionPer100g || {}).map(([field, value]) =>
+        [field, (powder.recognitionMeta?.missingFields || []).includes(field) ? '' : value])) },
       ...buildPowderTypeState(powder.category)
     });
   },
@@ -340,6 +342,11 @@ Page({
       },
       status: POWDER_STATUSES.ACTIVE,
       source: current.source || 'user',
+      sourceSystemPowderId: current.sourceSystemPowderId || '',
+      ...(current.recognitionMeta ? { recognitionMeta: updatePowderProvenance(current.recognitionMeta, current,
+        { name: (values.name || '').trim(), rawNutrition: values,
+          nutritionPer100g: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber'].map(field => [field, toNumber(values[field])])),
+          mixRatio: { powder: toNumber(values.ratioPowder), water: toNumber(values.ratioWater) } }) } : {}),
       createdAt: current.createdAt || now,
       updatedAt: now,
       deletedAt: null

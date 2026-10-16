@@ -47,6 +47,10 @@ class NutritionModel {
       mixingPlans,
       activeMixingPlanId: settings.activeMixingPlanId ?? ''
     };
+    if (Object.prototype.hasOwnProperty.call(settings, '_profileVersion')) {
+      normalized._profileId = settings._profileId;
+      normalized._profileVersion = settings._profileVersion;
+    }
     return normalized;
   }
 

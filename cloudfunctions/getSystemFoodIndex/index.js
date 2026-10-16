@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const { indexNutrientStates } = require('./lib/search');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -19,7 +20,14 @@ const INDEX_FIELDS = {
   schemaVersion: true,
   sourceFoodCode: true,
   nutritionBasis: true,
+  servingBasis: true,
+  baseQuantity: true,
+  baseUnit: true,
+  nutritionPer100g: true,
+  nutritionPerUnit: true,
   nutritionPerBasis: true,
+  nutrientStates: true,
+  recognitionMeta: true,
   proteinSource: true,
   proteinQuality: true,
   aliasText: true
@@ -93,7 +101,8 @@ function toIndexItem(food = {}) {
       quantity: Number(nutritionBasis.quantity) || 100,
       unit: nutritionBasis.unit || 'g'
     },
-    nutritionPerBasis: normalizeNutrition(food.nutritionPerBasis || food.nutritionPerUnit || {}),
+    nutritionPerBasis: normalizeNutrition(food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {}),
+    nutrientStates: indexNutrientStates(food, food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {}, food.nutritionBasis || food.servingBasis || { quantity: food.baseQuantity != null ? food.baseQuantity : food.nutritionPer100g ? 100 : null, unit: food.baseUnit || (food.nutritionPer100g ? 'g' : null) }),
     proteinSource: food.proteinSource || 'natural',
     proteinQuality: food.proteinQuality || '',
     aliasText: food.aliasText || (Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || '')),
@@ -128,7 +137,7 @@ exports.main = async (event = {}) => {
     returned: index.length,
     nextStart,
     hasMore: nextStart !== null,
-    indexSchemaVersion: Number(event.indexSchemaVersion) || 1,
+    indexSchemaVersion: 2,
     index
   };
 };

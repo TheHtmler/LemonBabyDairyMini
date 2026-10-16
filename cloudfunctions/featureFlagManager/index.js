@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const SEARCH_SCAN_KEYS = ['home_search_enabled', 'ai_search_enabled', 'nutrition_scan_enabled'];
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -155,6 +156,25 @@ exports.main = async (event = {}) => {
         ok: true,
         config: await getReportOcrAccessConfig()
       };
+    }
+    if (action === 'getSearchScanConfig') {
+      const configs = {};
+      for (const key of SEARCH_SCAN_KEYS) {
+        const result = await db.collection(FEATURE_FLAG_COLLECTION).where({ key }).limit(1).get();
+        // 与业务端保持一致：没有配置记录时默认向所有授权用户开放。
+        const doc = (result.data || [])[0] || { enabled: true, scope: 'all' };
+        configs[key] = { enabled: doc.enabled === true, scope: normalizeScope(doc.scope), allowOpenids: normalizeOpenids(doc.allowOpenids) };
+      }
+      return { ok: true, configs };
+    }
+    if (action === 'updateSearchScanConfig') {
+      if (!SEARCH_SCAN_KEYS.includes(event.key) || typeof event.enabled !== 'boolean' || !['all', 'whitelist'].includes(event.scope)) return { ok: false, code: 'INVALID_INPUT', message: '搜索或扫描开关配置无效' };
+      const data = { key: event.key, enabled: event.enabled, scope: event.scope, allowOpenids: normalizeOpenids(event.allowOpenids), updatedBy: OPENID, updatedAt: db.serverDate() };
+      const result = await db.collection(FEATURE_FLAG_COLLECTION).where({ key: event.key }).limit(1).get();
+      const existing = (result.data || [])[0];
+      if (existing) await db.collection(FEATURE_FLAG_COLLECTION).doc(existing._id).update({ data });
+      else await db.collection(FEATURE_FLAG_COLLECTION).add({ data });
+      return { ok: true };
     }
     if (action === 'updateReportOcrAccessConfig') {
       return {

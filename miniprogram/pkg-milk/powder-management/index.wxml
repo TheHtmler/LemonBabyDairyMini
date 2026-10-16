@@ -23,8 +23,7 @@
     </view>
     <view class="search-input-wrap">
       <text class="search-icon">搜索</text>
-      <input
-        class="search-input"
+      <input disabled="{{savingNutrition}}"         class="search-input"
         placeholder="支持模糊搜索奶粉名、品牌或别名"
         value="{{searchQuery}}"
         bindinput="onSearchInput"
@@ -120,23 +119,23 @@
               <view class="food-nutrition">
                 <view class="nutrition-item highlight calories">
                   <text class="label">热量</text>
-                  <text class="value">{{item.nutritionPer100g.calories || 0}}kcal</text>
+                  <text class="value">{{item.missingNutrition.calories ? '--' : (item.nutritionPer100g.calories || 0)}}kcal</text>
                 </view>
                 <view class="nutrition-item highlight protein">
                   <text class="label">蛋白</text>
-                  <text class="value">{{item.nutritionPer100g.protein || 0}}g</text>
+                  <text class="value">{{item.missingNutrition.protein ? '--' : (item.nutritionPer100g.protein || 0)}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">碳水</text>
-                  <text class="value">{{item.nutritionPer100g.carbs || 0}}g</text>
+                  <text class="value">{{item.missingNutrition.carbs ? '--' : (item.nutritionPer100g.carbs || 0)}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">脂肪</text>
-                  <text class="value">{{item.nutritionPer100g.fat || 0}}g</text>
+                  <text class="value">{{item.missingNutrition.fat ? '--' : (item.nutritionPer100g.fat || 0)}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">纤维</text>
-                  <text class="value">{{item.nutritionPer100g.fiber || 0}}g</text>
+                  <text class="value">{{item.missingNutrition.fiber ? '--' : (item.nutritionPer100g.fiber || 0)}}g</text>
                 </view>
               </view>
               <view class="food-nutrition mix-ratio-row" wx:if="{{item.showMixRatio !== false}}">
@@ -225,6 +224,7 @@
 
       <form bindsubmit="savePowderDraft">
         <scroll-view class="modal-body" scroll-y="true">
+          <view class="nutrition-photo-entry" wx:if="{{!editingBreastMilk}}"><view><text class="nutrition-entry-title">拍照填写营养</text><text class="nutrition-entry-hint">识别标签并自动查询对应营养资料</text></view><button size="mini" bindtap="startNutritionRecognition" disabled="{{savingNutrition}}">拍照 / 选图</button></view>
           <view class="form-section" wx:if="{{!editingBreastMilk}}">
             <view class="form-section-header">
               <text class="form-section-title">基础信息</text>
@@ -247,7 +247,7 @@
             <view class="form-item">
               <text class="form-label">名称</text>
               <view class="form-control">
-                <input class="input" name="name" value="{{powderDraft.name}}" placeholder="例如 纽迪希亚特护" />
+                <input disabled="{{savingNutrition}}" class="input" name="name" data-field="name" bindinput="onPowderInput" value="{{powderDraft.name}}" placeholder="例如 纽迪希亚特护" />
               </view>
             </view>
           </view>
@@ -284,17 +284,16 @@
             <view class="form-item">
               <text class="form-label">蛋白 (g)</text>
               <view class="form-control">
-                <input class="input" type="digit" name="protein" value="{{powderDraft.nutritionPer100g.protein}}" placeholder="例如 13.1" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="protein" data-field="protein" bindinput="onPowderInput" value="{{powderDraft.nutritionPer100g.protein}}" placeholder="例如 13.1" />
               </view>
             </view>
 
             <view class="form-item">
               <text class="form-label">热量 (kcal)</text>
               <view class="form-control form-control-stack">
-                <input class="input" type="digit" name="calories" value="{{powderDraft.nutritionPer100g.calories}}" placeholder="例如 505" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="calories" data-field="calories" bindinput="onPowderInput" value="{{powderDraft.nutritionPer100g.calories}}" placeholder="例如 505" />
                 <view class="energy-convert-row">
-                  <input
-                    class="input energy-kj-input"
+                  <input disabled="{{savingNutrition}}"                     class="input energy-kj-input"
                     type="digit"
                     placeholder="输入包装标注的 kJ"
                     value="{{energyKjInput}}"
@@ -309,21 +308,21 @@
             <view class="form-item">
               <text class="form-label">脂肪 (g)</text>
               <view class="form-control">
-                <input class="input" type="digit" name="fat" value="{{powderDraft.nutritionPer100g.fat}}" placeholder="例如 26" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="fat" data-field="fat" bindinput="onPowderInput" value="{{powderDraft.nutritionPer100g.fat}}" placeholder="例如 26" />
               </view>
             </view>
 
             <view class="form-item">
               <text class="form-label">碳水 (g)</text>
               <view class="form-control">
-                <input class="input" type="digit" name="carbs" value="{{powderDraft.nutritionPer100g.carbs}}" placeholder="例如 55" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="carbs" data-field="carbs" bindinput="onPowderInput" value="{{powderDraft.nutritionPer100g.carbs}}" placeholder="例如 55" />
               </view>
             </view>
 
             <view class="form-item">
               <text class="form-label">膳食纤维 (g)</text>
               <view class="form-control">
-                <input class="input" type="digit" name="fiber" value="{{powderDraft.nutritionPer100g.fiber}}" placeholder="例如 0" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="fiber" data-field="fiber" bindinput="onPowderInput" value="{{powderDraft.nutritionPer100g.fiber}}" placeholder="例如 0" />
               </view>
             </view>
           </view>
@@ -337,24 +336,25 @@
             <view class="form-item">
               <text class="form-label">粉量 (g)</text>
               <view class="form-control">
-                <input class="input" type="digit" name="ratioPowder" value="{{powderDraft.mixRatio.powder}}" placeholder="例如 13.5" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="ratioPowder" data-field="ratioPowder" bindinput="onPowderInput" value="{{powderDraft.mixRatio.powder}}" placeholder="例如 13.5" />
               </view>
             </view>
 
             <view class="form-item">
               <text class="form-label">水量 (ml)</text>
               <view class="form-control">
-                <input class="input" type="digit" name="ratioWater" value="{{powderDraft.mixRatio.water}}" placeholder="例如 90" />
+                <input disabled="{{savingNutrition}}" class="input" type="digit" name="ratioWater" data-field="ratioWater" bindinput="onPowderInput" value="{{powderDraft.mixRatio.water}}" placeholder="例如 90" />
               </view>
             </view>
           </view>
         </scroll-view>
 
         <view class="modal-footer">
-          <button class="btn cancel" catchtap="hideAddModal">取消</button>
-          <button class="btn confirm" form-type="submit">{{editingPowderIsSystemSource ? '加入我的奶粉' : ((powderDraft.id || editingBreastMilk) ? '保存修改' : '添加奶粉')}}</button>
+          <button class="btn cancel" disabled="{{savingNutrition}}" catchtap="hideAddModal">取消</button>
+          <button class="btn confirm" disabled="{{savingNutrition}}" loading="{{savingNutrition}}" form-type="submit">{{editingPowderIsSystemSource ? '加入我的奶粉' : ((powderDraft.id || editingBreastMilk) ? '保存修改' : '添加奶粉')}}</button>
         </view>
       </form>
     </view>
   </view>
+  <nutrition-recognition wx:if="{{showAddModal && !editingBreastMilk}}" id="nutritionRecognition" show-trigger="{{false}}" form-session-id="{{formSessionId}}" baby-uid="{{babyUid}}" mode="powder_label" draft="{{powderDraft}}" category-options="{{powderTypeOptions}}" expected-version="{{editingVersion}}" bind:recovered="onRecognitionRecovered" bind:patch="onNutritionPatch" />
 </view>

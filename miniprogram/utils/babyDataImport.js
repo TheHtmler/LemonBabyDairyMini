@@ -81,7 +81,8 @@ async function importFoods(db, sourceBabyUid, targetBabyUid, strategy = 'skip') 
       if (food._id && existing._id) idMap.set(food._id, existing._id);
       if (strategy === 'overwrite') {
         try {
-          await FoodModel.updateFood(existing._id, { ...fields, babyUid: targetBabyUid }, targetBabyUid);
+          await FoodModel.updateFood(existing._id, { ...fields, babyUid: targetBabyUid,
+            expectedVersion: Number(existing.version || 0) }, targetBabyUid);
           counts.updated += 1;
         } catch (error) {
           console.warn(`更新食物失败（${food.name || food._id}）:`, error);

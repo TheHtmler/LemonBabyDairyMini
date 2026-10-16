@@ -1,6 +1,6 @@
 const {
   resolveFoodIntakePremiumProteinSplit
-} = require('./recipeNutritionUtils');
+} = require('./search-core/recipeProtein');
 
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) {

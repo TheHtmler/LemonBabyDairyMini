@@ -1,3 +1,4 @@
+const { invalidateSearchForBaby } = require('../utils/searchSession');
 // 新版配奶营养档案模型：milk_nutrition_profiles 是配奶设置的主数据源
 const {
   POWDER_CATEGORIES,
@@ -237,6 +238,10 @@ class MilkNutritionProfileModel {
     settings.natural_milk_carbs = toNumberOrEmpty(breastNutrition.carbs);
     settings.natural_milk_fiber = toNumberOrEmpty(breastNutrition.fiber);
     settings.formulaPowders = powders;
+    if (profile._id) {
+      settings._profileId = profile._id;
+      settings._profileVersion = Number(profile.version || 0);
+    }
     applyPowderToLegacyFields(settings, 'formula_milk', regularPowder);
     applyPowderToLegacyFields(settings, 'special_milk', specialPowder);
 
@@ -277,9 +282,10 @@ class MilkNutritionProfileModel {
         return null;
       }
 
-      return this.profileDocumentToNutritionSettings(
+      const settings = this.profileDocumentToNutritionSettings(
         this.buildProfileDataFromSettings(babyUid, legacySettings)
       );
+      return { ...settings, _profileId: '', _profileVersion: 0 };
     } catch (error) {
       console.error('获取新版配奶营养档案失败：', error);
       if (options.throwOnError === true) {
@@ -308,14 +314,13 @@ class MilkNutritionProfileModel {
       const seedSettings = resolveNutritionProfileSeedSettings(
         options.seedSettings || babyRes?.nutritionSettings || {}
       );
-      const success = await this.updateNutritionProfileSettings(babyUid, seedSettings);
+      const success = await this.updateNutritionProfileSettings(babyUid, seedSettings, { createOnly: true });
       if (!success && options.throwOnError === true) {
         throw new Error('确保配奶营养档案失败');
       }
 
-      const settings = this.profileDocumentToNutritionSettings(
-        this.buildProfileDataFromSettings(babyUid, seedSettings)
-      );
+      const createdProfile = await getFirstDocument(milkNutritionProfileCollection, babyUid);
+      const settings = this.profileDocumentToNutritionSettings(createdProfile || this.buildProfileDataFromSettings(babyUid, seedSettings));
       console.info('[NutritionProfile] ensureNutritionProfileSettings created default profile', {
         babyUid,
         protein: settings.natural_milk_protein,
@@ -336,7 +341,7 @@ class MilkNutritionProfileModel {
     }
   }
 
-  async updateNutritionProfileSettings(babyUid, settings) {
+  async updateNutritionProfileSettings(babyUid, settings, options = {}) {
     try {
       const data = this.buildProfileDataFromSettings(babyUid, settings);
       console.info('[NutritionProfile] updateNutritionProfileSettings start', {
@@ -349,9 +354,17 @@ class MilkNutritionProfileModel {
       const documents = await getDocumentsByFreshness(milkNutritionProfileCollection, babyUid);
 
       if (documents.length === 0) {
+        if (Number(settings._profileVersion || 0) > 0 || settings._profileId) {
+          const conflict = new Error('营养档案已被移除，请重新加载');
+          conflict.code = 'VERSION_CONFLICT';
+          throw conflict;
+        }
+        try {
         const addRes = await milkNutritionProfileCollection.add({
           data: {
             ...data,
+            _id: 'profile_' + babyUid,
+            version: 1,
             createdAt: db.serverDate()
           }
         });
@@ -362,14 +375,45 @@ class MilkNutritionProfileModel {
         if (!addRes?._id) {
           throw new Error('milk_nutrition_profiles add did not return _id');
         }
+        settings._profileId = addRes._id;
+        settings._profileVersion = 1;
+        invalidateSearchForBaby(babyUid);
         return true;
+        } catch (error) {
+          // 初始化只能创建；并发创建成功后回读，不能拿旧种子覆盖新档案。
+          if (options.createOnly && (await getDocumentsByFreshness(milkNutritionProfileCollection, babyUid)).length) return true;
+          throw error;
+        }
       }
+
+      if (options.createOnly) return true;
 
       // 始终写入唯一的权威文档（最新那份），无论它由创建者还是参与者建立。
       const canonical = documents[0];
-      const updateRes = await milkNutritionProfileCollection.doc(canonical._id).update({
-        data
+      const expectedVersion = settings._profileVersion;
+      if (!Number.isInteger(expectedVersion) || expectedVersion < 0) {
+        const conflict = new Error('缺少读取时的营养档案版本，请重新加载');
+        conflict.code = 'VERSION_CONFLICT';
+        throw conflict;
+      }
+      if ((settings._profileId && settings._profileId !== canonical._id) || Number(canonical.version || 0) !== expectedVersion) {
+        const conflict = new Error('营养档案已被其他监护人修改，请重新加载后保存');
+        conflict.code = 'VERSION_CONFLICT';
+        throw conflict;
+      }
+      const versionCondition = expectedVersion === 0
+        ? db.command.or(db.command.eq(0), db.command.exists(false)) : db.command.eq(expectedVersion);
+      const updateRes = await milkNutritionProfileCollection.where({ _id: canonical._id, babyUid, version: versionCondition }).update({
+        data: { ...data, version: expectedVersion + 1 }
       });
+      if (!updateRes.stats || updateRes.stats.updated !== 1) {
+        const conflict = new Error('营养档案版本已变化，请重新加载后保存');
+        conflict.code = 'VERSION_CONFLICT';
+        throw conflict;
+      }
+      settings._profileId = canonical._id;
+      settings._profileVersion = expectedVersion + 1;
+      invalidateSearchForBaby(babyUid);
       console.info('[NutritionProfile] update canonical profile result', {
         babyUid,
         profileId: canonical._id,
@@ -399,6 +443,7 @@ class MilkNutritionProfileModel {
       return true;
     } catch (error) {
       console.error('更新新版配奶营养档案失败：', error);
+      if (error.code === 'VERSION_CONFLICT') throw error;
       return false;
     }
   }

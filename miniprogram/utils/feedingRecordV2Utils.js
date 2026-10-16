@@ -1,3 +1,5 @@
+const { copyRecognitionMetaForSnapshot } = require('./nutritionProvenance');
+const { indexNutrientStates } = require('./search-core/nutrition');
 const {
   POWDER_CATEGORY_META,
   PROTEIN_ROLES,
@@ -32,7 +34,8 @@ function normalizeNutritionSnapshot(nutrition = {}) {
     calories: toNumber(nutrition.calories),
     fat: toNumber(nutrition.fat),
     carbs: toNumber(nutrition.carbs),
-    fiber: toNumber(nutrition.fiber)
+    fiber: toNumber(nutrition.fiber),
+    ...(nutrition.sodium != null && Number.isFinite(Number(nutrition.sodium)) ? { sodium: Number(nutrition.sodium) } : {})
   };
 }
 
@@ -122,7 +125,9 @@ function buildFormulaPowderComponent(profile = {}, draft = {}) {
     powderWeight: roundValue(powderWeight),
     ratioMode,
     mixRatioSnapshot: mixRatio,
-    nutritionSnapshot: normalizeNutritionSnapshot(profile.nutritionPer100g)
+    nutritionSnapshot: normalizeNutritionSnapshot(profile.nutritionPer100g),
+    ...(profile.recognitionMeta ? { recognitionMeta: copyRecognitionMetaForSnapshot(profile.recognitionMeta) } : {}),
+    ...((profile.nutrientStates || profile.recognitionMeta) ? { nutrientStates: indexNutrientStates(profile, profile.nutritionPer100g || {}, { quantity: 100, unit: 'g', material: 'dry_powder' }) } : {})
   };
 }
 
