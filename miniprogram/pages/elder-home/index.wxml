@@ -1,0 +1,108 @@
+<view class="elder-home">
+  <view class="elder-header">
+    <view class="elder-baby">
+      <text class="elder-eyebrow">长辈模式 · 当前宝宝</text>
+      <text class="elder-baby-name">{{babyName || '正在加载…'}}</text>
+    </view>
+    <button class="elder-exit" plain aria-label="退出长辈模式" bindtap="exitMode">退出模式</button>
+  </view>
+
+  <view class="elder-switch">
+    <button class="elder-tab {{activeTab === 'entry' ? 'elder-tab-active' : ''}}" plain data-tab="entry" bindtap="switchTab" aria-label="记一笔，{{activeTab === 'entry' ? '已选中' : '未选中'}}">记一笔</button>
+    <button class="elder-tab {{activeTab === 'records' ? 'elder-tab-active' : ''}}" plain data-tab="records" bindtap="switchTab" aria-label="看记录，{{activeTab === 'records' ? '已选中' : '未选中'}}">
+      <text>看记录</text>
+      <text wx:if="{{records.length}}" class="elder-tab-count">{{records.length}}</text>
+    </button>
+  </view>
+
+  <view wx:if="{{saved}}" class="elder-saved" role="status">✓ 记录已更新，家人也能看到</view>
+
+  <view wx:if="{{activeTab === 'entry'}}" class="elder-entry-panel">
+    <view class="elder-section-heading">
+      <text class="elder-section-title">今天想记什么？</text>
+      <text class="elder-section-hint">选一项，直接开始记录</text>
+    </view>
+    <view class="elder-actions">
+      <button wx:for="{{actions}}" wx:key="type" class="elder-action elder-action-{{item.type}}" plain data-type="{{item.type}}" bindtap="openRecord" disabled="{{!babyUid}}" hover-class="elder-action-pressed" aria-label="{{item.label}}，{{item.hint}}">
+        <view class="elder-action-top">
+          <text class="elder-action-icon" aria-hidden="true">{{item.icon}}</text>
+          <text class="elder-action-plus" aria-hidden="true">＋</text>
+        </view>
+        <view class="elder-action-copy">
+          <text class="elder-action-label">{{item.label}}</text>
+          <text class="elder-action-hint">{{item.hint}}</text>
+        </view>
+      </button>
+    </view>
+    <view wx:if="{{error}}" class="elder-status elder-status-error" role="alert">
+      <text class="elder-status-title">{{error}}</text>
+      <button class="elder-retry" plain bindtap="loadRecords" disabled="{{loading}}">{{loading ? '正在重试…' : '重新加载'}}</button>
+    </view>
+  </view>
+
+  <view wx:else class="elder-records-panel">
+    <view class="elder-records-heading">
+      <view>
+        <text class="elder-section-title">今天的记录</text>
+        <text class="elder-section-hint">{{today}} · 全家共享</text>
+      </view>
+      <button class="elder-refresh" plain bindtap="loadRecords" disabled="{{loading}}">{{loading ? '刷新中…' : '刷新'}}</button>
+    </view>
+    <view class="elder-filters">
+      <button wx:for="{{recordFilters}}" wx:key="type" class="elder-filter {{selectedRecordType === item.type ? 'elder-filter-active' : ''}}" plain data-type="{{item.type}}" bindtap="selectRecordType" aria-label="{{item.label}}，{{item.count}}{{item.type === 'food' ? '餐' : '条'}}，{{selectedRecordType === item.type ? '已选中' : '未选中'}}">
+        <text>{{item.label}}</text>
+        <text class="elder-filter-count">{{item.count}}</text>
+      </button>
+    </view>
+    <view wx:if="{{error}}" class="elder-status elder-status-error" role="alert">
+      <text class="elder-status-title">{{error}}</text>
+      <text wx:if="{{records.length}}" class="elder-status-hint">下方保留的是上次读取的记录</text>
+      <button class="elder-retry" plain bindtap="loadRecords" disabled="{{loading}}">{{loading ? '正在重试…' : '重新加载'}}</button>
+    </view>
+    <view wx:elif="{{loading && !records.length}}" class="elder-status" role="status">
+      <text class="elder-status-title">正在读取今天的记录…</text>
+      <text class="elder-status-hint">稍等一下，家人的记录也会一起显示</text>
+    </view>
+    <view wx:elif="{{!visibleRecords.length}}" class="elder-status">
+      <text class="elder-empty-mark" aria-hidden="true">＋</text>
+      <text class="elder-status-title">{{selectedRecordType === 'all' ? '今天还没有记录' : '今天还没有' + selectedRecordLabel + '记录'}}</text>
+      <text class="elder-status-hint">{{selectedRecordType === 'other' ? '睡眠、治疗等记录会显示在这里' : '记下一笔，家人就能一起看到了'}}</text>
+      <button class="elder-empty-action" plain data-tab="entry" bindtap="switchTab">去记一笔</button>
+    </view>
+    <view wx:if="{{visibleRecords.length}}" class="elder-records">
+      <text class="elder-result-note">{{selectedRecordLabel}} · {{visibleRecords.length}} {{selectedRecordType === 'food' ? '餐' : '条'}}，最近的在前</text>
+      <view wx:for="{{visibleRecords}}" wx:key="id" class="elder-record elder-record-{{item.type}}">
+        <view class="elder-record-top">
+          <view class="elder-record-kind">
+            <view class="elder-record-dot" aria-hidden="true"></view>
+            <text class="elder-record-label {{item.type === 'food' ? 'elder-meal-title' : ''}}">{{item.type === 'food' ? item.content : item.label}}</text>
+          </view>
+          <text class="elder-record-time">{{item.time}}</text>
+        </view>
+        <view wx:if="{{item.type === 'milk' && item.milkItems.length}}" class="elder-milk-items">
+          <view wx:for="{{item.milkItems}}" wx:for-item="milk" wx:key="id" class="elder-milk-item">
+            <text class="elder-milk-name">{{milk.name}}</text>
+            <text wx:if="{{milk.badge}}" class="elder-milk-badge" style="{{milk.badgeStyle}}">{{milk.badge}}</text>
+            <text class="elder-milk-amount">：{{milk.amountText}}</text>
+          </view>
+        </view>
+        <text wx:elif="{{item.type !== 'food'}}" class="elder-record-content">{{item.content}}</text>
+        <view wx:if="{{item.type === 'food'}}" class="elder-meal-items">
+          <view wx:for="{{item.items}}" wx:for-item="food" wx:key="id" class="elder-meal-item">
+            <view class="elder-meal-food">
+              <text class="elder-meal-name">{{food.name}}</text>
+              <text class="elder-meal-amount">{{food.amount}}</text>
+            </view>
+            <text wx:if="{{food.notes}}" class="elder-meal-item-note">{{food.notes}}</text>
+          </view>
+        </view>
+        <text wx:if="{{item.notes}}" class="elder-record-notes">{{item.type === 'food' ? '本餐备注' : '备注'}}：{{item.notes}}</text>
+        <view wx:if="{{item.canManage}}" class="elder-record-actions">
+          <button class="elder-record-edit" plain data-id="{{item.id}}" bindtap="editRecord" disabled="{{loading || error || deletingRecordId}}">{{item.type === 'food' ? '编辑这餐' : '编辑'}}</button>
+          <button class="elder-record-delete" plain data-id="{{item.id}}" bindtap="deleteRecord" disabled="{{loading || error || deletingRecordId}}">{{deletingRecordId === item.id ? '处理中…' : (item.type === 'food' ? '删除这餐' : '删除')}}</button>
+        </view>
+      </view>
+      <text class="elder-records-end">今天的记录都在这里了</text>
+    </view>
+  </view>
+</view>

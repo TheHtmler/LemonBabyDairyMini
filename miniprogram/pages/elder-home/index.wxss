@@ -1,0 +1,110 @@
+page {
+  display: block;
+  background: #faf7ef;
+  color: #302b21;
+}
+.elder-home {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 32rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+  font-size: 18px;
+  line-height: 1.5;
+}
+/* 用页面作用域覆盖原生按钮的默认尺寸、边框和底色。 */
+.elder-home button[plain] {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.5;
+}
+.elder-home button::after { display: none; }
+.elder-home button[disabled] { opacity: 0.55; }
+.elder-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28rpx; }
+.elder-baby { flex: 1; min-width: 0; padding-right: 20rpx; }
+.elder-eyebrow { display: block; font-size: 16px; color: #6b614f; }
+.elder-baby-name { display: block; margin-top: 4rpx; font-size: 28px; font-weight: 700; line-height: 1.35; word-break: break-all; }
+.elder-home button.elder-exit { flex-shrink: 0; width: auto; min-height: 48px; padding: 12rpx 20rpx; border: 1px solid #c9bfaa; border-radius: 14px; font-size: 16px; color: #554c3c; background: #fffdf7; }
+.elder-switch { display: flex; padding: 5px; border: 1px solid #e6decd; border-radius: 18px; background: #ede7da; }
+.elder-home button.elder-tab { display: flex; align-items: center; justify-content: center; flex: 1; width: 0; min-height: 56px; border-radius: 13px; font-size: 21px; font-weight: 700; color: #6b614f; }
+.elder-home button.elder-tab-active { background: #fffdf7; color: #302b21; box-shadow: 0 2px 5px rgba(72, 55, 22, 0.08); }
+.elder-tab-count { min-width: 24px; margin-left: 8px; padding: 0 5px; border-radius: 8px; background: #e4dac4; color: #51442d; font-size: 16px; font-weight: 600; }
+.elder-saved { margin-top: 20rpx; padding: 18rpx 24rpx; border-radius: 14px; color: #31543b; background: #e5eedf; font-size: 18px; font-weight: 600; }
+.elder-section-heading { margin: 32rpx 0 20rpx; }
+.elder-section-title { display: block; font-size: 23px; font-weight: 700; letter-spacing: 0.2px; }
+.elder-section-hint { display: block; margin-top: 5rpx; font-size: 16px; color: #6b614f; }
+.elder-actions { display: flex; flex-wrap: wrap; justify-content: space-between; }
+.elder-home button.elder-action { display: flex; flex-direction: column; justify-content: space-between; width: calc(50% - 8px); height: calc(343rpx - 8px); min-height: 0; padding: 18px; margin-bottom: 16px; border: 1px solid #e7ddc7; border-radius: 20px; text-align: left; }
+.elder-action-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.elder-action-icon { font-size: 32px; line-height: 1.15; }
+.elder-action-plus { font-size: 26px; font-weight: 400; line-height: 1; }
+.elder-action-copy { width: 100%; margin-top: 14px; }
+.elder-action-label { display: block; font-size: 24px; font-weight: 700; line-height: 1.35; }
+.elder-action-hint { display: block; margin-top: 5px; font-size: 16px; line-height: 1.4; }
+.elder-home button.elder-action-milk { background: #f6cf66; border-color: #e4b74a; color: #493511; }
+.elder-home button.elder-action-medication { background: #e7eddc; border-color: #d4ddc4; color: #34472e; }
+.elder-home button.elder-action-water { background: #e1eef1; border-color: #c6dfe4; color: #284e59; }
+.elder-home button.elder-action-bowel { background: #eee4d8; border-color: #dfcdb8; color: #5c4330; }
+.elder-home button.elder-action-food { background: #f7e2d6; border-color: #ebceba; color: #70432e; }
+.elder-home button.elder-action-pressed { opacity: 0.78; transform: scale(0.98); }
+.elder-records-heading { display: flex; align-items: center; justify-content: space-between; margin: 32rpx 0 24rpx; }
+.elder-home button.elder-refresh { flex-shrink: 0; width: auto; min-height: 48px; margin-left: 10px; padding: 10px 12px; border: 1px solid #d5c6a7; border-radius: 13px; background: #fffdf7; color: #68502b; font-size: 17px; }
+.elder-filters { display: flex; flex-wrap: wrap; margin: 0 -4px 12px; }
+.elder-home button.elder-filter { display: flex; align-items: center; justify-content: center; width: calc(25% - 8px); min-height: 48px; margin: 0 4px 8px; padding: 5px 2px; border: 1px solid #ded5c4; border-radius: 12px; background: #fffdf7; color: #625747; font-size: 18px; }
+.elder-home button.elder-filter-active { background: #4c412b; border-color: #4c412b; color: #fffaf0; font-weight: 700; }
+.elder-filter-count { margin-left: 4px; font-size: 14px; }
+.elder-result-note { display: block; margin: 8px 0 12px; font-size: 16px; color: #6b614f; }
+.elder-record { margin-bottom: 14px; padding: 18px; border: 1px solid #e5ddce; border-radius: 18px; background: #fffdf8; }
+.elder-record-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.elder-record-kind { display: flex; align-items: center; }
+.elder-record-dot { width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; background: #82735a; }
+.elder-record-milk .elder-record-dot { background: #c58b19; }
+.elder-record-medication .elder-record-dot { background: #658347; }
+.elder-record-water .elder-record-dot { background: #4b8597; }
+.elder-record-bowel .elder-record-dot { background: #9b7850; }
+.elder-record-food .elder-record-dot { background: #c17a52; }
+.elder-record-label { font-size: 18px; font-weight: 600; color: #625747; }
+.elder-record-time { margin-left: 12px; font-size: 22px; font-weight: 700; }
+.elder-record-content { display: block; font-size: 21px; line-height: 1.55; word-break: break-all; white-space: pre-wrap; }
+.elder-milk-item { font-size: 21px; line-height: 1.8; word-break: break-all; }
+.elder-milk-item + .elder-milk-item { margin-top: 8px; }
+.elder-milk-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font-size: 16px; line-height: 1.5; vertical-align: 2px; }
+.elder-milk-amount { white-space: nowrap; }
+.elder-meal-title { font-size: 22px; font-weight: 700; color: #302b21; }
+.elder-meal-items { margin-top: 0; }
+.elder-meal-item { padding: 12px 0; border-top: 1px solid #eee7da; }
+.elder-meal-item:last-child { padding-bottom: 0; }
+.elder-meal-food { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; font-size: 20px; line-height: 1.5; }
+.elder-meal-name { flex: 1; min-width: 0; margin-right: 12px; word-break: break-all; }
+.elder-meal-amount { max-width: 100%; text-align: right; word-break: break-all; color: #70432e; }
+.elder-meal-item-note { display: block; margin-top: 5px; font-size: 16px; line-height: 1.5; color: #6b614f; word-break: break-all; white-space: pre-wrap; }
+.elder-record-notes { display: block; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee7da; font-size: 17px; color: #6b614f; word-break: break-all; white-space: pre-wrap; }
+.elder-records-end { display: block; padding: 10px 0 12px; text-align: center; color: #6b614f; font-size: 16px; }
+.elder-record-actions { display: flex; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee7da; }
+.elder-home .elder-record-actions button { flex: 1; width: 0; min-height: 48px; padding: 8px; border: 1px solid #d5c6a7; border-radius: 12px; font-size: 18px; }
+.elder-home button.elder-record-edit { background: #f9e6af; color: #493511; }
+.elder-home button.elder-record-delete { border-color: #e6ccc4; background: #fff8f4; color: #973e31; }
+.elder-status { margin: 18px 0; padding: 30px 20px; border: 1px dashed #d6cbb6; border-radius: 18px; text-align: center; background: #fffdf8; }
+.elder-status-title { display: block; font-size: 21px; font-weight: 600; }
+.elder-status-hint { display: block; margin-top: 10px; font-size: 17px; color: #6b614f; }
+.elder-empty-mark { display: block; margin-bottom: 12px; color: #a38851; font-size: 38px; line-height: 1; }
+.elder-home button.elder-empty-action, .elder-home button.elder-retry { width: 100%; min-height: 50px; margin-top: 22px; padding: 10px 16px; border-radius: 13px; color: #493511; background: #f6cf66; font-size: 20px; font-weight: 600; }
+.elder-status-error { border-style: solid; border-color: #e0c4b1; background: #fff6ed; }
+@media (max-width: 350px) {
+  .elder-home { padding-left: 20rpx; padding-right: 20rpx; }
+  .elder-home button.elder-action { height: calc(355rpx - 8px); padding: 14px; }
+  .elder-action-label { font-size: 22px; }
+  .elder-action-hint { font-size: 15px; }
+  .elder-home button.elder-filter { width: calc(33.333% - 8px); }
+  .elder-baby-name { font-size: 26px; }
+}

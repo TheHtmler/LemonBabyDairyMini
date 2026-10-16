@@ -1,14 +1,17 @@
 <page-meta page-style="{{drawerVisible || showAddTypeSheet ? 'overflow: hidden;' : ''}}" />
-<view class="page">
+<view class="page {{elderMode ? 'elder-form' : ''}}">
   <view class="meal-hero">
     <view class="meal-hero-top">
       <view class="meal-hero-main">
-        <text class="meal-hero-title">{{mode === 'edit' ? '编辑本顿' : '记本顿'}}</text>
+        <text class="meal-hero-title">{{mode === 'edit' ? '编辑本顿' : (elderMode ? '记食物' : '记本顿')}}</text>
         <view class="meal-hero-meta">
-          <text class="meal-hero-date">{{formattedSelectedDate}}</text>
+          <picker wx:if="{{elderMode}}" mode="date" value="{{selectedDate}}" end="{{maxDate}}" disabled="{{mode === 'edit' || isSaving || initialLoading || dateChanging}}" bindchange="onElderDateChange">
+            <view class="elder-date-field">日期：{{selectedDate}} ▾</view>
+          </picker>
+          <text wx:else class="meal-hero-date">{{formattedSelectedDate}}</text>
           <picker mode="time" value="{{mealDraft.mealTime}}" bindchange="onMealTimeChange">
             <view class="meal-time-field" hover-class="meal-time-field-hover" hover-stay-time="80">
-              <text class="meal-time-icon">🕒</text>
+              <text class="meal-time-icon">{{elderMode ? '时间' : '🕒'}}</text>
               <text class="meal-time-value">{{mealDraft.mealTime || '选择时间'}}</text>
               <text class="meal-time-caret">▾</text>
             </view>
@@ -22,7 +25,12 @@
     </view>
     <view class="meal-label-block">
       <text class="meal-label-caption">餐次</text>
-      <scroll-view class="meal-label-scroll" scroll-x>
+      <view wx:if="{{elderMode}}" class="meal-label-row">
+        <view class="label-chip {{mealDraft.mealLabel === item ? 'active' : ''}}" wx:for="{{mealLabels}}" wx:key="*this" data-label="{{item}}" bindtap="onMealLabelTap" role="button" aria-label="{{item}}，{{mealDraft.mealLabel === item ? '已选中' : '未选中'}}">
+          <text>{{item}}</text>
+        </view>
+      </view>
+      <scroll-view wx:else class="meal-label-scroll" scroll-x>
         <view class="meal-label-row">
           <view
             class="label-chip {{mealDraft.mealLabel === item ? 'active' : ''}}"
@@ -54,11 +62,12 @@
         <view class="meal-item-main">
           <view class="meal-item-title-row">
             <text class="meal-item-name">{{item.nameSnapshot}}</text>
-            <text class="food-option-source {{item.sourceType === 'recipe' ? 'recipe' : (item.sourceLabel === '我的' ? 'mine' : '')}}">{{item.sourceLabel}}</text>
+            <text wx:if="{{elderMode}}" class="elder-item-amount">{{item.quantity}}{{item.unit}}</text>
+            <text wx:else class="food-option-source {{item.sourceType === 'recipe' ? 'recipe' : (item.sourceLabel === '我的' ? 'mine' : '')}}">{{item.sourceLabel}}</text>
           </view>
-          <view class="meal-item-meta">
+          <view wx:if="{{!elderMode}}" class="meal-item-meta">
             <text class="amount-echo">{{item.quantity}}{{item.unit}}</text>
-            <text> · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}}g{{item.showPremiumProtein ? ('（含优质蛋白 ' + item.premiumProteinText + 'g · ' + item.premiumRatio + '%）') : ''}}</text>
+            <text wx:if="{{!elderMode}}"> · {{item.nutrition.calories || 0}} kcal · 蛋白 {{item.nutrition.proteinText || '0.00'}}g{{item.showPremiumProtein ? ('（含优质蛋白 ' + item.premiumProteinText + 'g · ' + item.premiumRatio + '%）') : ''}}</text>
           </view>
           <text class="meal-item-detail">碳水 {{item.nutrition.carbs || 0}} g · 脂肪 {{item.nutrition.fat || 0}} g</text>
         </view>
@@ -96,7 +105,7 @@
   </view>
 
   <view class="secondary-panel" wx:if="{{!initialLoading && mealDraft.items.length > 0}}">
-    <nutrition-target-preview
+    <nutrition-target-preview wx:if="{{!elderMode}}"
       preview="{{mealTargetPreview}}"
       title="保存本顿后的目标"
       subtitle="按已记录 + 本顿内容预估"
@@ -119,10 +128,10 @@
   <view class="page-footer-spacer"></view>
 
   <view class="footer-bar">
-    <button class="footer-btn cancel" bindtap="onCancel">取消</button>
-    <button class="footer-btn secondary" bindtap="openAddTypeSheet" disabled="{{initialLoading}}">选择</button>
-    <button class="footer-btn confirm" bindtap="saveMeal" disabled="{{initialLoading || mealDraft.items.length === 0}}">
-      {{mode === 'edit' ? '保存修改' : '保存本顿'}}
+    <button class="footer-btn cancel" bindtap="onCancel" disabled="{{isSaving}}">{{elderMode ? '返回' : '取消'}}</button>
+    <button class="footer-btn secondary" bindtap="openAddTypeSheet" disabled="{{initialLoading || isSaving || dateChanging}}">选择</button>
+    <button class="footer-btn confirm" bindtap="saveMeal" loading="{{isSaving || dateChanging}}" disabled="{{isSaving || dateChanging || initialLoading || mealDraft.items.length === 0}}">
+      {{isSaving ? '保存中' : (dateChanging ? '加载中' : (elderMode ? '保存' : (mode === 'edit' ? '保存修改' : '保存本顿')))}}
     </button>
   </view>
 
@@ -168,7 +177,7 @@
     </view>
 
     <view class="drawer-body batch-body" wx:if="{{drawerStep === 'batch'}}">
-      <nutrition-target-preview
+      <nutrition-target-preview wx:if="{{!elderMode}}"
         preview="{{batchTargetPreview}}"
         title="蛋白目标"
         subtitle="按已输入份量实时预估"
@@ -233,7 +242,7 @@
     <view class="drawer-body edit-body" wx:if="{{drawerStep === 'edit'}}">
       <scroll-view class="edit-body-scroll" scroll-y enhanced show-scrollbar="{{false}}">
         <view class="edit-body-content">
-          <nutrition-target-preview
+          <nutrition-target-preview wx:if="{{!elderMode}}"
             preview="{{draftTargetPreview}}"
             title="加入后目标提醒"
             subtitle="按当前份量实时预估"
@@ -293,7 +302,7 @@
     <view class="drawer-body edit-body" wx:if="{{drawerStep === 'recipe-edit'}}">
       <scroll-view class="edit-body-scroll" scroll-y enhanced show-scrollbar="{{false}}">
         <view class="edit-body-content">
-          <nutrition-target-preview
+          <nutrition-target-preview wx:if="{{!elderMode}}"
             preview="{{draftTargetPreview}}"
             title="修改后目标提醒"
             subtitle="按当前克数实时预估"

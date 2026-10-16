@@ -950,3 +950,64 @@
 .add-item-btn::after {
   border: none;
 }
+
+/* 长辈模式保留数量和单位，收起非录入营养信息。 */
+.elder-form { font-size: 34rpx; }
+.elder-form .meal-hero-title { font-size: 44rpx; }
+.elder-form .meal-hero-top,
+.elder-form .meal-hero-meta { display: block; }
+.elder-form .meal-hero-count,
+.elder-form .meal-item-detail,
+.elder-form .meal-digest,
+.elder-form .meal-digest-premium,
+.elder-form .secondary-panel,
+.elder-form .preview-grid,
+.elder-form .food-option-source { display: none; }
+.elder-form .meal-hero-meta picker { margin-top: 16rpx; }
+.elder-form .elder-date-field,
+.elder-form .meal-time-field { width: 100%; min-height: 96rpx; padding: 18rpx; box-sizing: border-box; font-size: 34rpx; line-height: 1.5; color: #3f2d12; background: #fff9ea; border-radius: 16rpx; }
+.elder-form .meal-time-value { font-size: 38rpx; }
+.elder-form .meal-time-icon,
+.elder-form .meal-time-caret,
+.elder-form .meal-label-caption,
+.elder-form .label-chip,
+.elder-form .empty-hint,
+.elder-form .loading-hint,
+.elder-form .drawer-subtitle,
+.elder-form .drawer-close,
+.elder-form .add-type-copy,
+.elder-form .field-label,
+.elder-form .unit-text,
+.elder-form .batch-food-sub,
+.elder-form .selected-food-sub { font-size: 32rpx; line-height: 1.5; color: #5a4518; }
+.elder-form .meal-label-block { display: block; }
+.elder-form .meal-label-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); height: auto; gap: 12rpx; padding-top: 12rpx; white-space: normal; }
+.elder-form .label-chip { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 48px; height: auto; margin: 0; padding: 10px; box-sizing: border-box; font-size: 20px; line-height: 1.4; text-align: center; }
+.elder-form .meal-item { display: block; padding: 24rpx 0; }
+.elder-form .meal-item-title-row { align-items: flex-start; justify-content: space-between; gap: 16px; }
+.elder-form .meal-item-title-row .meal-item-name { flex: 1; min-width: 0; word-break: break-all; }
+.elder-form .elder-item-amount { flex-shrink: 0; max-width: 45%; text-align: right; font-size: 20px; line-height: 1.5; color: #5a4518; overflow-wrap: break-word; }
+.elder-form .meal-item-name,
+.elder-form .selected-food-name,
+.elder-form .batch-food-name { font-size: 38rpx; line-height: 1.5; white-space: normal; overflow: visible; }
+.elder-form .meal-item-meta,
+.elder-form .amount-echo { font-size: 38rpx; line-height: 1.5; }
+.elder-form .meal-item-actions { justify-content: flex-end; margin-top: 16rpx; }
+.elder-form .text-btn { display: flex; align-items: center; justify-content: center; min-height: 48px; min-width: 76px; padding: 10px 16px; border-radius: 16rpx; background: #fff5d9; font-size: 18px; box-sizing: border-box; }
+.elder-form .empty-title,
+.elder-form .loading-title,
+.elder-form .drawer-title,
+.elder-form .add-type-title { font-size: 38rpx; line-height: 1.5; }
+.elder-form .drawer-close { min-height: 88rpx; display: flex; align-items: center; padding: 12rpx 20rpx; box-sizing: border-box; }
+.elder-form .notes-input { height: 180rpx; min-height: 180rpx; font-size: 36rpx; line-height: 1.5; padding: 20rpx; }
+.elder-form .quantity-row { flex-wrap: wrap; gap: 12rpx; }
+.elder-form .field-label { width: 100%; max-width: none; }
+.elder-form .quantity-input { height: 96rpx; min-height: 96rpx; font-size: 40rpx; }
+.elder-form .amount-input-placeholder { font-size: 32rpx; }
+.elder-form .footer-btn,
+.elder-form .add-item-btn { width: 100%; min-height: 104rpx; height: auto; margin: 0; padding: 16rpx 8rpx; line-height: 1.5; font-size: 36rpx; box-sizing: border-box; }
+.elder-form .footer-btn.confirm,
+.elder-form .add-item-btn { background: #f0a900; color: #382500; }
+.elder-form .batch-actions { flex-wrap: wrap; }
+.elder-form .add-type-sheet { max-height: 88vh; overflow-y: auto; }
+.elder-form .add-type-card { min-height: 144rpx; }

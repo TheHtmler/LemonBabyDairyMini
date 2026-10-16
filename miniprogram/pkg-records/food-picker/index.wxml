@@ -1,5 +1,5 @@
 <page-meta page-style="{{quantityDrawerVisible || cartExpanded ? 'overflow: hidden;' : ''}}" />
-<view class="page">
+<view class="page {{elderMode ? 'elder-form' : ''}}">
   <view class="top-panel">
     <view class="library-tabs">
       <view
@@ -152,7 +152,7 @@
       </view>
       <text class="quantity-drawer-close" bindtap="closeQuantityDrawer">关闭</text>
     </view>
-    <nutrition-target-preview
+    <nutrition-target-preview wx:if="{{!elderMode}}"
       preview="{{quantityTargetPreview}}"
       title="蛋白目标"
       subtitle="按已输入份量实时预估"

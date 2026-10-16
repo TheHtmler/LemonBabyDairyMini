@@ -173,19 +173,21 @@ class TreatmentRecordModel {
     }
   }
 
-  async findByDate(dateStr, babyUid) {
+  async findByDate(dateStr, babyUid, options = {}) {
     try {
       const [year, month, day] = String(dateStr).split('-').map(Number);
       const targetDate = new Date(year, month - 1, day);
       const startOfDay = this.getDateStart(targetDate);
       const endOfDay = this.getDateEnd(targetDate);
-      const result = await this.collection
+      const query = this.collection
         .where({
           babyUid,
           date: this.db.command.gte(startOfDay).and(this.db.command.lt(endOfDay))
         })
-        .orderBy('startDateTime', 'desc')
-        .get();
+        .orderBy('startDateTime', 'desc');
+      const result = options.allRecords
+        ? await require('../utils/readAllQuery').readAllQuery(query)
+        : await query.get();
       return { success: true, data: result.data || [] };
     } catch (error) {
       const rateLimited = `${error?.errMsg || error?.message || ''}`.includes('-405015')

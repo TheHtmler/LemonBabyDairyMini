@@ -1,0 +1,57 @@
+page { display: block; background: #faf7ef; color: #302b21; }
+.page { min-height: 100vh; padding: 24rpx 24rpx calc(100px + env(safe-area-inset-bottom)); box-sizing: border-box; font-size: 18px; line-height: 1.5; }
+/* 显式覆盖原生按钮的宽度、边距和行高，保证文字与勾选格居中。 */
+.page button { display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin: 0; min-height: 48px; height: auto; padding: 10px 12px; border: 0; border-radius: 13px; font-size: 18px; line-height: 1.5; }
+.page button::after { display: none; }
+.page button[disabled] { opacity: 0.6; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.page-title { flex: 1; min-width: 0; font-size: 26px; font-weight: 700; }
+.page button.details-btn { flex-shrink: 0; width: auto; padding: 8px 12px; background: transparent; color: #695b43; }
+.page-hint { margin: 4px 0 20px; color: #6b614f; }
+.stored-record-form { padding: 18px; border: 1px solid #e0d7c4; border-radius: 18px; background: #fffdf8; }
+.stored-record-form .context-field { min-height: 58px; border-bottom: 1px solid #eee7da; }
+.stored-record-field { margin-top: 18px; }
+.record-notes-input { box-sizing: border-box; width: 100%; height: 100px; padding: 12px; border: 1px solid #cdbd99; border-radius: 12px; background: #fff9ea; color: #302b21; font-size: 18px; }
+.record-editor-actions { display: flex; gap: 12px; }
+.page .record-editor-actions button { flex: 1; width: 0; min-width: 0; min-height: 52px; }
+.selected-context { margin: -6px 0 16px; color: #79521f; font-weight: 600; }
+.record-context { padding: 4px 14px; margin-bottom: 18px; border: 1px solid #e5ddce; border-radius: 16px; background: #fffdf8; }
+.context-field { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 12px; }
+.record-context picker + picker .context-field { border-top: 1px solid #eee7da; }
+.context-label { color: #6b614f; }
+.page button.refresh-btn { width: 100%; margin-top: 6px; background: #eee7da; color: #625747; }
+.state-card { padding: 20px; border: 1px solid #e5ddce; border-radius: 18px; background: #fffdf8; line-height: 1.7; }
+.state-title { margin-bottom: 12px; font-size: 21px; font-weight: 700; }
+.medication-card { margin-bottom: 14px; padding: 16px; border: 1px solid #e0d7c4; border-radius: 18px; background: #fffdf8; }
+.medication-done { border-color: #c7dccb; background: #f1f7ef; }
+.medication-name { font-size: 24px; font-weight: 700; word-break: break-all; }
+.medication-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.medication-heading .medication-name { flex: 1; min-width: 0; }
+.medication-intake { max-width: 48%; flex-shrink: 0; color: #286746; font-size: 18px; font-weight: 600; text-align: right; overflow-wrap: break-word; }
+.medication-progress { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; color: #5c503b; }
+.dose-count { color: #286746; font-size: 23px; font-weight: 700; }
+.dose-total { font-size: 16px; color: #756b59; }
+.dose-checks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.page button.dose-check { flex-direction: column; gap: 5px; width: 76px; min-height: 84px; padding: 8px 6px; border-radius: 12px; background: transparent; color: #786f60; }
+.page button.dose-check[disabled] { opacity: 1; }
+.dose-box { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 38px; height: 38px; border: 2px solid #ddd6c8; border-radius: 10px; background: #f6f3eb; font-size: 29px; line-height: 1; font-weight: 700; }
+.dose-label { font-size: 17px; line-height: 1.4; }
+.dose-time { font-size: 16px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.page button.next-dose { background: #f9e6af; color: #493511; font-weight: 700; }
+.next-dose .dose-box { border-color: #9b7a37; background: #fffaf0; }
+.page button.checked { color: #286746; }
+.checked .dose-box { border-color: #359365; background: #359365; color: #fff; animation: dose-check-in 180ms ease-out; }
+@keyframes dose-check-in { from { transform: scale(0.85); } to { transform: scale(1); } }
+.configuration-hint { display: block; margin-top: 10px; font-size: 17px; color: #8d522b; }
+.medication-details { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee7da; color: #6b614f; word-break: break-all; }
+.page button.adjust-btn { width: 100%; margin-top: 8px; border: 1px solid #d5c6a7; background: #fffdf7; color: #68502b; }
+.dosage-editor { margin-top: 14px; }
+.field-label { display: block; margin-bottom: 10px; }
+.dosage-input { width: 100%; height: 54px; padding: 10px 12px; border: 1px solid #cdbd99; border-radius: 12px; background: #fff9ea; color: #302b21; font-size: 22px; line-height: 1.5; box-sizing: border-box; }
+.dosage-actions { display: flex; gap: 10px; margin-top: 12px; }
+.page .dosage-actions button { flex: 1; width: 0; min-width: 0; }
+.page button.cancel-btn { background: #eee7da; color: #625747; }
+.page button.checkin-btn, .page button.retry-btn { background: #f6cf66; color: #493511; font-weight: 700; }
+.page button.retry-btn { width: 100%; margin-top: 18px; }
+.footer-actions { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; padding: 14px 24rpx calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid #e5ddce; background: #faf7ef; box-sizing: border-box; }
+.page button.finish-btn { width: 100%; min-height: 52px; background: #4c412b; color: #fffaf0; font-size: 20px; font-weight: 700; }

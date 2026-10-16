@@ -1,4 +1,5 @@
 const { isDeveloperOpenid } = require('../../config/developer');
+const { guardNormalPage, enableElderMode } = require('../../utils/elderMode');
 
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 const CREATOR_CANCEL_CONFIRM_TEXT = '确认注销';
@@ -57,6 +58,13 @@ const MENU_GROUPS = [
         icon: 'info',
         path: '/pkg-misc/personal-info/index',
         description: '查看身份、展示名称与账号状态'
+      },
+      {
+        id: 25,
+        name: '开启长辈模式',
+        icon: 'setting',
+        action: 'elderMode',
+        description: '大字记录，更简单；仅在当前设备生效'
       },
       {
         id: 16,
@@ -250,6 +258,7 @@ Page({
   },
 
   onLoad: function () {
+    if (guardNormalPage()) return;
     // 确保有默认的头像路径
     this.setData({
       defaultAvatarUrl: '/images/LemonLogo.png'
@@ -261,6 +270,7 @@ Page({
   },
 
   onShow: function () {
+    if (guardNormalPage()) return;
     this.refreshIdentityState();
     this.loadAccessibleBabyCount();
     if (this.data.uploadingAvatar) return;
@@ -717,7 +727,9 @@ Page({
   handleMenuClick: function(e) {
     const item = e.currentTarget.dataset.item;
     
-    if (item.action === 'cancelCreatorAccount') {
+    if (item.action === 'elderMode') {
+      enableElderMode();
+    } else if (item.action === 'cancelCreatorAccount') {
       this.handleCreatorAccountCancellation();
     } else if (item.action === 'unbindParticipant') {
       this.handleParticipantUnbind();

@@ -1,4 +1,5 @@
 // 首页（今日概览看板）
+const { guardNormalPage } = require('../../utils/elderMode');
 // 取数统一走 dailyRecordV2Service（与「数据记录」页同源，天然兼容 v1/v2：喂奶 v2、食物过渡期 legacy）。
 const MedicationRecordModel = require('../../models/medicationRecord');
 const MedicationModel = require('../../models/medication');
@@ -271,6 +272,7 @@ Page({
   },
 
   onLoad() {
+    if (guardNormalPage()) return;
     this.rangeSummaries = [];
     this._ready = false;
     this._lastDashboardLoadAt = 0;
@@ -299,6 +301,7 @@ Page({
   },
 
   async onShow() {
+    if (guardNormalPage()) return;
     const userRole = (app.globalData && app.globalData.userRole) || wx.getStorageSync('user_role');
     this.setData({ app, greetingText: buildGreeting(), isCreator: userRole === 'creator' });
     // 新用户引导：宝宝信息保存后选择“去设置”，会先切到首页并打上标记，

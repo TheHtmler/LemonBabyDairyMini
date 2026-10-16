@@ -1,6 +1,7 @@
 const FoodModel = require('../../models/food');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const { getBabyUid } = require('../../utils/index');
+const { isElderMode } = require('../../utils/elderMode');
 const { getNutritionTargetPreferences, hasTargetCoefficient } = require('../../utils/nutritionTargetPreferences');
 const {
   buildEntryTargetPreview,
@@ -19,6 +20,8 @@ const RECENT_FOOD_DAYS = 14;
 const RECENT_FOOD_FETCH_LIMIT = 120;
 const RECENT_CATEGORY = 'recent';
 const FOOD_VIRTUAL_ROW_HEIGHT_RPX = 190;
+// 与长辈模式卡片高度及下边距保持一致，避免虚拟列表出现跳行。
+const ELDER_FOOD_VIRTUAL_ROW_HEIGHT_RPX = 264;
 const FOOD_VIRTUAL_BUFFER = 6;
 const FOOD_VIRTUAL_MIN_WINDOW = 18;
 const FOOD_CART_FLY_DURATION = 520;
@@ -138,6 +141,7 @@ function safeSetStorageSync(key, value, options = {}) {
 
 Page({
   data: {
+    elderMode: false,
     loading: true,
     foodCatalog: [],
     libraryTabs: FOOD_LIBRARY_TABS,
@@ -178,6 +182,7 @@ Page({
     const isRecipeIngredientPicker = from === 'recipe-management' || from === 'recipe-wall';
     this.pickerSource = isRecipeIngredientPicker ? 'recipe-management' : 'meal';
     this.setData({
+      elderMode: isElderMode(),
       isRecipeIngredientPicker,
       cartConfirmText: isRecipeIngredientPicker ? '添加到食谱' : '确定'
     });
@@ -595,7 +600,8 @@ Page({
   getFoodVirtualItemHeight() {
     if (this.foodVirtualItemHeight) return this.foodVirtualItemHeight;
     const windowWidth = getCachedWindowInfo().windowWidth;
-    this.foodVirtualItemHeight = Math.max(1, Math.round(FOOD_VIRTUAL_ROW_HEIGHT_RPX * windowWidth / 750));
+    const rowHeight = this.data.elderMode ? ELDER_FOOD_VIRTUAL_ROW_HEIGHT_RPX : FOOD_VIRTUAL_ROW_HEIGHT_RPX;
+    this.foodVirtualItemHeight = Math.max(1, Math.round(rowHeight * windowWidth / 750));
     return this.foodVirtualItemHeight;
   },
 

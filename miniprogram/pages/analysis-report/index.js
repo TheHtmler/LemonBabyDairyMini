@@ -89,10 +89,12 @@ Page({
   },
 
   onLoad() {
+    if (require('../../utils/elderMode').guardNormalPage()) return;
     this.initPage();
   },
 
   onShow() {
+    if (require('../../utils/elderMode').guardNormalPage()) return;
     const reloadAt = wx.getStorageSync(ANALYSIS_REPORT_RELOAD_KEY);
     if (reloadAt) {
       wx.removeStorageSync(ANALYSIS_REPORT_RELOAD_KEY);

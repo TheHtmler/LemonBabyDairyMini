@@ -174,7 +174,7 @@ class WaterRecordModel {
     }
   }
 
-  async findByDate(dateStr, babyUid) {
+  async findByDate(dateStr, babyUid, options = {}) {
     try {
       const dateKey = this.getDateKey(dateStr);
       if (!babyUid || !dateKey) {
@@ -184,27 +184,31 @@ class WaterRecordModel {
       if (this.db.command?.gte && this.db.command?.lt) {
         const startOfDay = this.getDateStart(this.buildRecordTime(dateKey, '00:00'));
         const endOfDay = this.getDateEnd(startOfDay);
-        const rangeRes = await this.collection
+        const rangeQuery = this.collection
           .where({
             babyUid,
             recordTime: this.db.command.gte(startOfDay).and(this.db.command.lt(endOfDay)),
             status: 'active'
           })
-          .orderBy('recordTime', 'desc')
-          .get();
+          .orderBy('recordTime', 'desc');
+        const rangeRes = options.allRecords
+          ? await require('../utils/readAllQuery').readAllQuery(rangeQuery)
+          : await rangeQuery.get();
         if ((rangeRes.data || []).length > 0) {
           return { success: true, data: rangeRes.data || [] };
         }
       }
 
-      const result = await this.collection
+      const query = this.collection
         .where({
           babyUid,
           date: dateKey,
           status: 'active'
         })
-        .orderBy('recordTime', 'desc')
-        .get();
+        .orderBy('recordTime', 'desc');
+      const result = options.allRecords
+        ? await require('../utils/readAllQuery').readAllQuery(query)
+        : await query.get();
       return { success: true, data: result.data || [] };
     } catch (error) {
       console.error('查询喝水记录失败:', error);

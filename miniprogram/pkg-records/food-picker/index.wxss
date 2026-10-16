@@ -875,3 +875,56 @@
 .quantity-action::after {
   border: none;
 }
+
+/* 大字列表的固定行高须同步 ELDER_FOOD_VIRTUAL_ROW_HEIGHT_RPX。 */
+.elder-form { padding-bottom: calc(182rpx + env(safe-area-inset-bottom)); font-size: 34rpx; }
+.elder-form .library-tab { height: 88rpx; line-height: 88rpx; font-size: 34rpx; }
+.elder-form .search-input { height: 96rpx; font-size: 32rpx; }
+.elder-form .search-clear,
+.elder-form .toolbar-count,
+.elder-form .category-nav-item,
+.elder-form .category-empty,
+.elder-form .loading,
+.elder-form .empty-state { font-size: 32rpx; line-height: 1.5; color: #5a4518; }
+.elder-form .search-clear { min-height: 88rpx; display: flex; align-items: center; }
+.elder-form .toolbar-add-tip,
+.elder-form .food-option-image,
+.elder-form .food-option-meta-row,
+.elder-form .food-option-sub,
+.elder-form .food-option-alias,
+.elder-form .cart-detail-image,
+.elder-form .cart-detail-meta,
+.elder-form .quantity-draft-source,
+.elder-form .quantity-preview { display: none; }
+.elder-form .category-sidebar { width: 156rpx; }
+.elder-form .category-nav-item { padding: 22rpx 12rpx; min-height: 88rpx; box-sizing: border-box; }
+.elder-form .food-option { height: 250rpx; margin-bottom: 14rpx; padding: 18rpx 12rpx; gap: 12rpx; }
+.elder-form .food-option-name { font-size: 36rpx; line-height: 1.5; white-space: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.elder-form .food-option-add { width: 88rpx; height: 88rpx; font-size: 44rpx; }
+.elder-form .cart-bar { height: calc(164rpx + env(safe-area-inset-bottom)); }
+.elder-form .cart-icon { display: none; }
+.elder-form .cart-title,
+.elder-form .cart-detail-title,
+.elder-form .cart-detail-name,
+.elder-form .quantity-drawer-title,
+.elder-form .quantity-draft-name { font-size: 36rpx; line-height: 1.5; white-space: normal; }
+.elder-form .cart-subtitle,
+.elder-form .cart-detail-count,
+.elder-form .cart-clear,
+.elder-form .cart-detail-remove,
+.elder-form .quantity-drawer-subtitle,
+.elder-form .quantity-drawer-close,
+.elder-form .quantity-input-label,
+.elder-form .quantity-unit { font-size: 32rpx; line-height: 1.5; }
+.elder-form .cart-subtitle { color: #ffe9b8; }
+.elder-form .cart-confirm,
+.elder-form .cart-clear,
+.elder-form .cart-detail-remove,
+.elder-form .quantity-drawer-close { min-height: 88rpx; display: flex; align-items: center; justify-content: center; padding: 14rpx 20rpx; box-sizing: border-box; font-size: 32rpx; }
+.elder-form .cart-detail-panel { bottom: calc(164rpx + env(safe-area-inset-bottom)); }
+.elder-form .quantity-drawer { height: 90vh; }
+.elder-form .quantity-input-row { min-height: 104rpx; gap: 12rpx; }
+.elder-form .quantity-input { height: 104rpx; font-size: 40rpx; }
+.elder-form .amount-input-placeholder { font-size: 32rpx; }
+.elder-form .quantity-action { width: 100%; min-height: 104rpx; height: auto; margin: 0; padding: 16rpx 10rpx; box-sizing: border-box; line-height: 1.5; font-size: 34rpx; color: #382500; }
+.elder-form .quantity-action::after { border: none; }

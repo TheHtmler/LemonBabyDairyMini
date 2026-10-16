@@ -1,4 +1,5 @@
 const RecipeModel = require('../../models/recipe');
+const { isElderMode } = require('../../utils/elderMode');
 const { matchRecipeBySearch } = require('../../utils/recipeNutritionUtils');
 const { readRecipeCache } = RecipeModel;
 
@@ -29,6 +30,7 @@ function mapRecipeListItem(recipe = {}, index = 0) {
 
 Page({
   data: {
+    elderMode: false,
     loading: true,
     searchQuery: '',
     recipes: [],
@@ -36,6 +38,10 @@ Page({
     recipeCount: 0,
     filteredCount: 0,
     emptyHint: ''
+  },
+
+  onLoad() {
+    this.setData({ elderMode: isElderMode() });
   },
 
   async onShow() {
