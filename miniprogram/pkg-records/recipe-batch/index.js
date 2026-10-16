@@ -1,6 +1,7 @@
 const RecipeModel = require('../../models/recipe');
 const FoodModel = require('../../models/food');
 const { getBabyUid } = require('../../utils/index');
+const { isElderMode } = require('../../utils/elderMode');
 const {
   buildIngredientNutrition,
   summarizeBatchFromIngredients,
@@ -151,6 +152,7 @@ function buildCurrentNutritionDisplay(nutrition = {}, quantity) {
 
 Page({
   data: {
+    elderMode: false,
     loading: true,
     isEditMode: false,
     recipeId: '',
@@ -195,6 +197,7 @@ Page({
   },
 
   async onLoad(options = {}) {
+    this.setData({ elderMode: isElderMode() });
     const recipeId = decodeURIComponent(options.recipeId || '');
     const isEditMode = options.mode === 'edit';
     this.foodById = new Map();

@@ -96,11 +96,11 @@ class MedicationRecordModel {
    * @param {string} babyUid 宝宝UID
    * @returns {Promise}
    */
-  async findByDate(dateStr, babyUid) {
+  async findByDate(dateStr, babyUid, options = {}) {
     try {
       const [year, month, day] = dateStr.split('-').map(Number);
       const date = new Date(year, month - 1, day);
-      const result = await this.getRecordsByDate(date, babyUid);
+      const result = await this.getRecordsByDate(date, babyUid, options);
       return { success: true, data: result.data || [] };
     } catch (error) {
       console.error('查询药物记录失败:', error);
@@ -114,17 +114,19 @@ class MedicationRecordModel {
    * @param {string} babyUid 宝宝UID
    * @returns {Promise}
    */
-  async getRecordsByDate(date, babyUid) {
+  async getRecordsByDate(date, babyUid, options = {}) {
     const startOfDay = this.getDateStart(date);
     const endOfDay = this.getDateEnd(date);
     
-    return await this.collection
+    const query = this.collection
       .where({
         babyUid: babyUid,
         date: this.db.command.gte(startOfDay).and(this.db.command.lt(endOfDay))
       })
-      .orderBy('actualDateTime', 'desc')
-      .get();
+      .orderBy('actualDateTime', 'desc');
+    return options.allRecords
+      ? await require('../utils/readAllQuery').readAllQuery(query)
+      : await query.get();
   }
 
   /**

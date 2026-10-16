@@ -1,5 +1,6 @@
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const { getBabyUid } = require('../../utils/index');
+const { isElderMode, finishElderRecord } = require('../../utils/elderMode');
 
 const TYPE_OPTIONS = [
   { value: 'stool', label: '大便', icon: '💩', tip: '记录性状颜色' },
@@ -91,6 +92,8 @@ function buildRecordTime(dateKey, time) {
 
 Page({
   data: {
+    elderMode: false,
+    saved: false,
     dateKey: '',
     recordId: '',
     isEdit: false,
@@ -109,6 +112,7 @@ Page({
     const dateKey = options.date || getTodayDateKey();
     const recordId = options.id || '';
     this.setData({
+      elderMode: options.from === 'elder' || options.source === 'elder' || isElderMode(),
       dateKey,
       recordId,
       isEdit: !!recordId,
@@ -139,6 +143,11 @@ Page({
 
   onTimeChange(e) {
     this.setData({ 'form.time': e.detail.value });
+  },
+
+  onElderDateChange(e) {
+    if (!this.data.elderMode || this.data.isEdit || this.data.saving || this.data.saved) return;
+    this.setData({ dateKey: e.detail.value });
   },
 
   onTypeSelect(e) {
@@ -200,6 +209,7 @@ Page({
   },
 
   async saveBowelRecord() {
+    if (this.data.saving || this.data.saved) return;
     const { dateKey, recordId, isEdit, form } = this.data;
     if (!form.time) {
       wx.showToast({ title: '请选择时间', icon: 'none' });
@@ -244,9 +254,19 @@ Page({
         });
       }
 
-      await DailySummaryV2Model.markDirty(babyUid, dateKey);
-      await this.refreshPreviousPage();
+      // 写入完成后锁住提交；统计或页面刷新失败不能让同一笔记录再次写入。
+      this.setData({ saved: true });
+      try {
+        await DailySummaryV2Model.markDirty(babyUid, dateKey);
+        if (!this.data.elderMode) await this.refreshPreviousPage();
+      } catch (refreshError) {
+        console.error('排便记录已保存，刷新统计失败:', refreshError);
+      }
       wx.hideLoading();
+      if (this.data.elderMode) {
+        finishElderRecord();
+        return;
+      }
       wx.showToast({ title: isEdit ? '更新成功' : '记录成功', icon: 'success' });
       wx.navigateBack();
     } catch (error) {

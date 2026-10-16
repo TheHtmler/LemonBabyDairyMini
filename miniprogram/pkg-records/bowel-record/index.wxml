@@ -1,3 +1,4 @@
+<view class="{{elderMode ? 'elder-form' : ''}}">
 <view class="page bowel-page">
   <view class="hero-card">
     <view class="hero-main">
@@ -13,7 +14,10 @@
     <view class="compact-grid">
       <view class="compact-field">
         <text class="field-label">日期</text>
-        <view class="compact-value fixed-date">📅 {{dateKey}}</view>
+        <picker wx:if="{{elderMode && !isEdit}}" mode="date" value="{{dateKey}}" disabled="{{saving || saved}}" bindchange="onElderDateChange">
+          <view class="compact-picker">📅 {{dateKey}}</view>
+        </picker>
+        <view wx:else class="compact-value fixed-date">📅 {{dateKey}}</view>
       </view>
       <view class="compact-field">
         <text class="field-label">时间</text>
@@ -134,6 +138,7 @@
   </view>
 
   <view class="footer-actions">
-    <button class="save-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="saveBowelRecord">{{isEdit ? '保存修改' : '保存记录'}}</button>
+    <button class="save-btn" loading="{{saving}}" disabled="{{saving || saved}}" bindtap="saveBowelRecord">{{saved ? '已记录' : (saving ? '正在保存' : (isEdit ? '保存修改' : '保存记录'))}}</button>
   </view>
+</view>
 </view>

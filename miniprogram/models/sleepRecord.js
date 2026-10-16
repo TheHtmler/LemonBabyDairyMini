@@ -191,7 +191,7 @@ class SleepRecordModel {
     }
   }
 
-  async findByDate(dateStr, babyUid) {
+  async findByDate(dateStr, babyUid, options = {}) {
     try {
       const dateKey = this.getDateKey(dateStr);
       if (!babyUid || !dateKey) {
@@ -201,27 +201,31 @@ class SleepRecordModel {
       if (this.db.command?.gte && this.db.command?.lt) {
         const startOfDay = this.getDateStart(buildDateTime(dateKey, '00:00'));
         const endOfDay = this.getDateEnd(startOfDay);
-        const rangeRes = await this.collection
+        const rangeQuery = this.collection
           .where({
             babyUid,
             startDateTime: this.db.command.gte(startOfDay).and(this.db.command.lt(endOfDay)),
             status: 'active'
           })
-          .orderBy('startDateTime', 'desc')
-          .get();
+          .orderBy('startDateTime', 'desc');
+        const rangeRes = options.allRecords
+          ? await require('../utils/readAllQuery').readAllQuery(rangeQuery)
+          : await rangeQuery.get();
         if ((rangeRes.data || []).length > 0) {
           return { success: true, data: rangeRes.data || [] };
         }
       }
 
-      const result = await this.collection
+      const query = this.collection
         .where({
           babyUid,
           date: dateKey,
           status: 'active'
         })
-        .orderBy('startDateTime', 'desc')
-        .get();
+        .orderBy('startDateTime', 'desc');
+      const result = options.allRecords
+        ? await require('../utils/readAllQuery').readAllQuery(query)
+        : await query.get();
       return { success: true, data: result.data || [] };
     } catch (error) {
       console.error('查询睡眠记录失败:', error);

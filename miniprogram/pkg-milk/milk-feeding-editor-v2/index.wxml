@@ -1,13 +1,18 @@
 <page-meta page-style="{{showAddMilkPanel ? 'overflow: hidden;' : ''}}" />
+<view class="{{elderMode ? 'elder-form' : ''}}">
 <view class="page v2-page focused-feeding-page">
   <view class="feeding-hero">
-    <view class="feeding-summary-strip">
+    <picker wx:if="{{elderMode}}" mode="date" value="{{selectedDate}}" end="{{maxDate}}" disabled="{{editorMode === 'edit' || isSaving || loading || dateChanging}}" bindchange="onElderDateChange">
+      <view class="elder-date-field">日期：{{selectedDate}} ▾</view>
+    </picker>
+    <view class="feeding-summary-strip" wx:if="{{!elderMode}}">
       <view class="feeding-summary-item">
         <text class="feeding-summary-value">今日已喝 {{existingRecords.length}} 顿</text>
       </view>
     </view>
-    <view class="hero-action-pill" bindtap="navigateToGoalPlanner">算奶</view>
+    <view class="hero-action-pill" bindtap="navigateToGoalPlanner" wx:if="{{!elderMode}}">算奶</view>
     <view class="hero-time-wrap">
+      <text class="elder-time-label" wx:if="{{elderMode}}">喂奶时间（可修改）</text>
       <picker mode="time" value="{{startTime}}" bindchange="onTimeChange">
         <view class="hero-time-pill">{{startTime}}</view>
       </picker>
@@ -111,7 +116,7 @@
         </view>
         <view class="add-milk-dialog-corner">
           <view class="add-milk-dialog-close" bindtap="cancelAddMilkPanel">×</view>
-          <view class="add-milk-dialog-manage" bindtap="goToManagePowders">去配奶粉</view>
+          <view wx:if="{{!elderMode}}" class="add-milk-dialog-manage" bindtap="goToManagePowders">去配奶粉</view>
         </view>
       </view>
       <view class="add-milk-library-tabs">
@@ -140,7 +145,7 @@
         </scroll-view>
         <scroll-view class="add-milk-options-scroll" scroll-y enhanced show-scrollbar="{{false}}">
           <view class="add-milk-options-empty" wx:if="{{addMilkOptions.length === 0}}">
-            <text>{{addMilkActiveScope === 'system' ? '暂无系统奶粉' : '还没有奶粉，点右上角「去配奶粉」添加'}}</text>
+            <text>{{addMilkActiveScope === 'system' ? '暂无系统奶粉' : (elderMode ? '还没有常用奶粉，可以切换到系统奶粉选择' : '还没有奶粉，点右上角「去配奶粉」添加')}}</text>
           </view>
           <view class="add-milk-options">
             <view
@@ -212,7 +217,7 @@
     </view>
   </view>
 
-  <view class="save-preview-stack">
+  <view class="save-preview-stack" wx:if="{{!elderMode}}">
     <nutrition-target-preview
       preview="{{targetPreview}}"
       title="保存前看看"
@@ -294,7 +299,8 @@
   </view>
 
   <view class="footer-bar">
-    <button class="footer-btn cancel" bindtap="onCancel">取消</button>
-    <button class="footer-btn confirm" bindtap="saveFeedingRecord">保存</button>
+    <button class="footer-btn cancel" bindtap="onCancel" disabled="{{isSaving}}">{{elderMode ? '返回' : '取消'}}</button>
+    <button class="footer-btn confirm" bindtap="saveFeedingRecord" loading="{{isSaving || dateChanging}}" disabled="{{isSaving || loading || dateChanging}}">{{isSaving ? '保存中' : (dateChanging ? '加载中' : '保存')}}</button>
   </view>
+</view>
 </view>

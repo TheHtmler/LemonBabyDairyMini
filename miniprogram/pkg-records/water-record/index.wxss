@@ -651,3 +651,115 @@
   40% { transform: scale(1.12); color: #2F6F9F; }
   100% { transform: scale(1); }
 }
+
+/* 长辈模式直接展开录入页，使用纵向字段，避免大字号挤压数量与单位。 */
+.record-sheet.elder-form {
+  position: relative;
+  min-height: 100vh;
+  max-height: none;
+  padding: 32rpx 24rpx calc(180rpx + env(safe-area-inset-bottom));
+  border-radius: 0;
+  background: #FFFDF7;
+  box-sizing: border-box;
+  transform: none;
+  transition: none;
+  box-shadow: none;
+}
+
+.elder-form .sheet-title {
+  font-size: 44rpx;
+  color: #332600;
+}
+
+.elder-hint {
+  margin: 12rpx 0 32rpx;
+  font-size: 32rpx;
+  color: #66552F;
+  line-height: 1.6;
+}
+
+.elder-form .sheet-body {
+  flex: none;
+  max-height: none;
+}
+
+.elder-form .compact-grid {
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.elder-form .field-label,
+.elder-form .volume-unit {
+  font-size: 34rpx;
+  color: #54431C;
+}
+
+.elder-form .compact-picker,
+.elder-form .compact-input,
+.elder-form .notes-area {
+  min-height: 104rpx;
+  font-size: 38rpx;
+  padding: 22rpx;
+  line-height: 1.5;
+}
+
+.elder-form .compact-input {
+  height: 104rpx;
+}
+
+.elder-form .volume-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.elder-form .volume-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.elder-form .volume-unit {
+  position: static;
+  flex-shrink: 0;
+  transform: none;
+}
+
+.elder-form .quick-block,
+.elder-form .notes-block {
+  margin-top: 32rpx;
+}
+
+.elder-form .quick-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.elder-form .quick-chip {
+  height: 96rpx;
+  line-height: 92rpx;
+  font-size: 36rpx;
+  border-radius: 16rpx;
+}
+
+.elder-form .notes-area {
+  min-height: 200rpx;
+}
+
+.elder-form .sheet-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: #FFFDF7;
+  z-index: 30;
+}
+
+.elder-form .save-btn {
+  height: 108rpx;
+  line-height: 108rpx;
+  font-size: 40rpx;
+  color: #332600;
+  border-radius: 24rpx;
+}

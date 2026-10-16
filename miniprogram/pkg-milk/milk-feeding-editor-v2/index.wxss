@@ -1512,3 +1512,103 @@
   color: #ffffff;
   box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.24);
 }
+
+/* 长辈模式保持同一表单，仅放大必要信息与点击区域。 */
+.elder-form .page { padding: 24rpx 24rpx calc(180rpx + env(safe-area-inset-bottom)); font-size: 34rpx; }
+.elder-form .feeding-hero { display: flex; flex-direction: column; align-items: stretch; gap: 20rpx; }
+.elder-form .hero-time-wrap { position: static; display: flex; flex-direction: column; align-items: stretch; gap: 12rpx; margin-left: 0; }
+.elder-form .elder-date-field,
+.elder-form .hero-time-pill { min-height: 96rpx; padding: 20rpx; font-size: 36rpx; line-height: 1.4; box-sizing: border-box; background: #fff9ea; border-radius: 16rpx; color: #3f2d12; }
+.elder-form .elder-time-label,
+.elder-form .section-eyebrow,
+.elder-form .field-label,
+.elder-form .field-unit,
+.elder-form .remove-link,
+.elder-form .partial-intake-sub,
+.elder-form .partial-intake-help,
+.elder-form .partial-intake-chevron,
+.elder-form .partial-intake-restore,
+.elder-form .partial-intake-label,
+.elder-form .partial-intake-chip,
+.elder-form .partial-intake-preview-main,
+.elder-form .partial-intake-preview-sub,
+.elder-form .partial-intake-error { font-size: 32rpx; line-height: 1.5; color: #5a4518; }
+.elder-form .section-title,
+.elder-form .component-name,
+.elder-form .picker-text,
+.elder-form .add-source-title,
+.elder-form .empty-state,
+.elder-form .partial-intake-title { font-size: 36rpx; line-height: 1.5; }
+.elder-form .field-input,
+.elder-form .notes-input { font-size: 38rpx; line-height: 1.5; }
+.elder-form .field-input { height: 88rpx; }
+.elder-form .primary-input-shell { min-height: 104rpx; }
+.elder-form .notes-input { min-height: 180rpx; height: 180rpx; padding: 20rpx; }
+.elder-form .add-source-button,
+.elder-form .remove-link,
+.elder-form .partial-intake-toggle,
+.elder-form .partial-intake-restore { min-height: 88rpx; display: flex; align-items: center; box-sizing: border-box; }
+.elder-form .remove-link { padding: 12rpx 16rpx; color: #9e3f25; }
+.elder-form .milk-entry-header { flex-wrap: wrap; }
+.elder-form .component-main { flex: 1; }
+.elder-form .component-main picker { flex: 1; min-width: 0; }
+.elder-form .powder-picker-line { flex-wrap: wrap; min-height: 88rpx; }
+.elder-form .picker-text { white-space: normal; word-break: break-all; }
+.elder-form .mode-segment { width: 100%; border-radius: 18rpx; }
+.elder-form .mode-chip { flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center; padding: 12px 5px; font-size: 18px; line-height: 1.5; text-align: center; box-sizing: border-box; }
+.elder-form .partial-intake-row { flex-wrap: wrap; }
+.elder-form .partial-intake-label { width: 100%; }
+.elder-form .partial-intake-chip { min-height: 88rpx; display: flex; align-items: center; box-sizing: border-box; }
+.elder-form .entry-source-tag { display: none; }
+.elder-form .category-badge { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; line-height: 1; }
+.elder-form .add-milk-dialog-mask { padding: 12rpx; }
+.elder-form .add-milk-dialog-panel { height: 88vh; padding: 24rpx 16rpx calc(24rpx + env(safe-area-inset-bottom)); }
+.elder-form .add-milk-hint,
+.elder-form .add-milk-library-tab,
+.elder-form .add-milk-category-nav-item,
+.elder-form .add-milk-category-empty,
+.elder-form .add-milk-options-empty,
+.elder-form .add-milk-option-subtitle,
+.elder-form .add-milk-cart-subtitle,
+.elder-form .add-milk-cart-detail-count { font-size: 30rpx; line-height: 1.45; }
+.elder-form .add-milk-option-title,
+.elder-form .add-milk-cart-title,
+.elder-form .add-milk-cart-detail-title,
+.elder-form .add-milk-cart-detail-name,
+.elder-form .add-milk-cart-detail-remove,
+.elder-form .add-milk-cart-confirm { font-size: 32rpx; line-height: 1.45; }
+.elder-form .add-milk-library-tab,
+.elder-form .add-milk-category-nav-item,
+.elder-form .add-milk-cart-confirm,
+.elder-form .add-milk-cart-detail-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  height: auto;
+  padding: 10px 8px;
+  box-sizing: border-box;
+  font-size: 18px;
+  line-height: 1.4;
+  text-align: center;
+}
+/* 字体和点击区域同时放大，文字始终在区域中央，不依赖旧的行高定位。 */
+.elder-form .add-milk-library-tab { flex: 1; min-width: 0; }
+.elder-form .add-milk-category-sidebar { width: 160rpx; padding: 4px 0; }
+.elder-form .add-milk-category-nav-item { margin: 4px 0; padding: 10px 8px 10px 12px; }
+.elder-form .add-milk-category-nav-label { width: 100%; }
+.elder-form .add-milk-cart-confirm { min-width: 88px; min-height: 52px; padding: 12px 18px; border-radius: 14px; }
+.elder-form .add-milk-category-nav-label,
+.elder-form .add-milk-cart-detail-name,
+.elder-form .add-milk-cart-title { white-space: normal; overflow: visible; }
+.elder-form .add-milk-option-image,
+.elder-form .add-milk-option .category-badge,
+.elder-form .add-milk-cart-detail-image { display: none; }
+.elder-form .add-milk-option-add,
+.elder-form .add-milk-dialog-close { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.elder-form .add-milk-cart-detail { bottom: 210rpx; }
+.elder-form .add-milk-cart-bar { position: relative; z-index: 6; padding: 18rpx 12rpx; }
+.elder-form .add-milk-cart-anchor { display: none; }
+.elder-form .footer-bar { left: 0; right: 0; bottom: 0; padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom)); background: #fff9ea; box-sizing: border-box; }
+.elder-form .footer-btn { width: 100%; min-height: 52px; height: auto; display: flex; align-items: center; justify-content: center; margin: 0; padding: 12px 16px; box-sizing: border-box; line-height: 1.4; font-size: 20px; border-radius: 18rpx; }
+.elder-form .footer-btn.confirm { background: #f0a900; color: #382500; }

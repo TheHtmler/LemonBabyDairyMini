@@ -428,3 +428,29 @@ page {
 .confirm-btn::after {
   border: none !important;
 }
+
+/* 只收起营养统计，原料份量、食用份量和单位仍完整保留。 */
+.elder-form { font-size: 34rpx; padding-bottom: calc(180rpx + env(safe-area-inset-bottom)); }
+.elder-form .intro-card { flex-wrap: wrap; }
+.elder-form .intro-title,
+.elder-form .ingredient-name { font-size: 38rpx; line-height: 1.5; white-space: normal; overflow: visible; }
+.elder-form .intro-meta,
+.elder-form .loading-state,
+.elder-form .unit-text,
+.elder-form .qty-action-label,
+.elder-form .qty-action-chip,
+.elder-form .intake-panel-label,
+.elder-form .intake-tip { font-size: 32rpx; line-height: 1.5; color: #5a4518; }
+.elder-form .ingredient-edit-line { flex-wrap: wrap; gap: 12rpx; }
+.elder-form .ingredient-name { flex: 1 0 100%; }
+.elder-form .qty-input,
+.elder-form .qty-input.intake-input { flex: 1; width: auto; min-width: 0; height: 96rpx; min-height: 96rpx; font-size: 40rpx; color: #3f2d12; }
+.elder-form .qty-placeholder { font-size: 32rpx; }
+.elder-form .qty-action-chip { min-height: 88rpx; display: flex; align-items: center; padding: 16rpx 20rpx; box-sizing: border-box; }
+.elder-form .nutrition-preview,
+.elder-form .intake-detail { display: none; }
+.elder-form .intake-panel-head { display: block; }
+.elder-form .mode-tabs.compact { margin: 16rpx 0; justify-content: stretch; }
+.elder-form .mode-tabs.compact .mode-tab { flex: 1; height: 88rpx; line-height: 88rpx; font-size: 34rpx; }
+.elder-form .mode-tabs.compact .mode-tab.active { color: #382500; }
+.elder-form .confirm-btn { height: 104rpx; line-height: 104rpx; font-size: 38rpx; color: #382500; }

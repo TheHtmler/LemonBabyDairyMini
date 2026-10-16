@@ -4,6 +4,7 @@ const feedingRecordV2Model = require('../../models/feedingRecordV2');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
+const { isElderMode, finishElderRecord } = require('../../utils/elderMode');
 const {
   getNutritionTargetPreferences,
   pickCoefficient
@@ -285,6 +286,11 @@ function canLoadDailyTargetContext(wxLike = wxApi) {
 
 Page({
   data: {
+    elderMode: false,
+    isSaving: false,
+    dateChanging: false,
+    contextLoading: false,
+    maxDate: '',
     babyUid: '',
     editorMode: 'create',
     editingRecordId: '',
@@ -367,6 +373,8 @@ Page({
     }
 
     this.setData({
+      elderMode: isElderMode(),
+      maxDate: formatDateKey(),
       babyUid,
       editorMode,
       editingRecordId,
@@ -375,10 +383,13 @@ Page({
       startTime
     });
 
+    this.setData({ loading: true });
     await this.loadPageData();
+    this.setData({ loading: false });
   },
 
   async onShow() {
+    if (this.data.loading || this.data.dateChanging) return;
     // 从配奶设置页返回时，只刷新奶粉档案，避免清空本次已录入的奶。
     if (this._pendingPowderRefresh) {
       this._pendingPowderRefresh = false;
@@ -393,25 +404,28 @@ Page({
       return;
     }
 
+    const request = this.beginDateContextRequest();
     try {
       const [settings, basicInfo, records, systemPowders] = await Promise.all([
-        ensureNutritionProfileSettings(this.data.babyUid),
-        resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
+        ensureNutritionProfileSettings(request.babyUid),
+        resolveBasicInfoSnapshot(request.babyUid, request.selectedDate, {
           includeFallbacks: false,
           includeProfileInitial: true,
           // 当天成长记录可能只有身高体重、缺蛋白系数，补齐历史系数，避免存下缺系数的喂奶快照。
           carryForwardMissing: true
         }),
-        getV2RecordsByDate(this.data.babyUid, this.data.selectedDate),
+        getV2RecordsByDate(request.babyUid, request.selectedDate),
         this.loadSystemSelectablePowders()
       ]);
-      const targetContext = await this.loadTargetContext(basicInfo || {}, records || []);
-      const minePowders = (await getUserPowders(this.data.babyUid))
+      const targetContext = await this.loadTargetContext(basicInfo || {}, records || [], request);
+      const minePowders = (await getUserPowders(request.babyUid))
         .filter((powder) => powder.status !== POWDER_STATUSES.ARCHIVED)
         .map(enrichMinePowder);
 
       const formulaPowders = await resolvePowderImageUrls(mergeSelectablePowders(minePowders, systemPowders));
 
+      if (!this.isCurrentDateContextRequest(request)) return;
+      this._contextReadyDate = request.selectedDate;
       this.setData({
         nutritionSettings: settings || {},
         formulaPowders,
@@ -423,6 +437,7 @@ Page({
         specialProteinCoefficientInput: toInputValue(basicInfo?.specialProteinCoefficient),
         calorieCoefficientInput: toInputValue(basicInfo?.calorieCoefficient)
       }, () => {
+        if (!this.isCurrentDateContextRequest(request)) return;
         const editingRecord = this.resolveEditingRecord(records || []);
         if (editingRecord) {
           this.applyEditingRecord(editingRecord);
@@ -431,9 +446,25 @@ Page({
         this.refreshNutritionPreview();
       });
     } catch (error) {
+      if (!this.isCurrentDateContextRequest(request)) return;
       console.error('加载喂奶记录失败：', error);
       wxApi.showToast({ title: '加载失败，请稍后再试', icon: 'none' });
+    } finally {
+      if (this.isCurrentDateContextRequest(request)) this.setData({ contextLoading: false });
     }
+  },
+
+  beginDateContextRequest() {
+    // 所有日期上下文共用版本；后发请求使旧日期和旧快照的响应失效。
+    this._dateContextVersion = (this._dateContextVersion || 0) + 1;
+    this.setData({ contextLoading: true });
+    return { version: this._dateContextVersion, selectedDate: this.data.selectedDate, babyUid: this.data.babyUid };
+  },
+
+  isCurrentDateContextRequest(request) {
+    return request.version === this._dateContextVersion
+      && request.selectedDate === this.data.selectedDate
+      && request.babyUid === this.data.babyUid;
   },
 
   summarizeRecordsForTarget(records = []) {
@@ -452,8 +483,10 @@ Page({
     }, normalizeSummary()));
   },
 
-  async loadTargetContext(basicInfo = {}, records = []) {
-    const localTarget = await getNutritionTargetPreferences(this.data.babyUid, wxApi);
+  async loadTargetContext(basicInfo = {}, records = [], request = {}) {
+    const babyUid = request.babyUid || this.data.babyUid;
+    const selectedDate = request.selectedDate || this.data.selectedDate;
+    const localTarget = await getNutritionTargetPreferences(babyUid, wxApi);
     const fallbackSummary = this.summarizeRecordsForTarget(records);
     let currentSummary = fallbackSummary;
     let resolvedBasicInfo = basicInfo || {};
@@ -471,7 +504,7 @@ Page({
         };
       }
 
-      const daily = await DailyRecordV2Service.getDailyRecordV2(this.data.babyUid, this.data.selectedDate);
+      const daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, selectedDate);
       currentSummary = withDayPremiumFromDailySummary(
         daily?.summary?.macroSummary || daily?.overview?.macroSummary || fallbackSummary,
         daily?.summary || {}
@@ -497,44 +530,55 @@ Page({
 
   async refreshTargetContextFromPreferences() {
     if (!this.data.babyUid) return;
-
-    // 体重可能在首页/算奶页被改过；页面仍在栈内时只会走 onShow，需重新解析当日基础信息。
-    let latestBasicInfo = null;
+    const request = this.beginDateContextRequest();
+    const canReuseSnapshot = !this.data.elderMode || this._contextReadyDate === request.selectedDate;
+    const cachedBasicInfo = canReuseSnapshot ? this.buildBasicInfoSnapshot() : {};
+    const cachedRecords = canReuseSnapshot ? this.data.existingRecords || [] : [];
     try {
-      latestBasicInfo = await resolveBasicInfoSnapshot(this.data.babyUid, this.data.selectedDate, {
-        includeFallbacks: false,
-        includeProfileInitial: true,
-        carryForwardMissing: true
+      // 只允许复用同一日期已确认的快照，禁止跨日沿用旧体重与系数。
+      let latestBasicInfo = null;
+      try {
+        latestBasicInfo = await resolveBasicInfoSnapshot(request.babyUid, request.selectedDate, {
+          includeFallbacks: false,
+          includeProfileInitial: true,
+          carryForwardMissing: true
+        });
+      } catch (error) {
+        if (this.data.elderMode) throw error;
+        console.warn('刷新当日体重失败，沿用页面缓存:', error);
+      }
+      const targetContext = await this.loadTargetContext({
+        weight: latestBasicInfo?.weight || cachedBasicInfo.weight,
+        naturalProteinCoefficient: latestBasicInfo?.naturalProteinCoefficient || cachedBasicInfo.naturalProteinCoefficient,
+        specialProteinCoefficient: latestBasicInfo?.specialProteinCoefficient || cachedBasicInfo.specialProteinCoefficient,
+        calorieCoefficient: latestBasicInfo?.calorieCoefficient || cachedBasicInfo.calorieCoefficient
+      }, cachedRecords, request);
+      if (!this.isCurrentDateContextRequest(request)) return;
+
+      const patch = {
+        targetContext,
+        naturalProteinCoefficientInput: targetContext.targetPreferences?.naturalProteinCoefficient || cachedBasicInfo.naturalProteinCoefficient || '',
+        specialProteinCoefficientInput: targetContext.targetPreferences?.specialProteinCoefficient || cachedBasicInfo.specialProteinCoefficient || '',
+        calorieCoefficientInput: targetContext.targetPreferences?.calorieCoefficient || cachedBasicInfo.calorieCoefficient || ''
+      };
+      // 编辑模式保留记录快照；新建模式使用本次请求确认的当日基础信息。
+      if (this.data.editorMode !== 'edit') {
+        const nextWeight = toInputValue(targetContext.weight || latestBasicInfo?.weight);
+        if (nextWeight || this.data.elderMode) patch.weight = nextWeight;
+        if (this.data.elderMode) patch.height = toInputValue(latestBasicInfo?.height);
+      }
+      this._contextReadyDate = request.selectedDate;
+      this.setData(patch, () => {
+        if (this.isCurrentDateContextRequest(request)) this.refreshNutritionPreview();
       });
     } catch (error) {
-      console.warn('刷新当日体重失败，沿用页面缓存:', error);
+      if (!this.isCurrentDateContextRequest(request)) return;
+      this._contextReadyDate = '';
+      console.error('刷新喂奶日期信息失败：', error);
+      wxApi.showToast({ title: '日期信息加载失败，请重试', icon: 'none' });
+    } finally {
+      if (this.isCurrentDateContextRequest(request)) this.setData({ contextLoading: false });
     }
-
-    const targetContext = await this.loadTargetContext({
-      weight: latestBasicInfo?.weight || this.data.weight,
-      naturalProteinCoefficient: latestBasicInfo?.naturalProteinCoefficient || this.data.naturalProteinCoefficientInput,
-      specialProteinCoefficient: latestBasicInfo?.specialProteinCoefficient || this.data.specialProteinCoefficientInput,
-      calorieCoefficient: latestBasicInfo?.calorieCoefficient || this.data.calorieCoefficientInput
-    }, this.data.existingRecords || []);
-
-    const patch = {
-      targetContext,
-      naturalProteinCoefficientInput: targetContext.targetPreferences?.naturalProteinCoefficient || this.data.naturalProteinCoefficientInput,
-      specialProteinCoefficientInput: targetContext.targetPreferences?.specialProteinCoefficient || this.data.specialProteinCoefficientInput,
-      calorieCoefficientInput: targetContext.targetPreferences?.calorieCoefficient || this.data.calorieCoefficientInput
-    };
-
-    // 新建时同步最新体重，避免目标预览/保存快照仍用旧值；编辑模式保留记录快照体重。
-    if (this.data.editorMode !== 'edit') {
-      const nextWeight = toInputValue(targetContext.weight || latestBasicInfo?.weight);
-      if (nextWeight) {
-        patch.weight = nextWeight;
-      }
-    }
-
-    this.setData(patch, () => {
-      this.refreshNutritionPreview();
-    });
   },
 
   async handleNutritionTargetsSaved() {
@@ -555,6 +599,59 @@ Page({
     this.setData({
       startTime: e.detail.value
     });
+  },
+
+  async onElderDateChange(e) {
+    if (!this.data.elderMode || this.data.editorMode === 'edit' || this.data.isSaving || this.data.loading || this.data.dateChanging) return;
+    const selectedDate = e.detail.value;
+    if (!selectedDate || selectedDate === this.data.selectedDate) return;
+    const previousContext = {
+      selectedDate: this.data.selectedDate,
+      existingRecords: this.data.existingRecords,
+      targetContext: this.data.targetContext,
+      weight: this.data.weight,
+      height: this.data.height,
+      naturalProteinCoefficientInput: this.data.naturalProteinCoefficientInput,
+      specialProteinCoefficientInput: this.data.specialProteinCoefficientInput,
+      calorieCoefficientInput: this.data.calorieCoefficientInput
+    };
+    const previousReadyDate = this._contextReadyDate;
+    this.setData({ selectedDate, dateChanging: true });
+    const request = this.beginDateContextRequest();
+    try {
+      // 补记只更新日期上下文，保留已经填写的奶量与配比。
+      const [basicInfo, records] = await Promise.all([
+        resolveBasicInfoSnapshot(request.babyUid, selectedDate, {
+          includeFallbacks: false,
+          includeProfileInitial: true,
+          carryForwardMissing: true
+        }),
+        getV2RecordsByDate(request.babyUid, selectedDate)
+      ]);
+      const targetContext = await this.loadTargetContext(basicInfo || {}, records || [], request);
+      if (!this.isCurrentDateContextRequest(request)) return;
+      this._contextReadyDate = selectedDate;
+      this.setData({
+        existingRecords: records || [],
+        targetContext,
+        weight: toInputValue(basicInfo?.weight),
+        height: toInputValue(basicInfo?.height),
+        naturalProteinCoefficientInput: toInputValue(basicInfo?.naturalProteinCoefficient),
+        specialProteinCoefficientInput: toInputValue(basicInfo?.specialProteinCoefficient),
+        calorieCoefficientInput: toInputValue(basicInfo?.calorieCoefficient)
+      }, () => {
+        if (this.isCurrentDateContextRequest(request)) this.refreshNutritionPreview({ skipPartialSync: true });
+      });
+    } catch (error) {
+      if (!this.isCurrentDateContextRequest(request)) return;
+      this._contextReadyDate = previousReadyDate;
+      this.setData({ ...previousContext, contextLoading: false });
+      console.error('切换喂奶记录日期失败：', error);
+      wxApi.showToast({ title: '日期加载失败，请重试', icon: 'none' });
+    } finally {
+      if (this.isCurrentDateContextRequest(request)) this.setData({ contextLoading: false });
+      this.setData({ dateChanging: false });
+    }
   },
 
   onNotesInput(e) {
@@ -1634,6 +1731,15 @@ Page({
   },
 
   async saveFeedingRecord() {
+    if (this.data.isSaving || this.data.dateChanging || this.data.loading) return false;
+    if (this.data.contextLoading) {
+      wxApi.showToast({ title: '正在更新日期信息', icon: 'none' });
+      return false;
+    }
+    if (this.data.elderMode && this._contextReadyDate !== this.data.selectedDate) {
+      await this.refreshTargetContextFromPreferences();
+      if (this.data.contextLoading || this._contextReadyDate !== this.data.selectedDate) return false;
+    }
     if (!this.data.startTime) {
       wxApi.showToast({ title: '请选择喂奶时间', icon: 'none' });
       return false;
@@ -1700,15 +1806,19 @@ Page({
       }
     }
 
+    this.setData({ isSaving: true });
+    let recordSaved = false;
     try {
-      wxApi.showLoading({ title: '保存中' });
+      wxApi.showLoading({ title: '保存中', mask: true });
       if (this.data.editorMode === 'edit') {
         if (!this.data.editingRecordId) {
           wxApi.hideLoading();
+          this.setData({ isSaving: false });
           wxApi.showToast({ title: '未找到要编辑的记录', icon: 'none' });
           return false;
         }
         await updateFeedingRecordV2(this.data.editingRecordId, payload);
+        recordSaved = true;
         payload._id = this.data.editingRecordId;
         const nextDueAtMs = payload.startDateTime.getTime();
         if (
@@ -1727,11 +1837,16 @@ Page({
         }
       } else {
         const addResult = await addFeedingRecordV2(payload);
+        recordSaved = true;
         payload._id = (addResult && (addResult._id || (addResult.result && addResult.result._id))) || '';
       }
       await markDailySummaryDirty(this.data.babyUid, this.data.selectedDate);
       await this.notifyPreviousPageRefresh();
       wxApi.hideLoading();
+      if (this.data.elderMode) {
+        finishElderRecord();
+        return true;
+      }
       wxApi.showToast({ title: '已保存', icon: 'success' });
       setTimeout(() => {
         wxApi.navigateBack();
@@ -1739,6 +1854,18 @@ Page({
       return true;
     } catch (error) {
       wxApi.hideLoading();
+      // 写库成功后保持提交锁，避免附属刷新失败引导用户重复记录。
+      if (recordSaved) {
+        console.error('喂奶记录已保存，刷新附属信息失败：', error);
+        if (this.data.elderMode) {
+          finishElderRecord();
+        } else {
+          wxApi.showToast({ title: '已保存', icon: 'success' });
+          setTimeout(() => wxApi.navigateBack(), 300);
+        }
+        return true;
+      }
+      this.setData({ isSaving: false });
       console.error('保存喂奶记录失败：', error);
       wxApi.showToast({ title: '保存失败，请稍后再试', icon: 'none' });
       return false;
@@ -1746,6 +1873,7 @@ Page({
   },
 
   onCancel() {
+    if (this.data.isSaving) return;
     wxApi.navigateBack();
   }
 });
