@@ -27,7 +27,7 @@
 
 这 39 个文件是 `packages/nutrition-recognition-core` 的部署副本：
 三个营养云函数各 10 个，小程序识别组件 9 个（不含服务端模块）。
-它们由 `npm run build:nutrition` 生成，在 photo 分支已有 `.gitignore` 规则，不作为新增源码提交。
+它们由 `npm run build:nutrition` 生成。初次整合时沿用 photo 的 `.gitignore` 规则，未将副本提交；后续按用户确认调整为随源码一起纳入版本管理，详见下方补充记录。
 核对切换前后的内容，39 个产物及 `project.private.config.json` 共 40 个本地文件的哈希均未变化。
 
 ## 合并冲突处理
@@ -47,3 +47,11 @@
 
 以上是本地构建、静态检查和已有测试结果，不代表微信编译器、真机或真实云端识别已经验收。
 云端部署仍应按[已有部署清单](2026-10-14-home-search-scan-deployment.md)完整上传搜索和营养识别的相关函数及生成依赖，不能只上传搜索云函数。
+
+## 营养识别部署副本纳入版本管理（2026-10-19 补充）
+
+- 用户确认保留 39 个运行所需的部署副本，并将它们提交到 photo 分支，避免新检出后因漏执行构建而缺少模块。
+- 移除 `.gitignore` 的四条 `lib/core` 目录规则，同时移除本机 `.git/info/exclude` 中此前增加的对应规则。
+- 保留 `packages/nutrition-recognition-core` 为公共逻辑的维护入口，修改后执行 `npm run build:nutrition` 和 `npm run check:nutrition`，将源码与副本一同提交。
+- 仅拉取完整提交或切换到包含这些副本的分支，无需再手动生成这 39 个文件；云函数上传仍应携带完整的 `lib/core` 目录。
+- 本次验证：`npm run check:nutrition`、`npm run check:search` 通过；从暂存内容导出干净副本，未执行构建即通过营养模块一致性、独立加载和 39 个文件的 JS 语法检查。未新增或修改单元测试，未执行微信预览或云端部署。

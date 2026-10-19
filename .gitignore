@@ -16,9 +16,3 @@ node_modules/
 
 # Git worktrees
 .worktrees/
-
-# 云函数共享源码的构建产物
-cloudfunctions/recognizeNutritionLabel/lib/core/
-cloudfunctions/lookupNutritionReference/lib/core/
-cloudfunctions/confirmNutritionRecognition/lib/core/
-miniprogram/pkg-milk/components/nutrition-recognition/lib/core/

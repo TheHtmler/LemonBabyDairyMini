@@ -15,6 +15,8 @@ npm run check:search
 npm run check:nutrition
 ```
 
+营养识别的 39 个 `lib/core` 部署副本已纳入版本管理，新检出即可取得。上面的构建命令用于同步公共源码修改；仅拉取完整提交时无需为补齐这些文件而重新构建，但上传前仍需运行检查。修改 `packages/nutrition-recognition-core` 后，将源码和构建后的副本一起提交，不直接编辑副本。
+
 上传完整云函数目录及构建生成的 `lib`：
 
 - 新增 `searchManager`：能力查询、解析、查询执行及资料预览。
