@@ -48,7 +48,7 @@
   },
   "appid": "wx731fe4e54b1893ac",
   "projectname": "柠檬宝宝喂养记录",
-  "libVersion": "3.8.5",
+  "libVersion": "3.17.4",
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "condition": {
     "search": {
