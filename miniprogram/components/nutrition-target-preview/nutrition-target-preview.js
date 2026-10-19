@@ -1,5 +1,9 @@
 Component({
   properties: {
+    elderMode: {
+      type: Boolean,
+      value: false
+    },
     preview: {
       type: Object,
       value: null

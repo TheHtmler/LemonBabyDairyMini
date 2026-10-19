@@ -1,6 +1,6 @@
-<view class="target-preview" wx:if="{{preview}}">
+<view class="target-preview {{elderMode ? 'target-preview-elder' : ''}}" wx:if="{{preview}}">
   <view class="target-preview-head">
-    <view>
+    <view class="target-preview-head-main">
       <text class="target-preview-title">{{showProtein && !preview.hasProteinTarget ? emptyTitle : title}}</text>
       <text class="target-preview-subtitle">{{subtitle}}</text>
     </view>

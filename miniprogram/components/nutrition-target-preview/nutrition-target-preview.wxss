@@ -303,3 +303,41 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* 长辈模式复用原有目标计算，单列排布并放大提示与点击区域。 */
+.target-preview-elder { padding: 24rpx; }
+.target-preview-elder .target-preview-head { flex-wrap: wrap; }
+.target-preview-elder .target-preview-head-main { flex: 1; min-width: 220rpx; }
+.target-preview-elder .target-preview-title { font-size: 36rpx; line-height: 1.5; }
+.target-preview-elder .target-preview-subtitle,
+.target-preview-elder .target-preview-meta,
+.target-preview-elder .target-preview-premium-text,
+.target-preview-elder .target-preview-target-label { font-size: 30rpx; line-height: 1.5; color: #72551a; }
+.target-preview-elder .target-preview-grid { grid-template-columns: minmax(0, 1fr); gap: 16rpx; }
+.target-preview-elder .target-preview-item { min-height: 0; padding: 20rpx; }
+.target-preview-elder .target-preview-label,
+.target-preview-elder .target-preview-target-value,
+.target-preview-elder .target-preview-empty,
+.target-preview-elder .target-preview-calorie-label,
+.target-preview-elder .target-preview-calorie-text { font-size: 32rpx; line-height: 1.5; }
+.target-preview-elder .target-preview-label-text { white-space: normal; }
+.target-preview-elder .target-preview-badge { font-size: 28rpx; line-height: 1.5; padding: 4rpx 12rpx; }
+.target-preview-elder .target-preview-value-row,
+.target-preview-elder .target-preview-meta { flex-wrap: wrap; }
+.target-preview-elder .target-preview-value { font-size: 44rpx; line-height: 1.3; overflow-wrap: break-word; }
+.target-preview-elder .target-preview-action,
+.target-preview-elder .target-preview-empty-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12rpx 20rpx;
+  font-size: 32rpx;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.target-preview-elder .target-preview-empty,
+.target-preview-elder .target-preview-calorie { flex-direction: column; align-items: stretch; }
+.target-preview-elder .target-preview-calorie-text { text-align: left; }
+.target-preview-elder .target-preview-premium.is-empty { display: none; }
+.target-preview-elder .target-preview-bar { height: 12rpx; }
