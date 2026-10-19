@@ -140,8 +140,9 @@
       </view>
     </view>
 
-    <view class="save-preview-stack" wx:if="{{intakeTargetPreview && !elderMode}}">
+    <view class="save-preview-stack" wx:if="{{intakeTargetPreview}}">
       <nutrition-target-preview
+        elder-mode="{{elderMode}}"
         preview="{{intakeTargetPreview}}"
         title="保存前看看"
         subtitle="已记录 + 本次"

@@ -202,6 +202,13 @@
           <text wx:else>输入份量后计算营养</text>
         </view>
       </view>
+      <nutrition-target-preview wx:if="{{elderMode}}"
+        elder-mode="{{elderMode}}"
+        preview="{{quantityTargetPreview}}"
+        title="蛋白与热量提醒"
+        subtitle="按已输入份量实时预估"
+        bind:targetssaved="handleNutritionTargetsSaved"
+      />
     </scroll-view>
     <view class="quantity-actions">
       <button class="quantity-action secondary" bindtap="closeQuantityDrawer">继续选食物</button>
