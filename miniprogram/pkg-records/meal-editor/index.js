@@ -4,6 +4,7 @@ const RecipeModel = require('../../models/recipe');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { getBabyUid } = require('../../utils/index');
+const { isElderMode, finishElderRecord } = require('../../utils/elderMode');
 const {
   scaleNutrition,
   scaleNutritionByFactor,
@@ -485,6 +486,10 @@ function resolveFoodForNutritionCalc(item = {}, catalogFood = null) {
 
 Page({
   data: {
+    elderMode: false,
+    dateChanging: false,
+    contextLoading: false,
+    maxDate: '',
     mode: 'create',
     selectedDate: '',
     formattedSelectedDate: '',
@@ -540,13 +545,17 @@ Page({
     const selectedDate = options.date || formatDateKey(new Date());
     const mealTime = formatTime(new Date());
     const editMealBatchId = options.mealBatchId ? decodeURIComponent(options.mealBatchId) : '';
-    const isEditMode = !!editMealBatchId;
+    const editRecordId = options.recordId || '';
+    const isEditMode = !!(editMealBatchId || editRecordId);
     this.setData({
+      elderMode: isElderMode(),
+      maxDate: formatDateKey(new Date()),
       mode: isEditMode ? 'edit' : 'create',
       selectedDate,
       formattedSelectedDate: formatDisplayDate(selectedDate),
       sourcePage: options.from || '',
       editMealBatchId,
+      editRecordId,
       initialLoading: isEditMode,
       mealDraft: {
         mealTime,
@@ -565,7 +574,7 @@ Page({
     try {
       if (isEditMode) {
         // 编辑态优先拉本顿（快照足够展示），不先卡在食物库空态
-        await this.loadExistingMeal(editMealBatchId);
+        await this.loadExistingMeal(editMealBatchId, editRecordId);
         await Promise.all([catalogPromise, targetContextPromise]);
         this.hydrateMealItemsFromCatalog();
         this.refreshTargetPreviews();
@@ -594,50 +603,73 @@ Page({
 
   async loadTargetContext() {
     const babyUid = getBabyUid();
-    if (!babyUid) return;
-    let daily = null;
-    if (canLoadDailyTargetContext()) {
-      try {
-        daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, this.data.selectedDate);
-      } catch (error) {
-        console.warn('加载食物目标提醒每日汇总失败，将使用本地目标兜底:', error);
-      }
-    }
-    const basicInfo = mergeMissingBasicInfo(
-      daily?.basicInfo || daily?.summary?.basicInfo || {},
-      readCachedBabyBasicInfo(babyUid)
-    );
-    let localTarget = {};
+    if (!babyUid) return false;
+    const selectedDate = this.data.selectedDate;
+    const version = (this._dateContextVersion || 0) + 1;
+    this._dateContextVersion = version;
+    const isCurrent = () => version === this._dateContextVersion && selectedDate === this.data.selectedDate;
+    this.setData({ contextLoading: true, targetContextLoaded: false });
     try {
-      localTarget = await getNutritionTargetPreferences(babyUid);
-    } catch (error) {
-      console.warn('加载本地目标系数失败:', error);
-    }
-    const dayProteinQualityBase = resolveDayPremiumProteinBase(daily?.summary || {});
-    this.setData({
-      targetContext: {
-        currentSummary: withDayPremiumFromDailySummary(
-          daily?.summary?.macroSummary || daily?.overview?.macroSummary || {},
-          daily?.summary || {}
-        ),
-        weight: basicInfo.weight || '',
-        targetPreferences: {
-          naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),
-          specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, basicInfo.specialProteinCoefficient),
-          calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, basicInfo.calorieCoefficient)
+      let daily = null;
+      if (canLoadDailyTargetContext()) {
+        try {
+          daily = await DailyRecordV2Service.getDailyRecordV2(babyUid, selectedDate);
+        } catch (error) {
+          // 长辈补记必须确认选定日期，失败交由切换流程回滚，不能拿旧日数据保存。
+          if (this.data.elderMode) throw error;
+          console.warn('加载食物目标提醒每日汇总失败，将使用本地目标兜底:', error);
         }
-      },
-      dayProteinQualityBase,
-      targetContextLoaded: true
-    });
+      }
+      const basicInfo = mergeMissingBasicInfo(
+        daily?.basicInfo || daily?.summary?.basicInfo || {},
+        readCachedBabyBasicInfo(babyUid)
+      );
+      let localTarget = {};
+      try {
+        localTarget = await getNutritionTargetPreferences(babyUid);
+      } catch (error) {
+        console.warn('加载本地目标系数失败:', error);
+      }
+      if (!isCurrent()) return false;
+      const dayProteinQualityBase = resolveDayPremiumProteinBase(daily?.summary || {});
+      this._contextReadyDate = selectedDate;
+      this.setData({
+        targetContext: {
+          currentSummary: withDayPremiumFromDailySummary(
+            daily?.summary?.macroSummary || daily?.overview?.macroSummary || {},
+            daily?.summary || {}
+          ),
+          weight: basicInfo.weight || '',
+          targetPreferences: {
+            naturalProteinCoefficient: pickCoefficient(localTarget.naturalProteinCoefficient, basicInfo.naturalProteinCoefficient),
+            specialProteinCoefficient: pickCoefficient(localTarget.specialProteinCoefficient, basicInfo.specialProteinCoefficient),
+            calorieCoefficient: pickCoefficient(localTarget.calorieCoefficient, basicInfo.calorieCoefficient)
+          }
+        },
+        dayProteinQualityBase,
+        targetContextLoaded: true
+      });
+      return true;
+    } catch (error) {
+      if (!isCurrent()) return false;
+      this._contextReadyDate = '';
+      throw error;
+    } finally {
+      if (isCurrent()) this.setData({ contextLoading: false });
+    }
   },
 
   ensureTargetContextLoaded() {
-    if (this.data.targetContextLoaded) {
+    if (this.data.targetContextLoaded && (!this.data.elderMode || this._contextReadyDate === this.data.selectedDate)) {
       return Promise.resolve();
     }
     if (!this.targetContextLoadPromise) {
       this.targetContextLoadPromise = this.loadTargetContext()
+        .catch((error) => {
+          console.error('加载食物日期信息失败：', error);
+          wx.showToast({ title: '日期信息加载失败，请重试', icon: 'none' });
+          return false;
+        })
         .finally(() => {
           this.targetContextLoadPromise = null;
         });
@@ -645,9 +677,17 @@ Page({
     return this.targetContextLoadPromise;
   },
 
-  async reloadTargetContextAndPreviews() {
-    await this.loadTargetContext();
-    this.refreshTargetPreviews();
+  async reloadTargetContextAndPreviews(options = {}) {
+    try {
+      const loaded = await this.loadTargetContext();
+      if (loaded !== false) this.refreshTargetPreviews();
+      return loaded;
+    } catch (error) {
+      if (options.throwOnError) throw error;
+      console.error('刷新食物日期信息失败：', error);
+      wx.showToast({ title: '日期信息加载失败，请重试', icon: 'none' });
+      return false;
+    }
   },
 
   async handleNutritionTargetsSaved() {
@@ -791,6 +831,33 @@ Page({
     });
   },
 
+  async onElderDateChange(e) {
+    if (!this.data.elderMode || this.data.mode === 'edit' || this.data.isSaving || this.data.initialLoading || this.data.dateChanging) return;
+    const selectedDate = e.detail.value;
+    if (!selectedDate || selectedDate === this.data.selectedDate) return;
+    const previousContext = {
+      selectedDate: this.data.selectedDate,
+      formattedSelectedDate: this.data.formattedSelectedDate,
+      targetContext: this.data.targetContext,
+      dayProteinQualityBase: this.data.dayProteinQualityBase,
+      targetContextLoaded: this.data.targetContextLoaded
+    };
+    const previousReadyDate = this._contextReadyDate;
+    this.setData({ dateChanging: true });
+    try {
+      // 新日期请求自动使首次加载和返回页刷新中的旧请求失效。
+      this.setData({ selectedDate, formattedSelectedDate: formatDisplayDate(selectedDate), targetContextLoaded: false });
+      await this.reloadTargetContextAndPreviews({ throwOnError: true });
+    } catch (error) {
+      this._contextReadyDate = previousReadyDate;
+      this.setData(previousContext);
+      console.error('切换食物记录日期失败：', error);
+      wx.showToast({ title: '日期加载失败，请重试', icon: 'none' });
+    } finally {
+      this.setData({ dateChanging: false });
+    }
+  },
+
   onMealLabelTap(e) {
     const { label } = e.currentTarget.dataset;
     if (!label) return;
@@ -816,7 +883,7 @@ Page({
 
   async chooseRecipeEntry() {
     this.setData({ showAddTypeSheet: false });
-    await this.ensureTargetContextLoaded();
+    if (await this.ensureTargetContextLoaded() === false) return;
     const targetContext = this.data.targetContext || {};
     const dayBase = this.data.dayProteinQualityBase || {
       naturalProtein: 0,
@@ -877,7 +944,7 @@ Page({
   },
 
   async openFoodDrawer() {
-    await this.ensureTargetContextLoaded();
+    if (await this.ensureTargetContextLoaded() === false) return;
     const currentItems = (this.data.mealDraft.items || [])
       .map(item => ({
         foodId: item.foodId,
@@ -1084,7 +1151,7 @@ Page({
       drawerVisible: false,
       batchFoodDrafts: []
     }, async () => {
-      await this.ensureTargetContextLoaded();
+      if (await this.ensureTargetContextLoaded() === false) return;
       const targetContext = this.data.targetContext || {};
       writeFoodPickerTargetContext({
         currentSummary: targetContext.currentSummary || {},
@@ -1464,7 +1531,7 @@ Page({
         wx.showToast({ title: '缺少食谱信息，无法编辑', icon: 'none' });
         return;
       }
-      await this.ensureTargetContextLoaded();
+      if (await this.ensureTargetContextLoaded() === false) return;
       const targetContext = this.data.targetContext || {};
       const dayBase = this.data.dayProteinQualityBase || {
         naturalProtein: 0,
@@ -1588,9 +1655,9 @@ Page({
       : null;
   },
 
-  async loadExistingMeal(mealBatchId) {
+  async loadExistingMeal(mealBatchId, recordId = '') {
     const babyUid = getBabyUid();
-    if (!babyUid || !mealBatchId) {
+    if (!babyUid || (!mealBatchId && !recordId)) {
       this.setData({ initialLoading: false });
       wx.showToast({ title: '餐次信息缺失', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 300);
@@ -1598,7 +1665,10 @@ Page({
     }
 
     try {
-      const targetIntakes = (await FoodIntakeRecordModel.findByMealBatch(babyUid, this.data.selectedDate, mealBatchId))
+      const loaded = mealBatchId
+        ? await FoodIntakeRecordModel.findByMealBatch(babyUid, this.data.selectedDate, mealBatchId)
+        : (await FoodIntakeRecordModel.findByDate(babyUid, this.data.selectedDate)).filter(item => item._id === recordId && !item.mealBatchId);
+      const targetIntakes = loaded
         .sort((a, b) => {
           const sortDiff = (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0);
           if (sortDiff !== 0) return sortDiff;
@@ -1615,6 +1685,7 @@ Page({
       }
 
       const firstIntake = targetIntakes[0];
+      this._editingBabyUid = babyUid;
       const originalMealTime = firstIntake.mealTime || firstIntake.recordedAt || '';
       this._originalMealReminderSourceKey = mealBatchId ? `food:${mealBatchId}` : '';
       this._originalMealReminderTimeKey = `${this.data.selectedDate} ${originalMealTime}`;
@@ -1637,6 +1708,7 @@ Page({
           return withPremiumProteinDisplay({
             localId: intake._id || `meal_recipe_${index}`,
             originalIntakeId: intake._id || '',
+            notes: intake.notes || '',
             createdAt: intake.createdAt || null,
             createdBy: intake.createdBy || '',
             foodId: '',
@@ -1700,17 +1772,18 @@ Page({
         return withPremiumProteinDisplay({
           localId: intake._id || `meal_item_${index}`,
           originalIntakeId: intake._id || '',
+          notes: intake.notes || '',
           createdAt: intake.createdAt || null,
           createdBy: intake.createdBy || '',
           foodId: intake.foodId || '',
           food,
           foodSnapshot: intake.foodSnapshot || FoodModel.buildFoodSnapshot(food),
-          nameSnapshot: intake.foodName || intake.nameSnapshot || fallbackFood.name,
-          category: intake.category || fallbackFood.category,
-          unit: intake.unit || fallbackFood.baseUnit || 'g',
+          nameSnapshot: intake.foodName || intake.nameSnapshot || food.name,
+          category: intake.category || food.category,
+          unit: intake.unit || food.baseUnit || 'g',
           quantity: Number(intake.quantity) || 0,
           nutrition: withProteinNutritionDisplay(intake.nutrition || {}),
-          proteinSource: snapshot.proteinSource || intake.proteinSource || fallbackFood.proteinSource || 'natural',
+          proteinSource: snapshot.proteinSource || intake.proteinSource || food.proteinSource || 'natural',
           proteinQuality: intake.proteinQuality || (catalogFood?.proteinQuality) || '',
           libraryScope,
           sourceLabel: intake.sourceLabel || this.getFoodSourceLabel({
@@ -1731,7 +1804,7 @@ Page({
 
       this.setData({
         initialLoading: false,
-        editRecordId: '',
+        editRecordId: recordId,
         mealDraft: {
           mealTime: originalMealTime || formatTime(new Date()),
           mealLabel: firstIntake.mealLabel || getDefaultMealLabel(firstIntake.mealTime || firstIntake.recordedAt || ''),
@@ -1761,7 +1834,7 @@ Page({
         type: 'food',
         foodType: 'food',
         nameSnapshot: item.recipeName || item.nameSnapshot,
-        notes: '',
+        notes: String(item.notes || '').trim(),
         recordedAt: mealTime,
         time: mealTime,
         mealBatchId,
@@ -1900,7 +1973,21 @@ Page({
   },
 
   async saveMeal() {
-    if (this.data.isSaving) return;
+    if (this.data.isSaving || this.data.dateChanging) return;
+    if (this.data.contextLoading) {
+      wx.showToast({ title: '正在更新日期信息', icon: 'none' });
+      return;
+    }
+    if (this.data.elderMode && this._contextReadyDate !== this.data.selectedDate) {
+      try {
+        await this.ensureTargetContextLoaded();
+      } catch (error) {
+        console.error('保存前加载食物日期信息失败：', error);
+        wx.showToast({ title: '日期信息加载失败，请重试', icon: 'none' });
+        return;
+      }
+      if (this.data.contextLoading || this._contextReadyDate !== this.data.selectedDate) return;
+    }
 
     let items = [...(this.data.mealDraft.items || [])];
     if (this.data.drawerStep === 'recipe-edit' && this.data.currentRecipeDraft.localId) {
@@ -1935,13 +2022,30 @@ Page({
       return;
     }
 
-    const mealBatchId = this.data.editMealBatchId || `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    if (this.data.mode === 'edit' && babyUid !== this._editingBabyUid) {
+      wx.showToast({ title: '宝宝已切换，请重新进入', icon: 'none' });
+      return;
+    }
+    const mealBatchId = this.data.editMealBatchId || (this.data.editRecordId
+      ? `legacy_${this.data.editRecordId}` : `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
     const mealIntakes = this.buildMealIntakes(mealBatchId);
 
     this.setData({ isSaving: true });
     wx.showLoading({ title: '保存中...', mask: true });
 
+    let recordSaved = false;
     try {
+      if (this.data.editRecordId) {
+        // 无餐次编号的旧记录在保存时归入独立餐次，避免编辑被当成新增而留下两份。
+        const existing = (await FoodIntakeRecordModel.findByDate(babyUid, this.data.selectedDate))
+          .find(item => item._id === this.data.editRecordId);
+        if (!existing || (existing.mealBatchId && existing.mealBatchId !== mealBatchId)) {
+          throw new Error('食物记录已变化，请返回列表重新进入');
+        }
+        if (babyUid !== getBabyUid()) throw new Error('宝宝已切换，请重新进入');
+        await FoodIntakeRecordModel.updateFoodIntake(this.data.editRecordId, { mealBatchId });
+        this.setData({ editMealBatchId: mealBatchId });
+      }
       const saveResult = await FoodIntakeRecordModel.replaceMealBatch({
         babyUid,
         date: this.data.selectedDate,
@@ -1949,6 +2053,7 @@ Page({
         records: mealIntakes,
         operatorOpenid: app.globalData.openid || wx.getStorageSync('openid') || ''
       });
+      recordSaved = true;
 
       const savedMealIntakes = mealIntakes.map((record, index) => ({
         ...record,
@@ -1972,12 +2077,16 @@ Page({
             sourceKey: this._originalMealReminderSourceKey,
             candidate: buildUpcomingReminderCandidates({
               foodIntakeRecords: savedMealIntakes
-            }).food
+            }).food || {}
           })
           : Promise.resolve()
       ]);
 
       wx.hideLoading();
+      if (this.data.elderMode) {
+        finishElderRecord();
+        return;
+      }
       wx.showToast({ title: this.data.mode === 'edit' ? '已更新本顿' : '已保存本顿', icon: 'success' });
       // 不在此页阻塞拉整页上一页数据；返回后由上一页 onShow / 首页 dirty 刷新
       setTimeout(() => {
@@ -1986,13 +2095,24 @@ Page({
     } catch (error) {
       console.error('保存餐次失败:', error);
       wx.hideLoading();
+      // 写库成功后不再开放保存，附属任务失败也不会重复创建同一顿。
+      if (recordSaved) {
+        if (this.data.elderMode) {
+          finishElderRecord();
+        } else {
+          wx.showToast({ title: '已保存本顿', icon: 'success' });
+          setTimeout(() => wx.navigateBack(), 500);
+        }
+        return;
+      }
       wx.showToast({ title: '保存失败', icon: 'none' });
     } finally {
-      this.setData({ isSaving: false });
+      if (!recordSaved) this.setData({ isSaving: false });
     }
   },
 
   onCancel() {
+    if (this.data.isSaving) return;
     wx.navigateBack();
   }
 });

@@ -1,0 +1,104 @@
+<view class="page {{elderMode ? 'elder-form' : ''}}">
+  <block wx:if="{{!editingRecordId}}">
+  <view class="page-heading">
+    <view class="page-title">{{dateKey === maxDate ? '今日用药打卡' : '补记用药打卡'}}</view>
+    <button class="details-btn" bindtap="toggleDetails" disabled="{{saving}}" aria-expanded="{{showDetails}}">{{showDetails ? '收起' : '更多'}}</button>
+  </view>
+  <view class="page-hint">服用后点「打卡」，点绿色勾可取消</view>
+  <view wx:if="{{dateKey !== maxDate}}" class="selected-context">记录到 {{dateKey}}</view>
+
+  <view class="record-context">
+    <picker wx:if="{{showDetails}}" mode="date" value="{{dateKey}}" end="{{maxDate}}" disabled="{{saving}}" bindchange="onDateChange">
+      <view class="context-field"><text class="context-label">日期</text><text>{{dateKey}} ▾</text></view>
+    </picker>
+    <picker mode="time" value="{{time}}" disabled="{{saving}}" bindchange="onTimeChange">
+      <view class="context-field"><text class="context-label">打卡时间</text><text>{{time}} ▾</text></view>
+    </picker>
+    <button wx:if="{{showDetails}}" class="refresh-btn" bindtap="loadMedications" disabled="{{saving || loading}}">刷新用药记录</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">正在读取用药记录…</view>
+  <view wx:elif="{{loadError}}" class="state-card" role="alert">
+    <view>{{loadError}}</view>
+    <button class="retry-btn" bindtap="loadMedications">重新加载</button>
+  </view>
+  <view wx:elif="{{!medications.length}}" class="state-card">
+    <view class="state-title">暂未读取到药物配置</view>
+    <view>请家人在普通模式的“我的 → 药物管理”中配置药物、每次用量和服用频次。</view>
+    <button class="retry-btn" bindtap="loadMedications">重新加载</button>
+  </view>
+  <block wx:else>
+    <view wx:if="{{!medicationCards.length}}" class="state-card">
+      <view class="state-title">{{dateKey === maxDate ? '今天' : '当天'}}没有用药安排</view>
+      <view>已按家人设置的用药计划显示。</view>
+      <button class="retry-btn" bindtap="loadMedications">刷新记录</button>
+    </view>
+    <view wx:for="{{medicationCards}}" wx:key="medicationId" class="medication-card {{item.status === 'done' ? 'medication-done' : ''}}">
+      <view class="medication-heading">
+        <view class="medication-name">{{item.name}}</view>
+        <text wx:if="{{item.totalIntake}}" class="medication-intake">已摄入 {{item.totalIntake}}</text>
+      </view>
+      <view class="medication-progress" role="status">
+        <text>{{dateKey === maxDate ? '今日' : '当天'}}已打卡 <text class="dose-count">{{item.doseCount}}</text> 次</text>
+        <text class="dose-total">共 {{item.doseTotal}} 次</text>
+      </view>
+      <view class="dose-checks">
+        <button wx:for="{{item.doseChecks}}" wx:for-item="dose" wx:key="index" class="dose-check {{dose.checked ? 'checked' : (dose.index === item.nextDoseIndex && item.ready ? 'next-dose' : 'waiting-dose')}}" data-id="{{item.medicationId}}" data-dose-index="{{dose.index}}" bindtap="checkInMedication" disabled="{{saving || (dose.checked ? !dose.recordId : (!item.ready || dose.index !== item.nextDoseIndex)) || editingMedicationId === item.medicationId}}" aria-label="{{item.name}}，第{{dose.sequence}}次，{{dose.checked ? dose.time + '已打卡，再点取消' : (dose.index === item.nextDoseIndex && item.ready ? '服用后点此打卡' : '待打卡')}}">
+          <text class="dose-box">{{dose.checked ? '✓' : ''}}</text>
+          <text class="dose-label">{{savingMedicationId === item.medicationId && dose.index === savingDoseIndex ? (dose.checked ? '取消中' : '记录中') : (dose.checked || dose.index !== item.nextDoseIndex || !item.ready ? '第' + dose.sequence + '次' : '打卡')}}</text>
+          <text wx:if="{{dose.checked && dose.time}}" class="dose-time">{{dose.time}}</text>
+        </button>
+      </view>
+      <text wx:if="{{!item.ready}}" class="configuration-hint">请家人补充用量和单位后再打卡</text>
+      <view wx:if="{{showDetails}}" class="medication-details">
+        <view wx:if="{{item.ready}}">每次 {{item.dosage}} {{item.unit}}</view>
+        <view>{{item.frequencyText}}</view>
+        <view wx:if="{{editingMedicationId === item.medicationId}}" class="dosage-editor">
+          <text class="field-label">本次实际用量（{{item.unit}}）</text>
+          <input class="dosage-input" type="digit" value="{{customDosage}}" bindinput="onDosageInput" disabled="{{saving}}" focus="{{true}}" />
+          <view class="dosage-actions">
+            <button class="cancel-btn" bindtap="cancelDosageEdit" disabled="{{saving}}">取消</button>
+            <button class="checkin-btn" bindtap="saveAdjustedRecord" disabled="{{saving}}" loading="{{savingMedicationId === item.medicationId}}">确认打卡</button>
+          </view>
+        </view>
+        <button wx:elif="{{item.ready && !item.completed}}" class="adjust-btn" data-id="{{item.medicationId}}" bindtap="editDosage" disabled="{{saving}}">修改本次用量</button>
+      </view>
+    </view>
+  </block>
+
+  <view class="footer-actions">
+    <button class="finish-btn" bindtap="finishRecording" disabled="{{saving}}">完成，返回首页</button>
+  </view>
+  </block>
+  <block wx:else>
+    <view class="page-title">编辑用药记录</view>
+    <view class="page-hint">只修改这一次打卡</view>
+    <view wx:if="{{recordLoading}}" class="state-card">正在读取这次记录…</view>
+    <view wx:elif="{{recordError}}" class="state-card" role="alert">
+      <view>{{recordError}}</view>
+      <button class="retry-btn" bindtap="loadStoredRecord" disabled="{{recordBusy}}">重新加载</button>
+    </view>
+    <view wx:elif="{{recordSaved}}" class="state-card">操作已完成，请返回查看最新记录。</view>
+    <view wx:elif="{{recordForm}}" class="stored-record-form">
+      <view class="medication-name">{{recordForm.name}}</view>
+      <picker mode="date" value="{{recordForm.date}}" end="{{maxDate}}" data-field="date" bindchange="onRecordFieldChange" disabled="{{recordBusy}}">
+        <view class="context-field"><text class="context-label">日期</text><text>{{recordForm.date}} ▾</text></view>
+      </picker>
+      <picker mode="time" value="{{recordForm.time}}" data-field="time" bindchange="onRecordFieldChange" disabled="{{recordBusy}}">
+        <view class="context-field"><text class="context-label">服用时间</text><text>{{recordForm.time || '请选择'}} ▾</text></view>
+      </picker>
+      <view class="stored-record-field">
+        <text class="field-label">实际用量{{recordForm.unit ? '（' + recordForm.unit + '）' : ''}}</text>
+        <input class="dosage-input" type="digit" value="{{recordForm.dosage}}" data-field="dosage" bindinput="onRecordFieldChange" disabled="{{recordBusy}}" />
+      </view>
+      <view class="stored-record-field">
+        <text class="field-label">备注（选填）</text>
+        <textarea class="record-notes-input" value="{{recordForm.notes}}" data-field="notes" bindinput="onRecordFieldChange" disabled="{{recordBusy}}" maxlength="500" placeholder="需要补充的情况" />
+      </view>
+    </view>
+    <view class="footer-actions record-editor-actions">
+      <button class="cancel-btn" bindtap="returnFromRecord" disabled="{{recordBusy}}">返回</button>
+      <button wx:if="{{!recordSaved}}" class="checkin-btn" bindtap="saveStoredRecord" disabled="{{recordBusy || recordLoading || recordError || !recordForm}}" loading="{{recordBusy}}">保存修改</button>
+    </view>
+  </block>
+</view>

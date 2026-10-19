@@ -2843,6 +2843,7 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   onLoad: function() {
+    if (require('../../utils/elderMode').guardNormalPage()) return;
     // 确保云环境已初始化
     if (!wx.cloud) {
       console.error('请使用 2.2.3 或以上的基础库以使用云能力');
@@ -2926,6 +2927,7 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   onShow: async function() {
+    if (require('../../utils/elderMode').guardNormalPage()) return;
     const fromSearch = this.consumeSearchLocator();
     if (this._initializingRecords) return;
     if (!this.data.selectedDate) {

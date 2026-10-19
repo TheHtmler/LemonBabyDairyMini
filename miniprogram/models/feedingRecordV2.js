@@ -94,15 +94,17 @@ function createMissingGrowthRecordsError(error) {
   return nextError;
 }
 
-async function queryActiveV2Records(babyUid, date) {
-  const res = await feedingRecordV2Collection
+async function queryActiveV2Records(babyUid, date, options = {}) {
+  const query = feedingRecordV2Collection
     .where({
       babyUid,
       date,
       status: 'active'
     })
-    .orderBy('startTime', 'desc')
-    .get();
+    .orderBy('startTime', 'desc');
+  const res = options.allRecords
+    ? await require('../utils/readAllQuery').readAllQuery(query)
+    : await query.get();
 
   return (res.data || [])
     .filter((record) => record.recordType !== 'daily_basic_info')
@@ -645,8 +647,8 @@ class FeedingRecordV2Model {
     return { recordId: res._id };
   }
 
-  async getRecordsByDate(babyUid, date) {
-    return queryActiveV2Records(babyUid, date);
+  async getRecordsByDate(babyUid, date, options = {}) {
+    return queryActiveV2Records(babyUid, date, options);
   }
 
   async getRecentRecord(babyUid, date) {

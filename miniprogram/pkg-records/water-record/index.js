@@ -1,5 +1,6 @@
 const WaterRecordModel = require('../../models/waterRecord');
 const { getBabyUid } = require('../../utils/index');
+const { isElderMode, finishElderRecord } = require('../../utils/elderMode');
 
 const QUICK_VOLUMES = [20, 30, 50, 80, 100, 150, 200, 250];
 /**
@@ -42,6 +43,8 @@ function computeFillRatio(totalMl) {
 
 Page({
   data: {
+    elderMode: false,
+    saved: false,
     dateKey: '',
     totalMl: 0,
     displayTotalMl: 0,
@@ -82,13 +85,24 @@ Page({
 
   onLoad(options = {}) {
     const dateKey = options.date || getTodayDateKey();
-    this.setData({ dateKey });
+    const elderMode = options.from === 'elder' || options.source === 'elder' || isElderMode();
+    this.setData({
+      dateKey,
+      elderMode,
+      sheetVisible: elderMode,
+      canvasVisible: !elderMode,
+      form: createForm()
+    });
     if (options.id) {
       this._pendingEditId = options.id;
     }
   },
 
   onReady() {
+    if (this.data.elderMode) {
+      if (this._pendingEditId) this.openRecordSheetForEditById(this._pendingEditId);
+      return;
+    }
     this.initCanvas().then(() => this.refreshRecords());
     setTimeout(() => {
       this.setData({ entered: true });
@@ -507,6 +521,10 @@ Page({
 
   closeRecordSheet() {
     if (this.data.saving) return;
+    if (this.data.elderMode) {
+      wx.navigateBack();
+      return;
+    }
     this.setData({
       sheetVisible: false,
       editingId: '',
@@ -531,6 +549,10 @@ Page({
     this.setData({
       'form.time': e.detail.value
     });
+  },
+
+  onDateChange(e) {
+    this.setData({ dateKey: e.detail.value });
   },
 
   onVolumeInput(e) {
@@ -588,7 +610,7 @@ Page({
 
   async saveRecord() {
     const { dateKey, form, editingId, saving } = this.data;
-    if (saving) return;
+    if (saving || this.data.saved) return;
     if (!form.time) {
       wx.showToast({ title: '请选择时间', icon: 'none' });
       return;
@@ -614,6 +636,11 @@ Page({
       wx.hideLoading();
       if (!result.success) {
         wx.showToast({ title: result.message || '保存失败', icon: 'none' });
+        return;
+      }
+      if (this.data.elderMode) {
+        this.setData({ saved: true });
+        finishElderRecord();
         return;
       }
       const isCreate = !editingId;

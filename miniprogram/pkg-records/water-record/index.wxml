@@ -1,6 +1,6 @@
-<page-meta page-style="{{sheetVisible || listVisible ? 'overflow: hidden;' : ''}}" />
+<page-meta page-style="{{!elderMode && (sheetVisible || listVisible) ? 'overflow: hidden;' : ''}}" />
 
-<view class="page {{entered ? 'is-entered' : ''}} {{sheetVisible || listVisible ? 'sheet-open' : ''}}">
+<view wx:if="{{!elderMode}}" class="page {{entered ? 'is-entered' : ''}} {{sheetVisible || listVisible ? 'sheet-open' : ''}}">
   <view class="hero">
     <view class="amount-bar {{amountPop ? 'is-popping' : ''}}">
       <text class="amount-label">今日已记录</text>
@@ -95,7 +95,7 @@
 
 <!-- 全部明细 -->
 <view class="drawer-mask {{listVisible ? 'visible' : ''}}" wx:if="{{listVisible}}" bindtap="closeListSheet"></view>
-<view class="list-sheet {{listVisible ? 'visible' : ''}}">
+<view wx:if="{{!elderMode}}" class="list-sheet {{listVisible ? 'visible' : ''}}">
   <view class="sheet-handle"></view>
   <view class="sheet-title-row">
     <text class="sheet-title">今日明细</text>
@@ -120,13 +120,20 @@
 </view>
 
 <!-- 新增/编辑：wx:if 整层重建，确保编辑时时间/水量/备注可靠回显 -->
-<view class="drawer-mask visible" wx:if="{{sheetVisible}}" bindtap="closeRecordSheet"></view>
-<view class="record-sheet visible" wx:if="{{sheetVisible}}">
-  <view class="sheet-handle"></view>
-  <view class="sheet-title">{{editingId ? '调整喝水记录' : '新增喝水'}}</view>
+<view class="drawer-mask visible" wx:if="{{sheetVisible && !elderMode}}" bindtap="closeRecordSheet"></view>
+<view class="record-sheet visible {{elderMode ? 'elder-form' : ''}}" wx:if="{{sheetVisible}}">
+  <view class="sheet-handle" wx:if="{{!elderMode}}"></view>
+  <view class="sheet-title">{{elderMode ? '记喝水' : (editingId ? '调整喝水记录' : '新增喝水')}}</view>
+  <view class="elder-hint" wx:if="{{elderMode}}">填写实际喝水量，时间可修改补记</view>
 
-  <scroll-view class="sheet-body" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+  <scroll-view class="sheet-body" scroll-y="{{!elderMode}}" enhanced="{{true}}" show-scrollbar="{{false}}">
     <view class="compact-grid">
+      <view class="compact-field" wx:if="{{elderMode}}">
+        <text class="field-label">日期</text>
+        <picker mode="date" value="{{dateKey}}" bindchange="onDateChange">
+          <view class="compact-picker">{{dateKey}}</view>
+        </picker>
+      </view>
       <view class="compact-field">
         <text class="field-label">时间</text>
         <picker mode="time" value="{{form.time}}" bindchange="onTimeChange">
@@ -143,13 +150,13 @@
             placeholder="输入水量"
             bindinput="onVolumeInput"
           />
-          <text class="volume-unit">ml</text>
+          <text class="volume-unit">{{elderMode ? '毫升（ml）' : 'ml'}}</text>
         </view>
       </view>
     </view>
 
     <view class="quick-block">
-      <text class="field-label">快捷水量</text>
+      <text class="field-label">{{elderMode ? '快捷选择（毫升）' : '快捷水量'}}</text>
       <view class="quick-row">
         <view
           class="quick-chip {{form.volume == item ? 'active' : ''}}"
@@ -181,8 +188,8 @@
       hover-class="save-btn-press"
       hover-stay-time="80"
       loading="{{saving}}"
-      disabled="{{saving}}"
+      disabled="{{saving || saved}}"
       bindtap="saveRecord"
-    >保存记录</button>
+    >{{saved ? '已记录' : (saving ? '正在保存' : '保存记录')}}</button>
   </view>
 </view>

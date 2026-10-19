@@ -14,11 +14,12 @@ const growthRecordsV2Collection = db.collection('growth_records_v2');
 const bowelRecordsCollection = db.collection('bowel_records');
 const legacyFeedingRecordCollection = db.collection('feeding_records');
 
-function unwrapResult(result) {
+function unwrapResult(result, options = {}) {
   if (Array.isArray(result)) {
     return result;
   }
   if (result?.success === false) {
+    if (options.strictErrors) throw new Error(result.message || '读取共享记录失败');
     return [];
   }
   if (Array.isArray(result?.data)) {
@@ -49,28 +50,32 @@ async function loadGrowthRecords(babyUid, date) {
   return res.data || [];
 }
 
-async function loadBowelRecords(babyUid, date) {
+async function loadBowelRecords(babyUid, date, options = {}) {
   if (db.command?.gte && db.command?.lt) {
     const startOfDay = toDateStart(date);
     const endOfDay = toDateEnd(date);
-    const res = await bowelRecordsCollection
+    const query = bowelRecordsCollection
       .where({
         babyUid,
         recordTime: db.command.gte(startOfDay).and(db.command.lt(endOfDay))
       })
-      .orderBy('recordTime', 'desc')
-      .get();
+      .orderBy('recordTime', 'desc');
+    const res = options.allRecords
+      ? await require('./readAllQuery').readAllQuery(query)
+      : await query.get();
     return res.data || [];
   }
 
-  const res = await bowelRecordsCollection
+  const query = bowelRecordsCollection
     .where({
       babyUid,
       date,
       status: 'active'
     })
-    .orderBy('recordTime', 'desc')
-    .get();
+    .orderBy('recordTime', 'desc');
+  const res = options.allRecords
+    ? await require('./readAllQuery').readAllQuery(query)
+    : await query.get();
   return res.data || [];
 }
 
@@ -134,19 +139,19 @@ async function loadEventRecords(babyUid, date, options = {}) {
     sleepResult,
     growthRecords
   ] = await Promise.all([
-    FeedingRecordV2Model.getRecordsByDate(babyUid, date),
+    FeedingRecordV2Model.getRecordsByDate(babyUid, date, options),
     FoodIntakeRecordModel.findByDate(babyUid, date),
-    MedicationRecordModel.findByDate(date, babyUid),
-    TreatmentRecordModel.findByDate(date, babyUid),
-    loadBowelRecords(babyUid, date),
-    WaterRecordModel.findByDate(date, babyUid),
-    SleepRecordModel.findByDate(date, babyUid),
+    MedicationRecordModel.findByDate(date, babyUid, options),
+    TreatmentRecordModel.findByDate(date, babyUid, options),
+    loadBowelRecords(babyUid, date, options),
+    WaterRecordModel.findByDate(date, babyUid, options),
+    SleepRecordModel.findByDate(date, babyUid, options),
     loadGrowthRecords(babyUid, date)
   ]);
 
   const unwrap = result => {
     if (options.readOnly === true && result?.success === false) throw new Error(result.message || '当日记录读取失败，请重试');
-    return unwrapResult(result);
+    return unwrapResult(result, options);
   };
   return {
     milkRecords: unwrap(milkRecords),
@@ -476,7 +481,7 @@ async function getDailyRecordV2(babyUid, date, options = {}) {
   }
 
   // 未命中/失效：读 6 个事件集合并按原有语义重建（与改造前逐字等价）。
-  const loadedEventRecords = await loadEventRecords(babyUid, date);
+  const loadedEventRecords = await loadEventRecords(babyUid, date, options);
   const eventRecords = await ensureGrowthRecordForDate(babyUid, date, loadedEventRecords);
 
   let finalSummary;

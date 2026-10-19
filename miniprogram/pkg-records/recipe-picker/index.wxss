@@ -320,3 +320,31 @@ page {
 .primary-btn::after {
   border: none;
 }
+
+/* 食谱选择与录入页保持相同的大字和触控尺寸。 */
+.elder-form { font-size: 34rpx; }
+.elder-form .intro-card { flex-wrap: wrap; }
+.elder-form .intro-icon { display: none; }
+.elder-form .intro-title,
+.elder-form .empty-title,
+.elder-form .recipe-name { font-size: 38rpx; line-height: 1.5; white-space: normal; }
+.elder-form .intro-desc,
+.elder-form .intro-action-text,
+.elder-form .search-icon,
+.elder-form .search-clear,
+.elder-form .search-summary,
+.elder-form .empty-desc,
+.elder-form .recipe-meta,
+.elder-form .recipe-ingredients,
+.elder-form .loading-state { font-size: 32rpx; line-height: 1.5; color: #5a4518; }
+.elder-form .intro-action,
+.elder-form .search-clear { min-height: 88rpx; padding: 14rpx 18rpx; display: flex; align-items: center; box-sizing: border-box; }
+.elder-form .search-input { height: 96rpx; font-size: 32rpx; }
+.elder-form .search-icon,
+.elder-form .recipe-avatar { display: none; }
+.elder-form .recipe-card { min-height: 160rpx; padding: 24rpx 18rpx; }
+.elder-form .recipe-top { display: block; }
+.elder-form .recipe-meta { display: inline-block; margin-top: 8rpx; }
+.elder-form .recipe-ingredients { white-space: normal; }
+.elder-form .pick-btn { min-height: 88rpx; display: flex; align-items: center; padding: 16rpx; box-sizing: border-box; font-size: 34rpx; color: #382500; }
+.elder-form .primary-btn { height: 104rpx; line-height: 104rpx; font-size: 36rpx; color: #382500; }

@@ -265,3 +265,94 @@
 .save-btn[disabled] {
   opacity: 0.58;
 }
+
+/* 保留全部记录信息，在长辈模式中扩大文字和触控区域。 */
+.elder-form .page {
+  padding: 24rpx 24rpx calc(180rpx + env(safe-area-inset-bottom));
+}
+
+.elder-form .hero-card,
+.elder-form .card {
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.elder-form .hero-title {
+  font-size: 44rpx;
+}
+
+.elder-form .hero-subtitle,
+.elder-form .section-tip,
+.elder-form .type-tip {
+  font-size: 30rpx;
+  line-height: 1.5;
+  color: #66552F;
+}
+
+.elder-form .section-title,
+.elder-form .type-text {
+  font-size: 38rpx;
+  line-height: 1.4;
+}
+
+.elder-form .field-label {
+  font-size: 34rpx;
+  color: #54431C;
+  margin-bottom: 14rpx;
+}
+
+.elder-form .compact-grid {
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.elder-form .compact-picker,
+.elder-form .compact-value,
+.elder-form .notes-area {
+  min-height: 104rpx;
+  padding: 22rpx;
+  font-size: 36rpx;
+  line-height: 1.5;
+}
+
+.elder-form .bowel-type-btn {
+  min-height: 186rpx;
+  padding: 24rpx 8rpx;
+}
+
+.elder-form .type-tip {
+  display: none;
+}
+
+.elder-form .option-grid,
+.elder-form .option-grid.three {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.elder-form .option-btn {
+  min-height: 100rpx;
+  font-size: 36rpx;
+  padding: 18rpx 12rpx;
+}
+
+.elder-form .option-icon {
+  font-size: 36rpx;
+}
+
+.elder-form .form-section {
+  margin-top: 30rpx;
+}
+
+.elder-form .notes-area {
+  min-height: 220rpx;
+  max-height: none;
+}
+
+.elder-form .save-btn {
+  height: 108rpx;
+  line-height: 108rpx;
+  font-size: 40rpx;
+  color: #332600;
+  border-radius: 24rpx;
+}

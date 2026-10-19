@@ -4,7 +4,8 @@
     "pages/daily-feeding/index",
     "pages/data-records-v2/index",
     "pages/analysis-report/index",
-    "pages/profile/index"
+    "pages/profile/index",
+    "pages/elder-home/index"
   ],
   "subPackages": [
     {
@@ -21,6 +22,7 @@
         "treatment-record/index",
         "bowel-record/index",
         "water-record/index",
+        "medication-record/index",
         "sleep-record/index"
       ]
     },
