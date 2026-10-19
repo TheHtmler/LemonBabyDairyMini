@@ -217,15 +217,16 @@
     </view>
   </view>
 
-  <view class="save-preview-stack" wx:if="{{!elderMode}}">
+  <view class="save-preview-stack">
     <nutrition-target-preview
+      elder-mode="{{elderMode}}"
       preview="{{targetPreview}}"
       title="保存前看看"
       subtitle="今日累计 + 本次"
       bind:targetssaved="handleNutritionTargetsSaved"
     />
 
-    <view class="section-card secondary-card quick-preview-card">
+    <view class="section-card secondary-card quick-preview-card" wx:if="{{!elderMode}}">
       <view class="quick-preview-row">
         <view class="quick-preview-item">
           <text class="preview-value">{{nutritionPreview.totalVolume || 0}}</text>
