@@ -15,16 +15,16 @@ function estimateIdentityKey(value) {
 
 function estimateEligibility({ mode, identity: wanted, observation, reference, basis }) {
   const food = identity(wanted);
-  const refuse = reason => ({ eligible: false, fields: [], reason });
+  const refuse = (reason, requiredInput = '') => ({ eligible: false, fields: [], reason, requiredInput });
   if (!['food_object', 'food_label'].includes(mode)) return refuse('奶粉和母乳需采用标签、厂家资料或手填值。');
   const candidates = [food].concat((observation && observation.identityCandidates || []).map(identity));
   if (candidates.some(item => EXCLUDED_FOODS.test(item.name + item.series) || item.brand || item.series || item.stage || item.barcode)) {
     return refuse('配方、特医和明确品牌的产品需核对具体产品资料，不提供通用AI估算。');
   }
-  if (!food.name || GENERIC_NAMES.includes(searchText(food.name))) return refuse('请先确认具体食材名称，再生成AI估算。');
-  if (!['raw', 'boiled', 'stir_fried'].includes(food.preparation)) return refuse('请先确认生鲜、水煮或炒制状态。');
+  if (!food.name || GENERIC_NAMES.includes(searchText(food.name))) return refuse('请先确认具体食材名称，再生成AI估算。', 'identity');
+  if (!['raw', 'boiled', 'stir_fried'].includes(food.preparation)) return refuse('请先确认生鲜、水煮或炒制状态。', 'preparation');
   if (!basis || !(number(basis.quantity) > 0) || basis.unit !== 'g' || basis.material !== 'food') {
-    return refuse('AI估算按每100g可食部分提供，请先使用克数营养基准。');
+    return refuse('AI估算按每100g可食部分提供，请先使用克数营养基准。', 'basis');
   }
   if (!observation) return refuse('请先完成图片识别和参考查询。');
   const label = convertBasis(observation.nutrients, observation.basis, basis, observation.formula);

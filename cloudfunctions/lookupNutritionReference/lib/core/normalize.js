@@ -2,6 +2,31 @@
 
 const { FIELDS, UNITS, MODES, fail, text, number, identity, defaultDefinition } = require('./contracts');
 
+const UNIT_ALIASES = {
+  克: 'g', 公克: 'g', gram: 'g', grams: 'g',
+  毫克: 'mg', milligram: 'mg', milligrams: 'mg',
+  千焦: 'kj', 千焦耳: 'kj', kilojoule: 'kj', kilojoules: 'kj',
+  千卡: 'kcal', 大卡: 'kcal', 千卡路里: 'kcal', kilocalorie: 'kcal', kilocalories: 'kcal',
+  毫升: 'ml', milliliter: 'ml', milliliters: 'ml', millilitre: 'ml', millilitres: 'ml',
+  份: 'portion', serving: 'portion', servings: 'portion'
+};
+function normalizeUnit(value) {
+  const unit = text(value).normalize('NFKC').toLowerCase().replace(/\s/g, '').replace(/[μµ]/g, 'u');
+  return typeof UNIT_ALIASES[unit] === 'string' ? UNIT_ALIASES[unit] : unit;
+}
+
+function normalizePackageEvidence(raw, imageCount) {
+  const result = { identity: null, nutrition: null };
+  ['identity', 'nutrition'].forEach(key => {
+    const evidence = raw && raw[key];
+    if (evidence && Number.isInteger(evidence.imageIndex) && evidence.imageIndex >= 0 &&
+        evidence.imageIndex < imageCount && text(evidence.text, 600)) {
+      result[key] = { imageIndex: evidence.imageIndex, text: text(evidence.text, 600) };
+    }
+  });
+  return result;
+}
+
 function normalizeNutrient(field, raw, warnings = [], options = {}) {
   const entry = raw && typeof raw === 'object' ? raw : { value: raw, unit: UNITS[field] };
   let value = number(entry.value);
@@ -10,7 +35,8 @@ function normalizeNutrient(field, raw, warnings = [], options = {}) {
     state = entry.state;
     value = null;
   }
-  const unit = text(entry.unit).toLowerCase().replace('μ', 'u').replace('µ', 'u');
+  // 模型保留标签原单位，中文和英文写法应进入同一换算分支。
+  const unit = normalizeUnit(entry.unit);
   if (value !== null) {
     if (field === 'calories' && unit === 'kj') value /= 4.184;
     else if (UNITS[field] === 'g' && unit === 'mg') value /= 1000;
@@ -55,14 +81,22 @@ function normalizeObservation(raw = {}, { mode, imageCount = 1 } = {}) {
     evidence.imageIndex >= 0 && evidence.imageIndex < imageCount && text(evidence.text, 600);
   const candidates = Array.isArray(raw.identityCandidates) ? raw.identityCandidates : [];
   const identityCandidates = candidates.map(identity).filter(x => x.name).slice(0, 8);
-  if (!identityCandidates.length) fail('INVALID_MODEL_RESULT', '未能识别食物或产品名称，请补拍清晰图片');
+  const packageEvidence = normalizePackageEvidence(mode === 'food_object' ? null : raw.packageEvidence, imageCount);
+  // 营养表局部图可能没有商品名称，保留已有读数，待补拍正面或手动确认身份。
+  if (!identityCandidates.length && !(['food_label', 'powder_label'].includes(mode) && packageEvidence.nutrition)) {
+    fail('INVALID_MODEL_RESULT', '未能识别食物或产品名称，请补拍清晰图片');
+  }
+  if (!identityCandidates.length) packageEvidence.identity = null;
   const sourceBasis = raw.basis || {};
+  const basisUnit = normalizeUnit(sourceBasis.unit);
   const basis = {
     quantity: number(sourceBasis.quantity),
-    unit: ['g', 'ml', 'portion'].includes(sourceBasis.unit) ? sourceBasis.unit : null,
+    unit: ['g', 'ml', 'portion'].includes(basisUnit) ? basisUnit : null,
     material: ['food', 'dry_powder', 'prepared_formula', 'unknown'].includes(sourceBasis.material)
       ? sourceBasis.material : 'unknown'
   };
+  // 普通食品标签已确定物料类别；不因模型省略该字段而阻断整张表的回填。
+  if (mode === 'food_label' && basis.material === 'unknown') basis.material = 'food';
   if (mode === 'food_object') {
     basis.quantity = null; basis.unit = null; basis.material = 'food';
   }
@@ -96,7 +130,7 @@ function normalizeObservation(raw = {}, { mode, imageCount = 1 } = {}) {
   if (!formula.powderGrams && formula.scoopCount > 0 && formula.scoopGrams > 0) {
     formula.powderGrams = formula.scoopCount * formula.scoopGrams;
   }
-  return { identityCandidates, basis, nutrients, formula, formulaEvidence, warnings,
+  return { identityCandidates, packageEvidence, basis, nutrients, formula, formulaEvidence, warnings,
     missingFields: FIELDS.filter(field => nutrients[field].state !== 'present') };
 }
 
@@ -119,16 +153,10 @@ function convertBasis(nutrients, basis, target, formula = {}) {
   return result;
 }
 
-function toComparableBasis(observation, reference) {
-  const warnings = [];
-  const observed = convertBasis(observation.nutrients, observation.basis, reference.basis, observation.formula);
-  if (!observed) warnings.push('计量基准或物料状态不同，无法直接比较');
-  return { observed, reference: reference.nutrients, warnings };
-}
-
 function observationPatch(observation, mode) {
-  const name = observation.identityCandidates[0].name;
-  if (mode === 'food_object') return { name };
+  const name = (observation.identityCandidates[0] || {}).name;
+  const namePatch = name ? { name } : {};
+  if (mode === 'food_object') return namePatch;
   const target = mode === 'powder_label'
     ? { quantity: 100, unit: 'g', material: 'dry_powder' } : observation.basis;
   const values = convertBasis(observation.nutrients, observation.basis, target, observation.formula);
@@ -138,10 +166,10 @@ function observationPatch(observation, mode) {
   });
   if (mode === 'powder_label') {
     delete nutrition.sodium;
-    return { name, nutritionPer100g: nutrition,
+    return { ...namePatch, nutritionPer100g: nutrition,
       mixRatio: { powder: observation.formula.powderGrams, water: observation.formula.addedWaterMl } };
   }
-  return { name, unit: target.unit === 'portion' ? '份' : target.unit,
+  return { ...namePatch, unit: target.unit === 'portion' ? '份' : target.unit,
     baseQuantity: target.quantity, ...nutrition };
 }
 
@@ -149,15 +177,19 @@ function normalizeAutomaticObservation(raw, options) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !['food_label', 'powder_label', 'food_object', 'uncertain', 'unsupported'].includes(raw.resolvedMode)) fail('INVALID_MODEL_RESULT', '自动识别类型无效，请重新拍摄');
   let resolvedMode = raw.resolvedMode;
   const candidates = (Array.isArray(raw.identityCandidates) ? raw.identityCandidates : []).map(identity).filter(x => x.name);
-  const products = new Set(candidates.filter(x => x.brand || x.series || x.stage).map(x => [x.brand, x.series, x.stage].join('|')));
+  // 同一商品不同角度可能只读到部分身份，缺字段不等于不同商品。
+  const conflictingProducts = ['brand', 'series', 'stage', 'barcode'].some(key =>
+    new Set(candidates.map(candidate => text(candidate[key]).normalize('NFKC').toLowerCase().replace(/\s/g, '')).filter(Boolean)).size > 1);
   const evidence = raw.typeEvidence;
   const validEvidence = evidence && Number.isInteger(evidence.imageIndex) && evidence.imageIndex >= 0 && evidence.imageIndex < options.imageCount && text(evidence.text, 600);
-  if (resolvedMode !== 'unsupported' && (raw.multipleProducts === true || products.size > 1 || !candidates.length || !validEvidence)) resolvedMode = 'uncertain';
+  const packageEvidence = normalizePackageEvidence(raw.packageEvidence, options.imageCount);
+  const nutritionOnly = ['food_label', 'powder_label'].includes(resolvedMode) && !!packageEvidence.nutrition;
+  if (resolvedMode !== 'unsupported' && (raw.multipleProducts === true || conflictingProducts || (!candidates.length && !nutritionOnly) || !validEvidence)) resolvedMode = 'uncertain';
   if (['uncertain', 'unsupported'].includes(resolvedMode)) {
     return { resolvedMode, observation: { identityCandidates: candidates, basis: { quantity: null, unit: null, material: 'unknown' },
       nutrients: Object.fromEntries(FIELDS.map(field => [field, normalizeNutrient(field, null)])), formula: {}, formulaEvidence: {}, missingFields: [...FIELDS],
-      warnings: [resolvedMode === 'unsupported' ? '图片内容不属于可识别的食物或奶粉' : '物品类型或身份不明确，请确认类型并重新识别'] } };
+      warnings: [resolvedMode === 'unsupported' ? '图片内容不属于可识别的食物或奶粉' : '图片内容不明确，请拍清一种食品或完整包装'] } };
   }
   return { resolvedMode, observation: normalizeObservation(raw, { ...options, mode: resolvedMode }) };
 }
-module.exports = { normalizeNutrient, normalizeObservation, normalizeAutomaticObservation, convertBasis, toComparableBasis, observationPatch };
+module.exports = { normalizeNutrient, normalizeObservation, normalizeAutomaticObservation, convertBasis, observationPatch };

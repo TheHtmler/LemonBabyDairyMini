@@ -2,11 +2,11 @@
 const crypto = require('crypto');
 const { fail } = require('./lib/search');
 const { hash, getDocument } = require('./access');
-const { requireSecret } = require('./cursor');
 const COLLECTION = 'search_query_sessions';
 function signature(body, secret) { return crypto.createHmac('sha256', secret).update('search-context-v2:' + body).digest('hex'); }
 function createContextRepository({ db, accessContext, secret, now }) {
-  requireSecret(secret); const owner = hash([accessContext.openid, accessContext.babyUid]);
+  if (typeof secret !== 'string' || secret.length < 32) fail('CONFIG_MISSING', '搜索服务尚未配置，请稍后再试');
+  const owner = hash([accessContext.openid, accessContext.babyUid]);
   async function load(token) {
     if (typeof token !== 'string' || token.length > 1024) fail('INVALID_CONTEXT', '搜索上下文无效，请重新输入问题');
     const parts = token.split('.'); const [id, sign] = parts;

@@ -93,20 +93,41 @@ function classificationIdentityKey(value) {
   return JSON.stringify([food.name.toLowerCase().replace(/\s+/g, ''), food.brand, food.series, food.stage, food.barcode]);
 }
 
+// 模型识别蛋白来源，程序统一映射分类；不维护具体食品名称名单，也不依赖用户的资料库分类。
+const PROTEIN_GROUPS = {
+  meat: { label: '畜禽肉类的肌肉蛋白', quality: 'premium' },
+  seafood: { label: '鱼虾贝等水产蛋白', quality: 'premium' },
+  egg: { label: '蛋及以蛋为蛋白来源的制品', quality: 'premium' },
+  dairy: { label: '奶及以乳蛋白为来源的制品', quality: 'premium' },
+  soy: { label: '大豆及以大豆蛋白为来源的制品', quality: 'premium' },
+  grain_tuber: { label: '谷物与薯类', quality: 'regular' },
+  other_legume: { label: '大豆以外的普通杂豆', quality: 'regular' },
+  vegetable_fruit: { label: '蔬菜与水果', quality: 'regular' },
+  nuts_seeds: { label: '坚果与种子', quality: 'regular' },
+  collagen: { label: '皮筋、明胶及胶原蛋白', quality: 'regular' },
+  mixed: { label: '主要蛋白来源不明确的混合食品', quality: null },
+  unknown: { label: '无法确认蛋白来源', quality: null },
+  special_formula: { label: '有明确产品依据的特殊营养配方', quality: null }
+};
+
 function normalizeClassification(raw, food, catalog, { allowSpecial = true } = {}) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const requested = categoryText(raw.category); const matched = matchCategory(requested, catalog);
   // 完整本地标识可直接匹配；未知的新分类名称超限时不静默截断。
   const category = matched ? matched.value : requested.length <= 60 ? normalizeCategoryName(requested) : '';
+  const proteinGroup = typeof raw.proteinGroup === 'string' && Object.prototype.hasOwnProperty.call(PROTEIN_GROUPS, raw.proteinGroup) ?
+    raw.proteinGroup : 'unknown';
+  const group = PROTEIN_GROUPS[proteinGroup];
   let proteinSource = null; let proteinQuality = null;
-  if (raw.proteinSource === 'natural' && ['premium', 'regular'].includes(raw.proteinQuality)) {
-    proteinSource = 'natural'; proteinQuality = raw.proteinQuality;
-  } else if (allowSpecial && raw.proteinSource === 'special') {
+  if (group.quality) {
+    proteinSource = 'natural'; proteinQuality = group.quality;
+  } else if (allowSpecial && proteinGroup === 'special_formula') {
     proteinSource = 'special'; proteinQuality = '';
   }
   if (!category && !proteinSource) return null;
   return { category: matched ? matched.value : category, categoryMatched: !!matched,
-    proteinSource, proteinQuality, identity: identity(food), source: 'model_suggestion' };
+    proteinGroup, proteinSource, proteinQuality, proteinQualitySource: 'source_group_rule',
+    identity: identity(food), source: 'model_suggestion' };
 }
 
-module.exports = { normalizeCategoryCatalog, normalizeCategoryName, matchCategory, recommendCategories, classificationIdentityKey, normalizeClassification };
+module.exports = { PROTEIN_GROUPS, normalizeCategoryCatalog, normalizeCategoryName, matchCategory, recommendCategories, classificationIdentityKey, normalizeClassification };

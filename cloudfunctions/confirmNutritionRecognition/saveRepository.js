@@ -2,13 +2,29 @@
 const { fail, text, number } = require('./lib/core/contracts');
 const { getDocument, hash } = require('./lib/core/server');
 const { normalizeLegacyProfileSeed } = require('./lib/core/profile');
+const { strongIdentityKey, candidateIdentity, duplicateLevel } = require('./lib/core/duplicates');
 
 async function saveFood(tx, session, event, patch, meta, now) {
   const sourceId = session.sourceSystemFoodId || '';
   if ((event.sourceSystemFoodId || '') !== sourceId || (event.targetId || '') !== (session.targetFoodId || '') ||
       event.expectedVersion !== session.targetFoodVersion) fail('VERSION_CONFLICT', '确认对象与识别时不同，请重新核对');
-  const id = session.targetFoodId || (sourceId ? hash('food-source:' + session.babyUid + ':' + sourceId) : hash('food:' + event.sessionId));
-  const current = await getDocument(tx, 'food_catalog', id);
+  let id = session.targetFoodId || (sourceId ? hash('food-source:' + session.babyUid + ':' + sourceId) : hash('food:' + event.sessionId));
+  let current;
+  const identityKey = session.purpose === 'preview' && strongIdentityKey(session.confirmedIdentity, 'food');
+  if (identityKey) {
+    // 不同识别会话的同一强身份写入同一文档，让事务重试检测并发新增。
+    id = hash('food-identity:' + session.babyUid + ':' + identityKey);
+    for (let generation = 0; generation < 30; generation++) {
+      current = await getDocument(tx, 'food_catalog', id);
+      if (!current) break;
+      if (current.babyUid !== session.babyUid || current.isSystem) fail('FORBIDDEN', '不能修改该食物');
+      if (!current.deletedAt && (!current.status || current.status === 'active') && duplicateLevel(session.confirmedIdentity, candidateIdentity(current)) === 'exact') fail('VALIDATION_FAILED', '相同身份资料已保存，请查看已有资料');
+      // 归档或已改名的旧条目保留原文档，下一槽位仍由原文档版本确定。
+      id = hash('food-identity-next:' + id + ':' + Number(current.version || 0));
+      current = undefined;
+      if (generation === 29) fail('VERSION_CONFLICT', '同名资料版本较多，请到食物管理核对已有条目');
+    }
+  } else current = await getDocument(tx, 'food_catalog', id);
   if (current && (current.isSystem || current.babyUid !== session.babyUid)) fail('FORBIDDEN', '不能修改该食物');
   if (event.targetId && !current) fail('VERSION_CONFLICT', '食物已被删除，请重新加载');
   if (current && Number(current.version || 0) !== event.expectedVersion) fail('VERSION_CONFLICT', '其他监护人已修改该食物，请重新核对');
@@ -23,7 +39,7 @@ async function saveFood(tx, session, event, patch, meta, now) {
   const quality = form.proteinSource === 'natural' ? form.proteinQuality : '';
   if (form.proteinSource === 'natural' && !['premium', 'regular'].includes(quality)) fail('VALIDATION_FAILED', '请确认蛋白质量类型');
   const nutrition = {};
-  ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].forEach(field => { nutrition[field] = patch[field] ?? 0; });
+  ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].forEach(field => { nutrition[field] = number(patch[field]); });
   const image = text(form.image, 1000);
   if (image && !image.startsWith('cloud://')) fail('VALIDATION_FAILED', '展示图片必须先上传云存储');
   const data = { ...(current || {}), name: patch.name, category, categoryLevel1: category,
@@ -75,7 +91,7 @@ async function savePowder(tx, session, event, patch, meta, now) {
     }
   }
   const nutrition = {};
-  ['calories', 'protein', 'fat', 'carbs', 'fiber'].forEach(field => { nutrition[field] = number(patch.nutritionPer100g[field]) ?? 0; });
+  ['calories', 'protein', 'fat', 'carbs', 'fiber'].forEach(field => { nutrition[field] = number(patch.nutritionPer100g[field]); });
   const powder = { ...(existing || {}), id, name: patch.name, category, proteinRole: categories[category],
     nutritionPer100g: nutrition, mixRatio: patch.mixRatio, status: 'active',
     source: sourceId ? 'system' : existing && existing.source || 'user',

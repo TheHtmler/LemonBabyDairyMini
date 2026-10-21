@@ -1,21 +1,25 @@
 <page-meta page-style="{{preview ? 'overflow: hidden;' : ''}}" />
 <view class="search-page">
   <view class="search-header">
+    <view class="search-baby">当前宝宝：{{babyName}}</view>
     <view class="search-toolbar">
       <view class="search-bar">
         <view class="ss-icon ss-icon-search" aria-hidden="true"></view>
-        <input class="search-input" value="{{query}}" placeholder="搜索食物、药物、记录…" placeholder-class="search-placeholder" maxlength="300" confirm-type="search" focus="true" bindinput="onInput" bindconfirm="submit" aria-label="搜索内容" />
+        <input class="search-input" value="{{query}}" placeholder="{{followupActive ? '继续问这次结果，如：那昨天呢' : '搜索食物、药物、记录…'}}" placeholder-class="search-placeholder" maxlength="300" confirm-type="search" focus="{{queryFocus}}" bindinput="onInput" bindconfirm="submit" aria-label="搜索内容" />
         <button wx:if="{{query}}" class="icon-button search-clear" bindtap="clearQuery" aria-label="清除搜索"><view class="ss-icon ss-icon-close" aria-hidden="true"></view></button>
         <button wx:if="{{scanAvailable}}" class="icon-button search-camera" bindtap="scan" aria-label="拍照识别"><view class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view></button>
       </view>
       <button class="search-submit" bindtap="submit" loading="{{busy}}" disabled="{{busy || !searchEnabled}}">{{busy ? '' : '搜索'}}</button>
     </view>
-    <scroll-view class="tabs" scroll-x="true" enhanced="true" show-scrollbar="false"><view class="tabs-track"><button wx:for="{{tabs}}" wx:key="id" class="tab {{tab === item.id ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="onTab"><text>{{item.label}}</text><view wx:if="{{tab === item.id}}" class="tab-indicator"></view></button></view></scroll-view>
+    <scroll-view wx:if="{{showTabs}}" class="tabs" scroll-x="true" enhanced="true" show-scrollbar="false"><view class="tabs-track"><button wx:for="{{tabs}}" wx:key="id" class="tab {{tab === item.id ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="onTab" disabled="{{busy || moreBusy}}"><text>{{item.label}}</text><view wx:if="{{tab === item.id}}" class="tab-indicator"></view></button></view></scroll-view>
     <view class="search-filterbar" wx:if="{{hasSearched && !busy && result && result.kind === 'list' && !question}}">
       <picker wx:if="{{catalogResult}}" class="source-filter" range="{{sources}}" value="{{sourceIndex}}" bindchange="onSourceFilter"><view class="source-filter-value"><text>{{sources[sourceIndex]}}</text><text class="filter-caret">▾</text></view></picker>
+      <picker wx:else class="source-filter" range="{{recordDomains}}" range-key="label" value="{{recordDomainIndex}}" bindchange="onRecordDomain"><view class="source-filter-value"><text>{{recordDomains[recordDomainIndex].label}}</text><text class="filter-caret">▾</text></view></picker>
       <view class="filter-spacer"></view><button class="filter-toggle {{filtersOpen ? 'active' : ''}}" bindtap="toggleFilters"><view class="ss-icon ss-icon-filter"><view class="ss-filter-middle"></view></view><text>{{filtersOpen ? '收起' : '筛选'}}</text></button>
     </view>
   </view>
+  <view class="context-strip" wx:if="{{continuationReady || followupActive}}"><text>{{followupActive ? '继续查询：' : '本次查询：'}}{{continuationLabel || '当前结果'}}</text><button wx:if="{{!followupActive}}" class="text-button" bindtap="continueQuery" disabled="{{busy || moreBusy}}">继续问</button><button class="text-button" bindtap="newQuery">新查询</button></view>
+  <view class="saved-addition" wx:if="{{savedAddition}}"><text>已加入{{babyName}}的资料库{{savedAddition.name ? '：' + savedAddition.name : ''}}</text><button class="text-button" bindtap="openAddedItem">查看刚加入资料</button></view>
   <view wx:if="{{capabilityError}}" class="service-message" role="alert"><text>{{capabilityError}}</text><button class="text-button" bindtap="retryCapabilities" loading="{{capabilitiesLoading}}" disabled="{{capabilitiesLoading}}">重试</button></view>
 
   <view class="filters" wx:if="{{filtersOpen}}">
@@ -44,13 +48,14 @@
     <text class="history-range-caption">{{historyPeriodText}}</text><view wx:if="{{dateRangeOpen}}"><view class="date-range"><picker mode="date" value="{{startDate}}" data-key="startDate" bindchange="onDate"><view>{{startDate || '开始日期'}}</view></picker><text>至</text><picker mode="date" value="{{endDate}}" data-key="endDate" bindchange="onDate"><view>{{endDate || '结束日期'}}</view></picker></view><button class="primary" bindtap="applyHistoryPeriod">应用日期</button></view>
   </view>
   <view class="chips" wx:if="{{chips.length && !busy}}"><button wx:for="{{chips}}" wx:key="id" data-kind="{{item.kind}}" bindtap="onChip">{{item.label}}</button></view>
-  <view class="group-state" wx:if="{{busy}}"><view class="status-spinner"></view><text>正在查询…</text></view>
+  <view class="group-state" wx:if="{{busy}}" aria-live="polite"><view class="status-spinner"></view><text>{{slow ? '仍在查询，可以修改问题或稍后重试' : '正在查询…'}}</text></view>
   <view class="search-feedback" wx:if="{{question && !busy}}" role="alert">
     <text class="question-title">{{question.message}}</text>
     <view class="choice-options"><button wx:for="{{question.options}}" wx:key="id" data-id="{{item.id}}" bindtap="resolveChoice">{{item.label}}</button></view>
     <view class="threshold-entry" wx:if="{{question.input}}"><input type="digit" value="{{thresholdValue}}" placeholder="{{question.input.label}}" bindinput="onThreshold" aria-label="{{question.input.label}}" /><text>{{question.input.unit}}</text><button class="text-button" bindtap="resolveThreshold">查询</button></view>
   </view>
-  <view class="search-feedback" wx:if="{{!busy && !question && (error || message && (!result || !result.items || !result.items.length))}}" role="alert"><text>{{error || message}}</text><view class="feedback-actions"><button wx:if="{{error || status === 'unavailable' || status === 'partial'}}" class="text-button" bindtap="submit">重试</button><button class="text-button" bindtap="toggleFilters">调整筛选</button></view></view>
+  <view class="search-feedback" wx:if="{{!busy && !question && (error || message && !resultSummary)}}" role="alert"><text>{{error || message}}</text><view class="feedback-actions"><button wx:if="{{retryAvailable && !moreError}}" class="text-button" bindtap="retrySearch">重试原操作</button><button class="text-button" bindtap="newQuery">重新查询</button><button class="text-button" bindtap="toggleFilters">调整筛选</button><button wx:if="{{catalogResult && scanAvailable && !items.length}}" class="text-button" bindtap="scan">拍照添加资料</button></view></view>
+  <view class="result-summary" wx:if="{{resultSummary && !busy}}" aria-live="polite">{{resultSummary}}</view>
 
   <view class="intro" wx:if="{{!hasSearched && !query}}">
     <view wx:if="{{recent.length}}" class="recent"><view class="section-head"><text>最近搜索</text><button class="text-button" bindtap="clearRecent">清空</button></view><view class="recent-queries"><button wx:for="{{recent}}" wx:key="*this" class="recent-query" data-query="{{item}}" bindtap="useQuery" bindlongpress="removeRecent">{{item}}</button></view></view>
@@ -58,7 +63,7 @@
   </view>
   <view class="feature-list" wx:if="{{result && result.kind === 'feature' && !busy}}"><button wx:for="{{result.items}}" wx:key="id" class="feature-row" data-id="{{item.id}}" bindtap="feature"><text class="feature-name">{{item.name}}</text><view class="ss-icon ss-icon-arrow"></view></button></view>
   <view class="result-group" wx:if="{{result && result.kind === 'list' && !busy}}">
-    <view class="result-row" wx:for="{{visibleItems}}" wx:key="id" data-id="{{item.id}}" bindtap="openItem" role="button" hover-class="row-pressed">
+    <view id="search-result-{{index}}" class="result-row {{highlightedId === item.id ? 'result-highlighted' : ''}}" wx:for="{{visibleItems}}" wx:key="id" data-id="{{item.id}}" bindtap="openItem" role="button" hover-class="row-pressed">
       <image wx:if="{{item.thumbnailUrl}}" class="result-thumbnail" src="{{item.thumbnailUrl}}" mode="aspectFill" data-id="{{item.id}}" binderror="onResultImageError" />
       <view wx:else class="result-thumbnail result-placeholder" aria-hidden="true"><text>{{item.typeLabel}}</text></view>
       <view class="result-content">
@@ -71,7 +76,6 @@
         <view class="result-caption" wx:if="{{item.source === 'history'}}"><text>{{item.date}} {{item.time}}</text><text wx:if="{{item.actualQuantity > 0}}">实际食用 {{item.actualQuantity}} {{item.actualUnitText}}</text></view>
       </view><view class="ss-icon ss-icon-arrow result-open-arrow"></view>
     </view>
-    <view class="group-state" wx:if="{{items.length && !visibleItems.length}}">当前分类没有结果，可切换分类查看。</view>
   </view>
   <view class="metric-results" wx:if="{{result && !busy && (result.kind === 'scalar' || result.kind === 'series' || result.kind === 'comparison')}}">
     <view class="metric-heading"><view class="metric-title-line"><text class="metric-title">{{result.label}}</text><text class="metric-unit">{{result.unit}}</text></view><text class="metric-period" wx:if="{{result.requestedDays}}">有效 {{result.knownDays}} / {{result.requestedDays}} 天</text></view>
@@ -79,12 +83,14 @@
     <view wx:if="{{result.kind === 'series'}}"><button wx:for="{{result.rows}}" wx:key="date" class="metric-row" data-index="{{index}}" bindtap="openSeriesDay"><text class="metric-date">{{item.date}}</text><view class="metric-reading"><text class="{{item.known ? 'metric-value' : 'metric-missing'}}">{{item.known ? item.displayValue : item.missingReason}}</text><view class="ss-icon ss-icon-arrow"></view></view></button></view>
     <view wx:if="{{result.kind === 'comparison'}}"><view class="comparison-result" wx:for="{{result.rows}}" wx:key="index"><text class="answer-label">{{item.label}} · {{item.unit}}</text><view class="comparison-values"><view><text class="answer-label">{{result.periodLabels[0] || '第一段'}}</text><text class="summary-value">{{item.leftText}}</text></view><view><text class="answer-label">{{result.periodLabels[1] || '第二段'}}</text><text class="summary-value">{{item.rightText}}</text></view></view><text class="comparison-delta" wx:if="{{item.deltaText}}">差值 {{item.deltaText}} {{item.unit}}</text><text class="answer-note" wx:if="{{item.leftRequestedDays}}">有效天数 {{item.leftKnownDays}}/{{item.leftRequestedDays}} 与 {{item.rightKnownDays}}/{{item.rightRequestedDays}}</text></view></view>
   </view>
-  <button class="more-button" wx:if="{{nextCursor && !busy}}" loading="{{moreBusy}}" disabled="{{moreBusy}}" bindtap="more">继续查看</button>
+  <view class="service-message" wx:if="{{moreError}}" role="alert"><text>后续内容未加载：{{moreError}}</text><button class="text-button" wx:if="{{retryAvailable}}" bindtap="retrySearch" disabled="{{moreBusy}}">重试下一页</button><button wx:else class="text-button" bindtap="newQuery">重新查询</button></view>
+  <button class="more-button" wx:if="{{nextCursor && !busy && !moreError}}" loading="{{moreBusy}}" disabled="{{moreBusy}}" bindtap="more">{{slow ? '仍在加载…' : '继续查看'}}</button>
   <view class="answer-actions" wx:if="{{actions.length && !busy}}"><button wx:for="{{actions}}" wx:key="id" class="text-button" data-id="{{item.id}}" bindtap="action">{{item.label}}</button></view>
   <view wx:if="{{result && result.note && !busy}}"><button class="text-button metric-notes-toggle" bindtap="toggleNotes">{{notesOpen ? '收起依据' : '查看依据'}}</button><text class="hint" wx:if="{{notesOpen}}">{{result.note}}</text></view>
   <view wx:if="{{previewLoading}}" class="group-state"><view class="status-spinner"></view><text>正在打开资料…</text></view>
   <view class="preview-mask" wx:if="{{preview}}" bindtap="closePreview" catchtouchmove="stopPropagation"></view>
   <view class="preview" wx:if="{{preview}}" role="dialog" aria-label="资料预览">
+    <text class="search-baby">所属宝宝：{{babyName}}</text>
     <view class="preview-header"><view class="preview-heading"><text class="source-tag {{preview.source}}">{{preview.sourceText}}</text><text class="preview-title">{{preview.name}}</text></view><button class="icon-button" bindtap="closePreview" aria-label="关闭预览"><view class="ss-icon ss-icon-close"></view></button></view>
     <text class="preview-basis">{{preview.type === 'medication' ? '已记录的药物信息' : preview.type === 'recipe' ? '食谱配料' : preview.basisText}}</text><text wx:if="{{preview.estimate}}" class="hint">包含已采用的 AI 估算值</text>
     <scroll-view scroll-y="true" class="preview-body">

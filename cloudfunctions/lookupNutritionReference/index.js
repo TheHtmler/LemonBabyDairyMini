@@ -1,8 +1,29 @@
 'use strict';
 const { fail, identity, number } = require('./lib/core/contracts');
 const { matchReferenceCandidates, identityMatches, compareNutrition } = require('./lib/core/reference');
-const { runtime, ownedSession, getDocument, transaction, publicFailure, SESSION_COLLECTION } = require('./lib/core/server');
+const { estimateEligibility, normalizeModelEstimate, validateEstimateBinding } = require('./lib/core/estimate');
+const { runtime, ownedSession, getDocument, transaction, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
 const { findReferences } = require('./referenceRepository');
+
+function bindRecognitionEstimate(session, wanted, reference, basis, comparisonVersion, status, timestamp) {
+  const recognition = session.result || {};
+  if (session.purpose !== 'preview' || session.mode !== 'food_object' || !session.recognitionEstimate ||
+      status === 'ambiguous' || (recognition.classification || {}).proteinSource === 'special') return null;
+  const context = { mode: session.mode, identity: wanted, observation: session.observation,
+    reference, basis, comparisonVersion };
+  const eligible = estimateEligibility(context);
+  if (!eligible.eligible) return null;
+  try {
+    // 只补标签与参考均缺少的字段；身份或生熟状态变化后旧候选自动失效。
+    const normalized = normalizeModelEstimate(session.recognitionEstimate, wanted, eligible.fields);
+    const estimate = { ...normalized, comparisonVersion,
+      estimateId: hash(session.requestId + ':' + comparisonVersion + ':recognition'),
+      generatedAt: new Date(timestamp).toISOString(), classification: recognition.classification || null,
+      modelInfo: recognition.modelInfo || null, usage: null };
+    validateEstimateBinding(estimate, context);
+    return estimate;
+  } catch (_) { return null; }
+}
 
 function createReferenceHandler({ db, context, now = Date.now, search = findReferences }) {
   return async (event = {}) => {
@@ -33,6 +54,7 @@ function createReferenceHandler({ db, context, now = Date.now, search = findRefe
       } else fail('INVALID_INPUT', '参考查询操作无效');
       const comparisonVersion = (session.comparisonVersion || 0) + 1;
       const comparison = { ...compareNutrition(session.observation, reference, comparisonVersion, basis), status };
+      const estimate = bindRecognitionEstimate(session, wanted, reference, basis, comparisonVersion, status, now());
       await transaction(db, async tx => {
         const current = await getDocument(tx, SESSION_COLLECTION, event.sessionId);
         if (!current || current.status === 'saved' || current.confirmation && current.confirmation.state === 'processing' || current.version !== session.version) {
@@ -41,11 +63,12 @@ function createReferenceHandler({ db, context, now = Date.now, search = findRefe
         await tx.collection(SESSION_COLLECTION).doc(event.sessionId).update({
           confirmedIdentity: wanted, referenceCandidates: candidates, selectedReference: db.command.set(reference),
           comparison, comparisonBasis: basis, comparisonVersion, status: 'compared', version: current.version + 1,
-          estimate: null, estimateStatus: 'idle', estimateRequestId: '', estimateFailure: null, binding: null
+          estimate: db.command.set(estimate), estimateStatus: estimate ? 'ready' : 'idle',
+          estimateRequestId: '', estimateFailure: null, binding: null
         });
       });
       return { ok: true, sessionId: event.sessionId, referenceCandidates: candidates,
-        selectedReference: reference, comparison, comparisonVersion };
+        selectedReference: reference, comparison, comparisonVersion, estimate };
     } catch (error) { return publicFailure(error, event.requestId); }
   };
 }

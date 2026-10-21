@@ -3,6 +3,12 @@ const { isDeveloperOpenid } = require('../../config/developer');
 
 const CONFIG_ITEMS = [
   {
+    id: 'nutrition-quota',
+    name: '营养识别次数',
+    description: '设置每个账号每天的识别上限',
+    path: '/pkg-misc/nutrition-quota-settings/index'
+  },
+  {
     id: 'notice',
     name: '首页公告配置',
     description: '控制首页顶部跑马灯公告的显示与文案',

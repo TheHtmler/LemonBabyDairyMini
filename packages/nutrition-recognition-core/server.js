@@ -54,6 +54,21 @@ async function ownedSession(db, openid, babyUid, sessionId, now = Date.now()) {
 
 async function transaction(db, action) { return db.runTransaction(action); }
 
+async function readBabyFoodCatalog(db, babyUid) {
+  const result = []; const deadline = Date.now() + 8000;
+  const command = db.command;
+  const where = command.and([command.or([{ babyUid }, { sharedBabyUids: command.in([babyUid]) }]),
+    { sourceType: command.neq('system'), ownerType: command.neq('system'), isSystem: command.neq(true) }]);
+  for (let offset = 0; offset <= 5000; offset += 100) {
+    if (Date.now() > deadline) fail('SERVICE_UNAVAILABLE', '资料核对尚未完成，请稍后重试');
+    const page = await db.collection('food_catalog').where(where).orderBy('_id', 'asc').skip(offset).limit(100).get();
+    const rows = page.data || [];
+    result.push(...rows);
+    if (rows.length < 100) return result;
+  }
+  fail('VALIDATION_FAILED', '资料较多，暂不能完整核对重复项，请先到食物管理查看已有资料');
+}
+
 const FAILURE_STAGES = {
   runtime_init: '识别服务初始化失败，请稍后重试',
   access_check: '识别权限检查失败，请稍后重试',
@@ -104,4 +119,4 @@ function publicFailure(error, requestId, context = {}) {
   return { ok: false, requestId: text(requestId, 100), code, message, ...(stage ? { stage } : {}) };
 }
 
-module.exports = { runtime, hash, getDocument, assertAccess, ownedSession, transaction, publicFailure, SESSION_COLLECTION };
+module.exports = { runtime, hash, getDocument, assertAccess, ownedSession, transaction, readBabyFoodCatalog, publicFailure, SESSION_COLLECTION };

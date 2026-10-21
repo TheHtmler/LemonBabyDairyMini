@@ -18,6 +18,18 @@ function inPeriod(row, period, now) {
   return s.date !== today || s.time <= new Date(now + 28800000).toISOString().slice(11, 19);
 }
 function missingCollection(error) { return /COLLECTION_NOT_EXIST|DATABASE_COLLECTION_NOT_EXIST/.test(String(error.code || '')); }
+async function mapConcurrent(values, limit, action) {
+  const result = new Array(values.length); let position = 0; let stopped = false;
+  const worker = async () => {
+    while (!stopped && position < values.length) {
+      const index = position++;
+      try { result[index] = await action(values[index]); }
+      catch (error) { stopped = true; throw error; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, values.length) }, worker));
+  return result;
+}
 function createReadRepository({ db, accessContext, now, deadline = Date.now() + 22000, maxReads = 5000 }) {
   let reads = 0; const cache = new Map(); const manifests = [];
   function budget(count = 0) { reads += count; if (reads > maxReads || Date.now() >= deadline) fail('QUERY_BUDGET', '记录较多，请缩短日期范围后重试'); }
@@ -67,19 +79,19 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
   async function catalogItems(domain = 'catalog', keyword = '', source = 'all') {
     const key = JSON.stringify(['catalog', domain, keyword, source]); if (cache.has(key)) return cache.get(key);
     const task = (async () => {
-      const query = { intent: 'search_catalog', scope: domain === 'catalog' ? ['food', 'powder', 'recipe', 'medication'] : [domain], source, keyword };
-      const result = [];
-      for (const name of catalog.sourceNames(query)) {
+      const query = { scope: domain === 'catalog' ? ['food', 'powder', 'recipe', 'medication'] : [domain], source, keyword };
+      const sources = await mapConcurrent(catalog.sourceNames(query), 3, async name => {
+        const result = [];
         const collectionName = catalog.SOURCES[name].collection;
-        const where = catalog.whereFor(db, name, accessContext.babyUid, {});
+        const where = catalog.whereFor(db, name, accessContext.babyUid);
         let before;
         try { before = await manifest(collectionName, where); } catch (_) { fail('SOURCE_UNAVAILABLE', '资料状态暂时读取失败，请重试'); }
         manifests.push({ key: 'catalog-source:' + name, collection: collectionName, where, before });
-        if (before === 'absent') continue;
+        if (before === 'absent') return result;
         let position = {}; let profile = null;
         for (;;) {
           budget(); let response;
-          try { response = await catalog.scanSource({ db, accessContext, query: name === 'privatePowder' ? { ...query, keyword: '' } : query, period: {}, source: name, position, readLimit: 100 }); }
+          try { response = await catalog.scanSource({ db, accessContext, query: name === 'privatePowder' ? { ...query, keyword: '' } : query, source: name, position, readLimit: 100 }); }
           catch (error) { if (missingCollection(error)) break; fail('SOURCE_UNAVAILABLE', '资料暂时读取失败，请重试'); }
           budget(response.documents.length); position = response.nextPosition;
           for (const doc of response.documents) {
@@ -92,16 +104,20 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
           if (response.exhausted || response.documents.length < 100) break;
         }
         if (profile) for (let i = 0; i < (profile.formulaPowders || []).length; i++) { const item = catalog.normalizeCandidate(profile, name, i, accessContext.babyUid); if (item && !item.deleted) result.push(item); }
-      }
-      return result;
+        return result;
+      });
+      return sources.flat();
     })(); cache.set(key, task); return task;
   }
   async function events(domain, period) {
     if (domain === 'medication') return (await collection('medication_records', period, { dated: true, fields: ['date', 'dateKey', 'actualDateTime'] })).map(raw => event(raw, 'medication', raw.medicationName || '未命名药物', raw.medicationId || '', accessContext.babyUid));
     if (domain === 'water') return (await collection('water_records', period, { dated: true, fields: ['date', 'dateKey', 'recordTime'] })).map(raw => event(raw, 'water', '饮水记录', '', accessContext.babyUid));
-    const legacy = await collection('feeding_records', period, { dated: true });
+    const [legacy, current] = await Promise.all([
+      collection('feeding_records', period, { dated: true }),
+      collection(domain === 'milk' ? 'feeding_records_v2' : 'food_intake_records', period, { dated: true })
+    ]);
     if (domain === 'milk') {
-      const fresh = (await collection('feeding_records_v2', period, { dated: true })).map(row => {
+      const fresh = current.map(row => {
         const normalized = normalizeFeedingRecordV2(row);
         const known = Object.entries(row.nutritionSummary || {}).filter(([, value]) => value !== null && value !== '' && Number.isFinite(Number(value))).map(([key]) => key);
         return normalized ? { ...normalized, __nutritionMissing: !row.nutritionSummary, __nutritionFields: known } : null;
@@ -110,7 +126,7 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
       const old = legacy.flatMap(doc => (doc.feedings || []).filter(active).filter(row => !migrated.has(doc._id + ':' + (row._id || row.id || ''))).map((row, i) => ({ ...row, _id: doc._id + ':' + (row._id || row.id || i), date: doc.date, legacyRecordId: doc._id, legacy: true })));
       return [...fresh, ...old].filter(raw => inPeriod(raw, period, now)).map(raw => event(raw, 'milk', '喂奶记录', '', accessContext.babyUid));
     }
-    const fresh = await collection('food_intake_records', period, { dated: true });
+    const fresh = current;
     const migrated = new Set(fresh.map(row => (row.legacySource || {}).recordId + ':' + (row.legacySource || {}).intakeId));
     const old = legacy.flatMap(doc => (doc.intakes || []).filter(active).filter(row => row.type !== 'milk' && !row.milkType && !migrated.has(doc._id + ':' + (row._id || row.id || '')))
       .map((row, i) => ({ ...row, _id: doc._id + ':' + (row._id || row.id || i), date: doc.date, legacyRecordId: doc._id, legacy: true })));
@@ -120,10 +136,10 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
     });
   }
   async function verify() {
-    for (const item of manifests) {
+    await mapConcurrent(manifests, 3, async item => {
       let current; try { current = await manifest(item.collection, item.where); } catch (_) { fail('SOURCE_UNAVAILABLE', '记录变更状态读取失败，请重试'); }
       if (current !== item.before) fail('DATA_CHANGED', '查询期间记录发生变化，请重新查询');
-    }
+    });
     budget();
   }
   return { collection, catalogItems, events, verify, budget, revisions: () => Object.fromEntries(manifests.map(x => [hash(x.key), x.before])), get reads() { return reads; } };

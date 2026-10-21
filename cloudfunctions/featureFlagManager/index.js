@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const { NUTRITION_QUOTA_KEY, isDailyLimit, readNutritionQuota } = require('./lib/ai/nutritionQuota');
 const SEARCH_SCAN_KEYS = ['home_search_enabled', 'ai_search_enabled', 'nutrition_scan_enabled'];
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -128,6 +129,26 @@ async function updateReportOcrAccessConfig(event = {}, operatorOpenid = '') {
   return await getReportOcrAccessConfig();
 }
 
+async function updateNutritionQuota(event, operatorOpenid) {
+  if (!isDailyLimit(event.dailyLimit) || !Number.isSafeInteger(event.expectedVersion) || event.expectedVersion < 0) {
+    throw Object.assign(new Error('每日识别次数须为 0～10000 的整数'), { code: 'INVALID_INPUT' });
+  }
+  return db.runTransaction(async transaction => {
+    const current = await readNutritionQuota(transaction);
+    // 网络中断后再次保存相同目标值，可直接确认上次保存结果。
+    if (current.configured && current.dailyLimit === event.dailyLimit) return current;
+    if (current.version !== event.expectedVersion) {
+      throw Object.assign(new Error('配置已被其他管理员更新，请重新加载后再保存'), { code: 'CONFIG_CONFLICT' });
+    }
+    const version = current.version + 1;
+    await transaction.collection(FEATURE_FLAG_COLLECTION).doc(NUTRITION_QUOTA_KEY).set({
+      data: { key: NUTRITION_QUOTA_KEY, dailyLimit: event.dailyLimit, version,
+        updatedAt: db.serverDate(), updatedBy: operatorOpenid }
+    });
+    return { dailyLimit: event.dailyLimit, version, configured: true };
+  });
+}
+
 exports.main = async (event = {}) => {
   const { OPENID } = cloud.getWXContext();
   const action = event.action || 'getReportOcrAccessConfig';
@@ -151,6 +172,9 @@ exports.main = async (event = {}) => {
       return { ok: false, code: 'NO_PERMISSION', message: '无权限配置实验功能' };
     }
 
+    if (action === 'updateNutritionQuota') {
+      return { ok: true, config: await updateNutritionQuota(event, OPENID) };
+    }
     if (action === 'getReportOcrAccessConfig') {
       return {
         ok: true,
@@ -199,7 +223,7 @@ exports.main = async (event = {}) => {
     console.error('[featureFlagManager] failed', error);
     return {
       ok: false,
-      code: 'FEATURE_FLAG_FAILED',
+      code: ['INVALID_INPUT', 'CONFIG_CONFLICT', 'CONFIG_MISSING'].includes(error.code) ? error.code : 'FEATURE_FLAG_FAILED',
       message: error?.message || '配置更新失败'
     };
   }

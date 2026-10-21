@@ -48,7 +48,7 @@
 - 客户端**直连数据库**（`wx.cloud.database()`）完成绝大多数读写，云函数很少。
 - 运行时云函数（用户高频可触发的）：
   - `getOpenid`：每次冷启动调用 1 次（`miniprogram/app.js` `getOpenid`）。
-  - `checkPermission`：云函数存在，但客户端权限校验主要走 `app.checkPermission` 直连数据库。
+  - `checkPermission`：旧云函数源码已于 2026-10-19 移除；当前权限校验继续走 `app.checkPermission` 直连数据库。另移除无调用的 `decryptPhoneNumber/saveCreatorInfo` 云函数源码，详见[云端资源精简记录](verification/2026-10-19-search-cloud-cleanup.md)。
   - 其余（`accountCleanup` / `updateBabyAvatar` / `feedbackManager` / `getSystemFoodIndex` / 各 `migrate*`）为低频或迁移用途。
 - 关键集合：`baby_creators`、`baby_participants`、`baby_info`、`feeding_records_v2`、`food_intake_records`、`medication_records`、`treatment_records`、`bowel_records`、`growth_records_v2`、`daily_summary_v2`、`medications`、报告集合。
 

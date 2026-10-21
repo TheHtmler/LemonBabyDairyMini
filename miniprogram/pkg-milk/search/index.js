@@ -1,13 +1,24 @@
 const service = require('../../utils/searchService');
 const { waitForAppInitialization } = require('../../utils/index');
-const { currentContext, createSearchSession, openSearchLocator } = require('../../utils/searchSession');
+const { currentContext, createSearchSession, takeSearchAddition, openSearchLocator } = require('../../utils/searchSession');
 const { openFeature } = require('../../utils/searchFeatureCatalog');
-const { PROTOCOL_VERSION, BUILD_VERSION, FIELDS, UNITS, shiftDate, resolvePeriod } = require('./lib/search/index');
+const { FEATURES } = require('../../utils/search-core/features');
+const { PROTOCOL_VERSION, BUILD_VERSION } = require('../../utils/search-core/capabilities');
+const { FIELDS, UNITS } = require('../../utils/search-core/contracts');
+const { shiftDate, resolvePeriod } = require('../../utils/search-core/period');
 const LABELS = { calories: '能量', protein: '蛋白质', fat: '脂肪', carbs: '碳水', fiber: '膳食纤维', sodium: '钠' };
 const TABS = [{ id: 'all', label: '全部' }, { id: 'food', label: '食物' }, { id: 'powder', label: '奶粉' }, { id: 'recipe', label: '食谱' }, { id: 'medication', label: '药物' }, { id: 'history', label: '记录' }, { id: 'feature', label: '功能' }];
 const PERIODS = [{ label: '近 30 天', value: { kind: 'last_n_days', days: 30 } }, { label: '上周', value: { kind: 'previous_calendar_week' } }, { label: '近 7 天', value: { kind: 'last_n_days', days: 7 } }, { label: '本月', value: { kind: 'current_month' } }, { label: '全部历史', value: { kind: 'all' } }, { label: '自定义', value: { kind: 'range' } }];
 function numberText(value) { return typeof value === 'number' && Number.isFinite(value) ? String(Math.round(value * 10000) / 10000) : '缺少数据'; }
-function formatItem(item) {
+function manualFromInterpretation(value) {
+  if (!value) return null;
+  return { schemaVersion: 2, status: 'ready', operation: value.operation, domain: value.domain,
+    entityMentions: value.entityMentions || value.entityNames || [], measure: value.measure, measures: value.measures || [],
+    periods: value.periodDefinitions || [], filters: value.filters || [], source: value.source || 'all',
+    powderBasis: value.powderBasis || null, aggregation: value.aggregation, subjectMode: value.subjectMode,
+    basisQuantity: value.basisQuantity || 100, basisUnit: value.basisUnit || 'g', groupBy: value.groupBy, featureId: value.featureId };
+}
+function displayItem(item) {
   const basis = item.nutritionBasis || {};
   const values = FIELDS.map(key => {
     const entry = (item.nutrients || {})[key] || {};
@@ -17,11 +28,10 @@ function formatItem(item) {
   const basisText = basis.quantity > 0 && basis.unit ? '每 ' + basis.quantity + (basis.unit === 'g' ? ' 克' : basis.unit === 'ml' ? ' 毫升' : ' 份') +
     (basis.material === 'dry_powder' ? '干粉' : basis.material === 'prepared_formula' ? '冲调液' : '') : '计量基准未提供';
   return { ...item, answers: item.answers || [], ingredients: item.ingredients || [], values, proteinText: values.find(value => value.key === 'protein').value,
-    calorieText: values.find(value => value.key === 'calories').value,
     energyText: calories.state === 'known' ? Math.round(calories.value * 1000) / 1000 + ' 千卡' : '能量未提供',
     basisCaption: basisText.replace(/^每\s*/, ''),
     thumbnailUrl: typeof item.image === 'string' ? item.image : '',
-    typeLabel: item.type === 'medication' ? '药物' : item.type === 'powder' ? '奶粉' : item.type === 'recipe' ? '食谱' : '食物',
+    typeLabel: ({ medication: '药物', powder: '奶粉', recipe: '食谱', water: '饮水', milk: '喂奶' })[item.type] || '食物',
     hasNutrition: ['food', 'powder'].includes(item.type),
     medicationText: [item.dosage && item.dosage + ' ' + (item.unit || ''), item.frequency].filter(Boolean).join(' · '),
     medicationDetails: item.type === 'medication' ? [
@@ -32,45 +42,59 @@ function formatItem(item) {
     ] : [],
     actualUnitText: ({ g: '克', ml: '毫升', portion: '份' })[item.actualUnit] || item.actualUnit || '',
     basisText,
-    sourceText: item.source === 'system' ? '系统' : item.source === 'mine' ? '我的' : '饮食记录',
+    sourceText: ({ system: '系统', mine: '我的', history: '记录' })[item.source] || '饮食记录',
     estimate: Object.values((item.provenance || {}).fieldSources || {}).includes('model_estimate') };
-}
-function displayItem(item) {
-  const result = formatItem(item);
-  if (item.type === 'water') result.typeLabel = '饮水';
-  if (item.type === 'milk') result.typeLabel = '喂奶';
-  if (item.source === 'history') result.sourceText = '记录';
-  return result;
 }
 Page({
   data: {
-    query: '', babyName: '', tabs: TABS, tab: 'all', busy: false, moreBusy: false, previewLoading: false, preview: null,
-    searchEnabled: false, capabilityError: '', capabilitiesLoading: false, scanAvailable: true, aiAvailable: false,
-    hasSearched: false, catalogResult: false, recent: [], status: '', message: '', error: '', diagnosticId: '', question: null, thresholdValue: '',
+    query: '', babyName: '', tabs: TABS, tab: 'all', showTabs: false, busy: false, moreBusy: false, previewLoading: false, preview: null,
+    queryFocus: true, followupActive: false, continuationReady: false, continuationLabel: '', retryAvailable: false,
+    moreError: '', slow: false, savedAddition: null, highlightedId: '', resultSummary: '',
+    searchEnabled: false, capabilityError: '', capabilitiesLoading: false, scanAvailable: true,
+    hasSearched: false, catalogResult: false, recent: [], status: '', message: '', error: '', question: null, thresholdValue: '',
     items: [], visibleItems: [], result: null, chips: [], actions: [], nextCursor: null, notesOpen: false,
     filtersOpen: false, historyOptionsOpen: false, filterKeyword: '', sources: ['全部来源', '系统', '我的'], sourceIndex: 0,
     modes: ['资料', '饮食记录', '服药记录', '喂奶记录', '饮水记录'], modeIndex: 0,
     periods: PERIODS.map(x => x.label), periodIndex: 0, startDate: '', endDate: '', historyPeriodText: '', dateRangeOpen: false,
     powderBases: ['请选择基准', '干粉', '冲调液'], powderIndex: 0, conditions: [], fields: FIELDS.map(x => LABELS[x]),
-    operators: ['低于', '不高于', '等于', '不低于', '高于'], basisUnits: ['克', '毫升', '份']
+    operators: ['低于', '不高于', '等于', '不低于', '高于'], basisUnits: ['克', '毫升', '份'],
+    recordDomains: [{ id: 'diet', label: '饮食记录' }, { id: 'medication', label: '服药记录' }, { id: 'milk', label: '喂奶记录' }, { id: 'water', label: '饮水记录' }], recordDomainIndex: 0
   },
-  onLoad() { this._unloaded = false; this._capabilityEpoch = 0; this.attachContext(); },
+  onLoad() { this._unloaded = false; this._capabilityEpoch = 0; this._scrollTop = 0; this.attachContext(); },
   async onShow() {
     try { await waitForAppInitialization(); } catch (error) { this.setData({ capabilityError: error.message || '账号信息加载失败，请重试' }); return; }
     if (this._unloaded) return;
     const current = currentContext();
+    let refresh = null;
     if (!this._session || this._session.accountKey !== current.accountKey || this._session.babyUid !== current.babyUid) this.attachContext();
-    else if (this._session.changed()) { this.clearQuery(); this.setData({ message: '资料已更新，请重新搜索' }); }
+    else if (this._session.changed()) {
+      refresh = manualFromInterpretation(this._response && this._response.interpretation) || this._failedRequest && this._failedRequest.payload.manual || this._lastSuccessful && this._lastSuccessful.payload.manual;
+      this._refreshIntent = refresh;
+      this._refreshSelection = this._response && this._response.interpretation && this._response.interpretation.selectionSnapshot || this._lastSuccessful && this._lastSuccessful.payload.selectionSnapshot;
+      this._refreshQuery = this.data.hasSearched;
+      this._restoreScroll = this._scrollTop;
+      this._session.next(); this._contextToken = null; this._failedRequest = null; this._previewEpoch++;
+      this.setData({ preview: null, previewLoading: false, savedAddition: takeSearchAddition(current.babyUid), moreError: '', retryAvailable: false, continuationReady: false, followupActive: false });
+    }
     await this.loadCapabilities();
+    if (this._enabled && this._refreshQuery && !this._unloaded) {
+      this._refreshQuery = false;
+      const manual = refresh || this._refreshIntent; const selectionSnapshot = this._refreshSelection; this._refreshIntent = null; this._refreshSelection = null;
+      return this.request({ requestMode: 'new', ...(manual ? { manual, selectionSnapshot } : {}) });
+    }
   },
-  onUnload() { this._unloaded = true; this._capabilityEpoch++; if (this._session) this._session.dispose(); },
+  onPageScroll(event) { this._scrollTop = event.scrollTop; },
+  onHide() { this.setData({ queryFocus: false }); },
+  onUnload() { this._unloaded = true; this._capabilityEpoch++; clearTimeout(this._slowTimer); clearTimeout(this._highlightTimer); if (this._session) this._session.dispose(); },
   attachContext() {
     if (this._session) this._session.dispose();
     const context = currentContext(); this._session = createSearchSession(context); this._contextToken = null; this._response = null; this._allowed = []; this._enabled = false; this._previewEpoch = 0;
+    this._failedRequest = null; this._lastSuccessful = null; this._refreshQuery = false; this._refreshIntent = null; this._refreshSelection = null; clearTimeout(this._slowTimer);
     this._periods = PERIODS;
     this.setData({ query: '', babyName: context.babyName, searchEnabled: false, capabilityError: '', busy: false, moreBusy: false,
       items: [], visibleItems: [], result: null, question: null, recent: this._session.recent(), hasSearched: false,
-      status: '', error: '', message: '', preview: null, chips: [], actions: [], nextCursor: null, filtersOpen: false,
+      status: '', error: '', message: '', preview: null, previewLoading: false, chips: [], actions: [], nextCursor: null, filtersOpen: false,
+      followupActive: false, continuationReady: false, retryAvailable: false, moreError: '', slow: false, savedAddition: takeSearchAddition(context.babyUid), highlightedId: '', resultSummary: '', showTabs: false, tab: 'all',
       historyOptionsOpen: false, conditions: [], sourceIndex: 0, modeIndex: 0, periodIndex: 0, notesOpen: false });
     this.updateHistoryPeriodText();
   },
@@ -85,40 +109,78 @@ Page({
       this.reportSearchVersion(result);
       this._allowed = result.allowedFeatureIds || [];
       this._enabled = result.flags.home_search_enabled !== false && result.protocolVersion === PROTOCOL_VERSION;
-      this.setData({ searchEnabled: this._enabled, aiAvailable: !!(result.ai && result.ai.available), scanAvailable: result.flags.nutrition_scan_enabled !== false,
+      this.setData({ searchEnabled: this._enabled, scanAvailable: result.flags.nutrition_scan_enabled !== false,
         capabilityError: result.flags.home_search_enabled === false ? '搜索功能已关闭' : result.protocolVersion !== PROTOCOL_VERSION ? '搜索服务版本暂未就绪，请稍后重试' : '' });
-      if (!this._enabled) { session.next(); this._contextToken = null; this._response = null; this.setData({ items: [], visibleItems: [], result: null, question: null, preview: null, busy: false }); }
+      if (!this._enabled) this.clearPrivateResults();
     } catch (error) {
       if (!active()) return;
       this.setData({ capabilityError: error.message || '搜索服务暂时无法连接' });
-      if (['FORBIDDEN', 'FEATURE_DISABLED'].includes(error.code)) { this._enabled = false; this.clearQuery(); this.setData({ searchEnabled: false, recent: [] }); }
+      if (['FORBIDDEN', 'FEATURE_DISABLED'].includes(error.code)) this.clearPrivateResults();
     } finally { if (active()) this.setData({ capabilitiesLoading: false }); }
   },
   retryCapabilities() { if (!this.data.capabilitiesLoading) return this.loadCapabilities(); },
-  onInput(event) {
-    this._session.next(); this._previewEpoch++;
-    this.setData({ query: event.detail.value, busy: false, moreBusy: false, items: [], visibleItems: [], result: null, question: null, preview: null,
-      hasSearched: false, error: '', message: '', status: '', actions: [], chips: [], nextCursor: null, notesOpen: false });
+  clearPrivateResults() {
+    this._session.next(); this._previewEpoch++; clearTimeout(this._slowTimer);
+    this._enabled = false; this._contextToken = null; this._response = null; this._lastSuccessful = null;
+    this._failedRequest = null; this._refreshIntent = null; this._refreshSelection = null; this._refreshQuery = false;
+    this.setData({ query: '', items: [], visibleItems: [], result: null, question: null, preview: null, previewLoading: false,
+      busy: false, moreBusy: false, searchEnabled: false, recent: [], savedAddition: null, highlightedId: '',
+      chips: [], actions: [], nextCursor: null, continuationReady: false, followupActive: false, retryAvailable: false,
+      moreError: '', showTabs: false, slow: false, resultSummary: '' });
   },
-  clearQuery() { this._contextToken = null; this._response = null; this.onInput({ detail: { value: '' } }); this.setData({ filtersOpen: false, historyOptionsOpen: false, conditions: [] }); },
+  onInput(event) {
+    this._session.next(); this._previewEpoch++; this._failedRequest = null; clearTimeout(this._slowTimer);
+    if (!this.data.followupActive) { this._contextToken = null; this._response = null; this._lastSuccessful = null; }
+    this.setData({ query: event.detail.value, busy: false, moreBusy: false, items: [], visibleItems: [], result: null, question: null, preview: null,
+      previewLoading: false, hasSearched: false, error: '', message: '', status: '', actions: [], chips: [], nextCursor: null, notesOpen: false,
+      retryAvailable: false, moreError: '', slow: false, resultSummary: '', showTabs: false });
+  },
+  clearQuery() { this._contextToken = null; this._response = null; this.onInput({ detail: { value: '' } }); this.setData({ filtersOpen: false, historyOptionsOpen: false, conditions: [], followupActive: false, continuationReady: false }); },
   async submit() {
     if (this.data.busy || !this.data.query.trim()) return;
-    return this.request({});
+    return this.request({ requestMode: this.data.followupActive ? 'followup' : 'new' });
   },
-  async request(extra, append = false) {
+  continueQuery() {
+    if (!this._contextToken || !this.data.continuationReady) return;
+    this.setData({ followupActive: true, query: '', queryFocus: true, error: '' });
+  },
+  newQuery() { this.clearQuery(); this.setData({ followupActive: false, continuationReady: false, queryFocus: true }); },
+  async retrySearch() {
+    const failed = this._failedRequest;
+    if (!failed || this.data.busy || this.data.moreBusy) return;
+    if (failed.code === 'AI_UNKNOWN') {
+      const session = this._session; const epoch = session.epoch;
+      const answer = await new Promise(resolve => wx.showModal({ title: '重新提交智能查询', content: '上次调用结果暂不能确认。继续将发起一次新查询，可能再次使用一次智能解析次数。', confirmText: '重新查询', success: resolve, fail: () => resolve({ confirm: false }) }));
+      if (!answer.confirm || this._failedRequest !== failed || this._session !== session || !session.active(epoch)) return;
+    }
+    const payload = { ...failed.payload, ...(!failed.reuseId ? { requestId: service.createSearchRequestId() } : {}) };
+    return this.request({}, failed.append, { payload });
+  },
+  async request(extra = {}, append = false, retry = null) {
     if (!this._enabled) { this.setData({ error: this.data.capabilityError || '搜索服务正在准备，请稍后重试' }); return; }
+    const started = Date.now();
     const session = this._session; const token = session.next();
     const previous = this._response; const previousItems = this.data.items;
-    const contextToken = this._contextToken;
+    const requestMode = extra.requestMode || (extra.cursor ? 'page' : extra.edits || extra.resolution || extra.command ? 'edit' : 'new');
+    const payload = retry ? retry.payload : JSON.parse(JSON.stringify({ protocolVersion: PROTOCOL_VERSION, clientBuildVersion: BUILD_VERSION,
+      babyUid: session.babyUid, requestId: service.createSearchRequestId(), query: this.data.query.trim(), ...extra,
+      requestMode, contextToken: requestMode === 'new' ? undefined : this._contextToken || undefined }));
+    if (payload.requestMode === 'new' && !append) { this._contextToken = null; this._response = null; this._lastSuccessful = null; }
+    this._failedRequest = null; this._previewEpoch++;
+    clearTimeout(this._slowTimer);
+    this._slowTimer = setTimeout(() => { if (this._session === session && session.active(token)) this.setData({ slow: true }); }, 8000);
     this.setData({ [append ? 'moreBusy' : 'busy']: true, error: '', hasSearched: true, preview: null, filtersOpen: false, historyOptionsOpen: false,
+      previewLoading: false, retryAvailable: false, moreError: '', slow: false, queryFocus: false,
+      ...(payload.requestMode === 'new' ? { continuationReady: false, followupActive: false } : {}),
       ...(!append ? { items: [], visibleItems: [], result: null, question: null, message: '', actions: [], notesOpen: false } : {}) });
     try {
-      const result = await service.search({ protocolVersion: PROTOCOL_VERSION, clientBuildVersion: BUILD_VERSION, babyUid: session.babyUid, requestId: service.createSearchRequestId(), query: this.data.query.trim(), contextToken: contextToken || undefined, ...extra });
+      const result = await service.search(payload);
       if (this._session !== session || !session.active(token)) return;
       this.reportSearchVersion(result);
       if (result.protocolVersion !== PROTOCOL_VERSION) throw new Error('搜索服务版本暂未就绪，请稍后重试');
-      if (result.resetContext) this._contextToken = null;
+      if (result.resetContext) { this._contextToken = null; this.setData({ continuationReady: false, followupActive: false }); }
       else if (result.contextToken) this._contextToken = result.contextToken;
+      if (result.status === 'unavailable' || result.status === 'partial' && !result.result || result.resetContext) throw Object.assign(new Error(result.message || '本次查询未完成，请重试'), { code: result.reasonCode, terminal: result.reasonCode !== 'AI_RUNNING', resetContext: result.resetContext });
       const output = result.result ? { ...result.result } : null;
       let items = (output && output.items || []).map(displayItem);
       if (append && output && output.kind === 'list') items = [...new Map([...previousItems, ...items].map(item => [item.id, item])).values()];
@@ -134,20 +196,33 @@ Page({
         if (output.kind === 'feature') tab = 'feature';
         else if (output.kind !== 'list') tab = 'all';
         else if (items.length && items.every(item => item.source === 'history')) tab = 'history';
-        else if (items.length && items.every(item => item.type === items[0].type)) tab = items[0].type;
+        else if (result.interpretation && ['food', 'powder', 'recipe', 'medication'].includes(result.interpretation.domain)) tab = result.interpretation.domain;
         else tab = 'all';
       }
+      this._lastSuccessful = { payload };
       session.remember(this.data.query);
-      this.setData({ tab, status: result.status, message: result.message || '', diagnosticId: result.diagnosticId || '', question: result.question || null, thresholdValue: '',
-        items, result: output, catalogResult: !!(result.interpretation && result.interpretation.operation.startsWith('catalog')), chips: result.chips || [], actions: result.actions || [], nextCursor: result.nextCursor || null, recent: session.recent() });
+      const interpretation = result.interpretation;
+      const metric = output && !['list', 'feature'].includes(output.kind);
+      const summaryMessage = result.message || (result.status === 'partial' ? '本次结果尚不完整，请核对查询范围与依据' : '');
+      this.setData({ tab, status: result.status, message: summaryMessage, question: result.question || null, thresholdValue: '', busy: false, moreBusy: false, slow: false,
+        items, visibleItems: items, result: output, catalogResult: !!(interpretation && interpretation.operation.startsWith('catalog')), chips: result.chips || [], actions: result.actions || [], nextCursor: result.nextCursor || null, recent: session.recent(),
+        followupActive: false, continuationReady: !!this._contextToken && !!output,
+        continuationLabel: interpretation ? [interpretation.entityNames.join('、'), ...(interpretation.periods || [])].filter(Boolean).join(' · ') : this.data.query,
+        showTabs: !!output && !metric && output.kind === 'list' && !!interpretation && interpretation.operation.startsWith('catalog'),
+        recordDomainIndex: Math.max(0, this.data.recordDomains.findIndex(item => interpretation && item.id === interpretation.domain)),
+        resultSummary: [output && output.total !== undefined ? '找到 ' + output.total + ' 项' : '', summaryMessage, output && output.note || ''].filter(Boolean).join('；') }, () => {
+        if (this._session === session && session.active(token)) console.info('[search-display-timing]', { durationMs: Date.now() - started, diagnosticId: result.diagnosticId || '', serverMs: result.performance && result.performance.totalMs, append });
+      });
       if (result.interpretation) this.populateFilters(result.interpretation);
-      this.renderItems();
+      this.restoreResultPosition();
     } catch (error) {
       if (this._session === session && session.active(token)) {
-        if (error.code === 'FORBIDDEN') { this._contextToken = null; this._response = null; this._enabled = false; this.setData({ items: [], visibleItems: [], result: null, question: null, searchEnabled: false }); }
-        this.setData({ error: error.message || '这次查询没有完成，请重试' });
+        this._failedRequest = { payload, append, code: error.code, reuseId: !error.terminal && error.code !== 'AI_UNKNOWN' };
+        if (['FORBIDDEN', 'FEATURE_DISABLED'].includes(error.code)) { this.clearPrivateResults(); this.setData({ capabilityError: error.message || '当前宝宝的访问权限已失效' }); return; }
+        if (error.resetContext) this._failedRequest = null;
+        this.setData({ [append ? 'moreError' : 'error']: error.message || '这次查询没有完成，请重试', retryAvailable: !!this._failedRequest });
       }
-    } finally { if (this._session === session && session.active(token)) this.setData({ busy: false, moreBusy: false }); }
+    } finally { if (this._session === session && session.active(token)) { clearTimeout(this._slowTimer); if (this.data.busy || this.data.moreBusy || this.data.slow) this.setData({ busy: false, moreBusy: false, slow: false }); } }
   },
   reportSearchVersion(result) {
     const version = result.buildVersion || 'unknown'; const stamp = BUILD_VERSION + ':' + version;
@@ -155,8 +230,59 @@ Page({
     this._versionStamp = stamp;
     console.info('[search-version]', { clientBuildVersion: BUILD_VERSION, serviceBuildVersion: version, protocolVersion: result.protocolVersion });
   },
-  renderItems() { const tab = this.data.tab; this.setData({ visibleItems: this.data.items.filter(item => tab === 'all' || (tab === 'history' ? item.source === 'history' : item.type === tab)) }); },
-  onTab(event) { const tab = event.currentTarget.dataset.id; if (TABS.some(x => x.id === tab)) { this.setData({ tab }); this.renderItems(); } },
+  renderItems() { this.setData({ visibleItems: this.data.items }); },
+  async onTab(event) {
+    const tab = event.currentTarget.dataset.id;
+    if (!TABS.some(x => x.id === tab) || this.data.busy || this.data.moreBusy || tab === this.data.tab) return;
+    const value = this._response && this._response.interpretation;
+    const session = this._session;
+    const targetDomain = tab === 'history' ? value && value.domain === 'medication' ? 'medication' : value && value.domain === 'powder' ? 'milk' : 'diet' : tab === 'all' ? 'catalog' : tab;
+    const filters = value && value.filters || [];
+    const compatible = filters.filter(filter => filter.field === 'recipe.ingredients' ? targetDomain === 'recipe' : ['catalog', 'food', 'powder', 'diet'].includes(targetDomain));
+    if (compatible.length !== filters.length) {
+      const epoch = this._session.epoch;
+      const answer = await new Promise(resolve => wx.showModal({ title: '调整查询范围', content: '新的分类不支持部分筛选条件，继续将移除这些条件。', confirmText: '移除并查询', success: resolve, fail: () => resolve({ confirm: false }) }));
+      if (!answer.confirm || this._session !== session || !session.active(epoch)) return;
+    }
+    if (tab === 'feature') {
+      const keyword = this.data.filterKeyword || this.data.query;
+      const items = FEATURES.filter(item => this._allowed.includes(item.id) && (!keyword || [item.name, ...(item.keywords || []), ...(item.aliases || [])].some(name => name.includes(keyword)))).map(({ id, name }) => ({ id, name }));
+      this._session.next(); this._contextToken = null; this._response = null; this._failedRequest = null;
+      this.setData({ tab, items: [], visibleItems: [], result: { kind: 'feature', items }, showTabs: false, continuationReady: false, retryAvailable: false, error: '', nextCursor: null, chips: [], actions: [], resultSummary: '', message: items.length ? '' : '没有找到这个功能，可输入功能名称重新搜索' });
+      return;
+    }
+    const edits = { operation: tab === 'history' ? 'records.list' : 'catalog.search',
+      domain: targetDomain, filters: compatible, source: tab === 'history' ? 'all' : value && value.source || 'all',
+      powderBasis: tab === 'powder' ? value && value.powderBasis || null : null };
+    this.setData({ tab });
+    if (this._contextToken) return this.request({ edits });
+    return this.request({ manual: { ...(manualFromInterpretation(value) || { schemaVersion: 2, status: 'ready', entityMentions: [], periods: [] }), ...edits } });
+  },
+  async onRecordDomain(event) {
+    const index = Number(event.detail.value); const domain = this.data.recordDomains[index];
+    if (!domain || this.data.busy || this.data.moreBusy || !this._contextToken) return;
+    const filters = this._response && this._response.interpretation && this._response.interpretation.filters || [];
+    if (domain.id !== 'diet' && filters.length) {
+      const session = this._session; const epoch = session.epoch;
+      const answer = await new Promise(resolve => wx.showModal({ title: '调整记录范围', content: '新范围不支持营养筛选，继续会移除这些条件。', confirmText: '移除并查询', success: resolve, fail: () => resolve({ confirm: false }) }));
+      if (!answer.confirm || this._session !== session || !session.active(epoch)) return;
+    }
+    return this.request({ edits: { operation: 'records.list', domain: domain.id, filters: domain.id === 'diet' ? filters : [], powderBasis: null, source: 'all' } });
+  },
+  restoreResultPosition() {
+    const added = this.data.savedAddition;
+    const index = added ? this.data.visibleItems.findIndex(item => item.type === added.type && (item.sourceId === added.id || item.locator && item.locator.memberId === added.id)) : -1;
+    if (index >= 0) {
+      this.setData({ highlightedId: this.data.visibleItems[index].id });
+      if (wx.pageScrollTo) wx.pageScrollTo({ selector: '#search-result-' + index, duration: 180 });
+      clearTimeout(this._highlightTimer); this._highlightTimer = setTimeout(() => { if (!this._unloaded) this.setData({ highlightedId: '' }); }, 1200);
+    } else if (this._restoreScroll !== undefined && wx.pageScrollTo) wx.pageScrollTo({ scrollTop: this._restoreScroll, duration: 0 });
+    this._restoreScroll = undefined;
+  },
+  openAddedItem() {
+    const added = this.data.savedAddition; if (!added) return;
+    wx.navigateTo({ url: (added.type === 'powder' ? '/pkg-milk/powder-management/index' : '/pkg-milk/food-management/index') + '?searchId=' + encodeURIComponent(added.id) + '&searchScope=mine&searchBabyUid=' + encodeURIComponent(this._session.babyUid) });
+  },
   useQuery(event) { this.onInput({ detail: { value: event.currentTarget.dataset.query } }); return this.submit(); },
   clearRecent() { this._session.clear(); this.setData({ recent: [] }); },
   removeRecent(event) { this._session.remove(event.currentTarget.dataset.query); this.setData({ recent: this._session.recent() }); },
@@ -239,5 +365,5 @@ Page({
     const route = item.type === 'food' ? '/pkg-milk/food-management/index' : item.type === 'powder' ? '/pkg-milk/powder-management/index' : '/pkg-records/recipe-management/index';
     wx.navigateTo({ url: route + (item.type === 'recipe' ? '?mode=detail&id=' : '?searchId=') + encodeURIComponent(item.locator.memberId || item.sourceId) + '&searchScope=' + encodeURIComponent(item.source) + '&searchBabyUid=' + encodeURIComponent(this._session.babyUid) });
   },
-  scan() { if (this.data.scanAvailable) wx.navigateTo({ url: '/pkg-milk/nutrition-scan/index' }); }
+  scan() { if (this.data.scanAvailable) { this._restoreScroll = this._scrollTop; wx.navigateTo({ url: '/pkg-milk/nutrition-scan/index?from=search' }); } }
 });

@@ -2,7 +2,7 @@
 
 const PROTOCOL_VERSION = 2;
 const CAPABILITY_VERSION = 'search-2.0.0';
-const BUILD_VERSION = '20261016-semantic-first';
+const BUILD_VERSION = '20261019-search-performance';
 const CATALOG_DOMAINS = ['food', 'powder', 'recipe', 'medication'];
 const CAPABILITIES = {
   'catalog.search': { label: '查找资料', domains: ['catalog', ...CATALOG_DOMAINS], result: 'list' },

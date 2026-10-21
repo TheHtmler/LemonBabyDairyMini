@@ -1,10 +1,24 @@
 const revisions = new Map();
+const additions = new Map();
 function currentContext() {
   const app = getApp(); const global = app.globalData || {};
   return { accountKey: global.openid || wx.getStorageSync('openid') || '', babyUid: global.babyUid || wx.getStorageSync('baby_uid') || '', babyName: (global.babyInfo || {}).name || '当前宝宝' };
 }
 function revision(babyUid) { return revisions.get(babyUid) || 0; }
-function invalidateSearchForBaby(babyUid) { if (babyUid) revisions.set(babyUid, revision(babyUid) + 1); }
+function invalidateSearchForBaby(babyUid, saved) {
+  if (!babyUid) return;
+  revisions.set(babyUid, revision(babyUid) + 1);
+  if (!saved) return;
+  const context = currentContext();
+  if (context.babyUid !== babyUid || !context.accountKey || saved.accountKey && saved.accountKey !== context.accountKey) return;
+  const type = saved.targetType || (saved.powderId || saved.mode === 'powder_label' ? 'powder' : 'food');
+  const id = saved.itemId || saved.powderId || saved.foodId || saved.targetId;
+  if (id && ['food', 'powder'].includes(type)) additions.set(babyUid, { type, id, name: saved.name || saved.finalValues && saved.finalValues.name || '', accountKey: context.accountKey, createdAt: Date.now() });
+}
+function takeSearchAddition(babyUid) {
+  const value = additions.get(babyUid); additions.delete(babyUid);
+  return value && value.accountKey === currentContext().accountKey && Date.now() - value.createdAt < 1800000 ? value : null;
+}
 function createSearchSession({ accountKey, babyUid }) {
   const key = 'home_search_recent:' + accountKey + ':' + babyUid;
   let epoch = 0; let rev = revision(babyUid);
@@ -25,4 +39,4 @@ function openSearchLocator(locator) {
   const app = getApp(); app.globalData.pendingSearchLocator = { ...locator, accountKey: context.accountKey, createdAt: Date.now() };
   return wx.switchTab({ url: '/pages/data-records-v2/index' });
 }
-module.exports = { currentContext, createSearchSession, invalidateSearchForBaby, openSearchLocator };
+module.exports = { currentContext, createSearchSession, invalidateSearchForBaby, takeSearchAddition, openSearchLocator };

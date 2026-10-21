@@ -1,6 +1,6 @@
 'use strict';
 const { MEASURES, compareNutrient, matchCandidate, rankCatalogCandidate, configuredFrequency, searchText } = require('./lib/search');
-const { publicCandidate } = require('./queryService');
+const { publicCandidate } = require('./catalogAdapter');
 const { identityRank } = require('./entityResolver');
 
 function answer(item, measure, plan) {

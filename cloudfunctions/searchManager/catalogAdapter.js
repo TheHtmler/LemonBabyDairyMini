@@ -41,4 +41,5 @@ function normalizeCatalogCandidate(doc, type, source, ref, babyUid) {
     nutrients: normalizeNutrients(nutrition, evidenceFor(doc), basis), provenance: { fieldSources: (doc.recognitionMeta || {}).fieldSources || {}, kind: doc.recognitionMeta ? 'confirmed' : source },
     deleted: !active(doc), locator: { kind: 'catalog', babyUid, sourceId: ref.id, memberId: ref.memberId || '', memberIndex: ref.offset || 0, source: ref.source, type }, ref };
 }
-module.exports = { evidenceFor, basisFor, normalizeCatalogCandidate };
+function publicCandidate(candidate) { const { ref, deleted, searchText, aliases, ...value } = candidate; return value; }
+module.exports = { evidenceFor, basisFor, normalizeCatalogCandidate, publicCandidate };

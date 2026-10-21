@@ -18,7 +18,8 @@ function copy(source, destinations) {
     }
   }
 }
-copy('packages/search-core', ['cloudfunctions/searchManager/lib/search', 'miniprogram/utils/search-core', 'miniprogram/pkg-milk/search/lib/search', 'cloudfunctions/getSystemFoodIndex/lib/search', 'cloudfunctions/getSystemPowderIndex/lib/search']);
+// 普通分包复用主包的搜索模块；云函数仍各自携带独立部署所需的副本。
+copy('packages/search-core', ['cloudfunctions/searchManager/lib/search', 'miniprogram/utils/search-core', 'cloudfunctions/getSystemFoodIndex/lib/search', 'cloudfunctions/getSystemPowderIndex/lib/search']);
 // 服务端复用页面现有的纯计算源，不复制另一套营养和剩奶算法。
 for (const file of ['dailySummaryV2Utils.js', 'feedingRecordV2Utils.js', 'formulaPowderUtils.js', 'nutritionProvenance.js']) {
   const body = fs.readFileSync(path.join(root, 'miniprogram/utils', file), 'utf8').replace(/require\('\.\/search-core\//g, "require('../search/");

@@ -1,0 +1,35 @@
+<view class="quota-settings-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="config-card">
+      <text class="section-title">每日识别上限</text>
+      <text class="description">对所有账号生效，每个账号分别计数。</text>
+      <text class="current-limit" wx:if="{{ready}}">{{currentLimit === 0 ? '当前已暂停新识别' : '当前每账号每天 ' + currentLimit + ' 次'}}</text>
+      <text class="description" wx:elif="{{loading}}" aria-live="polite">正在读取当前配置…</text>
+      <view class="input-row">
+        <input class="limit-input" type="number" value="{{limitInput}}" maxlength="5"
+          placeholder="输入次数" aria-label="每账号每日识别次数"
+          bindinput="onLimitInput" bindconfirm="onSaveConfig" disabled="{{loading || saving || !ready}}" />
+        <text class="input-unit">次 / 天</text>
+      </view>
+      <text class="field-error" wx:if="{{fieldError}}" aria-live="polite">{{fieldError}}</text>
+      <text class="field-hint">可填 0～10000；0 表示暂停新的营养识别。</text>
+    </view>
+    <view class="rules">
+      <text>食物、奶粉识别与单独发起的 AI 估算共用次数。</text>
+      <text>每天 00:00（北京时间）重置。修改上限不清空当天已用次数。</text>
+    </view>
+    <view class="error-card" wx:if="{{errorText}}">
+      <text class="field-error" aria-live="polite">{{errorText}}</text>
+      <button class="reload-button" wx:if="{{canReload}}" bindtap="loadConfig" disabled="{{loading || saving}}">重新加载配置</button>
+    </view>
+    <button class="save-button" bindtap="onSaveConfig" loading="{{saving}}" disabled="{{loading || saving || !canSave}}">
+      {{saving ? '保存中…' : '保存配置'}}
+    </button>
+    <text class="save-hint">保存后，新的识别请求直接采用新上限。</text>
+  </view>
+  <view wx:elif="{{loading}}" class="empty-card"><text>正在加载…</text></view>
+  <view wx:else class="empty-card">
+    <text class="section-title">{{errorText || '无权限访问'}}</text>
+    <text class="description">该配置仅管理员可修改。</text>
+  </view>
+</view>

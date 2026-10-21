@@ -4,7 +4,7 @@ function invoke(name, options) {
 function createRequestId() { return 'nutrition_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12); }
 
 async function callNutritionFunction(name, data) {
-  let timer;
+  let timer; let succeeded = false; const startedAt = Date.now();
   try {
     const response = await Promise.race([
       wx.cloud.callFunction({ name, data }),
@@ -17,18 +17,29 @@ async function callNutritionFunction(name, data) {
       error.stage = result && result.stage || '';
       throw error;
     }
-    return result;
+    succeeded = true; return result;
   } catch (error) {
     const failure = normalizeCloudServiceError(error, 'scan');
     console.warn('[nutrition-service]', name, data.action, failure.code, failure.stage);
     throw failure;
-  } finally { clearTimeout(timer); }
+  } finally {
+    clearTimeout(timer);
+    console.info('[nutrition-timing]', { function: name, action: data.action, elapsedMs: Date.now() - startedAt, succeeded });
+  }
 }
 
 async function chooseRecognitionImages(options = {}) {
-  const selected = await invoke('chooseImage', { count: Math.max(1, Math.min(3, options.count || 3)), sizeType: ['compressed'], sourceType: options.sourceType || ['album', 'camera'] });
+  // 每个拍摄位置只选一张；包装双面在提交识别前收集齐全。
+  const selected = await invoke('chooseImage', { count: 1, sizeType: ['compressed'], sourceType: options.sourceType || ['album', 'camera'] });
+  return prepareRecognitionImages(selected.tempFilePaths);
+}
+
+// 原生取景拍照与相册选择共用图片压缩、张数和大小校验。
+async function prepareRecognitionImages(originalPaths) {
+  if (!Array.isArray(originalPaths) || !originalPaths.length || originalPaths.some(path => typeof path !== 'string' || !path)) throw new Error('请选择清晰的图片');
+  if (originalPaths.length > 3) throw new Error('同一商品最多保留3张图片');
   const paths = [];
-  for (const original of selected.tempFilePaths) {
+  for (const original of originalPaths) {
     let path = original;
     try { path = (await invoke('compressImage', { src: original, quality: 70 })).tempFilePath || original; }
     catch (_) { /* 部分图片格式或开发者工具不支持压缩时，校验原图大小后继续。 */ }
@@ -36,19 +47,19 @@ async function chooseRecognitionImages(options = {}) {
     if (file.size > 3 * 1024 * 1024) throw new Error('单张图片需小于3MB，请裁剪或重新拍摄');
     paths.push(path);
   }
-  if (!paths.length) throw new Error('请选择清晰的图片');
   return paths;
 }
 
 async function uploadRecognitionImages(paths, prepared, isActive, onProgress = () => {}) {
-  const fileIDs = [];
-  for (let i = 0; i < paths.length; i += 1) {
+  let completed = 0;
+  // 最多三张图并发上传，返回顺序仍与营养表、正面的位置一致。
+  return Promise.all(paths.map(async (path, i) => {
     if (!isActive()) throw new Error('当前表单已关闭');
-    const result = await wx.cloud.uploadFile({ cloudPath: prepared.filePaths[i], filePath: paths[i], config: { env: prepared.envId } });
-    fileIDs.push(result.fileID);
-    if (isActive()) onProgress(fileIDs.length, paths.length);
-  }
-  return fileIDs;
+    const result = await wx.cloud.uploadFile({ cloudPath: prepared.filePaths[i], filePath: path, config: { env: prepared.envId } });
+    completed += 1;
+    if (isActive()) onProgress(completed, paths.length);
+    return result.fileID;
+  }));
 }
 function pendingKey(babyUid) {
   const app = getApp(); const account = (app.globalData || {}).openid || wx.getStorageSync('openid') || '';
@@ -75,5 +86,5 @@ async function recoverConfirmation(pending) {
   return result;
 }
 const recognitionCapabilities = params => callNutritionFunction('recognizeNutritionLabel', { ...params, action: 'capabilities' });
-module.exports = { createRequestId, callNutritionFunction, recognitionCapabilities, chooseRecognitionImages, uploadRecognitionImages, pendingConfirmation, confirmWithRecovery, recoverConfirmation };
+module.exports = { createRequestId, callNutritionFunction, recognitionCapabilities, chooseRecognitionImages, prepareRecognitionImages, uploadRecognitionImages, pendingConfirmation, confirmWithRecovery, recoverConfirmation };
 const { normalizeCloudServiceError } = require('./cloudServiceError');

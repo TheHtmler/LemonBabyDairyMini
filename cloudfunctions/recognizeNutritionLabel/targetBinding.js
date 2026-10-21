@@ -1,7 +1,8 @@
 'use strict';
 const { fail } = require('./lib/core/contracts');
-const { hash, ownedSession, getDocument, transaction, SESSION_COLLECTION } = require('./lib/core/server');
+const { hash, ownedSession, getDocument, transaction, readBabyFoodCatalog, SESSION_COLLECTION } = require('./lib/core/server');
 const { normalizeLegacyProfileSeed, sortProfiles } = require('./lib/core/profile');
+const { findDuplicates } = require('./lib/core/duplicates');
 function bindingFingerprint(session) { return hash(JSON.stringify({ identity: session.confirmedIdentity, basis: session.comparisonBasis, comparisonVersion: session.comparisonVersion, mode: session.mode })); }
 async function bindPreviewTarget({ db, openid, event, now }) {
   const session = await ownedSession(db, openid, event.babyUid, event.sessionId, now);
@@ -12,7 +13,7 @@ async function bindPreviewTarget({ db, openid, event, now }) {
     if (session.binding.fingerprint !== fingerprint) fail('COMPARISON_STALE', '核对依据已变化，请重新加入');
     return { ok: true, binding: session.binding, expectedVersion: session.targetProfileVersion || 0 };
   }
-  let targetProfileId = ''; let targetProfileVersion = 0; let seedProfile = null; let seedLegacyDocumentId = ''; let seedLegacyHash = '';
+  let targetProfileId = ''; let targetProfileVersion = 0; let seedProfile = null; let seedLegacyDocumentId = ''; let seedLegacyHash = ''; let matches;
   if (event.targetType === 'powder') {
     const profiles = await db.collection('milk_nutrition_profiles').where({ babyUid: session.babyUid }).get();
     const profile = sortProfiles(profiles.data || [])[0];
@@ -22,14 +23,23 @@ async function bindPreviewTarget({ db, openid, event, now }) {
       seedProfile = normalizeLegacyProfileSeed(legacy.nutritionSettings || {}); seedLegacyDocumentId = legacy._id || ''; seedLegacyHash = hash(JSON.stringify(seedProfile));
     }
     const powders = profile ? profile.formulaPowders || [] : seedProfile.formulaPowders || [];
-    const existing = powders.find(x => x.status !== 'archived' && x.name === session.confirmedIdentity.name && JSON.stringify((x.recognitionMeta || {}).confirmedIdentity || {}) === JSON.stringify(session.confirmedIdentity));
-    if (existing) return { ok: true, existing: { targetType: 'powder', itemId: existing.id }, expectedVersion: targetProfileVersion };
+    matches = findDuplicates(powders, session.confirmedIdentity, 'powder');
   } else {
-    const result = await db.collection('food_catalog').where({ babyUid: session.babyUid, name: session.confirmedIdentity.name }).limit(20).get();
-    const existing = (result.data || []).find(x => !x.deletedAt && (!x.status || x.status === 'active') && JSON.stringify((x.recognitionMeta || {}).confirmedIdentity || {}) === JSON.stringify(session.confirmedIdentity));
-    if (existing) return { ok: true, existing: { targetType: 'food', itemId: existing._id }, expectedVersion: 0 };
+    matches = findDuplicates(await readBabyFoodCatalog(db, session.babyUid), session.confirmedIdentity, 'food');
   }
-  const binding = { targetType: event.targetType, requestId: event.requestId, fingerprint, comparisonVersion: session.comparisonVersion };
+  if (matches.exact.length) return { ok: true, existing: matches.exact[0], expectedVersion: targetProfileVersion };
+  const reviewToken = hash(JSON.stringify([event.sessionId, fingerprint, matches.possible.map(item => [item.itemId, item.revision, item.identityKey]).sort((a, b) => a[0].localeCompare(b[0]))]));
+  const reviewed = matches.possible.length && matches.possible.length <= 12 && session.duplicateReview && session.duplicateReview.token === reviewToken && event.duplicateReviewToken === reviewToken;
+  if (matches.possible.length && !reviewed) {
+    await transaction(db, async tx => {
+      const current = await getDocument(tx, SESSION_COLLECTION, event.sessionId);
+      if (!current || current.version !== session.version || current.status === 'saved' || current.confirmation && current.confirmation.state === 'processing') fail('COMPARISON_STALE', '草稿已变化，请重新核对');
+      await tx.collection(SESSION_COLLECTION).doc(event.sessionId).update({ duplicateReview: { token: reviewToken }, binding: null, version: current.version + 1 });
+    });
+    return { ok: true, duplicateReview: { token: reviewToken, total: matches.possible.length, canConfirm: matches.possible.length <= 12, candidates: matches.possible.slice(0, 12) } };
+  }
+  const binding = { targetType: event.targetType, requestId: event.requestId, fingerprint, comparisonVersion: session.comparisonVersion,
+    reviewedCandidates: reviewed ? matches.possible : [] };
   await transaction(db, async tx => {
     const current = await getDocument(tx, SESSION_COLLECTION, event.sessionId);
     if (!current || current.version !== session.version || current.status === 'saved' || current.confirmation && current.confirmation.state === 'processing') fail('COMPARISON_STALE', '草稿已变化，请重新核对');

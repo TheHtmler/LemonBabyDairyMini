@@ -25,7 +25,6 @@ async function prepareSession(db, openid, event, env, now, allocateFileIds, onSt
         prior.sourceSystemFoodId !== (event.sourceSystemFoodId || '') || prior.requestedTargetId !== (event.targetId || '')) {
       fail('INVALID_INPUT', '请求ID已用于其他识别操作');
     }
-    if (new Date(prior.expiresAt).getTime() <= now) fail('SESSION_EXPIRED', '识别请求已过期');
     return response(prior);
   }
   const prefix = 'nutrition_recognition/' + openid + '/' + event.babyUid + '/' + crypto.randomBytes(16).toString('hex');

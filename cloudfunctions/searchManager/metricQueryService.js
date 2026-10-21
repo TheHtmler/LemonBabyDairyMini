@@ -29,21 +29,19 @@ function knownTreatment(record, field) {
   return countedTreatmentItems(record).every(x => finite(x[field === 'calories' ? field : field + 'G']));
 }
 async function dailyRows({ reader, plan, period, now }) {
-  const [allFoods, allMilk, allTreatments] = await Promise.all([
+  const until = { startDate: null, endDateExclusive: period.endDateExclusive || shiftDate(shanghaiDate(now), 1) };
+  const [allFoods, allMilk, allTreatments, growth, oldMilk, profiles] = await Promise.all([
     reader.events('diet', period), plan.domain === 'diet' ? [] : reader.events('milk', period),
-    reader.collection('treatment_records', period, { dated: true, fields: ['date', 'dateKey', 'startDateTime'] })
+    reader.collection('treatment_records', period, { dated: true, fields: ['date', 'dateKey', 'startDateTime'] }),
+    reader.collection('growth_records_v2', until, { dated: true }),
+    reader.collection('feeding_records_v2', until, { dated: true }),
+    reader.collection('baby_info', null)
   ]);
   const foods = allFoods.filter(item => matchesEntity(item, plan));
   const milk = allMilk.filter(item => matchesEntity(item, plan));
   const treatments = plan.entities.length || plan.domain === 'diet' ? [] : allTreatments;
   const meta = MEASURES[plan.measure]; const coefficient = plan.measure.startsWith('metrics.');
   const nutrient = coefficient ? plan.measure.includes('calorie') ? 'calories' : plan.measure.includes('natural') ? 'naturalProtein' : plan.measure.includes('special') ? 'specialProtein' : 'protein' : meta.field;
-  const until = { startDate: null, endDateExclusive: period.endDateExclusive || shiftDate(shanghaiDate(now), 1) };
-  const [growth, oldMilk, profiles] = await Promise.all([
-    reader.collection('growth_records_v2', until, { dated: true }),
-    reader.collection('feeding_records_v2', until, { dated: true }),
-    reader.collection('baby_info', null)
-  ]);
   const recorded = new Set([...foods, ...milk].map(row => row.date));
   if (!['naturalProtein', 'specialProtein'].includes(nutrient)) treatments.filter(hasTreatmentNutrition).forEach(row => recorded.add(businessDate(row.dateKey || row.date)));
   let dates;
@@ -93,8 +91,7 @@ function aggregate(rows, plan) {
 }
 async function queryMetrics({ reader, plan, now, offset = 0 }) {
   if (plan.operation === 'metrics.compare' && !plan.measure.startsWith('metrics.') && !plan.measure.startsWith('intake.')) {
-    const sides = [];
-    for (const period of plan.effectivePeriods) sides.push(await queryRecords({ reader, plan: { ...plan, operation: 'records.aggregate' }, period, now }));
+    const sides = await Promise.all(plan.effectivePeriods.map(period => queryRecords({ reader, plan: { ...plan, operation: 'records.aggregate' }, period, now })));
     const left = sides[0].result.rows || []; const right = sides[1].result.rows || [];
     if (sides.some(x => !['ready', 'no_records'].includes(x.status)) || !left.length || !right.length) return { status: 'missing_data', message: '其中一段时间缺少完整可比较数据', result: { kind: 'comparison', rows: [] } };
     const groupKey = x => x.groupKey || x.unit + ':' + x.label;
@@ -102,8 +99,7 @@ async function queryMetrics({ reader, plan, now, offset = 0 }) {
     const rows = groups.map(group => { const a = left.find(x => groupKey(x) === groupKey(group)); const b = right.find(x => groupKey(x) === groupKey(group)); return { label: group.label, unit: group.unit, left: a ? a.value : null, right: b ? b.value : null, delta: a && b ? a.value - b.value : null, percentage: a && b && b.value !== 0 ? (a.value - b.value) / b.value * 100 : null }; });
     return { status: rows.every(x => x.left !== null && x.right !== null) ? 'ready' : 'missing_data', result: { kind: 'comparison', label: MEASURES[plan.measure].label, rows, note: '不同单位分别比较；某段没有对应单位的记录时不假定为零' } };
   }
-  const sides = [];
-  for (const period of plan.effectivePeriods) sides.push(await dailyRows({ reader, plan, period, now }));
+  const sides = await Promise.all(plan.effectivePeriods.map(period => dailyRows({ reader, plan, period, now })));
   if (plan.operation === 'metrics.series') {
     const rows = sides[0] || []; const page = rows.slice(offset, offset + 20);
     return { status: rows.some(x => x.known) ? 'ready' : rows.length ? 'missing_data' : 'no_records', message: rows.some(x => x.known) ? '' : rows.length ? '缺少计算所需的记录、营养或体重' : '没有可用的饮食记录',

@@ -10,15 +10,20 @@
     </view>
   </view>
 
-  <view class="home-search-row" wx:if="{{homeSearchEnabled || homeScanEnabled}}">
-    <button class="home-search-entry" bindtap="openHomeEntry" hover-class="home-search-pressed" aria-label="{{homeSearchEnabled ? '搜索食物、记录、功能' : '拍照识别食物与奶粉'}}">
-      <view wx:if="{{homeSearchEnabled}}" class="ss-icon ss-icon-search" aria-hidden="true"></view>
-      <view wx:else class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view>
-      <text class="home-search-text">{{homeSearchEnabled ? '搜索食物、记录、功能' : '拍照识别食物与奶粉'}}</text>
+  <view class="home-entry-row" wx:if="{{homeSearchEnabled || homeScanEnabled || (releaseNoticeVisible && releaseNoticeText)}}">
+    <button class="home-notice-entry" wx:if="{{releaseNoticeVisible && releaseNoticeText}}" bindtap="showReleaseNotice" hover-class="home-search-pressed" aria-label="{{releaseNoticeUnread ? '查看未读更新公告' : '查看更新公告'}}">
+      <view class="ss-icon ss-icon-notice" aria-hidden="true"><view class="ss-notice-handle"></view><view class="ss-notice-wave"></view></view>
+      <view wx:if="{{releaseNoticeUnread}}" class="home-notice-dot"></view>
     </button>
-    <button wx:if="{{homeSearchEnabled && homeScanEnabled}}" class="home-scan-entry" catchtap="openHomeScan" hover-class="home-search-pressed" aria-label="拍照识别食物或奶粉"><view class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view></button>
+    <view class="home-search-row" wx:if="{{homeSearchEnabled || homeScanEnabled}}">
+      <button class="home-search-entry" bindtap="openHomeEntry" hover-class="home-search-pressed" aria-label="{{homeSearchEnabled ? '搜索食物、记录、功能' : '拍照识别食物与奶粉'}}">
+        <view wx:if="{{homeSearchEnabled}}" class="ss-icon ss-icon-search" aria-hidden="true"></view>
+        <view wx:else class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view>
+        <text class="home-search-text">{{homeSearchEnabled ? '搜索食物、记录、功能' : '拍照识别食物与奶粉'}}</text>
+      </button>
+      <button wx:if="{{homeSearchEnabled && homeScanEnabled}}" class="home-scan-entry" catchtap="openHomeScan" hover-class="home-search-pressed" aria-label="拍照识别食物或奶粉"><view class="ss-icon ss-icon-camera" aria-hidden="true"><view class="ss-camera-lens"></view></view></button>
+    </view>
   </view>
-  <view class="home-notice-row" wx:if="{{releaseNoticeVisible && releaseNoticeText}}"><button class="home-notice-link" bindtap="showReleaseNotice"><view wx:if="{{releaseNoticeUnread}}" class="home-notice-dot"></view><text>查看更新</text><text>›</text></button></view>
 
   <!-- 宝宝卡（问候语并入卡片内部） -->
   <view class="hero">

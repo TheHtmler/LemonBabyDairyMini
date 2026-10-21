@@ -78,10 +78,12 @@ async function compilePlan({ draft: input, reader, contexts, selected = {}, now 
     return { draft, selected, terminal: { status: 'unsupported', message: '这句话缺少可查询的属性或指标，请说明想看频率、用量、次数还是摄入系数' } };
   if (effective.some(p => p.startDate && p.endDateExclusive && ['records.aggregate', 'metrics.aggregate', 'metrics.compare'].includes(draft.operation) && (Date.parse(p.endDateExclusive) - Date.parse(p.startDate)) / 86400000 > 90)) fail('QUERY_BUDGET', '一次统计最多 90 天，请缩短日期范围');
   if (effective.some(p => !p.startDate) && ['records.aggregate', 'metrics.aggregate', 'metrics.compare'].includes(draft.operation)) fail('QUERY_BUDGET', '合计统计需要明确日期，一次最多 90 天；可改为近 7 天或近 30 天');
-  const normalized = { ...draft, status: 'ready', periods, unresolved: [] };
+  // 首次执行冻结日期，追问修改日期时重新冻结；翻页不会跨午夜漂移。
+  const frozenPeriods = effective.map(period => period.startDate ? { kind: 'range', startDate: period.startDate, endDateExclusive: period.endDateExclusive } : { kind: 'all' });
+  const normalized = { ...draft, status: 'ready', periods: frozenPeriods, unresolved: [] };
   const plan = { ...normalized, capabilityVersion: CAPABILITY_VERSION, entityIds: entities.items.map(x => x.id), entities: entities.items, effectivePeriods: effective, entityMatch: entities.match,
     aggregation: draft.aggregation || (draft.operation === 'metrics.aggregate' ? 'mean_daily' : draft.operation === 'metrics.series' && !draft.periods.length ? 'latest' : draft.measure === 'records.count' ? 'count' : draft.operation === 'records.aggregate' ? 'sum' : null) };
-  plan.id = hash([plan.operation, plan.domain, plan.measure, plan.measures, plan.entityIds, periods, plan.filters, plan.source, plan.powderBasis, plan.aggregation, plan.groupBy, plan.basisQuantity, plan.basisUnit, plan.subjectMode]);
+  plan.id = hash([plan.operation, plan.domain, plan.measure, plan.measures, plan.entityIds, frozenPeriods, plan.filters, plan.source, plan.powderBasis, plan.aggregation, plan.groupBy, plan.basisQuantity, plan.basisUnit, plan.subjectMode]);
   return { draft: normalized, plan, selected, candidates: entities.candidates };
 }
 module.exports = { compilePlan, applySelection };

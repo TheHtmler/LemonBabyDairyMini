@@ -1,10 +1,11 @@
 'use strict';
 const { fail, number, text } = require('./lib/core/contracts');
 const { buildConfirmedPatch } = require('./lib/core/selection');
-const { runtime, ownedSession, getDocument, transaction, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
+const { runtime, ownedSession, getDocument, transaction, readBabyFoodCatalog, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
 const { saveFood, savePowder } = require('./saveRepository');
 const { sortProfiles } = require('./lib/core/profile');
 const { searchText } = require('./lib/core/reference');
+const { findDuplicates } = require('./lib/core/duplicates');
 const { requestHash, beginConfirmation, markConfirmationFailed, getConfirmationStatus } = require('./confirmationRepository');
 
 function createConfirmationHandler({ db, context, now = Date.now }) {
@@ -35,6 +36,13 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
         const current = sortProfiles(profiles.data || [])[0];
         if ((current && current._id || '') !== session.targetProfileId) fail('VERSION_CONFLICT', '营养档案已变化，请重新加载');
       }
+      if (session.purpose === 'preview') {
+        const items = session.mode === 'powder_label' ? (session.targetProfileId ? (await getDocument(db, 'milk_nutrition_profiles', session.targetProfileId) || {}).formulaPowders || [] : (session.seedProfile || {}).formulaPowders || []) : await readBabyFoodCatalog(db, session.babyUid);
+        const duplicates = findDuplicates(items, session.confirmedIdentity, session.mode === 'powder_label' ? 'powder' : 'food');
+        if (duplicates.exact.length) fail('VALIDATION_FAILED', '资料库已有相同身份的物品，请重新核对并查看已有资料');
+        const reviewed = session.binding.reviewedCandidates || [];
+        if (duplicates.possible.some(item => !reviewed.some(previous => previous.itemId === item.itemId && previous.revision === item.revision && previous.identityKey === item.identityKey))) fail('COMPARISON_STALE', '相近资料已变化，请重新核对重复项');
+      }
       let sourcePowderDocumentId = '';
       if (event.sourceSystemPowderId) {
         const sources = await db.collection('powder_catalog').where({ powderCode: event.sourceSystemPowderId }).limit(2).get();
@@ -46,6 +54,7 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
         { quantity: number(inputBasis.quantity), unit: inputBasis.unit, material: 'food' };
       if (!(basis.quantity > 0) || !['g', 'ml', 'portion'].includes(basis.unit)) fail('VALIDATION_FAILED', '请确认营养计量基准');
       const confirmedIdentity = session.confirmedIdentity || session.observation.identityCandidates[0];
+      if (!confirmedIdentity || !confirmedIdentity.name) fail('VALIDATION_FAILED', '请先补拍包装正面或确认商品名称');
       if (searchText((event.form || {}).name) !== searchText(confirmedIdentity.name)) {
         fail('VALIDATION_FAILED', '表单名称与已核对身份不同，请重新确认名称并查找参考');
       }
@@ -81,6 +90,15 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
           const record = await getDocument(tx, 'nutrition_reference', session.selectedReference._id);
           if (!record || !record.source.verified || record.status !== 'active' ||
               record.source.version !== session.selectedReference.source.version) fail('REFERENCE_UNAVAILABLE', '选定的营养参考版本已不可用');
+        }
+        if (session.purpose === 'preview' && session.mode !== 'powder_label') {
+          for (const candidate of session.binding.reviewedCandidates || []) {
+            const current = await getDocument(tx, 'food_catalog', candidate.itemId);
+            if (current && current.babyUid !== session.babyUid && !(current.sharedBabyUids || []).includes(session.babyUid)) fail('COMPARISON_STALE', '相近资料的可见范围已变化，请重新核对');
+            const match = current && findDuplicates([current], session.confirmedIdentity, 'food');
+            if (match && match.exact.length) fail('VALIDATION_FAILED', '已有资料的身份已更新，请查看已有资料');
+            if (match && match.possible.length && (match.possible[0].revision !== candidate.revision || match.possible[0].identityKey !== candidate.identityKey)) fail('COMPARISON_STALE', '相近资料已变化，请重新核对');
+          }
         }
         const saved = session.mode === 'powder_label' ?
           await savePowder(tx, { ...latest, sourcePowderDocumentId }, event, confirmed.patch, meta, timestamp) :

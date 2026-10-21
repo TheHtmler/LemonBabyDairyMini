@@ -1,0 +1,61 @@
+.quota-settings-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  background: #fff7dc;
+  color: #2c1d09;
+}
+.page-shell { display: flex; flex-direction: column; gap: 24rpx; }
+.config-card, .empty-card {
+  padding: 28rpx 24rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  border: 2rpx solid rgba(255, 184, 0, .12);
+}
+.section-title { display: block; font-size: 32rpx; font-weight: 700; color: #5f3900; }
+.description, .field-hint, .save-hint, .rules {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #817052;
+}
+.description { margin-top: 10rpx; }
+.current-limit { display: block; margin-top: 24rpx; font-size: 26rpx; color: #5f3900; }
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 20rpx;
+  padding: 12rpx 24rpx;
+  border: 2rpx solid #e8d8b6;
+  border-radius: 16rpx;
+  background: #fffcf5;
+}
+.limit-input { flex: 1; min-width: 0; height: 76rpx; font-size: 38rpx; font-weight: 600; }
+.input-unit { flex-shrink: 0; font-size: 26rpx; color: #817052; }
+.field-hint, .field-error { margin-top: 12rpx; }
+.field-error { display: block; font-size: 24rpx; color: #ad312d; line-height: 1.6; overflow-wrap: anywhere; }
+.rules { padding: 0 8rpx; }
+.rules text { display: block; margin-bottom: 8rpx; }
+.error-card { padding: 4rpx 16rpx 16rpx; border-radius: 16rpx; background: #fff0eb; }
+.reload-button { margin-top: 12rpx; padding: 8rpx 0; background: transparent; color: #8e3f21; font-size: 26rpx; }
+.reload-button::after, .save-button::after { border: none; }
+.save-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 18rpx 24rpx;
+  border: none;
+  border-radius: 24rpx;
+  background: #ffcf45;
+  color: #4f3600;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.save-button[disabled] { background: #ece7dc; color: #9a927f; }
+.save-hint { margin-top: -12rpx; text-align: center; }
+.empty-card { margin-top: 24rpx; text-align: center; }

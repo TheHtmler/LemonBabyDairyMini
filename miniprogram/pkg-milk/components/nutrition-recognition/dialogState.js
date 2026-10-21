@@ -1,7 +1,6 @@
-const { FIELDS, UNITS, number, convertBasis, searchText, normalizeCategoryCatalog,
-  normalizeClassification, classificationIdentityKey, matchCategory, recommendCategories } = require('./lib/core/index.js');
+const { FIELDS, UNITS, REQUIRED, number, convertBasis, searchText, normalizeCategoryCatalog,
+  normalizeClassification, classificationIdentityKey, matchCategory, recommendCategories, estimateEligibility } = require('./lib/core/index.js');
 const { FIELD_NAMES, isBlank } = require('../../../utils/nutritionComparison');
-const REQUIRED_FIELDS = ['calories', 'protein', 'fat', 'carbs'];
 const SOURCE_NAMES = { label: '包装标签', reference: '营养参考', model_estimate: 'AI估算', manual: '手填' };
 const FORM_FIELDS = ['name', 'category', 'categoryLevel2', 'unit', 'baseQuantity', 'proteinTypeIndex', 'image'];
 
@@ -24,8 +23,10 @@ function createDialogState(properties, paths) {
     values[field] = isBlank(nutrition[field]) ? '' : String(nutrition[field]);
     if (!isBlank(values[field])) { decisions[field] = { path: field, source: 'manual' }; manualFields.add(field); }
   });
-  return { mode, purpose: properties.purpose || 'form', powderCatalog: normalizeCategoryCatalog(properties.powderCategoryOptions || []),
-    allowEstimate: false, ignoreEstimate: true, saveFormOpen: false, babyUid: properties.babyUid, expectedVersion: properties.expectedVersion,
+  return { mode, requestedMode: mode, recognitionKind: properties.recognitionKind || '',
+    purpose: properties.purpose || 'form', powderCatalog: normalizeCategoryCatalog(properties.powderCategoryOptions || []),
+    allowEstimate: false, ignoreEstimate: true, saveFormOpen: false, previewShown: false, previewBasisMode: 'standard',
+    dirty: false, babyUid: properties.babyUid, expectedVersion: properties.expectedVersion,
     targetId: properties.targetId, sourceSystemFoodId: properties.sourceSystemFoodId,
     initialName: values.name, initialFormKey: formKey(draft, mode),
     initialBasisEdited: mode !== 'powder_label' && (!!draft.unit || (!isBlank(draft.baseQuantity) && number(draft.baseQuantity) !== 100)),
@@ -35,12 +36,23 @@ function createDialogState(properties, paths) {
     categorySuggestion: null, proteinSuggestion: null, extraCategories: [], categoryRejected: false,
     editedFields: new Set(), proposals: {}, referenceCandidates: [], identityCandidates: [],
     identity: null, comparisonVersion: 0, ratioSource: 'manual', status: 'starting', stage: 'prepare', imageUploaded: 0, error: '',
-    needIdentity: false, needPreparation: false, ignoreReference: false };
+    needIdentity: false, packageIdentityConfirmed: false, identityEditorOpen: false,
+    ignoreReference: false };
 }
 
 function targetBasis(state) {
   return state.mode === 'powder_label' ? { quantity: 100, unit: 'g', material: 'dry_powder' } :
     { quantity: number(state.values.baseQuantity), unit: state.values.unit === '份' ? 'portion' : state.values.unit, material: 'food' };
+}
+
+function getEstimateEligibility(state, identity = state.identity) {
+  const selectedProtein = state.proteinOptions[state.values.proteinTypeIndex];
+  const specialProtein = state.mode !== 'powder_label' && ((selectedProtein && selectedProtein.value === 'special') ||
+    (!selectedProtein && state.proteinSuggestion && state.proteinSuggestion.special));
+  if (specialProtein) return { eligible: false, fields: [], requiredInput: '',
+    reason: '特殊蛋白需核对标签或产品资料，缺少的指标可手填。' };
+  return estimateEligibility({ mode: state.mode, identity, observation: state.result && state.result.observation,
+    reference: state.reference, basis: targetBasis(state) });
 }
 
 function offerNutrition(state, nutrients, basis, source, sourceText, formula) {
@@ -65,6 +77,8 @@ function clearProposals(state) {
     }
   });
   state.proposals = {}; state.reference = null; state.estimate = null; state.comparisonVersion = 0;
+  state.previewEstimate = null; state.previewEstimateApplied = false;
+  state.comparison = null; state.comparisonStatus = ''; state.referenceWarning = ''; state.duplicateReview = null; state.duplicateDecision = null;
   state.binding = null;
   state.ignoreReference = false; state.error = '';
   state.categorySuggestion = null; state.proteinSuggestion = null;
@@ -86,28 +100,49 @@ function applyClassification(state, suggestion) {
   if (!state.categoryManual) state.values.category = category ? category.value : '';
   const index = state.proteinOptions.findIndex(option => option.value === classification.proteinSource && option.quality === classification.proteinQuality);
   state.proteinSuggestion = index >= 0 ? { index, label: state.proteinOptions[index].label,
-    special: classification.proteinSource === 'special' } : null;
+    special: classification.proteinSource === 'special', source: classification.proteinQualitySource } : null;
   if (!state.proteinManual) state.values.proteinTypeIndex = index >= 0 && !state.proteinSuggestion.special ? index : -1;
 }
 
 function editNutrition(state, field, value) {
   state.values[field] = value;
   state.editedFields.add(field);
-  if (isBlank(value)) { delete state.decisions[field]; state.manualFields.add(field); }
-  else { state.manualFields.add(field); state.decisions[field] = { path: field, source: 'manual' }; }
+  state.manualFields.add(field);
+  if (isBlank(value)) delete state.decisions[field];
+  else state.decisions[field] = { path: field, source: 'manual' };
 }
 
 function buildRows(state) {
+  const observation = state.result && state.result.observation;
   return FIELDS.filter(field => field !== 'sodium' || state.mode !== 'powder_label').map(field => {
     const decision = state.decisions[field]; const proposal = state.proposals[field];
     const source = decision && decision.source;
     const sourceText = source === 'manual' ? state.editedFields.has(field) ? '手填' : '保留原值' :
       proposal && proposal.sourceText || SOURCE_NAMES[source] || '';
+    const observed = observation && observation.nutrients[field];
+    const labelValue = ['food_label', 'powder_label'].includes(state.mode) && observed &&
+      observed.state === 'present' && number(observed.value) !== null && !state.manualFields.has(field) ?
+      String(Math.round(observed.value * 1000000) / 1000000) : '';
     return { path: field, label: FIELD_NAMES[field], unit: UNITS[field], value: state.values[field],
-      required: REQUIRED_FIELDS.includes(field), source: source || '', sourceText,
+      required: REQUIRED.includes(field), source: source || '', sourceText, labelValue,
       hasSuggestion: !!proposal && source === 'manual', suggestion: proposal ? String(Math.round(proposal.value * 1000000) / 1000000) : '',
       suggestionSource: proposal && proposal.sourceText || '' };
   });
+}
+
+function labelFillWarning(state, rows) {
+  if (state.needType || state.needIdentity || !rows.some(row => isBlank(row.value) && row.labelValue !== '')) return '';
+  const observation = state.result && state.result.observation;
+  if (!observation || convertBasis(observation.nutrients, observation.basis, targetBasis(state), observation.formula)) return '';
+  const basis = observation.basis;
+  if (!(basis.quantity > 0) || !basis.unit) {
+    return '计量基准未识别，请核对表头';
+  }
+  if (state.mode === 'powder_label') {
+    return '干粉营养表未识别';
+  }
+  const unit = { g: '克', ml: '毫升', portion: '份' }[basis.unit] || basis.unit;
+  return '请将填写单位改为' + unit;
 }
 
 function validateDialog(state, options) {
@@ -115,7 +150,7 @@ function validateDialog(state, options) {
   if (!String(state.values.name || '').trim()) missing.push('名称');
   if (!String(state.values.category || '').trim()) missing.push('分类');
   else if (!matchCategory(state.values.category, state.categoryCatalog.concat(state.extraCategories))) missing.push('选择或创建本地分类');
-  REQUIRED_FIELDS.forEach(field => { if (number(state.values[field]) === null) missing.push(FIELD_NAMES[field]); });
+  REQUIRED.forEach(field => { if (number(state.values[field]) === null) missing.push(FIELD_NAMES[field]); });
   ['fiber', 'sodium'].forEach(field => {
     if (field === 'sodium' && state.mode === 'powder_label') return;
     if (!isBlank(state.values[field]) && number(state.values[field]) === null) missing.push(FIELD_NAMES[field] + '格式');
@@ -128,7 +163,7 @@ function validateDialog(state, options) {
     if (!(basis.quantity > 0) || !['g', 'ml', 'portion'].includes(basis.unit)) missing.push('计量基准');
     if (state.values.proteinTypeIndex < 0 || !options.proteinOptions[state.values.proteinTypeIndex]) missing.push('蛋白来源');
   }
-  if (!state.result || !(state.comparisonVersion > 0) || state.needIdentity || state.needPreparation ||
+  if (!state.result || !(state.comparisonVersion > 0) || state.needIdentity ||
       searchText(state.values.name) !== searchText(state.identity && state.identity.name)) missing.push('完成名称和营养核对');
   return missing;
 }
@@ -143,4 +178,4 @@ function resultPatch(state) {
 }
 
 module.exports = { createDialogState, formKey, targetBasis, offerNutrition, clearProposals, editNutrition,
-  buildRows, validateDialog, resultPatch, applyClassification, REQUIRED_FIELDS, SOURCE_NAMES };
+  buildRows, validateDialog, resultPatch, applyClassification, getEstimateEligibility, labelFillWarning };

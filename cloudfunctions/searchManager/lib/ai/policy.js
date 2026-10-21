@@ -2,13 +2,12 @@
 const FLAG_KEYS = ['home_search_enabled', 'ai_search_enabled', 'nutrition_scan_enabled'];
 function fail(code, message) { throw Object.assign(new Error(message), { code }); }
 async function featureAccess(db, openid) {
-  const flags = {};
-  for (const key of FLAG_KEYS) {
+  const values = await Promise.all(FLAG_KEYS.map(async key => {
     const r = await db.collection('feature_flags').where({ key }).limit(1).get(); const doc = (r.data || [])[0];
     // 通用功能无需预建开关记录；已有关闭或范围配置仍优先生效。
-    flags[key] = !doc || doc.enabled === true && (doc.scope === 'all' || Array.isArray(doc.allowOpenids) && doc.allowOpenids.includes(openid));
-  }
-  return flags;
+    return [key, !doc || doc.enabled === true && (doc.scope === 'all' || Array.isArray(doc.allowOpenids) && doc.allowOpenids.includes(openid))];
+  }));
+  return Object.fromEntries(values);
 }
 function getAiPolicy({ scene, env = process.env }) {
   const primaryModel = scene === 'search' ? env.SEARCH_INTENT_MODEL || 'qwen3.5-122b-a10b' : env.BAILIAN_MODEL || 'qwen3.7-plus';

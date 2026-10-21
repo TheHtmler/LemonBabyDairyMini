@@ -1,14 +1,63 @@
-@import "../../styles/search-scan.wxss";
-page { background: #fff9e6; color: #473a22; }
-.scan-page { padding: 32rpx 28rpx calc(40rpx + env(safe-area-inset-bottom)); box-sizing: border-box; }
-.scan-page button { margin: 0; padding: 0; border-radius: 0; background: transparent; color: inherit; font-size: 27rpx; line-height: 1.45; box-sizing: border-box; }.scan-page button::after { border: 0; }.scan-page button[disabled] { opacity: .45; }
-.eyebrow,.title,.description,.footnote { display: block; }.eyebrow { color: #9a8866; font-size: 24rpx; line-height: 1.5; }.title { margin-top: 16rpx; font-size: 40rpx; font-weight: 600; line-height: 1.4; }.description { margin-top: 12rpx; color: #9a8866; font-size: 27rpx; line-height: 1.7; }
-.scan-guide { margin-top: 32rpx; padding: 24rpx; border: 1rpx solid #eadfc5; border-radius: 22rpx; background: #fffdf7; }.guide-header { display: flex; align-items: center; gap: 20rpx; padding-bottom: 24rpx; }.guide-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 80rpx; height: 80rpx; border-radius: 18rpx; background: #f8edcd; }.guide-icon .ss-icon { color: #987740; transform: scale(1.2); }.guide-heading { flex: 1; min-width: 0; }.guide-title,.guide-caption { display: block; }.guide-title { color: #78613b; font-size: 28rpx; font-weight: 500; line-height: 1.55; }.guide-caption { margin-top: 8rpx; color: #a18b64; font-size: 24rpx; line-height: 1.5; }
-.guide-row { display: flex; align-items: flex-start; gap: 22rpx; padding: 18rpx 0; border-top: 1rpx solid #efe6d2; color: #9a8866; font-size: 25rpx; line-height: 1.65; }.guide-row:last-child { padding-bottom: 0; }.guide-label { flex: 0 0 112rpx; color: #806947; font-weight: 500; }.guide-row > text:last-child { flex: 1; min-width: 0; }
-.service-state { display: flex; align-items: center; gap: 20rpx; margin-top: 24rpx; padding: 20rpx; border-radius: 16rpx; background: #f4eddb; color: #8e7953; font-size: 25rpx; line-height: 1.6; }.error-state { background: #fff0d5; color: #9c6638; }.success-state { background: #eef2dc; color: #637c3c; }.state-copy { flex: 1; min-width: 0; }.state-copy > text { display: block; overflow-wrap: break-word; }.state-title { margin-bottom: 6rpx; font-weight: 600; font-size: 27rpx; }.scan-page .retry-button { display: flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 88rpx; min-height: 80rpx; padding: 12rpx; color: #8b672c; font-size: 26rpx; }
-.state-spinner { width: 26rpx; height: 26rpx; flex-shrink: 0; border: 3rpx solid #eadcba; border-top-color: #aa8645; border-radius: 50%; box-sizing: border-box; animation: scan-spin .8s linear infinite; }@keyframes scan-spin { to { transform: rotate(360deg); } }
-.scan-actions { display: flex; align-items: stretch; gap: 16rpx; margin-top: 28rpx; }.scan-page .primary,.scan-page .secondary { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; min-height: 96rpx; gap: 12rpx; padding: 20rpx 16rpx; border-radius: 18rpx; font-size: 29rpx; font-weight: 500; white-space: nowrap; }.scan-page .primary { background: #ffcb46; color: #594018; }.scan-page .secondary { border: 1rpx solid #e8dbc0; background: #fffdf7; color: #826b46; }.scan-actions .ss-icon { color: inherit; transform: scale(.9); }.footnote { margin-top: 22rpx; color: #a18d69; font-size: 24rpx; line-height: 1.75; }
-.pending-state { margin-top: 24rpx; color: #90784f; font-size: 26rpx; line-height: 1.6; }.scan-page .full-width { width: 100%; margin-top: 16rpx; }
-.manual-section { margin-top: 36rpx; padding-top: 24rpx; border-top: 1rpx solid #eadfc5; }.manual-title { display: block; color: #9a8866; font-size: 25rpx; }.manual-actions { display: flex; gap: 24rpx; margin-top: 12rpx; }.manual-actions button { display: flex; align-items: center; justify-content: space-between; flex: 1; gap: 12rpx; min-height: 88rpx; color: #876c3b; font-size: 26rpx; text-align: left; }.manual-actions .ss-icon-arrow { width: 14rpx; height: 14rpx; color: #b09b75; margin-right: 6rpx; }
-@media (max-width: 350px) { .scan-page { padding-left: 24rpx; padding-right: 24rpx; }.title { font-size: 38rpx; }.scan-guide { padding: 20rpx; }.scan-actions { gap: 12rpx; }.scan-page .primary,.scan-page .secondary { gap: 8rpx; font-size: 27rpx; padding-right: 10rpx; padding-left: 10rpx; }.guide-label { flex-basis: 108rpx; } }
-@media (prefers-reduced-motion: reduce) { .state-spinner { animation: none; } }
+page { height: 100%; background: #171916; color: #fffdf5; }
+.scan-page { position: relative; width: 100%; height: 100vh; overflow: hidden; background: #171916; }
+.camera-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+/* 相机上方使用原生覆盖层，避免普通视图被取景画面遮挡。 */
+.camera-nav { position: absolute; left: 0; z-index: 2; }
+/* 与标题一样直接使用原生文本覆盖层，避开图片加载和嵌套弹性布局。 */
+.camera-back-button { position: absolute; left: 0; width: 44px; height: 44px; margin: 0; padding: 0; color: #fffdf5; font-family: Arial, sans-serif; font-size: 28px; font-weight: 400; line-height: 42px; text-align: center; }
+.nav-title { position: absolute; left: 44px; top: 0; height: 100%; font-size: 16px; font-weight: 500; color: #fffdf5; }
+.package-slots { position: absolute; left: 20px; right: 20px; display: flex; justify-content: center; }
+.photo-slot { display: flex; align-items: center; width: 45%; height: 48px; margin: 0 4px; border: 1px solid rgba(255,255,255,.4); border-radius: 10px; background: rgba(23,25,22,.65); box-sizing: border-box; }
+.photo-slot.active { border: 2px solid #ffcf55; }
+.slot-image,.slot-placeholder { flex-shrink: 0; width: 36px; height: 36px; margin-left: 5px; border-radius: 5px; }
+.slot-placeholder { color: #fffdf5; font-size: 24px; line-height: 36px; text-align: center; }
+.slot-caption { margin-left: 6px; color: #fffdf5; font-size: 12px; line-height: 20px; }
+.photo-slot.filled .slot-caption { color: #ffdf80; }
+.camera-hint { position: absolute; top: 24%; left: 8%; width: 84%; color: #fffdf5; font-size: 27rpx; line-height: 1.6; text-align: center; white-space: normal; }
+/* 使用一个完整边框，四角共用圆角，避免原生覆盖层独立角标的形状差异。 */
+.viewfinder { position: absolute; top: 30%; left: 10%; width: 80%; height: 34%; border: 2px solid rgba(255, 253, 245, .9); border-radius: 24rpx; box-sizing: border-box; }
+.camera-status { position: absolute; left: 40rpx; right: 40rpx; padding: 16rpx 20rpx; border-radius: 16rpx; background: rgba(23, 25, 22, .7); color: #fffdf5; font-size: 25rpx; line-height: 1.5; text-align: center; white-space: normal; }
+
+.camera-controls { position: absolute; left: 0; right: 0; bottom: 0; padding: 28rpx 40rpx calc(28rpx + env(safe-area-inset-bottom)); background: rgba(23, 25, 22, .28); }
+.capture-mode { min-height: 36px; margin: -12rpx 0 12rpx; color: #ffdf80; font-size: 25rpx; line-height: 36px; text-align: center; }
+.recognition-tabs { display: flex; align-items: center; justify-content: center; margin-bottom: 34rpx; }
+.recognition-tab { width: 168rpx; min-height: 44px; margin: 0 12rpx; border-radius: 16rpx; background: rgba(23, 25, 22, .42); color: #fffdf5; font-size: 30rpx; font-weight: 500; line-height: 44px; text-align: center; }
+.recognition-tab.selected { background: #fffdf5; color: #373b31; font-weight: 600; }
+.capture-actions { display: flex; align-items: center; justify-content: space-between; }
+.side-action { display: flex; flex-direction: column; align-items: center; width: 120rpx; min-width: 44px; padding: 8rpx 0; }
+.tool-circle { display: flex; align-items: center; justify-content: center; width: 84rpx; height: 84rpx; border-radius: 50%; background: rgba(23, 25, 22, .4); }
+.action-label { margin-top: 12rpx; color: #fffdf5; font-size: 23rpx; line-height: 1.5; text-align: center; }
+.album-icon { position: relative; width: 40rpx; height: 40rpx; overflow: hidden; border: 4rpx solid #fffdf5; border-radius: 10rpx; }
+.album-sun { position: absolute; top: 7rpx; left: 7rpx; width: 8rpx; height: 8rpx; border-radius: 50%; background: #fffdf5; }
+.album-mountain { position: absolute; top: 24rpx; left: 13rpx; width: 30rpx; height: 30rpx; border: 4rpx solid #fffdf5; border-radius: 6rpx; transform: rotate(45deg); }
+.help-icon { color: #fffdf5; font-size: 54rpx; font-weight: 500; line-height: 84rpx; text-align: center; }
+.shutter { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 136rpx; height: 136rpx; margin-bottom: 30rpx; border: 5rpx solid #fffdf5; border-radius: 50%; }
+.shutter-core { width: 112rpx; height: 112rpx; border-radius: 50%; background: #ffcf55; color: #44351b; font-size: 30rpx; font-weight: 600; line-height: 112rpx; text-align: center; }
+.controls-disabled { opacity: .4; }
+
+/* 只有权限、服务异常或保存结果需要说明时才展示状态面板。 */
+.screen-state { position: absolute; left: 40rpx; right: 40rpx; bottom: calc(310rpx + env(safe-area-inset-bottom)); }
+.screen-state.result-state { bottom: calc(40rpx + env(safe-area-inset-bottom)); }
+.state-scroll { height: 100%; }
+.state-content { padding: 28rpx 0; text-align: center; }
+.state-title,.state-description,.state-caption,.state-error { display: block; }
+.state-title { color: #fffdf5; font-size: 36rpx; font-weight: 600; line-height: 1.5; }
+.state-description { margin-top: 20rpx; color: #d7dacd; font-size: 28rpx; line-height: 1.8; overflow-wrap: break-word; }
+.state-caption { margin-top: 16rpx; color: #adb4a3; font-size: 25rpx; line-height: 1.7; }
+.state-error { margin-top: 16rpx; color: #ffcf8a; font-size: 26rpx; line-height: 1.6; }
+.scan-page .state-content button { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; max-width: 480rpx; margin: 24rpx auto 0; padding: 22rpx 24rpx; border-radius: 16rpx; font-size: 28rpx; line-height: 1.5; min-height: 44px; text-align: center; }
+.scan-page button::after { border: 0; }
+.scan-page button[disabled] { opacity: .45; }
+.state-primary { background: #ffcf55; color: #44351b; font-weight: 600; }
+.state-secondary { background: #353a30; color: #fffdf5; }
+.state-link { background: transparent; color: #d7dacd; }
+@media (max-height: 600px) {
+  .camera-hint { top: 22%; }
+  .viewfinder { top: 29%; height: 31%; }
+  .camera-controls { padding-top: 20rpx; }
+  .recognition-tabs { margin-bottom: 20rpx; }
+  .shutter { width: 116rpx; height: 116rpx; }
+  .shutter-core { width: 94rpx; height: 94rpx; line-height: 94rpx; }
+  .screen-state { bottom: calc(280rpx + env(safe-area-inset-bottom)); }
+}

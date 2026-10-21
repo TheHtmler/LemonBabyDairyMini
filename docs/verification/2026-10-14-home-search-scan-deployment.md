@@ -2,6 +2,8 @@
 
 日期：2026-10-14。状态：本地代码、构建与独立审查完成，**本清单尚未在云端执行**。
 
+2026-10-19 更新：用户确认项目仍在开发／测试，只支持当前搜索实现。`searchManager` 仅保留 `capabilities/search/preview`，旧 `interpret/execute/metricDates` 已从本地代码退役。云端资源处理见[云函数与集合精简记录](2026-10-19-search-cloud-cleanup.md)。
+
 本地证据见[验收记录](2026-10-14-home-search-scan.md)。集合创建、索引、权限、云端变量、部署、真实模型调用及实际清理均需按用户要求另行确认；本文不包含密钥。
 
 ## 1. 构建与部署文件
@@ -19,7 +21,7 @@ npm run check:nutrition
 
 上传完整云函数目录及构建生成的 `lib`：
 
-- 新增 `searchManager`：能力查询、解析、查询执行及资料预览。
+- `searchManager`：`capabilities` 能力查询、`search` 统一搜索及 `preview` 资料预览。
 - 更新 `featureFlagManager`：三个独立开关的管理员管理接口。
 - 更新 `getSystemFoodIndex`、`getSystemPowderIndex`：版本 2 的营养状态与原始基准。
 - 更新 `recognizeNutritionLabel`：自动识别、额度、目标绑定及显式估算。
@@ -29,13 +31,13 @@ npm run check:nutrition
 
 后三个营养云函数位于本轮开始时已有的未提交工作区中；应作为本次兼容实现一起核对部署，不能只上传新增搜索函数。依赖沿用仓库声明的 `wx-server-sdk`、`@cloudbase/node-sdk`，不要在部署时顺便升级核心依赖。
 
-云运行时需支持当前代码使用的 `base64url`、`Object.fromEntries`、`crypto`、HTTPS 和 CloudBase 事务。云函数超时需留出模型期限及数据库操作余量；查询主扫描时限 15 秒、搜索模型主备共 10 秒、视觉模型主备共 25 秒，不要把函数超时设置得比相应内部期限更短。实际运行时与超时配置待测试环境核对。
+云运行时需支持当前代码使用的 `base64url`、`Object.fromEntries`、`crypto`、HTTPS 和 CloudBase 事务。云函数超时需留出模型期限及数据库操作余量；当前搜索编排及读取使用 22 秒预算，视觉模型主备共 25 秒，不要把函数超时设置得比相应内部期限更短。实际运行时与超时配置待测试环境核对。
 
 ## 2. 集合、权限与保留期限
 
 新增集合：
 
-- `search_query_sessions`：`kind=state/candidate/page` 分别保存扫描状态、候选定位及已生成页回执，统一 30 分钟过期，查询租约 60 秒。候选不复制原始私有记录正文。
+- `search_query_sessions`：当前以 `kind=context/search_response_v2` 保存上下文与请求结果，30 分钟过期。旧 `state/candidate/page` 类型不再写入，过期后按现有脚本清理；集合本身继续保留。
 - `ai_search_requests`：搜索、识图及显式估算的请求摘要、结果、状态和用量，24 小时过期，调用租约 60 秒。
 - `ai_usage_counters`：按账号、上海日期和 `search/scan` 场景计数，7 天过期。估算计入 `scan`。
 
@@ -86,10 +88,6 @@ feeding_records_v2
 feeding_records
   babyUid↑, date↓, _id↓
 
-search_query_sessions
-  kind↑, sessionId↑, emitted↑, date↓, time↓, stableId↑
-  kind↑, sessionId↑, emitted↑, rank↑, name↑, stableId↑
-
 nutrition_reference
   status↑, source.verified↑, identity.barcode↑
   status↑, source.verified↑, searchTerms↑
@@ -100,9 +98,10 @@ nutrition_reference
 
 - `food_catalog` 私有来源还包含 `sourceType/ownerType/isSystem` 的不等过滤；`sharedBabyUids` 是数组字段。需验证多分支查询与剩余过滤的成本，不保证上述索引在任何数据分布下均高效。
 - `food_catalog` 的 `babyUid + name` 用于绑定时检查已有资料；`sourceType + sourceFoodCode`、`sourceType + powderCode` 用于原系统索引函数。
-- 旧 `feeding_records` 的字符串日期和 Date 日期使用两条扫描源，同一组日期索引；历史扫描没有数据库层面的 active 条件。迁移映射必须能读到软删除的新记录，不能加 active 过滤导致旧记录复活。
+- 当前记录读取仍支持 `feeding_records` 的字符串日期和 Date 日期；旧搜索接口退役不代表历史业务数据已完成迁移，不能据此删除该集合。
 - `nutrition_reference` 名称兜底是未锚定、不区分大小写的正则；名称索引不保证该分支能快速定位，需用真实参考库规模验证。
-- AI 请求、计数器及查询状态/页回执按确定性 `_id` 访问，不需要额外业务复合索引。现有清理脚本按 ID 重读，不依赖 `expiresAt` 查询索引。
+- AI 请求、计数器及搜索上下文／请求结果按 `_id` 访问，不需要额外业务复合索引。现有清理脚本按 ID 重读，不依赖 `expiresAt` 查询索引。
+- 新版 `searchManager` 部署并停用旧版本后，可删除 `search_query_sessions` 的旧候选索引：`kind↑, sessionId↑, emitted↑, date↓, time↓, stableId↑` 和 `kind↑, sessionId↑, emitted↑, rank↑, name↑, stableId↑`。默认 `_id` 索引保留；本地删除源码不会删除云端索引。
 
 ## 4. 服务端环境变量
 
@@ -123,14 +122,16 @@ nutrition_reference
 | `NUTRITION_FALLBACK_BASE_URL` | 未配置时沿用主接口 |
 | `NUTRITION_FALLBACK_API_KEY` | 同接口时可沿用主密钥；更换接口时必须有备用专用密钥 |
 | `SEARCH_DAILY_LIMIT` | 未设置或无效时默认 50；允许 0–10000 整数 |
-| `NUTRITION_DAILY_LIMIT` | 未设置或无效时默认 20；识图与显式估算共享；允许 0–10000 整数 |
+| `NUTRITION_DAILY_LIMIT` | 管理员尚未保存界面配置时使用；未设置或无效时默认 20；识图与显式估算共享；允许 0–10000 整数 |
 | `DEVELOPER_OPENIDS` | 可追加现有开发者名单；沿用既有管理员鉴权，不把管理员权限交给客户端 |
 
 额度变量留空字符串会被转换成 0，表示不允许新调用；要采用默认值应不设置该变量，或显式填写 50/20。普通搜索不依赖模型密钥和额度，但需要游标签名密钥与查询集合就绪；未配置功能开关记录时默认开放。
 
+营养识别次数现支持在“我的 → 配置 → 营养识别次数”设置。管理员保存后，`feature_flags/nutrition_daily_quota` 中的上限优先于 `NUTRITION_DAILY_LIMIT`；每个账号分别计数，修改上限不清空当天用量。入口、权限、构建与部署说明见 [营养识别次数管理配置](2026-10-20-admin-nutrition-quota.md)。
+
 云环境取值沿用微信上下文 `ENV`，再取 `TCB_ENV` 或 `SCF_NAMESPACE`；没有有效环境时拒绝启动。不要在本地误填生产环境来执行验收。
 
-搜索输出上限 500 Token，视觉输出上限 1500 Token；只在精确错误 `AllocationQuota.FreeTierOnly` 时允许一次备用，429、超时、非法 JSON 和截断不自动切备用。应用内日次数不能保障服务商不收费，必须另行核实各主备模型“免费额度用完即停”。无法核实时保持 AI 关闭。
+当前统一搜索输出上限 1400 Token，视觉输出上限 1500 Token；只在精确错误 `AllocationQuota.FreeTierOnly` 时允许一次备用，429、超时、非法 JSON 和截断不自动切备用。应用内日次数不能保障服务商不收费，必须另行核实各主备模型“免费额度用完即停”。无法核实时保持 AI 关闭。
 
 ## 5. 默认开放与可选开关
 
@@ -165,7 +166,7 @@ node "scripts/cleanup-nutrition-recognition.js" --input "/本地路径/recogniti
 
 搜索导出结构为包含 `ai_search_requests`、`ai_usage_counters`、`search_query_sessions` 三个数组的对象；识别导出为会话数组。导出可能含用户数据，需在授权范围内保存和处理。
 
-实际执行另外需要 `--apply --env`，属于需确认的云端删除操作。执行会按 ID 重新读取并复核过期及租约；查询会话必须同时清理 state、candidate、page。识别先清理属于该会话的图片，再压缩回执或移除到期会话；有效回执只保留身份、操作摘要、状态和结果定位，不保留完整营养正文。
+实际执行另外需要 `--apply --env`，属于需确认的云端删除操作。执行会按 ID 重新读取并复核过期及租约；搜索清理同时覆盖当前 `context/search_response_v2` 与遗留 `state/candidate/page` 的过期记录。识别先清理属于该会话的图片，再压缩回执或移除到期会话；有效回执只保留身份、操作摘要、状态和结果定位，不保留完整营养正文。
 
 不要给识别会话直接配置按 `expiresAt` 删除的 TTL，否则会跳过图片回收并提前删除仍在 30 天承诺期内的回执。首次部署后需要明确清理负责人或另行设计调度；仅写入过期时间不会自动删除云端数据。
 
@@ -175,7 +176,7 @@ node "scripts/cleanup-nutrition-recognition.js" --input "/本地路径/recogniti
 2. 核查旧新迁移关系：软删除新记录仍压制旧来源；若硬删除导致映射消失，先查明实际数据，不能声称完整去重或擅自回填。
 3. 创建所需集合/索引并部署完整云函数；无需预建三条功能开关记录；AI 免费保护确认前保留禁用的 AI 配置。核对 capabilities 在模型未配置时不会阻断首页其余功能。
 4. 验证默认开放的普通搜索：检查功能角色、资料归属、名称/配料、每 100 克条件、历史快照、真实零/缺失、干粉/冲调液、大于 200 条分页、空中间页、同游标重放及权限撤销。
-5. 平台确认免费用完即停后配置精确主备模型；验证 AI 搜索可用状态。检查示例原句、歧义补充、上海日期、500 Token 输出容量、10 秒主备期限、实际用量与重复请求。通过授权测试方式验证免费错误边界，不能为了测试耗尽而无上限调用。
+5. 平台确认免费用完即停后配置精确主备模型；验证 AI 搜索可用状态。检查示例原句、歧义补充、上海日期、1400 Token 输出容量、搜索总预算内的模型主备期限、实际用量与重复请求。通过授权测试方式验证免费错误边界，不能为了测试耗尽而无上限调用。
 6. 准备食物包装标签、奶粉包装/营养表、普通实物三类图片，以及模糊、多产品、部分营养缺失样本；检查同次判类提取、1500 Token 容量、25 秒期限、来源标记、用户主动估算与日额度共享。
 7. 开发者工具及真机验证相机权限、相册、取消、补拍、纠正类型、仅预览、加入资料、分类必填、双击保存、并发版本变化、保存后断网恢复、固定表单恢复、切账号/宝宝、返回、小屏和大字体。
 8. 导出脱敏临时记录验证两项清理计划，确认 24 小时草稿/图片、30 分钟查询、7 天计数和 30 天回执边界；实际清理需另行确认。
@@ -183,8 +184,8 @@ node "scripts/cleanup-nutrition-recognition.js" --input "/本地路径/recogniti
 
 ## 8. 已知实现边界
 
-- 搜索直接读取服务端原始目录及历史；系统索引云函数供资料页面使用。游标绑定协议/索引结构版本 `1:2:2`，不绑定实时资料内容版本；跨设备编辑不提供快照隔离，详情会重新读取。
-- 每页最多 20 条命中，单次总预算 200 个原文档/200 个展开候选；主扫描阈值为 160 次读取、180 个候选，为输出重读预留预算。当前预算和时间限制是代码常量，不存在对应环境变量。
+- 搜索直接读取服务端原始目录及历史；系统索引云函数供资料页面使用。当前分页令牌绑定账号、宝宝、上下文及查询计划，读取前后核对来源摘要；详情会重新读取。这不等同数据库快照事务。
+- 目录每页最多 20 条命中，当前读取器默认最多 5,000 次记录／摘要读取预算、22 秒期限；超出预算返回需缩短查询范围的状态。旧执行器的 200 条扫描预算已退役。
 - 食谱支持名称、备注和配料，严格营养密度筛选明确排除；旧记录缺少快照或营养证据时不会从当前资料补值。
 - 本清单不证明免费额度仍有效、模型质量合格、云端索引可用或真机通过。对应结果需追加到验收记录后才能宣称环境验收完成。
 
