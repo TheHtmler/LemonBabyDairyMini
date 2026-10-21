@@ -95,6 +95,7 @@ Page({
 
   onShow() {
     if (require('../../utils/elderMode').guardNormalPage()) return;
+    require('../../utils/feedback').refreshUnreadSilently();
     const reloadAt = wx.getStorageSync(ANALYSIS_REPORT_RELOAD_KEY);
     if (reloadAt) {
       wx.removeStorageSync(ANALYSIS_REPORT_RELOAD_KEY);
@@ -109,6 +110,7 @@ Page({
   },
 
   onPullDownRefresh() {
+    require('../../utils/feedback').refreshUnreadSilently({ force: true });
     this.loadReportData({ force: true }).finally(() => {
       wx.stopPullDownRefresh();
     });

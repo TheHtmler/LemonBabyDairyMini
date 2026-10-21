@@ -302,6 +302,7 @@ Page({
 
   async onShow() {
     if (guardNormalPage()) return;
+    require('../../utils/feedback').refreshUnreadSilently();
     const userRole = (app.globalData && app.globalData.userRole) || wx.getStorageSync('user_role');
     this.setData({ app, greetingText: buildGreeting(), isCreator: userRole === 'creator' });
     // 新用户引导：宝宝信息保存后选择“去设置”，会先切到首页并打上标记，
@@ -407,6 +408,7 @@ Page({
   onUnload() { this.hideMedUndo(); this.closeMedPanel(); if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer); },
 
   async onPullDownRefresh() {
+    require('../../utils/feedback').refreshUnreadSilently({ force: true });
     try {
       // rebuildTrend:true 已带 rebuildMissing，下拉一次即可刷新趋势
       await this.loadDashboard({ silent: true, rebuildTrend: true });

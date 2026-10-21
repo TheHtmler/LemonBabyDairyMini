@@ -1,0 +1,51 @@
+<view class="detail-page">
+  <view wx:if="{{loading}}" class="page-hint">正在加载反馈…</view>
+  <view wx:if="{{errorText}}" class="card error-card">
+    <text>{{errorText}}</text>
+    <button class="secondary-button" bindtap="retryLoad">重新加载</button>
+    <button class="text-button" bindtap="backToList">返回反馈列表</button>
+  </view>
+  <block wx:if="{{item}}">
+    <view class="card">
+      <view class="card-head">
+        <text class="type-badge">{{item.type}}</text>
+        <text class="status-badge {{item.status}}">{{item.statusText}}</text>
+      </view>
+      <text class="time">{{item.displayTime}}</text>
+      <text class="section-title">{{canReply ? '用户反馈' : '我的反馈'}}</text>
+      <text class="body-text" selectable>{{item.content}}</text>
+      <view wx:if="{{canReply}}" class="admin-meta">
+        <text wx:if="{{item.userNickname}}">昵称：{{item.userNickname}}</text>
+        <text wx:if="{{item.babyName}}">宝宝：{{item.babyName}}</text>
+        <text wx:if="{{item.userRole}}">角色：{{item.userRole === 'participant' ? '参与者' : '创建者'}}</text>
+        <text wx:if="{{item.contact}}">联系方式：{{item.contact}}</text>
+        <text wx:if="{{item.systemInfo.model}}">设备：{{item.systemInfo.brand}} {{item.systemInfo.model}} {{item.systemInfo.system}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{item.replyContent}}" class="card reply-card">
+      <text class="section-title reply-title">管理员回复</text>
+      <text class="body-text" selectable>{{item.replyContent}}</text>
+      <text class="time">{{item.replyTimeLabel}} {{item.replyTimeText}}</text>
+    </view>
+    <view wx:else class="card waiting-card">
+      <text class="section-title">管理员回复</text>
+      <text>{{item.status === 'processed' ? '该反馈已标记处理，暂无回复说明。' : '我们已收到你的反馈，处理结果会显示在这里。'}}</text>
+    </view>
+    <button wx:if="{{hasNewerReply}}" class="secondary-button" bindtap="retryLoad">有新回复，刷新查看</button>
+    <button wx:if="{{readError}}" class="text-button" bindtap="retryRead">{{readError}}</button>
+
+    <view wx:if="{{canReply}}" class="card editor-card">
+      <text class="section-title">填写处理回复</text>
+      <text wx:if="{{item.replyContent}}" class="editor-hint">修改保存后会替换用户看到的回复，并提示有新回复。</text>
+      <textarea class="reply-input" maxlength="1000" value="{{replyDraft}}" disabled="{{saving || loading}}" bindinput="onReplyInput" placeholder="例如：问题已修复，重新进入小程序后即可使用。" cursor-spacing="100" />
+      <text class="word-count">{{replyDraft.length}} / 1000</text>
+      <text class="editor-hint">保存后，用户可在“我的反馈”查看。</text>
+      <view wx:if="{{saveError}}" class="save-error">{{saveError}}</view>
+      <button wx:if="{{conflict}}" class="secondary-button" bindtap="refreshConflict">刷新最新回复，保留我的草稿</button>
+      <button class="secondary-button" disabled="{{saving || loading || conflict || !replyDraft.length}}" loading="{{saving}}" data-mode="reply" bindtap="saveReply">保存回复</button>
+      <button class="primary-button" disabled="{{saving || loading || conflict || !replyDraft.length}}" loading="{{saving}}" data-mode="process" bindtap="saveReply">回复并标记已处理</button>
+    </view>
+    <view wx:else class="page-hint">下拉可刷新处理结果</view>
+  </block>
+</view>
