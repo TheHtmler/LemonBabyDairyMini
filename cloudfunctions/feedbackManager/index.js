@@ -1,15 +1,82 @@
 const cloud = require('wx-server-sdk');
+const crypto = require('crypto');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
-const db = cloud.database();
+const db = cloud.database({ throwOnNotFound: false });
+const command = db.command;
+const FEEDBACK_TYPES = ['功能建议', '问题反馈', '体验吐槽', '其他'];
+const USER_FIELDS = {
+  _id: true, type: true, content: true, status: true, createdAt: true,
+  clientCreatedAt: true, replyContent: true, repliedAt: true,
+  replyVersion: true, readReplyVersion: true, hasUnreadReply: true
+};
 
 const DEVELOPER_OPENIDS = [
   'oYCao7fijm22dyl6C-tcYJo_G69A'
 ];
 
 function isDeveloperOpenid(openid = '') {
-  return DEVELOPER_OPENIDS.includes((openid || '').trim());
+  return DEVELOPER_OPENIDS.includes(text(openid));
+}
+
+function text(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function fail(message, code = 'INVALID_ARGUMENT') {
+  const error = new Error(message);
+  error.code = code;
+  error.isFeedbackError = true;
+  throw error;
+}
+
+function requireAdmin(openid) {
+  if (!isDeveloperOpenid(openid)) fail('当前账号无权管理反馈', 'FORBIDDEN');
+}
+
+function requireId(id) {
+  if (typeof id !== 'string' || !/^[\w-]{1,128}$/.test(id)) fail('反馈记录标识无效');
+  return id;
+}
+
+function version(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
+function dateText(value) {
+  const date = value instanceof Date ? value : new Date(value?.$date || value);
+  return value && Number.isFinite(date.getTime()) ? date.toISOString() : '';
+}
+
+function toUserFeedback(item) {
+  const replyVersion = version(item.replyVersion);
+  const readReplyVersion = Math.min(version(item.readReplyVersion), replyVersion);
+  return {
+    _id: item._id,
+    type: text(item.type) || '其他',
+    content: text(item.content),
+    status: item.status === 'processed' ? 'processed' : 'new',
+    createdAt: dateText(item.createdAt) || dateText(item.clientCreatedAt),
+    replyContent: text(item.replyContent),
+    repliedAt: dateText(item.repliedAt),
+    replyVersion,
+    readReplyVersion,
+    hasUnreadReply: replyVersion > readReplyVersion
+  };
+}
+
+function toAdminFeedback(item) {
+  const { lastReplyRequestId, lastReplyRequestFingerprint, ...metadata } = item;
+  return { ...metadata, ...toUserFeedback(item) };
+}
+
+async function readFeedback(database, id) {
+  const result = await database.collection('feedback_messages').doc(id).get();
+  if (!result.data || !result.data._id) {
+    fail('该反馈不存在或暂时无法查看', 'NOT_FOUND');
+  }
+  return result.data;
 }
 
 async function resolveBabyName(babyUid = '', babyName = '') {
@@ -46,9 +113,8 @@ async function submitFeedback(event = {}, openid = '') {
     miniProgramInfo = {}
   } = event;
 
-  const trimmedContent = (content || '').trim();
-  const trimmedContact = (contact || '').trim();
-  const resolvedBabyName = await resolveBabyName(babyUid, babyName);
+  const trimmedContent = text(content);
+  const trimmedContact = text(contact).slice(0, 100);
 
   if (!openid) {
     return { ok: false, message: '缺少用户身份' };
@@ -62,33 +128,43 @@ async function submitFeedback(event = {}, openid = '') {
     return { ok: false, message: '反馈内容至少 5 个字' };
   }
 
+  if (trimmedContent.length > 500) fail('反馈内容不能超过 500 字');
+  if (!FEEDBACK_TYPES.includes(type)) fail('反馈类型无效');
+  const resolvedBabyName = await resolveBabyName(text(babyUid), text(babyName));
+  const device = systemInfo && typeof systemInfo === 'object' ? systemInfo : {};
+  const mini = miniProgramInfo && typeof miniProgramInfo === 'object' ? miniProgramInfo : {};
+
   const result = await db.collection('feedback_messages').add({
     data: {
       type,
       content: trimmedContent,
       contact: trimmedContact,
-      babyUid,
+      babyUid: text(babyUid),
       babyName: resolvedBabyName,
-      userRole,
-      userNickname,
+      userRole: text(userRole),
+      userNickname: text(userNickname).slice(0, 100),
       openid,
-      appVersion,
-      source,
-      submitRoute,
+      appVersion: text(appVersion).slice(0, 100),
+      source: text(source).slice(0, 100),
+      submitRoute: text(submitRoute).slice(0, 200),
       systemInfo: {
-        brand: systemInfo.brand || '',
-        model: systemInfo.model || '',
-        platform: systemInfo.platform || '',
-        system: systemInfo.system || '',
-        language: systemInfo.language || '',
-        version: systemInfo.version || '',
-        SDKVersion: systemInfo.SDKVersion || ''
+        brand: text(device.brand).slice(0, 100),
+        model: text(device.model).slice(0, 100),
+        platform: text(device.platform).slice(0, 100),
+        system: text(device.system).slice(0, 100),
+        language: text(device.language).slice(0, 100),
+        version: text(device.version).slice(0, 100),
+        SDKVersion: text(device.SDKVersion).slice(0, 100)
       },
       miniProgramInfo: {
-        envVersion: miniProgramInfo.envVersion || '',
-        version: miniProgramInfo.version || ''
+        envVersion: text(mini.envVersion).slice(0, 100),
+        version: text(mini.version).slice(0, 100)
       },
       status: 'new',
+      replyContent: '',
+      replyVersion: 0,
+      readReplyVersion: 0,
+      hasUnreadReply: false,
       createdAt: db.serverDate(),
       clientCreatedAt: new Date().toISOString()
     }
@@ -106,6 +182,7 @@ async function listFeedbacks(event = {}, openid = '') {
   }
 
   const statusFilter = event.statusFilter || 'all';
+  if (!['all', 'new', 'processed'].includes(statusFilter)) fail('状态筛选无效');
   let query = db.collection('feedback_messages');
 
   if (statusFilter !== 'all') {
@@ -116,8 +193,120 @@ async function listFeedbacks(event = {}, openid = '') {
 
   return {
     ok: true,
-    data: res.data || []
+    data: (res.data || []).map(toAdminFeedback)
   };
+}
+
+async function listMine(event, openid) {
+  const conditions = [{ openid }, { createdAt: command.gte(new Date(0)) }];
+  if (event.cursor != null) {
+    const cursor = event.cursor;
+    if (!cursor || !Number.isSafeInteger(cursor.createdAt) || cursor.createdAt < 0
+      || !Number.isFinite(new Date(cursor.createdAt).getTime())) fail('分页参数无效');
+    requireId(cursor.id);
+    const date = new Date(cursor.createdAt);
+    conditions.push(command.or([
+      { createdAt: command.lt(date) },
+      { createdAt: date, _id: command.lt(cursor.id) }
+    ]));
+  }
+  const result = await db.collection('feedback_messages')
+    .where(command.and(conditions)).field(USER_FIELDS)
+    .orderBy('createdAt', 'desc').orderBy('_id', 'desc').limit(21).get();
+  const items = result.data || [];
+  const page = items.slice(0, 20).map(toUserFeedback);
+  const last = page[page.length - 1];
+  return {
+    ok: true,
+    data: page,
+    nextCursor: items.length > 20 && last
+      ? { createdAt: new Date(last.createdAt).getTime(), id: last._id } : null
+  };
+}
+
+async function getDetail(event, openid) {
+  const id = requireId(event.id);
+  const adminView = event.view === 'admin';
+  if (adminView) requireAdmin(openid);
+  const item = await readFeedback(db, id);
+  if (!adminView && item.openid !== openid) fail('该反馈不存在或暂时无法查看', 'NOT_FOUND');
+  return { ok: true, data: adminView ? toAdminFeedback(item) : toUserFeedback(item), canReply: adminView };
+}
+
+async function getUnreadCount(openid) {
+  const [unread, pending] = await Promise.all([
+    db.collection('feedback_messages').where({ openid, hasUnreadReply: true }).count(),
+    // 管理员待办按真实处理状态统计，不受列表筛选或最多 100 条展示限制影响。
+    isDeveloperOpenid(openid)
+      ? db.collection('feedback_messages').where({ status: 'new' }).count()
+      : Promise.resolve({ total: 0 })
+  ]);
+  return { ok: true, count: unread.total || 0, adminPendingCount: pending.total || 0 };
+}
+
+async function saveReply(event, openid) {
+  requireAdmin(openid);
+  const id = requireId(event.id);
+  const replyContent = text(event.replyContent);
+  if (!replyContent || replyContent.length > 1000) fail('回复内容需为 1–1000 字');
+  if (!['reply', 'process'].includes(event.mode)) fail('回复操作无效');
+  if (!Number.isSafeInteger(event.baseReplyVersion) || event.baseReplyVersion < 0) fail('回复版本无效');
+  const requestId = text(event.requestId);
+  if (!/^[\w-]{8,100}$/.test(requestId)) fail('回复请求标识无效');
+  const fingerprint = crypto.createHash('sha256')
+    .update(JSON.stringify([replyContent, event.mode, event.baseReplyVersion])).digest('hex');
+
+  await db.runTransaction(async transaction => {
+    const item = await readFeedback(transaction, id);
+    // 同一保存请求超时重试时直接复用结果，不再次生成未读。
+    if (item.lastReplyRequestId === requestId) {
+      if (item.lastReplyRequestFingerprint !== fingerprint) fail('请使用新的保存请求', 'CONFLICT');
+      return;
+    }
+    const currentVersion = version(item.replyVersion);
+    if (currentVersion !== event.baseReplyVersion) {
+      fail('回复已被更新，请刷新后重新确认', 'CONFLICT');
+    }
+    const changed = replyContent !== text(item.replyContent);
+    const nextVersion = currentVersion + (changed ? 1 : 0);
+    const data = {
+      replyContent,
+      replyVersion: nextVersion,
+      readReplyVersion: version(item.readReplyVersion),
+      hasUnreadReply: nextVersion > version(item.readReplyVersion),
+      lastReplyRequestId: requestId,
+      lastReplyRequestFingerprint: fingerprint,
+      updatedAt: db.serverDate()
+    };
+    if (changed) {
+      data.repliedAt = db.serverDate();
+      data.repliedBy = openid;
+    }
+    if (event.mode === 'process') data.status = 'processed';
+    await transaction.collection('feedback_messages').doc(id).update({ data });
+  });
+  return { ok: true, data: toAdminFeedback(await readFeedback(db, id)), canReply: true };
+}
+
+async function markReplyRead(event, openid) {
+  const id = requireId(event.id);
+  const seen = event.seenReplyVersion;
+  if (!Number.isSafeInteger(seen) || seen < 1) fail('已读版本无效');
+  const data = await db.runTransaction(async transaction => {
+    const item = await readFeedback(transaction, id);
+    if (item.openid !== openid) fail('该反馈不存在或暂时无法查看', 'NOT_FOUND');
+    const currentVersion = version(item.replyVersion);
+    if (seen > currentVersion) fail('已读版本无效');
+    // 只确认实际展示的版本，事务重试时保留更晚发布的未读回复。
+    const readReplyVersion = Math.max(version(item.readReplyVersion), seen);
+    const hasUnreadReply = currentVersion > readReplyVersion;
+    const cleared = currentVersion > version(item.readReplyVersion) && !hasUnreadReply;
+    await transaction.collection('feedback_messages').doc(id).update({
+      data: { readReplyVersion, hasUnreadReply }
+    });
+    return { _id: id, readReplyVersion, replyVersion: currentVersion, hasUnreadReply, cleared };
+  });
+  return { ok: true, data };
 }
 
 async function updateFeedbackStatus(event = {}, openid = '') {
@@ -125,21 +314,21 @@ async function updateFeedbackStatus(event = {}, openid = '') {
     return { ok: false, message: '无权限更新反馈状态' };
   }
 
-  const { id = '', status = '' } = event;
-
-  if (!id) {
-    return { ok: false, message: '缺少反馈记录标识' };
-  }
+  const id = requireId(event.id);
+  const status = event.status;
 
   if (!['new', 'processed'].includes(status)) {
     return { ok: false, message: '状态参数无效' };
   }
 
-  await db.collection('feedback_messages').doc(id).update({
-    data: {
-      status,
-      updatedAt: db.serverDate()
+  await db.runTransaction(async transaction => {
+    const item = await readFeedback(transaction, id);
+    if (status === 'processed' && !text(item.replyContent)) {
+      fail('请先填写处理说明', 'REPLY_REQUIRED');
     }
+    await transaction.collection('feedback_messages').doc(id).update({
+      data: { status, updatedAt: db.serverDate() }
+    });
   });
 
   return { ok: true };
@@ -150,11 +339,7 @@ async function deleteFeedback(event = {}, openid = '') {
     return { ok: false, message: '无权限删除反馈' };
   }
 
-  const { id = '' } = event;
-
-  if (!id) {
-    return { ok: false, message: '缺少反馈记录标识' };
-  }
+  const id = requireId(event.id);
 
   await db.collection('feedback_messages').doc(id).remove();
 
@@ -163,9 +348,16 @@ async function deleteFeedback(event = {}, openid = '') {
 
 exports.main = async (event = {}, context) => {
   const { OPENID } = cloud.getWXContext();
-  const action = event.action || '';
 
   try {
+    if (!OPENID) fail('缺少用户身份', 'UNAUTHENTICATED');
+    if (!event || typeof event !== 'object') fail('请求参数无效');
+    const action = event.action || '';
+    if (action === 'listMine') return await listMine(event, OPENID);
+    if (action === 'getDetail') return await getDetail(event, OPENID);
+    if (action === 'getUnreadCount') return await getUnreadCount(OPENID);
+    if (action === 'saveReply') return await saveReply(event, OPENID);
+    if (action === 'markReplyRead') return await markReplyRead(event, OPENID);
     if (action === 'submit') {
       return await submitFeedback(event, OPENID);
     }
@@ -184,10 +376,11 @@ exports.main = async (event = {}, context) => {
 
     return { ok: false, message: '不支持的操作类型' };
   } catch (error) {
-    console.error('feedbackManager failed:', error);
+    if (!error.isFeedbackError) console.error('反馈服务处理失败:', error);
     return {
       ok: false,
-      message: error.message || '反馈服务处理失败'
+      code: error.isFeedbackError ? error.code : 'SERVICE_ERROR',
+      message: error.isFeedbackError ? error.message : '反馈服务暂时不可用，请稍后重试'
     };
   }
 };

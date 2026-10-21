@@ -3,7 +3,7 @@
     <view class="hero-card">
       <view>
         <text class="hero-title">反馈列表</text>
-        <text class="hero-subtitle">开发者可以在这里集中查看反馈，并定期处理。</text>
+        <text class="hero-subtitle">查看反馈、回复用户，并记录处理结果。</text>
       </view>
       <text class="hero-meta">最近更新 {{lastUpdatedText || '--:--'}}</text>
     </view>
@@ -17,12 +17,16 @@
         bindtap="onFilterTap"
       >
         <text>{{item.label}}</text>
+        <block wx:if="{{item.value === 'new' && pendingCount > 0}}">
+          <view class="pending-dot" />
+          <text>{{pendingCount > 99 ? '99+' : pendingCount}}</text>
+        </block>
       </view>
     </view>
 
     <view wx:if="{{!loading && !feedbackItems.length}}" class="empty-card">
       <text class="empty-title">{{emptyText}}</text>
-      <text class="empty-subtitle">下拉页面可以手动刷新，页面也会定时自动更新。</text>
+      <text class="empty-subtitle">下拉页面可查看最新反馈。</text>
     </view>
 
     <view wx:for="{{feedbackItems}}" wx:key="_id" class="feedback-card">
@@ -35,6 +39,11 @@
       </view>
 
       <text class="feedback-content">{{item.content}}</text>
+
+      <view wx:if="{{item.replyContent}}" class="admin-reply-preview" data-id="{{item._id}}" bindtap="openReply">
+        <text class="reply-preview-label">管理员回复 · {{item.replyTimeText}}</text>
+        <text class="reply-preview-content">{{item.replyContent}}</text>
+      </view>
 
       <view class="detail-block">
         <view class="detail-row" wx:if="{{item.userNicknameText}}">
@@ -72,6 +81,9 @@
       </view>
 
       <view class="action-row">
+        <view class="action-pill primary-btn reply-action" data-id="{{item._id}}" bindtap="openReply">
+          <text>{{item.replyContent ? '查看回复' : '回复用户'}}</text>
+        </view>
         <view
           wx:if="{{item.contactText}}"
           class="action-pill ghost-btn"

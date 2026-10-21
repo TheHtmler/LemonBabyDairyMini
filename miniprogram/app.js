@@ -1,6 +1,7 @@
 // app.js
 // 跨分包共享工具：主包显式引用，避免「主包未使用的 JS」质量检测误报
 require('./utils/nutritionTargetPreview');
+const feedback = require('./utils/feedback');
 
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 
@@ -43,6 +44,10 @@ App({
     // 创建完整的初始化Promise
     this.initReady = this.initializeApp();
   },
+
+  onShow() {
+    feedback.refreshUnreadSilently({ force: true });
+  },
   
   /**
    * 完整的应用初始化流程
@@ -77,6 +82,7 @@ App({
       // 标记初始化完成
       this.globalData.isInitialized = true;
       this.globalData.initError = null;
+      feedback.refreshUnreadSilently();
       
       console.log('=== 应用初始化完成 ===');
       return {
@@ -150,6 +156,7 @@ App({
       // 作废已缓存的初始化 Promise，否则注销后角色选择页 waitForInitialization
       // 会拿到旧的「已登录」结果而错误跳回首页。
       this.initReady = null;
+      feedback.resetFeedbackState();
       
       // 重置用户的角色选择状态
       wx.setStorageSync(ACCOUNT_LOGGED_OUT_KEY, true);

@@ -2919,6 +2919,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   onShow: async function() {
     if (require('../../utils/elderMode').guardNormalPage()) return;
+    require('../../utils/feedback').refreshUnreadSilently();
     if (!this.data.selectedDate) {
       return;
     }
@@ -5042,6 +5043,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   // 下拉刷新
   onPullDownRefresh: async function() {
+    require('../../utils/feedback').refreshUnreadSilently({ force: true });
     try {
       if (this.data.selectedDate) {
         await this.fetchDailyRecords(this.data.selectedDate);
