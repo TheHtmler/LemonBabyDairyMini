@@ -2928,6 +2928,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   onShow: async function() {
     if (require('../../utils/elderMode').guardNormalPage()) return;
+    require('../../utils/feedback').refreshUnreadSilently();
     const fromSearch = this.consumeSearchLocator();
     if (this._initializingRecords) return;
     if (!this.data.selectedDate) {
@@ -5067,6 +5068,7 @@ function createDataRecordsPageConfig(options = {}) {
 
   // 下拉刷新
   onPullDownRefresh: async function() {
+    require('../../utils/feedback').refreshUnreadSilently({ force: true });
     try {
       if (this.data.selectedDate) {
         await this.fetchDailyRecords(this.data.selectedDate);

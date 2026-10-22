@@ -1,5 +1,6 @@
 const { waitForAppInitialization, handleError } = require('../../utils/index');
 const { isDeveloperOpenid } = require('../../config/developer');
+const feedback = require('../../utils/feedback');
 
 const STATUS_FILTERS = [
   { value: 'all', label: '全部' },
@@ -7,25 +8,26 @@ const STATUS_FILTERS = [
   { value: 'processed', label: '已处理' }
 ];
 
-const AUTO_REFRESH_MS = 30000;
-
 Page({
   data: {
     statusFilters: STATUS_FILTERS,
     statusFilter: 'all',
     feedbackItems: [],
+    pendingCount: 0,
     loading: true,
     hasAccess: true,
     lastUpdatedText: '',
     emptyText: '还没有反馈数据'
   },
 
-  autoRefreshTimer: null,
   hasInitialized: false,
 
   async onLoad() {
+    this._alive = true;
+    this._loadSeq = 0;
     try {
       await waitForAppInitialization();
+      if (!this._alive) return;
       const app = getApp();
       const openid = app.globalData.openid || wx.getStorageSync('openid') || '';
 
@@ -38,8 +40,17 @@ Page({
       }
 
       this.hasInitialized = true;
+      const generation = feedback.getUnreadState().generation;
+      this._unsubscribe = feedback.subscribeUnread(state => {
+        if (!this._alive) return;
+        if (state.generation !== generation) {
+          this._loadSeq += 1;
+          this.setData({ hasAccess: false, feedbackItems: [], pendingCount: 0, loading: false });
+          return;
+        }
+        this.setData({ pendingCount: state.adminPendingCount });
+      });
       await this.loadFeedbacks();
-      this.startAutoRefresh();
     } catch (error) {
       this.setData({ loading: false });
       handleError(error, { title: '加载反馈列表失败' });
@@ -47,19 +58,17 @@ Page({
   },
 
   onShow() {
+    feedback.getUnreadState();
     if (!this.hasInitialized || !this.data.hasAccess) {
       return;
     }
     this.loadFeedbacks({ silent: true });
-    this.startAutoRefresh();
-  },
-
-  onHide() {
-    this.stopAutoRefresh();
   },
 
   onUnload() {
-    this.stopAutoRefresh();
+    this._alive = false;
+    this._loadSeq += 1;
+    if (this._unsubscribe) this._unsubscribe();
   },
 
   onPullDownRefresh() {
@@ -70,39 +79,18 @@ Page({
     this.loadFeedbacks({ silent: true });
   },
 
-  startAutoRefresh() {
-    this.stopAutoRefresh();
-    this.autoRefreshTimer = setInterval(() => {
-      this.loadFeedbacks({ silent: true });
-    }, AUTO_REFRESH_MS);
-  },
-
-  stopAutoRefresh() {
-    if (this.autoRefreshTimer) {
-      clearInterval(this.autoRefreshTimer);
-      this.autoRefreshTimer = null;
-    }
-  },
-
   async loadFeedbacks({ silent = false } = {}) {
+    if (!this._alive || !this.data.hasAccess) return;
+    feedback.refreshUnreadSilently({ force: true });
+    const request = ++this._loadSeq;
     if (!silent) {
       this.setData({ loading: true });
     }
 
     try {
-      const res = await wx.cloud.callFunction({
-        name: 'feedbackManager',
-        data: {
-          action: 'list',
-          statusFilter: this.data.statusFilter
-        }
-      });
-
-      if (!res?.result?.ok) {
-        throw new Error(res?.result?.message || '获取反馈列表失败');
-      }
-
-      const feedbackItems = (res.result.data || []).map(item => this.normalizeFeedbackItem(item));
+      const result = await feedback.callFeedback('list', { statusFilter: this.data.statusFilter });
+      if (!this._alive || request !== this._loadSeq) return;
+      const feedbackItems = (result.data || []).map(item => this.normalizeFeedbackItem(item));
 
       this.setData({
         feedbackItems,
@@ -111,6 +99,7 @@ Page({
         emptyText: this.getEmptyText(this.data.statusFilter)
       });
     } catch (error) {
+      if (!this._alive || request !== this._loadSeq || error.code === 'STALE_SESSION') return;
       this.setData({ loading: false });
       handleError(error, {
         title: error?.message || '刷新反馈列表失败'
@@ -122,14 +111,12 @@ Page({
   },
 
   normalizeFeedbackItem(item = {}) {
-    const createdAt = this.resolveCreatedAt(item);
     const status = item.status === 'processed' ? 'processed' : 'new';
     const systemInfoText = this.formatSystemInfo(item.systemInfo);
     const miniProgramText = this.formatMiniProgramInfo(item.miniProgramInfo);
 
     return {
-      ...item,
-      displayTime: this.formatDateTime(createdAt),
+      ...feedback.normalizeFeedback(item),
       status,
       statusText: status === 'processed' ? '已处理' : '未处理',
       roleText: item.userRole === 'participant' ? '参与者' : '创建者',
@@ -171,39 +158,6 @@ Page({
     return parts.join(' | ');
   },
 
-  resolveCreatedAt(item = {}) {
-    if (item.createdAt instanceof Date) {
-      return item.createdAt;
-    }
-
-    if (item.createdAt && typeof item.createdAt === 'object' && item.createdAt.$date) {
-      return new Date(item.createdAt.$date);
-    }
-
-    if (item.clientCreatedAt) {
-      const clientDate = new Date(item.clientCreatedAt);
-      if (!Number.isNaN(clientDate.getTime())) {
-        return clientDate;
-      }
-    }
-
-    return new Date();
-  },
-
-  formatDateTime(date) {
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-      return '';
-    }
-
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    const hour = `${date.getHours()}`.padStart(2, '0');
-    const minute = `${date.getMinutes()}`.padStart(2, '0');
-
-    return `${year}-${month}-${day} ${hour}:${minute}`;
-  },
-
   formatUpdateTime(date) {
     const hour = `${date.getHours()}`.padStart(2, '0');
     const minute = `${date.getMinutes()}`.padStart(2, '0');
@@ -240,6 +194,12 @@ Page({
     }
 
     const nextStatus = status === 'processed' ? 'new' : 'processed';
+    const item = this.data.feedbackItems.find(item => item._id === id);
+    if (nextStatus === 'processed' && !item?.replyContent) {
+      wx.showToast({ title: '请先填写处理说明', icon: 'none' });
+      this.openReply(e);
+      return;
+    }
 
     try {
       wx.showLoading({
@@ -247,18 +207,9 @@ Page({
         mask: true
       });
 
-      const res = await wx.cloud.callFunction({
-        name: 'feedbackManager',
-        data: {
-          action: 'updateStatus',
-          id,
-          status: nextStatus
-        }
-      });
-
-      if (!res?.result?.ok) {
-        throw new Error(res?.result?.message || '更新反馈状态失败');
-      }
+      await feedback.callFeedback('updateStatus', { id, status: nextStatus });
+      feedback.invalidateUnread();
+      feedback.refreshUnreadSilently({ force: true });
 
       wx.hideLoading();
       wx.showToast({
@@ -276,6 +227,11 @@ Page({
     }
   },
 
+  openReply(e) {
+    const id = e.currentTarget.dataset.id;
+    if (id) wx.navigateTo({ url: `/pkg-misc/feedback-detail/index?id=${encodeURIComponent(id)}&view=admin` });
+  },
+
   deleteFeedback(e) {
     const { id = '', content = '' } = e.currentTarget.dataset || {};
     if (!id) {
@@ -286,7 +242,7 @@ Page({
 
     wx.showModal({
       title: '删除反馈',
-      content: previewText ? `确定删除这条反馈？\n\n${previewText}` : '确定删除这条反馈？',
+      content: `删除后，该反馈及回复将从用户的“我的反馈”中移除。\n\n${previewText}`,
       confirmColor: '#D65B00',
       success: async (res) => {
         if (!res.confirm) {
@@ -299,17 +255,9 @@ Page({
             mask: true
           });
 
-          const result = await wx.cloud.callFunction({
-            name: 'feedbackManager',
-            data: {
-              action: 'delete',
-              id
-            }
-          });
-
-          if (!result?.result?.ok) {
-            throw new Error(result?.result?.message || '删除反馈失败');
-          }
+          await feedback.callFeedback('delete', { id });
+          feedback.invalidateUnread();
+          feedback.refreshUnreadSilently({ force: true });
 
           wx.hideLoading();
           wx.showToast({

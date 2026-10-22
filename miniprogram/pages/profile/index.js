@@ -1,5 +1,6 @@
 const { isDeveloperOpenid } = require('../../config/developer');
 const { guardNormalPage, enableElderMode } = require('../../utils/elderMode');
+const feedback = require('../../utils/feedback');
 
 const ACCOUNT_LOGGED_OUT_KEY = 'account_logged_out';
 const CREATOR_CANCEL_CONFIRM_TEXT = '确认注销';
@@ -159,7 +160,7 @@ const MENU_GROUPS = [
         name: '意见反馈',
         icon: 'info',
         path: '/pkg-misc/feedback/index',
-        description: '告诉我们问题、建议或想增加的功能'
+        description: '提交建议，查看处理回复'
       },
       {
         id: 20,
@@ -197,7 +198,7 @@ const MENU_GROUPS = [
         name: '反馈列表',
         icon: 'info',
         path: '/pkg-misc/feedback-list/index',
-        description: '查看用户提交的反馈并标记处理状态',
+        description: '查看用户反馈、回复并记录处理结果',
         showForDeveloper: true
       },
       {
@@ -239,6 +240,8 @@ Page({
     userInfo: {},
     babyInfo: {}, // 添加宝宝信息
     isLoggedIn: true,  // 默认设置为已登录
+    feedbackUnreadCount: 0,
+    adminFeedbackPendingCount: 0,
     isEditingProfile: false,
     tempNickName: '',
     userRole: '', // 用户角色
@@ -259,6 +262,9 @@ Page({
 
   onLoad: function () {
     if (guardNormalPage()) return;
+    this._unsubscribeFeedback = feedback.subscribeUnread(state => {
+      this.setData({ feedbackUnreadCount: state.count, adminFeedbackPendingCount: state.adminPendingCount });
+    });
     // 确保有默认的头像路径
     this.setData({
       defaultAvatarUrl: '/images/LemonLogo.png'
@@ -271,10 +277,15 @@ Page({
 
   onShow: function () {
     if (guardNormalPage()) return;
+    feedback.refreshUnreadSilently();
     this.refreshIdentityState();
     this.loadAccessibleBabyCount();
     if (this.data.uploadingAvatar) return;
     this.getBabyInfo();
+  },
+
+  onUnload() {
+    if (this._unsubscribeFeedback) this._unsubscribeFeedback();
   },
 
   // 加载可访问宝宝数量：≥2 时「同步数据」菜单才显示，数量变化后重建菜单
@@ -737,7 +748,7 @@ Page({
       this.openSyncPanel();
     } else if (item.path) {
       wx.navigateTo({
-        url: item.path
+        url: item.id === 12 && this.data.feedbackUnreadCount > 0 ? `${item.path}?tab=mine` : item.path
       });
     }
   },
@@ -970,6 +981,7 @@ Page({
     // 作废已缓存的初始化 Promise，确保角色选择页重新走一次完整初始化，
     // 否则会拿到注销前「已登录」的旧结果而错误跳回首页。
     app.initReady = null;
+    feedback.resetFeedbackState();
   },
 
   // 复制邀请码

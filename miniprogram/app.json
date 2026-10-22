@@ -54,6 +54,7 @@
         "baby-info/index",
         "medications/index",
         "feedback/index",
+        "feedback-detail/index",
         "feedback-list/index",
         "ocr-access-settings/index",
         "notice-settings/index",
