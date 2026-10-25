@@ -1909,5 +1909,4 @@ page {
 .home-search-pressed { background: #fbf2d9; }
 .home-notice-entry { position: relative; display: flex; align-items: center; justify-content: center; flex: 0 0 88rpx; width: 88rpx; min-width: 44px; min-height: 96rpx; margin: 0; padding: 0; border-radius: 20rpx; background: transparent; line-height: 1; }
 .home-notice-entry .ss-icon { color: #8d7853; }
-.home-notice-dot { position: absolute; top: 18rpx; right: 12rpx; width: 10rpx; height: 10rpx; border-radius: 50%; background: #d79427; }
 @import "../../styles/search-scan.wxss";
