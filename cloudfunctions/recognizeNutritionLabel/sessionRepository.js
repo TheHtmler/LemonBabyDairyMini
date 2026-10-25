@@ -70,24 +70,25 @@ async function prepareSession(db, openid, event, env, now, allocateFileIds, onSt
   if (!Array.isArray(fileIDs) || fileIDs.length !== filePaths.length) fail('SAVE_FAILED', '图片路径分配失败');
   fileIDs.forEach((id, index) => validateFileId(id, filePaths[index], env));
   onStage('prepare_create_session');
-  await transaction(db, async tx => {
+  const session = await transaction(db, async tx => {
     const old = await getDocument(tx, SESSION_COLLECTION, sessionId);
     if (old) {
       if ((old.requestedMode || old.mode) !== event.mode || (old.purpose || 'form') !== (preview ? 'preview' : 'form') || old.filePaths.length !== event.imageCount) fail('INVALID_INPUT', '请求ID已被其他识别操作使用');
       if (new Date(old.expiresAt).getTime() <= now) fail('SESSION_EXPIRED', '识别请求已过期');
-      return;
+      return old;
     }
-    await tx.collection(SESSION_COLLECTION).doc(sessionId).set({ requestId: event.requestId, ownerOpenid: openid,
+    const created = { requestId: event.requestId, ownerOpenid: openid,
       babyUid: event.babyUid, mode: event.mode, requestedMode: event.mode, purpose: preview ? 'preview' : 'form', env, status: 'uploading',
       categoryCatalog: normalizeCategoryCatalog(Array.isArray(event.categoryCatalog) ? event.categoryCatalog.slice(0, 100) : []),
       filePaths, fileIDs, expectedFileIDs: fileIDs,
       createdAt: new Date(now), expiresAt: new Date(now + 24 * 60 * 60 * 1000),
       targetProfileId: profile && profile._id || '', seedProfile, seedLegacyDocumentId, seedLegacyHash,
       targetFoodId, targetFoodVersion, sourceSystemFoodId, requestedTargetId: event.targetId || '',
-      comparisonVersion: 0, version: 0 });
+      comparisonVersion: 0, version: 0 };
+    await tx.collection(SESSION_COLLECTION).doc(sessionId).set(created);
+    return created;
   });
-  onStage('prepare_read_session');
-  const session = await getDocument(db, SESSION_COLLECTION, sessionId);
+  // 事务提交后返回实际采用的会话，并发复用时不能返回本次另行分配的上传路径。
   return response(session);
 }
 

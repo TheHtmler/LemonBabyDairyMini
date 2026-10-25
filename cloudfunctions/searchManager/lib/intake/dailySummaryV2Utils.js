@@ -1,6 +1,7 @@
 const {
   resolveFoodIntakePremiumProteinSplit
 } = require('../search/recipeProtein');
+const { withMissingNutrition } = require('./nutritionProvenance');
 
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) {
@@ -155,7 +156,7 @@ function roundMilkSummary(summary = {}) {
 }
 
 function roundFoodSummary(summary = {}) {
-  return {
+  return withMissingNutrition({
     calories: roundValue(summary.calories),
     protein: roundValue(summary.protein),
     naturalProtein: roundValue(summary.naturalProtein),
@@ -166,7 +167,7 @@ function roundFoodSummary(summary = {}) {
     carbs: roundValue(summary.carbs),
     fiber: roundValue(summary.fiber),
     fluidVolume: roundValue(summary.fluidVolume)
-  };
+  }, summary);
 }
 
 function roundTreatmentSummary(summary = {}) {
@@ -285,6 +286,8 @@ function mergeFoodNutrition(records = []) {
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);
     summary.fiber += toNumber(nutrition.fiber);
+    Object.assign(summary, withMissingNutrition(summary, nutrition, record.foodSnapshot,
+      ...((record.recipeSource || {}).ingredientsSnapshot || []).filter(item => Number(item.quantity) > 0).flatMap(item => [item.nutrition, item.foodSnapshot])));
     if (String(record.unit || '').toLowerCase() === 'ml') {
       summary.fluidVolume += toNumber(record.quantity);
     }

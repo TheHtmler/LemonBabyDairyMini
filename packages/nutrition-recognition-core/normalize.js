@@ -1,6 +1,8 @@
 'use strict';
 
 const { FIELDS, UNITS, MODES, fail, text, number, identity, defaultDefinition } = require('./contracts');
+const { validateNutrientEvidence, validateBasisEvidence, readLabelEnergy } = require('./evidenceValidation');
+const NUTRIENT_LABELS = { calories: '能量', protein: '蛋白质', fat: '脂肪', carbs: '碳水化合物', fiber: '膳食纤维', sodium: '钠' };
 
 const UNIT_ALIASES = {
   克: 'g', 公克: 'g', gram: 'g', grams: 'g',
@@ -28,24 +30,16 @@ function normalizePackageEvidence(raw, imageCount) {
 }
 
 function normalizeNutrient(field, raw, warnings = [], options = {}) {
-  const entry = raw && typeof raw === 'object' ? raw : { value: raw, unit: UNITS[field] };
+  let entry = raw && typeof raw === 'object' ? raw : { value: raw, unit: UNITS[field] };
   let value = number(entry.value);
   let state = value === null ? 'missing' : 'present';
+  let validationIssue = null;
   if (['missing', 'trace', 'below_limit', 'unverified'].includes(entry.state)) {
     state = entry.state;
     value = null;
   }
   // 模型保留标签原单位，中文和英文写法应进入同一换算分支。
-  const unit = normalizeUnit(entry.unit);
-  if (value !== null) {
-    if (field === 'calories' && unit === 'kj') value /= 4.184;
-    else if (UNITS[field] === 'g' && unit === 'mg') value /= 1000;
-    else if (UNITS[field] === 'mg' && unit === 'g') value *= 1000;
-    else if (unit !== UNITS[field]) {
-      warnings.push(field + '的单位无法确认，未采用该数值');
-      value = null; state = 'missing';
-    }
-  }
+  let unit = normalizeUnit(entry.unit);
   let evidence = null;
   if (entry.evidence && typeof entry.evidence === 'object') {
     const index = entry.evidence.imageIndex;
@@ -54,6 +48,20 @@ function normalizeNutrient(field, raw, warnings = [], options = {}) {
       evidence = { imageIndex: index, text: content };
     } else if (options.requireEvidence) {
       fail('INVALID_MODEL_RESULT', '识别证据的图片序号或文字无效');
+    }
+  }
+  // 能量原文优先于模型的结构化数值和单位，避免漏换算或重复换算。
+  if (options.requireEvidence && evidence && field === 'calories' && value !== null) {
+    const energy = readLabelEnergy(evidence.text);
+    if (energy) { entry = { ...entry, ...energy }; value = energy.value; unit = energy.unit; }
+  }
+  if (value !== null) {
+    if (field === 'calories' && unit === 'kj') value /= 4.184;
+    else if (UNITS[field] === 'g' && unit === 'mg') value /= 1000;
+    else if (UNITS[field] === 'mg' && unit === 'g') value *= 1000;
+    else if (unit !== UNITS[field]) {
+      warnings.push(field + '的单位无法确认，未采用该数值');
+      value = null; state = 'missing';
     }
   }
   if (options.requireEvidence && value !== null && !evidence) {
@@ -68,8 +76,18 @@ function normalizeNutrient(field, raw, warnings = [], options = {}) {
       !/kcal|kJ|\d\s*(?:mg|g)|毫克|千卡|千焦|克/i.test(evidence.text)) {
     value = null; state = 'missing'; warnings.push(field + '的证据只有百分比，未采用为营养含量');
   }
+  if (options.requireEvidence && evidence && value !== null) {
+    const problem = validateNutrientEvidence(field, entry, unit, evidence.text);
+    if (problem) {
+      const message = (NUTRIENT_LABELS[field] || field) + problem.message + '，未自动采用该读数';
+      warnings.push(message); value = null; state = 'missing';
+      if (problem.conflict) validationIssue = { code: 'EVIDENCE_CONFLICT', message,
+        observedValue: entry.value, observedUnit: text(entry.unit, 40) };
+    }
+  }
   return { value, state, unit: UNITS[field],
-    definition: text(entry.definition, 80) || defaultDefinition(field), evidence };
+    definition: text(entry.definition, 80) || defaultDefinition(field), evidence,
+    ...(validationIssue ? { validationIssue } : {}) };
 }
 
 function normalizeObservation(raw = {}, { mode, imageCount = 1 } = {}) {
@@ -82,6 +100,16 @@ function normalizeObservation(raw = {}, { mode, imageCount = 1 } = {}) {
   const candidates = Array.isArray(raw.identityCandidates) ? raw.identityCandidates : [];
   const identityCandidates = candidates.map(identity).filter(x => x.name).slice(0, 8);
   const packageEvidence = normalizePackageEvidence(mode === 'food_object' ? null : raw.packageEvidence, imageCount);
+  if (mode !== 'food_object') {
+    const canonical = value => text(value, 600).normalize('NFKC').toLowerCase().replace(/\s/g, '');
+    const packageText = canonical(packageEvidence.identity && packageEvidence.identity.text);
+    identityCandidates.forEach(candidate => {
+      ['brand', 'series', 'stage', 'barcode'].forEach(key => {
+        if (candidate[key] && (!packageText.includes(canonical(candidate[key])) ||
+            key === 'barcode' && !/^\d{8,14}$/.test(candidate[key]))) candidate[key] = '';
+      });
+    });
+  }
   // 营养表局部图可能没有商品名称，保留已有读数，待补拍正面或手动确认身份。
   if (!identityCandidates.length && !(['food_label', 'powder_label'].includes(mode) && packageEvidence.nutrition)) {
     fail('INVALID_MODEL_RESULT', '未能识别食物或产品名称，请补拍清晰图片');
@@ -95,8 +123,8 @@ function normalizeObservation(raw = {}, { mode, imageCount = 1 } = {}) {
     material: ['food', 'dry_powder', 'prepared_formula', 'unknown'].includes(sourceBasis.material)
       ? sourceBasis.material : 'unknown'
   };
-  // 普通食品标签已确定物料类别；不因模型省略该字段而阻断整张表的回填。
-  if (mode === 'food_label' && basis.material === 'unknown') basis.material = 'food';
+  // 普通粉状食品仍按食品计量，不套用奶粉干粉的换算基准。
+  if (mode === 'food_label' && ['unknown', 'dry_powder'].includes(basis.material)) basis.material = 'food';
   if (mode === 'food_object') {
     basis.quantity = null; basis.unit = null; basis.material = 'food';
   }
@@ -107,8 +135,26 @@ function normalizeObservation(raw = {}, { mode, imageCount = 1 } = {}) {
   if (mode !== 'food_object' && hasEvidence(sourceBasis.evidence)) basis.evidence = {
     imageIndex: sourceBasis.evidence.imageIndex, text: text(sourceBasis.evidence.text, 600)
   };
+  if (basis.evidence && basis.quantity !== null) {
+    const problem = validateBasisEvidence(basis, basis.evidence.text);
+    if (problem) { basis.quantity = null; basis.unit = null; warnings.push(problem); }
+  }
   if (mode === 'powder_label' && ['dry_powder', 'prepared_formula'].includes(basis.material)) {
     identityCandidates.forEach(candidate => { candidate.preparation = basis.material; });
+  }
+  if (mode === 'food_label') {
+    const packageText = [packageEvidence.identity, packageEvidence.nutrition, basis.evidence]
+      .filter(Boolean).map(entry => entry.text).join(' ');
+    identityCandidates.forEach(candidate => {
+      const preparation = candidate.preparation;
+      const supported = preparation === 'dry_powder'
+        ? /干粉|粉末|粉状|固体饮料|powder/i.test(packageText)
+        : /冲调后|冲调液|配制后|调制后|prepared\s+(?:formula|product)|as\s+prepared/i.test(packageText);
+      if (['dry_powder', 'prepared_formula'].includes(preparation) && !supported) {
+        candidate.preparation = 'unknown';
+        warnings.push('商品处理状态缺少相应包装证据，已保留为未知');
+      }
+    });
   }
   const nutrients = {};
   FIELDS.forEach(field => {
@@ -188,7 +234,7 @@ function normalizeAutomaticObservation(raw, options) {
   if (['uncertain', 'unsupported'].includes(resolvedMode)) {
     return { resolvedMode, observation: { identityCandidates: candidates, basis: { quantity: null, unit: null, material: 'unknown' },
       nutrients: Object.fromEntries(FIELDS.map(field => [field, normalizeNutrient(field, null)])), formula: {}, formulaEvidence: {}, missingFields: [...FIELDS],
-      warnings: [resolvedMode === 'unsupported' ? '图片内容不属于可识别的食物或奶粉' : '图片内容不明确，请拍清一种食品或完整包装'] } };
+      warnings: [resolvedMode === 'unsupported' ? '图片内容不属于可识别的食物' : '图片内容不明确，请拍清一种食品或完整包装'] } };
   }
   return { resolvedMode, observation: normalizeObservation(raw, { ...options, mode: resolvedMode }) };
 }

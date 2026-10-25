@@ -2,6 +2,7 @@
 
 const { fail } = require('./lib/core/contracts');
 const { estimateEligibility, validateEstimateBinding } = require('./lib/core/estimate');
+const { assertFoodRecognition } = require('./lib/core/identitySafety');
 const { ownedSession, getDocument, transaction, hash, publicFailure, SESSION_COLLECTION } = require('./lib/core/server');
 const { resolveConfig } = require('./modelClient');
 
@@ -13,12 +14,14 @@ async function estimateNutrition({ db, openid, config, modelClient, now }, event
     fail('INVALID_INPUT', 'AI估算请求参数无效');
   }
   const session = await ownedSession(db, openid, event.babyUid, event.sessionId, now());
+  assertFoodRecognition({ mode: session.mode, observation: session.observation, identity: session.confirmedIdentity });
   if (session.status !== 'compared' || !session.observation || !session.confirmedIdentity || !session.comparisonBasis) {
     fail('VALIDATION_FAILED', '请先确认食材身份、营养基准并查询参考，再生成AI估算');
   }
   if (event.comparisonVersion !== session.comparisonVersion) fail('COMPARISON_STALE', '核对版本已变化，请重新查询参考');
   const context = { mode: session.mode, identity: session.confirmedIdentity, observation: session.observation,
-    reference: session.selectedReference, basis: session.comparisonBasis, comparisonVersion: session.comparisonVersion };
+    reference: session.selectedReference, basis: session.comparisonBasis, comparisonVersion: session.comparisonVersion,
+    identityConfirmation: session.identityConfirmation };
   const eligible = estimateEligibility(context);
   if (!eligible.eligible) fail('VALIDATION_FAILED', eligible.reason);
   const response = (estimate, cached) => ({ ok: true, requestId: event.requestId, sessionId: event.sessionId,

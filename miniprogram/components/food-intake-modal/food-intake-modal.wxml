@@ -107,11 +107,11 @@
               </view>
               <view class="preview-row">
                 <text>膳纤</text>
-                <text>{{foodExperiment.nutritionPreview.fiber || 0}} g</text>
+                <text>{{foodExperiment.nutritionPreview.fiber === null ? '--' : (foodExperiment.nutritionPreview.fiber || 0)}} g</text>
               </view>
               <view class="preview-row">
                 <text>钠</text>
-                <text>{{foodExperiment.nutritionPreview.sodium || 0}} mg</text>
+                <text>{{foodExperiment.nutritionPreview.sodium === null ? '--' : (foodExperiment.nutritionPreview.sodium || 0)}} mg</text>
               </view>
             </block>
           </view>

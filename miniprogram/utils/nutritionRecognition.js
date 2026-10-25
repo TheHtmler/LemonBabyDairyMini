@@ -1,10 +1,12 @@
+const { normalizeCloudServiceError } = require('./cloudServiceError');
+
 function invoke(name, options) {
   return new Promise((resolve, reject) => wx[name]({ ...options, success: resolve, fail: reject }));
 }
 function createRequestId() { return 'nutrition_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12); }
 
 async function callNutritionFunction(name, data) {
-  let timer; let succeeded = false; const startedAt = Date.now();
+  let timer;
   try {
     const response = await Promise.race([
       wx.cloud.callFunction({ name, data }),
@@ -15,22 +17,23 @@ async function callNutritionFunction(name, data) {
       const error = new Error(result && result.message || '营养服务暂不可用');
       error.code = result && result.code || 'SERVICE_UNAVAILABLE';
       error.stage = result && result.stage || '';
+      error.restartRequired = result && result.restartRequired === true;
       throw error;
     }
-    succeeded = true; return result;
+    return result;
   } catch (error) {
     const failure = normalizeCloudServiceError(error, 'scan');
     console.warn('[nutrition-service]', name, data.action, failure.code, failure.stage);
     throw failure;
   } finally {
     clearTimeout(timer);
-    console.info('[nutrition-timing]', { function: name, action: data.action, elapsedMs: Date.now() - startedAt, succeeded });
   }
 }
 
 async function chooseRecognitionImages(options = {}) {
   // 每个拍摄位置只选一张；包装双面在提交识别前收集齐全。
-  const selected = await invoke('chooseImage', { count: 1, sizeType: ['compressed'], sourceType: options.sourceType || ['album', 'camera'] });
+  const selected = await invoke('chooseImage',
+    { count: 1, sizeType: ['compressed'], sourceType: options.sourceType || ['album', 'camera'] });
   return prepareRecognitionImages(selected.tempFilePaths);
 }
 
@@ -55,7 +58,8 @@ async function uploadRecognitionImages(paths, prepared, isActive, onProgress = (
   // 最多三张图并发上传，返回顺序仍与营养表、正面的位置一致。
   return Promise.all(paths.map(async (path, i) => {
     if (!isActive()) throw new Error('当前表单已关闭');
-    const result = await wx.cloud.uploadFile({ cloudPath: prepared.filePaths[i], filePath: path, config: { env: prepared.envId } });
+    const result = await wx.cloud.uploadFile({
+      cloudPath: prepared.filePaths[i], filePath: path, config: { env: prepared.envId } });
     completed += 1;
     if (isActive()) onProgress(completed, paths.length);
     return result.fileID;
@@ -75,7 +79,7 @@ async function confirmWithRecovery(payload) {
     const result = await callNutritionFunction('confirmNutritionRecognition', { ...payload, action: 'confirm' });
     wx.removeStorageSync(key); return result;
   } catch (error) {
-    if (['INVALID_INPUT', 'VALIDATION_FAILED', 'VERSION_CONFLICT', 'COMPARISON_STALE', 'FORBIDDEN', 'REFERENCE_UNAVAILABLE'].includes(error.code)) wx.removeStorageSync(key);
+    if (['INVALID_INPUT', 'VALIDATION_FAILED', 'IDENTITY_INSUFFICIENT', 'VERSION_CONFLICT', 'COMPARISON_STALE', 'FORBIDDEN', 'REFERENCE_UNAVAILABLE', 'SESSION_EXPIRED'].includes(error.code)) wx.removeStorageSync(key);
     throw error;
   }
 }
@@ -87,4 +91,3 @@ async function recoverConfirmation(pending) {
 }
 const recognitionCapabilities = params => callNutritionFunction('recognizeNutritionLabel', { ...params, action: 'capabilities' });
 module.exports = { createRequestId, callNutritionFunction, recognitionCapabilities, chooseRecognitionImages, prepareRecognitionImages, uploadRecognitionImages, pendingConfirmation, confirmWithRecovery, recoverConfirmation };
-const { normalizeCloudServiceError } = require('./cloudServiceError');

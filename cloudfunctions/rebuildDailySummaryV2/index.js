@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const { withMissingNutrition } = require('./lib/nutritionProvenance');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -295,8 +296,10 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
 
 function mergeFoodNutrition(records = []) {
   const food = createEmptySummary().food;
+  const sources = [];
   (records || []).forEach((record = {}) => {
     const nutrition = record.nutrition || {};
+    sources.push(nutrition, record.foodSnapshot, ...((record.recipeSource || {}).ingredientsSnapshot || []).filter(item => Number(item.quantity) > 0).flatMap(item => [item.nutrition, item.foodSnapshot]));
     const split = resolveFoodProteinSplit(record);
     const naturalProtein = toNumber(split.natural);
     const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
@@ -314,7 +317,7 @@ function mergeFoodNutrition(records = []) {
     }
   });
   Object.keys(food).forEach(key => { food[key] = roundValue(food[key]); });
-  return food;
+  return withMissingNutrition(food, ...sources);
 }
 
 function shouldCountTreatmentItem(item = {}) {

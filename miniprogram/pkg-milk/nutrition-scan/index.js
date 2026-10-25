@@ -4,19 +4,16 @@ const { recognitionCapabilities, pendingConfirmation, recoverConfirmation,
   chooseRecognitionImages, prepareRecognitionImages } = require('../../utils/nutritionRecognition');
 const { measureCaptureRegion, cropCaptureImage } = require('./captureImage');
 const FoodCategoryModel = require('../../models/foodCategory');
-const { POWDER_CATEGORIES, POWDER_CATEGORY_META } = require('../../utils/formulaPowderUtils');
 const FOOD_CATEGORIES = ['主食及谷薯', '蔬菜类', '水果类', '肉禽类', '水产类', '乳类及制品', '蛋类', '豆制品', '婴幼儿辅食', '零食', '饮品', '甜品', '油脂及调味品'];
 
 Page({
   data: {
     babyUid: '', babyName: '', formSessionId: 0, available: false, loading: true, loadingSlow: false,
     error: '', reasonCode: '', pending: null, recovering: false, capturing: false,
-    saved: null, existing: null, recognitionKind: 'food', categories: FOOD_CATEGORIES,
+    existing: null, categories: FOOD_CATEGORIES,
     cameraActive: false, cameraReady: false, cameraError: '', cameraPermissionDenied: false,
     cameraGeneration: 0, recognitionOpen: false, navTop: 24, navHeight: 44, navRight: 100,
     packageCapture: false, photoSlots: [{ label: '① 营养成分表', path: '' }, { label: '② 包装正面', path: '' }], activePhotoSlot: 0, packageReady: false,
-    powderCategories: [POWDER_CATEGORIES.REGULAR_FORMULA, POWDER_CATEGORIES.SPECIAL_FORMULA, POWDER_CATEGORIES.ENERGY_SUPPLEMENT]
-      .map(value => ({ value, label: POWDER_CATEGORY_META[value].label })),
     proteinOptions: [
       { label: '天然蛋白（优质）', value: 'natural', quality: 'premium' },
       { label: '天然蛋白（普通）', value: 'natural', quality: 'regular' },
@@ -26,7 +23,7 @@ Page({
   onLoad(options = {}) {
     this._epoch = 0; this._captureEpoch = 0; this._unloaded = false;
     this._pageVisible = false; this._cameraSuspended = false; this._layoutVersion = 0;
-    this.setData({ fromSearch: options.from === 'search', recognitionKind: options.kind === 'powder' ? 'powder' : 'food', packageCapture: options.kind === 'powder' });
+    this.setData({ fromSearch: options.from === 'search' });
     this.updateNavigationLayout();
   },
   updateNavigationLayout() {
@@ -59,7 +56,7 @@ Page({
         this._cameraSuspended = false;
         this.resetPhotoSlots();
         this.setData({ babyUid: context.babyUid, babyName: context.babyName,
-          formSessionId: this.data.formSessionId + 1, saved: null, existing: null,
+          formSessionId: this.data.formSessionId + 1, existing: null,
           available: false, capturing: false, recognitionOpen: false, categories: FOOD_CATEGORIES });
       }
       if (!context.accountKey || !context.babyUid) {
@@ -111,6 +108,7 @@ Page({
     this.syncCamera();
   },
   onUnload() {
+    this.invalidatePreparationBatch();
     this._unloaded = true; this._pageVisible = false; this._epoch++; this._captureEpoch++; this._cameraContext = null;
     clearTimeout(this._availabilityTimer); this._availability = null;
     if (this._cancelPhoto) this._cancelPhoto();
@@ -118,7 +116,7 @@ Page({
   syncCamera() {
     if (this._unloaded) return;
     const cameraActive = !!(this._pageVisible && !this._cameraSuspended && !this.data.recognitionOpen &&
-      !this.data.pending && !this.data.saved && !this.data.existing && !this.data.cameraError && (this.data.loading || this.data.available));
+      !this.data.pending && !this.data.existing && !this.data.cameraError && (this.data.loading || this.data.available));
     if (cameraActive === this.data.cameraActive) return;
     this._cameraContext = null;
     this.setData({ cameraActive, cameraReady: false, cameraGeneration: this.data.cameraGeneration + 1 });
@@ -165,6 +163,7 @@ Page({
     const open = event.detail.open === true;
     const patch = { recognitionOpen: open };
     if (!open && this.data.recognitionOpen) {
+      this.invalidatePreparationBatch();
       // 关闭核对层即结束本次前台操作，不等待已失效的云请求返回。
       this._captureEpoch++; this._cameraSuspended = false; patch.capturing = false;
     }
@@ -173,35 +172,65 @@ Page({
   goBack() { wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/daily-feeding/index' }) }); },
   showPhotoHelp() {
     if (this.data.capturing) return;
-    wx.showModal({ title: this.data.recognitionKind === 'powder' ? '拍摄奶粉' : '拍摄食物',
-      content: this.data.packageCapture ? '先拍完整营养成分表，再拍同一商品的正面。点选图片位置可重拍，拍齐后点击识别。' : '食物实物拍清全貌即可。包装食品可选择“双面拍”，分别拍营养表与正面。', showCancel: false, confirmText: '知道了' });
+    wx.showModal({ title: '拍摄提示',
+      content: '食材、做好的菜选“拍食物”，拍清全貌；有营养成分表的食品选“拍包装”，分别拍营养表和包装正面。系统会自动判断类型。奶粉请到奶粉管理中按包装手动填写。', showCancel: false, confirmText: '知道了' });
   },
   retryAvailability() {
     if (!this.data.loading && !this.data.capturing) { this._availability = null; return this.onShow(); }
   },
-  selectRecognitionKind(event) {
-    const kind = event.currentTarget.dataset.kind;
-    if (!['powder', 'food'].includes(kind) || kind === this.data.recognitionKind ||
+  selectCaptureMode(event) {
+    const mode = event.currentTarget.dataset.mode;
+    if (!['food', 'package'].includes(mode) || (mode === 'package') === this.data.packageCapture ||
         this.data.capturing || this.data.recovering || this.data.pending) return;
     const component = this.selectComponent('#scanner');
     if (component && component.isBusy()) return;
     this.resetPhotoSlots();
-    this.setData({ recognitionKind: kind, packageCapture: kind === 'powder' });
+    this.setData({ packageCapture: mode === 'package', error: '' });
   },
   resetPhotoSlots() {
+    this.invalidatePreparationBatch();
     this.setData({ photoSlots: [{ label: '① 营养成分表', path: '' }, { label: '② 包装正面', path: '' }], activePhotoSlot: 0, packageReady: false });
-  },
-  togglePackageCapture() {
-    if (this.data.capturing || this.data.recognitionOpen || this.data.recognitionKind === 'powder') return;
-    this.resetPhotoSlots();
-    this.setData({ packageCapture: !this.data.packageCapture, error: '' });
   },
   selectPhotoSlot(event) {
     const index = Number(event.currentTarget.dataset.index);
     if (this.data.capturing || this.data.recognitionOpen || ![0, 1].includes(index)) return;
     // 先拍营养表；已有图片的位置可选中后重拍或从相册替换。
     if (index === 1 && !this.data.photoSlots[0].path) return;
+    // 重拍会建立新的采集批次，旧准备结果即使晚到也不能再被接管。
+    if (this.data.photoSlots[index].path) this.invalidatePreparationBatch();
     this.setData({ activePhotoSlot: index, packageReady: false, error: '' });
+  },
+  removePhotoSlot(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    if (!this.data.packageCapture || this.data.capturing || this.data.recognitionOpen || this.data.pending ||
+        this.data.recovering || ![0, 1].includes(index) || !this.data.photoSlots[index].path) return;
+    this.invalidatePreparationBatch();
+    const slots = this.data.photoSlots.map((slot, slotIndex) => slotIndex === index ? { label: slot.label, path: '' } : slot);
+    this.setData({ photoSlots: slots, activePhotoSlot: slots[0].path ? index : 0, packageReady: false, error: '' });
+  },
+  invalidatePreparationBatch(batch = this._preparationBatch) {
+    if (!batch || this._preparationBatch !== batch) return;
+    batch.active = false; this._preparationBatch = null;
+    const component = this.selectComponent('#scanner');
+    if (component) component.cancelPreviewPreparation(batch.token);
+  },
+  ensurePreparationBatch(component) {
+    const context = currentContext(); const contextKey = context.accountKey + ':' + context.babyUid;
+    const imageCount = this.data.packageCapture ? 2 : 1;
+    let batch = this._preparationBatch;
+    if (!batch || !batch.active || batch.contextKey !== contextKey || batch.imageCount !== imageCount) {
+      this.invalidatePreparationBatch();
+      batch = { token: {}, active: true, contextKey, imageCount };
+      this._preparationBatch = batch;
+    }
+    component.preparePreview({ batchToken: batch.token, imageCount,
+      isCurrent: () => {
+        const current = currentContext();
+        return !this._unloaded && batch.active && this._preparationBatch === batch &&
+          contextKey === current.accountKey + ':' + current.babyUid &&
+          imageCount === (this.data.packageCapture ? 2 : 1);
+      } });
+    return batch;
   },
   takePhoto() { return this.data.packageCapture && this.data.packageReady ? this.recognizePackage() : this.start('camera'); },
   chooseAlbum() { return this.start('album'); },
@@ -211,10 +240,11 @@ Page({
     if (!component || component.isBusy()) return;
     const epoch = ++this._captureEpoch; const key = this._contextKey;
     const slots = this.data.photoSlots;
+    const preparationBatch = this.ensurePreparationBatch(component);
     this._cameraSuspended = true; this.setData({ capturing: true, error: '' }); this.syncCamera();
     try {
       await component.startRecognition({ paths: slots.map(slot => slot.path), previewFrame: slots[0].previewFrame || null,
-        coverImageIndex: 1, mode: 'auto', recognitionKind: this.data.recognitionKind });
+        coverImageIndex: 1, mode: 'auto', preparationBatch: preparationBatch.token });
     } finally {
       if (this.isCurrentCapture(epoch, key)) {
         this._cameraSuspended = false; this.setData({ capturing: false }); this.syncCamera();
@@ -251,9 +281,17 @@ Page({
     if (component.isBusy()) return;
     const captureEpoch = ++this._captureEpoch;
     const key = this._contextKey;
-    const recognitionKind = this.data.recognitionKind;
     const layoutVersion = this._layoutVersion;
-    this.setData({ capturing: true, saved: null, existing: null, error: '' });
+    let handedOff = false; let captured = false;
+    let preparationBatch = null;
+    if (!this.data.packageCapture) {
+      this.invalidatePreparationBatch();
+      preparationBatch = this.ensurePreparationBatch(component);
+    } else if (this.data.photoSlots.some(slot => !!slot.path)) {
+      if (this.data.photoSlots[this.data.activePhotoSlot].path) this.invalidatePreparationBatch();
+      preparationBatch = this.ensurePreparationBatch(component);
+    }
+    this.setData({ capturing: true, existing: null, error: '' });
     try {
       let paths; let previewFrame = null;
       if (source === 'camera') {
@@ -278,9 +316,13 @@ Page({
         const slots = this.data.photoSlots.map((slot, slotIndex) => slotIndex === index ? { ...slot, path: paths[0], previewFrame } : slot);
         const next = slots.findIndex(slot => !slot.path);
         this.setData({ photoSlots: slots, activePhotoSlot: next < 0 ? index : next, packageReady: next < 0 });
+        if (!preparationBatch) preparationBatch = this.ensurePreparationBatch(component);
+        captured = true;
       } else {
         // 双面或单张均由模型自动判断食品类别，不再事后要求用户选择。
-        await component.startRecognition({ paths, previewFrame, coverImageIndex: 0, mode: 'auto', recognitionKind });
+        handedOff = true;
+        await component.startRecognition({ paths, previewFrame, coverImageIndex: 0, mode: 'auto',
+          preparationBatch: preparationBatch.token });
       }
     } catch (error) {
       if (this.isCurrentCapture(captureEpoch, key) && !/cancel/i.test(error.errMsg || error.message || '')) {
@@ -288,6 +330,7 @@ Page({
         this.setData({ error: message });
       }
     } finally {
+      if (!handedOff && !captured) this.invalidatePreparationBatch(preparationBatch);
       if (this.isCurrentCapture(captureEpoch, key)) {
         this._cameraSuspended = false;
         this.setData({ capturing: false, packageReady: this.data.packageCapture && this.data.photoSlots.every(slot => !!slot.path) });
@@ -297,8 +340,8 @@ Page({
   },
   onSaved(event) {
     if (event.detail.babyUid !== this.data.babyUid) return;
-    this.setData({ saved: event.detail, pending: null, existing: null, error: '' });
-    this.syncCamera();
+    this.continueScan();
+    wx.showToast({ title: '添加成功', icon: 'success' });
   },
   onExisting(event) {
     if (event.detail.babyUid && event.detail.babyUid !== this.data.babyUid) return;
@@ -307,7 +350,7 @@ Page({
   },
   continueScan() {
     this.resetPhotoSlots();
-    this.setData({ saved: null, existing: null, error: '', pending: pendingConfirmation(this.data.babyUid) });
+    this.setData({ existing: null, error: '', pending: pendingConfirmation(this.data.babyUid) });
     this.syncCamera();
   },
   async recover() {
@@ -319,19 +362,18 @@ Page({
       const result = await recoverConfirmation(pending);
       if (result.state === 'saved') invalidateSearchForBaby(pending.babyUid, { ...result.savedResult, accountKey: key.split(':')[0] });
       if (!this.isCurrent(epoch, key)) return;
-      if (result.state === 'saved') this.setData({ pending: null, saved: result.savedResult, error: '' });
+      if (result.state === 'saved') this.onSaved({ detail: { babyUid: pending.babyUid } });
       else if (['failed', 'not_submitted'].includes(result.state)) this.setData({ pending: null, error: '上次资料未保存，可以重新识别' });
       else this.setData({ error: result.state === 'processing' ? '仍在保存，请稍后恢复状态' : '暂不能确认保存结果，请稍后恢复，避免重复添加' });
     } catch (error) { if (this.isCurrent(epoch, key)) this.setData({ error: error.message }); }
     finally { if (this.isCurrent(epoch, key)) { this.setData({ recovering: false }); this.syncCamera(); } }
   },
-  openManual(event) {
-    const kind = event.currentTarget.dataset.kind || this.data.recognitionKind;
-    wx.navigateTo({ url: kind === 'powder' ? '/pkg-milk/powder-management/index' : '/pkg-milk/food-management/index' });
+  openManual() {
+    wx.navigateTo({ url: '/pkg-milk/food-management/index' });
   },
   openLibrary() {
     if (!this.isCurrent(this._epoch, this._contextKey)) { wx.showToast({ title: '宝宝已切换，请重新打开资料', icon: 'none' }); return; }
-    const value = this.data.existing || this.data.saved || {};
+    const value = this.data.existing || {};
     const powder = value.targetType === 'powder' || value.mode === 'powder_label' || value.powderId;
     const id = value.itemId || value.powderId || value.foodId || value.targetId || '';
     wx.navigateTo({ url: (powder ? '/pkg-milk/powder-management/index' : '/pkg-milk/food-management/index') + '?searchId=' + encodeURIComponent(id) + '&searchScope=mine&searchBabyUid=' + encodeURIComponent(this.data.babyUid) });

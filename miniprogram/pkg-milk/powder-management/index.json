@@ -1,6 +1,3 @@
 {
-  "navigationBarTitleText": "奶粉管理",
-  "usingComponents": {
-    "nutrition-recognition": "../components/nutrition-recognition/index"
-  }
+  "navigationBarTitleText": "奶粉管理"
 }

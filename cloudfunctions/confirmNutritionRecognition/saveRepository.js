@@ -10,7 +10,8 @@ async function saveFood(tx, session, event, patch, meta, now) {
       event.expectedVersion !== session.targetFoodVersion) fail('VERSION_CONFLICT', '确认对象与识别时不同，请重新核对');
   let id = session.targetFoodId || (sourceId ? hash('food-source:' + session.babyUid + ':' + sourceId) : hash('food:' + event.sessionId));
   let current;
-  const identityKey = session.purpose === 'preview' && strongIdentityKey(session.confirmedIdentity, 'food');
+  // 明确确认重复添加时按本次会话新建，不能命中已有食物的身份文档。
+  const identityKey = session.purpose === 'preview' && !(session.binding && session.binding.allowDuplicate) && strongIdentityKey(session.confirmedIdentity, 'food');
   if (identityKey) {
     // 不同识别会话的同一强身份写入同一文档，让事务重试检测并发新增。
     id = hash('food-identity:' + session.babyUid + ':' + identityKey);
@@ -48,7 +49,7 @@ async function saveFood(tx, session, event, patch, meta, now) {
     babyUid: session.babyUid, sharedBabyUids: Array.from(new Set([].concat(current && current.sharedBabyUids || [], session.babyUid))),
     isSystem: false, ownerType: 'baby', sourceType: source ? 'user_override' : current && current.sourceType || 'user_custom',
     recordType: 'food_catalog_item', schemaVersion: 2, status: 'active', isLiquid: patch.unit === 'ml',
-    image, nutritionSource: 'user_confirmed', recognitionMeta: meta,
+    image, nutritionSource: 'user_confirmed', isPhotoAiRecognized: true, recognitionMeta: meta,
     version: Number(current && current.version || 0) + 1,
     createdBy: current && current.createdBy || session.ownerOpenid,
     createdAt: current && current.createdAt || now, updatedAt: now };

@@ -86,7 +86,7 @@
                     <text class="food-tag system" wx:if="{{item.isSystem}}">系统预设</text>
                     <text class="food-tag snapshot" wx:elif="{{item.isSystemSnapshot}}">系统修订</text>
                     <text class="food-tag custom" wx:else>我的</text>
-                    <text class="food-tag estimate" wx:if="{{item.usesModelEstimate}}">含AI估算</text>
+                    <text class="nutrition-estimate-tag" wx:if="{{item.usesModelEstimate}}">含 AI 估算</text>
                   </view>
                   <view class="food-meta-row">
                     <text class="food-path">{{item.categoryLevel2 || item.category}}</text>

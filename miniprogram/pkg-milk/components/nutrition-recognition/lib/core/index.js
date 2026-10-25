@@ -7,5 +7,6 @@ const reference = require('./reference');
 const selection = require('./selection');
 const estimate = require('./estimate');
 const classification = require('./classification');
+const identitySafety = require('./identitySafety');
 
-module.exports = { ...contracts, ...normalize, ...reference, ...selection, ...estimate, ...classification };
+module.exports = { ...contracts, ...normalize, ...reference, ...selection, ...estimate, ...classification, ...identitySafety };

@@ -1,4 +1,5 @@
 @import "../../styles/search-scan.wxss";
+@import "../../styles/nutrition-tags.wxss";
 page { background: #fff9e6; color: #473a22; }
 .search-page { padding: 0 24rpx calc(40rpx + env(safe-area-inset-bottom)); box-sizing: border-box; }
 /* 显式重置微信 v2 按钮的默认宽度，避免挤占分类、筛选栏和快捷词。 */
@@ -79,6 +80,7 @@ page { background: #fff9e6; color: #473a22; }
 .condition input { height: 72rpx; padding: 0 12rpx; border: 1rpx solid #e6dbc2; border-radius: 10rpx; box-sizing: border-box; background: #fffdf7; text-align: center; }
 .search-page .add-condition { display: flex; align-items: center; justify-content: flex-start; min-height: 88rpx; color: #8b692a; font-size: 26rpx; }
 .hint { display: block; padding: 10rpx 0; color: #9a8866; font-size: 23rpx; line-height: 1.65; }
+.nutrient-value-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10rpx; min-width: 0; }
 .search-page .primary { display: flex; align-items: center; justify-content: center; min-height: 88rpx; padding: 18rpx 24rpx; border-radius: 16rpx; background: #ffcb46; color: #594018; font-size: 29rpx; font-weight: 600; }
 .search-page .filter-apply { margin-top: 12rpx !important; width: 100%; }
 .suggestions { margin-top: 16rpx; padding: 0 20rpx; border-radius: 16rpx; background: #fffdf7; }

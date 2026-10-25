@@ -7,22 +7,25 @@
       <cover-view class="nav-title" style="line-height: {{navHeight}}px;">拍照识别</cover-view>
     </cover-view>
 
-    <cover-view wx:if="{{packageCapture && !pending && !saved && !existing}}" class="package-slots" style="top: {{navTop + navHeight + 14}}px;">
-      <cover-view wx:for="{{photoSlots}}" wx:key="label" class="photo-slot {{activePhotoSlot === index && !packageReady ? 'active' : ''}} {{item.path ? 'filled' : ''}}" data-index="{{index}}" bindtap="selectPhotoSlot" aria-role="button" aria-label="{{item.label}}{{item.path ? '，已拍摄，点选后可替换' : '，待拍摄'}}">
-        <cover-image wx:if="{{item.path}}" class="slot-image" src="{{item.path}}"></cover-image>
-        <cover-view wx:else class="slot-placeholder">＋</cover-view>
-        <cover-view class="slot-caption">{{item.label}}</cover-view>
+    <cover-view wx:if="{{packageCapture && !pending && !existing}}" class="package-slots" style="top: {{navTop + navHeight + 3}}px;">
+      <cover-view wx:for="{{photoSlots}}" wx:key="label" class="photo-slot-wrapper">
+        <cover-view class="photo-slot {{activePhotoSlot === index && !packageReady ? 'active' : ''}} {{item.path ? 'filled' : ''}}" data-index="{{index}}" bindtap="selectPhotoSlot" aria-role="button" aria-label="{{item.label}}{{item.path ? '，已拍摄，点选后可替换' : '，待拍摄'}}">
+          <cover-image wx:if="{{item.path}}" class="slot-image" src="{{item.path}}"></cover-image>
+          <cover-view wx:else class="slot-placeholder">＋</cover-view>
+          <cover-view class="slot-caption">{{item.label}}</cover-view>
+        </cover-view>
+        <cover-view wx:if="{{item.path && !capturing}}" class="slot-remove" data-index="{{index}}" catchtap="removePhotoSlot" aria-role="button" aria-label="重拍{{item.label}}"><cover-view class="slot-remove-icon">×</cover-view></cover-view>
       </cover-view>
     </cover-view>
 
     <block wx:if="{{cameraActive}}">
-      <cover-view class="camera-hint">{{packageCapture ? packageReady ? '两面已拍齐，点击识别' : activePhotoSlot === 0 ? '拍清完整营养成分表，包含表头' : '拍清包装正面，包含名称与品牌' : '将食物或完整营养表放入框内'}}</cover-view>
+      <cover-view class="camera-hint">{{packageCapture ? packageReady ? '两面已拍齐，点击识别' : activePhotoSlot === 0 ? '拍清完整营养成分表，包含表头' : '拍清包装正面，包含名称与品牌' : '食物拍清全貌，有营养表可选“拍包装”'}}</cover-view>
       <cover-view id="captureFrame" class="viewfinder" aria-label="框内为识别范围"></cover-view>
     </block>
 
-    <cover-view wx:if="{{(loadingSlow || capturing || error) && !pending && !saved && !existing && (loading || available)}}" class="camera-status" style="top: {{navTop + navHeight + (packageCapture ? 86 : 16)}}px;">{{loadingSlow ? '正在准备拍照…' : capturing ? '正在准备图片…' : error}}</cover-view>
+    <cover-view wx:if="{{(loadingSlow || capturing || error) && !pending && !existing && (loading || available)}}" class="camera-status" style="top: {{navTop + navHeight + (packageCapture ? 86 : 16)}}px;">{{loadingSlow ? '正在准备拍照…' : capturing ? '正在准备图片…' : error}}</cover-view>
 
-    <view class="screen-state {{pending || saved || existing ? 'result-state' : ''}}" wx:if="{{pending || saved || existing || cameraError || (!loading && !available)}}" style="top: {{navTop + navHeight + 40}}px;">
+    <view class="screen-state {{pending || existing ? 'result-state' : ''}}" wx:if="{{pending || existing || cameraError || (!loading && !available)}}" style="top: {{navTop + navHeight + 40}}px;">
       <scroll-view class="state-scroll" scroll-y="true">
         <view class="state-content" wx:if="{{pending}}">
           <text class="state-title">上次保存结果待确认</text>
@@ -30,10 +33,9 @@
           <text class="state-error" wx:if="{{error}}">{{error}}</text>
           <button class="state-primary" bindtap="recover" loading="{{recovering}}" disabled="{{recovering}}">恢复保存状态</button>
         </view>
-        <view class="state-content" wx:elif="{{saved || existing}}">
-          <text class="state-title">{{saved ? '已加入资料库' : '资料库已有相同物品'}}</text>
-          <text class="state-description">{{saved ? saved.name || saved.finalValues.name || '资料已保存' : existing.name || '查看并核对已有资料'}}</text>
-          <text class="state-caption" wx:if="{{saved}}">{{babyName || '当前宝宝'}} · 未自动生成食用记录</text>
+        <view class="state-content" wx:elif="{{existing}}">
+          <text class="state-title">资料库已有相同物品</text>
+          <text class="state-description">{{existing.name || '查看并核对已有资料'}}</text>
           <button class="state-primary" bindtap="openLibrary">查看资料</button>
           <button class="state-secondary" bindtap="continueScan">继续拍摄</button>
           <button class="state-link" bindtap="returnToSearch">{{fromSearch ? '返回搜索' : '到搜索查看'}}</button>
@@ -42,7 +44,7 @@
           <text class="state-title">暂时无法识别</text>
           <text class="state-description">{{error}}</text>
           <button class="state-primary" bindtap="retryAvailability" disabled="{{capturing}}">重试</button>
-          <button class="state-link" bindtap="openManual">手动填写{{recognitionKind === 'powder' ? '奶粉' : '食物'}}资料</button>
+          <button class="state-link" bindtap="openManual">手动填写食物资料</button>
         </view>
         <view class="state-content" wx:else>
           <text class="state-title">{{cameraPermissionDenied ? '允许使用相机' : '相机暂不可用'}}</text>
@@ -52,11 +54,10 @@
       </scroll-view>
     </view>
 
-    <cover-view class="camera-controls" wx:if="{{!pending && !saved && !existing}}">
-      <cover-view class="capture-mode" wx:if="{{recognitionKind === 'food'}}" bindtap="togglePackageCapture" aria-role="button" aria-label="{{packageCapture ? '切换为单张拍摄' : '包装食品切换为双面拍摄'}}">{{packageCapture ? '包装双面拍 · 切换单张' : '包装食品？双面拍 ›'}}</cover-view>
+    <cover-view class="camera-controls" wx:if="{{!pending && !existing}}">
       <cover-view class="recognition-tabs {{capturing ? 'controls-disabled' : ''}}">
-        <cover-view class="recognition-tab {{recognitionKind === 'food' ? 'selected' : ''}}" data-kind="food" bindtap="selectRecognitionKind" aria-role="button" aria-label="识别食物{{recognitionKind === 'food' ? '，已选中' : ''}}">食物</cover-view>
-        <cover-view class="recognition-tab {{recognitionKind === 'powder' ? 'selected' : ''}}" data-kind="powder" bindtap="selectRecognitionKind" aria-role="button" aria-label="识别奶粉{{recognitionKind === 'powder' ? '，已选中' : ''}}">奶粉</cover-view>
+        <cover-view class="recognition-tab {{!packageCapture ? 'selected' : ''}}" data-mode="food" bindtap="selectCaptureMode" aria-role="button" aria-label="拍食物，全貌单张{{!packageCapture ? '，已选中' : ''}}">拍食物</cover-view>
+        <cover-view class="recognition-tab {{packageCapture ? 'selected' : ''}}" data-mode="package" bindtap="selectCaptureMode" aria-role="button" aria-label="拍包装，营养表与正面各一张{{packageCapture ? '，已选中' : ''}}">拍包装</cover-view>
       </cover-view>
       <cover-view class="capture-actions">
         <cover-view class="side-action {{!available || loading || capturing ? 'controls-disabled' : ''}}" bindtap="chooseAlbum" aria-role="button" aria-label="从相册选择">
@@ -76,5 +77,5 @@
     </cover-view>
   </block>
 
-  <nutrition-recognition id="scanner" mode="auto" recognition-kind="{{recognitionKind}}" purpose="preview" show-trigger="{{false}}" baby-uid="{{babyUid}}" baby-name="{{babyName}}" navigation-top="{{navTop}}" navigation-height="{{navHeight}}" form-session-id="{{formSessionId}}" category-options="{{categories}}" powder-category-options="{{powderCategories}}" protein-options="{{proteinOptions}}" bind:visibilitychange="onRecognitionVisibility" bind:saved="onSaved" bind:existing="onExisting" />
+  <nutrition-recognition id="scanner" mode="auto" purpose="preview" show-trigger="{{false}}" baby-uid="{{babyUid}}" baby-name="{{babyName}}" navigation-top="{{navTop}}" navigation-height="{{navHeight}}" form-session-id="{{formSessionId}}" category-options="{{categories}}" protein-options="{{proteinOptions}}" bind:visibilitychange="onRecognitionVisibility" bind:saved="onSaved" bind:existing="onExisting" />
 </view>

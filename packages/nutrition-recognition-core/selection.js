@@ -3,9 +3,13 @@
 const { FIELDS, text, number, fail, validateFinalPatch } = require('./contracts');
 const { convertBasis } = require('./normalize');
 const { validateEstimateBinding } = require('./estimate');
+const { identityRequirement } = require('./identitySafety');
 
-function buildConfirmedPatch({ observation, reference, estimate, confirmedIdentity, comparisonVersion,
-  decisions = [], targetBasis, mode, name, mixRatio }) {
+function buildConfirmedPatch({ observation, reference, estimate, confirmedIdentity, identityConfirmation, comparisonVersion,
+  decisions = [], targetBasis, mode, name, mixRatio, proteinSource }) {
+  if (identityRequirement({ mode, identity: confirmedIdentity, observation, identityConfirmation }).required) {
+    fail('IDENTITY_INSUFFICIENT', '具体种类与制备状态尚未确认，营养待补充');
+  }
   const label = convertBasis(observation.nutrients, observation.basis, targetBasis, observation.formula);
   const standard = reference && convertBasis(reference.nutrients, reference.basis, targetBasis);
   const values = {}; const fieldSources = {}; const evidence = {}; const missingFields = [];
@@ -15,14 +19,25 @@ function buildConfirmedPatch({ observation, reference, estimate, confirmedIdenti
   if (decisions.length > FIELDS.length || new Set(decisions.map(x => x.path)).size !== decisions.length) {
     fail('VALIDATION_FAILED', '选值字段重复或过多');
   }
+  if (proteinSource === 'special' && decisions.some(decision => decision.source === 'model_estimate')) {
+    fail('VALIDATION_FAILED', '特殊蛋白不能采用通用AI估算，请核对标签、产品资料或手工填写');
+  }
   const estimated = decisions.some(decision => decision.source === 'model_estimate') ? validateEstimateBinding(estimate,
     { mode, identity: confirmedIdentity || observation.identityCandidates[0], observation, reference,
-      basis: targetBasis, comparisonVersion }) : null;
+      basis: targetBasis, comparisonVersion, identityConfirmation }) : null;
   FIELDS.forEach(field => {
     const decision = decisions.find(x => x.path === field);
     let value = null;
     if (decision) {
       if (!['label', 'reference', 'manual', 'model_estimate'].includes(decision.source)) fail('VALIDATION_FAILED', '营养来源无效');
+      if (mode === 'food_label' && !['label', 'manual'].includes(decision.source)) {
+        fail('VALIDATION_FAILED', '包装食品以实拍营养标签为准，缺失指标请补拍或手填');
+      }
+      if ((observation.nutrients[field] || {}).validationIssue && decision.source !== 'manual' &&
+          !(decision.source === 'reference' && identityConfirmation && identityConfirmation.source === 'user_selected_reference' &&
+            reference && identityConfirmation.referenceId === reference.referenceId)) {
+        fail('VALIDATION_FAILED', field + '的标签数值与证据冲突，请对照包装手工核对');
+      }
       if (decision.source === 'manual') value = number(decision.value);
       else if (decision.source === 'model_estimate') {
         if (!estimated.fields.includes(field)) fail('VALIDATION_FAILED', '已有标签或参考值的指标不能用AI估算替代');

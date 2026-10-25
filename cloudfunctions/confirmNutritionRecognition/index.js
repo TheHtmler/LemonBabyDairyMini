@@ -1,6 +1,7 @@
 'use strict';
 const { fail, number, text } = require('./lib/core/contracts');
 const { buildConfirmedPatch } = require('./lib/core/selection');
+const { assertFoodRecognition, identityRequirement } = require('./lib/core/identitySafety');
 const { runtime, ownedSession, getDocument, transaction, readBabyFoodCatalog, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
 const { saveFood, savePowder } = require('./saveRepository');
 const { sortProfiles } = require('./lib/core/profile');
@@ -21,6 +22,7 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
         if (session.operationId !== event.operationId || !session.confirmation || session.confirmation.requestHash !== payloadHash) fail('REQUEST_CONFLICT', '草稿已经保存，请查看原保存结果');
         return { ok: true, ...session.savedResult };
       }
+      assertFoodRecognition({ mode: session.mode, observation: session.observation, identity: session.confirmedIdentity });
       if (!session.observation || !Number.isInteger(event.expectedVersion) || event.expectedVersion < 0 ||
           !Array.isArray(event.decisions) || !text(event.operationId, 100)) fail('INVALID_INPUT', '确认保存参数无效');
       if (event.comparisonVersion !== session.comparisonVersion) fail('COMPARISON_STALE', '比对结果已变化，请重新核对');
@@ -36,7 +38,12 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
         const current = sortProfiles(profiles.data || [])[0];
         if ((current && current._id || '') !== session.targetProfileId) fail('VERSION_CONFLICT', '营养档案已变化，请重新加载');
       }
-      if (session.purpose === 'preview') {
+      // 共享修订记录使不同会话的查重与新增串行化，覆盖没有强身份键的成品食品。
+      // shortcut: 仅覆盖识别保存，其他食物写入迁到云端后应共用此修订号。
+      const catalogGuardId = session.mode !== 'powder_label' ? hash('food-catalog-guard:' + session.babyUid) : '';
+      const catalogGuard = catalogGuardId ? await getDocument(db, SESSION_COLLECTION, catalogGuardId) : null;
+      const catalogRevision = Number(catalogGuard && catalogGuard.version || 0);
+      if (session.purpose === 'preview' && !session.binding.allowDuplicate) {
         const items = session.mode === 'powder_label' ? (session.targetProfileId ? (await getDocument(db, 'milk_nutrition_profiles', session.targetProfileId) || {}).formulaPowders || [] : (session.seedProfile || {}).formulaPowders || []) : await readBabyFoodCatalog(db, session.babyUid);
         const duplicates = findDuplicates(items, session.confirmedIdentity, session.mode === 'powder_label' ? 'powder' : 'food');
         if (duplicates.exact.length) fail('VALIDATION_FAILED', '资料库已有相同身份的物品，请重新核对并查看已有资料');
@@ -55,6 +62,8 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
       if (!(basis.quantity > 0) || !['g', 'ml', 'portion'].includes(basis.unit)) fail('VALIDATION_FAILED', '请确认营养计量基准');
       const confirmedIdentity = session.confirmedIdentity || session.observation.identityCandidates[0];
       if (!confirmedIdentity || !confirmedIdentity.name) fail('VALIDATION_FAILED', '请先补拍包装正面或确认商品名称');
+      if (identityRequirement({ mode: session.mode, identity: confirmedIdentity, observation: session.observation,
+        identityConfirmation: session.identityConfirmation }).required) fail('IDENTITY_INSUFFICIENT', '具体种类与制备状态尚未确认，营养待补充');
       if (searchText((event.form || {}).name) !== searchText(confirmedIdentity.name)) {
         fail('VALIDATION_FAILED', '表单名称与已核对身份不同，请重新确认名称并查找参考');
       }
@@ -68,12 +77,12 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
       } : (event.form || {}).mixRatio;
       const confirmed = buildConfirmedPatch({ observation: session.observation, reference: session.selectedReference,
         estimate: session.estimateStatus === 'ready' ? session.estimate : null,
-        confirmedIdentity, comparisonVersion: session.comparisonVersion,
+        confirmedIdentity, identityConfirmation: session.identityConfirmation, comparisonVersion: session.comparisonVersion,
         decisions: event.decisions, targetBasis: basis, mode: session.mode,
-        name: (event.form || {}).name, mixRatio });
+        name: (event.form || {}).name, mixRatio, proteinSource: (event.form || {}).proteinSource });
       const timestamp = new Date(now());
       const meta = { ...confirmed.recognitionMeta, sessionId: event.sessionId, requestId: session.requestId,
-        modelInfo: session.result.modelInfo, confirmedIdentity,
+        modelInfo: session.result.modelInfo, confirmedIdentity, identityConfirmation: session.identityConfirmation || null,
         comparisonStatus: session.comparison && session.comparison.status || 'not_found',
         confirmedAt: timestamp, confirmedBy: context.OPENID };
       if (session.mode === 'powder_label') meta.mixRatioSource = ratioSource;
@@ -85,7 +94,13 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
           return latest.savedResult;
         }
         if (!latest || latest.version !== session.version || latest.comparisonVersion !== event.comparisonVersion ||
-            new Date(latest.expiresAt).getTime() <= now() || !latest.confirmation || latest.confirmation.lease !== claimed.lease) fail('COMPARISON_STALE', '草稿状态已变化，请重新核对');
+            new Date(latest.expiresAt).getTime() <= now() || !latest.confirmation || latest.confirmation.state !== 'processing' ||
+            latest.confirmation.leaseUntil <= now() || latest.confirmation.lease !== claimed.lease) fail('COMPARISON_STALE', '草稿状态已变化，请重新核对');
+        if (catalogGuardId) {
+          const currentGuard = await getDocument(tx, SESSION_COLLECTION, catalogGuardId);
+          if (Number(currentGuard && currentGuard.version || 0) !== catalogRevision) fail('COMPARISON_STALE', '资料库已有新增或更新，请重新核对重复项');
+          await tx.collection(SESSION_COLLECTION).doc(catalogGuardId).set({ recordType: 'food_catalog_guard', babyUid: session.babyUid, version: catalogRevision + 1 });
+        }
         if (session.selectedReference) {
           const record = await getDocument(tx, 'nutrition_reference', session.selectedReference._id);
           if (!record || !record.source.verified || record.status !== 'active' ||
@@ -112,7 +127,7 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
       return { ok: true, ...result };
     } catch (error) {
       // 网络/数据库异常可能发生于提交响应丢失时，不把未知结果写成确定失败。
-      if (claimed && ['INVALID_INPUT', 'VALIDATION_FAILED', 'VERSION_CONFLICT', 'COMPARISON_STALE', 'FORBIDDEN', 'REFERENCE_UNAVAILABLE', 'REQUEST_CONFLICT'].includes(error.code)) {
+      if (claimed && ['INVALID_INPUT', 'VALIDATION_FAILED', 'IDENTITY_INSUFFICIENT', 'VERSION_CONFLICT', 'COMPARISON_STALE', 'FORBIDDEN', 'REFERENCE_UNAVAILABLE', 'REQUEST_CONFLICT'].includes(error.code)) {
         await markConfirmationFailed(db, event.sessionId, event.operationId, claimed.lease, error.code).catch(() => {});
       }
       return publicFailure(error, event.requestId);

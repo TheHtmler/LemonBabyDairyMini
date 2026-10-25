@@ -110,13 +110,52 @@ const PROTEIN_GROUPS = {
   special_formula: { label: '有明确产品依据的特殊营养配方', quality: null }
 };
 
-function normalizeClassification(raw, food, catalog, { allowSpecial = true } = {}) {
+function hasProteinGroupSupport(proteinGroup, food, requested, observation) {
+  if (['unknown', 'mixed'].includes(proteinGroup)) return true;
+  const source = [identity(food).name, observation && observation.packageEvidence &&
+    observation.packageEvidence.identity && observation.packageEvidence.identity.text].filter(Boolean).join(' ');
+  const protein = observation && observation.nutrients && observation.nutrients.protein;
+  const labelZero = !!(protein && protein.state === 'present' && protein.value === 0);
+  // 商品口味不等于配料或主要蛋白来源，不能凭“牛奶味糖果”派生乳蛋白质量。
+  if (/口味|风味|(?:奶|肉|蛋|豆|芝士|奶酪)味|flavou?r(?:ed)?/i.test(source)) return false;
+  const soy = /大豆|黄豆|黑大豆|青大豆|毛豆|豆腐|豆干|豆浆|豆奶|腐竹|\bsoy(?:bean)?s?\b/i.test(source);
+  const otherLegume = /红豆|赤小豆|绿豆|芸豆|豌豆|蚕豆|鹰嘴豆|扁豆|眉豆|豇豆|\b(?:adzuki|mung|kidney|pinto|navy)\s+beans?\b|\blentils?\b|\bchickpeas?\b|\bpeas?\b/i.test(source);
+  // 标签零值可能取整；有明确来源名称时仍可保留，不能仅凭零值否定真实来源。
+  if (proteinGroup === 'other_legume') return otherLegume && !soy;
+  if (proteinGroup === 'soy') return soy && !otherLegume;
+  if (proteinGroup === 'collagen') return /胶原|明胶|皮筋|肉皮|猪皮|牛筋|\bcollagen\b|\bgelatin\b/i.test(source);
+  if (proteinGroup === 'special_formula') return /特殊医学用途|特殊营养|全营养配方|\bmedical\s+food\b|\bspecial\s+formula\b/i.test(source);
+  const families = {
+    meat: ['肉禽类'], seafood: ['水产类'], egg: ['蛋类'], dairy: ['乳类及制品'], soy: ['豆制品'],
+    grain_tuber: ['主食及谷薯'], vegetable_fruit: ['蔬菜类', '水果类']
+  };
+  if (proteinGroup === 'nuts_seeds') return /坚果|种子|果仁|\bnuts?\b|\bseeds?\b/i.test(source) ||
+    !labelZero && /坚果|种子|果仁|nut|seed/i.test(requested);
+  const groupFamilies = families[proteinGroup] || [];
+  const explicit = CATEGORY_FAMILIES.some(family => groupFamilies.includes(family.name) &&
+    (family.food.test(source) || family.category.test(source)));
+  if (explicit) return true;
+  if (proteinGroup === 'grain_tuber' && /山药|淮山|土豆|马铃薯|红薯|甘薯|番薯|紫薯|芋头/.test(source)) return true;
+  // 具体食材已支持另一类别时，模型自己的分类名称不能反过来充当来源证据。
+  if (CATEGORY_FAMILIES.some(family => family.food.test(source))) return false;
+  // 分类族只能辅助非零或未读到蛋白含量的食品；零蛋白且来源只靠模型猜测时不派生质量。
+  return !labelZero && CATEGORY_FAMILIES.some(family => groupFamilies.includes(family.name) && family.category.test(requested));
+}
+
+function normalizeClassification(raw, food, catalog, { allowSpecial = true, observation = null, warnings = [] } = {}) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const requested = categoryText(raw.category); const matched = matchCategory(requested, catalog);
   // 完整本地标识可直接匹配；未知的新分类名称超限时不静默截断。
   const category = matched ? matched.value : requested.length <= 60 ? normalizeCategoryName(requested) : '';
-  const proteinGroup = typeof raw.proteinGroup === 'string' && Object.prototype.hasOwnProperty.call(PROTEIN_GROUPS, raw.proteinGroup) ?
+  let proteinGroup = typeof raw.proteinGroup === 'string' && Object.prototype.hasOwnProperty.call(PROTEIN_GROUPS, raw.proteinGroup) ?
     raw.proteinGroup : 'unknown';
+  const classificationWarnings = [];
+  if (!hasProteinGroupSupport(proteinGroup, food, requested, observation)) {
+    proteinGroup = 'unknown';
+    const message = '蛋白来源分类缺少与食品身份一致的依据，已保留为未知';
+    classificationWarnings.push(message);
+    if (Array.isArray(warnings) && !warnings.includes(message)) warnings.push(message);
+  }
   const group = PROTEIN_GROUPS[proteinGroup];
   let proteinSource = null; let proteinQuality = null;
   if (group.quality) {
@@ -127,7 +166,8 @@ function normalizeClassification(raw, food, catalog, { allowSpecial = true } = {
   if (!category && !proteinSource) return null;
   return { category: matched ? matched.value : category, categoryMatched: !!matched,
     proteinGroup, proteinSource, proteinQuality, proteinQualitySource: 'source_group_rule',
-    identity: identity(food), source: 'model_suggestion' };
+    identity: identity(food), source: 'model_suggestion',
+    ...(classificationWarnings.length ? { warnings: classificationWarnings } : {}) };
 }
 
 module.exports = { PROTEIN_GROUPS, normalizeCategoryCatalog, normalizeCategoryName, matchCategory, recommendCategories, classificationIdentityKey, normalizeClassification };

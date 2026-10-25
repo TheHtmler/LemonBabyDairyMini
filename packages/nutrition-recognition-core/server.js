@@ -46,10 +46,31 @@ async function assertAccess(db, openid, babyUid) {
 async function ownedSession(db, openid, babyUid, sessionId, now = Date.now()) {
   if (!/^[a-f0-9]{64}$/.test(sessionId || '')) fail('INVALID_INPUT', '识别草稿ID无效');
   await assertAccess(db, openid, babyUid);
+  return readOwnedSession(db, openid, babyUid, sessionId, now);
+}
+
+async function readOwnedSession(db, openid, babyUid, sessionId, now) {
   const session = await getDocument(db, SESSION_COLLECTION, sessionId);
   if (!session || session.ownerOpenid !== openid || session.babyUid !== babyUid) fail('FORBIDDEN', '无法访问该识别草稿');
   if (session.status !== 'saved' && new Date(session.expiresAt).getTime() <= now) fail('SESSION_EXPIRED', '识别草稿已过期，请重新识别');
   return session;
+}
+
+// 作用域在每次请求内创建，只复用闭包绑定身份的鉴权，不接收客户端跳过标记。
+function createRequestAccess(db, openid, babyUid) {
+  let accessPromise;
+  const checkAccess = () => {
+    if (!accessPromise) accessPromise = assertAccess(db, openid, babyUid);
+    return accessPromise;
+  };
+  return {
+    assertAccess: checkAccess,
+    async ownedSession(sessionId, now = Date.now()) {
+      if (!/^[a-f0-9]{64}$/.test(sessionId || '')) fail('INVALID_INPUT', '识别草稿ID无效');
+      await checkAccess();
+      return readOwnedSession(db, openid, babyUid, sessionId, now);
+    }
+  };
 }
 
 async function transaction(db, action) { return db.runTransaction(action); }
@@ -101,7 +122,7 @@ function publicFailure(error, requestId, context = {}) {
   const source = error && typeof error === 'object' ? error : {};
   const allowed = new Set(['CONFIG_MISSING', 'INVALID_INPUT', 'FORBIDDEN', 'FREE_QUOTA_EXHAUSTED',
     'MODEL_TIMEOUT', 'MODEL_UNAVAILABLE', 'INVALID_MODEL_RESULT', 'SESSION_EXPIRED',
-    'REFERENCE_UNAVAILABLE', 'COMPARISON_STALE', 'VERSION_CONFLICT', 'VALIDATION_FAILED',
+    'REFERENCE_UNAVAILABLE', 'COMPARISON_STALE', 'VERSION_CONFLICT', 'VALIDATION_FAILED', 'IDENTITY_INSUFFICIENT',
     'SAVE_FAILED', 'RECOGNITION_IN_PROGRESS', 'SERVICE_UNAVAILABLE', 'AI_UNAVAILABLE', 'AI_RUNNING', 'AI_UNKNOWN', 'DAILY_LIMIT', 'REQUEST_CONFLICT', 'SAVE_PROCESSING']);
   const stage = Object.prototype.hasOwnProperty.call(FAILURE_STAGES, context.stage) ? context.stage : '';
   const action = ['prepare', 'recognize', 'estimate', 'search', 'select', 'confirm'].includes(context.action) ? context.action : 'unknown';
@@ -119,4 +140,4 @@ function publicFailure(error, requestId, context = {}) {
   return { ok: false, requestId: text(requestId, 100), code, message, ...(stage ? { stage } : {}) };
 }
 
-module.exports = { runtime, hash, getDocument, assertAccess, ownedSession, transaction, readBabyFoodCatalog, publicFailure, SESSION_COLLECTION };
+module.exports = { runtime, hash, getDocument, assertAccess, ownedSession, createRequestAccess, transaction, readBabyFoodCatalog, publicFailure, SESSION_COLLECTION };

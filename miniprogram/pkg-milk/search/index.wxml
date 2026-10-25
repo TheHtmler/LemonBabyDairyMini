@@ -92,9 +92,9 @@
   <view class="preview" wx:if="{{preview}}" role="dialog" aria-label="资料预览">
     <text class="search-baby">所属宝宝：{{babyName}}</text>
     <view class="preview-header"><view class="preview-heading"><text class="source-tag {{preview.source}}">{{preview.sourceText}}</text><text class="preview-title">{{preview.name}}</text></view><button class="icon-button" bindtap="closePreview" aria-label="关闭预览"><view class="ss-icon ss-icon-close"></view></button></view>
-    <text class="preview-basis">{{preview.type === 'medication' ? '已记录的药物信息' : preview.type === 'recipe' ? '食谱配料' : preview.basisText}}</text><text wx:if="{{preview.estimate}}" class="hint">包含已采用的 AI 估算值</text>
+    <text class="preview-basis">{{preview.type === 'medication' ? '已记录的药物信息' : preview.type === 'recipe' ? '食谱配料' : preview.basisText}}</text>
     <scroll-view scroll-y="true" class="preview-body">
-      <view wx:if="{{preview.hasNutrition}}" class="preview-nutrient" wx:for="{{preview.values}}" wx:key="key"><text>{{item.label}}</text><text class="nutrient-value">{{item.value}}</text></view>
+      <view wx:if="{{preview.hasNutrition}}" class="preview-nutrient" wx:for="{{preview.values}}" wx:key="key"><text>{{item.label}}</text><view class="nutrient-value-line"><text class="nutrient-value">{{item.value}}</text><text wx:if="{{item.isEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view></view>
       <view wx:if="{{preview.type === 'medication'}}" class="preview-nutrient medication-detail" wx:for="{{preview.medicationDetails}}" wx:key="label"><text>{{item.label}}</text><text class="nutrient-value">{{item.value}}</text></view>
       <view wx:if="{{preview.ingredients.length}}" class="ingredients"><text wx:for="{{preview.ingredients}}" wx:key="index">{{item}}</text></view>
     </scroll-view>

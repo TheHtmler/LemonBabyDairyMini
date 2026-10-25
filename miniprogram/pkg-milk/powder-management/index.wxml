@@ -224,7 +224,6 @@
 
       <form bindsubmit="savePowderDraft">
         <scroll-view class="modal-body" scroll-y="true">
-          <view class="nutrition-photo-entry" wx:if="{{!editingBreastMilk}}"><view><text class="nutrition-entry-title">拍照填写营养</text><text class="nutrition-entry-hint">识别标签并自动查询对应营养资料</text></view><button size="mini" bindtap="startNutritionRecognition" disabled="{{savingNutrition}}">拍照 / 选图</button></view>
           <view class="form-section" wx:if="{{!editingBreastMilk}}">
             <view class="form-section-header">
               <text class="form-section-title">基础信息</text>
@@ -356,5 +355,4 @@
       </form>
     </view>
   </view>
-  <nutrition-recognition wx:if="{{showAddModal && !editingBreastMilk}}" id="nutritionRecognition" show-trigger="{{false}}" form-session-id="{{formSessionId}}" baby-uid="{{babyUid}}" mode="powder_label" draft="{{powderDraft}}" category-options="{{powderTypeOptions}}" expected-version="{{editingVersion}}" bind:recovered="onRecognitionRecovered" bind:patch="onNutritionPatch" />
 </view>

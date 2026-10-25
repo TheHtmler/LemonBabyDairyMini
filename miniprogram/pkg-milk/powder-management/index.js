@@ -17,6 +17,7 @@ const {
   buildCategoryBadgeStyle
 } = require('../../utils/formulaPowderUtils');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
+const { pendingConfirmation } = require('../../utils/nutritionRecognition');
 
 const ACTIVE_POWDER_RENDER_BATCH = 30;
 const POWDER_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
@@ -215,7 +216,6 @@ Page({
     powderPlaceholderImage: POWDER_PLACEHOLDER_IMAGE,
     showAddModal: false,
     savingNutrition: false,
-    formSessionId: 0,
     editingVersion: 0,
     powderTypeOptions: POWDER_TYPE_OPTIONS,
     powderTypeIndex: 0,
@@ -263,11 +263,6 @@ Page({
     }
     this.setData({ activeLibraryScope: 'mine' });
     this.showEditModal({ currentTarget: { dataset: { id: breastMilk.powderId || breastMilk._id } } });
-  },
-
-  async onRecognitionRecovered(event) {
-    if (event.detail.babyUid !== this.data.babyUid || event.detail.babyUid !== getBabyUid()) return;
-    this.hideAddModal(true); await this.loadPowders();
   },
 
   async onShow() {
@@ -536,7 +531,6 @@ Page({
       : activeCategory;
     this.setData({
       showAddModal: true,
-      formSessionId: this.data.formSessionId + 1,
       editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
       energyKjInput: '',
       editingPowderIsSystemSource: false,
@@ -560,7 +554,6 @@ Page({
 
     this.setData({
       showAddModal: true,
-      formSessionId: this.data.formSessionId + 1,
       editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
       energyKjInput: '',
       editingPowderIsSystemSource: true,
@@ -580,7 +573,6 @@ Page({
     if (isVirtualBreastMilkPowder(powder)) {
       this.setData({
         showAddModal: true,
-      formSessionId: this.data.formSessionId + 1,
       editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
         energyKjInput: '',
         editingPowderIsSystemSource: false,
@@ -599,7 +591,6 @@ Page({
 
     this.setData({
       showAddModal: true,
-      formSessionId: this.data.formSessionId + 1,
       editingVersion: PowderCatalogModel.getProfileVersion(this.data.babyUid),
       energyKjInput: '',
       editingPowderIsSystemSource: false,
@@ -691,32 +682,6 @@ Page({
     const path = field === 'name' ? 'name' : field === 'ratioPowder' ? 'mixRatio.powder' :
       field === 'ratioWater' ? 'mixRatio.water' : 'nutritionPer100g.' + field;
     this.setData({ ['powderDraft.' + path]: e.detail.value });
-    this.selectComponent('#nutritionRecognition')?.markManual(field, e.detail.value);
-  },
-
-  startNutritionRecognition() {
-    if (!this.data.savingNutrition) this.selectComponent('#nutritionRecognition')?.startRecognition();
-  },
-
-  onNutritionPatch(e) {
-    const patch = e.detail.patch || {};
-    const updates = {};
-    Object.keys(patch).forEach(field => {
-      if (field === 'mixRatio') {
-        updates['powderDraft.mixRatio'] = { powder: String(patch.mixRatio.powder), water: String(patch.mixRatio.water) };
-        return;
-      }
-      if (field === 'category') {
-        updates['powderDraft.category'] = patch.category;
-        updates['powderDraft.proteinRole'] = patch.category === POWDER_CATEGORIES.SPECIAL_FORMULA ? PROTEIN_ROLES.SPECIAL :
-          patch.category === POWDER_CATEGORIES.ENERGY_SUPPLEMENT ? PROTEIN_ROLES.NONE : PROTEIN_ROLES.NATURAL;
-        Object.assign(updates, buildPowderTypeState(patch.category));
-        return;
-      }
-      const path = field === 'name' ? field : 'nutritionPer100g.' + field;
-      updates['powderDraft.' + path] = String(patch[field]);
-    });
-    this.setData(updates);
   },
 
   applyKjToKcal() {
@@ -730,7 +695,6 @@ Page({
     this.setData({
       'powderDraft.nutritionPer100g.calories': String(kcalValue)
     });
-    this.selectComponent('#nutritionRecognition')?.markManual('calories', String(kcalValue));
     wx.showToast({ title: '已换算为 kcal', icon: 'success' });
   },
 
@@ -786,16 +750,15 @@ Page({
   },
 
   async savePowderDraft(e) {
-    const recognition = this.selectComponent('#nutritionRecognition');
-    if (this._saving || recognition?.isBusy()) return;
-    if (recognition?.hasPendingSave()) { wx.showToast({ title: '请先恢复上次保存状态', icon: 'none' }); return; }
+    if (this._saving) return;
+    if (pendingConfirmation(this.data.babyUid)) { wx.showToast({ title: '请先到拍照识别页恢复保存状态', icon: 'none' }); return; }
     this._saving = true;
     this.setData({ savingNutrition: true });
-    try { await this.persistPowderDraft(e, recognition); }
+    try { await this.persistPowderDraft(e); }
     finally { this._saving = false; this.setData({ savingNutrition: false }); }
   },
 
-  async persistPowderDraft(e, recognition) {
+  async persistPowderDraft(e) {
     const values = e.detail.value || {};
     const isBreastMilk = !!this.data.editingBreastMilk;
     const requiredError = this.validatePowderDraftRequired(values, { isBreastMilk });
@@ -868,10 +831,7 @@ Page({
 
     try {
       wx.showLoading({ title: '保存中...', mask: true });
-      const result = recognition?.hasSession() ? await recognition.confirm({
-        targetId: isSystemSource ? '' : current.id || '',
-        sourceSystemPowderId: draft.sourceSystemPowderId || '', form: draft
-      }) : await PowderCatalogModel.saveUserPowder(babyUid, draft);
+      const result = await PowderCatalogModel.saveUserPowder(babyUid, draft);
       wx.hideLoading();
       wx.showToast({
         title: result.message || '保存成功',

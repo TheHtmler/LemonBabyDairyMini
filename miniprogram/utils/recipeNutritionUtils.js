@@ -1,4 +1,5 @@
 const { summarizePremiumProteinFromIngredients, scalePremiumProteinSummary, resolveDayPremiumProteinBase, isRecipeIntakeRecord, resolvePremiumProteinRatio, resolveFoodIntakePremiumProteinSplit } = require('./search-core/recipeProtein');
+const { withMissingNutrition } = require('./nutritionProvenance');
 const NUTRITION_FIELDS = [
   'calories',
   'protein',
@@ -36,7 +37,7 @@ function addNutrition(a = {}, b = {}) {
   NUTRITION_FIELDS.forEach((field) => {
     result[field] = roundNumber((Number(a[field]) || 0) + (Number(b[field]) || 0), 2);
   });
-  return result;
+  return withMissingNutrition(result, a, b);
 }
 
 function scaleNutrition(nutritionPer100g = {}, ateG) {
@@ -51,7 +52,7 @@ function scaleNutritionByFactor(nutrition = {}, factor) {
   NUTRITION_FIELDS.forEach((field) => {
     result[field] = roundNumber((Number(nutrition[field]) || 0) * safeFactor, 2);
   });
-  return result;
+  return withMissingNutrition(result, nutrition);
 }
 
 function summarizeBatchFromIngredients(ingredients = []) {
@@ -160,7 +161,7 @@ function buildIngredientNutrition(food, quantity, deps = {}) {
     food && food.proteinSplit
   );
 
-  return {
+  return withMissingNutrition({
     calories: roundNumber(Number(base.calories) || 0, 2),
     protein: roundNumber(Number(base.protein) || 0, 2),
     naturalProtein,
@@ -169,7 +170,7 @@ function buildIngredientNutrition(food, quantity, deps = {}) {
     carbs: roundNumber(Number(base.carbs) || 0, 2),
     fiber: roundNumber(Number(base.fiber) || 0, 2),
     sodium: roundNumber(Number(base.sodium) || 0, 2)
-  };
+  }, base, food);
 }
 
 function hasProteinSplit(nutrition = {}) {
@@ -325,7 +326,7 @@ function summarizeRecipeNutrition(ingredients = [], yieldWeightG) {
 
   return {
     totalNutrition,
-    nutritionPer100g,
+    nutritionPer100g: withMissingNutrition(nutritionPer100g, totalNutrition),
     proteinSource: deriveProteinSource(totalNutrition)
   };
 }

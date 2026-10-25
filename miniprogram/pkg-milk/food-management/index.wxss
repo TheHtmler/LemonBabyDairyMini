@@ -1,3 +1,5 @@
+@import "../../styles/nutrition-tags.wxss";
+
 .container {
   height: 100vh;
   background: #fef8ec;
@@ -401,11 +403,6 @@
 .food-tag.system {
   background: rgba(255, 184, 0, 0.15);
   color: #ff9b00;
-}
-
-.food-tag.estimate {
-  background: #fff0d2;
-  color: #80591e;
 }
 
 .food-tag.custom {

@@ -25,7 +25,8 @@ function normalizeReferenceRecord(raw, options = {}) {
 function searchText(value) { return text(value).toLowerCase().replace(/[\s（）()、，,·-]/g, ''); }
 
 function identityMatches(left, right) {
-  if (['unknown', 'other'].includes(left.preparation) || ['unknown', 'other'].includes(right.preparation) ||
+  // other 表示明确的其他制备方式或成品，不能与状态未知混为一谈。
+  if (left.preparation === 'unknown' || right.preparation === 'unknown' ||
       left.preparation !== right.preparation) return false;
   const barcodeMatches = left.barcode && right.barcode && /^\d{8,14}$/.test(left.barcode) && left.barcode === right.barcode;
   const isProduct = ['dry_powder', 'prepared_formula'].includes(left.preparation) ||

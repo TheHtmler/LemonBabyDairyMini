@@ -1,7 +1,9 @@
-const { number, searchText, REQUIRED, FIELDS, estimateIdentityKey } = require('./lib/core/index.js');
+const { number, searchText, REQUIRED, FIELDS, estimateIdentityKey, isGenericIdentity, assertFoodRecognition } = require('./lib/core/index.js');
 const { isBlank } = require('../../../utils/nutritionComparison');
 const { createRequestId } = require('../../../utils/nutritionRecognition');
-const { targetBasis, offerNutrition, applyClassification, getEstimateEligibility } = require('./dialogState');
+const { targetBasis, offerNutrition, applyClassification, getEstimateEligibility, getIdentityRequirement,
+  clearProposals, invalidateIdentityConfirmation } = require('./dialogState');
+const { resolvePreviewPreparation, invalidatePreviewPreparation } = require('./preparation');
 const PROVIDER_NAMES = { china_food_table: '中国食物成分表', usda_fdc: 'USDA', manufacturer: '厂家资料', verified_catalog: '已核验参考' };
 function providerName(provider) { return PROVIDER_NAMES[provider] || provider; }
 
@@ -13,13 +15,24 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
     if (!state.prepared) {
       state.imageUploaded = 0;
       update('准备上传图片', '正在准备安全上传', 'prepare');
-      const requestId = createRequestId();
-      const prepared = await call('recognizeNutritionLabel', { action: 'prepare', requestId,
+      let prefetched = null;
+      if (state.previewPreparation) {
+        prefetched = await resolvePreviewPreparation(state.previewPreparation);
+        if (!isActive()) return;
+        if (!prefetched) {
+          invalidatePreviewPreparation(state.previewPreparation); state.previewPreparation = null;
+          // 分类目录可能在选图期间更新，串行回退采用当前快照。
+          update('准备上传图片', '正在准备安全上传', 'prepare');
+        }
+      }
+      const requestId = prefetched ? prefetched.requestId : createRequestId();
+      const prepared = prefetched && prefetched.prepared || await call('recognizeNutritionLabel', { action: 'prepare', requestId,
         babyUid: state.babyUid, purpose: state.purpose, mode: state.mode, imageCount: state.paths.length,
         expectedVersion: state.expectedVersion, targetId: state.targetId, sourceSystemFoodId: state.sourceSystemFoodId,
         categoryCatalog: state.categoryCatalog.slice(0, 100) });
       if (!isActive()) return;
       state.requestId = requestId; state.prepared = prepared;
+      invalidatePreviewPreparation(state.previewPreparation); state.previewPreparation = null;
     }
     if (!state.fileIDs) {
       update('上传图片', '已上传 ' + state.imageUploaded + '/' + state.paths.length + ' 张', 'upload');
@@ -36,23 +49,27 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
       const result = await call('recognizeNutritionLabel', { action: 'recognize', requestId: state.requestId,
         sessionId: state.prepared.sessionId, babyUid: state.babyUid, fileIDs: state.fileIDs });
       if (!isActive()) return;
+      assertFoodRecognition({ mode: result.resolvedMode || result.mode, observation: result.observation });
       state.result = result; state.identityCandidates = result.identityCandidates;
       state.previewEstimate = result.previewEstimate || null;
+      state.identity = { ...(result.identityCandidates[0] || {}) };
       if (state.purpose === 'preview') {
         state.mode = result.resolvedMode || result.mode;
-        if (state.mode === 'powder_label') state.categoryCatalog = state.powderCatalog;
-        // 已自动判断出的类型直接采用，看不清时重拍，不再手选类型。
-        if (['uncertain', 'unsupported'].includes(state.mode)) {
+        const assessment = result.observation.identityAssessment || {};
+        // 可辨认粗类别的图片先等待用户确认；真正看不清或不支持的图片才要求重拍。
+        if (state.mode === 'unsupported' || ['image_unclear', 'multiple_products', 'unsupported'].includes(assessment.reason) ||
+            state.mode === 'uncertain' && !assessment.canConfirm) {
           state.needType = true;
           stop('type', '请拍清一种食品或完整包装'); return;
         }
       }
-      state.identity = { ...(result.identityCandidates[0] || {}) };
       const conflict = state.initialName && searchText(state.initialName) !== searchText(state.identity.name);
       if (!conflict) state.values.name = state.identity.name || '';
       const packageIdentityMissing = ['food_label', 'powder_label'].includes(state.mode) &&
         !(result.observation.packageEvidence || {}).identity;
-      state.needIdentity = !!conflict || !state.identity.name || packageIdentityMissing;
+      const requirement = getIdentityRequirement(state);
+      state.identityManualRequired = requirement.required && requirement.canConfirm && ['uncertain', 'food_object'].includes(state.mode);
+      state.needIdentity = !!conflict || isGenericIdentity(state.identity) || packageIdentityMissing || requirement.required;
       const original = result.originalBasis;
       if (state.mode !== 'powder_label' && !state.manualFields.size) {
         if (!state.values.unit) state.values.unit = original.unit === 'portion' ? '份' : original.unit || 'g';
@@ -68,16 +85,19 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
         }
       }
       // 实物名称先进入浮窗，缺少营养时在浮窗内补全，避免整段流程都停在扫描动画。
-      if (state.purpose === 'preview' && state.mode === 'food_object') state.previewShown = true;
+      if (state.purpose === 'preview' && ['food_object', 'uncertain'].includes(state.mode)) state.previewShown = true;
       update(state.identity.name ? '已识别：' + state.identity.name : '已读取营养表', '', 'recognize');
     }
     if (state.needType) { stop('type', '请拍清一种食品或完整包装'); return; }
+    const identitySafety = getIdentityRequirement(state);
+    if (identitySafety.required || isGenericIdentity(state.identity)) state.needIdentity = true;
+    if (state.identityDeferred) { stop('identity_deferred', '本次页面暂留照片，营养待补充'); return; }
     if (state.needIdentity) {
       if (state.purpose === 'preview' && !state.initialName && ['food_label', 'powder_label'].includes(state.mode)) {
         const observation = state.result.observation;
         offerNutrition(state, observation.nutrients, observation.basis, 'label', '包装标签', observation.formula);
       }
-      stop('identity', '请确认食物名称'); return;
+      stop('identity', state.identityManualRequired ? '请确认具体种类与生熟状态' : '请确认食物名称'); return;
     }
     applyClassification(state, state.estimate && state.estimate.classification || state.result.classification);
     if (state.mode !== 'powder_label' && !(targetBasis(state).quantity > 0 && ['g', 'ml', 'portion'].includes(targetBasis(state).unit))) {
@@ -110,15 +130,27 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
       try {
         result = await call('lookupNutritionReference', { action: state.selectedReferenceId ? 'select' : 'search',
           referenceId: state.selectedReferenceId, sessionId: state.result.sessionId, babyUid: state.babyUid,
-          identity: state.identity, targetBasis: targetBasis(state) });
+          identity: state.identity, targetBasis: targetBasis(state),
+          identityConfirmation: state.identityConfirmationPending ? 'user_confirmed' : undefined });
       } catch (error) {
         if (!isActive()) return;
+        if (error.code === 'IDENTITY_INSUFFICIENT') {
+          clearProposals(state); invalidateIdentityConfirmation(state);
+          state.needIdentity = true; state.identityManualRequired = true;
+          stop('identity', '请重新确认具体种类与生熟状态'); return;
+        }
         if (state.purpose !== 'preview' || state.saveFormOpen || error.code === 'FORBIDDEN') throw error;
         // 预览保留图片中已有依据的结果；保存时仍须重新取得服务端比较版本。
         state.referenceWarning = '营养参考暂时无法查询，以下先展示图片识别结果。';
         state.status = 'preview'; update('识别结果', state.referenceWarning, 'ready'); return;
       }
       if (!isActive()) return;
+      if (result.mode) state.mode = result.mode;
+      state.identityConfirmation = result.identityConfirmation || null;
+      state.identityConfirmationPending = false;
+      if (getIdentityRequirement(state).required) {
+        state.needIdentity = true; stop('identity', '请重新确认具体种类与生熟状态'); return;
+      }
       // 查询成功后再替换预览估算，查询失败时保留已显示的有效营养值。
       if (state.previewEstimateApplied) {
         FIELDS.forEach(field => {
@@ -146,9 +178,10 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
       update('已找到营养参考', state.reference.identity.name + ' · ' + provider);
     }
     const eligibility = getEstimateEligibility(state);
-    // 状态由图片自动判断；未知状态不猜测，也不再要求用户填写食物状态。
-    if (state.allowEstimate && !state.ignoreEstimate && eligibility.requiredInput === 'identity') {
+    if (!eligibility.eligible) state.estimate = null;
+    if (state.allowEstimate && !state.ignoreEstimate && ['identity', 'preparation'].includes(eligibility.requiredInput)) {
       state.needIdentity = true;
+      state.identityManualRequired = true;
       stop('identity', eligibility.reason); return;
     }
     const autoEstimate = preview && state.mode === 'food_object' && !state.autoEstimateAttempted;
@@ -186,8 +219,11 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
     state.retryRecognitionRequired = error.code === 'AI_UNKNOWN';
     state.failedStage = state.stage; state.status = 'failed'; state.error = error.message || '处理失败，请稍后重试';
     // 网络中断或处理中时复用原会话，取回云端缓存；已明确失败或过期才重新准备。
-    const terminal = error.code === 'SESSION_EXPIRED' || (error.code && ['model_request', 'session_save'].includes(error.stage));
-    if (!state.result && terminal) { state.prepared = null; state.fileIDs = null; }
+    const terminal = error.restartRequired || error.code === 'SESSION_EXPIRED' || (error.code && ['model_request', 'session_save'].includes(error.stage));
+    if (!state.result && terminal) {
+      state.prepared = null; state.fileIDs = null;
+      invalidatePreviewPreparation(state.previewPreparation); state.previewPreparation = null;
+    }
     update('处理未完成', state.error, 'error');
   }
 }

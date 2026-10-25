@@ -4,11 +4,11 @@
     <view><text class="entry-title">拍照填写营养</text><text class="entry-hint">拍照或选图，自动填写</text></view>
     <button class="entry-button" size="mini" bindtap="startRecognition" disabled="{{busy}}" loading="{{busy}}">拍照 / 选图</button>
   </view>
-  <view class="recognition-overlay {{previewOnly ? 'photo-overlay' : ''}}" wx:if="{{dialogOpen}}">
+  <view class="recognition-overlay {{previewOnly ? 'photo-overlay' : ''}}" wx:if="{{dialogOpen}}" aria-hidden="{{!!duplicateComparison}}">
     <block wx:if="{{previewOnly}}">
-      <image class="recognition-photo {{previewScanning ? '' : packagePhotoNeeded && previewEmptyNutrition ? 'photo-needs-label' : !identityVisible ? 'photo-error' : 'photo-with-result'}}" style="{{previewPhotoStyle}}" src="{{previewPhoto}}" mode="aspectFit" />
+      <image class="recognition-photo {{previewScanning ? '' : !identityVisible ? 'photo-error' : 'photo-with-result'}}" style="{{previewPhotoStyle}}" src="{{previewPhoto}}" mode="aspectFit" />
       <view class="recognition-photo-shade"></view>
-      <button class="photo-back" style="{{navigationTop > 0 ? 'top:' + navigationTop + 'px;height:' + navigationHeight + 'px;' : ''}}" catchtap="cancelDialog" aria-label="返回拍照" disabled="{{saving || pendingSave}}"><image class="back-icon" src="/pkg-milk/nutrition-scan/back.png" mode="aspectFit" aria-hidden="true"></image></button>
+      <button size="mini" class="photo-back" style="{{navigationTop > 0 ? 'top:' + navigationTop + 'px;height:' + navigationHeight + 'px;' : ''}}" catchtap="cancelDialog" aria-label="返回拍照" disabled="{{saving || pendingSave}}"><image class="back-icon" src="/pkg-milk/nutrition-scan/back.png" mode="aspectFit" aria-hidden="true"></image></button>
       <view class="scan-feedback" style="{{scanFeedbackStyle}}" wx:if="{{previewScanning}}" aria-live="polite">
         <view class="scan-grid" aria-hidden="true"></view>
         <view class="scan-sweep" aria-hidden="true"><view class="scan-laser"></view></view>
@@ -25,26 +25,45 @@
       </view>
     </block>
     <view class="recognition-mask" wx:if="{{!previewScanning}}" catchtap="cancelDialog" catchtouchmove="stopPropagation"></view>
-    <view wx:if="{{!previewScanning}}" class="recognition-dialog {{previewOnly ? 'preview-dialog' : ''}} {{previewOnly && !identityVisible ? 'preview-error-dialog' : ''}} {{previewOnly && packagePhotoNeeded && previewEmptyNutrition ? 'preview-photo-required' : ''}}" style="{{keyboardHeight ? 'bottom:' + keyboardHeight + 'px;height:calc(88vh - ' + keyboardHeight + 'px);max-height:calc(88vh - ' + keyboardHeight + 'px);' : ''}}" role="dialog" aria-label="营养识别与核对">
+    <view wx:if="{{!previewScanning}}" class="recognition-dialog {{previewOnly ? 'preview-dialog' : ''}} {{previewOnly && !identityVisible ? 'preview-error-dialog' : ''}}" style="{{keyboardHeight ? 'bottom:' + keyboardHeight + 'px;height:calc(88vh - ' + keyboardHeight + 'px);max-height:calc(88vh - ' + keyboardHeight + 'px);' : ''}}" role="dialog" aria-label="营养识别与核对">
       <view class="preview-grip" wx:if="{{previewOnly}}" aria-hidden="true"></view>
       <view class="dialog-header" wx:else>
         <text class="dialog-title">{{purpose === 'preview' ? (displayMode === 'powder_label' ? '添加奶粉' : '添加食物') : (displayMode === 'powder_label' ? '填写奶粉营养' : '填写食物营养')}}</text>
         <text class="dialog-baby" wx:if="{{purpose === 'preview' && babyName}}">{{babyName}}</text>
-        <button class="close-button" catchtap="cancelDialog" aria-label="关闭识别弹窗"><view class="close-icon"></view></button>
       </view>
+      <button size="mini" wx:if="{{!previewOnly}}" class="close-button" catchtap="cancelDialog" aria-label="关闭识别弹窗" disabled="{{saving || pendingSave}}"><view class="close-icon" aria-hidden="true"></view></button>
       <scroll-view class="dialog-body" scroll-y="true" scroll-into-view="{{scrollToField}}" scroll-with-animation="{{false}}">
         <text class="preview-note" wx:if="{{longWaiting}}" aria-live="polite">仍在处理中，请稍候</text>
-        <view class="error-row" wx:if="{{error}}"><text class="error-text">{{error}}</text><button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button></view>
+        <view class="error-row" wx:if="{{error && previewOnly}}"><text class="error-text">{{error}}</text><button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button></view>
         <button wx:if="{{canRestoreDraft}}" class="text-button" catchtap="restorePreviousDraft" disabled="{{busy}}">恢复重新识别前的草稿</button>
         <view class="reference-warning" wx:if="{{!previewOnly && labelFillWarning}}"><text>{{labelFillWarning}}</text></view>
         <view wx:if="{{!previewOnly && canRetryReference}}" class="reference-warning"><text>营养查询失败</text><button class="text-button" catchtap="retryReference" disabled="{{busy}}">重试查询</button></view>
-        <view wx:if="{{existingItem}}" class="duplicate-panel"><text>已有相同身份资料：{{existingItem.name}}</text><button class="text-button" catchtap="openDuplicate" disabled="{{busy}}">查看已有资料</button></view>
-        <view wx:if="{{duplicateReview}}" class="duplicate-panel">
-          <text>找到 {{duplicateReview.total}} 条相近资料，请先核对身份。</text>
-          <view wx:for="{{duplicateReview.candidates}}" wx:key="itemId"><text class="duplicate-name">{{item.name}}</text><text class="preview-note">{{item.identity.brand}} {{item.identity.series}} {{item.identity.stage}} {{item.identity.barcode}}</text><button class="text-button" data-index="{{index}}" catchtap="openDuplicate" disabled="{{busy}}">查看这条资料</button></view>
-          <button wx:if="{{duplicateReview.canConfirm}}" class="text-button" catchtap="confirmDifferentIdentity" disabled="{{busy}}">已核对，确实是不同物品</button>
-          <text wx:else class="preview-note">相近条目较多，请先补充准确名称或产品身份。</text>
-          <button wx:if="{{!previewOnly && displayMode !== 'food_object'}}" class="text-button" catchtap="openProductDetails" disabled="{{busy}}">修改品牌或规格</button>
+        <view wx:if="{{duplicateChecking}}" class="duplicate-check-status" aria-live="polite"><view class="spinner" aria-hidden="true"></view><text>{{previewOnly ? '正在检查是否已添加' : '正在检查资料库'}}</text></view>
+        <text wx:elif="{{duplicateCheckFailed}}" class="duplicate-check-status">相近资料检查暂未完成，保存时会再次核对。</text>
+        <view wx:if="{{existingItem || duplicateReview}}" id="recognition-duplicates" class="duplicate-panel">
+          <view wx:if="{{existingItem}}" class="duplicate-summary">
+            <view class="duplicate-symbol" aria-hidden="true"></view>
+            <view class="duplicate-info"><text class="duplicate-heading">这份资料已经添加过</text><text class="duplicate-caption">{{existingItem.name}}</text></view>
+            <button size="mini" class="duplicate-compare-button" data-id="{{existingItem.itemId}}" catchtap="openDuplicateComparison" disabled="{{busy || pendingSave}}" aria-label="对比已有资料：{{existingItem.name}}" aria-controls="recognition-duplicate-comparison">营养对比</button>
+          </view>
+          <button wx:else class="duplicate-summary" catchtap="toggleDuplicateReview" disabled="{{busy || pendingSave}}" aria-expanded="{{duplicateReviewOpen}}" aria-controls="recognition-duplicate-details" aria-label="资料库有 {{duplicateReview.total}} 条相近资料，{{duplicateReviewOpen ? '收起' : '展开核对'}}">
+            <view class="duplicate-symbol" aria-hidden="true"></view>
+            <view class="duplicate-info">
+              <text class="duplicate-heading">资料库里有相近{{displayMode === 'powder_label' ? '奶粉' : '食物'}}</text>
+              <text class="duplicate-caption">{{duplicateReview.total}} 条已有记录，可先查看营养对比</text>
+            </view>
+            <view class="duplicate-link"><text>{{duplicateReviewOpen ? '收起' : '查看已有'}}</text><view class="duplicate-chevron {{duplicateReviewOpen ? 'chevron-up' : 'chevron-down'}}" aria-hidden="true"></view></view>
+          </button>
+          <view wx:if="{{!existingItem && duplicateReview && duplicateReviewOpen}}" id="recognition-duplicate-details" class="duplicate-details">
+            <view wx:for="{{duplicateReview.candidates}}" wx:key="itemId" class="duplicate-entry">
+              <view class="duplicate-info">
+                <text class="duplicate-name">{{item.name}}</text>
+                <text wx:if="{{item.identity.brand || item.identity.series || item.identity.stage}}" class="duplicate-caption">{{item.identity.brand}} {{item.identity.series}} {{item.identity.stage}}</text>
+                <text wx:if="{{item.identity.barcode}}" class="duplicate-caption">条码 {{item.identity.barcode}}</text>
+              </view>
+              <button size="mini" class="duplicate-compare-button" data-id="{{item.itemId}}" catchtap="openDuplicateComparison" disabled="{{busy || pendingSave}}" aria-label="对比已有资料：{{item.name}}" aria-controls="recognition-duplicate-comparison">营养对比</button>
+            </view>
+          </view>
         </view>
         <view class="image-upload-view" wx:if="{{!previewOnly && !identityVisible}}">
           <view class="image-list"><image class="image-preview" wx:for="{{imagePaths}}" wx:key="*this" src="{{item}}" mode="aspectFill" /></view>
@@ -53,31 +72,37 @@
 
         <view class="preview-section" wx:if="{{previewOnly && identityVisible}}">
           <text class="preview-title">{{previewName}}</text>
+          <view class="identity-review-panel" wx:if="{{identityReview}}">
+            <text class="identity-review-title">具体种类待确认</text>
+            <text class="identity-review-copy">已辨认到{{identityCoarseCategory}}，具体种类还不能确定。</text>
+            <view class="identity-features" wx:if="{{identityVisibleFeatures.length}}"><text class="identity-feature" wx:for="{{identityVisibleFeatures}}" wx:key="*this">{{item}}</text></view>
+            <block wx:if="{{identityDeferred}}">
+              <text class="identity-review-copy">当前页面暂留照片，营养待补充。离开页面后需重新识别。</text>
+              <input class="input identity-note-input" value="{{identityNote}}" maxlength="160" placeholder="本次页面备注（选填）" aria-label="本次页面备注" bindinput="onIdentityNoteInput" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" />
+              <button class="text-button" catchtap="openIdentityEditor" disabled="{{busy}}">补充名称</button>
+            </block>
+            <block wx:else>
+              <text class="identity-review-copy">请明确名称和生熟状态后，再查询营养。</text>
+              <view class="identity-review-actions"><button wx:if="{{!identityEditorOpen}}" class="text-button" catchtap="openIdentityEditor" disabled="{{busy}}">补充名称</button><button class="text-button" catchtap="onIdentityUnknown" disabled="{{busy || pendingSave}}">我也不确定</button></view>
+            </block>
+          </view>
           <view class="preview-basis-tabs" wx:if="{{!needType && previewBasisOptions.length}}">
             <button wx:for="{{previewBasisOptions}}" wx:key="value" class="basis-tab {{previewBasisMode === item.value ? 'selected' : ''}}" data-mode="{{item.value}}" catchtap="onPreviewBasisChange" disabled="{{busy}}" aria-pressed="{{previewBasisMode === item.value}}">{{item.label}}</button>
           </view>
-          <text class="preview-basis" wx:elif="{{!needType && (!packagePhotoNeeded || !previewEmptyNutrition)}}">{{previewBasis}}</text>
+          <text class="preview-basis" wx:elif="{{!needType}}">{{previewBasis}}</text>
           <block wx:if="{{!needType}}">
-            <view class="preview-nutrition-status" wx:if="{{!packagePhotoNeeded && (nutritionLoading || previewNutritionHint)}}">
+            <view class="preview-nutrition-status" wx:if="{{nutritionLoading || previewNutritionHint}}">
               <view class="module-status loading" wx:if="{{nutritionLoading}}" aria-live="polite"><view class="spinner"></view><text>{{scanPhase}}</text></view>
               <view class="preview-short-hint" wx:else><text>{{previewNutritionHint}}</text><button wx:if="{{canRetryReference && !labelFillWarning && !needIdentity && !needBasis}}" class="text-button" catchtap="retryReference" disabled="{{busy}}">重试</button></view>
             </view>
-            <view class="nutrition-photo-prompt" wx:if="{{packagePhotoNeeded}}">
-              <text class="nutrition-photo-title">{{nutritionLoading ? '正在查找该商品的营养资料' : packagePhotoTitle}}</text>
-              <text class="nutrition-photo-hint">{{packagePhotoHint}}</text>
-              <button wx:if="{{canRetryReference && !needIdentity}}" class="text-button" catchtap="retryReference" disabled="{{busy || pendingSave}}">重试查询</button>
-              <button wx:if="{{needsProductPhoto && !identityEditorOpen}}" class="text-button" catchtap="openIdentityEditor" disabled="{{busy || pendingSave}}">手动填写名称</button>
-              <button wx:elif="{{!needIdentity}}" class="text-button" catchtap="beginPreviewSave" disabled="{{busy || pendingSave}}">手动填写</button>
-            </view>
-            <block wx:if="{{!packagePhotoNeeded || !previewEmptyNutrition}}">
             <view class="preview-highlights">
               <view class="preview-highlight highlight-energy">
-                <text class="highlight-label">热量</text>
+                <view class="nutrient-label-line"><text class="highlight-label">热量</text><text wx:if="{{previewCalories.isEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view>
                 <view class="highlight-reading"><text class="highlight-value {{previewCalories.hasValue ? '' : 'unrecognized'}}">{{previewCalories.value}}</text><text class="highlight-unit" wx:if="{{previewCalories.hasValue}}">{{previewCalories.unit}}</text></view>
                 <text class="nutrient-note" wx:if="{{previewCalories.note}}">{{previewCalories.note}}</text>
               </view>
               <view class="preview-highlight highlight-protein">
-                <text class="highlight-label">蛋白质</text>
+                <view class="nutrient-label-line"><text class="highlight-label">蛋白质</text><text wx:if="{{previewProtein.isEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view>
                 <view class="highlight-reading"><text class="highlight-value {{previewProtein.hasValue ? '' : 'unrecognized'}}">{{previewProtein.value}}</text><text class="highlight-unit" wx:if="{{previewProtein.hasValue}}">{{previewProtein.unit}}</text></view>
                 <text class="protein-type" wx:if="{{previewProteinType}}">{{previewProteinType}}</text>
                 <text class="nutrient-note" wx:if="{{previewProtein.note}}">{{previewProtein.note}}</text>
@@ -85,22 +110,22 @@
             </view>
             <view class="preview-macros">
               <view class="macro-item" wx:for="{{previewMacros}}" wx:key="path">
+                <view class="nutrient-label-line macro-label-line"><text class="macro-label">{{item.label}}</text><text wx:if="{{item.isEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view>
                 <view class="macro-reading"><text class="macro-value {{item.hasValue ? '' : 'unrecognized'}}">{{item.value}}</text><text class="macro-unit" wx:if="{{item.hasValue}}">{{item.unit}}</text></view>
-                <text class="macro-label">{{item.label}}</text>
                 <text class="nutrient-note" wx:if="{{item.note}}">{{item.note}}</text>
               </view>
             </view>
             <view class="preview-extras">
-              <view class="extra-item" wx:for="{{previewExtras}}" wx:key="path"><text class="extra-label">{{item.label}}</text><text class="extra-reading {{item.hasValue ? '' : 'unrecognized'}}">{{item.value}}{{item.unit}}</text><text class="nutrient-note" wx:if="{{item.note}}">{{item.note}}</text></view>
+              <view class="extra-item" wx:for="{{previewExtras}}" wx:key="path"><view class="nutrient-label-line extra-label-line"><text class="extra-label">{{item.label}}</text><text wx:if="{{item.isEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view><text class="extra-reading {{item.hasValue ? '' : 'unrecognized'}}">{{item.value}}{{item.unit}}</text><text class="nutrient-note" wx:if="{{item.note}}">{{item.note}}</text></view>
             </view>
-            </block>
             <view class="preview-actions" wx:if="{{canEstimate}}">
               <button class="text-button" catchtap="onRequestEstimate" disabled="{{busy || pendingSave}}">{{estimateButtonText}}</button>
             </view>
-            <view class="preview-correction" wx:if="{{needIdentity && (!needsProductPhoto || identityEditorOpen)}}">
+            <view class="preview-correction" wx:if="{{needIdentity && !identityDeferred && (!identityReview || identityEditorOpen)}}">
               <input class="input" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.name}}" placeholder="请输入具体食物名称" aria-label="具体食物名称" data-field="name" bindinput="onDialogInput" disabled="{{busy}}" />
-              <view class="choice-group"><button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy}}">{{item.name}}</button><button class="text-button" catchtap="onContinueIdentity" disabled="{{busy}}">确认名称</button></view>
-              <button wx:if="{{displayMode === 'food_object'}}" class="text-button" catchtap="onSkipEstimate" disabled="{{busy}}">暂不估算</button>
+              <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
+              <view class="choice-group"><button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy}}">候选：{{item.name}}</button><button class="text-button" catchtap="onContinueIdentity" disabled="{{busy}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button></view>
+              <button wx:if="{{displayMode === 'food_object' && !identityReview}}" class="text-button" catchtap="onIdentityUnknown" disabled="{{busy}}">我也不确定</button>
             </view>
             <view class="preview-correction" wx:if="{{needBasis}}">
               <text class="preview-note">营养计量基准</text>
@@ -115,19 +140,21 @@
         </view>
         <block wx:if="{{!previewOnly && identityVisible}}">
         <view class="form-section">
-          <view class="form-section-header"><text class="form-section-title">基础信息</text><text class="estimate-origin" wx:if="{{hasEstimate}}">含 AI 估算</text></view>
+          <view class="form-section-header"><view class="form-section-heading"><text class="form-section-title">必填信息</text><text class="form-section-subtitle">{{displayMode === 'powder_label' ? '核对干粉营养成分和冲调比例' : '决定食物展示分类和营养计算基准'}}</text></view></view>
           <view wx:if="{{identityVisible}}">
-            <view id="recognition-field-name" class="form-item">
+            <view id="recognition-field-name" class="form-item {{invalidField === 'name' ? 'field-invalid' : ''}}">
               <text class="form-label">名称</text>
               <view class="form-control">
                 <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{values.name}}" placeholder="请输入名称" aria-label="名称" data-field="name" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy}}" />
+                <text class="field-error" wx:if="{{invalidField === 'name'}}" role="alert">{{fieldError}}</text>
                 <view class="choice-group" wx:if="{{needIdentity}}">
-                  <button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy}}">使用 {{item.name}}</button>
-                  <button class="text-button" catchtap="onContinueIdentity" disabled="{{busy}}">使用当前名称</button>
+                  <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
+                  <button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy}}">候选：{{item.name}}</button>
+                  <button class="text-button" catchtap="onContinueIdentity" disabled="{{busy}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
                 </view>
               </view>
             </view>
-            <view id="recognition-field-category" class="form-item">
+            <view id="recognition-field-category" class="form-item {{invalidField === 'category' ? 'field-invalid' : ''}}">
               <text class="form-label">分类</text>
               <view class="form-control form-control-stack">
                 <view class="category-picker-row">
@@ -141,65 +168,87 @@
                   <button class="custom-category-button" catchtap="onCreateCategory" disabled="{{busy}}" loading="{{categoryCreating}}">{{categoryCreating ? '创建中' : '添加'}}</button>
                 </view>
                 <text class="field-hint" wx:if="{{categoryCreateOpen}}">添加分类会立即保存，取消识别不会撤销这个分类。</text>
+                <text class="field-error" wx:if="{{invalidField === 'category'}}" role="alert">{{fieldError}}</text>
               </view>
             </view>
 
             <view wx:if="{{nutritionVisible}}">
-              <view class="module-status nutrition-status loading" wx:if="{{nutritionLoading}}"><view class="spinner"></view><text>正在填入营养数据</text></view>
               <view class="reference-choice" wx:if="{{needReference}}">
                 <button class="reference-button" wx:for="{{referenceCandidates}}" wx:key="referenceId" data-index="{{index}}" catchtap="onReference" disabled="{{busy}}"><text>{{item.identity.name}}</text><text class="reference-provider">{{item.source.provider}} ›</text></button>
                 <button class="text-button" catchtap="onSkipReference" disabled="{{busy}}">暂不使用参考</button>
               </view>
-              <view class="form-item" wx:if="{{displayMode !== 'powder_label'}}">
+              <view id="recognition-field-unit" class="form-item {{invalidField === 'unit' ? 'field-invalid' : ''}}" wx:if="{{displayMode !== 'powder_label'}}">
                 <text class="form-label">记录单位</text>
-                <view class="form-control"><picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy}}"><view class="picker-display {{values.unit ? '' : 'placeholder'}}"><text class="picker-text">{{values.unit || '请选择单位'}}</text><text class="picker-arrow">›</text></view></picker></view>
+                <view class="form-control"><picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy}}"><view class="picker-display {{values.unit ? '' : 'placeholder'}}"><text class="picker-text">{{values.unit || '请选择单位'}}</text><text class="picker-arrow">›</text></view></picker><text class="field-error" wx:if="{{invalidField === 'unit'}}" role="alert">{{fieldError}}</text></view>
               </view>
-              <view id="recognition-field-baseQuantity" class="form-item" wx:if="{{displayMode !== 'powder_label'}}">
+              <view id="recognition-field-baseQuantity" class="form-item {{invalidField === 'baseQuantity' ? 'field-invalid' : ''}}" wx:if="{{displayMode !== 'powder_label'}}">
                 <text class="form-label">营养基准份量</text>
-                <view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.baseQuantity}}" placeholder="默认 100" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy}}" /></view>
+                <view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.baseQuantity}}" placeholder="默认 100" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy}}" /><text class="field-error" wx:if="{{invalidField === 'baseQuantity'}}" role="alert">{{fieldError}}</text></view>
               </view>
               <view class="field-hint fixed-basis" wx:else>营养成分 · 每 100g 干粉</view>
               <block wx:for="{{requiredNutrientRows}}" wx:key="path">
-                <view id="recognition-field-{{item.path}}" class="form-item nutrient-row">
+                <view id="recognition-field-{{item.path}}" class="form-item nutrient-row {{invalidField === item.path ? 'field-invalid' : ''}}">
                   <text class="form-label">{{item.formLabel}} ({{item.unit}})</text>
                   <view class="form-control">
-                    <view class="input input-loading" wx:if="{{item.loading}}"><view class="skeleton-value"></view><view class="spinner"></view></view>
-                    <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="必填" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy}}" />
+                    <view class="nutrient-input-line">
+                      <view class="input input-loading" wx:if="{{item.loading}}"><view class="skeleton-value"></view><view class="spinner"></view></view>
+                      <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="{{item.validationIssue ? '待核对' : '必填'}}" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy}}" />
+                      <text wx:if="{{!item.loading && !item.validationIssue && item.value !== '' && item.source === 'model_estimate'}}" class="nutrition-estimate-tag">AI 估算</text>
+                    </view>
+                    <text class="field-error" wx:if="{{invalidField === item.path}}" role="alert">{{fieldError}}</text>
                     <text class="field-hint" wx:if="{{item.value === '' && item.labelValue !== ''}}">标签：{{item.labelValue}} {{item.unit}} · 基准待确认</text>
+                    <text class="field-hint validation-issue" wx:if="{{item.validationIssue}}">待核对：{{item.validationIssue}}，请对照包装手动填写。</text>
+                    <text class="field-hint" wx:if="{{item.retainedValueReview}}">保留原值，请核对包装</text>
+                    <button wx:if="{{item.retainedValueReview}}" class="text-button" data-field="{{item.path}}" catchtap="confirmOriginalNutrition" disabled="{{busy || pendingSave}}">已核对原值</button>
                   </view>
                 </view>
-                <view class="form-item" wx:if="{{item.path === 'protein' && displayMode !== 'powder_label'}}">
+                <view id="recognition-field-proteinTypeIndex" class="form-item {{invalidField === 'proteinTypeIndex' ? 'field-invalid' : ''}}" wx:if="{{item.path === 'protein' && displayMode !== 'powder_label'}}">
                   <text class="form-label">蛋白来源</text>
                   <view class="form-control form-control-stack">
                     <picker range="{{proteinItems}}" range-key="label" value="{{proteinIndex}}" bindchange="onProteinChange" disabled="{{busy}}">
                       <view class="picker-display {{values.proteinTypeIndex >= 0 ? '' : 'placeholder'}}"><text class="picker-text">{{values.proteinTypeIndex >= 0 ? proteinOptions[values.proteinTypeIndex].label : '请选择蛋白来源'}}</text><text class="picker-arrow">›</text></view>
                     </picker>
+                    <text class="field-error" wx:if="{{invalidField === 'proteinTypeIndex'}}" role="alert">{{fieldError}}</text>
                     <button class="text-button special-confirm" wx:if="{{proteinSuggestionSpecial && proteinSuggestionIndex !== values.proteinTypeIndex}}" catchtap="onUseProteinSuggestion" disabled="{{busy}}">确认使用特殊蛋白</button>
                   </view>
                 </view>
               </block>
               <view wx:if="{{displayMode === 'powder_label'}}">
-                <view id="recognition-field-ratioPowder" class="form-item"><text class="form-label">粉量 (g)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioPowder}}" placeholder="必填" aria-label="奶粉粉量" data-field="ratioPowder" bindinput="onDialogInput" disabled="{{busy}}" /></view></view>
-                <view id="recognition-field-ratioWater" class="form-item"><text class="form-label">加水量 (ml)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioWater}}" placeholder="必填" aria-label="冲调加水量" data-field="ratioWater" bindinput="onDialogInput" disabled="{{busy}}" /></view></view>
+                <view id="recognition-field-ratioPowder" class="form-item {{invalidField === 'ratioPowder' ? 'field-invalid' : ''}}"><text class="form-label">粉量 (g)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioPowder}}" placeholder="必填" aria-label="奶粉粉量" data-field="ratioPowder" bindinput="onDialogInput" disabled="{{busy}}" /><text class="field-error" wx:if="{{invalidField === 'ratioPowder'}}" role="alert">{{fieldError}}</text></view></view>
+                <view id="recognition-field-ratioWater" class="form-item {{invalidField === 'ratioWater' ? 'field-invalid' : ''}}"><text class="form-label">加水量 (ml)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioWater}}" placeholder="必填" aria-label="冲调加水量" data-field="ratioWater" bindinput="onDialogInput" disabled="{{busy}}" /><text class="field-error" wx:if="{{invalidField === 'ratioWater'}}" role="alert">{{fieldError}}</text></view></view>
               </view>
             </view>
           </view>
         </view>
 
-        <view class="form-section" wx:if="{{identityVisible}}">
-          <button class="section-toggle" catchtap="toggleOptional" aria-expanded="{{optionalOpen}}"><text class="form-section-title">更多信息 · 选填</text><text>{{optionalOpen ? '收起' : '展开'}}</text></button>
-          <view id="recognition-field-details" wx:if="{{optionalOpen && displayMode !== 'food_object'}}">
+        <view id="recognition-field-details" class="form-section" wx:if="{{identityVisible}}">
+          <view class="form-section-header"><view class="form-section-heading"><text class="form-section-title">扩展信息</text><text class="form-section-subtitle">{{displayMode === 'powder_label' ? '选填，可补充商品资料和膳食纤维' : purpose === 'preview' ? '选填，可补充图片、膳食纤维和钠' : '选填，可补充膳食纤维和钠'}}</text></view></view>
+          <view class="form-item" wx:if="{{purpose === 'preview' && displayMode !== 'powder_label'}}">
+            <text class="form-label">图片</text>
+            <view class="form-control form-control-stack">
+              <button wx:if="{{coverImagePath}}" class="food-image-preview" catchtap="previewFoodImage" disabled="{{busy || pendingSave}}" aria-label="预览食物图片"><image src="{{coverImagePath}}" mode="aspectFill" /></button>
+              <button class="text-button" catchtap="chooseFoodImage" disabled="{{busy || pendingSave}}">{{coverImagePath ? '更换图片' : '选择图片'}}</button>
+            </view>
+          </view>
+          <view wx:if="{{displayMode === 'powder_label'}}">
             <view class="form-item"><text class="form-label">品牌</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.brand}}" maxlength="240" data-key="brand" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品品牌" disabled="{{busy}}" /></view></view>
             <view class="form-item"><text class="form-label">系列</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.series}}" maxlength="240" data-key="series" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品系列" disabled="{{busy}}" /></view></view>
             <view class="form-item"><text class="form-label">段数或规格</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.stage}}" maxlength="240" data-key="stage" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品段数或规格" disabled="{{busy}}" /></view></view>
             <view class="form-item"><text class="form-label">条码</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.barcode}}" maxlength="32" data-key="barcode" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品条码" disabled="{{busy}}" /></view></view>
           </view>
-          <view id="recognition-field-{{item.path}}" wx:if="{{optionalOpen}}" class="form-item nutrient-row" wx:for="{{optionalNutrientRows}}" wx:key="path">
+          <view id="recognition-field-{{item.path}}" class="form-item nutrient-row {{invalidField === item.path ? 'field-invalid' : ''}}" wx:for="{{optionalNutrientRows}}" wx:key="path">
             <text class="form-label">{{item.formLabel}} ({{item.unit}})</text>
             <view class="form-control">
-              <view class="input input-loading" wx:if="{{item.loading}}"><view class="skeleton-value"></view><view class="spinner"></view></view>
-              <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="选填" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy}}" />
+              <view class="nutrient-input-line">
+                <view class="input input-loading" wx:if="{{item.loading}}"><view class="skeleton-value"></view><view class="spinner"></view></view>
+                <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="{{item.validationIssue ? '待核对' : '选填'}}" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy}}" />
+                <text wx:if="{{!item.loading && !item.validationIssue && item.value !== '' && item.source === 'model_estimate'}}" class="nutrition-estimate-tag">AI 估算</text>
+              </view>
+              <text class="field-error" wx:if="{{invalidField === item.path}}" role="alert">{{fieldError}}</text>
               <text class="field-hint" wx:if="{{item.value === '' && item.labelValue !== ''}}">标签：{{item.labelValue}} {{item.unit}} · 基准待确认</text>
+              <text class="field-hint validation-issue" wx:if="{{item.validationIssue}}">待核对：{{item.validationIssue}}，请对照包装手动填写。</text>
+              <text class="field-hint" wx:if="{{item.retainedValueReview}}">保留原值，请核对包装</text>
+              <button wx:if="{{item.retainedValueReview}}" class="text-button" data-field="{{item.path}}" catchtap="confirmOriginalNutrition" disabled="{{busy || pendingSave}}">已核对原值</button>
             </view>
           </view>
         </view>
@@ -207,8 +256,45 @@
         </block>
       </scroll-view>
       <view class="dialog-footer">
-        <view class="footer-actions"><button class="secondary-button" catchtap="cancelDialog" disabled="{{saving || pendingSave}}">{{previewOnly ? '重拍' : '取消'}}</button><button wx:if="{{pendingSave}}" class="primary-button" catchtap="recoverPreviewSave" disabled="{{busy}}">恢复保存状态</button><button wx:elif="{{previewOnly && needsProductPhoto}}" class="primary-button" catchtap="openIdentityEditor" disabled="{{busy}}">填写名称</button><button wx:elif="{{!previewOnly || !needType}}" class="primary-button" catchtap="useResults" disabled="{{busy || !identityVisible || (previewOnly && !canUse)}}" loading="{{busy}}">{{saving ? '保存中' : busy ? '处理中' : previewOnly ? needsNutritionPhoto ? '手动填写' : '应用结果' : purpose === 'preview' ? '保存' : '填入表单'}}</button></view>
+        <view class="save-feedback" wx:if="{{error && !previewOnly && !saving}}" role="alert" aria-live="polite">
+          <text class="error-text">{{error}}</text>
+          <button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button>
+        </view>
+        <view class="footer-actions">
+          <button class="secondary-button" catchtap="cancelDialog" disabled="{{saving || pendingSave}}">{{previewOnly ? '重拍' : '取消'}}</button>
+          <button wx:if="{{pendingSave}}" class="primary-button" catchtap="recoverPreviewSave" disabled="{{busy}}">恢复保存状态</button>
+          <button wx:elif="{{previewOnly && needIdentity && (!identityEditorOpen || identityDeferred)}}" class="primary-button" catchtap="openIdentityEditor" disabled="{{busy}}">补充名称</button>
+          <button wx:elif="{{previewOnly && needIdentity}}" class="primary-button" catchtap="onContinueIdentity" disabled="{{busy}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
+          <button wx:elif="{{!previewOnly || (!needType && identityVisible)}}" class="primary-button" catchtap="useResults" disabled="{{busy || !identityVisible || (previewOnly && !canUse)}}" loading="{{busy}}">{{saving ? '添加中' : busy ? '处理中' : previewOnly ? '应用结果' : purpose === 'preview' ? displayMode === 'powder_label' ? '添加奶粉' : '添加食物' : '填入表单'}}</button>
+        </view>
       </view>
+    </view>
+  </view>
+  <view wx:if="{{dialogOpen && saving}}" class="recognition-saving-mask" catchtap="stopPropagation" catchtouchmove="stopPropagation" role="alert" aria-live="polite">
+    <view class="recognition-saving-status"><view class="spinner" aria-hidden="true"></view><text>正在添加…</text></view>
+  </view>
+  <view wx:if="{{dialogOpen && duplicateComparison}}" class="comparison-overlay">
+    <view class="comparison-mask" catchtap="stopPropagation" catchtouchmove="stopPropagation"></view>
+    <view id="recognition-duplicate-comparison" class="comparison-dialog {{duplicateComparison.unavailable ? 'comparison-unavailable' : ''}}" role="dialog" aria-modal="true" aria-label="营养对比">
+      <view class="comparison-dialog-header"><text>营养对比</text></view>
+      <button size="mini" class="close-button" catchtap="closeDuplicateComparison" aria-label="关闭营养对比"><view class="close-icon" aria-hidden="true"></view></button>
+      <scroll-view class="comparison-body" scroll-y="true">
+        <view class="comparison-table" role="table" aria-label="已有食物与本次识别的营养对比">
+          <view class="comparison-row comparison-header" role="row">
+            <view class="comparison-nutrient" role="columnheader"><text>营养</text><text wx:if="{{duplicateComparison.compatible}}" class="comparison-basis">{{duplicateComparison.basis}}</text></view>
+            <view class="comparison-reading comparison-existing" role="columnheader"><text class="comparison-column-label">已有食物</text><text class="comparison-name">{{duplicateComparison.existingName}}</text><text wx:if="{{!duplicateComparison.unavailable && !duplicateComparison.compatible}}" class="comparison-basis">{{duplicateComparison.existingBasis}}</text></view>
+            <view class="comparison-reading comparison-current" role="columnheader"><text class="comparison-column-label">本次识别</text><text class="comparison-name">{{duplicateComparison.currentName}}</text><text wx:if="{{!duplicateComparison.unavailable && !duplicateComparison.compatible}}" class="comparison-basis">{{duplicateComparison.currentBasis}}</text></view>
+          </view>
+          <view wx:if="{{duplicateComparison.unavailable}}" class="comparison-empty">已有营养数据暂不可用。</view>
+          <block wx:else>
+            <view wx:for="{{duplicateComparison.rows}}" wx:key="path" class="comparison-row" role="row">
+              <view class="comparison-nutrient" role="rowheader"><text>{{item.label}}</text><text class="comparison-source">{{item.unit}}</text></view>
+              <view class="comparison-reading comparison-existing" role="cell"><view class="comparison-value-line"><text class="comparison-number">{{item.previous}}</text><text wx:if="{{item.previousIsEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view><text wx:if="{{item.previousSource && !item.previousIsEstimate}}" class="comparison-source">{{item.previousSource}}</text></view>
+              <view class="comparison-reading comparison-current {{item.changed ? 'comparison-changed' : ''}}" role="cell"><view class="comparison-value-line"><text class="comparison-number">{{item.current}}</text><text wx:if="{{item.currentIsEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view><text wx:if="{{item.currentSource && !item.currentIsEstimate}}" class="comparison-source">{{item.currentSource}}</text></view>
+            </view>
+          </block>
+        </view>
+      </scroll-view>
     </view>
   </view>
 </view>

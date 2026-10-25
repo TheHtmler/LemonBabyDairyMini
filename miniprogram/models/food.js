@@ -1,7 +1,7 @@
 const { invalidateSearchForBaby } = require('../utils/searchSession');
 // 食物数据模型，支持自定义食物库与营养计算
 const SystemFoodIndex = require('../utils/systemFoodIndex');
-const { updateManualProvenance } = require('../utils/nutritionProvenance');
+const { updateManualProvenance, withMissingNutrition } = require('../utils/nutritionProvenance');
 const { stableHash } = require('../utils/nutritionHash');
 const db = wx.cloud.database();
 const _ = db.command;
@@ -178,7 +178,7 @@ class FoodModel {
     };
     result.proteinText = this._formatProteinText(result.protein);
 
-    return result;
+    return withMissingNutrition(result, nutrition, food);
   }
 
   /**
@@ -199,6 +199,7 @@ class FoodModel {
 
       const payload = this._normalizeFoodForWrite({
         ...foodData,
+        isPhotoAiRecognized: foodData.isPhotoAiRecognized === true,
         sharedBabyUids
       });
       payload.version = 1;
@@ -235,6 +236,7 @@ class FoodModel {
       const snapshotPayload = this._normalizeFoodForWrite({
         ...sourceFood,
         ...foodData,
+        isPhotoAiRecognized: foodData.isPhotoAiRecognized === true,
         isSystem: false,
         babyUid,
         sharedBabyUids: [babyUid],
@@ -343,6 +345,9 @@ class FoodModel {
       const currentRes = await this.collection.doc(foodId).get();
       const current = currentRes.data;
       if (!current || current.isSystem || current.babyUid !== babyUid) throw new Error('未找到可更新的自定义食物');
+      // 保存来源属于条目历史，普通编辑不能把拍照来源改成手动来源。
+      if (typeof current.isPhotoAiRecognized === 'boolean') payload.isPhotoAiRecognized = current.isPhotoAiRecognized;
+      else delete payload.isPhotoAiRecognized;
       const expectedVersion = foodData.expectedVersion;
       if (!Number.isInteger(expectedVersion) || expectedVersion < 0) throw new Error('缺少读取时的食物版本，请重新打开表单');
       delete payload.expectedVersion;
@@ -366,6 +371,7 @@ class FoodModel {
       }
       if (current.recognitionMeta) payload.recognitionMeta = updateManualProvenance(current.recognitionMeta,
         current.nutritionPerBasis, payload.nutritionPerBasis, basisChanged, foodData.rawNutrition, foodData.touchedNutritionFields);
+      payload.nutritionPerBasis = withMissingNutrition(payload.nutritionPerBasis, payload);
       if (basisChanged && payload.recognitionMeta) payload.recognitionMeta.finalBasis = {
         ...payload.nutritionBasis, material: 'food'
       };
@@ -439,9 +445,8 @@ class FoodModel {
   }
 
   _normalizeNutritionPerBasis(food = {}) {
-    return this._normalizeNutrition(
-      food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {}
-    );
+    const nutrition = food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {};
+    return withMissingNutrition(this._normalizeNutrition(nutrition), nutrition, food);
   }
 
   _getDefaultSourceType(food = {}) {
@@ -454,7 +459,8 @@ class FoodModel {
 
   _normalizeFoodForWrite(foodData = {}) {
     const nutritionBasis = this._normalizeNutritionBasis(foodData);
-    const nutritionPerBasis = this._normalizeNutritionPerBasis(foodData);
+    const rawNutrition = foodData.rawNutrition || foodData.nutritionPerBasis || foodData.nutritionPer100g || foodData.nutritionPerUnit || {};
+    const nutritionPerBasis = withMissingNutrition(this._normalizeNutrition(rawNutrition), rawNutrition);
     const sourceType = this._getDefaultSourceType(foodData);
     const isSystem = sourceType === 'system' || foodData.ownerType === 'system' || foodData.isSystem === true;
 
@@ -493,6 +499,7 @@ class FoodModel {
       categoryLevel1: formatted.categoryLevel1 || formatted.category || '',
       categoryLevel2: formatted.categoryLevel2 || '',
       ...(formatted.recognitionMeta ? { recognitionMeta: JSON.parse(JSON.stringify(formatted.recognitionMeta)) } : {}),
+      ...(typeof formatted.isPhotoAiRecognized === 'boolean' ? { isPhotoAiRecognized: formatted.isPhotoAiRecognized } : {}),
       ...(formatted.nutrientStates ? { nutrientStates: JSON.parse(JSON.stringify(formatted.nutrientStates)) } : {}),
       nutritionBasis: formatted.nutritionBasis,
       nutritionPerBasis: formatted.nutritionPerBasis,

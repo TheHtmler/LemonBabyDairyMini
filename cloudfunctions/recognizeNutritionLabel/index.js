@@ -2,7 +2,8 @@
 
 const { fail } = require('./lib/core/contracts');
 const { observationPatch } = require('./lib/core/normalize');
-const { runtime, assertAccess, ownedSession, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
+const { assertFoodRecognition, identityRequirement } = require('./lib/core/identitySafety');
+const { runtime, createRequestAccess, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
 const { prepareSession, claimRecognition } = require('./sessionRepository');
 const { resolveConfig, callRecognitionModel, callNutritionEstimateModel } = require('./modelClient');
 const { resolveImages } = require('./imageReader');
@@ -17,17 +18,20 @@ async function loadRecognitionPolicy(db, config, required = false) {
   return { ...policy, dailyLimit: quota.dailyLimit };
 }
 
+function safeRecognitionPreview(result) {
+  if (!result || !result.observation) return result;
+  assertFoodRecognition({ mode: result.resolvedMode || result.mode, observation: result.observation });
+  // 老会话或额度幂等缓存也经过同一门槛，不能继续泄漏未经确认的肉类估算。
+  const pending = identityRequirement({ mode: result.resolvedMode || result.mode, observation: result.observation }).required;
+  return pending ? { ...result, previewEstimate: null, classification: null } : result;
+}
+
 function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, imageReader = resolveImages,
   modelClient = callRecognitionModel, estimateClient = callNutritionEstimateModel, now = Date.now, config = process.env }) {
   return async (event = {}) => {
     let stage = 'access_check';
     const action = event.action || 'recognize';
-    const startedAt = Date.now(); let stageStartedAt = startedAt; const timings = {};
-    const setStage = value => {
-      const current = Date.now();
-      timings[stage] = (timings[stage] || 0) + current - stageStartedAt;
-      stage = value; stageStartedAt = current;
-    };
+    const setStage = value => { stage = value; };
     try {
       if (action === 'getDailyLimit') {
         // 只返回公开额度与版本，不包含管理员身份、模型密钥或账号使用记录。
@@ -36,9 +40,10 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
         const policy = getAiPolicy({ scene: 'scan', env: config });
         return { ok: true, config: await readNutritionQuota(db, policy.dailyLimit) };
       }
-      await assertAccess(db, context.OPENID, event.babyUid);
-      if (!['capabilities', 'prepare', 'recognize', 'estimate', 'bindTarget'].includes(action)) fail('INVALID_INPUT', '不支持的识别操作');
-      if (action === 'bindTarget') return await bindPreviewTarget({ db, openid: context.OPENID, event, now: now() });
+      const access = createRequestAccess(db, context.OPENID, event.babyUid);
+      await access.assertAccess();
+      if (!['capabilities', 'prepare', 'recognize', 'estimate', 'bindTarget', 'checkDuplicates'].includes(action)) fail('INVALID_INPUT', '不支持的识别操作');
+      if (['bindTarget', 'checkDuplicates'].includes(action)) return await bindPreviewTarget({ db, openid: context.OPENID, event, now: now() });
       const flags = await featureAccess(db, context.OPENID);
       if (action === 'capabilities') {
         const policy = await loadRecognitionPolicy(db, config);
@@ -54,7 +59,9 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
             '今日识别次数已用完（每天 ' + policy.dailyLimit + ' 次），明天可继续识别' };
       }
       if (!flags.nutrition_scan_enabled) fail('AI_UNAVAILABLE', '拍照识别暂不可用，可以手动添加资料');
+      assertFoodRecognition({ mode: event.mode });
       if (event.action === 'estimate') {
+        setStage('model_config');
         const policy = await loadRecognitionPolicy(db, config, true);
         return await estimateNutrition({ db, openid: context.OPENID,
           config: { ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' },
@@ -62,33 +69,54 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
             const reservation = await reserveInvocation({ db, openid: context.OPENID, babyUid: event.babyUid, scene: 'scan', requestId: hash('estimate:' + event.sessionId + ':' + event.requestId), requestHash: hash(JSON.stringify([event.sessionId, event.comparisonVersion, options.identity])), now: now(), dailyLimit: policy.dailyLimit });
             if (reservation.state === 'cached') return reservation.result;
             let dispatched = false; let model;
-            try { await markDispatched(db, reservation); dispatched = true; model = await estimateClient(options); await completeInvocation({ db, reservation, result: model, usage: model.usage, dispatched }); return model; }
-            catch (error) { await completeInvocation({ db, reservation, error, usage: model && model.usage || error.usage || null, dispatched }).catch(() => {}); throw error; }
+            try {
+              await markDispatched(db, reservation); dispatched = true;
+              model = await estimateClient(options);
+              await completeInvocation({ db, reservation, result: model, usage: model.usage, dispatched });
+              return model;
+            } catch (error) {
+              await completeInvocation({ db, reservation, error, usage: model && model.usage || error.usage || null, dispatched }).catch(() => {});
+              throw error;
+            }
           }, now }, event, setStage);
       }
       if (event.action === 'prepare') {
         // 模型尚未就绪时先提示原因，避免用户上传图片后才发现识别无法执行。
+        setStage('model_config');
         const policy = await loadRecognitionPolicy(db, config, true);
         resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' });
         // 等待准备流程完成，异步异常才能在这里保留具体出错阶段。
         return await prepareSession(db, context.OPENID, event, env, now(), allocateFileIds, setStage);
       }
       setStage('session_read');
-      const session = await ownedSession(db, context.OPENID, event.babyUid, event.sessionId, now());
+      const session = await access.ownedSession(event.sessionId, now());
+      assertFoodRecognition({ mode: session.mode, observation: session.observation, identity: session.confirmedIdentity });
       if (event.requestId && event.requestId !== session.requestId) fail('REQUEST_CONFLICT', '识别请求编号与草稿不同');
-      if (session.result) return { ...session.result, sessionId: event.sessionId };
-      if (session.status === 'failed') return session.failure;
+      if (session.result) return { ...safeRecognitionPreview(session.result), sessionId: event.sessionId };
+      if (session.status === 'failed') return { ...session.failure, restartRequired: true };
       if (session.status === 'recognizing') fail(session.recognitionLeaseUntil > now() ? 'RECOGNITION_IN_PROGRESS' : 'AI_UNKNOWN', session.recognitionLeaseUntil > now() ? '识别正在处理，请稍后再查看' : '上次识别结果暂不可确认，请主动重新识别');
       if (!['recognize', undefined].includes(event.action)) fail('INVALID_INPUT', '不支持的识别操作');
       setStage('model_config');
-      const policy = await loadRecognitionPolicy(db, config, true);
-      const modelConfig = resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' });
+      // 会话与缓存核验后才并行只读准备，图片失败仍在额度预留之前处理。
+      const imageOutcome = Promise.resolve().then(() => imageReader(cloud, event.fileIDs, session, env))
+        .then(images => ({ ok: true, images }), error => ({ ok: false, error }));
+      let policy; let modelConfig;
+      try {
+        policy = await loadRecognitionPolicy(db, config, true);
+        modelConfig = resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' });
+      } catch (error) {
+        // 配置错误优先，收尾等待已启动的图片读取，避免遗留异步异常或后台工作。
+        await imageOutcome;
+        throw error;
+      }
       setStage('image_read');
-      const images = await imageReader(cloud, event.fileIDs, session, env);
+      const imageResult = await imageOutcome;
+      if (!imageResult.ok) throw imageResult.error;
+      const images = imageResult.images;
       setStage('session_claim');
       const reservation = await reserveInvocation({ db, openid: context.OPENID, babyUid: event.babyUid, scene: 'scan', requestId: session.requestId,
         requestHash: hash(JSON.stringify([event.sessionId, session.requestedMode || session.mode, event.fileIDs])), now: now(), dailyLimit: policy.dailyLimit });
-      if (reservation.state === 'cached') return reservation.result;
+      if (reservation.state === 'cached') return safeRecognitionPreview(reservation.result);
       let dispatched = false; let model;
       try {
         if (!await claimRecognition(db, event.sessionId, now())) fail('RECOGNITION_IN_PROGRESS', '识别正在处理，请稍后再查看');
@@ -97,6 +125,7 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
         model = await modelClient({ images, mode: session.mode, purpose: session.purpose, categoryCatalog: session.categoryCatalog,
           ...modelConfig, deadline: now() + 25000 });
         const resolvedMode = model.resolvedMode || session.mode;
+        assertFoodRecognition({ mode: resolvedMode, observation: model.observation });
         const unresolved = ['uncertain', 'unsupported'].includes(resolvedMode);
         const result = { ok: true, requestId: session.requestId, mode: resolvedMode, resolvedMode,
           observation: model.observation, identityCandidates: model.observation.identityCandidates, patch: unresolved ? {} : observationPatch(model.observation, resolvedMode),
@@ -116,17 +145,11 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
         return { ...result, sessionId: event.sessionId };
       } catch (error) {
         await completeInvocation({ db, reservation, dispatched, error, usage: model && model.usage || error.usage || null }).catch(() => {});
-        const failure = publicFailure(error, session.requestId, { action, stage });
+        const failure = { ...publicFailure(error, session.requestId, { action, stage }), restartRequired: true };
         await db.collection(SESSION_COLLECTION).doc(event.sessionId).update({ status: 'failed', failure }).catch(() => {});
         return failure;
       }
     } catch (error) { return publicFailure(error, event.requestId, { action, stage }); }
-    finally {
-      setStage('complete');
-      // 只记录阶段耗时，不输出图片、模型原文、账号或宝宝信息。
-      console.info('[nutrition-timing]', { action: ['prepare', 'recognize', 'estimate', 'bindTarget', 'capabilities', 'getDailyLimit'].includes(action) ? action : 'invalid',
-        elapsedMs: Date.now() - startedAt, stages: timings });
-    }
   };
 }
 

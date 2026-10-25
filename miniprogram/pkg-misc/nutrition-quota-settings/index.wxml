@@ -15,7 +15,7 @@
       <text class="field-hint">可填 0～10000；0 表示暂停新的营养识别。</text>
     </view>
     <view class="rules">
-      <text>食物、奶粉识别与单独发起的 AI 估算共用次数。</text>
+      <text>食物识别与单独发起的 AI 估算共用次数。</text>
       <text>每天 00:00（北京时间）重置。修改上限不清空当天已用次数。</text>
     </view>
     <view class="error-card" wx:if="{{errorText}}">

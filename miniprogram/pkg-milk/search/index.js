@@ -22,7 +22,8 @@ function displayItem(item) {
   const basis = item.nutritionBasis || {};
   const values = FIELDS.map(key => {
     const entry = (item.nutrients || {})[key] || {};
-    return { key, label: LABELS[key], value: entry.state === 'known' ? Math.round(entry.value * 1000) / 1000 + ' ' + entry.unit : '未提供' };
+    return { key, label: LABELS[key], value: entry.state === 'known' ? Math.round(entry.value * 1000) / 1000 + ' ' + entry.unit : '未提供',
+      isEstimate: entry.state === 'known' && ((item.provenance || {}).fieldSources || {})[key] === 'model_estimate' };
   });
   const calories = (item.nutrients || {}).calories || {};
   const basisText = basis.quantity > 0 && basis.unit ? '每 ' + basis.quantity + (basis.unit === 'g' ? ' 克' : basis.unit === 'ml' ? ' 毫升' : ' 份') +
@@ -42,8 +43,7 @@ function displayItem(item) {
     ] : [],
     actualUnitText: ({ g: '克', ml: '毫升', portion: '份' })[item.actualUnit] || item.actualUnit || '',
     basisText,
-    sourceText: ({ system: '系统', mine: '我的', history: '记录' })[item.source] || '饮食记录',
-    estimate: Object.values((item.provenance || {}).fieldSources || {}).includes('model_estimate') };
+    sourceText: ({ system: '系统', mine: '我的', history: '记录' })[item.source] || '饮食记录' };
 }
 Page({
   data: {

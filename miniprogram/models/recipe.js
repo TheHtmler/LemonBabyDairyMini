@@ -6,7 +6,7 @@ const { invalidateSearchForBaby } = require('../utils/searchSession');
  */
 
 const FoodModel = require('./food');
-const { copyRecognitionMetaForSnapshot } = require('../utils/nutritionProvenance');
+const { copyRecognitionMetaForSnapshot, withMissingNutrition } = require('../utils/nutritionProvenance');
 const {
   buildCreateAuditFields,
   buildUpdateAuditFields,
@@ -49,7 +49,7 @@ function toNumber(value, fallback = 0) {
 }
 
 function normalizeNutrition(nutrition = {}) {
-  return {
+  return withMissingNutrition({
     calories: toNumber(nutrition.calories),
     protein: toNumber(nutrition.protein),
     naturalProtein: toNumber(nutrition.naturalProtein),
@@ -58,7 +58,7 @@ function normalizeNutrition(nutrition = {}) {
     carbs: toNumber(nutrition.carbs),
     fiber: toNumber(nutrition.fiber),
     sodium: toNumber(nutrition.sodium)
-  };
+  }, nutrition);
 }
 
 function sanitizeFoodSnapshot(snapshot = {}) {
@@ -71,11 +71,13 @@ function sanitizeFoodSnapshot(snapshot = {}) {
     categoryLevel1: snapshot.categoryLevel1 || snapshot.category || '',
     categoryLevel2: snapshot.categoryLevel2 || '',
     ...(recognitionMeta ? { recognitionMeta } : {}),
+    ...(typeof snapshot.isPhotoAiRecognized === 'boolean' ? { isPhotoAiRecognized: snapshot.isPhotoAiRecognized } : {}),
+    ...(snapshot.nutrientStates ? { nutrientStates: JSON.parse(JSON.stringify(snapshot.nutrientStates)) } : {}),
     nutritionBasis: {
       quantity: toNumber(basis.quantity, 100),
       unit: basis.unit || 'g'
     },
-    nutritionPerBasis: normalizeNutrition(perBasis),
+    nutritionPerBasis: withMissingNutrition(normalizeNutrition(perBasis), snapshot),
     proteinSource: snapshot.proteinSource || 'natural',
     proteinSplit: snapshot.proteinSplit || null,
     proteinQuality: snapshot.proteinQuality || '',
@@ -102,11 +104,13 @@ function normalizeIngredient(ingredient = {}, index = 0) {
       || foodSnapshot.proteinQuality
       || '',
     foodSnapshot,
-    nutrition: normalizeNutrition(ingredient.nutrition || emptyNutrition())
+    nutrition: withMissingNutrition(normalizeNutrition(ingredient.nutrition || emptyNutrition()), Number(ingredient.quantity) > 0 ? foodSnapshot : null)
   };
 }
 
 function normalizeRecipe(doc = {}) {
+  const ingredients = (doc.ingredients || []).map((item, index) => normalizeIngredient(item, index));
+  const nutrientSources = ingredients.filter(item => item.quantity > 0).map(item => item.nutrition);
   // 不使用 ...doc：云文档里的 undefined / 多余字段会导致 setData 失败，列表表现为一直为空
   return {
     _id: doc._id || '',
@@ -122,9 +126,9 @@ function normalizeRecipe(doc = {}) {
     prepTimeSec: doc.prepTimeSec === undefined || doc.prepTimeSec === null
       ? null
       : doc.prepTimeSec,
-    ingredients: (doc.ingredients || []).map((item, index) => normalizeIngredient(item, index)),
-    totalNutrition: normalizeNutrition(doc.totalNutrition || emptyNutrition()),
-    nutritionPer100g: normalizeNutrition(doc.nutritionPer100g || emptyNutrition()),
+    ingredients,
+    totalNutrition: withMissingNutrition(normalizeNutrition(doc.totalNutrition || emptyNutrition()), ...nutrientSources),
+    nutritionPer100g: withMissingNutrition(normalizeNutrition(doc.nutritionPer100g || emptyNutrition()), ...nutrientSources),
     proteinSource: doc.proteinSource || 'natural',
     usageCount: toNumber(doc.usageCount, 0),
     lastUsedAt: doc.lastUsedAt === undefined ? null : doc.lastUsedAt,

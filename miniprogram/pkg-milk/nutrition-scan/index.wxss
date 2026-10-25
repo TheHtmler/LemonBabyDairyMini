@@ -8,11 +8,15 @@ page { height: 100%; background: #171916; color: #fffdf5; }
 .camera-back-button { position: absolute; left: 0; width: 44px; height: 44px; margin: 0; padding: 0; color: #fffdf5; font-family: Arial, sans-serif; font-size: 28px; font-weight: 400; line-height: 42px; text-align: center; }
 .nav-title { position: absolute; left: 44px; top: 0; height: 100%; font-size: 16px; font-weight: 500; color: #fffdf5; }
 .package-slots { position: absolute; left: 20px; right: 20px; display: flex; justify-content: center; }
-.photo-slot { display: flex; align-items: center; width: 45%; height: 48px; margin: 0 4px; border: 1px solid rgba(255,255,255,.4); border-radius: 10px; background: rgba(23,25,22,.65); box-sizing: border-box; }
+/* 角标与照片框并列放置，跨在圆角处时不会被照片框裁切。 */
+.photo-slot-wrapper { position: relative; width: 45%; height: 59px; margin: 0 4px; }
+.photo-slot { position: absolute; top: 11px; left: 0; right: 11px; display: flex; align-items: center; height: 48px; border: 1px solid rgba(255,255,255,.4); border-radius: 10px; background: rgba(23,25,22,.65); box-sizing: border-box; }
 .photo-slot.active { border: 2px solid #ffcf55; }
 .slot-image,.slot-placeholder { flex-shrink: 0; width: 36px; height: 36px; margin-left: 5px; border-radius: 5px; }
 .slot-placeholder { color: #fffdf5; font-size: 24px; line-height: 36px; text-align: center; }
-.slot-caption { margin-left: 6px; color: #fffdf5; font-size: 12px; line-height: 20px; }
+.slot-caption { flex: 1; min-width: 0; margin-left: 6px; color: #fffdf5; font-size: 12px; line-height: 20px; white-space: normal; }
+.slot-remove { position: absolute; top: 0; right: 0; width: 44px; height: 44px; }
+.slot-remove-icon { position: absolute; top: 0; right: 0; width: 22px; height: 22px; border-radius: 11px; background: rgba(0,0,0,.7); color: #ffffff; font-size: 20px; line-height: 20px; text-align: center; }
 .photo-slot.filled .slot-caption { color: #ffdf80; }
 .camera-hint { position: absolute; top: 24%; left: 8%; width: 84%; color: #fffdf5; font-size: 27rpx; line-height: 1.6; text-align: center; white-space: normal; }
 /* 使用一个完整边框，四角共用圆角，避免原生覆盖层独立角标的形状差异。 */
@@ -20,7 +24,6 @@ page { height: 100%; background: #171916; color: #fffdf5; }
 .camera-status { position: absolute; left: 40rpx; right: 40rpx; padding: 16rpx 20rpx; border-radius: 16rpx; background: rgba(23, 25, 22, .7); color: #fffdf5; font-size: 25rpx; line-height: 1.5; text-align: center; white-space: normal; }
 
 .camera-controls { position: absolute; left: 0; right: 0; bottom: 0; padding: 28rpx 40rpx calc(28rpx + env(safe-area-inset-bottom)); background: rgba(23, 25, 22, .28); }
-.capture-mode { min-height: 36px; margin: -12rpx 0 12rpx; color: #ffdf80; font-size: 25rpx; line-height: 36px; text-align: center; }
 .recognition-tabs { display: flex; align-items: center; justify-content: center; margin-bottom: 34rpx; }
 .recognition-tab { width: 168rpx; min-height: 44px; margin: 0 12rpx; border-radius: 16rpx; background: rgba(23, 25, 22, .42); color: #fffdf5; font-size: 30rpx; font-weight: 500; line-height: 44px; text-align: center; }
 .recognition-tab.selected { background: #fffdf5; color: #373b31; font-weight: 600; }
@@ -41,10 +44,9 @@ page { height: 100%; background: #171916; color: #fffdf5; }
 .screen-state.result-state { bottom: calc(40rpx + env(safe-area-inset-bottom)); }
 .state-scroll { height: 100%; }
 .state-content { padding: 28rpx 0; text-align: center; }
-.state-title,.state-description,.state-caption,.state-error { display: block; }
+.state-title,.state-description,.state-error { display: block; }
 .state-title { color: #fffdf5; font-size: 36rpx; font-weight: 600; line-height: 1.5; }
 .state-description { margin-top: 20rpx; color: #d7dacd; font-size: 28rpx; line-height: 1.8; overflow-wrap: break-word; }
-.state-caption { margin-top: 16rpx; color: #adb4a3; font-size: 25rpx; line-height: 1.7; }
 .state-error { margin-top: 16rpx; color: #ffcf8a; font-size: 26rpx; line-height: 1.6; }
 .scan-page .state-content button { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; max-width: 480rpx; margin: 24rpx auto 0; padding: 22rpx 24rpx; border-radius: 16rpx; font-size: 28rpx; line-height: 1.5; min-height: 44px; text-align: center; }
 .scan-page button::after { border: 0; }

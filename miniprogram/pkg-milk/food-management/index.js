@@ -2,6 +2,7 @@ const FoodModel = require('../../models/food');
 const FoodCategoryModel = require('../../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
 const { normalizeCategoryName } = require('../components/nutrition-recognition/lib/core/classification');
+const { formatNutritionValue } = require('../../utils/nutritionComparison');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
 const DEFAULT_CATEGORY_SUGGESTIONS = [
   '主食及谷薯',
@@ -781,12 +782,12 @@ Page({
       return;
     }
 
-    const kcalValue = this.roundNumber(kjValue / 4.184, 2);
+    const kcalValue = formatNutritionValue(kjValue / 4.184);
     this._touchedNutritionFields = { ...(this._touchedNutritionFields || {}), calories: true };
     this.setData({
-      'formData.calories': String(kcalValue)
+      'formData.calories': kcalValue
     });
-    this.selectComponent('#nutritionRecognition')?.markManual('calories', String(kcalValue));
+    this.selectComponent('#nutritionRecognition')?.markManual('calories', kcalValue);
     wx.showToast({ title: '已换算为 kcal', icon: 'success' });
   },
 

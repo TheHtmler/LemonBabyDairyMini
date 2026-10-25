@@ -325,6 +325,7 @@ function shouldRefreshCachedSummary(cachedSummary = {}, rebuiltSummary = {}) {
   if (shouldRefreshCachedBasicInfo(cachedSummary, rebuiltSummary)) {
     return true;
   }
+  if (JSON.stringify(cachedSummary.food?.missingFields || []) !== JSON.stringify(rebuiltSummary.food?.missingFields || [])) return true;
 
   const macroFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'carbs', 'fat'];
   const foodFields = ['calories', 'protein', 'naturalProtein', 'specialProtein', 'premiumProtein', 'regularProtein', 'carbs', 'fat', 'fiber', 'fluidVolume'];

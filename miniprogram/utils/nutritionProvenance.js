@@ -1,6 +1,22 @@
 // 手工编辑后保留识别原始证据，并更新最终值的来源。
 const NUTRITION_FIELDS = ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'];
 
+// 计算与汇总仍可复用数值算法，但有缺项的指标不能作为完整的零值输出。
+function withMissingNutrition(nutrition, ...sources) {
+  const missing = new Set();
+  [nutrition, ...sources].filter(Boolean).forEach(source => {
+    const meta = source.recognitionMeta || {};
+    [source.missingFields, meta.missingFields].filter(Array.isArray).flat().forEach(field => missing.add(field));
+    NUTRITION_FIELDS.forEach(field => {
+      const state = (source.nutrientStates || {})[field];
+      const confirmed = ['label', 'reference', 'manual', 'model_estimate'].includes((meta.fieldSources || {})[field]);
+      if (!confirmed && ((source.missingNutrition || {})[field] || state && ['missing', 'unverified', 'trace', 'below_limit', 'not_convertible'].includes(typeof state === 'string' ? state : state.state))) missing.add(field);
+    });
+  });
+  const fields = NUTRITION_FIELDS.filter(field => missing.has(field) && Object.prototype.hasOwnProperty.call(nutrition, field));
+  return fields.length ? { ...nutrition, ...Object.fromEntries(fields.map(field => [field, null])), missingFields: fields } : nutrition;
+}
+
 function copyRecognitionMetaForSnapshot(meta) {
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return undefined;
   const next = {};
@@ -48,4 +64,4 @@ function updatePowderProvenance(meta, before = {}, after = {}) {
   }
   return next;
 }
-module.exports = { updateManualProvenance, updatePowderProvenance, copyRecognitionMetaForSnapshot };
+module.exports = { updateManualProvenance, updatePowderProvenance, copyRecognitionMetaForSnapshot, withMissingNutrition };

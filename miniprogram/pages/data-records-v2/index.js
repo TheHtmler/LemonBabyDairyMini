@@ -20,6 +20,7 @@ const WaterRecordModel = require('../../models/waterRecord');
 const SleepRecordModel = require('../../models/sleepRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
+const { withMissingNutrition } = require('../../utils/nutritionProvenance');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
@@ -2792,7 +2793,7 @@ function createDataRecordsPageConfig(options = {}) {
       proteinSource,
       proteinQuality,
       sourceType: food.sourceType || (food.isSystem ? 'system' : 'user_custom'),
-      nutrition: {
+      nutrition: withMissingNutrition({
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
         naturalProtein: roundNumber(naturalProtein, 2),
@@ -2801,7 +2802,7 @@ function createDataRecordsPageConfig(options = {}) {
         fat: roundNumber(Number(nutrition.fat) || 0, 2),
         fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
         sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
-      },
+      }, nutrition, food),
       naturalProtein: roundNumber(naturalProtein, 2),
       specialProtein: roundNumber(specialProtein, 2),
       milkType: food.milkType || '',

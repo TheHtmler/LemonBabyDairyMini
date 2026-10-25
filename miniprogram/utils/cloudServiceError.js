@@ -13,7 +13,7 @@ function normalizeCloudServiceError(error, scene = 'search') {
     code = 'NETWORK_ERROR'; message = '网络连接失败，请检查网络后重试';
   }
   if (!message || !/[\u4e00-\u9fff]/.test(message)) message = service + '暂时失败，请重试';
-  return Object.assign(new Error(message), { code, stage: source.stage || '' });
+  return Object.assign(new Error(message), { code, stage: source.stage || '', restartRequired: source.restartRequired === true });
 }
 
 module.exports = { normalizeCloudServiceError };
