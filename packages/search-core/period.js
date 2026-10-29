@@ -10,7 +10,8 @@ function resolvePeriod(period, now = Date.now()) {
   let startDate = today; let endDateExclusive = tomorrow;
   const weekday = (new Date(today + 'T00:00:00Z').getUTCDay() + 6) % 7;
   if (p.kind === 'yesterday') { startDate = shiftDate(today, -1); endDateExclusive = today; }
-  if (p.kind === 'last_n_days') startDate = shiftDate(today, 1 - p.days);
+  // 近期统计只覆盖已结束的自然日，避免把尚未记录完整的今天计入。
+  if (p.kind === 'last_n_days') { startDate = shiftDate(today, -p.days); endDateExclusive = today; }
   if (p.kind === 'current_calendar_week') startDate = shiftDate(today, -weekday);
   if (p.kind === 'previous_calendar_week') { endDateExclusive = shiftDate(today, -weekday); startDate = shiftDate(endDateExclusive, -7); }
   if (p.kind === 'current_month') startDate = today.slice(0, 7) + '-01';

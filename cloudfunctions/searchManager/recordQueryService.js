@@ -1,6 +1,8 @@
 'use strict';
-const { MEASURES, matchCandidate, businessDate } = require('./lib/search');
+const { MEASURES, matchCandidate, businessDate, shanghaiDate, shiftDate } = require('./lib/search');
 const { inPeriod } = require('./readRepository');
+const { timeOf } = require('./dietAdapter');
+const { hash } = require('./access');
 function matchesEntity(item, plan) {
   if (!plan.entities.length) return true;
   if (item.domain === 'milk') return (item.raw.formulaComponents || []).some(component => plan.entities.some(entity => component.powderId === (entity.locator && entity.locator.memberId || entity.sourceId) || component.powderName === entity.name));
@@ -55,18 +57,44 @@ function publicEvent(item, plan) {
   }
   return result;
 }
+function groupMealEvents(matched, events = matched) {
+  // 沿用餐次编号；无编号的旧记录各自保留，不按餐名或时间猜测合并。
+  const keyOf = item => JSON.stringify([item.date, item.raw.legacy ? 'legacy' : 'current', item.raw.mealBatchId || item.id]);
+  const selected = new Set(matched.map(keyOf)); const groups = new Map();
+  for (const item of events) {
+    const key = keyOf(item);
+    if (!selected.has(key)) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  return [...groups].map(([key, rows]) => {
+    rows.sort((left, right) => (Number(left.raw.sortOrder) || 0) - (Number(right.raw.sortOrder) || 0) || left.id.localeCompare(right.id));
+    const first = rows[0]; const raw = first.raw;
+    const ingredients = rows.map(item => item.name + (item.raw.quantity !== undefined && item.raw.quantity !== null && item.raw.quantity !== '' ? ' ' + item.raw.quantity + ' ' + (item.raw.unit || 'g') : '') + (item.raw.notes ? ' · ' + item.raw.notes : ''));
+    return { id: 'meal:' + hash(key), source: 'history', sourceId: first.sourceId, type: 'meal',
+      name: raw.mealLabel || ({ breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' })[raw.mealType] || '饮食记录',
+      date: first.date, time: timeOf(raw.mealTime || raw.time || raw.recordedAt || first.time), foodCount: rows.length,
+      mealSummary: rows.slice(0, 3).map(item => item.name).join('、') + (rows.length > 3 ? '等' + rows.length + '项' : ''),
+      mealNote: [...new Set(rows.map(item => item.raw.mealNote).filter(Boolean))].join('；'), ingredients,
+      locator: first.locator };
+  }).sort((left, right) => (right.date + right.time).localeCompare(left.date + left.time) || left.id.localeCompare(right.id));
+}
 async function queryRecords({ reader, plan, period = plan.effectivePeriods[0], offset = 0, now }) {
   const selected = await selectedEvents(reader, plan, period, now); const items = selected.items;
   if (plan.operation === 'records.list') {
     let display = items;
+    const byMeal = plan.domain === 'diet' && plan.groupBy !== 'entity';
     if (plan.groupBy === 'entity') {
       const seen = new Set();
       display = items.filter(item => { const key = item.candidate && item.candidate.groupKey || item.entityId || item.name; if (seen.has(key)) return false; seen.add(key); return true; });
     }
+    if (byMeal) display = groupMealEvents(items, (await reader.events('diet', period)).filter(item => inPeriod(item.raw, period, now)));
     if (plan.aggregation === 'latest') display = display.slice(0, 1);
     const page = display.slice(offset, offset + 20);
     return { status: display.length ? 'ready' : selected.unknown ? 'missing_data' : 'no_records', message: display.length ? '' : selected.unknown ? '部分记录缺少可比较的营养快照' : '这段时间没有符合条件的记录',
-      result: { kind: 'list', items: page.map(item => publicEvent(item, plan)), total: display.length, nextOffset: offset + page.length < display.length ? offset + page.length : null, note: selected.unknown ? '部分记录缺少比较依据，未纳入列表' : '' } };
+      result: { kind: 'list', items: byMeal ? page : page.map(item => publicEvent(item, plan)), total: display.length,
+        ...(byMeal ? { entityType: 'meal' } : {}), nextOffset: offset + page.length < display.length ? offset + page.length : null,
+        note: [selected.unknown ? '部分记录缺少比较依据，未纳入列表' : '', byMeal && (plan.entities.length || plan.filters.length) ? '按包含匹配食物的餐次展示，详情保留整餐内容；筛选条件针对餐内食物。' : ''].filter(Boolean).join('；') } };
   }
   const meta = MEASURES[plan.measure]; const groups = new Map(); let missing = selected.unknown;
   for (const item of items) {
@@ -85,4 +113,30 @@ async function queryRecords({ reader, plan, period = plan.effectivePeriods[0], o
   return { status: items.length ? 'ready' : 'no_records', message: items.length ? '' : '这段时间没有服用或摄入记录', result: { kind: 'scalar', label: meta.label, rows, recordedDays: new Set(items.map(x => x.date)).size, totalRecords: items.length,
     note: plan.measure === 'milk.recorded_volume' ? '沿用当日统计的奶量口径；配奶水量不等同于成品实际入口体积' : plan.measure === 'records.count' ? '次数仅代表已记录事件，不推断未记录时是否实际服用' : '' } };
 }
-module.exports = { queryRecords, selectedEvents, amount, publicEvent, matchesEntity };
+async function queryRecordSeries({ reader, plan, now, offset = 0 }) {
+  const selected = await selectedEvents(reader, plan, plan.effectivePeriods[0], now);
+  const meta = MEASURES[plan.measure]; const days = new Map(); const units = new Set();
+  for (const item of selected.items) {
+    reader.budget();
+    if (!days.has(item.date)) days.set(item.date, { date: item.date, value: 0, known: true, unit: meta.unit,
+      locator: { kind: 'day', babyUid: plan.babyUid, date: item.date } });
+    const row = days.get(item.date); const value = amount(item, plan.measure);
+    if (!value) { row.known = false; row.missingReason = '部分记录缺少可计算的用量'; continue; }
+    units.add(value.unit); row.unit = value.unit; row.value += value.value;
+    if (!Number.isFinite(row.value)) { row.known = false; row.missingReason = '记录数值超出可计算范围'; }
+  }
+  if (units.size > 1) return { status: 'unsupported', message: '记录使用了不同计量单位，暂时无法合并为同一条每日趋势' };
+  let rows = [...days.values()].sort((a, b) => b.date.localeCompare(a.date)).map(row => ({ ...row,
+    value: row.known ? Number(row.value.toFixed(4)) : null }));
+  if (plan.aggregation === 'latest') rows = rows.slice(0, 1);
+  const page = rows.slice(offset, offset + 20); const period = plan.effectivePeriods[0];
+  const until = period.endDateExclusive && period.endDateExclusive < shiftDate(shanghaiDate(now), 1) ? period.endDateExclusive : shiftDate(shanghaiDate(now), 1);
+  return { status: !rows.length ? 'no_records' : rows.some(row => !row.known) ? 'missing_data' : 'ready',
+    message: !rows.length ? '这段时间没有对应的已记录事件' : rows.some(row => !row.known) ? '部分日期缺少完整的用量依据' : '',
+    result: { kind: 'series', label: meta.label, unit: [...units][0] || meta.unit, rows: page, total: rows.length,
+      knownDays: rows.filter(row => row.known).length,
+      requestedDays: period.startDate ? Math.max(0, (Date.parse(until) - Date.parse(period.startDate)) / 86400000) : rows.length,
+      nextOffset: offset + page.length < rows.length ? offset + page.length : null,
+      note: '仅统计各日已记录事件；未记录日期不补零，也不推断实际未发生。' } };
+}
+module.exports = { queryRecords, queryRecordSeries, selectedEvents, amount, publicEvent, groupMealEvents, matchesEntity };

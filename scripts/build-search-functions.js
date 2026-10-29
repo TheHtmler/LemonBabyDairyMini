@@ -21,7 +21,7 @@ function copy(source, destinations) {
 // 普通分包复用主包的搜索模块；云函数仍各自携带独立部署所需的副本。
 copy('packages/search-core', ['cloudfunctions/searchManager/lib/search', 'miniprogram/utils/search-core', 'cloudfunctions/getSystemFoodIndex/lib/search', 'cloudfunctions/getSystemPowderIndex/lib/search']);
 // 服务端复用页面现有的纯计算源，不复制另一套营养和剩奶算法。
-for (const file of ['dailySummaryV2Utils.js', 'feedingRecordV2Utils.js', 'formulaPowderUtils.js', 'nutritionProvenance.js']) {
+for (const file of ['dailySummaryV2Utils.js', 'feedingRecordV2Utils.js', 'formulaPowderUtils.js', 'nutritionProvenance.js', 'growthChartUtils.js']) {
   const body = fs.readFileSync(path.join(root, 'miniprogram/utils', file), 'utf8').replace(/require\('\.\/search-core\//g, "require('../search/");
   writeGenerated('cloudfunctions/searchManager/lib/intake/' + file, body);
 }

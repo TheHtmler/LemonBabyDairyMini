@@ -14,21 +14,15 @@ function runtime() {
 }
 function createSearchHandler({ db, context, env = process.env, now = Date.now, modelClient }) {
   return async (event = {}) => {
-    const started = Date.now(); let accessMs = 0; let flagsMs = 0;
     try {
       const accessContext = await assertSearchAccess(db, context.OPENID, event.babyUid);
-      accessMs = Date.now() - started; const flagsStarted = Date.now();
       const flags = await featureAccess(db, accessContext.openid);
-      flagsMs = Date.now() - flagsStarted;
       if (event.action === 'capabilities') {
         return { ok: true, flags, allowedFeatureIds: ['food', 'powder', 'recipe', 'medication', 'meal', 'milk', 'water', 'records', 'nutrition', 'goals', 'baby'],
           protocolVersion: PROTOCOL_VERSION, capabilityVersion: CAPABILITY_VERSION, buildVersion: BUILD_VERSION, operations: Object.keys(CAPABILITIES) };
       }
       if (!flags.home_search_enabled) fail('FEATURE_DISABLED', '搜索功能暂未开放');
-      if (event.action === 'search') {
-        const response = await search({ db, accessContext, event, flags, env, now: now(), modelClient });
-        return { ...response, performance: { ...response.performance, accessMs, flagsMs, totalMs: Date.now() - started } };
-      }
+      if (event.action === 'search') return await search({ db, accessContext, event, flags, env, now: now(), modelClient });
       if (event.action === 'preview') return { ok: true, item: publicCandidate(await previewSource(db, accessContext, event)) };
       fail('INVALID_INPUT', '不支持该搜索操作');
     } catch (error) {

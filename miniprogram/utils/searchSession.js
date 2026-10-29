@@ -34,7 +34,8 @@ function openSearchLocator(locator) {
   const context = currentContext();
   if (!locator || locator.babyUid !== context.babyUid) return wx.showToast({ title: '宝宝已切换，请重新搜索', icon: 'none' });
   const date = encodeURIComponent(locator.date || '');
-  if (locator.kind === 'meal' && locator.mealBatchId) return wx.navigateTo({ url: '/pkg-records/meal-editor/index?date=' + date + '&from=search&mealBatchId=' + encodeURIComponent(locator.mealBatchId) });
+  if (locator.kind === 'meal' && (locator.mealBatchId || locator.recordId)) return wx.navigateTo({ url: '/pkg-records/meal-editor/index?date=' + date + '&from=search&' +
+    (locator.mealBatchId ? 'mealBatchId=' + encodeURIComponent(locator.mealBatchId) : 'recordId=' + encodeURIComponent(locator.recordId)) });
   if (locator.kind === 'milk') return wx.navigateTo({ url: '/pkg-milk/milk-feeding-editor-v2/index?mode=edit&source=search&date=' + date + '&recordId=' + encodeURIComponent(locator.recordId) });
   const app = getApp(); app.globalData.pendingSearchLocator = { ...locator, accountKey: context.accountKey, createdAt: Date.now() };
   return wx.switchTab({ url: '/pages/data-records-v2/index' });

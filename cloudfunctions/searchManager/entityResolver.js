@@ -1,5 +1,5 @@
 'use strict';
-const { searchText, CATALOG_DOMAINS } = require('./lib/search');
+const { searchText, rankCatalogCandidate, CATALOG_DOMAINS } = require('./lib/search');
 
 function identityRank(item, mention) {
   const key = searchText(mention); if (!key) return -1;
@@ -14,7 +14,7 @@ async function resolveEntities(reader, draft, period) {
   const matched = [];
   for (const mention of draft.entityMentions) {
     let rows = catalogDomain ? await reader.catalogItems(catalogDomain, mention, draft.source) : [];
-    const ranked = rows.map(item => ({ item, rank: identityRank(item, mention) })).filter(x => x.rank >= 0).sort((a, b) => a.rank - b.rank || a.item.name.localeCompare(b.item.name));
+    const ranked = rows.map(item => ({ item, rank: draft.operation === 'catalog.search' ? rankCatalogCandidate(item, mention) : identityRank(item, mention) })).filter(x => x.rank >= 0).sort((a, b) => a.rank - b.rank || a.item.name.localeCompare(b.item.name));
     const exact = ranked.filter(x => x.rank < 2);
     let candidates = (draft.operation === 'catalog.search' ? ranked : exact.length ? exact : ranked).map(x => x.item);
     if (!draft.operation.startsWith('catalog') && ['medication', 'diet', 'milk'].includes(draft.domain)) {

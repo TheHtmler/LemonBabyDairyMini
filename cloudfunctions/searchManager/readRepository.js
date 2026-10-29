@@ -6,7 +6,7 @@ const { normalizeFeedingRecordV2 } = require('./lib/intake/feedingRecordV2Utils'
 const { timeOf, normalizeDietCandidate } = require('./dietAdapter');
 
 function stamp(row) {
-  const date = businessDate(row.dateKey || row.date || row.recordTime || row.startDateTime || row.actualDateTime);
+  const date = businessDate(row.dateKey || row.date || row.recordDate || row.recordTime || row.startDateTime || row.actualDateTime);
   const time = timeOf(row.actualTime || row.timeString || row.startTime || row.time || row.actualDateTime || row.recordTime || row.startDateTime);
   return { date, time };
 }
@@ -54,10 +54,25 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
     ]));
   }
   async function collection(name, period, options = {}) {
-    const key = JSON.stringify([name, period, options.fields, !!options.dated]); if (cache.has(key)) return cache.get(key);
+    const key = JSON.stringify([name, period, options.fields, !!options.dated, !!options.overlapSleep]);
+    if (cache.has(key)) return cache.get(key);
     const task = (async () => {
       const _ = db.command; const clauses = [{ babyUid: accessContext.babyUid }];
-      const range = dateWhere(period, options.fields || ['date']); if (range) clauses.push(range);
+      if (options.overlapSleep && name === 'sleep_records' && period) {
+        const lo = period.startDate || '1900-01-01';
+        const hi = period.endDateExclusive || shiftDate(shanghaiDate(now), 1);
+        const absent = field => _.or([{ [field]: null }, { [field]: '' }, { [field]: _.exists(false) }]);
+        const unfinished = _.and([absent('endDateTime'), absent('endTime')]);
+        // 日期预筛选保留长睡眠和历史未结束记录，精确交集由护理执行器校验。
+        clauses.push(_.or([
+          dateWhere({ startDate: shiftDate(lo, -1), endDateExclusive: hi }, ['date', 'dateKey', 'startDateTime', 'endDateTime']),
+          _.and([{ startDateTime: _.lt(new Date(hi + 'T00:00:00+08:00')) }, _.or([{ endDateTime: _.gt(new Date(lo + 'T00:00:00+08:00')) }, unfinished])]),
+          _.and([{ startDateTime: _.lt(shiftDate(hi, 1)) }, { endDateTime: _.gt(shiftDate(lo, -1)) }]),
+          _.and([_.or([{ date: _.lt(hi) }, { dateKey: _.lt(hi) }]), unfinished])
+        ]));
+      } else {
+        const range = dateWhere(period, options.fields || ['date']); if (range) clauses.push(range);
+      }
       const base = clauses.length === 1 ? clauses[0] : _.and(clauses);
       let before;
       try { before = await manifest(name, base); } catch (_) { fail('SOURCE_UNAVAILABLE', '所需记录暂时读取失败，请重试'); }
@@ -69,15 +84,17 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
         try { response = await db.collection(name).where(where).orderBy('_id', 'asc').limit(100).get(); }
         catch (_) { fail('SOURCE_UNAVAILABLE', '所需记录暂时读取失败，请重试'); }
         const batch = response.data || []; budget(batch.length);
-        rows.push(...batch.filter(row => row.babyUid === accessContext.babyUid && active(row) && (!options.dated || inPeriod(row, period, now))));
+        rows.push(...batch.filter(row => row.babyUid === accessContext.babyUid && active(row) && (options.overlapSleep || !options.dated || inPeriod(row, period, now))));
         if (batch.length < 100) break;
         const last = batch[batch.length - 1]._id; if (!last || last === after) fail('SOURCE_UNAVAILABLE', '记录分页未完成，请重试'); after = last;
       }
-      manifests.push({ key, collection: name, where: base, before }); return rows;
+      manifests.push({ key, collection: name, where: base, before });
+      return rows;
     })(); cache.set(key, task); return task;
   }
   async function catalogItems(domain = 'catalog', keyword = '', source = 'all') {
-    const key = JSON.stringify(['catalog', domain, keyword, source]); if (cache.has(key)) return cache.get(key);
+    const key = JSON.stringify(['catalog', domain, keyword, source]);
+    if (cache.has(key)) return cache.get(key);
     const task = (async () => {
       const query = { scope: domain === 'catalog' ? ['food', 'powder', 'recipe', 'medication'] : [domain], source, keyword };
       const sources = await mapConcurrent(catalog.sourceNames(query), 3, async name => {
@@ -106,7 +123,8 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
         if (profile) for (let i = 0; i < (profile.formulaPowders || []).length; i++) { const item = catalog.normalizeCandidate(profile, name, i, accessContext.babyUid); if (item && !item.deleted) result.push(item); }
         return result;
       });
-      return sources.flat();
+      const items = sources.flat();
+      return items;
     })(); cache.set(key, task); return task;
   }
   async function events(domain, period) {
@@ -142,7 +160,7 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
     });
     budget();
   }
-  return { collection, catalogItems, events, verify, budget, revisions: () => Object.fromEntries(manifests.map(x => [hash(x.key), x.before])), get reads() { return reads; } };
+  return { collection, catalogItems, events, verify, budget, revisions: () => Object.fromEntries(manifests.map(x => [hash(x.key), x.before])) };
 }
 function event(raw, domain, name, entityId, babyUid) {
   const s = stamp(raw); return { id: domain + ':' + raw._id, sourceId: raw._id, domain, type: domain === 'diet' ? raw.sourceType === 'recipe' ? 'recipe' : 'food' : domain, name, entityId, date: s.date, time: s.time, raw,
