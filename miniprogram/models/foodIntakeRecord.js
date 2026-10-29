@@ -78,9 +78,11 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
     quantity: foodSnapshot.baseQuantity,
     unit: foodSnapshot.baseUnit
   });
-  const nutritionPerBasis = withMissingNutrition(normalizeNutritionPerBasis(
-    foodSnapshot.nutritionPerBasis || foodSnapshot.nutritionPer100g
-  ), foodSnapshot);
+  const rawNutrition = foodSnapshot.nutritionPerBasis || foodSnapshot.nutritionPer100g || foodSnapshot.nutritionPerUnit;
+  const hasNutrition = rawNutrition && ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium']
+    .some(field => hasOwn(rawNutrition, field));
+  const nutritionPerBasis = hasNutrition
+    ? withMissingNutrition(normalizeNutritionPerBasis(rawNutrition), foodSnapshot) : null;
   const recognitionMeta = copyRecognitionMetaForSnapshot(foodSnapshot.recognitionMeta);
 
   return {
@@ -94,7 +96,8 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
     nutritionBasis,
     proteinSource: foodSnapshot.proteinSource || 'natural',
     proteinQuality: foodSnapshot.proteinQuality || '',
-    nutritionPerBasis,
+    proteinSplit: foodSnapshot.proteinSplit || null,
+    ...(nutritionPerBasis ? { nutritionPerBasis } : {}),
     sourceType: foodSnapshot.sourceType || '',
     libraryScope: foodSnapshot.libraryScope || (foodSnapshot.sourceType === 'system' ? 'system' : ''),
     sourceSystemFoodId: foodSnapshot.sourceSystemFoodId || '',

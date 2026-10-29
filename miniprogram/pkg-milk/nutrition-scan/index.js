@@ -53,11 +53,12 @@ Page({
       const key = context.accountKey + ':' + context.babyUid;
       if (key !== this._contextKey) {
         this._contextKey = key; this._captureEpoch++;
+        this._recoveryRequest = null;
         this._cameraSuspended = false;
         this.resetPhotoSlots();
         this.setData({ babyUid: context.babyUid, babyName: context.babyName,
           formSessionId: this.data.formSessionId + 1, existing: null,
-          available: false, capturing: false, recognitionOpen: false, categories: FOOD_CATEGORIES });
+          available: false, capturing: false, recovering: false, recognitionOpen: false, categories: FOOD_CATEGORIES });
       }
       if (!context.accountKey || !context.babyUid) {
         this.setData({ loading: false, available: false, pending: null,
@@ -356,17 +357,24 @@ Page({
   async recover() {
     const pending = this.data.pending;
     if (!pending || this.data.recovering) return;
-    const epoch = this._epoch; const key = this._contextKey;
+    const key = this._contextKey; const request = this._recoveryRequest = {};
+    // 同一宝宝前后台切换继续等待；切换上下文后旧恢复任务失效。
+    const active = () => this._recoveryRequest === request && this.isCurrent(this._epoch, key);
     this.setData({ recovering: true });
     try {
       const result = await recoverConfirmation(pending);
       if (result.state === 'saved') invalidateSearchForBaby(pending.babyUid, { ...result.savedResult, accountKey: key.split(':')[0] });
-      if (!this.isCurrent(epoch, key)) return;
+      if (!active()) return;
       if (result.state === 'saved') this.onSaved({ detail: { babyUid: pending.babyUid } });
       else if (['failed', 'not_submitted'].includes(result.state)) this.setData({ pending: null, error: '上次资料未保存，可以重新识别' });
       else this.setData({ error: result.state === 'processing' ? '仍在保存，请稍后恢复状态' : '暂不能确认保存结果，请稍后恢复，避免重复添加' });
-    } catch (error) { if (this.isCurrent(epoch, key)) this.setData({ error: error.message }); }
-    finally { if (this.isCurrent(epoch, key)) { this.setData({ recovering: false }); this.syncCamera(); } }
+    } catch (error) { if (active()) this.setData({ error: error.message }); }
+    finally {
+      if (this._recoveryRequest === request) {
+        this._recoveryRequest = null;
+        if (!this._unloaded) { this.setData({ recovering: false }); this.syncCamera(); }
+      }
+    }
   },
   openManual() {
     wx.navigateTo({ url: '/pkg-milk/food-management/index' });

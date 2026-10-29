@@ -2,7 +2,7 @@
   <view class="recovery-banner" wx:if="{{purpose !== 'preview' && recoveryPending}}"><text>上次资料的保存结果待确认</text><button class="primary-button" catchtap="recoverFormSave" disabled="{{recoveryBusy}}" loading="{{recoveryBusy}}">恢复保存状态</button></view>
   <view class="recognition-entry" wx:if="{{showTrigger}}">
     <view><text class="entry-title">拍照填写营养</text><text class="entry-hint">拍照或选图，自动填写</text></view>
-    <button class="entry-button" size="mini" bindtap="startRecognition" disabled="{{busy}}" loading="{{busy}}">拍照 / 选图</button>
+    <button class="entry-button" size="mini" bindtap="startRecognition" disabled="{{busy || pendingSave}}" loading="{{busy}}">拍照 / 选图</button>
   </view>
   <view class="recognition-overlay {{previewOnly ? 'photo-overlay' : ''}}" wx:if="{{dialogOpen}}" aria-hidden="{{!!duplicateComparison}}">
     <block wx:if="{{previewOnly}}">
@@ -34,10 +34,10 @@
       <button size="mini" wx:if="{{!previewOnly}}" class="close-button" catchtap="cancelDialog" aria-label="关闭识别弹窗" disabled="{{saving || pendingSave}}"><view class="close-icon" aria-hidden="true"></view></button>
       <scroll-view class="dialog-body" scroll-y="true" scroll-into-view="{{scrollToField}}" scroll-with-animation="{{false}}">
         <text class="preview-note" wx:if="{{longWaiting}}" aria-live="polite">仍在处理中，请稍候</text>
-        <view class="error-row" wx:if="{{error && previewOnly}}"><text class="error-text">{{error}}</text><button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button></view>
-        <button wx:if="{{canRestoreDraft}}" class="text-button" catchtap="restorePreviousDraft" disabled="{{busy}}">恢复重新识别前的草稿</button>
+        <view class="error-row" wx:if="{{error && previewOnly}}"><text class="error-text">{{error}}</text><button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy || pendingSave}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button></view>
+        <button wx:if="{{canRestoreDraft}}" class="text-button" catchtap="restorePreviousDraft" disabled="{{busy || pendingSave}}">恢复重新识别前的草稿</button>
         <view class="reference-warning" wx:if="{{!previewOnly && labelFillWarning}}"><text>{{labelFillWarning}}</text></view>
-        <view wx:if="{{!previewOnly && canRetryReference}}" class="reference-warning"><text>营养查询失败</text><button class="text-button" catchtap="retryReference" disabled="{{busy}}">重试查询</button></view>
+        <view wx:if="{{!previewOnly && canRetryReference}}" class="reference-warning"><text>营养查询失败</text><button class="text-button" catchtap="retryReference" disabled="{{busy || pendingSave}}">重试查询</button></view>
         <view wx:if="{{duplicateChecking}}" class="duplicate-check-status" aria-live="polite"><view class="spinner" aria-hidden="true"></view><text>{{previewOnly ? '正在检查是否已添加' : '正在检查资料库'}}</text></view>
         <text wx:elif="{{duplicateCheckFailed}}" class="duplicate-check-status">相近资料检查暂未完成，保存时会再次核对。</text>
         <view wx:if="{{existingItem || duplicateReview}}" id="recognition-duplicates" class="duplicate-panel">
@@ -78,22 +78,22 @@
             <view class="identity-features" wx:if="{{identityVisibleFeatures.length}}"><text class="identity-feature" wx:for="{{identityVisibleFeatures}}" wx:key="*this">{{item}}</text></view>
             <block wx:if="{{identityDeferred}}">
               <text class="identity-review-copy">当前页面暂留照片，营养待补充。离开页面后需重新识别。</text>
-              <input class="input identity-note-input" value="{{identityNote}}" maxlength="160" placeholder="本次页面备注（选填）" aria-label="本次页面备注" bindinput="onIdentityNoteInput" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" />
-              <button class="text-button" catchtap="openIdentityEditor" disabled="{{busy}}">补充名称</button>
+              <input class="input identity-note-input" value="{{identityNote}}" maxlength="160" placeholder="本次页面备注（选填）" aria-label="本次页面备注" bindinput="onIdentityNoteInput" disabled="{{busy || pendingSave}}" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" />
+              <button class="text-button" catchtap="openIdentityEditor" disabled="{{busy || pendingSave}}">补充名称</button>
             </block>
             <block wx:else>
               <text class="identity-review-copy">请明确名称和生熟状态后，再查询营养。</text>
-              <view class="identity-review-actions"><button wx:if="{{!identityEditorOpen}}" class="text-button" catchtap="openIdentityEditor" disabled="{{busy}}">补充名称</button><button class="text-button" catchtap="onIdentityUnknown" disabled="{{busy || pendingSave}}">我也不确定</button></view>
+              <view class="identity-review-actions"><button wx:if="{{!identityEditorOpen}}" class="text-button" catchtap="openIdentityEditor" disabled="{{busy || pendingSave}}">补充名称</button><button class="text-button" catchtap="onIdentityUnknown" disabled="{{busy || pendingSave}}">我也不确定</button></view>
             </block>
           </view>
           <view class="preview-basis-tabs" wx:if="{{!needType && previewBasisOptions.length}}">
-            <button wx:for="{{previewBasisOptions}}" wx:key="value" class="basis-tab {{previewBasisMode === item.value ? 'selected' : ''}}" data-mode="{{item.value}}" catchtap="onPreviewBasisChange" disabled="{{busy}}" aria-pressed="{{previewBasisMode === item.value}}">{{item.label}}</button>
+            <button wx:for="{{previewBasisOptions}}" wx:key="value" class="basis-tab {{previewBasisMode === item.value ? 'selected' : ''}}" data-mode="{{item.value}}" catchtap="onPreviewBasisChange" disabled="{{busy || pendingSave}}" aria-pressed="{{previewBasisMode === item.value}}">{{item.label}}</button>
           </view>
           <text class="preview-basis" wx:elif="{{!needType}}">{{previewBasis}}</text>
           <block wx:if="{{!needType}}">
             <view class="preview-nutrition-status" wx:if="{{nutritionLoading || previewNutritionHint}}">
               <view class="module-status loading" wx:if="{{nutritionLoading}}" aria-live="polite"><view class="spinner"></view><text>{{scanPhase}}</text></view>
-              <view class="preview-short-hint" wx:else><text>{{previewNutritionHint}}</text><button wx:if="{{canRetryReference && !labelFillWarning && !needIdentity && !needBasis}}" class="text-button" catchtap="retryReference" disabled="{{busy}}">重试</button></view>
+              <view class="preview-short-hint" wx:else><text>{{previewNutritionHint}}</text><button wx:if="{{canRetryReference && !labelFillWarning && !needIdentity && !needBasis}}" class="text-button" catchtap="retryReference" disabled="{{busy || pendingSave}}">重试</button></view>
             </view>
             <view class="preview-highlights">
               <view class="preview-highlight highlight-energy">
@@ -122,20 +122,20 @@
               <button class="text-button" catchtap="onRequestEstimate" disabled="{{busy || pendingSave}}">{{estimateButtonText}}</button>
             </view>
             <view class="preview-correction" wx:if="{{needIdentity && !identityDeferred && (!identityReview || identityEditorOpen)}}">
-              <input class="input" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.name}}" placeholder="请输入具体食物名称" aria-label="具体食物名称" data-field="name" bindinput="onDialogInput" disabled="{{busy}}" />
-              <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
-              <view class="choice-group"><button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy}}">候选：{{item.name}}</button><button class="text-button" catchtap="onContinueIdentity" disabled="{{busy}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button></view>
-              <button wx:if="{{displayMode === 'food_object' && !identityReview}}" class="text-button" catchtap="onIdentityUnknown" disabled="{{busy}}">我也不确定</button>
+              <input class="input" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.name}}" placeholder="请输入具体食物名称" aria-label="具体食物名称" data-field="name" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" />
+              <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
+              <view class="choice-group"><button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy || pendingSave}}">候选：{{item.name}}</button><button class="text-button" catchtap="onContinueIdentity" disabled="{{busy || pendingSave}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button></view>
+              <button wx:if="{{displayMode === 'food_object' && !identityReview}}" class="text-button" catchtap="onIdentityUnknown" disabled="{{busy || pendingSave}}">我也不确定</button>
             </view>
             <view class="preview-correction" wx:if="{{needBasis}}">
               <text class="preview-note">营养计量基准</text>
               <view class="preview-basis-fields">
-                <input class="input" type="digit" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.baseQuantity}}" placeholder="基准份量" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy}}" />
-                <picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy}}"><view class="picker-display">{{values.unit || '请选择单位'}}</view></picker>
+                <input class="input" type="digit" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.baseQuantity}}" placeholder="基准份量" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy || pendingSave}}" />
+                <picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy || pendingSave}}"><view class="picker-display">{{values.unit || '请选择单位'}}</view></picker>
               </view>
             </view>
           </block>
-          <view class="reference-choice" wx:if="{{needReference}}"><text>选择对应食物</text><button class="reference-button" wx:for="{{referenceCandidates}}" wx:key="referenceId" data-index="{{index}}" catchtap="onReference" disabled="{{busy}}">{{item.identity.name}} · {{item.source.provider}}</button><button class="text-button" catchtap="onSkipReference" disabled="{{busy}}">暂不使用参考</button></view>
+          <view class="reference-choice" wx:if="{{needReference}}"><text>选择对应食物</text><button class="reference-button" wx:for="{{referenceCandidates}}" wx:key="referenceId" data-index="{{index}}" catchtap="onReference" disabled="{{busy || pendingSave}}">{{item.identity.name}} · {{item.source.provider}}</button><button class="text-button" catchtap="onSkipReference" disabled="{{busy || pendingSave}}">暂不使用参考</button></view>
           <text class="preview-note" wx:if="{{needType}}">{{unrecognizedHint}}</text>
         </view>
         <block wx:if="{{!previewOnly && identityVisible}}">
@@ -145,12 +145,12 @@
             <view id="recognition-field-name" class="form-item {{invalidField === 'name' ? 'field-invalid' : ''}}">
               <text class="form-label">名称</text>
               <view class="form-control">
-                <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{values.name}}" placeholder="请输入名称" aria-label="名称" data-field="name" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy}}" />
+                <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{values.name}}" placeholder="请输入名称" aria-label="名称" data-field="name" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy || pendingSave}}" />
                 <text class="field-error" wx:if="{{invalidField === 'name'}}" role="alert">{{fieldError}}</text>
                 <view class="choice-group" wx:if="{{needIdentity}}">
-                  <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
-                  <button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy}}">候选：{{item.name}}</button>
-                  <button class="text-button" catchtap="onContinueIdentity" disabled="{{busy}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
+                  <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
+                  <button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy || pendingSave}}">候选：{{item.name}}</button>
+                  <button class="text-button" catchtap="onContinueIdentity" disabled="{{busy || pendingSave}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
                 </view>
               </view>
             </view>
@@ -158,14 +158,14 @@
               <text class="form-label">分类</text>
               <view class="form-control form-control-stack">
                 <view class="category-picker-row">
-                  <picker class="field-picker" range="{{categoryItems}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange" disabled="{{busy}}">
+                  <picker class="field-picker" range="{{categoryItems}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange" disabled="{{busy || pendingSave}}">
                     <view class="picker-display {{values.category ? '' : 'placeholder'}}"><text class="picker-text">{{categoryLabel || '请选择分类'}}</text><text class="picker-arrow">›</text></view>
                   </picker>
-                  <button class="category-add-trigger" wx:if="{{purpose !== 'preview' && unmatchedCategory && displayMode !== 'powder_label'}}" catchtap="toggleCategoryCreate" disabled="{{busy}}">{{categoryCreateOpen ? '收起' : '新增'}}</button>
+                  <button class="category-add-trigger" wx:if="{{purpose !== 'preview' && unmatchedCategory && displayMode !== 'powder_label'}}" catchtap="toggleCategoryCreate" disabled="{{busy || pendingSave}}">{{categoryCreateOpen ? '收起' : '新增'}}</button>
                 </view>
                 <view class="custom-category-row" wx:if="{{purpose !== 'preview' && categoryCreateOpen && unmatchedCategory && displayMode !== 'powder_label'}}">
-                  <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input custom-category-input" value="{{newCategoryName}}" maxlength="60" placeholder="新分类名称" aria-label="新分类名称" bindinput="onNewCategoryInput" disabled="{{busy}}" />
-                  <button class="custom-category-button" catchtap="onCreateCategory" disabled="{{busy}}" loading="{{categoryCreating}}">{{categoryCreating ? '创建中' : '添加'}}</button>
+                  <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input custom-category-input" value="{{newCategoryName}}" maxlength="60" placeholder="新分类名称" aria-label="新分类名称" bindinput="onNewCategoryInput" disabled="{{busy || pendingSave}}" />
+                  <button class="custom-category-button" catchtap="onCreateCategory" disabled="{{busy || pendingSave}}" loading="{{categoryCreating}}">{{categoryCreating ? '创建中' : '添加'}}</button>
                 </view>
                 <text class="field-hint" wx:if="{{categoryCreateOpen}}">添加分类会立即保存，取消识别不会撤销这个分类。</text>
                 <text class="field-error" wx:if="{{invalidField === 'category'}}" role="alert">{{fieldError}}</text>
@@ -174,16 +174,16 @@
 
             <view wx:if="{{nutritionVisible}}">
               <view class="reference-choice" wx:if="{{needReference}}">
-                <button class="reference-button" wx:for="{{referenceCandidates}}" wx:key="referenceId" data-index="{{index}}" catchtap="onReference" disabled="{{busy}}"><text>{{item.identity.name}}</text><text class="reference-provider">{{item.source.provider}} ›</text></button>
-                <button class="text-button" catchtap="onSkipReference" disabled="{{busy}}">暂不使用参考</button>
+                <button class="reference-button" wx:for="{{referenceCandidates}}" wx:key="referenceId" data-index="{{index}}" catchtap="onReference" disabled="{{busy || pendingSave}}"><text>{{item.identity.name}}</text><text class="reference-provider">{{item.source.provider}} ›</text></button>
+                <button class="text-button" catchtap="onSkipReference" disabled="{{busy || pendingSave}}">暂不使用参考</button>
               </view>
               <view id="recognition-field-unit" class="form-item {{invalidField === 'unit' ? 'field-invalid' : ''}}" wx:if="{{displayMode !== 'powder_label'}}">
                 <text class="form-label">记录单位</text>
-                <view class="form-control"><picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy}}"><view class="picker-display {{values.unit ? '' : 'placeholder'}}"><text class="picker-text">{{values.unit || '请选择单位'}}</text><text class="picker-arrow">›</text></view></picker><text class="field-error" wx:if="{{invalidField === 'unit'}}" role="alert">{{fieldError}}</text></view>
+                <view class="form-control"><picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{values.unit ? '' : 'placeholder'}}"><text class="picker-text">{{values.unit || '请选择单位'}}</text><text class="picker-arrow">›</text></view></picker><text class="field-error" wx:if="{{invalidField === 'unit'}}" role="alert">{{fieldError}}</text></view>
               </view>
               <view id="recognition-field-baseQuantity" class="form-item {{invalidField === 'baseQuantity' ? 'field-invalid' : ''}}" wx:if="{{displayMode !== 'powder_label'}}">
                 <text class="form-label">营养基准份量</text>
-                <view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.baseQuantity}}" placeholder="默认 100" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy}}" /><text class="field-error" wx:if="{{invalidField === 'baseQuantity'}}" role="alert">{{fieldError}}</text></view>
+                <view class="form-control form-control-stack"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.baseQuantity}}" placeholder="默认 100" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy || pendingSave}}" /><text class="field-error" wx:if="{{invalidField === 'baseQuantity'}}" role="alert">{{fieldError}}</text><text class="field-hint">更改基准份量会影响摄入计算，已填营养值保持不变，请自行核对。</text></view>
               </view>
               <view class="field-hint fixed-basis" wx:else>营养成分 · 每 100g 干粉</view>
               <block wx:for="{{requiredNutrientRows}}" wx:key="path">
@@ -192,7 +192,7 @@
                   <view class="form-control">
                     <view class="nutrient-input-line">
                       <view class="input input-loading" wx:if="{{item.loading}}"><view class="skeleton-value"></view><view class="spinner"></view></view>
-                      <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="{{item.validationIssue ? '待核对' : '必填'}}" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy}}" />
+                      <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="{{item.validationIssue ? '待核对' : '必填'}}" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" />
                       <text wx:if="{{!item.loading && !item.validationIssue && item.value !== '' && item.source === 'model_estimate'}}" class="nutrition-estimate-tag">AI 估算</text>
                     </view>
                     <text class="field-error" wx:if="{{invalidField === item.path}}" role="alert">{{fieldError}}</text>
@@ -205,17 +205,17 @@
                 <view id="recognition-field-proteinTypeIndex" class="form-item {{invalidField === 'proteinTypeIndex' ? 'field-invalid' : ''}}" wx:if="{{item.path === 'protein' && displayMode !== 'powder_label'}}">
                   <text class="form-label">蛋白来源</text>
                   <view class="form-control form-control-stack">
-                    <picker range="{{proteinItems}}" range-key="label" value="{{proteinIndex}}" bindchange="onProteinChange" disabled="{{busy}}">
+                    <picker range="{{proteinItems}}" range-key="label" value="{{proteinIndex}}" bindchange="onProteinChange" disabled="{{busy || pendingSave}}">
                       <view class="picker-display {{values.proteinTypeIndex >= 0 ? '' : 'placeholder'}}"><text class="picker-text">{{values.proteinTypeIndex >= 0 ? proteinOptions[values.proteinTypeIndex].label : '请选择蛋白来源'}}</text><text class="picker-arrow">›</text></view>
                     </picker>
                     <text class="field-error" wx:if="{{invalidField === 'proteinTypeIndex'}}" role="alert">{{fieldError}}</text>
-                    <button class="text-button special-confirm" wx:if="{{proteinSuggestionSpecial && proteinSuggestionIndex !== values.proteinTypeIndex}}" catchtap="onUseProteinSuggestion" disabled="{{busy}}">确认使用特殊蛋白</button>
+                    <button class="text-button special-confirm" wx:if="{{proteinSuggestionSpecial && proteinSuggestionIndex !== values.proteinTypeIndex}}" catchtap="onUseProteinSuggestion" disabled="{{busy || pendingSave}}">确认使用特殊蛋白</button>
                   </view>
                 </view>
               </block>
               <view wx:if="{{displayMode === 'powder_label'}}">
-                <view id="recognition-field-ratioPowder" class="form-item {{invalidField === 'ratioPowder' ? 'field-invalid' : ''}}"><text class="form-label">粉量 (g)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioPowder}}" placeholder="必填" aria-label="奶粉粉量" data-field="ratioPowder" bindinput="onDialogInput" disabled="{{busy}}" /><text class="field-error" wx:if="{{invalidField === 'ratioPowder'}}" role="alert">{{fieldError}}</text></view></view>
-                <view id="recognition-field-ratioWater" class="form-item {{invalidField === 'ratioWater' ? 'field-invalid' : ''}}"><text class="form-label">加水量 (ml)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioWater}}" placeholder="必填" aria-label="冲调加水量" data-field="ratioWater" bindinput="onDialogInput" disabled="{{busy}}" /><text class="field-error" wx:if="{{invalidField === 'ratioWater'}}" role="alert">{{fieldError}}</text></view></view>
+                <view id="recognition-field-ratioPowder" class="form-item {{invalidField === 'ratioPowder' ? 'field-invalid' : ''}}"><text class="form-label">粉量 (g)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioPowder}}" placeholder="必填" aria-label="奶粉粉量" data-field="ratioPowder" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" /><text class="field-error" wx:if="{{invalidField === 'ratioPowder'}}" role="alert">{{fieldError}}</text></view></view>
+                <view id="recognition-field-ratioWater" class="form-item {{invalidField === 'ratioWater' ? 'field-invalid' : ''}}"><text class="form-label">加水量 (ml)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioWater}}" placeholder="必填" aria-label="冲调加水量" data-field="ratioWater" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" /><text class="field-error" wx:if="{{invalidField === 'ratioWater'}}" role="alert">{{fieldError}}</text></view></view>
               </view>
             </view>
           </view>
@@ -223,25 +223,33 @@
 
         <view id="recognition-field-details" class="form-section" wx:if="{{identityVisible}}">
           <view class="form-section-header"><view class="form-section-heading"><text class="form-section-title">扩展信息</text><text class="form-section-subtitle">{{displayMode === 'powder_label' ? '选填，可补充商品资料和膳食纤维' : purpose === 'preview' ? '选填，可补充图片、膳食纤维和钠' : '选填，可补充膳食纤维和钠'}}</text></view></view>
-          <view class="form-item" wx:if="{{purpose === 'preview' && displayMode !== 'powder_label'}}">
+          <view class="form-item" wx:if="{{displayMode !== 'powder_label'}}">
             <text class="form-label">图片</text>
             <view class="form-control form-control-stack">
-              <button wx:if="{{coverImagePath}}" class="food-image-preview" catchtap="previewFoodImage" disabled="{{busy || pendingSave}}" aria-label="预览食物图片"><image src="{{coverImagePath}}" mode="aspectFill" /></button>
-              <button class="text-button" catchtap="chooseFoodImage" disabled="{{busy || pendingSave}}">{{coverImagePath ? '更换图片' : '选择图片'}}</button>
+              <view class="food-image-gallery">
+                <view class="food-image-item" wx:for="{{foodImagePaths}}" wx:key="*this">
+                  <button class="food-image-preview" data-index="{{index}}" catchtap="previewFoodImage" disabled="{{busy || pendingSave}}" aria-label="预览第 {{index + 1}} 张食物图片"><image src="{{item}}" mode="aspectFill" /></button>
+                  <view class="food-image-actions">
+                    <button class="text-button" data-index="{{index}}" catchtap="setFoodImageCover" disabled="{{busy || pendingSave || item === coverImagePath}}">{{item === coverImagePath ? '封面' : '设为封面'}}</button>
+                    <button class="text-button" data-index="{{index}}" catchtap="removeFoodImage" disabled="{{busy || pendingSave}}" aria-label="移除第 {{index + 1}} 张食物图片">移除</button>
+                  </view>
+                </view>
+              </view>
+              <button wx:if="{{foodImagePaths.length < 3}}" class="text-button" catchtap="chooseFoodImage" disabled="{{busy || pendingSave}}">添加图片</button>
             </view>
           </view>
           <view wx:if="{{displayMode === 'powder_label'}}">
-            <view class="form-item"><text class="form-label">品牌</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.brand}}" maxlength="240" data-key="brand" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品品牌" disabled="{{busy}}" /></view></view>
-            <view class="form-item"><text class="form-label">系列</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.series}}" maxlength="240" data-key="series" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品系列" disabled="{{busy}}" /></view></view>
-            <view class="form-item"><text class="form-label">段数或规格</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.stage}}" maxlength="240" data-key="stage" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品段数或规格" disabled="{{busy}}" /></view></view>
-            <view class="form-item"><text class="form-label">条码</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.barcode}}" maxlength="32" data-key="barcode" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品条码" disabled="{{busy}}" /></view></view>
+            <view class="form-item"><text class="form-label">品牌</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.brand}}" maxlength="240" data-key="brand" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品品牌" disabled="{{busy || pendingSave}}" /></view></view>
+            <view class="form-item"><text class="form-label">系列</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.series}}" maxlength="240" data-key="series" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品系列" disabled="{{busy || pendingSave}}" /></view></view>
+            <view class="form-item"><text class="form-label">段数或规格</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.stage}}" maxlength="240" data-key="stage" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品段数或规格" disabled="{{busy || pendingSave}}" /></view></view>
+            <view class="form-item"><text class="form-label">条码</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{identityDetails.barcode}}" maxlength="32" data-key="barcode" bindinput="onIdentityDetailInput" bindblur="onIdentityDetailBlur" aria-label="产品条码" disabled="{{busy || pendingSave}}" /></view></view>
           </view>
           <view id="recognition-field-{{item.path}}" class="form-item nutrient-row {{invalidField === item.path ? 'field-invalid' : ''}}" wx:for="{{optionalNutrientRows}}" wx:key="path">
             <text class="form-label">{{item.formLabel}} ({{item.unit}})</text>
             <view class="form-control">
               <view class="nutrient-input-line">
                 <view class="input input-loading" wx:if="{{item.loading}}"><view class="skeleton-value"></view><view class="spinner"></view></view>
-                <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="{{item.validationIssue ? '待核对' : '选填'}}" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy}}" />
+                <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" wx:else class="input" type="digit" value="{{item.value}}" placeholder="{{item.validationIssue ? '待核对' : '选填'}}" aria-label="{{item.label}} {{item.unit}}" data-field="{{item.path}}" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" />
                 <text wx:if="{{!item.loading && !item.validationIssue && item.value !== '' && item.source === 'model_estimate'}}" class="nutrition-estimate-tag">AI 估算</text>
               </view>
               <text class="field-error" wx:if="{{invalidField === item.path}}" role="alert">{{fieldError}}</text>
@@ -258,13 +266,13 @@
       <view class="dialog-footer">
         <view class="save-feedback" wx:if="{{error && !previewOnly && !saving}}" role="alert" aria-live="polite">
           <text class="error-text">{{error}}</text>
-          <button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button>
+          <button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy || pendingSave}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button>
         </view>
         <view class="footer-actions">
           <button class="secondary-button" catchtap="cancelDialog" disabled="{{saving || pendingSave}}">{{previewOnly ? '重拍' : '取消'}}</button>
           <button wx:if="{{pendingSave}}" class="primary-button" catchtap="recoverPreviewSave" disabled="{{busy}}">恢复保存状态</button>
-          <button wx:elif="{{previewOnly && needIdentity && (!identityEditorOpen || identityDeferred)}}" class="primary-button" catchtap="openIdentityEditor" disabled="{{busy}}">补充名称</button>
-          <button wx:elif="{{previewOnly && needIdentity}}" class="primary-button" catchtap="onContinueIdentity" disabled="{{busy}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
+          <button wx:elif="{{previewOnly && needIdentity && (!identityEditorOpen || identityDeferred)}}" class="primary-button" catchtap="openIdentityEditor" disabled="{{busy || pendingSave}}">补充名称</button>
+          <button wx:elif="{{previewOnly && needIdentity}}" class="primary-button" catchtap="onContinueIdentity" disabled="{{busy || pendingSave}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
           <button wx:elif="{{!previewOnly || (!needType && identityVisible)}}" class="primary-button" catchtap="useResults" disabled="{{busy || !identityVisible || (previewOnly && !canUse)}}" loading="{{busy}}">{{saving ? '添加中' : busy ? '处理中' : previewOnly ? '应用结果' : purpose === 'preview' ? displayMode === 'powder_label' ? '添加奶粉' : '添加食物' : '填入表单'}}</button>
         </view>
       </view>

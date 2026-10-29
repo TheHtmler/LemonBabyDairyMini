@@ -3,26 +3,43 @@ const { fail, identity, FIELDS, number } = require('./lib/core/contracts');
 const { hash, ownedSession, getDocument, transaction, readBabyFoodCatalog, SESSION_COLLECTION } = require('./lib/core/server');
 const { normalizeLegacyProfileSeed, sortProfiles } = require('./lib/core/profile');
 const { findDuplicates } = require('./lib/core/duplicates');
-const { assertFoodRecognition, identityRequirement } = require('./lib/core/identitySafety');
+const { assertFoodRecognition, identityRequirement, makeIdentityConfirmation } = require('./lib/core/identitySafety');
 function bindingFingerprint(session) { return hash(JSON.stringify({ identity: session.confirmedIdentity, basis: session.comparisonBasis, comparisonVersion: session.comparisonVersion, mode: session.mode })); }
 async function bindPreviewTarget({ db, openid, event, now }) {
-  const session = await ownedSession(db, openid, event.babyUid, event.sessionId, now);
+  let session = await ownedSession(db, openid, event.babyUid, event.sessionId, now);
   const preview = event.action === 'checkDuplicates';
   if (session.purpose !== 'preview' || session.status === 'saved' || !['food', 'powder'].includes(event.targetType) || !/^[A-Za-z0-9_-]{8,100}$/.test(event.requestId || '') || event.targetId || event.sourceSystemFoodId || event.sourceSystemPowderId) fail('INVALID_INPUT', '只能将预览结果加入新的资料');
   if (!['food_label', 'food_object', 'powder_label'].includes(session.mode) || (event.targetType === 'powder') !== (session.mode === 'powder_label')) fail('COMPARISON_STALE', '请先核对物品类型、名称和营养基准');
+  const useFormValues = !preview && event.useFormValues === true && event.targetType === 'food';
+  let formContext = {};
+  if (useFormValues) {
+    if (!session.observation || !session.result) fail('VALIDATION_FAILED', '请先完成图片识别');
+    const wanted = identity(event.identity || {});
+    const basis = event.targetBasis || {};
+    const confirmation = makeIdentityConfirmation(wanted);
+    if (!confirmation || !(number(basis.quantity) > 0) || !['g', 'ml', 'portion'].includes(basis.unit)) fail('VALIDATION_FAILED', '请填写具体名称与有效的营养基准');
+    formContext = { confirmedIdentity: wanted, identityConfirmation: confirmation,
+      comparisonBasis: { quantity: number(basis.quantity), unit: basis.unit, material: 'food' },
+      comparisonVersion: session.comparisonVersion || 1, status: 'compared' };
+    session = { ...session, ...formContext };
+  }
+  const formUpdate = useFormValues ? { ...formContext,
+    confirmedIdentity: db.command.set(formContext.confirmedIdentity),
+    identityConfirmation: db.command.set(formContext.identityConfirmation),
+    comparisonBasis: db.command.set(formContext.comparisonBasis) } : {};
   const wanted = preview ? identity(event.identity || {}) : session.confirmedIdentity;
   assertFoodRecognition({ mode: session.mode, observation: session.observation, identity: wanted });
   if (preview && !wanted.name) fail('INVALID_INPUT', '请先填写名称');
   // 表单展示阶段只读资料库，不创建绑定或确认令牌。
   if (!preview) {
-    if (!session.confirmedIdentity || !session.comparisonBasis || event.comparisonVersion !== session.comparisonVersion || !session.comparisonVersion) fail('COMPARISON_STALE', '请先核对物品类型、名称和营养基准');
+    if (!session.confirmedIdentity || !session.comparisonBasis || (!useFormValues && event.comparisonVersion !== session.comparisonVersion) || !session.comparisonVersion) fail('COMPARISON_STALE', '请先核对物品类型、名称和营养基准');
     if (identityRequirement({ mode: session.mode, identity: session.confirmedIdentity, observation: session.observation,
       identityConfirmation: session.identityConfirmation }).required) fail('IDENTITY_INSUFFICIENT', '具体种类与制备状态尚未确认，营养待补充');
   }
   const fingerprint = bindingFingerprint(session);
   if (!preview && session.binding && session.binding.requestId === event.requestId) {
     if (session.binding.fingerprint !== fingerprint) fail('COMPARISON_STALE', '核对依据已变化，请重新加入');
-    return { ok: true, binding: session.binding, expectedVersion: session.targetProfileVersion || 0 };
+    return { ok: true, binding: session.binding, comparisonVersion: session.comparisonVersion, expectedVersion: session.targetProfileVersion || 0 };
   }
   let targetProfileId = ''; let targetProfileVersion = 0; let seedProfile = null; let seedLegacyDocumentId = ''; let seedLegacyHash = ''; let items;
   if (event.targetType === 'powder') {
@@ -67,17 +84,17 @@ async function bindPreviewTarget({ db, openid, event, now }) {
     await transaction(db, async tx => {
       const current = await getDocument(tx, SESSION_COLLECTION, event.sessionId);
       if (!current || current.version !== session.version || current.status === 'saved' || current.confirmation && current.confirmation.state === 'processing') fail('COMPARISON_STALE', '草稿已变化，请重新核对');
-      await tx.collection(SESSION_COLLECTION).doc(event.sessionId).update({ duplicateReview: { token: reviewToken }, binding: null, version: current.version + 1 });
+      await tx.collection(SESSION_COLLECTION).doc(event.sessionId).update({ ...formUpdate, duplicateReview: { token: reviewToken }, binding: null, version: current.version + 1 });
     });
-    return { ok: true, existing: withNutrition(matches.exact[0]), duplicateReview: { token: reviewToken, total: duplicates.length, canConfirm: true, candidates: duplicates.slice(0, 12).map(withNutrition) } };
+    return { ok: true, comparisonVersion: session.comparisonVersion, existing: withNutrition(matches.exact[0]), duplicateReview: { token: reviewToken, total: duplicates.length, canConfirm: true, candidates: duplicates.slice(0, 12).map(withNutrition) } };
   }
   const binding = { targetType: event.targetType, requestId: event.requestId, fingerprint, comparisonVersion: session.comparisonVersion,
     allowDuplicate: !!reviewed, reviewedCandidates: [] };
   await transaction(db, async tx => {
     const current = await getDocument(tx, SESSION_COLLECTION, event.sessionId);
     if (!current || current.version !== session.version || current.status === 'saved' || current.confirmation && current.confirmation.state === 'processing') fail('COMPARISON_STALE', '草稿已变化，请重新核对');
-    await tx.collection(SESSION_COLLECTION).doc(event.sessionId).update({ binding: db.command.set(binding), targetProfileId, targetProfileVersion, targetFoodId: '', targetFoodVersion: 0, seedProfile: db.command.set(seedProfile), seedLegacyDocumentId, seedLegacyHash, version: current.version + 1 });
+    await tx.collection(SESSION_COLLECTION).doc(event.sessionId).update({ ...formUpdate, binding: db.command.set(binding), targetProfileId, targetProfileVersion, targetFoodId: '', targetFoodVersion: 0, seedProfile: db.command.set(seedProfile), seedLegacyDocumentId, seedLegacyHash, version: current.version + 1 });
   });
-  return { ok: true, binding, expectedVersion: targetProfileVersion };
+  return { ok: true, binding, comparisonVersion: session.comparisonVersion, expectedVersion: targetProfileVersion };
 }
 module.exports = { bindPreviewTarget, bindingFingerprint };

@@ -3,6 +3,8 @@ const FoodCategoryModel = require('../../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
 const { normalizeCategoryName } = require('../components/nutrition-recognition/lib/core/classification');
 const { formatNutritionValue } = require('../../utils/nutritionComparison');
+const { chooseRecognitionImages, uploadFoodImages } = require('../../utils/nutritionRecognition');
+const { resolveCloudTempUrls } = require('../../utils/cloudTempUrlCache');
 const { waitForAppInitialization, getBabyUid, handleError } = require('../../utils/index');
 const DEFAULT_CATEGORY_SUGGESTIONS = [
   '主食及谷薯',
@@ -58,6 +60,7 @@ const createEmptyFormData = (category = '', unit = '') => ({
   baseQuantity: '100',
   calories: '',
   image: '',
+  images: [],
   protein: '',
   carbs: '',
   fat: '',
@@ -96,7 +99,7 @@ Page({
     editingVersion: 0,
     formData: createEmptyFormData(),
     energyKjInput: '',
-    foodImagePreviewUrl: '',
+    foodImagePreviewUrls: [],
     uploadingFoodImage: false,
     categoryPickerIndex: 0,
     unitPickerIndex: 0,
@@ -605,6 +608,7 @@ Page({
       proteinQuality: this.getProteinTypeOption(formData.proteinTypeIndex).quality,
       foodType: 'food',
       image: formData.image ? formData.image.trim() : '',
+      images: formData.images || [],
       isLiquid: baseUnit.toLowerCase() === 'ml',
       babyUid,
       isSystem: false,
@@ -633,6 +637,7 @@ Page({
       baseQuantity: String(food.nutritionBasis?.quantity != null ? food.nutritionBasis.quantity : (food.baseQuantity != null ? food.baseQuantity : 100)),
       calories: !(food.recognitionMeta?.missingFields || []).includes('calories') && nutrition.calories != null ? String(nutrition.calories) : '',
       image: food.image || '',
+      images: food.images || (food.image ? [food.image] : []),
       protein: !(food.recognitionMeta?.missingFields || []).includes('protein') && nutrition.protein != null ? String(nutrition.protein) : '',
       carbs: !(food.recognitionMeta?.missingFields || []).includes('carbs') && nutrition.carbs != null ? String(nutrition.carbs) : '',
       fat: !(food.recognitionMeta?.missingFields || []).includes('fat') && nutrition.fat != null ? String(nutrition.fat) : '',
@@ -656,7 +661,7 @@ Page({
       showAddModal: true,
       formSessionId: this.data.formSessionId + 1,
       energyKjInput: '',
-      foodImagePreviewUrl: '',
+      foodImagePreviewUrls: [],
       customCategoryInput: '',
       customUnitInput: '',
       showCategoryCreator: false,
@@ -694,7 +699,7 @@ Page({
       editingFoodIsSystemSource: !!target.isSystem,
       editingSourceSystemFoodId: target.isSystem ? target._id : (target.sourceSystemFoodId || ''),
       energyKjInput: '',
-      foodImagePreviewUrl: target.displayImage || target.image || '',
+      foodImagePreviewUrls: target.imageUrls || formData.images,
       customCategoryInput: '',
       customUnitInput: '',
       showCategoryCreator: false,
@@ -713,7 +718,7 @@ Page({
     this.setData({
       showAddModal: false,
       energyKjInput: '',
-      foodImagePreviewUrl: '',
+      foodImagePreviewUrls: [],
       uploadingFoodImage: false,
       editingFoodId: '',
       editingVersion: 0,
@@ -744,7 +749,7 @@ Page({
   },
 
   startNutritionRecognition() {
-    if (!this.data.savingNutrition) this.selectComponent('#nutritionRecognition')?.startRecognition();
+    if (!this.data.savingNutrition && !this.data.uploadingFoodImage) this.selectComponent('#nutritionRecognition')?.startRecognition();
   },
 
   onNutritionCategoryCreated(e) {
@@ -759,7 +764,8 @@ Page({
   onNutritionPatch(e) {
     const patch = e.detail.patch || {};
     const updates = {};
-    Object.keys(patch).forEach(field => { updates['formData.' + field] = field === 'proteinTypeIndex' ? Number(patch[field]) : String(patch[field]); });
+    Object.keys(patch).forEach(field => { updates['formData.' + field] = field === 'images' ? patch[field] : field === 'proteinTypeIndex' ? Number(patch[field]) : String(patch[field]); });
+    if (patch.images) updates.foodImagePreviewUrls = patch.images;
     if (patch.unit) updates.unitPickerIndex = this.getUnitPickerIndex(patch.unit);
     if (patch.category) updates.categoryPickerIndex = this.getCategoryPickerIndex(patch.category);
     if (patch.proteinTypeIndex != null) { updates.proteinTypeTouched = true; updates.proteinTypeRecommendationText = ''; }
@@ -792,100 +798,55 @@ Page({
   },
 
   async chooseFoodImage() {
-    if (this.data.uploadingFoodImage) {
-      return;
-    }
-
+    if (this.data.uploadingFoodImage || this.data.savingNutrition || this.data.formData.images.length >= 3) return;
+    const session = this.data.formSessionId; const babyUid = this.data.babyUid;
+    const active = () => this.data.showAddModal && this.data.formSessionId === session && this.data.babyUid === babyUid;
+    this.setData({ uploadingFoodImage: true });
     try {
-      const chooseRes = await new Promise((resolve, reject) => {
-        wx.chooseImage({
-          count: 1,
-          sizeType: ['compressed'],
-          sourceType: ['album', 'camera'],
-          success: resolve,
-          fail: reject
-        });
-      });
-      const tempFilePath = chooseRes?.tempFilePaths?.[0];
-      if (!tempFilePath) {
-        return;
-      }
-
-      await this.uploadFoodImageToCloud(tempFilePath);
-    } catch (error) {
-      if (error && /cancel/i.test(error.errMsg || '')) {
-        return;
-      }
-      handleError(error, { title: '选择图片失败' });
-    }
-  },
-
-  async uploadFoodImageToCloud(tempFilePath) {
-    const babyUid = this.data.babyUid || getBabyUid();
-    if (!babyUid) {
-      wx.showToast({ title: '缺少宝宝信息，无法上传', icon: 'none' });
-      return;
-    }
-
-    try {
-      this.setData({
-        uploadingFoodImage: true,
-        foodImagePreviewUrl: tempFilePath,
-        'formData.image': tempFilePath
-      });
+      const paths = await chooseRecognitionImages({ count: 3 - this.data.formData.images.length });
+      if (!active()) return;
       wx.showLoading({ title: '上传中...', mask: true });
-
-      const extMatch = (tempFilePath || '').match(/\.[a-zA-Z0-9]+$/);
-      const ext = extMatch ? extMatch[0] : '.jpg';
-      const cloudPath = `food_images/${babyUid}_${Date.now()}${ext}`;
-      const result = await wx.cloud.uploadFile({
-        cloudPath,
-        filePath: tempFilePath,
-        config: {
-          env: app.globalData.cloudEnvId
-        }
-      });
-
-      if (!result?.fileID) {
-        throw new Error('图片上传失败');
-      }
-
-      wx.hideLoading();
-      this.setData({
-        uploadingFoodImage: false,
-        foodImagePreviewUrl: tempFilePath,
-        'formData.image': result.fileID
-      });
-      wx.showToast({ title: '图片已上传', icon: 'success' });
+      const uploaded = await uploadFoodImages(paths, app.globalData.cloudEnvId);
+      if (!active()) return;
+      const images = this.data.formData.images.concat(uploaded);
+      this.setData({ 'formData.images': images, 'formData.image': this.data.formData.image || images[0],
+        foodImagePreviewUrls: (this.data.foodImagePreviewUrls || []).concat(paths) });
     } catch (error) {
+      if (active() && !/cancel/i.test(error.errMsg || '')) handleError(error, { title: '图片上传失败', hideLoading: false });
+    } finally {
       wx.hideLoading();
-      this.setData({
-        uploadingFoodImage: false,
-        foodImagePreviewUrl: '',
-        'formData.image': ''
-      });
-      handleError(error, { title: '图片上传失败', hideLoading: false });
+      if (active()) this.setData({ uploadingFoodImage: false });
     }
   },
 
-  clearFoodImage() {
-    this.setData({
-      foodImagePreviewUrl: '',
-      'formData.image': ''
-    });
+  clearFoodImage(event) {
+    if (this.data.uploadingFoodImage || this.data.savingNutrition) return;
+    const index = Number(event.currentTarget.dataset.index);
+    const images = this.data.formData.images.filter((_, i) => i !== index);
+    this.setData({ 'formData.images': images,
+      'formData.image': images.includes(this.data.formData.image) ? this.data.formData.image : images[0] || '',
+      foodImagePreviewUrls: this.data.foodImagePreviewUrls.filter((_, i) => i !== index) });
   },
 
-  previewFoodImage(e) {
+  setFoodImageCover(event) {
+    if (this.data.uploadingFoodImage || this.data.savingNutrition) return;
+    const image = this.data.formData.images[Number(event.currentTarget.dataset.index)];
+    if (image) this.setData({ 'formData.image': image });
+  },
+
+  async previewFoodImage(e) {
     const { url } = e.currentTarget.dataset || {};
-    const current = (url || '').toString().trim();
-    if (!current) {
-      return;
-    }
-
-    wx.previewImage({
-      current,
-      urls: [current]
-    });
+    const index = Number(e.currentTarget.dataset.index);
+    let urls = Number.isInteger(index) ? this.data.foodImagePreviewUrls.slice() : [url];
+    const position = Number.isInteger(index) ? index : 0;
+    const session = this.data.formSessionId; const babyUid = this.data.babyUid;
+    if (!urls[position]) return;
+    const resolved = await resolveCloudTempUrls(urls);
+    if (session !== this.data.formSessionId || babyUid !== this.data.babyUid || (Number.isInteger(index) && !this.data.showAddModal)) return;
+    urls = urls.map(id => resolved.get(id) || id);
+    const current = urls[position];
+    if (current.startsWith('cloud://')) { wx.showToast({ title: '图片暂时无法预览，请重试', icon: 'none' }); return; }
+    wx.previewImage({ current, urls: urls.filter(id => !id.startsWith('cloud://')) });
   },
 
   onCategoryPickerChange(e) {
@@ -1093,7 +1054,7 @@ Page({
 
   async saveFood() {
     const recognition = this.selectComponent('#nutritionRecognition');
-    if (this._saving || recognition?.isBusy()) return;
+    if (this._saving || this.data.uploadingFoodImage || recognition?.isBusy()) return;
     if (recognition?.hasPendingSave()) { wx.showToast({ title: '请先恢复上次保存状态', icon: 'none' }); return; }
     if (!this.validateForm()) {
       return;

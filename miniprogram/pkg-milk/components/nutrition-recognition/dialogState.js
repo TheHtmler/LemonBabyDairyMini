@@ -3,7 +3,7 @@ const { FIELDS, UNITS, REQUIRED, number, convertBasis, searchText, normalizeCate
   identityRequirement, isGenericIdentity } = require('./lib/core/index.js');
 const { FIELD_NAMES, isBlank, formatNutritionValue } = require('../../../utils/nutritionComparison');
 const SOURCE_NAMES = { label: '包装标签', reference: '营养参考', model_estimate: 'AI估算', manual: '手填' };
-const FORM_FIELDS = ['name', 'category', 'categoryLevel2', 'unit', 'baseQuantity', 'proteinTypeIndex', 'image'];
+const FORM_FIELDS = ['name', 'category', 'categoryLevel2', 'unit', 'baseQuantity', 'proteinTypeIndex', 'image', 'images'];
 
 function formKey(draft = {}, mode) {
   const nutrition = mode === 'powder_label' ? draft.nutritionPer100g || {} : draft;
@@ -200,7 +200,7 @@ function validateDialog(state, options) {
   FIELDS.forEach(field => {
     if (field === 'sodium' && state.mode === 'powder_label') return;
     const observed = state.result && state.result.observation.nutrients[field];
-    if (observed && observed.validationIssue && !state.editedFields.has(field) && number(state.values[field]) !== null) missing.push(FIELD_NAMES[field] + '待核对');
+    if (!options.currentForm && observed && observed.validationIssue && !state.editedFields.has(field) && number(state.values[field]) !== null) missing.push(FIELD_NAMES[field] + '待核对');
   });
   ['fiber', 'sodium'].forEach(field => {
     if (field === 'sodium' && state.mode === 'powder_label') return;
@@ -212,9 +212,9 @@ function validateDialog(state, options) {
   } else {
     if (state.values.proteinTypeIndex < 0 || !options.proteinOptions[state.values.proteinTypeIndex]) missing.push('蛋白来源');
   }
-  if (!state.result || !(state.comparisonVersion > 0) || state.needIdentity ||
+  if (!options.currentForm && (!state.result || !(state.comparisonVersion > 0) || state.needIdentity ||
       state.identityDeferred || getIdentityRequirement(state).required ||
-      searchText(state.values.name) !== searchText(state.identity && state.identity.name)) missing.push('完成名称和营养核对');
+      searchText(state.values.name) !== searchText(state.identity && state.identity.name))) missing.push('完成名称和营养核对');
   return missing;
 }
 

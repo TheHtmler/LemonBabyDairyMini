@@ -2,7 +2,7 @@ const { FIELDS, number, normalizeCategoryCatalog, normalizeCategoryName, matchCa
   makeIdentityConfirmation, isGenericIdentity, assertFoodRecognition } = require('./lib/core/index.js');
 const FoodCategoryModel = require('../../../models/foodCategory');
 const { isBlank, FIELD_NAMES } = require('../../../utils/nutritionComparison');
-const { createRequestId, callNutritionFunction, chooseRecognitionImages, uploadRecognitionImages, confirmWithRecovery, pendingConfirmation, recoverConfirmation } = require('../../../utils/nutritionRecognition');
+const { createRequestId, callNutritionFunction, chooseRecognitionImages, uploadRecognitionImages, uploadFoodImages, confirmWithRecovery, pendingConfirmation, recoverConfirmation } = require('../../../utils/nutritionRecognition');
 const { invalidateSearchForBaby, currentContext } = require('../../../utils/searchSession');
 const { createDialogState, formKey, targetBasis, clearProposals, editNutrition, buildRows, validateDialog, resultPatch,
   getEstimateEligibility, labelFillWarning, getIdentityRequirement, invalidateIdentityConfirmation } = require('./dialogState');
@@ -26,7 +26,7 @@ Component({
     proteinSuggestionText: '', proteinSuggestionIndex: -1, proteinSuggestionSpecial: false,
     identityCandidates: [], referenceCandidates: [], needIdentity: false, needReference: false,
     recoveryPending: null, recoveryBusy: false, canUse: false, previewOnly: false, displayMode: 'food_label', needType: false, canEstimate: false, saving: false, pendingSave: false,
-    imagePaths: [], coverImagePath: '', uploadedCount: 0, imageCount: 0, identityVisible: false, nutritionVisible: false,
+    imagePaths: [], foodImagePaths: [], coverImagePath: '', uploadedCount: 0, imageCount: 0, identityVisible: false, nutritionVisible: false,
     longWaiting: false, canRestoreDraft: false, duplicateReview: null, duplicateReviewOpen: false, duplicateChecking: false, duplicateCheckFailed: false, existingItem: null, duplicateComparison: null,
     identityDetails: {}, keyboardHeight: 0, scrollToField: '', invalidField: '', fieldError: '', canRetryRecognition: false,
     previewNutritionHint: '', labelFillWarning: '', needBasis: false,
@@ -56,7 +56,7 @@ Component({
         nutrientRows: [], requiredNutrientRows: [], optionalNutrientRows: [], values: {}, canUse: false, saving: false, pendingSave: false, needType: false, previewOnly: false,
         longWaiting: false, canRestoreDraft: false, duplicateReview: null, duplicateReviewOpen: false, duplicateChecking: false, duplicateCheckFailed: false, existingItem: null, duplicateComparison: null,
         keyboardHeight: 0, scrollToField: '', invalidField: '', fieldError: '', previewNutritionHint: '', labelFillWarning: '', needBasis: false, canRetryRecognition: false,
-        coverImagePath: '', previewPhoto: '', previewScanning: false, scanPhase: '', previewCalories: {}, previewProtein: {}, previewProteinType: '', previewMacros: [], previewExtras: [],
+        coverImagePath: '', foodImagePaths: [], previewPhoto: '', previewScanning: false, scanPhase: '', previewCalories: {}, previewProtein: {}, previewProteinType: '', previewMacros: [], previewExtras: [],
         previewBasisOptions: [], previewBasisMode: 'standard',
         identityEditorOpen: false,
         previewPhotoStyle: '', scanFeedbackStyle: '', scanOrbitStyle: '', canRetryReference: false,
@@ -142,6 +142,7 @@ Component({
         state.previewFrame = options.previewFrame || null;
         state.coverImageIndex = Number.isInteger(options.coverImageIndex) && options.coverImageIndex >= 0 && options.coverImageIndex < paths.length ? options.coverImageIndex : -1;
         state.coverImagePath = paths[state.coverImageIndex] || paths[0] || '';
+        state.foodImagePaths = [...new Set(paths)]; state.foodImageUploads = {};
         if (this._parentTouched.unit || this._parentTouched.baseQuantity) state.initialBasisEdited = true;
         state.accountKey = currentContext().accountKey;
         state.operationId = createRequestId();
@@ -163,7 +164,7 @@ Component({
       }
     },
     async retryRecognition() {
-      const state = this._pending; if (!state || this.data.busy) return;
+      const state = this._pending; if (!state || this.data.busy || state.pendingSave) return;
       if (!state.retryRecognitionRequired) return this.runPending();
       wx.showModal({ title: '重新识别', content: '上次识别结果暂不可确认。继续会重新提交图片，并占用一次识别次数。', confirmText: '重新识别', success: result => {
         if (result.confirm && this._pending === state && !this.data.busy) this.startRecognition({
@@ -172,7 +173,7 @@ Component({
     },
     async runPending() {
       const state = this._pending;
-      if (!state) return;
+      if (!state || state.pendingSave) return;
       const epoch = this._epoch; const context = currentContext(); const flow = this._flowEpoch = (this._flowEpoch || 0) + 1;
       const active = () => epoch === this._epoch && sameContext(context) && flow === this._flowEpoch && this._pending === state && currentContext().accountKey === state.accountKey && currentContext().babyUid === state.babyUid;
       clearTimeout(this._slowTimer);
@@ -225,7 +226,7 @@ Component({
       this.setData({ ...progress, ...preview,
         invalidField, fieldError: invalidField ? state.validationMessage : '',
         scrollToField: scrollTarget ? '' : this.data.scrollToField,
-        previewOnly, coverImagePath: state.coverImagePath || '', retryRecognitionRequired: !!state.retryRecognitionRequired, displayMode: state.mode, needType: !!state.needType, saving: !!state.saving, pendingSave: !!state.pendingSave,
+        previewOnly, coverImagePath: state.coverImagePath || '', foodImagePaths: state.foodImagePaths || [], retryRecognitionRequired: !!state.retryRecognitionRequired, displayMode: state.mode, needType: !!state.needType, saving: !!state.saving, pendingSave: !!state.pendingSave,
         identityDetails: { ...(state.identity || {}) }, canRetryRecognition: state.status === 'failed',
         canRestoreDraft: !!this._previousDraft && (state.status === 'failed' || state.needType), duplicateReview: state.duplicateReview || null, existingItem: state.existingItem || null,
         duplicateReviewOpen: !!state.duplicateReviewOpen,
@@ -276,7 +277,7 @@ Component({
     },
     restorePreviousDraft() {
       const state = this._previousDraft;
-      if (!state || this.data.busy || !this.isCurrentState(state)) return;
+      if (!state || this.data.busy || this.data.pendingSave || !this.isCurrentState(state)) return;
       this._flowEpoch++; this._pending = state; this._previousDraft = null;
       state.duplicateReviewOpen = false;
       this.setData({ busy: false, error: '', canRestoreDraft: false }); this.renderDialog();
@@ -288,7 +289,7 @@ Component({
     stopPropagation() {},
     onPreviewBasisChange(event) {
       const state = this._pending; const mode = event.currentTarget.dataset.mode;
-      if (!state || !this.data.previewOnly || this.data.busy || !this.data.previewBasisOptions.some(item => item.value === mode)) return;
+      if (!state || !this.data.previewOnly || this.data.busy || state.pendingSave || !this.data.previewBasisOptions.some(item => item.value === mode)) return;
       // 切换只影响预览；保存基准与原始标签依据均不变。
       state.previewBasisMode = mode; this.renderDialog();
     },
@@ -329,7 +330,7 @@ Component({
     },
     onDialogInput(e) {
       const state = this._pending;
-      if (!state || this.data.busy) return;
+      if (!state || this.data.busy || state.pendingSave) return;
       const field = e.currentTarget.dataset.field;
       state.dirty = true;
       // 手填营养不改变食物身份，保留对比并即时更新差异。
@@ -338,7 +339,7 @@ Component({
       else {
         state.values[field] = e.detail.value;
         if (['ratioPowder', 'ratioWater'].includes(field)) state.ratioSource = 'manual';
-        if (field === 'name') { clearProposals(state, true); invalidateIdentityConfirmation(state); state.needIdentity = true; }
+        if (field === 'name') { clearProposals(state, true); invalidateIdentityConfirmation(state); state.needIdentity = !state.saveFormOpen; }
         if (field === 'baseQuantity') { clearProposals(state, true); state.initialBasisEdited = true; }
       }
       this.renderDialog();
@@ -355,7 +356,8 @@ Component({
     async onDialogBlur(e) {
       const field = e.currentTarget.dataset.field;
       const state = this._pending;
-      if (!state || this.data.busy || !state.result) return;
+      if (!state || this.data.busy || state.pendingSave || !state.result) return;
+      if (state.saveFormOpen) return;
       if (field === 'name' && String(state.values.name || '').trim()) {
         state.identity = { ...state.identity, name: state.values.name.trim() };
         state.needIdentity = isGenericIdentity(state.identity) || state.identityManualRequired && !state.identityConfirmation || getIdentityRequirement(state).required;
@@ -366,12 +368,12 @@ Component({
     },
     onCategoryChange(e) {
       const state = this._pending; const item = this.data.categoryItems[Number(e.detail.value)];
-      if (!state || !item || this.data.busy) return;
+      if (!state || !item || this.data.busy || state.pendingSave) return;
       state.dirty = true;
       state.values.category = item.value; state.categoryManual = true; state.categoryRejected = !!item.value; this.renderDialog();
     },
     async onProteinChange(e) {
-      if (!this._pending || this.data.busy) return;
+      if (!this._pending || this.data.busy || this._pending.pendingSave) return;
       const item = this.data.proteinItems[Number(e.detail.value)];
       if (!item) return;
       const state = this._pending; const previous = state.proteinOptions[state.values.proteinTypeIndex];
@@ -380,31 +382,31 @@ Component({
       state.values.proteinTypeIndex = item.index; state.proteinManual = true;
       if (previous && previous.value === 'special' || next && next.value === 'special') clearProposals(state);
       this.renderDialog();
-      if (this._pending.result) await this.runPending();
+      if (this._pending.result && !state.saveFormOpen) await this.runPending();
     },
     async onUseProteinSuggestion() {
       const state = this._pending;
-      if (!state || this.data.busy || !state.proteinSuggestion) return;
+      if (!state || this.data.busy || state.pendingSave || !state.proteinSuggestion) return;
       state.dirty = true;
       const previous = state.proteinOptions[state.values.proteinTypeIndex];
       const next = state.proteinOptions[state.proteinSuggestion.index];
       state.values.proteinTypeIndex = state.proteinSuggestion.index; state.proteinManual = true;
       if (previous && previous.value === 'special' || next && next.value === 'special') clearProposals(state);
       this.renderDialog();
-      if (state.result) await this.runPending();
+      if (state.result && !state.saveFormOpen) await this.runPending();
     },
     onNewCategoryInput(e) {
-      if (!this._pending || this.data.busy) return;
+      if (!this._pending || this.data.busy || this._pending.pendingSave) return;
       this._pending.newCategoryName = e.detail.value; this.renderDialog();
     },
     toggleCategoryCreate() {
-      if (!this._pending || this.data.busy) return;
+      if (!this._pending || this.data.busy || this._pending.pendingSave) return;
       this._pending.categoryCreateOpen = !this._pending.categoryCreateOpen; this.renderDialog();
     },
     async onCreateCategory() {
       const state = this._pending;
       if (state && state.purpose === 'preview') return;
-      if (!state || this.data.busy || state.mode === 'powder_label') return;
+      if (!state || this.data.busy || state.pendingSave || state.mode === 'powder_label') return;
       const name = normalizeCategoryName(String(this.data.newCategoryName || '').trim());
       if (!name || name.length > 60) { state.error = '分类名称需为1至60个字符'; this.renderDialog(); return; }
       const existing = matchCategory(name, state.categoryCatalog);
@@ -435,16 +437,16 @@ Component({
     },
     async onUnitChange(e) {
       const state = this._pending;
-      if (!state || this.data.busy) return;
+      if (!state || this.data.busy || state.pendingSave) return;
       state.dirty = true;
       const index = Number(e.detail.value);
       state.values.unit = index > 0 ? this.data.unitItems[index] : ''; state.initialBasisEdited = true;
       clearProposals(state, true); this.renderDialog();
-      if (state.result) await this.runPending();
+      if (state.result && !state.saveFormOpen) await this.runPending();
     },
     async onCandidate(e) {
       const state = this._pending;
-      if (!state || this.data.busy) return;
+      if (!state || this.data.busy || state.pendingSave) return;
       const candidate = state.identityCandidates[Number(e.currentTarget.dataset.index)];
       if (!candidate) return;
       state.dirty = true;
@@ -454,7 +456,7 @@ Component({
     },
     async onContinueIdentity() {
       const state = this._pending;
-      if (!state || this.data.busy || !String(state.values.name || '').trim()) return;
+      if (!state || this.data.busy || state.pendingSave || !String(state.values.name || '').trim()) return;
       let identity = { ...state.identity, name: state.values.name.trim() };
       if (isGenericIdentity(identity)) {
         state.error = '请填写具体种类，例如猪肉、牛肉或鸡肉；仍不确定可选择“我也不确定”'; this.renderDialog(); return;
@@ -476,7 +478,7 @@ Component({
       await this.runPending();
     },
     onIdentityPreparationChange(event) {
-      const state = this._pending; if (!state || this.data.busy) return;
+      const state = this._pending; if (!state || this.data.busy || state.pendingSave) return;
       const preparation = ['', 'raw', 'boiled', 'stir_fried', 'other'][Number(event.detail.value)];
       if (preparation === undefined) return;
       clearProposals(state); invalidateIdentityConfirmation(state);
@@ -491,12 +493,12 @@ Component({
       this.renderDialog();
     },
     onIdentityNoteInput(event) {
-      const state = this._pending; if (!state || this.data.busy || !state.identityDeferred) return;
+      const state = this._pending; if (!state || this.data.busy || state.pendingSave || !state.identityDeferred) return;
       state.identityNote = String(event.detail.value || '').slice(0, 160); state.dirty = true;
     },
     async onReference(e) {
       const state = this._pending;
-      if (!state || this.data.busy) return;
+      if (!state || this.data.busy || state.pendingSave) return;
       const candidate = state.referenceCandidates[Number(e.currentTarget.dataset.index)];
       if (!candidate) return;
       if (isGenericIdentity(candidate.identity)) { state.error = '该参考名称过于笼统，请填写具体种类后核对'; this.renderDialog(); return; }
@@ -509,7 +511,7 @@ Component({
       await this.runPending();
     },
     async onSkipReference() {
-      if (!this._pending || this.data.busy) return;
+      if (!this._pending || this.data.busy || this._pending.pendingSave) return;
       this._pending.dirty = true;
       this._pending.ignoreReference = true; await this.runPending();
     },
@@ -519,7 +521,7 @@ Component({
     async useResults() {
       const state = this._pending;
       if (!state || this.data.busy || state.pendingSave) return;
-      if (state.needIdentity || state.identityDeferred) { this.openIdentityEditor(); return; }
+      if (!state.saveFormOpen && (state.needIdentity || state.identityDeferred)) { this.openIdentityEditor(); return; }
       if (state.purpose === 'preview') {
         if (!state.saveFormOpen) return this.openSaveForm();
         return this.savePreview();
@@ -529,8 +531,18 @@ Component({
       if (state.initialFormKey !== formKey(this.properties.draft || {}, state.mode)) {
         state.error = '原表单已变化，请取消后重新识别'; this.renderDialog(); return;
       }
+      const patch = resultPatch(state);
+      this.setData({ busy: true });
+      try {
+        const images = await uploadFoodImages(state.foodImagePaths, state.prepared.envId, state.foodImageUploads);
+        if (this._pending !== state || !this.isCurrentState(state)) return;
+        Object.assign(patch, { images, image: images[Math.max(0, state.foodImagePaths.indexOf(state.coverImagePath))] || '' });
+      } catch (error) {
+        if (this._pending === state && this.isCurrentState(state)) { state.error = error.message || '图片保存失败，请重试'; this.renderDialog(); }
+        return;
+      } finally { if (this._pending === state && this.isCurrentState(state)) this.setData({ busy: false }); }
       this._applied = state; this._pending = null; this._flowEpoch += 1;
-      this.emitPatch(resultPatch(state), [...state.editedFields].filter(field => FIELDS.includes(field) && state.decisions[field] && state.decisions[field].source === 'manual'));
+      this.emitPatch(patch, [...state.editedFields].filter(field => FIELDS.includes(field) && state.decisions[field] && state.decisions[field].source === 'manual'));
       this.setData({ dialogOpen: false, busy: false, error: '', phase: '', phaseDetail: '' });
     },
     markManual(field, value) {
@@ -564,18 +576,12 @@ Component({
         { quantity: number(draft.baseQuantity), unit: draft.unit === '份' ? 'portion' : draft.unit, material: 'food' };
       this.setData({ busy: true });
       try {
-        if (!state.comparisonVersion) {
-          const result = await callNutritionFunction('lookupNutritionReference', { action: 'search',
-            sessionId: state.result.sessionId, babyUid: state.babyUid, identity: { ...state.identity, name: draft.name }, targetBasis: basis });
-          if (!sameContext(context) || epoch !== this._epoch || this._applied !== state) throw new Error('当前表单已关闭，请重新核对');
-          state.comparisonVersion = result.comparisonVersion;
-        }
-        const decisions = FIELDS.filter(path => state.decisions[path] && !(path === 'sodium' && state.mode === 'powder_label')).map(path =>
-          state.decisions[path].source === 'manual' ? { path, source: 'manual', value: values[path] } : { path, source: state.decisions[path].source });
+        const decisions = FIELDS.filter(path => !isBlank(values[path]) && !(path === 'sodium' && state.mode === 'powder_label'))
+          .map(path => ({ path, source: (state.decisions[path] || {}).source || 'manual', value: values[path] }));
         return await confirmWithRecovery({ ...saveContext,
           ...(state.mode !== 'powder_label' ? { targetId: state.prepared.targetFoodId } : {}),
           babyUid: state.babyUid, sessionId: state.result.sessionId, operationId: state.operationId,
-          comparisonVersion: state.comparisonVersion,
+          comparisonVersion: state.comparisonVersion, useFormValues: true, identity: { ...state.identity, name: draft.name },
           expectedVersion: state.mode === 'powder_label' ? this.properties.expectedVersion : state.prepared.targetFoodVersion,
           targetBasis: basis, decisions, mixRatioDecision: { source: state.ratioSource } });
       } catch (error) {
@@ -595,12 +601,14 @@ Component({
     },
     async chooseFoodImage() {
       const state = this._pending;
-      if (!state || this.data.busy || state.pendingSave || !state.saveFormOpen) return;
+      if (!state || this.data.busy || state.pendingSave || state.foodImagePaths.length >= 3) return;
       this.setData({ busy: true });
       try {
-        const paths = await chooseRecognitionImages();
+        const paths = await chooseRecognitionImages({ count: 3 - state.foodImagePaths.length });
         if (this._pending !== state || !this.isCurrentState(state)) return;
-        state.coverImagePath = paths[0]; state.coverFileID = ''; state.dirty = true;
+        state.foodImagePaths = [...new Set(state.foodImagePaths.concat(paths))];
+        if (!state.coverImagePath) state.coverImagePath = paths[0];
+        state.dirty = true;
       } catch (error) {
         if (this._pending === state && this.isCurrentState(state) && !/cancel/i.test(error.errMsg || error.message || '')) {
           state.error = error.message || '选择图片失败，请重试';
@@ -609,14 +617,27 @@ Component({
         if (this._pending === state && this.isCurrentState(state)) { this.setData({ busy: false }); this.renderDialog(); }
       }
     },
-    previewFoodImage() {
-      if (!this.data.coverImagePath || this.data.busy || this.data.pendingSave) return;
-      wx.previewImage({ current: this.data.coverImagePath, urls: [this.data.coverImagePath] });
+    previewFoodImage(event) {
+      const state = this._pending; const index = Number(event.currentTarget.dataset.index);
+      if (!state || this.data.busy || state.pendingSave || !state.foodImagePaths[index]) return;
+      wx.previewImage({ current: state.foodImagePaths[index], urls: state.foodImagePaths });
+    },
+    setFoodImageCover(event) {
+      const state = this._pending; const index = Number(event.currentTarget.dataset.index);
+      if (!state || this.data.busy || state.pendingSave || !state.foodImagePaths[index]) return;
+      state.coverImagePath = state.foodImagePaths[index]; state.dirty = true; this.renderDialog();
+    },
+    removeFoodImage(event) {
+      const state = this._pending; const index = Number(event.currentTarget.dataset.index);
+      if (!state || this.data.busy || state.pendingSave || !state.foodImagePaths[index]) return;
+      state.foodImagePaths = state.foodImagePaths.filter((_, i) => i !== index);
+      if (!state.foodImagePaths.includes(state.coverImagePath)) state.coverImagePath = state.foodImagePaths[0] || '';
+      state.dirty = true; this.renderDialog();
     },
     openSaveForm() {
-      const state = this._pending; if (!state || this.data.busy || state.needType) return;
+      const state = this._pending; if (!state || this.data.busy || state.pendingSave || state.needType) return;
       if (state.needIdentity || state.identityDeferred || getIdentityRequirement(state).required) { this.openIdentityEditor(); return; }
-      // 直接展示识别数据，沿用结果页的查重状态。
+      // 直接填写当前识别结果，保存时以用户最终表单为准。
       state.saveFormOpen = true;
       this.setData({ scrollToField: '' }); this.renderDialog();
       if (state.duplicateCheckFailed) state.duplicateCheckKey = '';
@@ -624,7 +645,7 @@ Component({
     },
     async checkDuplicatePreview(state) {
       if (state.purpose !== 'preview' || !state.result || state.needType || state.needIdentity ||
-          state.identityDeferred || state.saving || state.status === 'failed' || getIdentityRequirement(state).required) return;
+          state.identityDeferred || state.saving || state.pendingSave || state.status === 'failed' || getIdentityRequirement(state).required) return;
       // 同一身份沿用预查结果，改名后由清空草稿建议使旧请求失效。
       const key = JSON.stringify([state.mode, state.identity]);
       if (state.duplicateCheckKey === key) return;
@@ -653,8 +674,10 @@ Component({
       try {
         const result = await callNutritionFunction('recognizeNutritionLabel', { action: 'bindTarget', babyUid: state.babyUid, sessionId: state.result.sessionId,
           requestId: createRequestId(), targetType: state.mode === 'powder_label' ? 'powder' : 'food', comparisonVersion: state.comparisonVersion,
+          useFormValues: true, identity: { ...state.identity, name: state.values.name }, targetBasis: targetBasis(state),
           duplicateReviewToken: state.duplicateDecision || undefined, allowDuplicate: !!state.duplicateDecision });
         if (this._pending !== state || !this.isCurrentState(state)) return false;
+        state.comparisonVersion = result.comparisonVersion;
         state.duplicateCheckFailed = false;
         state.duplicateReviewOpen = !result.existing && !!result.duplicateReview && result.duplicateReview.total === 1;
         if (result.existing || result.duplicateReview) {
@@ -682,41 +705,20 @@ Component({
     },
     onIdentityDetailInput(event) {
       const state = this._pending; const key = event.currentTarget.dataset.key;
-      if (!state || this.data.busy || !['brand', 'series', 'stage', 'barcode'].includes(key)) return;
+      if (!state || this.data.busy || state.pendingSave || !['brand', 'series', 'stage', 'barcode'].includes(key)) return;
       state.identity = { ...state.identity, [key]: event.detail.value }; state.dirty = true;
       clearProposals(state); invalidateIdentityConfirmation(state);
       state.needIdentity = state.identityManualRequired || getIdentityRequirement(state).required;
       state.existingItem = null; this.renderDialog();
     },
-    onIdentityDetailBlur() { if (this._pending && !this.data.busy && this._pending.result) return this.runPending(); },
-    async preparePreviewComparison(state) {
-      if (state.comparisonVersion) return true;
-      const appliedValues = JSON.stringify(resultPatch(state));
-      await this.runPending();
-      if (this._pending !== state || !this.isCurrentState(state)) return false;
-      if (state.status !== 'ready' || !state.comparisonVersion) {
-        state.error = state.error || ({ reference: '尚未添加，请先选择对应食物或暂不使用参考',
-          identity: '尚未添加，请先确认食物名称与制备状态', basis: '尚未添加，请先确认营养基准份量和记录单位' })[state.status] ||
-          '营养核对尚未完成，本次未添加，请重试';
-        return false;
-      }
-      // 保存前若参考核对改变了已应用的值，必须让用户再次核对。
-      if (JSON.stringify(resultPatch(state)) !== appliedValues) {
-        state.error = '营养核对更新了部分信息，请确认后再次保存'; this.renderDialog(); return false;
-      }
-      return true;
-    },
+    onIdentityDetailBlur() { if (this._pending && !this.data.busy && !this._pending.pendingSave && !this._pending.saveFormOpen && this._pending.result) return this.runPending(); },
     async savePreview() {
       const state = this._pending; if (!state || this.data.busy || state.saving || state.pendingSave) return;
-      const missingFields = validateDialog(state, { proteinOptions: this.properties.proteinOptions || [] })
-        .filter(label => label !== '完成名称和营养核对');
+      const missingFields = validateDialog(state, { proteinOptions: this.properties.proteinOptions || [], currentForm: true });
       if (missingFields.length) { this.focusMissing(missingFields); return; }
       state.error = ''; state.saving = true; this.setData({ busy: true, phase: '正在添加', phaseDetail: '' }); this.renderDialog();
       try {
-        // 核对、查重和上传共用一次提交状态，期间不能再次编辑或提交。
-        if (!await this.preparePreviewComparison(state)) return;
-        const missing = validateDialog(state, { proteinOptions: this.properties.proteinOptions || [] });
-        if (missing.length) { this.focusMissing(missing); return; }
+        // 仅绑定当前资料、查重和上传，不再次查询或覆盖营养值。
         let bound = await this.bindPreviewState(state);
         if (!bound && this._pending === state && state.duplicateReview && state.duplicateReview.token) bound = await this.confirmDuplicateAddition();
         if (this._pending !== state || !this.isCurrentState(state)) return;
@@ -729,23 +731,18 @@ Component({
         const form = { name: state.values.name, category: state.values.category, categoryLevel2: state.values.categoryLevel2 || '',
           proteinSource: protein.value || '', proteinQuality: protein.quality || '',
           mixRatio: { powder: state.values.ratioPowder, water: state.values.ratioWater } };
-        const decisions = FIELDS.filter(path => state.decisions[path] && !(path === 'sodium' && state.mode === 'powder_label')).map(path => state.decisions[path].source === 'manual' ? { path, source: 'manual', value: state.values[path] } : { path, source: state.decisions[path].source });
-        if (state.mode !== 'powder_label' && state.coverImagePath) {
-          if (!state.coverFileID) {
-            // 展示图另存到食物图片目录，不能引用会随识别草稿过期清理的临时文件。
-            const path = state.coverImagePath;
-            const extension = (path.match(/\.(jpg|jpeg|png|webp)$/i) || [null, 'jpg'])[1];
-            const uploaded = await wx.cloud.uploadFile({ cloudPath: 'food_images/recognition_' + state.result.sessionId + '.' + extension,
-              filePath: path, config: { env: state.prepared.envId } });
-            if (!uploaded.fileID) throw new Error('食物图片保存失败，请重试');
-            state.coverFileID = uploaded.fileID;
-          }
-          form.image = state.coverFileID;
+        const decisions = buildRows(state).filter(row => !isBlank(row.value))
+          .map(row => ({ path: row.path, source: row.source || 'manual', value: row.value }));
+        if (state.mode !== 'powder_label') {
+          form.images = await uploadFoodImages(state.foodImagePaths, state.prepared.envId, state.foodImageUploads);
+          form.image = form.images[Math.max(0, state.foodImagePaths.indexOf(state.coverImagePath))] || '';
         }
         if (this._pending !== state || !this.isCurrentState(state)) return;
+        state.submittedName = form.name;
         const result = await confirmWithRecovery({ babyUid: state.babyUid, sessionId: state.result.sessionId, operationId: state.operationId, comparisonVersion: state.comparisonVersion,
+          useFormValues: true,
           expectedVersion: state.expectedVersion, targetBasis: targetBasis(state), decisions, form, mixRatioDecision: { source: state.ratioSource } });
-        const saved = { ...result, name: state.values.name, accountKey: state.accountKey, babyUid: state.babyUid, mode: state.mode };
+        const saved = { ...result, name: state.submittedName, accountKey: state.accountKey, babyUid: state.babyUid, mode: state.mode };
         invalidateSearchForBaby(state.babyUid, saved);
         if (this._pending === state && this.isCurrentState(state)) { this._pending = null; this._previousDraft = null; this.setData({ dialogOpen: false, busy: false, saving: false }); this.triggerEvent('saved', saved); }
       } catch (error) {
@@ -774,7 +771,7 @@ Component({
       try {
         const result = await recoverConfirmation(pending);
         if (this._pending !== state || !this.isCurrentState(state)) return;
-        if (result.state === 'saved') { const saved = { ...result.savedResult, name: state.values.name, accountKey: state.accountKey, babyUid: state.babyUid, mode: state.mode }; invalidateSearchForBaby(state.babyUid, saved); this._pending = null; this.setData({ dialogOpen: false, pendingSave: false }); this.triggerEvent('saved', saved); }
+        if (result.state === 'saved') { const saved = { ...result.savedResult, name: state.submittedName, accountKey: state.accountKey, babyUid: state.babyUid, mode: state.mode }; invalidateSearchForBaby(state.babyUid, saved); this._pending = null; this.setData({ dialogOpen: false, pendingSave: false }); this.triggerEvent('saved', saved); }
         else if (['failed', 'not_submitted'].includes(result.state)) { state.pendingSave = false; state.error = '本次尚未保存，可核对后重新提交'; state.operationId = createRequestId(); state.binding = null; }
         else state.error = result.state === 'processing' ? '仍在保存，请稍后再查看' : '暂不能确认保存结果，请稍后恢复状态，避免重复添加';
       } catch (error) { if (this._pending === state && this.isCurrentState(state)) state.error = error.message; }

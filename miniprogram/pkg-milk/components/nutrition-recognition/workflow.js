@@ -117,7 +117,7 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
       state.previewShown = true;
     }
     if (preview && ['food_label', 'powder_label'].includes(state.mode)) {
-      // 标签已足够展示时立即结束预览，参考核对延后到保存步骤。
+      // 标签已足够展示时立即结束预览，参考核对在进入填写表单时完成。
       if (REQUIRED.every(field => number(state.values[field]) !== null)) {
         state.status = 'preview'; update('识别结果', '', 'ready'); return;
       }

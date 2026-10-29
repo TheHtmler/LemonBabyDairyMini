@@ -796,12 +796,26 @@
   color: #c65247;
 }
 
-.food-image-preview {
+/* 提高优先级覆盖原生按钮宽度，避免缩略图溢出卡片、遮住图片间距。 */
+.food-image-item .food-image-preview {
+  display: block;
   width: 180rpx;
   height: 180rpx;
+  min-width: 180rpx;
+  max-width: 180rpx;
   border-radius: 20rpx;
   background: #f5f5f5;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  overflow: hidden;
 }
+.food-image-preview image { width: 100%; height: 100%; display: block; }
+.food-image-gallery { display: flex; flex-wrap: wrap; }
+.food-image-item { flex: 0 0 180rpx; width: 180rpx; margin: 0 24rpx 24rpx 0; }
+.food-image-actions { display: flex; flex-direction: column; }
+.food-image-item .food-image-actions button { width: 100%; min-height: 88rpx; margin: 0; padding: 8rpx; font-size: 22rpx; line-height: 1.5; background: transparent; color: #6c6144; }
+.food-image-preview::after, .food-image-actions button::after, .image-upload-button::after { border: 0; }
 
 .suggestions {
   display: flex;

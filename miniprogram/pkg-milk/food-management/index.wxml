@@ -258,7 +258,7 @@
             <text class="form-label">营养基准份量</text>
             <view class="form-control form-control-stack">
               <input disabled="{{savingNutrition}}" class="input" type="digit" placeholder="默认 100" value="{{formData.baseQuantity}}" data-field="baseQuantity" bindinput="onInputChange" />
-              <text class="field-hint">营养值按这份量计算</text>
+              <text class="field-hint">营养值按这份量计算。更改份量会影响摄入计算，已填营养值保持不变，请自行核对。</text>
             </view>
           </view>
 
@@ -324,21 +324,17 @@
             <text class="form-label">图片</text>
             <view class="form-control form-control-stack">
               <view class="image-field-row">
-                <view class="image-upload-button" bindtap="chooseFoodImage">
-                  {{uploadingFoodImage ? '上传中...' : '上传图片'}}
-                </view>
-                <view class="image-clear-button" wx:if="{{formData.image}}" bindtap="clearFoodImage">
-                  移除
+                <button class="image-upload-button" wx:if="{{formData.images.length < 3}}" bindtap="chooseFoodImage" disabled="{{uploadingFoodImage || savingNutrition}}">{{uploadingFoodImage ? '上传中...' : '添加图片'}}</button>
+              </view>
+              <view class="food-image-gallery">
+                <view class="food-image-item" wx:for="{{formData.images}}" wx:key="*this">
+                  <button class="food-image-preview" data-index="{{index}}" bindtap="previewFoodImage" disabled="{{uploadingFoodImage || savingNutrition}}" aria-label="预览第 {{index + 1}} 张食物图片"><image src="{{foodImagePreviewUrls[index] || item}}" mode="aspectFill" /></button>
+                  <view class="food-image-actions">
+                    <button data-index="{{index}}" bindtap="setFoodImageCover" disabled="{{uploadingFoodImage || savingNutrition || item === formData.image}}">{{item === formData.image ? '封面' : '设为封面'}}</button>
+                    <button data-index="{{index}}" bindtap="clearFoodImage" disabled="{{uploadingFoodImage || savingNutrition}}" aria-label="移除第 {{index + 1}} 张食物图片">移除</button>
+                  </view>
                 </view>
               </view>
-              <image
-                class="food-image-preview"
-                wx:if="{{foodImagePreviewUrl || formData.image}}"
-                src="{{foodImagePreviewUrl || formData.image}}"
-                mode="aspectFill"
-                data-url="{{foodImagePreviewUrl || formData.image}}"
-                bindtap="previewFoodImage"
-              />
             </view>
           </view>
           <view class="form-item">

@@ -10,8 +10,13 @@ button::after { border: none; }
 .recognition-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10000; }
 .recognition-saving-mask { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10002; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .25); }
 .recognition-saving-status { display: flex; align-items: center; gap: 16rpx; padding: 32rpx 40rpx; border-radius: 20rpx; background: #ffffff; color: #473a22; font-size: 28rpx; }
-.food-image-preview { width: 144rpx; height: 144rpx; border-radius: 16rpx; overflow: hidden; }
+/* 提高优先级覆盖原生按钮宽度，避免缩略图溢出卡片、遮住图片间距。 */
+.food-image-item .food-image-preview { display: block; width: 180rpx; height: 180rpx; min-width: 180rpx; max-width: 180rpx; padding: 0; margin: 0; line-height: 0; border-radius: 16rpx; overflow: hidden; }
 .food-image-preview image { display: block; width: 100%; height: 100%; }
+.food-image-gallery { display: flex; flex-wrap: wrap; }
+.food-image-item { flex: 0 0 180rpx; width: 180rpx; margin: 0 24rpx 24rpx 0; }
+.food-image-actions { display: flex; flex-direction: column; }
+.food-image-actions .text-button { width: 100%; min-height: 88rpx; padding: 8rpx 0; margin: 0; font-size: 22rpx; }
 .recognition-mask { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .4); }
 .photo-overlay { background: #28251f; }
 .recognition-photo, .recognition-photo-shade { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }

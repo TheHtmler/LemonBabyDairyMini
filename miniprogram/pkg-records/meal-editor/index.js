@@ -438,10 +438,10 @@ function calculateMealSummary(items = []) {
 function foodHasNutritionBasis(food = {}) {
   const nutrition = food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {};
   return ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium']
-    .some((key) => Number(nutrition[key]) > 0);
+    .some((key) => Object.prototype.hasOwnProperty.call(nutrition, key));
 }
 
-/** 编辑预览用：优先食物库，缺失时用 intake 快照里的每份营养 */
+/** 历史编辑沿用原快照；确实没有营养快照时才回退食物库。 */
 function resolveFoodForNutritionCalc(item = {}, catalogFood = null) {
   const snapshot = item.foodSnapshot || {};
   const provenance = {
@@ -458,6 +458,23 @@ function resolveFoodForNutritionCalc(item = {}, catalogFood = null) {
     unit: item.unit || 'g'
   };
   const base = catalogFood || item.food || null;
+  if (foodHasNutritionBasis(snapshot)) {
+    return {
+      ...snapshot, ...provenance,
+      _id: item.foodId || '',
+      name: snapshot.name || item.nameSnapshot || '食物',
+      category: snapshot.category || item.category || '辅食',
+      baseUnit: snapshotBasis.unit,
+      baseQuantity: snapshotBasis.quantity,
+      nutritionBasis: snapshotBasis,
+      nutritionPerBasis: snapshotNutrition,
+      proteinSource: snapshot.proteinSource || item.proteinSource || 'natural',
+      proteinQuality: snapshot.proteinQuality || item.proteinQuality || '',
+      proteinSplit: snapshot.proteinSplit || null,
+      sourceType: snapshot.sourceType || item.sourceType || '',
+      libraryScope: snapshot.libraryScope || item.libraryScope || ''
+    };
+  }
   if (base && foodHasNutritionBasis(base)) {
     return base;
   }
@@ -1336,7 +1353,8 @@ Page({
       createdBy: originalItem?.createdBy || '',
       foodId,
       food,
-      foodSnapshot: FoodModel.buildFoodSnapshot(food),
+      foodSnapshot: originalItem && originalItem.foodId === foodId && foodHasNutritionBasis(originalItem.foodSnapshot || {})
+        ? originalItem.foodSnapshot : FoodModel.buildFoodSnapshot(food),
       nameSnapshot: food.name,
       category: (food.category || '').toString().trim() || '辅食',
       unit: food.baseUnit || 'g',

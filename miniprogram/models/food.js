@@ -118,7 +118,7 @@ class FoodModel {
   async resolveFoodImageUrls(foods = []) {
     const list = Array.isArray(foods) ? foods : [];
     const fileIds = list
-      .map(food => (food?.image || '').toString().trim())
+      .flatMap(food => this._normalizeFoodImages(food))
       .filter(image => image.startsWith('cloud://'));
 
     if (!fileIds.length) {
@@ -138,7 +138,8 @@ class FoodModel {
       const image = (food?.image || '').toString().trim();
       return {
         ...food,
-        imageUrl: imageUrlMap.get(image) || image || ''
+        imageUrl: imageUrlMap.get(image) || image || '',
+        imageUrls: this._normalizeFoodImages(food).map(id => imageUrlMap.get(id) || id)
       };
     });
   }
@@ -458,6 +459,7 @@ class FoodModel {
   }
 
   _normalizeFoodForWrite(foodData = {}) {
+    const images = this._normalizeFoodImages(foodData);
     const nutritionBasis = this._normalizeNutritionBasis(foodData);
     const rawNutrition = foodData.rawNutrition || foodData.nutritionPerBasis || foodData.nutritionPer100g || foodData.nutritionPerUnit || {};
     const nutritionPerBasis = withMissingNutrition(this._normalizeNutrition(rawNutrition), rawNutrition);
@@ -472,7 +474,8 @@ class FoodModel {
       sourceType,
       ownerType: foodData.ownerType || (isSystem ? 'system' : 'baby'),
       isSystem,
-      image: foodData.image ? String(foodData.image).trim() : '',
+      image: foodData.image ? String(foodData.image).trim() : images[0] || '',
+      images,
       nutritionBasis,
       nutritionPerBasis,
       nutritionExtra: foodData.nutritionExtra || {},
@@ -487,8 +490,17 @@ class FoodModel {
     delete payload.rawNutrition;
     delete payload.touchedNutritionFields;
     delete payload.expectedVersion;
+    delete payload.imageUrl;
+    delete payload.imageUrls;
 
     return payload;
+  }
+
+  _normalizeFoodImages(food = {}) {
+    const images = (Array.isArray(food.images) ? food.images : [])
+      .filter(image => typeof image === 'string' && image.trim()).map(image => image.trim());
+    if (typeof food.image === 'string' && food.image.trim() && !images.includes(food.image.trim())) images.unshift(food.image.trim());
+    return [...new Set(images)];
   }
 
   buildFoodSnapshot(food = {}) {
@@ -533,6 +545,7 @@ class FoodModel {
       isSystem: true,
       isLiquid: !!food.isLiquid,
       image: food.image || '',
+      images: this._normalizeFoodImages(food),
       aliasText: Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || '')
     };
   }
@@ -570,7 +583,8 @@ class FoodModel {
       isSystem,
       isCustom: !isSystem,
       libraryScope: isSystem ? 'system' : 'mine',
-      image: food.image || '',
+      image: food.image || this._normalizeFoodImages(food)[0] || '',
+      images: this._normalizeFoodImages(food),
       isLiquid: nutritionBasis.unit.toLowerCase() === 'ml' || !!food.isLiquid,
       aliasText
     };

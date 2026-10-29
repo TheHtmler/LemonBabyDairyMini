@@ -56,7 +56,7 @@ function buildPreviewView(state, rows, { busy, labelWarning }) {
     frame.left + frame.width <= 100.01 && frame.top + frame.height <= 100.01;
   const scanSize = frameValid && Number.isFinite(frame.scanSize) && frame.scanSize > 0 ? frame.scanSize : 56;
   return {
-    previewPhoto: state.paths[previewScanning || state.coverImageIndex < 0 ? 0 : state.coverImageIndex] || state.paths[0] || '',
+    previewPhoto: previewScanning ? state.paths[0] || '' : state.coverImagePath || state.paths[0] || '',
     previewScanning,
     previewPhotoStyle: previewScanning && frameValid ?
       'left:' + frame.left + '%;top:' + frame.top + '%;width:' + frame.width + '%;height:' + frame.height + '%;border-radius:12px;' : '',

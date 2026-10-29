@@ -41,15 +41,21 @@ async function saveFood(tx, session, event, patch, meta, now) {
   if (form.proteinSource === 'natural' && !['premium', 'regular'].includes(quality)) fail('VALIDATION_FAILED', '请确认蛋白质量类型');
   const nutrition = {};
   ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].forEach(field => { nutrition[field] = number(patch[field]); });
-  const image = text(form.image, 1000);
-  if (image && !image.startsWith('cloud://')) fail('VALIDATION_FAILED', '展示图片必须先上传云存储');
+  const submittedImages = form.images === undefined ? (form.image ? [form.image] : []) : form.images;
+  if (!Array.isArray(submittedImages) || submittedImages.length > 3 || submittedImages.some(id =>
+    typeof id !== 'string' || !id.trim() || id.length > 1000 || !id.trim().startsWith('cloud://'))) {
+    fail('VALIDATION_FAILED', '食物图片最多3张，须先上传云存储');
+  }
+  const images = [...new Set(submittedImages.map(id => id.trim()))];
+  const image = text(form.image, 1000) || images[0] || '';
+  if (image && !images.includes(image)) fail('VALIDATION_FAILED', '封面须选自食物图片');
   const data = { ...(current || {}), name: patch.name, category, categoryLevel1: category,
     categoryLevel2: text(form.categoryLevel2, 100), nutritionBasis: { quantity: patch.baseQuantity, unit: patch.unit },
     nutritionPerBasis: nutrition, proteinSource: form.proteinSource, proteinQuality: quality, foodType: 'food',
     babyUid: session.babyUid, sharedBabyUids: Array.from(new Set([].concat(current && current.sharedBabyUids || [], session.babyUid))),
     isSystem: false, ownerType: 'baby', sourceType: source ? 'user_override' : current && current.sourceType || 'user_custom',
     recordType: 'food_catalog_item', schemaVersion: 2, status: 'active', isLiquid: patch.unit === 'ml',
-    image, nutritionSource: 'user_confirmed', isPhotoAiRecognized: true, recognitionMeta: meta,
+    image, images, nutritionSource: 'user_confirmed', isPhotoAiRecognized: true, recognitionMeta: meta,
     version: Number(current && current.version || 0) + 1,
     createdBy: current && current.createdBy || session.ownerOpenid,
     createdAt: current && current.createdAt || now, updatedAt: now };

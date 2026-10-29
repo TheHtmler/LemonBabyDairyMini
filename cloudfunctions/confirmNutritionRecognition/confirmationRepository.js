@@ -9,7 +9,7 @@ function canonical(value) {
 }
 function requestHash(event) {
   const content = {};
-  ['babyUid', 'sessionId', 'operationId', 'comparisonVersion', 'expectedVersion', 'targetId', 'sourceSystemFoodId', 'sourceSystemPowderId', 'targetBasis', 'decisions', 'mixRatioDecision', 'form'].forEach(key => { if (event[key] !== undefined) content[key] = event[key]; });
+  ['babyUid', 'sessionId', 'operationId', 'comparisonVersion', 'expectedVersion', 'targetId', 'sourceSystemFoodId', 'sourceSystemPowderId', 'targetBasis', 'decisions', 'mixRatioDecision', 'form', 'useFormValues', 'identity'].forEach(key => { if (event[key] !== undefined) content[key] = event[key]; });
   return hash(JSON.stringify(canonical(content)));
 }
 async function beginConfirmation({ db, sessionId, operationId, payloadHash, now }) {

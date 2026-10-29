@@ -21,7 +21,7 @@ function buildProgressView(state, busy, rows) {
     ['ready', 'preview'].includes(state.status) && !identityReview ? state.referenceWarning || missingRequiredNutrition ? 'review' : 'done' :
       ['reference', 'basis'].includes(state.status) ? 'review' : nutritionLoading ? 'loading' : 'waiting';
   const nutrientRows = rows.map(row => ({ ...row, formLabel: FORM_LABELS[row.path],
-    loading: nutritionLoading && isBlank(row.value) && !state.manualFields.has(row.path) }));
+    loading: nutritionLoading && row.required && isBlank(row.value) && !state.manualFields.has(row.path) }));
   return { imagePaths: state.paths, uploadedCount: uploaded, imageCount: state.paths.length,
     uploadLoading, uploadStatus, identityLoading, identityStatus, identityVisible,
     nutritionVisible, nutritionLoading, nutritionStatus,
