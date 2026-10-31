@@ -3,6 +3,12 @@ const { isDeveloperOpenid } = require('../../config/developer');
 
 const CONFIG_ITEMS = [
   {
+    id: 'ai-model',
+    name: 'AI 模型配置',
+    description: '管理模型轮换顺序、免费额度和有效期',
+    path: '/pkg-misc/ai-model-settings/index'
+  },
+  {
     id: 'nutrition-quota',
     name: '营养识别次数',
     description: '设置每个账号每天的识别上限',
@@ -11,7 +17,7 @@ const CONFIG_ITEMS = [
   {
     id: 'notice',
     name: '首页公告配置',
-    description: '控制首页顶部跑马灯公告的显示与文案',
+    description: '设置消息中心公告与更新的显示和内容',
     path: '/pkg-misc/notice-settings/index'
   },
   {

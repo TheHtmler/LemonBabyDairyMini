@@ -216,7 +216,7 @@ Page({
       const pages = getCurrentPages ? getCurrentPages() : [];
       const currentPage = pages.length ? pages[pages.length - 1] : null;
 
-      await feedback.callFeedback('submit', {
+      const result = await feedback.callFeedback('submit', {
           type: this.data.selectedType,
           content,
           contact,
@@ -255,6 +255,9 @@ Page({
       });
       wx.pageScrollTo({ scrollTop: 0, duration: 0 });
       await this.loadMine();
+      if (this._alive && result.id) wx.navigateTo({
+        url: `/pkg-misc/feedback-detail/index?id=${encodeURIComponent(result.id)}`
+      });
     } catch (error) {
       wx.hideLoading();
       if (!this._alive || error.code === 'STALE_SESSION') return;

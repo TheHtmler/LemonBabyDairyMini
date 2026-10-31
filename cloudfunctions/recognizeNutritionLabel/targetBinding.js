@@ -1,5 +1,5 @@
 'use strict';
-const { fail, identity, FIELDS, number } = require('./lib/core/contracts');
+const { fail, identity, FIELDS, number, foodBasis } = require('./lib/core/contracts');
 const { hash, ownedSession, getDocument, transaction, readBabyFoodCatalog, SESSION_COLLECTION } = require('./lib/core/server');
 const { normalizeLegacyProfileSeed, sortProfiles } = require('./lib/core/profile');
 const { findDuplicates } = require('./lib/core/duplicates');
@@ -15,11 +15,11 @@ async function bindPreviewTarget({ db, openid, event, now }) {
   if (useFormValues) {
     if (!session.observation || !session.result) fail('VALIDATION_FAILED', '请先完成图片识别');
     const wanted = identity(event.identity || {});
-    const basis = event.targetBasis || {};
+    const basis = foodBasis(event.targetBasis || {}, true);
     const confirmation = makeIdentityConfirmation(wanted);
-    if (!confirmation || !(number(basis.quantity) > 0) || !['g', 'ml', 'portion'].includes(basis.unit)) fail('VALIDATION_FAILED', '请填写具体名称与有效的营养基准');
+    if (!confirmation) fail('VALIDATION_FAILED', '请填写具体名称与有效的营养基准');
     formContext = { confirmedIdentity: wanted, identityConfirmation: confirmation,
-      comparisonBasis: { quantity: number(basis.quantity), unit: basis.unit, material: 'food' },
+      comparisonBasis: basis,
       comparisonVersion: session.comparisonVersion || 1, status: 'compared' };
     session = { ...session, ...formContext };
   }

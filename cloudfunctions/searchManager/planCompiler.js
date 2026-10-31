@@ -70,10 +70,15 @@ function applySelection(draft, selected, choice) {
     } else if (choice.value === 'configured') { next.operation = 'catalog.read'; next.subjectMode = 'configured'; next.periods = []; }
     else fail('INVALID_QUERY', '查询方向无效');
   }
-  if (choice.slot === 'powderBasis') { next.powderBasis = choice.value; next.basisUnit = choice.value === 'prepared' ? 'ml' : 'g'; }
+  if (choice.slot === 'powderBasis') {
+    next.powderBasis = choice.value; next.basisUnit = choice.value === 'prepared' ? 'ml' : 'g';
+  }
   if (choice.slot === 'threshold') {
-    const field = next.measure && next.measure.startsWith('nutrition.') ? next.measure : 'nutrition.protein';
-    next.operation = 'catalog.search'; next.filters = [{ field, operator: 'lt', value: choice.value, unit: MEASURES[field].unit, basisQuantity: 100, basisUnit: 'g' }]; next.measure = null; next.measures = [];
+    if (!draft.threshold) fail('INVALID_CONTEXT', '待补条件已失效，请重新输入完整查询');
+    // 只补缺失数值，不改比较方向、计量基准或已确定的其他筛选。
+    next.filters = [...draft.filters, { ...draft.threshold, value: choice.value }];
+    delete next.threshold;
+    next.measure = null; next.measures = [];
   }
   if (choice.slot === 'excludedIngredientScope') {
     if (choice.value === 'dairy') return { draft: { ...next, status: 'unsupported', reasonCode: 'ingredient_group_unavailable' }, selected: state };
@@ -125,9 +130,15 @@ async function compilePlan({ draft: input, reader, contexts, selected = {}, now 
     const coefficient = (draft.measure || '').startsWith('metrics.'); const count = draft.measure === 'records.count';
     return ask('aggregation', '比较日均还是总量？', count ? [{ label: '记录次数', value: 'count' }] : coefficient ? [{ label: '日均系数', value: 'mean_daily' }] : [{ label: '日均', value: 'mean_daily' }, { label: '总量', value: 'sum' }]);
   }
-  if (draft.unresolved.includes('threshold')) return ask('threshold', '每 100 克的' + (MEASURES[draft.measure] || { label: '蛋白质' }).label + '低于多少？', [], { type: 'number', label: '请输入数值', unit: (MEASURES[draft.measure] || { unit: 'g' }).unit });
+  if (draft.domain === 'powder' && (draft.threshold || draft.measures.some(x => x.startsWith('nutrition.')) || draft.filters.length) && !draft.powderBasis) return ask('powderBasis', '按干粉还是冲调液？', [{ label: '干粉', value: 'dry' }, { label: '冲调液', value: 'prepared' }]);
+  if (draft.threshold) {
+    const condition = draft.threshold;
+    const basis = condition.basisQuantity + ({ g: '克', ml: '毫升', portion: '份' })[condition.basisUnit];
+    const comparison = { lt: '低于', lte: '不超过', eq: '等于', gte: '不低于', gt: '高于' }[condition.operator];
+    return ask('threshold', '每 ' + basis + '的' + MEASURES[condition.field].label + comparison + '多少？', [],
+      { type: 'number', label: '请输入数值', unit: condition.unit });
+  }
   if (draft.filters.some(x => x.field === 'recipe.ingredients' && x.entityMention === '奶') || draft.unresolved.includes('excludedIngredientScope')) return ask('excludedIngredientScope', '你想排除哪些配料？', [{ label: '牛奶和奶粉', value: 'milk_and_powder' }, { label: '所有乳制品', value: 'dairy' }]);
-  if (draft.domain === 'powder' && (draft.measures.some(x => x.startsWith('nutrition.')) || draft.filters.length) && !draft.powderBasis) return ask('powderBasis', '按干粉还是冲调液？', [{ label: '干粉', value: 'dry' }, { label: '冲调液', value: 'prepared' }]);
   if (effective.some(p => p.startDate && p.endDateExclusive && ['records.aggregate', 'metrics.aggregate', 'metrics.compare'].includes(draft.operation) && (Date.parse(p.endDateExclusive) - Date.parse(p.startDate)) / 86400000 > 90)) fail('QUERY_BUDGET', '一次统计最多 90 天，请缩短日期范围');
   if (effective.some(p => !p.startDate) && ['records.aggregate', 'metrics.aggregate', 'metrics.compare'].includes(draft.operation)) fail('QUERY_BUDGET', '合计统计需要明确日期，一次最多 90 天；可改为近 7 天或近 30 天');
   // 首次执行冻结日期，追问修改日期时重新冻结；翻页不会跨午夜漂移。

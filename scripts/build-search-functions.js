@@ -27,7 +27,7 @@ for (const file of ['dailySummaryV2Utils.js', 'feedingRecordV2Utils.js', 'formul
 }
 writeGenerated('cloudfunctions/rebuildDailySummaryV2/lib/nutritionProvenance.js', fs.readFileSync(path.join(root, 'miniprogram/utils/nutritionProvenance.js'), 'utf8'));
 writeGenerated('cloudfunctions/searchManager/lib/config/milkCategoryTags.js', fs.readFileSync(path.join(root, 'miniprogram/config/milkCategoryTags.js'), 'utf8'));
-if (fs.existsSync(path.join(root, 'packages/ai-access-core'))) copy('packages/ai-access-core', ['cloudfunctions/searchManager/lib/ai', 'cloudfunctions/recognizeNutritionLabel/lib/ai', 'cloudfunctions/featureFlagManager/lib/ai']);
+if (fs.existsSync(path.join(root, 'packages/ai-access-core'))) copy('packages/ai-access-core', ['cloudfunctions/searchManager/lib/ai', 'cloudfunctions/recognizeNutritionLabel/lib/ai', 'cloudfunctions/featureFlagManager/lib/ai', 'cloudfunctions/syncAiModelQuota/lib/ai']);
 // 全部生成内容先校验；依赖优先落盘，避免调用方先更新而依赖尚未生成。
 const ordered = [];
 const visited = new Set();

@@ -92,6 +92,48 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
       return rows;
     })(); cache.set(key, task); return task;
   }
+  async function latestWeightBefore(name, beforeDate) {
+    const field = { growth_records_v2: 'weight', feeding_records_v2: 'basicInfoSnapshot.weight' }[name];
+    if (!field || !/^\d{4}-\d{2}-\d{2}$/.test(beforeDate)) fail('INVALID_QUERY', '体重回溯范围无效');
+    const key = JSON.stringify(['weight-before', name, beforeDate]);
+    if (cache.has(key)) return cache.get(key);
+    const task = (async () => {
+      const _ = db.command;
+      // 日期字符串和数据库日期分别取最近一条，避免混合存储类型的排序遗漏。
+      const candidates = await Promise.all([
+        _.gte('1900-01-01').and(_.lt(beforeDate)),
+        _.gte(new Date('1900-01-01T00:00:00+08:00')).and(_.lt(new Date(beforeDate + 'T00:00:00+08:00')))
+      ].map(async (range, index) => {
+        const where = _.and([{ babyUid: accessContext.babyUid, date: range },
+          { [field]: _.exists(true) }, { [field]: _.nin([null, '', 0, '0']) },
+          _.or([{ status: _.exists(false) }, { status: _.in(['active', '', null]) }]),
+          _.or([{ deletedAt: _.exists(false) }, { deletedAt: _.in([null, '', false, 0]) }])]);
+        let before;
+        try { before = await manifest(name, where); }
+        catch (error) { if (error.code === 'QUERY_BUDGET') throw error; fail('SOURCE_UNAVAILABLE', '历史体重状态读取失败，请重试'); }
+        manifests.push({ key: key + ':' + index, collection: name, where, before });
+        if (before === 'absent') return null;
+        for (let offset = 0; ; offset += 20) {
+          budget(); let response;
+          try { response = await db.collection(name).where(where).orderBy('date', 'desc').orderBy('updatedAt', 'desc')
+            .orderBy('_id', 'desc').skip(offset).limit(20).get(); }
+          catch (_) { fail('SOURCE_UNAVAILABLE', '历史体重读取失败，请重试'); }
+          const batch = response.data || []; budget(batch.length);
+          const candidate = batch.find(row => {
+            const value = name === 'growth_records_v2' ? row.weight : (row.basicInfoSnapshot || {}).weight;
+            const day = businessDate(row.date);
+            return row.babyUid === accessContext.babyUid && active(row) && day && day < beforeDate &&
+              ['number', 'string'].includes(typeof value) && Number.isFinite(Number(value)) && Number(value) > 0;
+          });
+          if (candidate) return candidate;
+          if (batch.length < 20) return null;
+        }
+      }));
+      return candidates.filter(Boolean).sort((a, b) => businessDate(b.date).localeCompare(businessDate(a.date)) ||
+        (new Date(b.updatedAt || 0).getTime() || 0) - (new Date(a.updatedAt || 0).getTime() || 0) ||
+        String(b._id).localeCompare(String(a._id)))[0] || null;
+    })(); cache.set(key, task); return task;
+  }
   async function catalogItems(domain = 'catalog', keyword = '', source = 'all') {
     const key = JSON.stringify(['catalog', domain, keyword, source]);
     if (cache.has(key)) return cache.get(key);
@@ -160,7 +202,7 @@ function createReadRepository({ db, accessContext, now, deadline = Date.now() + 
     });
     budget();
   }
-  return { collection, catalogItems, events, verify, budget, revisions: () => Object.fromEntries(manifests.map(x => [hash(x.key), x.before])) };
+  return { collection, latestWeightBefore, catalogItems, events, verify, budget, revisions: () => Object.fromEntries(manifests.map(x => [hash(x.key), x.before])) };
 }
 function event(raw, domain, name, entityId, babyUid) {
   const s = stamp(raw); return { id: domain + ':' + raw._id, sourceId: raw._id, domain, type: domain === 'diet' ? raw.sourceType === 'recipe' ? 'recipe' : 'food' : domain, name, entityId, date: s.date, time: s.time, raw,

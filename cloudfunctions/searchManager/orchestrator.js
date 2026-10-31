@@ -30,7 +30,9 @@ function semanticGuard(query, draft, context) {
 }
 function applyEdits(draft, edits) {
   if (!edits || typeof edits !== 'object' || Array.isArray(edits) || Object.keys(edits).some(x => !['source', 'period', 'domain', 'filters', 'powderBasis', 'entityMention', 'operation'].includes(x))) fail('INVALID_QUERY', '筛选条件无效');
-  const next = { ...draft, status: 'ready', unresolved: [] };
+  const unresolved = edits.filters !== undefined || edits.operation ? [] : draft.unresolved;
+  const next = { ...draft, status: unresolved.length ? 'needs_clarification' : 'ready', unresolved };
+  if (!unresolved.includes('threshold')) delete next.threshold;
   if (edits.period) next.periods = [edits.period];
   for (const key of ['source', 'domain', 'filters', 'powderBasis', 'operation']) if (edits[key] !== undefined) next[key] = edits[key];
   if (edits.entityMention !== undefined) next.entityMentions = edits.entityMention ? [edits.entityMention] : [];
@@ -46,10 +48,10 @@ function errorResponse(error) {
   if (error.code === 'QUERY_BUDGET' || error.code === 'DATA_CHANGED') return { status: 'partial', reasonCode: error.code, message: error.message };
   if (error.code === 'SEMANTIC_CONFLICT') return { status: 'needs_clarification', reasonCode: error.code, message: error.message };
   const known = ['AI_UNAVAILABLE', 'DAILY_LIMIT', 'CONFIG_MISSING', 'SOURCE_UNAVAILABLE', 'INVALID_MODEL_RESULT', 'MODEL_TIMEOUT', 'MODEL_UNAVAILABLE', 'MODEL_RATE_LIMIT', 'FREE_QUOTA_EXHAUSTED', 'AI_RUNNING', 'AI_UNKNOWN', 'REQUEST_CONFLICT', 'INVALID_QUERY', 'INVALID_CURSOR', 'STALE_CURSOR'];
-  return { status: 'unavailable', reasonCode: known.includes(error.code) ? error.code : 'SEARCH_FAILED', message: error.code === 'AI_UNAVAILABLE' ? '智能解析暂不可用，仍可直接按名称查询' : known.includes(error.code) ? error.message : '这次查询没有完成，请重试' };
+  return { status: 'unavailable', reasonCode: known.includes(error.code) ? error.code : 'SEARCH_FAILED', message: known.includes(error.code) ? error.message : '这次查询没有完成，请重试' };
 }
 async function search({ db, accessContext, event, env, flags, now, modelClient }) {
-  const started = Date.now(); let route = ''; let fallbackReason = '';
+  const started = Date.now(); let route = ''; let fallbackReason = ''; let fallbackMessage = '';
   const base = { ok: true, protocolVersion: PROTOCOL_VERSION, capabilityVersion: CAPABILITY_VERSION, buildVersion: BUILD_VERSION };
   try {
     if (event.protocolVersion !== PROTOCOL_VERSION) return { ...base, status: 'unavailable', reasonCode: 'PROTOCOL_MISMATCH', message: '搜索服务版本暂未就绪，请稍后重试' };
@@ -111,13 +113,16 @@ async function search({ db, accessContext, event, env, flags, now, modelClient }
         route = interpreted.understandingSource === 'request_cache' ? 'model_request_cache' : interpreted.understandingSource;
       } catch (error) {
         if (!['AI_UNAVAILABLE', 'DAILY_LIMIT', 'FREE_QUOTA_EXHAUSTED', 'MODEL_TIMEOUT', 'MODEL_UNAVAILABLE', 'MODEL_RATE_LIMIT', 'CONFIG_MISSING'].includes(error.code)) throw error;
+        // 降级前保留错误类别，避免真实名称查询成功后丢失智能解析失败的线索。
+        console.warn('[search-ai-unavailable]', JSON.stringify({ code: error.code,
+          ...(Number.isInteger(error.httpStatus) ? { httpStatus: error.httpStatus } : {}) }));
         // 智能服务不可用时仅按数据库中真实存在的完整名称降级，不猜测问句意图。
         const name = query.trim(); if (name.length > 100) throw error;
         let candidates;
         try { candidates = await reader.catalogItems('catalog', name, 'all'); }
         catch (_) { throw error; }
         if (!candidates.some(item => { const rank = identityRank(item, name); return rank >= 0 && rank < 2; })) throw error;
-        draft = make('catalog.browse', 'catalog', { entityMentions: [name] }); route = 'grounded_name_fallback'; fallbackReason = error.code;
+        draft = make('catalog.browse', 'catalog', { entityMentions: [name] }); route = 'grounded_name_fallback'; fallbackReason = error.code; fallbackMessage = error.message;
       }
       if (context && draft.domain === context.draft.domain && JSON.stringify(draft.entityMentions.map(searchText)) === JSON.stringify(context.draft.entityMentions.map(searchText))) {
         selected = context.selected || {}; carriedCandidates = context.candidates || [];
@@ -161,7 +166,7 @@ async function search({ db, accessContext, event, env, flags, now, modelClient }
           label: plan.effectivePeriods.length === 1 ? '查看原始记录' : '查看第' + (index + 1) + '段原始记录' }));
     }
     result.understanding = { source: route, degraded: !!fallbackReason, reasonCode: fallbackReason };
-    if (fallbackReason && result.result) result.result.note = '智能解析暂不可用，本次仅按完整真实名称查找资料。' + (result.result.note || '');
+    if (fallbackReason && result.result) result.result.note = (fallbackMessage || '智能解析暂不可用') + '。本次仅按完整真实名称查找资料。' + (result.result.note || '');
     const token = await contexts.save({ draft: compiled.draft, selected: compiled.selected, candidates: compiled.candidates && compiled.candidates.length ? compiled.candidates : carriedCandidates, question: compiled.question || null, planId: result.planId || '', sourceRevisions: reader.revisions() }, context);
     result.contextToken = token;
     if (result.result && result.result.nextOffset !== undefined && result.result.nextOffset !== null) result.nextCursor = contexts.pageToken(token, result.planId, result.result.nextOffset);

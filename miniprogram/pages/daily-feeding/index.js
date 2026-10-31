@@ -25,6 +25,9 @@ const {
   saveNutritionTargetPreferences
 } = require('../../utils/nutritionTargetPreferences');
 const { formatBabyAgeText } = require('../../utils/babyAgeDisplay');
+const feedback = require('../../utils/feedback');
+const releaseNotice = require('../../utils/releaseNotice');
+const { isDeveloperOpenid } = require('../../config/developer');
 const {
   buildUpcomingReminderCandidates
 } = require('../../utils/upcomingReminderCandidates');
@@ -46,7 +49,6 @@ const app = getApp();
 const TREND_DAYS = 7;
 const HOME_BOOT_MIN_DURATION = 800;
 const HOME_DASHBOARD_ONSHOW_TTL_MS = 15 * 1000;
-const DEFAULT_RELEASE_NOTICE_TEXT = '看板已升级：聚焦今日营养达成、喂养进度与用药打卡，明细请到「数据记录」查看。';
 
 // 近7天趋势可切换的指标（数据均来自 daily_summary_v2）
 // 蛋白拆成 总/天然/特殊 三个独立单柱 tab，保证每天数值都标得清楚；
@@ -260,10 +262,11 @@ Page({
     currentModalDosage: '',
     currentModalNotes: '',
 
-    // 公告
-    homeSearchEnabled: true, homeScanEnabled: true, releaseNoticeUnread: false,
-    releaseNoticeVisible: true,
-    releaseNoticeText: DEFAULT_RELEASE_NOTICE_TEXT,
+    // 消息角标汇总公告、个人回复与管理员待处理反馈。
+    homeSearchEnabled: true,
+    homeScanEnabled: true,
+    notificationUnreadCount: 0,
+    notificationAriaLabel: '消息中心',
 
     // 入场动画开关（每次 onShow 重置以重播）
     animReady: false,
@@ -276,6 +279,8 @@ Page({
 
   onLoad() {
     if (guardNormalPage()) return;
+    this._notificationAlive = true;
+    this._unsubscribeFeedback = feedback.subscribeUnread(state => this.updateNotificationState(state));
     this.rangeSummaries = [];
     this._ready = false;
     this._lastDashboardLoadAt = 0;
@@ -305,7 +310,10 @@ Page({
 
   async onShow() {
     if (guardNormalPage()) return;
-    require('../../utils/feedback').refreshUnreadSilently();
+    const feedbackState = feedback.getUnreadState();
+    this.updateNotificationState(feedbackState);
+    // 管理员重新进入首页时获取最新待办，不沿用个人消息的短期缓存。
+    feedback.refreshUnreadSilently({ force: isDeveloperOpenid(feedbackState.identity) });
     const userRole = (app.globalData && app.globalData.userRole) || wx.getStorageSync('user_role');
     this.setData({ app, greetingText: buildGreeting(), isCreator: userRole === 'creator' });
     // 新用户引导：宝宝信息保存后选择“去设置”，会先切到首页并打上标记，
@@ -410,6 +418,8 @@ Page({
 
   onHide() { this.hideMedUndo(); this.closeMedPanel(); if (this._openMedModalTimer) clearTimeout(this._openMedModalTimer); },
   onUnload() {
+    this._notificationAlive = false;
+    if (this._unsubscribeFeedback) this._unsubscribeFeedback();
     this._searchCapabilityEpoch = (this._searchCapabilityEpoch || 0) + 1;
     this.hideMedUndo();
     this.closeMedPanel();
@@ -417,7 +427,8 @@ Page({
   },
 
   async onPullDownRefresh() {
-    require('../../utils/feedback').refreshUnreadSilently({ force: true });
+    feedback.refreshUnreadSilently({ force: true });
+    this.loadReleaseNotice();
     try {
       // rebuildTrend:true 已带 rebuildMissing，下拉一次即可刷新趋势
       await this.loadDashboard({ silent: true, rebuildTrend: true });
@@ -516,31 +527,29 @@ Page({
     }
   },
   openHomeSearch() { if (this.data.homeSearchEnabled) wx.navigateTo({ url: '/pkg-milk/search/index' }); },
-  openHomeEntry() { return this.data.homeSearchEnabled ? this.openHomeSearch() : this.openHomeScan(); },
   openHomeScan() { if (this.data.homeScanEnabled) wx.navigateTo({ url: '/pkg-milk/nutrition-scan/index' }); },
-  noticeReadKey(text) {
-    let hash = 2166136261;
-    for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619);
-    return 'home_notice_read:' + currentContext().accountKey + ':' + (hash >>> 0).toString(16);
+  openNotificationCenter() {
+    wx.navigateTo({ url: '/pkg-misc/notification-center/index' });
   },
-  showReleaseNotice() {
-    const text = this.data.releaseNoticeText || '';
-    wx.showModal({ title: '更新公告', content: text, showCancel: false, confirmText: '知道了' });
-    wx.setStorageSync(this.noticeReadKey(text), true); this.setData({ releaseNoticeUnread: false });
+  updateNotificationState(state) {
+    if (!this._notificationAlive) return;
+    const notice = releaseNotice.getReleaseNoticeState(state.identity);
+    const unreadCount = state.count + (notice.unread ? 1 : 0);
+    const adminPendingCount = isDeveloperOpenid(state.identity) ? state.adminPendingCount : 0;
+    const count = unreadCount + adminPendingCount;
+    this.setData({
+      notificationUnreadCount: count,
+      notificationAriaLabel: adminPendingCount > 0
+        ? `消息中心，${unreadCount} 条未读，${adminPendingCount} 条待处理反馈`
+        : count > 0 ? `消息中心，${count} 条未读` : '消息中心'
+    });
   },
   async loadReleaseNotice() {
     try {
-      const res = await wx.cloud.callFunction({
-        name: 'featureFlagManager',
-        data: { action: 'getHomeReleaseNotice' }
-      });
-      const notice = res?.result?.notice;
-      if (!res?.result?.ok || !notice) return;
-      this.setData({
-        releaseNoticeVisible: notice.visible !== false,
-        releaseNoticeText: notice.text || DEFAULT_RELEASE_NOTICE_TEXT,
-        releaseNoticeUnread: !wx.getStorageSync(this.noticeReadKey(notice.text || DEFAULT_RELEASE_NOTICE_TEXT))
-      });
+      await waitForAppInitialization();
+      if (!this._notificationAlive) return;
+      await releaseNotice.loadReleaseNotice();
+      this.updateNotificationState(feedback.getUnreadState());
     } catch (error) {
       console.warn('[daily-feeding] loadReleaseNotice failed', error);
     }

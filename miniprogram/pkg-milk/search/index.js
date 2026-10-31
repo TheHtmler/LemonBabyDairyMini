@@ -2,9 +2,8 @@ const service = require('../../utils/searchService');
 const { waitForAppInitialization } = require('../../utils/index');
 const { currentContext, createSearchSession, takeSearchAddition, openSearchLocator } = require('../../utils/searchSession');
 const { openFeature } = require('../../utils/searchFeatureCatalog');
-const { PROTOCOL_VERSION } = require('../../utils/search-core/capabilities');
-const { FIELDS } = require('../../utils/search-core/contracts');
-const LABELS = { calories: '能量', protein: '蛋白质', fat: '脂肪', carbs: '碳水', fiber: '膳食纤维', sodium: '钠' };
+const { PROTOCOL_VERSION, MEASURES } = require('../../utils/search-core/capabilities');
+const { displayItem, resultConditions } = require('../../utils/searchPresentation');
 function numberText(value) { return typeof value === 'number' && Number.isFinite(value) ? String(Math.round(value * 10000) / 10000) : '缺少数据'; }
 function emptyResult(response) {
   const output = response.result || {};
@@ -12,10 +11,17 @@ function emptyResult(response) {
   if (!['no_match', 'no_records'].includes(response.status) && !missing) return null;
   if (missing) return { title: '记录信息还不完整', description: response.message || '部分记录缺少计算所需的数据，暂时无法给出完整结果。' };
   if (response.status === 'no_match') return { title: '没有找到相关内容', description: '试试更常用的名称，或减少一些查询条件。' };
-  const domain = (response.interpretation || {}).domain;
-  if (domain === 'growth') return { title: '这段时间没有新的成长测量', description: '自动沿用上次体重、身高等数值不算新测量，可以在上方扩大日期范围。' };
+  const interpretation = response.interpretation || {};
+  const domain = interpretation.domain;
+  if (domain === 'growth') {
+    const measure = MEASURES[interpretation.measure] || {};
+    const allHistory = (interpretation.periodDefinitions || []).some(period => period.kind === 'all');
+    const query = !allHistory && measure.label ? '最近一次' + measure.label : '';
+    return { title: '这段时间没有新的成长测量',
+      description: '自动沿用上次体重、身高等数值不算新测量。' + (query ? '可以改搜“' + query + '”。' : '保存新的测量后，就能在这里查到。'), query };
+  }
   const label = ({ diet: '饮食', milk: '喂奶', medication: '服药', water: '饮水', sleep: '睡眠', bowel: '尿布', intake: '摄入' })[domain] || '相关';
-  return { title: '这段时间还没有' + label + '记录', description: '结果只包含当前宝宝已保存的记录，可以在上方换个日期试试。' };
+  return { title: '这段时间还没有' + label + '记录', description: '结果只包含当前宝宝已保存的记录，可在问题中指定其他日期。' };
 }
 function manualFromInterpretation(value) {
   if (!value) return null;
@@ -25,45 +31,19 @@ function manualFromInterpretation(value) {
     powderBasis: value.powderBasis || null, aggregation: value.aggregation, subjectMode: value.subjectMode,
     basisQuantity: value.basisQuantity || 100, basisUnit: value.basisUnit || 'g', groupBy: value.groupBy, featureId: value.featureId, browseGroup: value.browseGroup };
 }
-function displayItem(item) {
-  const basis = item.nutritionBasis || {};
-  const values = FIELDS.map(key => {
-    const entry = (item.nutrients || {})[key] || {};
-    return { key, label: LABELS[key], value: entry.state === 'known' ? Math.round(entry.value * 1000) / 1000 + ' ' + entry.unit : '未提供',
-      isEstimate: entry.state === 'known' && ((item.provenance || {}).fieldSources || {})[key] === 'model_estimate' };
-  });
-  const calories = (item.nutrients || {}).calories || {};
-  const basisText = basis.quantity > 0 && basis.unit ? '每 ' + basis.quantity + (basis.unit === 'g' ? ' 克' : basis.unit === 'ml' ? ' 毫升' : ' 份') +
-    (basis.material === 'dry_powder' ? '干粉' : basis.material === 'prepared_formula' ? '冲调液' : '') : '计量基准未提供';
-  return { ...item, answers: item.answers || [], ingredients: item.ingredients || [], values, proteinText: values.find(value => value.key === 'protein').value,
-    energyText: calories.state === 'known' ? Math.round(calories.value * 1000) / 1000 + ' 千卡' : '能量未提供',
-    basisCaption: basisText.replace(/^每\s*/, ''),
-    thumbnailUrl: typeof item.image === 'string' ? item.image : '',
-    typeLabel: ({ medication: '药物', powder: '奶粉', recipe: '食谱', meal: '餐次', water: '饮水', milk: '喂奶', growth: '成长', sleep: '睡眠', bowel: '尿布' })[item.type] || '食物',
-    hasNutrition: ['food', 'powder'].includes(item.type),
-    medicationText: [item.dosage && item.dosage + ' ' + (item.unit || ''), item.frequency].filter(Boolean).join(' · '),
-    medicationDetails: item.type === 'medication' ? [
-      { label: '已设置剂量', value: item.dosage ? item.dosage + ' ' + (item.unit || '') : '未填写' },
-      { label: '已设置频率', value: item.frequency || '未填写' },
-      { label: '浓度', value: item.concentration ? item.concentration + ' ' + (item.concentrationUnit || '') + '/' + (item.volumeUnit || '') : '未填写' },
-      { label: '备注', value: item.notes || '未填写' }
-    ] : [],
-    actualUnitText: ({ g: '克', ml: '毫升', portion: '份' })[item.actualUnit] || item.actualUnit || '',
-    basisText,
-    sourceText: ({ system: '系统', mine: '我的', history: '记录' })[item.source] || '饮食记录' };
-}
 Page({
   data: {
     query: '', babyName: '', busy: false, moreBusy: false, previewLoading: false, preview: null,
-    queryFocus: false, retryAvailable: false,
+    queryFocus: false, queryReady: false, queryEdited: false, resultQuery: '', resultConditions: '', retryAvailable: false,
     moreError: '', slow: false, savedAddition: null, highlightedId: '', resultSummary: '',
     searchEnabled: false, capabilityError: '', capabilitiesLoading: false,
     exampleQueries: [
-      { query: '系统食物有哪些' }, { query: '每100克蛋白质低于5克的系统食物' },
-      { query: '最近一周的体重变化' }, { query: '今天喝了多少奶' },
+      { query: '系统食物有哪些' }, { query: '今天喝了多少奶' },
+      { query: '每100克蛋白质低于5克的系统食物' }, { query: '最近一周的体重变化' },
       { query: '今天的饮食记录' }, { query: '最近一周的天然蛋白系数' }
     ],
-    hasSearched: false, recent: [], message: '', error: '', emptyState: null, question: null, thresholdValue: '',
+    hasSearched: false, recent: [], recentExpanded: false, recentManaging: false, examplesExpanded: false,
+    message: '', error: '', emptyState: null, question: null, thresholdValue: '',
     items: [], visibleItems: [], result: null, actions: [], nextCursor: null, notesOpen: false
   },
   onLoad() { this._unloaded = false; this._capabilityEpoch = 0; this._scrollTop = 0; this.attachContext(); },
@@ -81,7 +61,7 @@ Page({
       refresh = manualFromInterpretation(this._response && this._response.interpretation) || this._failedRequest && this._failedRequest.payload.manual || this._lastSuccessful && this._lastSuccessful.payload.manual;
       this._refreshIntent = refresh;
       this._refreshSelection = this._response && this._response.interpretation && this._response.interpretation.selectionSnapshot || this._lastSuccessful && this._lastSuccessful.payload.selectionSnapshot;
-      this._refreshQuery = this.data.hasSearched;
+      this._refreshQuery = !!this._response;
       this._restoreScroll = this._scrollTop;
       this._session.next(); this._contextToken = null; this._failedRequest = null; this._previewEpoch++;
       this.setData({ preview: null, previewLoading: false, savedAddition: takeSearchAddition(current.babyUid), moreError: '', retryAvailable: false });
@@ -91,7 +71,7 @@ Page({
     if (this._enabled && this._refreshQuery && !this._unloaded) {
       this._refreshQuery = false;
       const manual = refresh || this._refreshIntent; const selectionSnapshot = this._refreshSelection; this._refreshIntent = null; this._refreshSelection = null;
-      return this.request({ requestMode: 'new', ...(manual ? { manual, selectionSnapshot } : {}) });
+      return this.request({ requestMode: 'new', query: this.data.resultQuery, ...(manual ? { manual, selectionSnapshot } : {}) });
     }
   },
   onPageScroll(event) { this._scrollTop = event.scrollTop; },
@@ -103,6 +83,7 @@ Page({
     this._failedRequest = null; this._lastSuccessful = null; this._refreshQuery = false; this._refreshIntent = null; this._refreshSelection = null;
     clearTimeout(this._slowTimer);
     this.setData({ query: '', babyName: context.babyName, searchEnabled: this._enabled, capabilityError: '', busy: false, moreBusy: false,
+      queryReady: false, queryEdited: false, resultQuery: '', resultConditions: '', recentExpanded: false, recentManaging: false, examplesExpanded: false,
       items: [], visibleItems: [], result: null, question: null, recent: this._session.recent(), hasSearched: false,
       error: '', message: '', emptyState: null, preview: null, previewLoading: false, actions: [], nextCursor: null,
       retryAvailable: false, moreError: '', slow: false, savedAddition: takeSearchAddition(context.babyUid), highlightedId: '', resultSummary: '', notesOpen: false });
@@ -132,21 +113,29 @@ Page({
     this._enabled = false; this._contextToken = null; this._response = null; this._lastSuccessful = null;
     this._failedRequest = null; this._refreshIntent = null; this._refreshSelection = null; this._refreshQuery = false;
     this.setData({ query: '', items: [], visibleItems: [], result: null, question: null, preview: null, previewLoading: false,
+      queryReady: false, queryEdited: false, resultQuery: '', resultConditions: '', hasSearched: false,
       busy: false, moreBusy: false, searchEnabled: false, recent: [], savedAddition: null, highlightedId: '',
       actions: [], nextCursor: null, retryAvailable: false,
       moreError: '', slow: false, resultSummary: '', emptyState: null });
   },
   onInput(event) {
+    const query = event.detail.value;
     this._session.next(); this._previewEpoch++; this._failedRequest = null; clearTimeout(this._slowTimer);
-    this._contextToken = null; this._response = null; this._lastSuccessful = null;
-    this.setData({ query: event.detail.value, busy: false, moreBusy: false, items: [], visibleItems: [], result: null, question: null, preview: null,
-      previewLoading: false, hasSearched: false, error: '', message: '', emptyState: null, actions: [], nextCursor: null, notesOpen: false,
-      retryAvailable: false, moreError: '', slow: false, resultSummary: '' });
+    // 输入仅更新草稿并使迟到响应失效；旧结果及其后续操作仍归属原查询。
+    const patch = { query, queryReady: !!query.trim(), queryEdited: !!this.data.resultQuery && query.trim() !== this.data.resultQuery,
+      busy: false, moreBusy: false, preview: null, previewLoading: false, error: '', retryAvailable: false, moreError: '', slow: false };
+    if (!query.trim()) {
+      this._contextToken = null; this._response = null; this._lastSuccessful = null;
+      this._refreshQuery = false; this._refreshIntent = null; this._refreshSelection = null;
+      Object.assign(patch, { items: [], visibleItems: [], result: null, question: null, hasSearched: false, message: '', emptyState: null,
+        actions: [], nextCursor: null, notesOpen: false, resultSummary: '', resultQuery: '', resultConditions: '', queryEdited: false, highlightedId: '' });
+    }
+    this.setData(patch);
   },
   clearQuery() { this.onInput({ detail: { value: '' } }); this.focusQuery(); },
   focusQuery() { this.setData({ queryFocus: true }); },
   async submit() {
-    if (this.data.busy || !this.data.query.trim()) return;
+    if (this.data.busy || this.data.moreBusy || !this.data.query.trim()) return;
     return this.request({ requestMode: 'new' });
   },
   async retrySearch() {
@@ -166,25 +155,24 @@ Page({
     const previous = this._response; const previousItems = this.data.items;
     const requestMode = extra.requestMode || (extra.cursor ? 'page' : extra.resolution || extra.command ? 'edit' : 'new');
     const payload = retry ? retry.payload : JSON.parse(JSON.stringify({ protocolVersion: PROTOCOL_VERSION,
-      babyUid: session.babyUid, requestId: service.createSearchRequestId(), query: this.data.query.trim(), ...extra,
+      babyUid: session.babyUid, requestId: service.createSearchRequestId(), query: requestMode === 'new' ? this.data.query.trim() : this.data.resultQuery, ...extra,
       requestMode, contextToken: requestMode === 'new' ? undefined : this._contextToken || undefined }));
-    if (payload.requestMode === 'new' && !append) { this._contextToken = null; this._response = null; this._lastSuccessful = null; }
+    this._refreshQuery = false; this._refreshIntent = null; this._refreshSelection = null;
     this._failedRequest = null; this._previewEpoch++;
     clearTimeout(this._slowTimer);
     this._slowTimer = setTimeout(() => { if (this._session === session && session.active(token)) this.setData({ slow: true }); }, 8000);
     this.setData({ [append ? 'moreBusy' : 'busy']: true, error: '', hasSearched: true, preview: null,
       previewLoading: false, retryAvailable: false, moreError: '', slow: false, queryFocus: false,
-      ...(!append ? { items: [], visibleItems: [], result: null, question: null, message: '', emptyState: null, actions: [], notesOpen: false, resultSummary: '' } : {}) });
+      ...(!append ? { notesOpen: false } : {}) });
     try {
       const result = await service.search(payload);
       if (this._session !== session || !session.active(token)) return;
       if (result.protocolVersion !== PROTOCOL_VERSION) throw new Error('搜索服务版本暂未就绪，请稍后重试');
-      if (result.resetContext) this._contextToken = null;
-      else if (result.contextToken) this._contextToken = result.contextToken;
       if (result.status === 'unavailable' || result.status === 'partial' && !result.result || result.resetContext) throw Object.assign(new Error(result.message || '本次查询未完成，请重试'), { code: result.reasonCode, terminal: result.reasonCode !== 'AI_RUNNING', resetContext: result.resetContext });
+      this._contextToken = result.contextToken || null;
       const output = result.result ? { ...result.result } : null;
       if (output && output.kind === 'feature') this._allowed = (output.items || []).map(item => item.id);
-      let items = (output && output.items || []).map(displayItem);
+      let items = (output && output.items || []).map(item => displayItem(item, result.interpretation));
       if (append && output && output.kind === 'list') items = [...new Map([...previousItems, ...items].map(item => [item.id, item])).values()];
       if (output && output.rows) {
         let rows = output.rows;
@@ -195,10 +183,11 @@ Page({
       }
       this._response = { ...result, result: output };
       this._lastSuccessful = { payload };
-      session.remember(this.data.query);
+      session.remember(payload.query);
       const emptyState = emptyResult(result);
       const summaryMessage = emptyState ? '' : result.message || (result.status === 'partial' ? '本次结果尚不完整，请核对查询范围与统计说明' : '');
       this.setData({ message: summaryMessage, emptyState, question: result.question || null, thresholdValue: '', busy: false, moreBusy: false, slow: false,
+        resultQuery: payload.query, queryEdited: this.data.query.trim() !== payload.query, resultConditions: resultConditions(result),
         items, visibleItems: items, result: output, actions: result.actions || [], nextCursor: result.nextCursor || null, recent: session.recent(),
         resultSummary: [output && output.kind === 'list' && output.total > 0 ? '找到 ' + output.total + (output.entityType === 'meal' ? ' 餐' : ' 项') : '',
           ...(output && (output.kind !== 'comparison' || !(output.rows || []).length) ? output.periodLabels || [] : [])].filter(Boolean).join(' · ') });
@@ -233,8 +222,11 @@ Page({
     this.onInput({ detail: { value: query } });
     return this.submit();
   },
-  clearRecent() { this._session.clear(); this.setData({ recent: [] }); },
-  removeRecent(event) { this._session.remove(event.currentTarget.dataset.query); this.setData({ recent: this._session.recent() }); },
+  clearRecent() { this._session.clear(); this.setData({ recent: [], recentExpanded: false, recentManaging: false }); },
+  removeRecent(event) { this._session.remove(event.currentTarget.dataset.query); const recent = this._session.recent(); this.setData({ recent, ...(!recent.length ? { recentExpanded: false, recentManaging: false } : {}) }); },
+  toggleRecentManaging() { this.setData({ recentManaging: !this.data.recentManaging }); },
+  toggleRecentExpanded() { this.setData({ recentExpanded: !this.data.recentExpanded }); },
+  toggleExamples() { this.setData({ examplesExpanded: !this.data.examplesExpanded }); },
   resolveChoice(event) {
     if (this.data.busy || !this.data.question) return;
     return this.request({ resolution: { challengeId: this.data.question.id, choiceId: event.currentTarget.dataset.id } });

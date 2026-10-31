@@ -195,6 +195,7 @@ Page({
 
     const nextStatus = status === 'processed' ? 'new' : 'processed';
     const item = this.data.feedbackItems.find(item => item._id === id);
+    if (!item) return;
     if (nextStatus === 'processed' && !item?.replyContent) {
       wx.showToast({ title: '请先填写处理说明', icon: 'none' });
       this.openReply(e);
@@ -207,7 +208,9 @@ Page({
         mask: true
       });
 
-      await feedback.callFeedback('updateStatus', { id, status: nextStatus });
+      await feedback.callFeedback('updateStatus', {
+        id, status: nextStatus, baseConversationVersion: item.conversationVersion
+      });
       feedback.invalidateUnread();
       feedback.refreshUnreadSilently({ force: true });
 

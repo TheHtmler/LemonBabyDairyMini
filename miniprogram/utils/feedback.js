@@ -185,7 +185,21 @@ function normalizeFeedback(item = {}) {
     statusText: item.status === 'processed' ? '已处理' : '未处理',
     displayTime: formatTime(item.createdAt || item.clientCreatedAt),
     replyTimeText: formatTime(item.repliedAt),
-    replyTimeLabel: replyVersion > 1 ? '更新于' : '回复于'
+    replyTimeLabel: '回复于',
+    lastMessageTime: formatTime(item.lastMessageAt),
+    followUpCount: Math.max(0, Number(item.followUpCount) || 0),
+    conversationVersion: Math.max(0, Number(item.conversationVersion) || 0)
+  };
+}
+
+function normalizeFeedbackEntry(entry, item, adminView) {
+  const role = entry.role === 'admin' ? 'admin' : 'user';
+  return {
+    ...entry, role,
+    displayTime: formatTime(entry.createdAt),
+    fromMe: adminView ? role === 'admin' : role === 'user',
+    authorLabel: role === 'admin' ? '管理员回复' : adminView ? '用户补充' : '我的补充',
+    isLatestReply: role === 'admin' && entry.replyVersion === item.replyVersion
   };
 }
 
@@ -196,5 +210,5 @@ function createReplyRequestId() {
 module.exports = {
   callFeedback, readyIdentity, getUnreadState, refreshUnread, refreshUnreadSilently,
   subscribeUnread, resetFeedbackState, invalidateUnread, acknowledgeReply,
-  normalizeFeedback, createReplyRequestId
+  normalizeFeedback, normalizeFeedbackEntry, createReplyRequestId
 };

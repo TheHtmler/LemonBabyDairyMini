@@ -9,11 +9,11 @@ const { resolveConfig, callRecognitionModel, callNutritionEstimateModel } = requ
 const { resolveImages } = require('./imageReader');
 const { estimateNutrition } = require('./estimateService');
 const { bindPreviewTarget } = require('./targetBinding');
-const { featureAccess, getAiPolicy, requireAiPolicy, usageStatus, reserveInvocation, markDispatched, completeInvocation } = require('./lib/ai');
+const { featureAccess, getAiPolicy, resolveModelPolicy, usageStatus, reserveInvocation, markDispatched, completeInvocation } = require('./lib/ai');
 const { readNutritionQuota } = require('./lib/ai/nutritionQuota');
 
 async function loadRecognitionPolicy(db, config, required = false) {
-  const policy = (required ? requireAiPolicy : getAiPolicy)({ scene: 'scan', env: config });
+  const policy = await resolveModelPolicy(db, 'scan', config, required);
   const quota = await readNutritionQuota(db, policy.dailyLimit);
   return { ...policy, dailyLimit: quota.dailyLimit };
 }
@@ -50,8 +50,9 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
         if (!flags.nutrition_scan_enabled) return { ok: true, enabled: false, available: false,
           reasonCode: 'FEATURE_DISABLED', message: '拍照识别已关闭', remaining: 0 };
         if (!policy.available) return { ok: true, enabled: true, available: false,
-          reasonCode: 'CONFIG_MISSING', message: '识别服务尚未准备好，请稍后重试', remaining: 0 };
-        resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' });
+          reasonCode: ['ENDPOINT_INVALID', 'API_KEY_MISSING', 'LEGACY_POLICY_UNAVAILABLE'].includes(policy.unavailableReason) ? 'CONFIG_MISSING' : 'AI_UNAVAILABLE',
+          policyReason: policy.unavailableReason, message: policy.unavailableMessage, remaining: 0 };
+        resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' }, policy);
         const quota = await usageStatus(db, context.OPENID, 'scan', policy.dailyLimit, now());
         return { ok: true, enabled: true, available: quota.available, remaining: quota.remaining,
           reasonCode: quota.available ? '' : 'DAILY_LIMIT',
@@ -64,14 +65,14 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
         setStage('model_config');
         const policy = await loadRecognitionPolicy(db, config, true);
         return await estimateNutrition({ db, openid: context.OPENID,
-          config: { ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' },
+          config: { ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.managed ? '' : policy.fallbackModel || '' },
           modelClient: async options => {
             const reservation = await reserveInvocation({ db, openid: context.OPENID, babyUid: event.babyUid, scene: 'scan', requestId: hash('estimate:' + event.sessionId + ':' + event.requestId), requestHash: hash(JSON.stringify([event.sessionId, event.comparisonVersion, options.identity])), now: now(), dailyLimit: policy.dailyLimit });
             if (reservation.state === 'cached') return reservation.result;
             let dispatched = false; let model;
             try {
               await markDispatched(db, reservation); dispatched = true;
-              model = await estimateClient(options);
+              model = await estimateClient({ ...options, ...(policy.managed ? resolveConfig(config, policy) : {}) });
               await completeInvocation({ db, reservation, result: model, usage: model.usage, dispatched });
               return model;
             } catch (error) {
@@ -84,7 +85,7 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
         // 模型尚未就绪时先提示原因，避免用户上传图片后才发现识别无法执行。
         setStage('model_config');
         const policy = await loadRecognitionPolicy(db, config, true);
-        resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' });
+        resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' }, policy);
         // 等待准备流程完成，异步异常才能在这里保留具体出错阶段。
         return await prepareSession(db, context.OPENID, event, env, now(), allocateFileIds, setStage);
       }
@@ -103,7 +104,7 @@ function createRecognitionHandler({ cloud, db, context, env, allocateFileIds, im
       let policy; let modelConfig;
       try {
         policy = await loadRecognitionPolicy(db, config, true);
-        modelConfig = resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' });
+        modelConfig = resolveConfig({ ...config, BAILIAN_MODEL: policy.primaryModel, NUTRITION_FALLBACK_MODEL: policy.fallbackModel || '' }, policy);
       } catch (error) {
         // 配置错误优先，收尾等待已启动的图片读取，避免遗留异步异常或后台工作。
         await imageOutcome;

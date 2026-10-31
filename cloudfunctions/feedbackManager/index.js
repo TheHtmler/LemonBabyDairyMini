@@ -1,5 +1,5 @@
 const cloud = require('wx-server-sdk');
-const crypto = require('crypto');
+const { createFeedbackThreadService, conversationVersion } = require('./thread');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -9,7 +9,9 @@ const FEEDBACK_TYPES = ['功能建议', '问题反馈', '体验吐槽', '其他'
 const USER_FIELDS = {
   _id: true, type: true, content: true, status: true, createdAt: true,
   clientCreatedAt: true, replyContent: true, repliedAt: true,
-  replyVersion: true, readReplyVersion: true, hasUnreadReply: true
+  replyVersion: true, readReplyVersion: true, hasUnreadReply: true,
+  conversationVersion: true, followUpCount: true, lastUserContent: true,
+  lastMessageContent: true, lastMessageRole: true, lastMessageAt: true
 };
 
 const DEVELOPER_OPENIDS = [
@@ -62,7 +64,13 @@ function toUserFeedback(item) {
     repliedAt: dateText(item.repliedAt),
     replyVersion,
     readReplyVersion,
-    hasUnreadReply: replyVersion > readReplyVersion
+    hasUnreadReply: replyVersion > readReplyVersion,
+    conversationVersion: conversationVersion(item),
+    followUpCount: version(item.followUpCount),
+    lastUserContent: text(item.lastUserContent),
+    lastMessageContent: text(item.lastMessageContent),
+    lastMessageRole: item.lastMessageRole === 'admin' ? 'admin' : 'user',
+    lastMessageAt: dateText(item.lastMessageAt)
   };
 }
 
@@ -71,12 +79,30 @@ function toAdminFeedback(item) {
   return { ...metadata, ...toUserFeedback(item) };
 }
 
-async function readFeedback(database, id) {
+async function readFeedback(database, id, includeDeleting = false) {
   const result = await database.collection('feedback_messages').doc(id).get();
   if (!result.data || !result.data._id) {
     fail('该反馈不存在或暂时无法查看', 'NOT_FOUND');
   }
+  if (result.data.deleting && !includeDeleting) fail('该反馈正在删除，请稍后重试', 'NOT_FOUND');
   return result.data;
+}
+
+async function checkText(content, openid) {
+  let result;
+  try {
+    result = await cloud.openapi.security.msgSecCheck({ version: 2, scene: 2, openid, content });
+  } catch (error) {
+    if (Number(error.errCode || error.errcode) === 87014) fail('内容未通过安全检查，请调整后提交', 'CONTENT_REJECTED');
+    console.error('反馈文本安全检查调用失败:', error.errCode || error.code || 'UNKNOWN');
+    fail('内容安全检查暂不可用，请稍后重试', 'SECURITY_CHECK_FAILED');
+  }
+  const code = Number(result && (result.errCode || result.errcode)) || 0;
+  const suggestion = result && result.result && result.result.suggest;
+  if (code === 87014 || suggestion === 'risky' || suggestion === 'review') {
+    fail('内容未通过安全检查，请调整后提交', 'CONTENT_REJECTED');
+  }
+  if (code !== 0 || suggestion !== 'pass') fail('内容安全检查暂不可用，请稍后重试', 'SECURITY_CHECK_FAILED');
 }
 
 async function resolveBabyName(babyUid = '', babyName = '') {
@@ -130,6 +156,7 @@ async function submitFeedback(event = {}, openid = '') {
 
   if (trimmedContent.length > 500) fail('反馈内容不能超过 500 字');
   if (!FEEDBACK_TYPES.includes(type)) fail('反馈类型无效');
+  await checkText(trimmedContent, openid);
   const resolvedBabyName = await resolveBabyName(text(babyUid), text(babyName));
   const device = systemInfo && typeof systemInfo === 'object' ? systemInfo : {};
   const mini = miniProgramInfo && typeof miniProgramInfo === 'object' ? miniProgramInfo : {};
@@ -165,6 +192,13 @@ async function submitFeedback(event = {}, openid = '') {
       replyVersion: 0,
       readReplyVersion: 0,
       hasUnreadReply: false,
+      conversationVersion: 0,
+      followUpCount: 0,
+      lastUserContent: trimmedContent,
+      lastUserEntryAt: db.serverDate(),
+      lastMessageContent: trimmedContent,
+      lastMessageRole: 'user',
+      lastMessageAt: db.serverDate(),
       createdAt: db.serverDate(),
       clientCreatedAt: new Date().toISOString()
     }
@@ -183,17 +217,21 @@ async function listFeedbacks(event = {}, openid = '') {
 
   const statusFilter = event.statusFilter || 'all';
   if (!['all', 'new', 'processed'].includes(statusFilter)) fail('状态筛选无效');
-  let query = db.collection('feedback_messages');
-
-  if (statusFilter !== 'all') {
-    query = query.where({ status: statusFilter });
-  }
-
-  const res = await query.orderBy('createdAt', 'desc').limit(100).get();
+  const query = () => statusFilter === 'all' ? db.collection('feedback_messages')
+    : db.collection('feedback_messages').where({ status: statusFilter });
+  // 新追问需要浮到前面；创建时间分支同时覆盖尚无活动时间的既有记录。
+  const [created, active] = await Promise.all([
+    query().orderBy('createdAt', 'desc').limit(100).get(),
+    query().orderBy('lastMessageAt', 'desc').limit(100).get()
+  ]);
+  const rows = new Map();
+  [...(created.data || []), ...(active.data || [])].forEach(item => rows.set(item._id, item));
+  const activityTime = item => new Date(dateText(item.lastMessageAt) || dateText(item.createdAt)).getTime() || 0;
+  const items = [...rows.values()].sort((a, b) => activityTime(b) - activityTime(a) || b._id.localeCompare(a._id)).slice(0, 100);
 
   return {
     ok: true,
-    data: (res.data || []).map(toAdminFeedback)
+    data: items.map(toAdminFeedback)
   };
 }
 
@@ -225,12 +263,7 @@ async function listMine(event, openid) {
 }
 
 async function getDetail(event, openid) {
-  const id = requireId(event.id);
-  const adminView = event.view === 'admin';
-  if (adminView) requireAdmin(openid);
-  const item = await readFeedback(db, id);
-  if (!adminView && item.openid !== openid) fail('该反馈不存在或暂时无法查看', 'NOT_FOUND');
-  return { ok: true, data: adminView ? toAdminFeedback(item) : toUserFeedback(item), canReply: adminView };
+  return threadService.getDetail(event, openid);
 }
 
 async function getUnreadCount(openid) {
@@ -242,50 +275,6 @@ async function getUnreadCount(openid) {
       : Promise.resolve({ total: 0 })
   ]);
   return { ok: true, count: unread.total || 0, adminPendingCount: pending.total || 0 };
-}
-
-async function saveReply(event, openid) {
-  requireAdmin(openid);
-  const id = requireId(event.id);
-  const replyContent = text(event.replyContent);
-  if (!replyContent || replyContent.length > 1000) fail('回复内容需为 1–1000 字');
-  if (!['reply', 'process'].includes(event.mode)) fail('回复操作无效');
-  if (!Number.isSafeInteger(event.baseReplyVersion) || event.baseReplyVersion < 0) fail('回复版本无效');
-  const requestId = text(event.requestId);
-  if (!/^[\w-]{8,100}$/.test(requestId)) fail('回复请求标识无效');
-  const fingerprint = crypto.createHash('sha256')
-    .update(JSON.stringify([replyContent, event.mode, event.baseReplyVersion])).digest('hex');
-
-  await db.runTransaction(async transaction => {
-    const item = await readFeedback(transaction, id);
-    // 同一保存请求超时重试时直接复用结果，不再次生成未读。
-    if (item.lastReplyRequestId === requestId) {
-      if (item.lastReplyRequestFingerprint !== fingerprint) fail('请使用新的保存请求', 'CONFLICT');
-      return;
-    }
-    const currentVersion = version(item.replyVersion);
-    if (currentVersion !== event.baseReplyVersion) {
-      fail('回复已被更新，请刷新后重新确认', 'CONFLICT');
-    }
-    const changed = replyContent !== text(item.replyContent);
-    const nextVersion = currentVersion + (changed ? 1 : 0);
-    const data = {
-      replyContent,
-      replyVersion: nextVersion,
-      readReplyVersion: version(item.readReplyVersion),
-      hasUnreadReply: nextVersion > version(item.readReplyVersion),
-      lastReplyRequestId: requestId,
-      lastReplyRequestFingerprint: fingerprint,
-      updatedAt: db.serverDate()
-    };
-    if (changed) {
-      data.repliedAt = db.serverDate();
-      data.repliedBy = openid;
-    }
-    if (event.mode === 'process') data.status = 'processed';
-    await transaction.collection('feedback_messages').doc(id).update({ data });
-  });
-  return { ok: true, data: toAdminFeedback(await readFeedback(db, id)), canReply: true };
 }
 
 async function markReplyRead(event, openid) {
@@ -316,6 +305,7 @@ async function updateFeedbackStatus(event = {}, openid = '') {
 
   const id = requireId(event.id);
   const status = event.status;
+  if (!Number.isSafeInteger(event.baseConversationVersion) || event.baseConversationVersion < 0) fail('处理记录版本无效');
 
   if (!['new', 'processed'].includes(status)) {
     return { ok: false, message: '状态参数无效' };
@@ -323,6 +313,9 @@ async function updateFeedbackStatus(event = {}, openid = '') {
 
   await db.runTransaction(async transaction => {
     const item = await readFeedback(transaction, id);
+    if (conversationVersion(item) !== event.baseConversationVersion) {
+      fail('处理记录已有更新，请刷新列表后再操作', 'CONFLICT');
+    }
     if (status === 'processed' && !text(item.replyContent)) {
       fail('请先填写处理说明', 'REPLY_REQUIRED');
     }
@@ -341,10 +334,16 @@ async function deleteFeedback(event = {}, openid = '') {
 
   const id = requireId(event.id);
 
+  await threadService.deleteEntries(id);
   await db.collection('feedback_messages').doc(id).remove();
 
   return { ok: true };
 }
+
+const threadService = createFeedbackThreadService({
+  db, command, readFeedback, requireAdmin, requireId, version, text, fail,
+  dateText, toUserFeedback, toAdminFeedback, checkText
+});
 
 exports.main = async (event = {}, context) => {
   const { OPENID } = cloud.getWXContext();
@@ -356,7 +355,8 @@ exports.main = async (event = {}, context) => {
     if (action === 'listMine') return await listMine(event, OPENID);
     if (action === 'getDetail') return await getDetail(event, OPENID);
     if (action === 'getUnreadCount') return await getUnreadCount(OPENID);
-    if (action === 'saveReply') return await saveReply(event, OPENID);
+    if (action === 'listEntries') return await threadService.listEntries(event, OPENID);
+    if (action === 'appendEntry') return await threadService.appendEntry(event, OPENID);
     if (action === 'markReplyRead') return await markReplyRead(event, OPENID);
     if (action === 'submit') {
       return await submitFeedback(event, OPENID);

@@ -1,5 +1,5 @@
 'use strict';
-const { fail, number, text, identity } = require('./lib/core/contracts');
+const { fail, text, identity, foodBasis } = require('./lib/core/contracts');
 const { buildConfirmedPatch } = require('./lib/core/selection');
 const { assertFoodRecognition, identityRequirement, makeIdentityConfirmation } = require('./lib/core/identitySafety');
 const { runtime, ownedSession, getDocument, transaction, readBabyFoodCatalog, publicFailure, SESSION_COLLECTION, hash } = require('./lib/core/server');
@@ -59,9 +59,7 @@ function createConfirmationHandler({ db, context, now = Date.now }) {
         sourcePowderDocumentId = sources.data[0]._id;
       }
       const inputBasis = event.targetBasis || {};
-      const basis = session.mode === 'powder_label' ? { quantity: 100, unit: 'g', material: 'dry_powder' } :
-        { quantity: number(inputBasis.quantity), unit: inputBasis.unit, material: 'food' };
-      if (!(basis.quantity > 0) || !['g', 'ml', 'portion'].includes(basis.unit)) fail('VALIDATION_FAILED', '请确认营养计量基准');
+      const basis = session.mode === 'powder_label' ? { quantity: 100, unit: 'g', material: 'dry_powder' } : foodBasis(inputBasis, useFormValues);
       const originalIdentity = session.confirmedIdentity || session.observation.identityCandidates[0];
       const confirmedIdentity = useFormValues && session.purpose !== 'preview'
         ? identity({ ...originalIdentity, ...event.identity, name: (event.form || {}).name }) : originalIdentity;

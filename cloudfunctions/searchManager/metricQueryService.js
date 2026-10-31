@@ -29,18 +29,15 @@ function knownTreatment(record, field) {
   return countedTreatmentItems(record).every(x => finite(x[field === 'calories' ? field : field + 'G']));
 }
 async function dailyRows({ reader, plan, period, now }) {
-  const until = { startDate: null, endDateExclusive: period.endDateExclusive || shiftDate(shanghaiDate(now), 1) };
-  const [allFoods, allMilk, allTreatments, growth, oldMilk, profiles] = await Promise.all([
+  const meta = MEASURES[plan.measure]; const coefficient = plan.measure.startsWith('metrics.');
+  const [allFoods, allMilk, allTreatments] = await Promise.all([
     reader.events('diet', period), plan.domain === 'diet' ? [] : reader.events('milk', period),
-    reader.collection('treatment_records', period, { dated: true, fields: ['date', 'dateKey', 'startDateTime'] }),
-    reader.collection('growth_records_v2', until, { dated: true }),
-    reader.collection('feeding_records_v2', until, { dated: true }),
-    reader.collection('baby_info', null)
+    plan.domain === 'diet' || plan.entities.length ? [] : reader.collection('treatment_records', period,
+      { dated: true, fields: ['date', 'dateKey', 'startDateTime'] })
   ]);
   const foods = allFoods.filter(item => matchesEntity(item, plan));
   const milk = allMilk.filter(item => matchesEntity(item, plan));
   const treatments = plan.entities.length || plan.domain === 'diet' ? [] : allTreatments;
-  const meta = MEASURES[plan.measure]; const coefficient = plan.measure.startsWith('metrics.');
   const nutrient = coefficient ? plan.measure.includes('calorie') ? 'calories' : plan.measure.includes('natural') ? 'naturalProtein' : plan.measure.includes('special') ? 'specialProtein' : 'protein' : meta.field;
   const recorded = new Set([...foods, ...milk].map(row => row.date));
   if (!['naturalProtein', 'specialProtein'].includes(nutrient)) treatments.filter(hasTreatmentNutrition).forEach(row => recorded.add(businessDate(row.dateKey || row.date)));
@@ -52,6 +49,22 @@ async function dailyRows({ reader, plan, period, now }) {
     dates.reverse();
   }
   if (plan.aggregation === 'latest') dates = dates.filter(day => recorded.has(day)).slice(0, 1);
+  let growth = []; let oldMilk = []; let profiles = [];
+  if (coefficient && dates.length) {
+    const startDate = dates[dates.length - 1];
+    const weightPeriod = { startDate, endDateExclusive: shiftDate(dates[0], 1) };
+    const [currentGrowth, previousGrowth] = await Promise.all([
+      reader.collection('growth_records_v2', weightPeriod, { dated: true }),
+      reader.latestWeightBefore('growth_records_v2', startDate)
+    ]);
+    growth = previousGrowth ? currentGrowth.concat(previousGrowth) : currentGrowth;
+    // 当期喂奶已由 events 读取，直接复用快照，不再重复扫描全历史。
+    oldMilk = allMilk.filter(item => !item.raw.legacy).map(item => item.raw);
+    if (!previousGrowth) {
+      const previousMilk = await reader.latestWeightBefore('feeding_records_v2', startDate);
+      if (previousMilk) oldMilk.push(previousMilk);
+    }
+  }
   const pickWeight = date => {
     const order = rows => rows.slice().sort((a, b) => businessDate(b.date).localeCompare(businessDate(a.date)) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
     const sameGrowth = order(growth.filter(row => businessDate(row.date) === date && finite(row.weight) && Number(row.weight) > 0))[0];
@@ -63,12 +76,13 @@ async function dailyRows({ reader, plan, period, now }) {
     const profile = profiles.find(row => finite(row.weight) && Number(row.weight) > 0);
     return profile ? { value: Number(profile.weight), date: '', source: 'baby_info_initial' } : { value: 0, date: '', source: '' };
   };
+  if (coefficient && dates.some(date => !pickWeight(date).value)) profiles = await reader.collection('baby_info', null);
   const rows = dates.map(date => {
     reader.budget(); const foodDay = foods.filter(x => x.date === date); const milkDay = milk.filter(x => x.date === date);
     const treatmentDay = treatments.filter(x => businessDate(x.dateKey || x.date) === date);
     const hasRecords = recorded.has(date);
     const quality = [...foodDay, ...milkDay].every(event => knownNutrition(event, nutrient)) && treatmentDay.every(row => knownTreatment(row, nutrient));
-    const weight = pickWeight(date);
+    const weight = coefficient ? pickWeight(date) : { value: 0, date: '', source: '' };
     const summary = buildDailySummaryV2({ date, foodIntakeRecords: foodDay.map(x => x.raw), milkRecords: milkDay.map(x => x.raw), treatmentRecords: treatmentDay,
       growthRecords: weight.value > 0 ? [{ date, weight: String(weight.value) }] : [] });
     const metric = buildDailyNutritionMetricFromSummary(summary, date, weight.value);

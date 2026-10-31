@@ -1,0 +1,7 @@
+{
+  "name": "sync-ai-model-quota",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": { "node": ">=16.13.0" },
+  "dependencies": { "wx-server-sdk": "~2.6.3", "@cloudbase/node-sdk": "^3.16.0" }
+}

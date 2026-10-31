@@ -5,11 +5,12 @@
     <view class="search-toolbar">
       <view class="search-bar">
         <view class="ss-icon ss-icon-search" aria-hidden="true"></view>
-        <input class="search-input" value="{{query}}" placeholder="输入想查的内容或问题" placeholder-class="search-placeholder" maxlength="300" confirm-type="search" focus="{{queryFocus}}" bindinput="onInput" bindconfirm="submit" aria-label="搜索内容" />
+        <input class="search-input" value="{{query}}" placeholder="输入名称或直接问一句" placeholder-class="search-placeholder" maxlength="300" confirm-type="search" focus="{{queryFocus}}" bindinput="onInput" bindconfirm="submit" aria-label="搜索内容" />
         <button wx:if="{{query}}" class="icon-button search-clear" bindtap="clearQuery" aria-label="清除搜索"><view class="ss-icon ss-icon-close" aria-hidden="true"></view></button>
       </view>
-      <button class="search-submit" bindtap="submit" disabled="{{busy || !searchEnabled || !query}}">{{busy ? '查询中' : '搜索'}}</button>
+      <button class="search-submit" bindtap="submit" disabled="{{busy || moreBusy || !searchEnabled || !queryReady}}">{{busy ? '查询中' : '搜索'}}</button>
     </view>
+    <view class="search-edit-note" wx:if="{{queryEdited && !busy}}" role="status"><text>问题已修改，点击搜索更新结果</text><text class="previous-query">上次查询：{{resultQuery}}</text></view>
   </view>
   <view class="saved-addition" wx:if="{{savedAddition}}"><text>已加入{{babyName}}的资料库{{savedAddition.name ? '：' + savedAddition.name : ''}}</text><button class="text-button" bindtap="openAddedItem">查看刚加入资料</button></view>
   <view wx:if="{{capabilityError}}" class="service-message" role="alert"><text>{{capabilityError}}</text><button class="text-button" bindtap="retryCapabilities" loading="{{capabilitiesLoading}}" disabled="{{capabilitiesLoading}}">重试</button></view>
@@ -25,13 +26,16 @@
     <view class="threshold-entry" wx:if="{{question.input}}"><input type="digit" value="{{thresholdValue}}" placeholder="{{question.input.label}}" bindinput="onThreshold" aria-label="{{question.input.label}}" /><text>{{question.input.unit}}</text><button class="text-button" bindtap="resolveThreshold">查询</button></view>
   </view>
   <view class="search-feedback" wx:if="{{!busy && (error || message && !question)}}" role="alert"><text>{{error || message}}</text><view class="feedback-actions" wx:if="{{retryAvailable && !moreError}}"><button class="text-button" bindtap="retrySearch">重试</button></view></view>
-  <view class="result-summary" wx:if="{{resultSummary && !busy}}" aria-live="polite">{{resultSummary}}</view>
-  <view class="search-empty" wx:if="{{emptyState && !busy}}" role="status" aria-live="polite"><view class="empty-mark" aria-hidden="true"><view class="ss-icon ss-icon-search"></view></view><text class="empty-title">{{emptyState.title}}</text><text class="empty-description">{{emptyState.description}}</text></view>
+  <view class="result-heading" wx:if="{{resultQuery && (result || emptyState) && !busy}}" aria-live="polite"><view class="result-heading-line"><text class="result-heading-title">{{queryEdited ? '上次搜索结果' : '搜索结果'}}</text><text class="result-summary" wx:if="{{resultSummary}}">{{resultSummary}}</text></view><text class="result-conditions" wx:if="{{resultConditions}}">{{resultConditions}}</text></view>
+  <view class="search-empty" wx:if="{{emptyState && !busy}}" role="status" aria-live="polite"><view class="empty-mark" aria-hidden="true"><view class="ss-icon ss-icon-search"></view></view><text class="empty-title">{{emptyState.title}}</text><text class="empty-description">{{emptyState.description}}</text><button wx:if="{{emptyState.query}}" class="empty-query" data-query="{{emptyState.query}}" bindtap="useQuery" disabled="{{!searchEnabled}}" hover-class="query-pressed">{{emptyState.query}}<view class="ss-icon ss-icon-arrow" aria-hidden="true"></view></button></view>
 
-  <view class="intro" wx:if="{{!hasSearched && !query}}">
-    <view class="example-heading"><text class="example-title">试试这样搜</text><text class="example-hint">查系统食物，也能查宝宝已有记录</text></view>
-    <view class="quick-queries"><button wx:for="{{exampleQueries}}" wx:key="query" class="quick-query" data-query="{{item.query}}" bindtap="useQuery" disabled="{{!searchEnabled}}" hover-class="query-pressed"><text class="quick-query-label">{{item.query}}</text></button></view>
-    <view wx:if="{{recent.length}}" class="recent"><view class="section-head"><text>最近搜索</text><button class="text-button" bindtap="clearRecent">清空</button></view><view class="recent-queries"><button wx:for="{{recent}}" wx:key="*this" class="recent-query" data-query="{{item}}" bindtap="useQuery" bindlongpress="removeRecent" disabled="{{!searchEnabled}}" hover-class="query-pressed">{{item}}</button></view></view>
+  <view class="intro" wx:if="{{!hasSearched && !queryReady}}">
+    <view wx:if="{{recent.length}}" class="recent">
+      <view class="section-head"><text>最近搜索</text><view class="recent-tools"><button wx:if="{{recentManaging}}" class="text-button" bindtap="clearRecent">清空</button><button class="text-button" bindtap="toggleRecentManaging" aria-expanded="{{recentManaging}}">{{recentManaging ? '完成' : '管理'}}</button></view></view>
+      <view class="recent-queries"><block wx:for="{{recent}}" wx:key="*this"><view wx:if="{{index < 3 || recentExpanded || recentManaging}}" class="recent-query-item"><button class="recent-query" data-query="{{item}}" bindtap="useQuery" bindlongpress="removeRecent" disabled="{{!searchEnabled}}" hover-class="query-pressed"><text class="recent-query-label">{{item}}</text></button><button wx:if="{{recentManaging}}" class="icon-button recent-remove" data-query="{{item}}" bindtap="removeRecent" aria-label="删除这条搜索记录"><view class="ss-icon ss-icon-close" aria-hidden="true"></view></button></view></block></view>
+      <button wx:if="{{recent.length > 3 && !recentManaging}}" class="text-button recent-more" bindtap="toggleRecentExpanded" aria-expanded="{{recentExpanded}}">{{recentExpanded ? '收起' : '查看全部 ' + recent.length + ' 条'}}</button>
+    </view>
+    <view class="examples"><view class="section-head"><text>试试这样搜</text><button class="text-button" bindtap="toggleExamples" aria-expanded="{{examplesExpanded}}">{{examplesExpanded ? '收起示例' : '更多示例'}}</button></view><view class="quick-queries"><block wx:for="{{exampleQueries}}" wx:key="query"><button wx:if="{{index < 3 || examplesExpanded}}" class="quick-query" data-query="{{item.query}}" bindtap="useQuery" disabled="{{!searchEnabled}}" hover-class="query-pressed"><text class="quick-query-label">{{item.query}}</text><view class="ss-icon ss-icon-arrow" aria-hidden="true"></view></button></block></view></view>
   </view>
   <view class="feature-list" wx:if="{{result && result.kind === 'feature' && !busy}}"><button wx:for="{{result.items}}" wx:key="id" class="feature-row" data-id="{{item.id}}" bindtap="feature"><text class="feature-name">{{item.name}}</text><view class="ss-icon ss-icon-arrow"></view></button></view>
   <view class="result-group" wx:if="{{result && result.kind === 'list' && !busy && !emptyState}}">
@@ -43,11 +47,11 @@
       <view class="result-content">
         <view class="result-title-line"><text class="result-name">{{item.name}}</text><text wx:if="{{item.source !== 'history'}}" class="source-tag {{item.source}}">{{item.sourceText}}</text></view>
         <view class="field-answers" wx:if="{{item.answers.length}}"><view class="field-answer" wx:for="{{item.answers}}" wx:for-item="answer" wx:key="field"><text class="answer-label">{{answer.label}}</text><text class="answer-value {{answer.known ? '' : 'answer-missing'}}">{{answer.value}}</text><text class="answer-note" wx:if="{{answer.note}}">{{answer.note}}</text></view></view>
-        <view class="result-nutrition" wx:elif="{{item.hasNutrition}}"><text class="energy-value">{{item.energyText}}</text><text class="result-basis"> / {{item.basisCaption}}</text></view>
+        <view class="result-nutrition" wx:elif="{{item.hasNutrition}}"><text class="nutrition-primary">{{item.primaryNutrition.label}} {{item.primaryNutrition.value}}</text><text class="result-basis"> / {{item.primaryNutrition.basis}}</text><text wx:if="{{item.primaryNutrition.isEstimate}}" class="nutrition-estimate-tag">AI 估算</text></view>
         <view class="ingredient-caption" wx:elif="{{item.type === 'meal'}}">{{item.mealSummary}}</view>
         <view class="ingredient-caption" wx:elif="{{item.type === 'recipe'}}"><text wx:for="{{item.ingredients}}" wx:for-item="ingredient" wx:key="index">{{ingredient}}{{index + 1 < item.ingredients.length ? '、' : ''}}</text></view>
         <view class="ingredient-caption" wx:elif="{{item.type === 'medication'}}">{{item.medicationText || '未填写剂量和频率'}}</view>
-        <view class="result-caption" wx:if="{{!item.answers.length && item.hasNutrition}}">蛋白质 {{item.proteinText}}</view>
+        <view class="result-caption" wx:if="{{!item.answers.length && item.hasNutrition}}">{{item.secondaryNutrition}}</view>
         <view class="result-caption" wx:if="{{item.source === 'history'}}"><text>{{item.date}} {{item.time}}</text><text wx:if="{{item.type === 'meal'}}">共 {{item.foodCount}} 项 · 查看餐次详情</text><text wx:if="{{item.actualQuantity > 0}}">实际食用 {{item.actualQuantity}} {{item.actualUnitText}}</text></view>
       </view><view class="ss-icon ss-icon-arrow result-open-arrow"></view>
     </view>

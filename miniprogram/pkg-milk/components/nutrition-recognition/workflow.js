@@ -106,6 +106,13 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
     const observation = state.result.observation;
     offerNutrition(state, observation.nutrients, observation.basis, 'label', '包装标签', observation.formula);
     const preview = state.purpose === 'preview' && !state.saveFormOpen;
+    const estimateRequested = preview && state.mode === 'food_object' || state.allowEstimate && !state.ignoreEstimate;
+    const requiredEstimateInput = getEstimateEligibility(state).requiredInput;
+    if (estimateRequested && ['identity', 'preparation'].includes(requiredEstimateInput)) {
+      // 自动补全与手动估算使用同一确认入口，不能把未知制备状态静默展示为空营养。
+      state.needIdentity = true; state.identityManualRequired = true;
+      stop('identity', requiredEstimateInput === 'preparation' ? '请确认食物的生熟状态后继续补充营养' : '请确认具体种类与生熟状态'); return;
+    }
     if (preview && state.mode === 'food_object' && !state.comparisonVersion && state.previewEstimate &&
         getEstimateEligibility(state).eligible && estimateIdentityKey(state.previewEstimate.identity) === estimateIdentityKey(state.identity)) {
       // 首轮有效估算立即展示；它还不是可保存的比较结果。
@@ -179,11 +186,6 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
     }
     const eligibility = getEstimateEligibility(state);
     if (!eligibility.eligible) state.estimate = null;
-    if (state.allowEstimate && !state.ignoreEstimate && ['identity', 'preparation'].includes(eligibility.requiredInput)) {
-      state.needIdentity = true;
-      state.identityManualRequired = true;
-      stop('identity', eligibility.reason); return;
-    }
     const autoEstimate = preview && state.mode === 'food_object' && !state.autoEstimateAttempted;
     if (eligibility.eligible && !state.estimate && (autoEstimate || state.allowEstimate && !state.ignoreEstimate)) {
       state.autoEstimateAttempted = true;
@@ -195,7 +197,8 @@ async function runWorkflow(state, { call, upload, isActive, onUpdate }) {
       } catch (error) {
         if (!isActive()) return;
         if (!preview || error.code === 'FORBIDDEN') throw error;
-        state.error = '营养暂未识别，可重试估算或手动填写';
+        state.failedStage = error.stage || 'estimate';
+        state.error = error.message || '营养暂未识别，可重试估算或手动填写';
         state.status = 'preview'; update('识别结果', '', 'ready'); return;
       }
       if (!isActive()) return;

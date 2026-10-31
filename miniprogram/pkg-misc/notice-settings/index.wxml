@@ -2,7 +2,7 @@
   <view wx:if="{{hasAccess}}" class="page-shell">
     <view class="hero-card">
       <text class="hero-title">首页公告配置</text>
-      <text class="hero-subtitle">控制首页顶部跑马灯公告的显示与文案。保存后所有用户进入首页即可看到最新内容。</text>
+      <text class="hero-subtitle">设置消息中心「公告与更新」的显示与内容。用户可从首页消息入口查看。</text>
       <view class="meta-row">
         <text>最近保存</text>
         <text class="meta-value">{{updatedAtText}}</text>
@@ -17,7 +17,7 @@
       <view class="switch-row">
         <view class="switch-copy">
           <text class="section-title">显示公告</text>
-          <text class="field-hint">关闭后首页不再展示跑马灯公告。</text>
+          <text class="field-hint">关闭后消息中心不再展示公告，反馈回复和反馈入口仍可使用。</text>
         </view>
         <switch checked="{{visible}}" color="#ffb800" bindchange="onVisibleChange" />
       </view>
@@ -28,11 +28,11 @@
       <textarea
         class="message-textarea"
         value="{{text}}"
-        placeholder="请输入首页公告文案"
+        placeholder="请输入公告或更新说明"
         maxlength="120"
         bindinput="onTextInput"
       />
-      <text class="field-hint">建议控制在 60 字以内，过长会在跑马灯中滚动展示。</text>
+      <text class="field-hint">最多 120 字。消息中心展示摘要，点击后可阅读完整内容。</text>
     </view>
 
     <view class="save-section">

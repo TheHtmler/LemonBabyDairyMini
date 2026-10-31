@@ -1,4 +1,5 @@
 'use strict';
 const policy = require('./policy');
 const usage = require('./usage');
-module.exports = { ...policy, ...usage };
+const modelRegistry = require('./modelRegistry');
+module.exports = { ...policy, ...usage, ...modelRegistry };

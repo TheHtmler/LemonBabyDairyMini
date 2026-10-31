@@ -1,0 +1,62 @@
+<view class="model-settings-page">
+  <view wx:if="{{hasAccess}}" class="page-shell">
+    <view class="service-heading">
+      <view class="service-copy"><text class="section-title">AI 服务</text><text class="description">搜索与识别共用开关</text></view>
+      <switch class="service-switch" checked="{{enabled}}" color="#c18a20" disabled="{{!ready || busy || loading}}" bindchange="onEnabledChange" aria-label="启用 AI 服务" />
+    </view>
+    <view class="error-panel" wx:if="{{errorText && errorText !== quotaFeedback.detail}}">
+      <text aria-live="polite">{{errorText}}</text>
+      <button class="text-button {{busy || loading ? 'is-disabled' : ''}}" size="mini" bindtap="onReload" disabled="{{busy || loading}}">{{dirty ? '放弃修改并重新加载' : '重新加载'}}</button>
+    </view>
+    <text class="description loading-text" wx:if="{{loading && !ready}}">正在读取配置…</text>
+    <block wx:if="{{ready}}">
+      <view class="scene-tabs" role="tablist">
+        <button class="scene-tab {{scene === 'search' ? 'selected' : ''}} {{busy ? 'is-disabled' : ''}}" role="tab" aria-selected="{{scene === 'search'}}" data-scene="search" bindtap="onSceneTap" disabled="{{busy}}">搜索</button>
+        <button class="scene-tab {{scene === 'scan' ? 'selected' : ''}} {{busy ? 'is-disabled' : ''}}" role="tab" aria-selected="{{scene === 'scan'}}" data-scene="scan" bindtap="onSceneTap" disabled="{{busy}}">识别与估算</button>
+      </view>
+      <view class="status-panel">
+        <text class="eyebrow">{{summaryLabel}}</text>
+        <text class="summary-title {{summary.tone}}" aria-live="polite">{{summary.title}}</text>
+        <text class="description">{{summary.detail}}</text>
+        <view class="quota-block">
+          <view class="quota-copy">
+            <text class="quota-title {{quotaFeedback.tone}}">{{quotaFeedback.title}}</text>
+            <text class="quota-detail {{quotaFeedback.tone}}" aria-live="polite">{{quotaFeedback.detail}}</text>
+          </view>
+          <button class="refresh-button {{busy || loading ? 'is-disabled' : ''}}" size="mini" bindtap="onRefreshQuota" loading="{{operation === 'refresh'}}" disabled="{{busy || loading}}">{{operation === 'refresh' ? '刷新中' : '刷新额度'}}</button>
+        </view>
+      </view>
+      <view class="list-heading"><text class="section-title">模型顺序</text><text class="caption">按顺序自动切换</text></view>
+      <view class="model-list">
+        <view class="model-row" wx:for="{{rows}}" wx:key="model">
+          <view class="model-heading">
+            <text class="order-number">{{item.number}}</text>
+            <text class="model-name">{{item.title}}</text>
+            <button class="model-toggle {{item.enabled ? 'selected' : ''}} {{busy || loading ? 'is-disabled' : ''}}" size="mini" data-model="{{item.model}}" bindtap="onModelToggle" disabled="{{busy || loading}}" aria-pressed="{{item.enabled}}" aria-label="{{item.title + (item.enabled ? '停用' : '启用')}}"><text class="toggle-label">{{item.enabled ? '已启用' : '启用'}}</text></button>
+          </view>
+          <view class="model-foot">
+            <view class="model-info">
+              <view class="model-meta"><text class="meta-part">{{item.remainingText}}</text><text class="meta-part" wx:if="{{item.expiresText}}">{{item.expiresText}} 到期</text><text class="meta-part">查询时免费保护：{{item.protectionText}}</text></view>
+              <text class="model-state {{item.enabled ? (item.available ? 'ready' : 'warning') : ''}}">{{item.reason}}</text>
+            </view>
+            <view class="order-controls"><button class="order-button {{busy || loading || item.first ? 'is-disabled' : ''}}" size="mini" data-model="{{item.model}}" data-offset="-1" bindtap="onMove" disabled="{{busy || loading || item.first}}" aria-label="{{item.title + '上移'}}">↑</button><button class="order-button {{busy || loading || item.last ? 'is-disabled' : ''}}" size="mini" data-model="{{item.model}}" data-offset="1" bindtap="onMove" disabled="{{busy || loading || item.last}}" aria-label="{{item.title + '下移'}}">↓</button></view>
+          </view>
+        </view>
+      </view>
+      <button class="details-toggle" size="mini" bindtap="onToggleDetails" aria-expanded="{{detailsExpanded}}">运行详情与说明 <text>{{detailsExpanded ? '收起' : '展开'}}</text></button>
+      <view wx:if="{{detailsExpanded}}" class="details-panel">
+        <text class="detail-label">最近实际使用</text><text class="detail-value">{{actual}}</text>
+        <text class="description" wx:if="{{actualTime}}">{{actualTime}}（北京时间）</text>
+        <text class="description" wx:if="{{switchReason}}">切换原因：{{switchReason}}</text>
+        <text class="description">“刷新额度”只查询百炼免费余额，不会测试或调用模型。</text>
+        <text class="description">模型配置保存后持续生效。额度可按需手动刷新；启用定时任务后每 5 分钟更新显示，未刷新或查询失败不影响使用。</text>
+        <text class="description" wx:if="{{queryConfigured && !renewalConfigured}}">当前使用云端控制台令牌，失效后需要更新授权。</text>
+        <text class="description">免费额度用完即停由百炼端保护开关控制。调用返回免费额度已用完或到期时自动跳过该模型；全部不可用时暂停 AI。</text>
+        <text class="detail-label model-ids-title">模型编号</text><text class="model-id" wx:for="{{rows}}" wx:key="model">{{item.number}}. {{item.model}}</text>
+      </view>
+      <view class="save-area"><text class="save-hint">{{saveHint}}</text><button class="save-button {{!dirty || busy || loading || saveBlocked ? 'is-disabled' : ''}}" bindtap="onSave" loading="{{operation === 'save'}}" disabled="{{!dirty || busy || loading || saveBlocked}}">{{operation === 'save' ? '保存中…' : '保存配置'}}</button></view>
+    </block>
+  </view>
+  <view wx:elif="{{loading}}" class="empty-state">正在加载…</view>
+  <view wx:else class="empty-state"><text class="section-title">{{errorText || '无权限访问'}}</text><text class="description">该配置仅管理员可查看和修改。</text></view>
+</view>

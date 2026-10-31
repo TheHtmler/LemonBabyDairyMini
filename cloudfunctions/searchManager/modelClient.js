@@ -15,7 +15,7 @@ function post(config, body, deadline) {
         let value; try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch (_) { return end(Object.assign(new Error('智能解析格式无效'), { code: 'INVALID_MODEL_RESULT' })); }
         if (response.statusCode >= 400) {
           const free = ((value.error || {}).code || value.code) === 'AllocationQuota.FreeTierOnly';
-          return end(Object.assign(new Error(free ? '模型免费额度已用完或到期' : response.statusCode === 429 ? '智能服务繁忙，请稍后重试' : '智能服务暂不可用'), { code: free ? 'FREE_QUOTA_EXHAUSTED' : response.statusCode === 429 ? 'MODEL_RATE_LIMIT' : 'MODEL_UNAVAILABLE' }));
+          return end(Object.assign(new Error(free ? '模型免费额度已用完或到期' : response.statusCode === 429 ? '智能服务繁忙，请稍后重试' : '智能服务暂不可用'), { code: free ? 'FREE_QUOTA_EXHAUSTED' : response.statusCode === 429 ? 'MODEL_RATE_LIMIT' : 'MODEL_UNAVAILABLE', httpStatus: response.statusCode }));
         }
         end(null, value);
       });
@@ -49,10 +49,23 @@ async function callIntentModel({ query, env, policy, request = post, deadline = 
     calls.push({ model: config.model, inputTokens: Number((response.usage || {}).prompt_tokens) || 0, outputTokens: Number((response.usage || {}).completion_tokens) || 0 });
     return response;
   };
-  let response;
+  let response; let reason = '';
+  const models = [...new Set(policy.managed ? policy.candidates : [policy.primaryModel, policy.fallbackModel].filter(Boolean))];
   try {
-  try { response = await call(primary); }
-  catch (error) { calls.push({ model: primary.model, error: error.code }); if (error.code !== 'FREE_QUOTA_EXHAUSTED' || !policy.fallbackModel || maxCalls < 2) throw error; actual = { ...primary, model: policy.fallbackModel }; response = await call(actual); }
+  for (let index = 0; index < Math.min(2, maxCalls, models.length); index++) {
+    actual = { ...primary, model: models[index] };
+    try { response = await call(actual); break; }
+    catch (error) {
+      calls.push({ model: actual.model, error: error.code });
+      if (policy.onModelError) await policy.onModelError(actual.model, error.code);
+      const transient = policy.managed && (error.code === 'MODEL_RATE_LIMIT' || error.code === 'MODEL_TIMEOUT' ||
+        error.code === 'MODEL_UNAVAILABLE' && (!error.httpStatus || error.httpStatus === 429 || error.httpStatus >= 500));
+      if (!(error.code === 'FREE_QUOTA_EXHAUSTED' || transient) || index + 1 >= Math.min(2, maxCalls, models.length) || Date.now() >= deadline - 500) throw error;
+      reason = error.code;
+    }
+  }
+  if (!response) fail('AI_UNAVAILABLE', '暂无符合免费额度要求的模型');
+  if (policy.onModelSuccess) await policy.onModelSuccess(actual.model, reason);
   const choice = (response.choices || [])[0];
     if (!choice || choice.finish_reason !== 'stop' || typeof (choice.message || {}).content !== 'string') fail('INVALID_MODEL_RESULT', '模型响应未完整结束，请仅输出适用字段的完整JSON对象。');
   let plan; try { plan = JSON.parse(choice.message.content); } catch (_) { fail('INVALID_MODEL_RESULT', '模型输出不是有效JSON，请修正结构并只返回完整JSON对象。'); }

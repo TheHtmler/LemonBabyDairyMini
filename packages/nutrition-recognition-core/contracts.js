@@ -38,6 +38,16 @@ function defaultDefinition(field) {
   return ['carbs', 'fiber', 'calories'].includes(field) ? 'unknown' : field;
 }
 
+function foodBasis(input = {}, allowCustomUnit = false) {
+  const quantity = number(input.quantity);
+  const unit = typeof input.unit === 'string' ? input.unit.trim() : '';
+  if (!(quantity > 0) || !unit || unit.length > 40 || /[\u0000-\u001f\u007f]/.test(unit) ||
+      !allowCustomUnit && !['g', 'ml', 'portion'].includes(unit)) {
+    fail('VALIDATION_FAILED', '请确认有效的营养计量基准与记录单位');
+  }
+  return { quantity, unit: unit === '份' ? 'portion' : unit, material: 'food' };
+}
+
 function validateFinalPatch(mode, patch = {}) {
   const nutrition = mode === 'powder_label' ? patch.nutritionPer100g || {} : patch;
   const missingFields = REQUIRED.filter(field => number(nutrition[field]) === null);
@@ -53,4 +63,4 @@ function validateFinalPatch(mode, patch = {}) {
 }
 
 module.exports = { FIELDS, UNITS, MODES, PREPARATIONS, REQUIRED, fail, text, number, identity,
-  defaultDefinition, validateFinalPatch };
+  defaultDefinition, foodBasis, validateFinalPatch };

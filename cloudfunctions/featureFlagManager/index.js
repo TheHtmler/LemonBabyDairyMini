@@ -1,5 +1,7 @@
 const cloud = require('wx-server-sdk');
 const { NUTRITION_QUOTA_KEY, isDailyLimit, readNutritionQuota } = require('./lib/ai/nutritionQuota');
+const { getModelAdminView, saveModelConfig } = require('./lib/ai/modelRegistry');
+const { syncModelQuota } = require('./lib/ai/quotaSync');
 const SEARCH_SCAN_KEYS = ['home_search_enabled', 'ai_search_enabled', 'nutrition_scan_enabled'];
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -172,6 +174,18 @@ exports.main = async (event = {}) => {
       return { ok: false, code: 'NO_PERMISSION', message: '无权限配置实验功能' };
     }
 
+    if (['getAiModelConfig', 'updateAiModelConfig', 'refreshAiModelQuota'].includes(action)) {
+      // AI 共享模块统一使用 CloudBase 的直接文档接口，其他开关沿用微信 SDK。
+      const env = cloud.getWXContext().ENV || process.env.TCB_ENV || process.env.SCF_NAMESPACE;
+      if (!env) throw Object.assign(new Error('无法确定当前云环境'), { code: 'CONFIG_MISSING' });
+      const modelDb = require('@cloudbase/node-sdk').init({ env }).database();
+      if (action === 'updateAiModelConfig') {
+        await saveModelConfig(modelDb, event.config && { ...event.config, expectedVersion: event.expectedVersion }, OPENID);
+      }
+      const sync = action === 'refreshAiModelQuota' ? await syncModelQuota(modelDb, process.env, { force: true }) : null;
+      return { ok: true, ...(sync ? { sync } : {}), view: await getModelAdminView(modelDb) };
+    }
+
     if (action === 'updateNutritionQuota') {
       return { ok: true, config: await updateNutritionQuota(event, OPENID) };
     }
@@ -221,9 +235,13 @@ exports.main = async (event = {}) => {
     return { ok: false, code: 'UNKNOWN_ACTION', message: '不支持的配置操作' };
   } catch (error) {
     console.error('[featureFlagManager] failed', error);
+    const transactionError = [error.code, error.errCode, error.message, error.errMsg].filter(Boolean).join(' ');
+    if (action === 'updateAiModelConfig' && /TransactionBusy|DATABASE_TRANSACTION_CONFLICT/.test(transactionError)) {
+      return { ok: false, code: 'AI_CONFIG_BUSY', message: '配置保存暂时繁忙，请稍后再次保存；当前修改已保留' };
+    }
     return {
       ok: false,
-      code: ['INVALID_INPUT', 'CONFIG_CONFLICT', 'CONFIG_MISSING'].includes(error.code) ? error.code : 'FEATURE_FLAG_FAILED',
+      code: ['INVALID_INPUT', 'CONFIG_CONFLICT', 'CONFIG_MISSING', 'AI_CONFIG_NOT_READY'].includes(error.code) ? error.code : 'FEATURE_FLAG_FAILED',
       message: error?.message || '配置更新失败'
     };
   }

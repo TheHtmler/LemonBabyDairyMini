@@ -40,8 +40,13 @@
 
       <text class="feedback-content">{{item.content}}</text>
 
+      <view wx:if="{{item.followUpCount > 0}}" class="admin-reply-preview" data-id="{{item._id}}" bindtap="openReply">
+        <text class="reply-preview-label">用户补充 · 共 {{item.followUpCount}} 次</text>
+        <text class="reply-preview-content">{{item.lastUserContent}}</text>
+      </view>
+
       <view wx:if="{{item.replyContent}}" class="admin-reply-preview" data-id="{{item._id}}" bindtap="openReply">
-        <text class="reply-preview-label">管理员回复 · {{item.replyTimeText}}</text>
+        <text class="reply-preview-label">最新管理员回复 · {{item.replyTimeText}}</text>
         <text class="reply-preview-content">{{item.replyContent}}</text>
       </view>
 

@@ -1,8 +1,8 @@
 'use strict';
 
 const PROTOCOL_VERSION = 2;
-const CAPABILITY_VERSION = 'search-2.1.0';
-const BUILD_VERSION = '20261029-search-cleanup';
+const CAPABILITY_VERSION = 'search-2.2.0';
+const BUILD_VERSION = '20261031-search-scan-ai-fixes';
 const DOMAIN_DESCRIPTIONS = {
   catalog: '具体名称没有明确查询方向时，综合查找相关资料和最近记录；类别名不属于具体对象名称。',
   food: '系统或宝宝私有的食物资料与营养属性，不是实际饮食记录。',

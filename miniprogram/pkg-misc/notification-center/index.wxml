@@ -1,0 +1,154 @@
+<view class="message-page">
+  <view class="message-navigation">
+    <view class="message-toolbar">
+      <text wx:if="{{activeTab === 'admin-feedback' && isFeedbackAdmin}}" class="message-summary">{{feedbackKnown ? adminPendingCount + ' 条待处理反馈' : '反馈管理'}}</text>
+      <text wx:else class="message-summary">{{adminPendingCount > 0 ? (unreadCount > 0 ? unreadCount + ' 条未读 · ' : '') + adminPendingCount + ' 条待处理反馈' : unreadCount > 0 ? unreadCount + ' 条未读消息' : '公告、更新与反馈回复'}}</text>
+      <button class="feedback-button" bindtap="submitFeedback" hover-class="message-pressed">提个反馈</button>
+    </view>
+    <view class="message-tabs {{isFeedbackAdmin ? 'admin-tabs' : ''}}">
+      <button
+        wx:for="{{messageTabs}}"
+        wx:key="id"
+        class="message-tab {{activeTab === item.id ? 'selected' : ''}}"
+        data-tab="{{item.id}}"
+        bindtap="onTabTap"
+        hover-class="message-pressed"
+        aria-label="{{(activeTab === item.id ? '已选中，' : '') + item.label + (item.count > 0 ? '，' + item.count + (item.id === 'all' ? ' 条提醒' : item.id === 'admin-feedback' ? ' 条待处理' : ' 条未读') : '')}}"
+      >
+        <view class="tab-label">
+          <text>{{item.label}}</text>
+          <text wx:if="{{item.count > 0}}" class="count-badge tab-badge" aria-hidden="true">{{item.count > 99 ? '99+' : item.count}}</text>
+        </view>
+      </button>
+    </view>
+  </view>
+
+  <view class="message-content">
+    <view wx:if="{{identityError}}" class="message-error">
+      <text>{{identityError}}</text>
+      <button class="retry-button" bindtap="retryMessages">重新加载</button>
+    </view>
+
+    <view class="message-list" wx:if="{{activeTab !== 'admin-feedback'}}">
+      <block wx:if="{{activeTab === 'all' || activeTab === 'notice'}}">
+        <button wx:if="{{noticeVisible && noticeText}}" class="message-row" bindtap="openNotice" hover-class="message-pressed" aria-label="{{noticeUnread ? '公告与更新，1 条未读，查看完整公告' : '公告与更新，已读，查看完整公告'}}">
+          <view class="message-avatar notice-avatar">
+            <image class="notice-logo" src="/images/LemonLogo.png" mode="aspectFit" aria-hidden="true"></image>
+            <text wx:if="{{noticeUnread}}" class="count-badge avatar-badge" aria-hidden="true">1</text>
+          </view>
+          <view class="message-main">
+            <view class="message-heading">
+              <text class="message-name">公告与更新</text>
+              <text class="message-meta">{{noticeUnread ? '新公告' : '已读'}}</text>
+            </view>
+            <text class="message-preview">{{noticeText}}</text>
+          </view>
+          <text class="message-arrow" aria-hidden="true">›</text>
+        </button>
+        <view wx:elif="{{noticeLoading}}" class="message-state">正在加载公告…</view>
+        <view wx:elif="{{noticeLoaded && !noticeError}}" class="message-state">
+          <text class="empty-title">暂无公告更新</text>
+          <text class="empty-hint">新公告会在这里提醒你</text>
+        </view>
+        <view wx:if="{{noticeError && !identityError}}" class="message-error">
+          <text>{{noticeError}}</text>
+          <button class="retry-button" bindtap="retryMessages">重试</button>
+        </view>
+      </block>
+
+      <block wx:if="{{activeTab === 'all' || activeTab === 'feedback'}}">
+        <button class="message-row" bindtap="openFeedbackReplies" hover-class="message-pressed" aria-label="{{feedbackUnreadCount > 0 ? '反馈回复，' + feedbackUnreadCount + ' 条未读，查看我的反馈' : '反馈回复，查看我的反馈与历史回复'}}">
+          <view class="message-avatar feedback-avatar">
+            <image class="reply-icon" src="/images/icons/message.svg" mode="aspectFit" aria-hidden="true"></image>
+            <text wx:if="{{feedbackUnreadCount > 0}}" class="count-badge avatar-badge" aria-hidden="true">{{feedbackUnreadCount > 99 ? '99+' : feedbackUnreadCount}}</text>
+          </view>
+          <view class="message-main">
+            <view class="message-heading">
+              <text class="message-name">反馈回复</text>
+              <text wx:if="{{feedbackUnreadCount > 0}}" class="message-meta">待查看</text>
+            </view>
+            <text class="message-preview" wx:if="{{feedbackUnreadCount > 0}}">你的反馈收到 {{feedbackUnreadCount}} 条新回复</text>
+            <text class="message-preview" wx:elif="{{feedbackLoading && !feedbackKnown}}">正在同步回复提醒…</text>
+            <text class="message-preview" wx:elif="{{feedbackKnown}}">暂无未读回复，查看历史回复与处理进度</text>
+            <text class="message-preview" wx:else>查看反馈回复与处理进度</text>
+          </view>
+          <text class="message-arrow" aria-hidden="true">›</text>
+        </button>
+        <view wx:if="{{feedbackError && !identityError}}" class="message-error">
+          <text>{{feedbackError}}</text>
+          <button class="retry-button" bindtap="retryMessages">重试</button>
+        </view>
+      </block>
+
+      <button wx:if="{{isFeedbackAdmin && activeTab === 'all'}}" class="message-row" data-tab="admin-feedback" bindtap="onTabTap" hover-class="message-pressed" aria-label="{{adminPendingCount > 0 ? '反馈列表，' + adminPendingCount + ' 条待处理反馈' : '查看用户反馈列表'}}">
+        <view class="message-avatar feedback-avatar">
+          <image class="reply-icon" src="/images/icons/message.svg" mode="aspectFit" aria-hidden="true"></image>
+          <text wx:if="{{adminPendingCount > 0}}" class="count-badge avatar-badge" aria-hidden="true">{{adminPendingCount > 99 ? '99+' : adminPendingCount}}</text>
+        </view>
+        <view class="message-main">
+          <view class="message-heading">
+            <text class="message-name">反馈列表</text>
+            <text wx:if="{{adminPendingCount > 0}}" class="message-meta">待处理</text>
+          </view>
+          <text wx:if="{{adminPendingCount > 0}}" class="message-preview">有 {{adminPendingCount}} 条用户反馈等待处理</text>
+          <text wx:else class="message-preview">查看用户反馈与处理状态</text>
+        </view>
+        <text class="message-arrow" aria-hidden="true">›</text>
+      </button>
+    </view>
+
+    <view wx:if="{{isFeedbackAdmin && activeTab === 'admin-feedback'}}" class="admin-feedback-panel">
+      <view class="admin-list-toolbar">
+        <view class="admin-filters">
+          <button
+            wx:for="{{adminStatusFilters}}"
+            wx:key="value"
+            class="admin-filter {{adminStatusFilter === item.value ? 'selected' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="onAdminFilterTap"
+            hover-class="message-pressed"
+            aria-label="{{(adminStatusFilter === item.value ? '已选中，' : '') + item.label + '反馈'}}"
+          >{{item.label}}</button>
+        </view>
+        <button class="admin-manage-button" bindtap="openAdminFeedbackList" hover-class="message-pressed">详细管理 ›</button>
+      </view>
+
+      <view wx:if="{{feedbackError && !identityError}}" class="message-error">
+        <text>{{feedbackError}}</text>
+        <button class="retry-button" bindtap="retryMessages">重试</button>
+      </view>
+
+      <view class="admin-feedback-list">
+        <button
+          wx:for="{{adminFeedbackItems}}"
+          wx:key="_id"
+          class="admin-feedback-item"
+          data-id="{{item._id}}"
+          bindtap="openAdminFeedback"
+          hover-class="message-pressed"
+          aria-label="{{item.senderName + '，' + item.statusText + '，查看并处理反馈'}}"
+        >
+          <view class="admin-feedback-heading">
+            <text class="admin-feedback-sender">{{item.senderName}}</text>
+            <text class="admin-status {{item.status}}">{{item.statusText}}</text>
+          </view>
+          <text class="admin-feedback-meta">{{item.type || '其他'}} · {{item.lastMessageTime || item.displayTime}}</text>
+          <text class="admin-feedback-content">{{item.followUpCount > 0 ? '最新补充：' : ''}}{{item.lastUserContent || item.content}}</text>
+          <text wx:if="{{item.replyContent}}" class="admin-reply-preview">回复：{{item.replyContent}}</text>
+          <text class="admin-feedback-action">查看与处理 ›</text>
+        </button>
+
+        <view wx:if="{{adminListError}}" class="message-error">
+          <text>{{adminListError}}</text>
+          <button class="retry-button" bindtap="retryAdminList">重新加载</button>
+        </view>
+        <view wx:elif="{{adminListLoaded && !adminFeedbackItems.length && !adminListLoading}}" class="message-state">
+          <text class="empty-title">{{adminStatusFilter === 'new' ? '当前没有未处理反馈' : adminStatusFilter === 'processed' ? '当前没有已处理反馈' : '还没有收到用户反馈'}}</text>
+          <text class="empty-hint">下拉可查看最新反馈</text>
+        </view>
+        <view wx:if="{{adminListLoading}}" class="admin-list-footer">{{adminFeedbackItems.length ? '正在刷新反馈…' : '正在加载反馈列表…'}}</view>
+        <view wx:elif="{{adminListLoaded && adminFeedbackItems.length >= 100 && !adminListError}}" class="admin-list-footer">当前展示最近 100 条反馈</view>
+      </view>
+    </view>
+  </view>
+</view>

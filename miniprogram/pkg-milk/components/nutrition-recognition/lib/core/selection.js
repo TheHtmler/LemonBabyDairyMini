@@ -19,6 +19,10 @@ function buildConfirmedPatch({ observation, reference, estimate, confirmedIdenti
   if (decisions.length > FIELDS.length || new Set(decisions.map(x => x.path)).size !== decisions.length) {
     fail('VALIDATION_FAILED', '选值字段重复或过多');
   }
+  if (useFormValues && !['g', 'ml', 'portion'].includes(targetBasis.unit)) {
+    // 自定义单位没有自动换算关系，只采纳用户确认的最终值，原识别证据仍保留。
+    decisions = decisions.map(decision => ({ ...decision, source: 'manual' }));
+  }
   if (proteinSource === 'special' && decisions.some(decision => decision.source === 'model_estimate')) {
     fail('VALIDATION_FAILED', '特殊蛋白不能采用通用AI估算，请核对标签、产品资料或手工填写');
   }
