@@ -2,7 +2,7 @@
   <view class="message-navigation">
     <view class="message-toolbar">
       <text wx:if="{{activeTab === 'admin-feedback' && isFeedbackAdmin}}" class="message-summary">{{feedbackKnown ? adminPendingCount + ' 条待处理反馈' : '反馈管理'}}</text>
-      <text wx:else class="message-summary">{{adminPendingCount > 0 ? (unreadCount > 0 ? unreadCount + ' 条未读 · ' : '') + adminPendingCount + ' 条待处理反馈' : unreadCount > 0 ? unreadCount + ' 条未读消息' : '公告、更新与反馈回复'}}</text>
+      <text wx:else class="message-summary">{{adminPendingCount > 0 ? (unreadCount > 0 ? unreadCount + ' 条未读 · ' : '') + adminPendingCount + ' 条待处理反馈' : unreadCount > 0 ? unreadCount + ' 条未读消息' : '公告、更新与反馈信息'}}</text>
       <button class="feedback-button" bindtap="submitFeedback" hover-class="message-pressed">提个反馈</button>
     </view>
     <view class="message-tabs {{isFeedbackAdmin ? 'admin-tabs' : ''}}">
@@ -57,20 +57,20 @@
       </block>
 
       <block wx:if="{{activeTab === 'all' || activeTab === 'feedback'}}">
-        <button class="message-row" bindtap="openFeedbackReplies" hover-class="message-pressed" aria-label="{{feedbackUnreadCount > 0 ? '反馈回复，' + feedbackUnreadCount + ' 条未读，查看我的反馈' : '反馈回复，查看我的反馈与历史回复'}}">
+        <button class="message-row" bindtap="openFeedbackReplies" hover-class="message-pressed" aria-label="{{feedbackUnreadCount > 0 ? '反馈信息，' + feedbackUnreadCount + ' 条未读，查看我的反馈' : '反馈信息，查看我的反馈与历史回复'}}">
           <view class="message-avatar feedback-avatar">
             <image class="reply-icon" src="/images/icons/message.svg" mode="aspectFit" aria-hidden="true"></image>
             <text wx:if="{{feedbackUnreadCount > 0}}" class="count-badge avatar-badge" aria-hidden="true">{{feedbackUnreadCount > 99 ? '99+' : feedbackUnreadCount}}</text>
           </view>
           <view class="message-main">
             <view class="message-heading">
-              <text class="message-name">反馈回复</text>
+              <text class="message-name">反馈信息</text>
               <text wx:if="{{feedbackUnreadCount > 0}}" class="message-meta">待查看</text>
             </view>
             <text class="message-preview" wx:if="{{feedbackUnreadCount > 0}}">你的反馈收到 {{feedbackUnreadCount}} 条新回复</text>
             <text class="message-preview" wx:elif="{{feedbackLoading && !feedbackKnown}}">正在同步回复提醒…</text>
-            <text class="message-preview" wx:elif="{{feedbackKnown}}">暂无未读回复，查看历史回复与处理进度</text>
-            <text class="message-preview" wx:else>查看反馈回复与处理进度</text>
+            <text class="message-preview" wx:elif="{{feedbackKnown}}">暂无未读回复，查看历史沟通记录</text>
+            <text class="message-preview" wx:else>查看反馈信息与沟通记录</text>
           </view>
           <text class="message-arrow" aria-hidden="true">›</text>
         </button>
@@ -110,7 +110,6 @@
             aria-label="{{(adminStatusFilter === item.value ? '已选中，' : '') + item.label + '反馈'}}"
           >{{item.label}}</button>
         </view>
-        <button class="admin-manage-button" bindtap="openAdminFeedbackList" hover-class="message-pressed">详细管理 ›</button>
       </view>
 
       <view wx:if="{{feedbackError && !identityError}}" class="message-error">

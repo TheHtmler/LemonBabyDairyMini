@@ -13,7 +13,6 @@ Page({
     statusFilters: STATUS_FILTERS,
     statusFilter: 'all',
     feedbackItems: [],
-    pendingCount: 0,
     loading: true,
     hasAccess: true,
     lastUpdatedText: '',
@@ -45,10 +44,9 @@ Page({
         if (!this._alive) return;
         if (state.generation !== generation) {
           this._loadSeq += 1;
-          this.setData({ hasAccess: false, feedbackItems: [], pendingCount: 0, loading: false });
+          this.setData({ hasAccess: false, feedbackItems: [], loading: false });
           return;
         }
-        this.setData({ pendingCount: state.adminPendingCount });
       });
       await this.loadFeedbacks();
     } catch (error) {

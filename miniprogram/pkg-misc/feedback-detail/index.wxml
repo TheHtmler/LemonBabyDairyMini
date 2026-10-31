@@ -1,67 +1,118 @@
-<view class="detail-page">
-  <view wx:if="{{loading}}" class="page-hint">正在加载反馈…</view>
-  <view wx:if="{{errorText}}" class="card error-card">
-    <text>{{errorText}}</text>
-    <button class="secondary-button" bindtap="retryLoad">重新加载</button>
+<view class="detail-page {{keyboardHeight > 0 ? 'keyboard-open' : ''}}" style="padding-bottom: {{keyboardHeight}}px;">
+  <view wx:if="{{!item && loading}}" class="page-state">
+    <view class="brand-mark">柠</view>
+    <text class="state-title">正在打开反馈…</text>
+    <text class="state-description">每一次建议，都让小程序变好一点</text>
+  </view>
+  <view wx:if="{{!item && errorText}}" class="page-state">
+    <text class="state-title">暂时无法查看</text>
+    <text class="state-description">{{errorText}}</text>
+    <button class="primary-button state-button" bindtap="retryLoad">重新加载</button>
     <button class="text-button" bindtap="backToList">返回反馈列表</button>
   </view>
   <block wx:if="{{item}}">
-    <view class="card">
-      <view class="card-head">
-        <text class="type-badge">{{item.type}}</text>
-        <text class="status-badge {{item.status}}">{{item.statusText}}</text>
+    <view class="conversation-header">
+      <view class="thread-toolbar">
+        <view class="thread-heading">
+          <text class="thread-type">{{item.type}}</text>
+          <picker wx:if="{{canReply}}" class="status-picker" mode="selector" range="{{statusOptions}}" value="{{item.status === 'processed' ? 1 : 0}}"
+            disabled="{{saving || loading || statusSaving || conflict || retryMode}}" bindchange="onStatusChange"
+            aria-label="{{'反馈状态：' + (item.status === 'processed' ? '已处理' : '待处理') + '，点击切换'}}">
+            <view class="thread-status {{item.status}} {{statusSaving ? 'status-saving' : ''}}">
+              <view class="status-dot" /><text>{{statusSaving ? '更新中' : item.status === 'processed' ? '已处理' : '待处理'}}</text><view class="status-chevron" />
+            </view>
+          </picker>
+        </view>
+        <view class="thread-actions">
+          <button wx:if="{{canReply}}" class="text-button toolbar-button {{showMetadata ? 'active' : ''}}" bindtap="toggleMetadata">{{showMetadata ? '收起' : '资料'}}</button>
+          <button class="text-button toolbar-button" disabled="{{saving || loading || statusSaving}}" loading="{{loading}}" bindtap="retryLoad">刷新</button>
+        </view>
       </view>
-      <text class="time">{{item.displayTime}}</text>
-      <text class="section-title">{{canReply ? '用户反馈' : '我的反馈'}}</text>
-      <text class="body-text" selectable>{{item.content}}</text>
-      <view wx:if="{{canReply}}" class="admin-meta">
+      <text wx:if="{{!canReply}}" class="privacy-caption">仅你与开发者可见</text>
+      <view wx:if="{{canReply && showMetadata}}" class="admin-meta">
         <text wx:if="{{item.userNickname}}">昵称：{{item.userNickname}}</text>
         <text wx:if="{{item.babyName}}">宝宝：{{item.babyName}}</text>
         <text wx:if="{{item.userRole}}">角色：{{item.userRole === 'participant' ? '参与者' : '创建者'}}</text>
         <text wx:if="{{item.contact}}">联系方式：{{item.contact}}</text>
         <text wx:if="{{item.systemInfo.model}}">设备：{{item.systemInfo.brand}} {{item.systemInfo.model}} {{item.systemInfo.system}}</text>
+        <text>提交于 {{item.displayTime}}</text>
       </view>
     </view>
-
-    <view class="thread-heading">
-      <text class="section-title">补充与处理记录</text>
-      <button class="text-button" disabled="{{saving || loading}}" bindtap="retryLoad">刷新记录</button>
+    <view wx:if="{{errorText}}" class="inline-error">
+      <text>{{errorText}}</text>
+      <button class="text-button" disabled="{{saving || loading || statusSaving}}" bindtap="retryLoad">重试</button>
     </view>
-    <button wx:if="{{nextCursor}}" class="secondary-button history-button" disabled="{{historyLoading || loading || saving}}" loading="{{historyLoading}}" bindtap="loadEarlier">查看更早记录</button>
-    <view wx:if="{{historyError}}" class="save-error">
-      <text>{{historyError}}</text>
-      <button class="text-button" bindtap="loadEarlier">重新加载</button>
-    </view>
-    <view wx:for="{{entries}}" wx:for-item="entry" wx:key="_id" class="thread-entry {{entry.fromMe ? 'from-me' : ''}}">
-      <text class="entry-author">{{entry.authorLabel}} · {{entry.displayTime}}</text>
-      <view class="entry-bubble {{entry.role}}">
-        <view wx:if="{{entry.replyTo}}" class="entry-quote">
-          <text class="quote-label">{{entry.replyTo.role === 'admin' ? '针对管理员回复' : '针对用户补充'}}</text>
-          <text class="quote-content">{{entry.replyTo.content}}</text>
+    <scroll-view class="conversation-scroll" scroll-y scroll-into-view="{{scrollTarget}}" scroll-with-animation="{{scrollAnimated}}"
+      refresher-enabled="{{!saving && !loading && !statusSaving}}" refresher-triggered="{{refreshing}}" bindrefresherrefresh="refreshConversation">
+      <view class="conversation-content">
+        <view id="original-message" class="message-group">
+          <text class="message-time">{{item.conversationTime}}</text>
+          <view class="message-row {{!canReply ? 'from-me' : ''}}">
+            <view class="message-main">
+              <text class="message-author">{{canReply ? '用户 · 首次反馈' : '首次反馈'}}</text>
+              <view class="message-bubble"><text class="body-text" selectable>{{item.content}}</text></view>
+            </view>
+          </view>
         </view>
-        <text class="body-text {{entry.isLatestReply ? 'latest-reply' : ''}}" selectable>{{entry.content}}</text>
+        <button wx:if="{{nextCursor}}" class="text-button history-button" disabled="{{historyLoading || loading || saving || statusSaving}}" loading="{{historyLoading}}" bindtap="loadEarlier">加载更早的沟通记录</button>
+        <view wx:if="{{historyError}}" class="inline-error">
+          <text>{{historyError}}</text>
+          <button class="text-button" disabled="{{historyLoading || loading || saving || statusSaving}}" bindtap="loadEarlier">重试</button>
+        </view>
+        <view wx:for="{{entries}}" wx:for-item="entry" wx:key="_id" id="message-{{entry.sequence}}" class="message-group">
+          <text wx:if="{{entry.showTime}}" class="message-time">{{entry.conversationTime}}</text>
+          <view class="message-row {{entry.fromMe ? 'from-me' : ''}}">
+            <view class="message-main">
+              <view wx:if="{{entry.showAuthor || (entry.isLatestReply && item.hasUnreadReply && !canReply)}}" class="message-author">
+                <text>{{entry.role === 'admin' ? '开发者' : '用户'}}</text>
+                <text wx:if="{{entry.isLatestReply && item.hasUnreadReply && !canReply}}" class="new-label">新回复</text>
+              </view>
+              <view class="message-bubble">
+                <view wx:if="{{entry.replyTo}}" class="entry-quote">
+                  <text class="quote-label">引用{{entry.replyTo.role === 'admin' ? '开发者回复' : '用户补充'}}</text>
+                  <text class="quote-content">{{entry.replyTo.content}}</text>
+                </view>
+                <text class="body-text {{entry.isLatestReply ? 'latest-reply' : ''}}" selectable>{{entry.content}}</text>
+              </view>
+              <button wx:if="{{!canReply && entry.role === 'admin'}}" class="text-button quote-action" data-id="{{entry._id}}" disabled="{{saving || loading}}" bindtap="quoteReply">引用回复</button>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{!entries.length && !loading}}" class="received-note">
+          <text class="received-title">{{canReply ? '等待你的第一条回复' : '反馈已送达，感谢你的认真建议'}}</text>
+          <text>{{canReply ? '在下方填写处理说明，或确认更多细节。' : '开发者回复后会有新回复提示，你也可以先补充细节。'}}</text>
+        </view>
+        <button wx:if="{{hasNewerReply}}" class="text-button notice-button" disabled="{{saving || loading}}" bindtap="retryLoad">有新回复，点击刷新</button>
+        <button wx:if="{{readError}}" class="text-button notice-button" bindtap="retryRead">{{readError}}</button>
+        <view id="conversation-end" class="conversation-end" />
       </view>
-      <button wx:if="{{!canReply && entry.role === 'admin'}}" class="text-button quote-action" data-id="{{entry._id}}" disabled="{{saving || loading}}" bindtap="quoteReply">针对这条回复继续追问</button>
-    </view>
-    <view wx:if="{{!entries.length && !loading}}" class="page-hint">{{canReply ? '暂无处理记录，可在下方回复用户。' : '我们已收到反馈，你也可以继续补充情况。'}}</view>
-    <button wx:if="{{hasNewerReply}}" class="secondary-button" bindtap="retryLoad">有新处理记录，刷新查看</button>
-    <button wx:if="{{readError}}" class="text-button" bindtap="retryRead">{{readError}}</button>
-
-    <view id="follow-up-editor" class="card editor-card">
-      <text class="section-title">{{canReply ? '追加处理回复' : quote ? '针对回复继续追问' : '补充或继续追问'}}</text>
-      <text class="editor-hint">{{!canReply && item.status === 'processed' ? '提交补充后，这条反馈会重新进入待处理。' : '仅用于当前问题的补充与处理，每轮记录都会保留。'}}</text>
+    </scroll-view>
+    <view id="follow-up-editor" class="composer">
       <view wx:if="{{quote}}" class="composer-quote">
-        <text class="quote-label">正在追问这条管理员回复</text>
-        <text class="quote-content">{{quote.content}}</text>
-        <button class="text-button" disabled="{{saving}}" bindtap="cancelQuote">取消引用</button>
+        <view class="composer-quote-copy">
+          <text class="quote-label">回复开发者</text>
+          <text class="quote-content">{{quote.content}}</text>
+        </view>
+        <button class="text-button cancel-quote" disabled="{{saving}}" bindtap="cancelQuote" aria-label="取消引用">取消</button>
       </view>
-      <textarea class="reply-input" maxlength="1000" value="{{draft}}" disabled="{{saving || loading}}" bindinput="onDraftInput" placeholder="{{canReply ? '填写处理说明，或进一步确认问题细节' : '补充问题细节，或针对处理结果继续提问'}}" cursor-spacing="100" />
-      <text class="word-count">{{draft.length}} / 1000</text>
       <view wx:if="{{saveError}}" class="save-error">{{saveError}}</view>
-      <button wx:if="{{conflict}}" class="secondary-button" bindtap="refreshConflict">刷新最新记录，保留我的草稿</button>
-      <button class="{{canReply ? 'secondary-button' : 'primary-button'}}" disabled="{{saving || loading || conflict || !draft.length}}" loading="{{saving}}" data-mode="reply" bindtap="submitEntry">{{canReply ? '提交回复' : quote ? '提交追问' : '提交补充'}}</button>
-      <button wx:if="{{canReply}}" class="primary-button" disabled="{{saving || loading || conflict || !draft.length}}" loading="{{saving}}" data-mode="process" bindtap="submitEntry">回复并标记已处理</button>
+      <button wx:if="{{conflict}}" class="text-button conflict-button" bindtap="refreshConflict">刷新最新记录，保留我的草稿</button>
+      <view class="composer-row">
+        <view class="input-shell">
+        <textarea class="reply-input" maxlength="1000" value="{{draft}}" auto-height adjust-position="{{false}}"
+          focus="{{inputFocused}}" disabled="{{saving || loading || conflict}}" bindinput="onDraftInput" bindfocus="onDraftFocus" bindblur="onDraftBlur"
+          bindkeyboardheightchange="onKeyboardHeightChange" placeholder="{{canReply ? '回复用户…' : quote ? '回复这条内容…' : '补充你的问题…'}}"
+          placeholder-class="input-placeholder" cursor-spacing="20" show-confirm-bar="{{false}}" />
+        </view>
+        <button class="primary-button send-button" disabled="{{saving || loading || statusSaving || conflict || !dirty}}" loading="{{saving}}" data-mode="{{retryMode || (canReply && processAfterSend ? 'process' : 'reply')}}" bindtap="submitEntry">{{retryMode ? '重试' : '发送'}}</button>
+      </view>
+      <view class="composer-footer">
+        <checkbox-group wx:if="{{canReply && (item.status !== 'processed' || retryMode === 'process')}}" class="process-options" bindchange="onProcessChange">
+          <label class="process-option"><checkbox value="process" checked="{{processAfterSend}}" disabled="{{saving || loading || statusSaving || conflict || retryMode}}" color="#B78918" /><text>同时标记已处理</text></label>
+        </checkbox-group>
+        <text wx:else class="composer-hint">{{canReply ? '已处理，仍可继续回复' : '请勿填写密码等敏感信息'}}</text>
+        <text wx:if="{{draft.length}}" class="word-count {{draft.length >= 900 ? 'near-limit' : ''}}">{{draft.length}}/1000</text>
+      </view>
     </view>
-    <view class="page-hint">下拉可刷新当前问题的处理记录</view>
   </block>
 </view>

@@ -667,5 +667,3 @@
   color: #8A6A12;
   margin-bottom: 20rpx;
 }
-.feedback-unread-entry { display: flex; align-items: center; gap: 8rpx; flex-shrink: 0; margin-left: 12rpx; color: #C73E32; font-size: 24rpx; }
-.feedback-unread-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: #E5483B; }

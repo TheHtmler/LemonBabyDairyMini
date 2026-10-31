@@ -2,13 +2,14 @@
   <view class="feedback-tabs">
     <view class="feedback-tab {{activeTab === 'submit' ? 'selected' : ''}}" data-tab="submit" bindtap="onTabTap">提交反馈</view>
     <view class="feedback-tab {{activeTab === 'mine' ? 'selected' : ''}}" data-tab="mine" bindtap="onTabTap">
-      我的反馈<view wx:if="{{unreadCount > 0}}" class="unread-dot" />
+      我的反馈
     </view>
   </view>
   <view hidden="{{activeTab !== 'submit'}}">
   <view class="hero-card">
-    <text class="hero-title">告诉我们你的想法</text>
-    <text class="hero-subtitle">围绕同一个问题查看处理进度、补充情况，并继续追问。</text>
+    <text class="hero-eyebrow">一起把小程序变得更好</text>
+    <text class="hero-title">你的想法，我们想听</text>
+    <text class="hero-subtitle">提交后可与开发者继续沟通，补充细节、查看回复。</text>
   </view>
 
   <view class="section-card">
@@ -47,27 +48,35 @@
     <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitFeedback">
       提交反馈
     </button>
+    <text class="privacy-note">反馈仅你与开发者可见，请勿填写密码、身份证号等敏感信息。</text>
   </view>
   </view>
 
   <view hidden="{{activeTab !== 'mine'}}">
+    <view class="list-heading">
+      <text class="list-title">每个问题，都有下文</text>
+      <text class="list-description">点开一条反馈，接着上次的内容聊</text>
+    </view>
     <view wx:if="{{unreadCount > 0}}" class="unread-banner">有 {{unreadCount}} 条反馈收到新回复</view>
     <view wx:for="{{feedbackItems}}" wx:key="_id" class="section-card feedback-item" data-id="{{item._id}}" bindtap="openFeedback">
       <view class="feedback-item-head">
         <text class="type-label">{{item.type}}</text>
-        <text class="status-label {{item.status}}">{{item.statusText}}</text>
       </view>
-      <text class="item-time">{{item.displayTime}}</text>
       <text class="item-content clamp-two">{{item.content}}</text>
       <view class="reply-preview">
-        <view wx:if="{{item.replyContent}}" class="reply-preview-title">
-          <text>最新管理员回复</text>
-          <view wx:if="{{item.hasUnreadReply}}" class="new-reply"><view class="unread-dot" /><text>新回复</text></view>
-          <text wx:else class="read-label">已回复</text>
+        <view class="preview-mark">{{item.lastMessageRole === 'user' && item.followUpCount > 0 ? '我' : '柠'}}</view>
+        <view class="preview-copy">
+          <view class="reply-preview-title">
+            <text>{{item.lastMessageRole === 'user' && item.followUpCount > 0 ? '我的补充' : item.replyContent ? '开发者回复' : '等待开发者回复'}}</text>
+            <view wx:if="{{item.hasUnreadReply}}" class="new-reply"><text>新回复</text></view>
+          </view>
+          <text class="reply-summary clamp-two">{{item.followUpCount > 0 || item.replyContent ? (item.lastMessageContent || item.replyContent) : '反馈已收到，你也可以先补充更多细节。'}}</text>
         </view>
-        <text class="reply-summary clamp-two">{{item.replyContent || '暂无管理员回复'}}</text>
       </view>
-      <view class="detail-link">查看记录与继续追问 ›</view>
+      <view class="item-footer">
+        <text class="item-time">{{item.lastMessageTime || item.displayTime}}</text>
+        <text class="detail-link">继续沟通 ›</text>
+      </view>
     </view>
     <view wx:if="{{listError}}" class="section-card list-state">
       <text>{{listError}}</text>
@@ -75,6 +84,7 @@
     </view>
     <view wx:elif="{{listLoaded && !feedbackItems.length && !listLoading}}" class="section-card list-state">
       <text>你还没有提交过反馈</text>
+      <text class="empty-description">遇到的问题、想要的功能，都可以告诉开发者。</text>
       <button class="retry-button" bindtap="goToSubmit">去提交反馈</button>
     </view>
     <view wx:if="{{listLoading}}" class="list-footer">正在加载反馈…</view>

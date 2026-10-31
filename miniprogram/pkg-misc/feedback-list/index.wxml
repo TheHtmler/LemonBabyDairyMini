@@ -17,10 +17,6 @@
         bindtap="onFilterTap"
       >
         <text>{{item.label}}</text>
-        <block wx:if="{{item.value === 'new' && pendingCount > 0}}">
-          <view class="pending-dot" />
-          <text>{{pendingCount > 99 ? '99+' : pendingCount}}</text>
-        </block>
       </view>
     </view>
 

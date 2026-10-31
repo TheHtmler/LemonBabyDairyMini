@@ -240,8 +240,6 @@ Page({
     userInfo: {},
     babyInfo: {}, // 添加宝宝信息
     isLoggedIn: true,  // 默认设置为已登录
-    feedbackUnreadCount: 0,
-    adminFeedbackPendingCount: 0,
     isEditingProfile: false,
     tempNickName: '',
     userRole: '', // 用户角色
@@ -262,9 +260,6 @@ Page({
 
   onLoad: function () {
     if (guardNormalPage()) return;
-    this._unsubscribeFeedback = feedback.subscribeUnread(state => {
-      this.setData({ feedbackUnreadCount: state.count, adminFeedbackPendingCount: state.adminPendingCount });
-    });
     // 确保有默认的头像路径
     this.setData({
       defaultAvatarUrl: '/images/LemonLogo.png'
@@ -277,15 +272,10 @@ Page({
 
   onShow: function () {
     if (guardNormalPage()) return;
-    feedback.refreshUnreadSilently();
     this.refreshIdentityState();
     this.loadAccessibleBabyCount();
     if (this.data.uploadingAvatar) return;
     this.getBabyInfo();
-  },
-
-  onUnload() {
-    if (this._unsubscribeFeedback) this._unsubscribeFeedback();
   },
 
   // 加载可访问宝宝数量：≥2 时「同步数据」菜单才显示，数量变化后重建菜单
@@ -748,7 +738,7 @@ Page({
       this.openSyncPanel();
     } else if (item.path) {
       wx.navigateTo({
-        url: item.id === 12 && this.data.feedbackUnreadCount > 0 ? `${item.path}?tab=mine` : item.path
+        url: item.id === 12 && feedback.getUnreadState().count > 0 ? `${item.path}?tab=mine` : item.path
       });
     }
   },

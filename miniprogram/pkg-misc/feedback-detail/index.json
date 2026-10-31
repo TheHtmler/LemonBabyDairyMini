@@ -1,4 +1,7 @@
 {
-  "navigationBarTitleText": "反馈详情",
-  "enablePullDownRefresh": true
+  "navigationBarTitleText": "反馈沟通",
+  "navigationBarBackgroundColor": "#FEFEFC",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F5F3",
+  "disableScroll": true
 }

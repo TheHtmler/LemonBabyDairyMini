@@ -6,7 +6,7 @@ const { isDeveloperOpenid } = require('../../config/developer');
 const MESSAGE_TABS = [
   { id: 'all', label: '全部' },
   { id: 'notice', label: '公告更新' },
-  { id: 'feedback', label: '反馈回复' }
+  { id: 'feedback', label: '反馈信息' }
 ];
 const ADMIN_FEEDBACK_TAB = { id: 'admin-feedback', label: '反馈列表' };
 const ADMIN_STATUS_FILTERS = [
@@ -203,13 +203,6 @@ Page({
     const id = event.currentTarget.dataset.id;
     if (this.data.adminFeedbackItems.some(item => item._id === id)) {
       wx.navigateTo({ url: `/pkg-misc/feedback-detail/index?id=${encodeURIComponent(id)}&view=admin` });
-    }
-  },
-
-  openAdminFeedbackList() {
-    const state = feedback.getUnreadState();
-    if (isDeveloperOpenid(state.identity) && this.data.isFeedbackAdmin) {
-      wx.navigateTo({ url: '/pkg-misc/feedback-list/index' });
     }
   },
 

@@ -42,12 +42,6 @@
           <view class="menu-name">{{menuItem.name}}</view>
           <view class="menu-desc" wx:if="{{menuItem.description}}">{{menuItem.description}}</view>
         </view>
-        <view wx:if="{{menuItem.id === 12 && feedbackUnreadCount > 0}}" class="feedback-unread-entry">
-          <view class="feedback-unread-dot" /><text>有新回复</text>
-        </view>
-        <view wx:if="{{menuItem.id === 13 && isDeveloper && adminFeedbackPendingCount > 0}}" class="feedback-unread-entry">
-          <view class="feedback-unread-dot" /><text>{{adminFeedbackPendingCount > 99 ? '99+' : adminFeedbackPendingCount}} 条待处理</text>
-        </view>
         <view class="menu-arrow">
           <image src="/images/icons/arrow-right.svg" mode="aspectFit"></image>
         </view>

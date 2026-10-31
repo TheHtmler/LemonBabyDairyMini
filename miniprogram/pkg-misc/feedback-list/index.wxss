@@ -79,14 +79,6 @@
   color: #ffffff;
 }
 
-.pending-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: #E5484D;
-  flex-shrink: 0;
-}
-
 .feedback-card {
   padding: 22rpx 24rpx;
 }

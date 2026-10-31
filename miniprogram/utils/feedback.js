@@ -1,6 +1,5 @@
-// 反馈的身份、未读数量和导航红点统一维护，避免各页面各算一份。
+// 统一维护反馈身份与未读数量，供首页消息提醒和详情阅读状态使用。
 const CACHE_MS = 30000;
-const { isElderMode } = require('./elderMode');
 const listeners = new Set();
 let identity = '';
 let generation = 0;
@@ -25,16 +24,7 @@ function snapshot() {
   return { identity, generation, revision, count, adminPendingCount, known };
 }
 
-function syncTabBar() {
-  if (isElderMode()) return;
-  const method = count > 0 || adminPendingCount > 0 ? wx.showTabBarRedDot : wx.hideTabBarRedDot;
-  if (typeof method !== 'function') return;
-  // 在分包页或导航尚未显示时允许失败，下次导航页 onShow 会重新同步。
-  method.call(wx, { index: 3, fail() {} });
-}
-
 function publish() {
-  syncTabBar();
   const value = snapshot();
   listeners.forEach(listener => {
     try { listener(value); } catch (error) { console.warn('反馈提醒更新失败:', error); }
@@ -116,7 +106,6 @@ function invalidateUnread() {
 
 async function refreshUnread({ force = false } = {}) {
   const owner = await readyIdentity();
-  syncTabBar();
   if (!force && known && Date.now() - refreshedAt < CACHE_MS) return snapshot();
   if (pending) return pending;
   const requestRevision = revision;
