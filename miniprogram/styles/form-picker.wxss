@@ -1,0 +1,7 @@
+/* 下拉选择器统一外观与触摸反馈，图标自身不截获原生picker事件。 */
+.form-picker-face { display: flex; align-items: center; justify-content: space-between; min-width: 0; box-sizing: border-box; }
+.form-picker-value { display: block; flex: 1; min-width: 0; overflow: hidden; line-height: 1.5; white-space: nowrap; text-overflow: ellipsis; }
+.form-picker-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 24rpx; width: 24rpx; height: 24rpx; margin-left: 8rpx; color: #af966c; pointer-events: none; }
+.form-picker-chevron { display: block; flex: none; width: 10rpx; height: 10rpx; margin-top: -4rpx; box-sizing: border-box; border-right: 2rpx solid currentColor; border-bottom: 2rpx solid currentColor; transform: rotate(45deg); }
+.form-picker-face.form-picker-pressed { background-color: #fff1cf; }
+.form-picker-disabled { opacity: .45; }

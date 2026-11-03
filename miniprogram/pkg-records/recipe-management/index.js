@@ -23,12 +23,14 @@ function isWeightUnit(unit) {
 function buildDefaultPreview(ingredients = []) {
   const prepared = (ingredients || []).map((item) => {
     const quantity = Math.max(0, Number(item.quantity) || 0);
-    const source = item.food || item.foodSnapshot || {};
+    const preserveMixedSnapshot = !!item.foodSnapshot?.nutritionPerBasis &&
+      (item.foodSnapshot.proteinQuality === 'mixed' || item.food?.proteinQuality === 'mixed');
+    const source = preserveMixedSnapshot ? item.foodSnapshot : item.food || item.foodSnapshot || {};
     return {
       quantity,
       unit: item.unit || 'g',
-      proteinQuality: item.proteinQuality
-        || source.proteinQuality
+      proteinQuality: source.proteinQuality
+        || item.proteinQuality
         || item.foodSnapshot?.proteinQuality
         || item.food?.proteinQuality
         || '',
@@ -60,9 +62,9 @@ function buildDefaultPreview(ingredients = []) {
     proteinText: formatPreviewNumber(nutrition.protein, 2),
     carbsText: formatPreviewNumber(nutrition.carbs, 2),
     fatText: formatPreviewNumber(nutrition.fat, 2),
-    premiumProteinText: formatPreviewNumber(premiumProtein, 2),
+    premiumProteinText: (premium.premiumProteinEstimated ? '约' : '') + formatPreviewNumber(premiumProtein, 2),
     premiumRatio,
-    showPremiumProtein: premiumProtein > 0
+    showPremiumProtein: premiumProtein > 0 || !!premium.premiumProteinEstimated
   };
 }
 

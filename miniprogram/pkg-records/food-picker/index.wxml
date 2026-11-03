@@ -75,6 +75,8 @@
         <view class="food-option-main">
           <view class="food-title-row">
             <text class="food-option-name">{{item.name}}</text>
+            <text class="protein-mixed-tag" wx:if="{{item.proteinQuality === 'mixed'}}" aria-label="混合蛋白">混</text>
+            <text class="protein-premium-tag" wx:elif="{{item.proteinQuality === 'premium'}}" aria-label="优质蛋白">优</text>
           </view>
           <view class="food-option-meta-row">
             <text class="food-option-energy">{{item.nutritionPerUnit.calories || 0}}</text>
@@ -113,7 +115,11 @@
       <view class="cart-detail-item" wx:for="{{selectedFoodCart}}" wx:key="_id">
         <image class="cart-detail-image" src="{{item.displayImage}}" mode="aspectFill" />
         <view class="cart-detail-main">
-          <text class="cart-detail-name">{{item.name}}</text>
+          <view class="cart-detail-title-row">
+            <text class="cart-detail-name">{{item.name}}</text>
+            <text class="protein-mixed-tag" wx:if="{{item.proteinQuality === 'mixed'}}" aria-label="混合蛋白">混</text>
+            <text class="protein-premium-tag" wx:elif="{{item.proteinQuality === 'premium'}}" aria-label="优质蛋白">优</text>
+          </view>
           <text class="cart-detail-meta">{{item.categoryLevel2 || item.category || '未分类'}} · {{item.nutritionPerUnit.calories || 0}}kcal / {{item.baseQuantity || 100}}{{item.baseUnit || 'g'}}</text>
         </view>
         <view class="cart-detail-remove" data-id="{{item._id}}" catchtap="removeFoodFromSelectionCart">移除</view>
@@ -176,6 +182,8 @@
         <view class="quantity-draft-header">
           <view class="quantity-draft-title-row">
             <text class="quantity-draft-name">{{item.name}}</text>
+            <text class="protein-mixed-tag" wx:if="{{item.isMixedProtein}}" aria-label="混合蛋白">混</text>
+            <text class="protein-premium-tag" wx:elif="{{item.isPremiumProtein}}" aria-label="优质蛋白">优</text>
             <text class="quantity-draft-source {{item.sourceLabel === '我的' ? 'mine' : ''}}">{{item.sourceLabel}}</text>
           </view>
         </view>

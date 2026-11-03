@@ -1,0 +1,14 @@
+<view class="protein-help-anchor">
+  <view class="protein-help-trigger {{disabled ? 'protein-help-disabled' : ''}}" catchtap="toggle" hover-class="protein-help-pressed" aria-role="button" aria-label="查看混合蛋白说明" aria-expanded="{{open}}" aria-disabled="{{disabled}}"><view class="protein-help-icon"><text class="protein-help-mark">?</text></view></view>
+</view>
+<root-portal wx:if="{{open}}" enable="{{true}}">
+  <view class="protein-help-layer" catchtouchmove="stopEvent">
+    <view class="protein-help-backdrop" catchtap="close" aria-role="button" aria-label="关闭混合蛋白说明"></view>
+    <view class="protein-help-popover {{positioned ? '' : 'protein-help-measuring'}}" style="left: {{left}}px; top: {{top}}px; width: {{width}}px; max-height: {{maxHeight}}px;" catchtap="stopEvent" aria-role="dialog" aria-label="混合蛋白说明">
+      <view class="protein-help-arrow protein-help-arrow-{{placement}}" style="left: {{arrowLeft}}px;"></view>
+      <view class="protein-help-heading"><text class="protein-help-title">什么是混合蛋白？</text><view class="protein-help-close" catchtap="close" hover-class="protein-help-pressed" aria-role="button" aria-label="关闭说明">×</view></view>
+      <text class="protein-help-copy">同一食品含优质和普通蛋白来源，如鸡肉＋小麦粉。按优质成分用量估算，剩余蛋白按普通计算。</text>
+      <text class="protein-help-note">用量按每100g成品填写，优质蛋白统一按参考值估算。</text>
+    </view>
+  </view>
+</root-portal>

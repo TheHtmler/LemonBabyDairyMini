@@ -1,21 +1,26 @@
 'use strict';
+const { mixedPremiumRatio } = require('./proteinComposition');
+
+function hasMixedProtein(record = {}) {
+  return record.premiumProteinEstimated === true || record.proteinQuality === 'mixed'
+    || record.foodSnapshot?.proteinQuality === 'mixed' || record.food?.proteinQuality === 'mixed'
+    || (record.recipeSource?.ingredientsSnapshot || record.ingredientsSnapshot || []).some(hasMixedProtein);
+}
+
+function estimateFlag(value) { return value ? { premiumProteinEstimated: true } : {}; }
 function roundNumber(num, precision = 2) { if (isNaN(num)) return 0; const multiplier = Math.pow(10, precision); return Math.round(num * multiplier) / multiplier; }
 
 function summarizePremiumProteinFromIngredients(ingredients = []) {
   let premiumProtein = 0;
   let regularProtein = 0;
+  let estimated = false;
   (ingredients || []).forEach((item = {}) => {
+    estimated = estimated || hasMixedProtein(item);
     const natural = Number(item.nutrition?.naturalProtein) || 0;
     if (!(natural > 0)) return;
-    const quality = item.proteinQuality
-      || item.foodSnapshot?.proteinQuality
-      || item.food?.proteinQuality
-      || '';
-    if (quality === 'premium') {
-      premiumProtein += natural;
-    } else {
-      regularProtein += natural;
-    }
+    const split = resolveFoodIntakePremiumProteinSplit(item, natural);
+    premiumProtein += split.premiumProtein;
+    regularProtein += split.regularProtein;
   });
   premiumProtein = roundNumber(premiumProtein, 2);
   regularProtein = roundNumber(regularProtein, 2);
@@ -27,7 +32,8 @@ function summarizePremiumProteinFromIngredients(ingredients = []) {
     premiumProtein,
     regularProtein,
     naturalProtein,
-    premiumRatio
+    premiumRatio,
+    ...estimateFlag(estimated)
   };
 }
 
@@ -44,7 +50,8 @@ function scalePremiumProteinSummary(summary = {}, factor) {
     premiumProtein,
     regularProtein,
     naturalProtein,
-    premiumRatio
+    premiumRatio,
+    ...estimateFlag(summary.premiumProteinEstimated)
   };
 }
 
@@ -55,7 +62,9 @@ function resolveDayPremiumProteinBase(summary = {}) {
   const foodPremium = Number(summary.food?.premiumProtein) || 0;
   return {
     naturalProtein: roundNumber(milkNatural + foodNatural, 2),
-    premiumProtein: roundNumber(milkNatural + foodPremium, 2)
+    premiumProtein: roundNumber(milkNatural + foodPremium, 2),
+    ...estimateFlag(summary.food?.premiumProteinEstimated),
+    ...(summary.food?.premiumProteinEstimated ? { premiumProteinEstimateCount: Number(summary.food.premiumProteinEstimateCount) || 1 } : {})
   };
 }
 
@@ -105,7 +114,7 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
   );
 
   if (!(naturalProtein > 0)) {
-    return { premiumProtein: 0, regularProtein: 0, premiumRatio: 0 };
+    return { premiumProtein: 0, regularProtein: 0, premiumRatio: 0, ...estimateFlag(hasMixedProtein(record)) };
   }
 
   if (isRecipeIntakeRecord(record)) {
@@ -125,13 +134,20 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
         return {
           premiumProtein,
           regularProtein,
-          premiumRatio: resolvePremiumProteinRatio(premiumProtein, naturalProtein)
+          premiumRatio: resolvePremiumProteinRatio(premiumProtein, naturalProtein),
+          ...estimateFlag(batch.premiumProteinEstimated)
         };
       }
     }
   }
 
-  const quality = record.proteinQuality || record.foodSnapshot?.proteinQuality || '';
+  const quality = record.foodSnapshot?.proteinQuality || record.proteinQuality || record.food?.proteinQuality || '';
+  if (quality === 'mixed') {
+    const food = { ...(record.food || {}), ...record, ...(record.foodSnapshot || {}) };
+    const premiumProtein = roundNumber(naturalProtein * mixedPremiumRatio(food), 2);
+    return { premiumProtein, regularProtein: roundNumber(naturalProtein - premiumProtein, 2),
+      premiumRatio: resolvePremiumProteinRatio(premiumProtein, naturalProtein), premiumProteinEstimated: true };
+  }
   if (quality === 'premium') {
     return {
       premiumProtein: roundNumber(naturalProtein, 2),
@@ -145,4 +161,4 @@ function resolveFoodIntakePremiumProteinSplit(record = {}, naturalProteinInput) 
     premiumRatio: 0
   };
 }
-module.exports = { summarizePremiumProteinFromIngredients, scalePremiumProteinSummary, resolveDayPremiumProteinBase, isRecipeIntakeRecord, resolvePremiumProteinRatio, resolveFoodIntakePremiumProteinSplit };
+module.exports = { hasMixedProtein, summarizePremiumProteinFromIngredients, scalePremiumProteinSummary, resolveDayPremiumProteinBase, isRecipeIntakeRecord, resolvePremiumProteinRatio, resolveFoodIntakePremiumProteinSplit };

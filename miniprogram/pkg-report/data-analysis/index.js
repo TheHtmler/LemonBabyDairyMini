@@ -130,6 +130,7 @@ function buildProteinAmountRows({
   avgTotalProtein = 0,
   avgNaturalProtein = 0,
   avgPremiumProtein = 0,
+  premiumProteinEstimated = false,
   avgSpecialProtein = 0
 } = {}) {
   const total = roundNumber(Number(avgTotalProtein) || 0, 2);
@@ -154,7 +155,7 @@ function buildProteinAmountRows({
       ratioText: `${formatProteinAmountDisplay(naturalRatio, 1)}%`,
       nested: {
         label: '优质蛋白',
-        gramsText: `${formatProteinAmountDisplay(premium)}g`,
+        gramsText: `${premiumProteinEstimated ? '约' : ''}${formatProteinAmountDisplay(premium)}g`,
         ratioText: `${formatProteinAmountDisplay(premiumRatio, 1)}%`
       }
     },
@@ -383,6 +384,7 @@ function buildAnalysisSummaryFromDailySummary(summary = {}) {
       (Number(milk.specialProtein) || 0) + (Number(food.specialProtein) || 0)
     ), 2),
     premiumProtein: roundNumber(milkNaturalProtein + foodPremiumProtein, 2),
+    premiumProteinEstimated: !!food.premiumProteinEstimated,
     regularProtein: roundNumber(regularProtein, 2),
     carbs: roundNumber(Number(macro.carbs) || (
       (Number(milk.carbs) || 0) + (Number(food.carbs) || 0) + (Number(treatment.carbs) || 0)
@@ -1623,6 +1625,7 @@ Page({
     let totalPremiumProteinRatio = 0;
     let totalRegularProteinRatio = 0;
     let totalPremiumProtein = 0;
+    let premiumProteinEstimated = false;
     let totalRegularProtein = 0;
     let totalNaturalProteinGrams = 0;
     let totalSpecialProteinGrams = 0;
@@ -1741,6 +1744,7 @@ Page({
           totalNaturalProteinGrams += dayNaturalProteinGrams;
           totalSpecialProteinGrams += daySpecialProteinGrams;
           totalPremiumProtein += Number(summary.premiumProtein) || 0;
+          premiumProteinEstimated = premiumProteinEstimated || !!summary.premiumProteinEstimated;
           proteinAmountDays++;
         }
 
@@ -1824,7 +1828,8 @@ Page({
       avgTotalProtein,
       avgNaturalProtein,
       avgPremiumProtein,
-      avgSpecialProtein: avgSpecialProteinAmount
+      avgSpecialProtein: avgSpecialProteinAmount,
+      premiumProteinEstimated
     });
     const avgProteinEnergyRatio = macroRatioDays > 0
       ? roundNumber(totalProteinEnergyRatio / macroRatioDays, 1)
@@ -1988,6 +1993,7 @@ Page({
         } else {
           const qualitySplit = resolveFoodIntakePremiumProteinSplit(intake, naturalProtein);
           summary.premiumProtein += Number(qualitySplit.premiumProtein) || 0;
+          if (qualitySplit.premiumProteinEstimated) summary.premiumProteinEstimated = true;
           summary.regularProtein += Number(qualitySplit.regularProtein) || 0;
         }
       }

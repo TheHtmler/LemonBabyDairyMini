@@ -1,0 +1,53 @@
+<view class="pc-editor">
+  <view class="pc-header"><text class="pc-title">优质蛋白成分</text><text class="pc-basis">每100g成品</text></view>
+
+  <view class="pc-table">
+    <view class="pc-table-head"><text class="pc-col-name">优质成份</text><text class="pc-col-amount">含量占比</text><text class="pc-col-protein">每100g蛋白含量</text><view class="pc-col-action" aria-hidden="{{true}}"></view></view>
+    <view class="pc-table-row" wx:for="{{rows}}" wx:key="rowKey">
+      <view class="pc-col-name">
+        <view class="pc-control {{disabled ? 'pc-control-disabled' : ''}}"><view class="pc-input-body"><input class="pc-input pc-name-input" value="{{item.name}}" maxlength="80" placeholder="名称" placeholder-class="pc-placeholder" cursor-spacing="24" data-index="{{index}}" data-field="name" bindinput="editRow" disabled="{{disabled}}" aria-label="第{{index + 1}}行优质成分" /></view></view>
+      </view>
+      <view class="pc-col-amount">
+        <view class="pc-control {{disabled ? 'pc-control-disabled' : ''}}">
+          <text class="pc-amount-prefix">约</text>
+          <view class="pc-input-body"><input class="pc-input pc-number-input" type="digit" value="{{item.amount.value}}" placeholder="含量" placeholder-class="pc-placeholder" cursor-spacing="24" data-index="{{index}}" data-field="amount.value" bindinput="editRow" disabled="{{disabled}}" aria-label="第{{index + 1}}行成分估算含量" /></view>
+          <picker mode="selector" class="pc-unit-picker" range="{{units}}" value="{{item.unitIndex}}" data-index="{{index}}" data-field="unit" bindchange="editRow" disabled="{{disabled}}" aria-label="第{{index + 1}}行含量单位"><view class="pc-picker-face form-picker-face {{disabled ? 'form-picker-disabled' : ''}}" hover-class="{{disabled ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="pc-picker-label form-picker-value">{{units[item.unitIndex]}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view></picker>
+        </view>
+      </view>
+      <view class="pc-col-protein">
+        <view class="pc-control {{disabled ? 'pc-control-disabled' : ''}}"><view class="pc-input-body"><input class="pc-input pc-number-input" type="digit" value="{{item.proteinPer100g}}" placeholder="蛋白" placeholder-class="pc-placeholder" cursor-spacing="24" data-index="{{index}}" data-field="proteinPer100g" bindinput="editRow" disabled="{{disabled}}" aria-label="第{{index + 1}}行成分每100g蛋白质" /></view><text class="pc-suffix">g</text></view>
+      </view>
+      <button class="pc-btn pc-remove {{disabled ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" data-index="{{index}}" bindtap="removeRow" disabled="{{disabled}}" aria-label="{{rows.length === 1 ? '清空' : '删除'}}第{{index + 1}}行成分">{{rows.length === 1 ? '清空' : '删除'}}</button>
+    </view>
+  </view>
+
+  <view class="pc-actions">
+    <button class="pc-btn pc-action-button pc-add-library {{disabled || !canChooseFood ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" bindtap="openLibrary" disabled="{{disabled || !canChooseFood}}"><text class="pc-action-label">从已有食物添加</text></button>
+    <button class="pc-btn pc-action-button pc-add-manual {{disabled || !canAddRow ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" bindtap="addManual" disabled="{{disabled || !canAddRow}}"><text class="pc-action-label">自定义添加</text></button>
+  </view>
+  <view class="pc-preview" wx:if="{{preview}}"><text class="pc-preview-label">优质蛋白估算</text><text class="pc-preview-value">{{preview}}</text></view>
+  <view class="pc-error" wx:if="{{error}}" role="alert"><text class="pc-error-copy">{{error}}</text></view>
+</view>
+
+<root-portal wx:if="{{libraryOpen}}" enable="{{true}}">
+  <view class="pc-library-layer">
+    <view class="pc-library-mask" catchtap="closeLibrary" catchtouchmove="stopEvent" aria-role="button" aria-label="关闭食物选择"></view>
+    <view class="pc-library-sheet" style="bottom: {{libraryKeyboardHeight}}px; max-height: calc(100vh - {{libraryKeyboardHeight}}px - 32rpx);" catchtap="stopEvent" aria-role="dialog" aria-label="选择优质蛋白食物" aria-modal="true">
+      <view class="pc-library-header"><view class="pc-library-heading"><text class="pc-library-title">选择优质成分</text><text class="pc-library-subtitle">仅显示优质蛋白食物</text></view><view class="pc-library-close" catchtap="closeLibrary" hover-class="pc-pressed" aria-role="button" aria-label="关闭食物选择">×</view></view>
+      <view class="pc-tabs">
+        <button class="pc-btn pc-tab {{libraryScope === 'mine' ? 'pc-tab-selected' : ''}} {{disabled ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" data-scope="mine" bindtap="changeScope" disabled="{{disabled}}">我的食物</button>
+        <button class="pc-btn pc-tab pc-tab-second {{libraryScope === 'system' ? 'pc-tab-selected' : ''}} {{disabled ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" data-scope="system" bindtap="changeScope" disabled="{{disabled}}">系统食物</button>
+      </view>
+      <view class="pc-control pc-search-control"><view class="pc-input-body"><input class="pc-input pc-search-input" value="{{query}}" placeholder="搜索名称、分类或别名" placeholder-class="pc-placeholder" adjust-position="{{false}}" bindkeyboardheightchange="onLibraryKeyboardHeight" cursor-spacing="24" bindinput="searchLibrary" disabled="{{disabled}}" aria-label="搜索优质蛋白食物" /></view></view>
+      <view class="pc-library-results">
+        <view class="pc-library-state" wx:if="{{libraryLoading}}"><text class="pc-state-copy">正在加载食物库…</text></view>
+        <view class="pc-library-state" wx:elif="{{libraryError}}"><text class="pc-error-copy">{{libraryError}}</text><button class="pc-btn pc-retry {{disabled ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" bindtap="loadLibrary" disabled="{{disabled}}">重新加载</button></view>
+        <scroll-view wx:else scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}" class="pc-candidate-list" lower-threshold="48" bindscrolltolower="moreCandidates">
+          <button class="pc-btn pc-candidate {{disabled ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" wx:for="{{candidates}}" wx:key="id" data-index="{{index}}" bindtap="selectFood" disabled="{{disabled}}" aria-label="选择{{item.name}}"><view class="pc-candidate-copy"><text class="pc-candidate-name">{{item.name}}</text><text class="pc-candidate-detail">蛋白 {{item.proteinText}}g / 100g</text></view><text class="pc-candidate-add">＋</text></button>
+          <view class="pc-library-empty" wx:if="{{!candidateCount}}"><text class="pc-state-copy">暂无匹配的优质食物</text><text class="pc-state-hint">可切换食物库，或关闭后手动填写。</text></view>
+          <button class="pc-btn pc-more {{disabled ? 'pc-btn-disabled' : ''}}" hover-class="pc-pressed" wx:if="{{candidateCount > candidates.length}}" bindtap="moreCandidates" disabled="{{disabled}}">加载更多 · 共{{candidateCount}}种</button>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</root-portal>

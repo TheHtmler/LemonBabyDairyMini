@@ -1,4 +1,5 @@
 'use strict';
+const { validateProteinComposition } = require('./lib/proteinComposition');
 const { fail, text, number } = require('./lib/core/contracts');
 const { getDocument, hash } = require('./lib/core/server');
 const { normalizeLegacyProfileSeed } = require('./lib/core/profile');
@@ -38,7 +39,7 @@ async function saveFood(tx, session, event, patch, meta, now) {
   const category = text(form.category, 80);
   if (!category || !['natural', 'special'].includes(form.proteinSource)) fail('VALIDATION_FAILED', '请确认分类与蛋白来源');
   const quality = form.proteinSource === 'natural' ? form.proteinQuality : '';
-  if (form.proteinSource === 'natural' && !['premium', 'regular'].includes(quality)) fail('VALIDATION_FAILED', '请确认蛋白质量类型');
+  if (form.proteinSource === 'natural' && !['premium', 'regular', 'mixed'].includes(quality)) fail('VALIDATION_FAILED', '请确认蛋白质量类型');
   const nutrition = {};
   ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].forEach(field => { nutrition[field] = number(patch[field]); });
   const submittedImages = form.images === undefined ? (form.image ? [form.image] : []) : form.images;
@@ -59,6 +60,8 @@ async function saveFood(tx, session, event, patch, meta, now) {
     version: Number(current && current.version || 0) + 1,
     createdBy: current && current.createdBy || session.ownerOpenid,
     createdAt: current && current.createdAt || now, updatedAt: now };
+  try { data.proteinComposition = validateProteinComposition({ ...data, proteinComposition: form.proteinComposition }); }
+  catch (error) { fail('VALIDATION_FAILED', error.message); }
   if (source) {
     data.sourceSystemFoodId = source._id;
     data.sourceFoodCode = source.sourceFoodCode || (source.origin || {}).foodCode || '';

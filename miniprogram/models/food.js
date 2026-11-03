@@ -1,3 +1,4 @@
+const { normalizeProteinComposition, validateProteinComposition } = require('../utils/search-core/proteinComposition');
 const { invalidateSearchForBaby } = require('../utils/searchSession');
 // 食物数据模型，支持自定义食物库与营养计算
 const SystemFoodIndex = require('../utils/systemFoodIndex');
@@ -482,6 +483,7 @@ class FoodModel {
       updatedAt: foodData.updatedAt
     };
 
+    payload.proteinComposition = validateProteinComposition(payload);
     delete payload.nutritionPerUnit;
     delete payload.nutritionPer100g;
     delete payload.baseQuantity;
@@ -518,6 +520,7 @@ class FoodModel {
       proteinSource: formatted.proteinSource || 'natural',
       proteinSplit: formatted.proteinSplit || null,
       proteinQuality: formatted.proteinQuality || '',
+      proteinComposition: normalizeProteinComposition(formatted.proteinComposition),
       sourceType: formatted.sourceType || '',
       libraryScope: formatted.libraryScope || (formatted.isSystem ? 'system' : 'mine'),
       sourceSystemFoodId: formatted.sourceSystemFoodId || '',

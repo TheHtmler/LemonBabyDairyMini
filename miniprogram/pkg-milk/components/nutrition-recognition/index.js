@@ -5,7 +5,7 @@ const { isBlank, FIELD_NAMES } = require('../../../utils/nutritionComparison');
 const { createRequestId, callNutritionFunction, chooseRecognitionImages, uploadRecognitionImages, uploadFoodImages, confirmWithRecovery, pendingConfirmation, recoverConfirmation } = require('../../../utils/nutritionRecognition');
 const { invalidateSearchForBaby, currentContext } = require('../../../utils/searchSession');
 const { createDialogState, formKey, targetBasis, clearProposals, editNutrition, buildRows, validateDialog, resultPatch,
-  getEstimateEligibility, labelFillWarning, getIdentityRequirement, invalidateIdentityConfirmation } = require('./dialogState');
+  getEstimateEligibility, labelFillWarning, getIdentityRequirement, invalidateIdentityConfirmation, setProteinType } = require('./dialogState');
 const { runWorkflow, providerName } = require('./workflow');
 const { buildProgressView } = require('./progressView');
 const { buildPreviewView, buildDuplicateComparison } = require('./evidenceView');
@@ -249,7 +249,7 @@ Component({
           identity: { name: item.identity.name }, source: { provider: providerName(item.source.provider) } })),
         needIdentity: state.needIdentity, needReference: state.status === 'reference',
         canUse: !this.data.busy && !state.pendingSave && !state.identityDeferred &&
-          !(identitySafety && identitySafety.required) && (previewOnly ? !!state.result && !state.needType && !state.needIdentity && state.status !== 'failed' : missing.length === 0),
+          !(identitySafety && identitySafety.required) && (previewOnly ? !!state.result && !state.needType && !state.needIdentity && state.status !== 'failed' : missing.every(label => label.startsWith('混合成分：'))),
         error: previewOnly && !state.result && state.status === 'failed' ? '未识别成功，请重拍或重试' : state.error || '' }, () => {
         // 等缺项提示和提交蒙层更新到界面后，再定位到实际表单项。
         if (scrollTarget && this._pending === state && this.isCurrentState(state) && state.validationField === scrollTarget) {
@@ -318,6 +318,13 @@ Component({
     focusMissing(missing) {
       const state = this._pending; if (!state || !missing.length) return;
       const label = missing[0];
+      if (label.startsWith('混合成分：')) {
+        const message = label.slice(5);
+        state.error = '';
+        this.selectComponent('#proteinCompositionEditor')?.showValidationError(message);
+        wx.showToast({ title: message, icon: 'none' });
+        this.renderDialog(); return;
+      }
       const field = FIELDS.find(key => FIELD_NAMES[key] === label || FIELD_NAMES[key] + '格式' === label || FIELD_NAMES[key] + '待核对' === label) ||
         ({ 名称: 'name', 具体种类名称: 'name', 分类: 'category', 选择或创建本地分类: 'category', 记录单位: 'unit',
           营养基准份量: 'baseQuantity', 蛋白来源: 'proteinTypeIndex', 粉量: 'ratioPowder', 水量: 'ratioWater' })[label] || 'name';
@@ -327,6 +334,12 @@ Component({
         ratioWater: '请填写大于 0 的水量' })[field] || (label.endsWith('待核对') ? '请对照包装核对该数值' : '请填写有效的' + FIELD_NAMES[field] + '数值');
       state.error = ''; state.scrollToMissing = true;
       wx.hideKeyboard(); this.renderDialog();
+    },
+    onProteinCompositionChange(event) {
+      const state = this._pending;
+      if (!state || this.data.busy || state.pendingSave) return;
+      state.values.proteinComposition = event.detail.value; state.dirty = true;
+      this.renderDialog();
     },
     onDialogInput(e) {
       const state = this._pending;
@@ -379,7 +392,7 @@ Component({
       const state = this._pending; const previous = state.proteinOptions[state.values.proteinTypeIndex];
       state.dirty = true;
       const next = state.proteinOptions[item.index];
-      state.values.proteinTypeIndex = item.index; state.proteinManual = true;
+      setProteinType(state, item.index); state.proteinManual = true;
       if (previous && previous.value === 'special' || next && next.value === 'special') clearProposals(state);
       this.renderDialog();
       if (this._pending.result && !state.saveFormOpen) await this.runPending();
@@ -390,7 +403,7 @@ Component({
       state.dirty = true;
       const previous = state.proteinOptions[state.values.proteinTypeIndex];
       const next = state.proteinOptions[state.proteinSuggestion.index];
-      state.values.proteinTypeIndex = state.proteinSuggestion.index; state.proteinManual = true;
+      setProteinType(state, state.proteinSuggestion.index); state.proteinManual = true;
       if (previous && previous.value === 'special' || next && next.value === 'special') clearProposals(state);
       this.renderDialog();
       if (state.result && !state.saveFormOpen) await this.runPending();
@@ -730,6 +743,7 @@ Component({
         const protein = state.proteinOptions[state.values.proteinTypeIndex] || {};
         const form = { name: state.values.name, category: state.values.category, categoryLevel2: state.values.categoryLevel2 || '',
           proteinSource: protein.value || '', proteinQuality: protein.quality || '',
+          proteinComposition: protein.quality === 'mixed' ? state.values.proteinComposition : null,
           mixRatio: { powder: state.values.ratioPowder, water: state.values.ratioWater } };
         const decisions = buildRows(state).filter(row => !isBlank(row.value))
           .map(row => ({ path: row.path, source: row.source || 'manual', value: row.value }));

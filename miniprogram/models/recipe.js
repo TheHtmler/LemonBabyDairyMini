@@ -1,3 +1,4 @@
+const { normalizeProteinComposition } = require('../utils/search-core/proteinComposition');
 const { invalidateSearchForBaby } = require('../utils/searchSession');
 /**
  * 食谱目录数据模型
@@ -81,6 +82,7 @@ function sanitizeFoodSnapshot(snapshot = {}) {
     proteinSource: snapshot.proteinSource || 'natural',
     proteinSplit: snapshot.proteinSplit || null,
     proteinQuality: snapshot.proteinQuality || '',
+    proteinComposition: normalizeProteinComposition(snapshot.proteinComposition),
     sourceType: snapshot.sourceType || '',
     libraryScope: snapshot.libraryScope || '',
     sourceSystemFoodId: snapshot.sourceSystemFoodId || '',
@@ -221,7 +223,9 @@ class RecipeModel {
       const foodName = item.foodName || food?.name || item.foodSnapshot?.name || '';
       let foodSnapshot = item.foodSnapshot;
 
-      if (food) {
+      const preserveMixedSnapshot = !!foodSnapshot?.nutritionPerBasis &&
+        (foodSnapshot.proteinQuality === 'mixed' || food?.proteinQuality === 'mixed');
+      if (food && !preserveMixedSnapshot) {
         foodSnapshot = FoodModel.buildFoodSnapshot(food);
       } else if (!foodSnapshot || !foodSnapshot.name) {
         throw new Error(`缺少原料「${foodName || index + 1}」的食物信息`);
@@ -229,7 +233,7 @@ class RecipeModel {
 
       const quantity = Math.max(0, toNumber(item.quantity, 0));
       const unit = item.unit || food?.baseUnit || foodSnapshot?.nutritionBasis?.unit || 'g';
-      const source = food || foodSnapshot;
+      const source = preserveMixedSnapshot ? foodSnapshot : food || foodSnapshot;
       const nutrition = quantity > 0
         ? buildIngredientNutrition(source, quantity)
         : emptyNutrition();
@@ -240,8 +244,8 @@ class RecipeModel {
         quantity,
         unit,
         sortOrder: item.sortOrder,
-        proteinQuality: item.proteinQuality
-          || food?.proteinQuality
+        proteinQuality: source.proteinQuality
+          || item.proteinQuality
           || foodSnapshot?.proteinQuality
           || '',
         foodSnapshot,

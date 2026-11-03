@@ -1,1 +1,7 @@
-{ "component": true }
+{
+  "component": true,
+  "usingComponents": {
+    "protein-composition-editor": "/components/protein-composition-editor/index",
+    "protein-help-popover": "/components/protein-help-popover/index"
+  }
+}

@@ -101,7 +101,8 @@ function slimFoodSnapshot(snapshot = {}) {
     nutritionPerBasis: snapshot.nutritionPerBasis || {},
     proteinSource: snapshot.proteinSource || 'natural',
     proteinSplit: snapshot.proteinSplit || null,
-    proteinQuality: snapshot.proteinQuality || ''
+    proteinQuality: snapshot.proteinQuality || '',
+    proteinComposition: snapshot.proteinComposition || null
   };
 }
 
@@ -237,6 +238,7 @@ Page({
         naturalProtein: nutrition.naturalProtein,
         specialProtein: nutrition.specialProtein,
         premiumProtein: nutrition.premiumProtein,
+        premiumProteinEstimated: !!nutrition.premiumProteinEstimated,
         carbs: nutrition.carbs,
         fat: nutrition.fat
       })
@@ -288,6 +290,7 @@ Page({
   },
 
   getIngredientSource(ingredient = {}) {
+    if (ingredient.foodSnapshot?.proteinQuality === 'mixed') return ingredient.foodSnapshot;
     return this.foodById.get(ingredient.foodId)
       || ingredient.foodSnapshot
       || null;
@@ -357,7 +360,7 @@ Page({
         || item.unit
         || snapshot.nutritionBasis?.unit
         || 'g';
-      const source = food || snapshot;
+      const source = snapshot.proteinQuality === 'mixed' ? snapshot : food || snapshot;
       const per100 = buildPer100Display(source, unit);
       const editQuantity = Number(editIngredient?.quantity);
       const defaultQuantity = editQuantity > 0
@@ -735,9 +738,9 @@ Page({
         totalCalories: formatNumber(summary.totalNutrition.calories, 0),
         totalCarbs: formatNumber(summary.totalNutrition.carbs, 0),
         totalFat: formatNumber(summary.totalNutrition.fat, 0),
-        premiumProteinText: formatNumber(premiumProtein),
+        premiumProteinText: (premium.premiumProteinEstimated ? '约' : '') + formatNumber(premiumProtein),
         premiumRatio,
-        showPremiumProtein: premiumProtein > 0,
+        showPremiumProtein: premiumProtein > 0 || !!premium.premiumProteinEstimated,
         canUseGramsIntake: summary.canUseGramsIntake
       }
     }, () => this.refreshIntakePreview());
@@ -815,14 +818,15 @@ Page({
           fat: formatNumber(intake.nutrition.fat, 0),
           eatenGText: intake.eatenG > 0 ? `${formatNumber(intake.eatenG, 1)}g` : '',
           showPremium: naturalProtein > 0 || premiumSummary.premiumProtein > 0,
-          premiumValue: formatNumber(premiumSummary.premiumProtein),
+          premiumValue: (premiumSummary.premiumProteinEstimated ? '约' : '') + formatNumber(premiumSummary.premiumProtein),
           premiumRatio: Number(premiumSummary.premiumRatio) || 0,
           showDayPremiumRatio: dayCombined.naturalProtein > 0,
           dayPremiumRatio: dayCombined.premiumRatio
         },
         intakeTargetPreview: this.buildIntakeTargetPreview({
           ...intake.nutrition,
-          premiumProtein: premiumSummary.premiumProtein
+          premiumProtein: premiumSummary.premiumProtein,
+          premiumProteinEstimated: !!premiumSummary.premiumProteinEstimated
         })
       });
     } catch (error) {

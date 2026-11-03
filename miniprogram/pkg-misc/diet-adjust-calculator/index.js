@@ -1,3 +1,4 @@
+const { mixedPremiumRatio } = require('../../utils/search-core/proteinComposition');
 const MilkNutritionProfileModel = require('../../models/nutritionProfile');
 const FoodModel = require('../../models/food');
 const FeedingRecordV2Model = require('../../models/feedingRecordV2');
@@ -202,7 +203,9 @@ Page({
           selected: false,
           sharePercent: 0,
           food,
-          premiumProteinPerUnit: food.proteinQuality === 'premium' ? density.proteinPerUnit : 0,
+          premiumProteinPerUnit: food.proteinSource === 'special' ? 0
+            : food.proteinQuality === 'mixed' ? density.proteinPerUnit * mixedPremiumRatio(food)
+              : food.proteinQuality === 'premium' ? density.proteinPerUnit : 0,
           ...density
         };
       });

@@ -1,0 +1,24 @@
+/* 蛋白质量标识在食物库、选择列表和摄入记录中保持一致。 */
+.protein-mixed-tag,
+.protein-premium-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.protein-mixed-tag {
+  background: #fff0d1;
+  color: #946014;
+}
+
+.protein-premium-tag {
+  background: #e7f3e8;
+  color: #39764a;
+}

@@ -886,6 +886,8 @@ Page({
           foodId: food._id,
           name: food.name,
           sourceLabel: food.sourceLabel,
+          isMixedProtein: food.proteinQuality === 'mixed',
+          isPremiumProtein: food.proteinQuality === 'premium',
           quantity: quantityText,
           initialQuantity: !isNaN(quantity) && quantity > 0 ? quantity : '',
           placeholder: !isNaN(quantity) && quantity > 0 ? `当前 ${quantity}` : '请输入',
@@ -1019,9 +1021,7 @@ Page({
         },
         proteinSource,
         proteinQuality: food.proteinQuality || '',
-        foodSnapshot: {
-          proteinQuality: food.proteinQuality || ''
-        },
+        foodSnapshot: FoodModel.buildFoodSnapshot(food),
         naturalProtein,
         specialProtein
       });

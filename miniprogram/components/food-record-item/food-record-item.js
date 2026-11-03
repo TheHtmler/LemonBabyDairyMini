@@ -1,5 +1,6 @@
 const {
-  resolveFoodIntakePremiumProteinSplit
+  resolveFoodIntakePremiumProteinSplit,
+  isRecipeIntakeRecord
 } = require('../../utils/recipeNutritionUtils');
 
 function resolveSourceTag(record = {}) {
@@ -63,6 +64,8 @@ Component({
     nameText: '',
     quantityText: '',
     metricItems: [],
+    isMixedProtein: false,
+    isPremiumProtein: false,
     sourceTag: '',
     sourceTagClass: ''
   },
@@ -91,12 +94,18 @@ Component({
       const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
       const premiumProtein = Number(qualitySplit.premiumProtein) || 0;
       const premiumRatio = Number(qualitySplit.premiumRatio) || 0;
+      // 普通记录优先使用当时的质量快照，食谱沿用原料快照的混合标记。
+      const proteinQuality = record.foodSnapshot?.proteinQuality || record.proteinQuality || record.food?.proteinQuality || '';
+      const isMixedProtein = isRecipeIntakeRecord(record)
+        ? !!qualitySplit.premiumProteinEstimated
+        : proteinQuality === 'mixed';
+      const isPremiumProtein = !isMixedProtein && proteinQuality === 'premium';
 
       const proteinText = `蛋白 ${this.formatProteinText(nutrition.protein)}g`;
       const metricItems = [
         `${nutrition.calories || 0} kcal`,
-        premiumProtein > 0
-          ? `${proteinText}（含优质蛋白 ${this.formatProteinText(premiumProtein)}g · ${premiumRatio}%）`
+        premiumProtein > 0 || qualitySplit.premiumProteinEstimated
+          ? `${proteinText}（含优质蛋白 ${qualitySplit.premiumProteinEstimated ? '约' : ''}${this.formatProteinText(premiumProtein)}g · ${premiumRatio}%）`
           : proteinText,
         `碳水 ${nutrition.carbs || 0}g`,
         `脂肪 ${nutrition.fat || 0}g`
@@ -107,6 +116,8 @@ Component({
         nameText,
         quantityText: `${quantity}${unit}`,
         metricItems,
+        isMixedProtein,
+        isPremiumProtein,
         sourceTag,
         sourceTagClass
       });

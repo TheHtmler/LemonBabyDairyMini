@@ -2,6 +2,8 @@
   <view class="food-header">
     <view class="food-name-wrap">
       <text class="food-name">{{nameText}}</text>
+      <text class="protein-mixed-tag" wx:if="{{isMixedProtein}}" aria-label="混合蛋白">混</text>
+      <text class="protein-premium-tag" wx:elif="{{isPremiumProtein}}" aria-label="优质蛋白">优</text>
       <text class="food-source-tag {{sourceTagClass}}" wx:if="{{sourceTag}}">{{sourceTag}}</text>
     </view>
     <text class="food-quantity" wx:if="{{quantityText}}">{{quantityText}}</text>

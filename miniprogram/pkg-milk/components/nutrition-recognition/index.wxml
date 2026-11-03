@@ -123,7 +123,7 @@
             </view>
             <view class="preview-correction" wx:if="{{needIdentity && !identityDeferred && (!identityReview || identityEditorOpen)}}">
               <input class="input" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.name}}" placeholder="请输入具体食物名称" aria-label="具体食物名称" data-field="name" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" />
-              <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
+              <picker mode="selector" wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}} form-picker-face {{busy || pendingSave ? 'form-picker-disabled' : ''}}" hover-class="{{busy || pendingSave ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{identityPreparationItems[identityPreparationIndex]}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view></picker>
               <view class="choice-group"><button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy || pendingSave}}">候选：{{item.name}}</button><button class="text-button" catchtap="onContinueIdentity" disabled="{{busy || pendingSave}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button></view>
               <button wx:if="{{displayMode === 'food_object' && !identityReview}}" class="text-button" catchtap="onIdentityUnknown" disabled="{{busy || pendingSave}}">我也不确定</button>
             </view>
@@ -131,7 +131,7 @@
               <text class="preview-note">营养计量基准</text>
               <view class="preview-basis-fields">
                 <input class="input" type="digit" adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" cursor-spacing="24" value="{{values.baseQuantity}}" placeholder="基准份量" aria-label="营养基准份量" data-field="baseQuantity" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy || pendingSave}}" />
-                <picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy || pendingSave}}"><view class="picker-display">{{values.unit || '请选择单位'}}</view></picker>
+                <picker mode="selector" range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy || pendingSave}}"><view class="picker-display form-picker-face {{busy || pendingSave ? 'form-picker-disabled' : ''}}" hover-class="{{busy || pendingSave ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{values.unit || '请选择单位'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view></picker>
               </view>
             </view>
           </block>
@@ -148,7 +148,7 @@
                 <input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" value="{{values.name}}" placeholder="请输入名称" aria-label="名称" data-field="name" bindinput="onDialogInput" bindblur="onDialogBlur" disabled="{{busy || pendingSave}}" />
                 <text class="field-error" wx:if="{{invalidField === 'name'}}" role="alert">{{fieldError}}</text>
                 <view class="choice-group" wx:if="{{needIdentity}}">
-                  <picker wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}}">{{identityPreparationItems[identityPreparationIndex]}}</view></picker>
+                  <picker mode="selector" wx:if="{{needIdentityPreparation}}" class="identity-preparation-picker" range="{{identityPreparationItems}}" value="{{identityPreparationIndex}}" bindchange="onIdentityPreparationChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{identityPreparationIndex ? '' : 'placeholder'}} form-picker-face {{busy || pendingSave ? 'form-picker-disabled' : ''}}" hover-class="{{busy || pendingSave ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{identityPreparationItems[identityPreparationIndex]}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view></picker>
                   <button class="choice-button" wx:for="{{identityCandidates}}" wx:key="index" data-index="{{index}}" catchtap="onCandidate" disabled="{{busy || pendingSave}}">候选：{{item.name}}</button>
                   <button class="text-button" catchtap="onContinueIdentity" disabled="{{busy || pendingSave}}">{{needIdentityPreparation ? '确认名称与状态' : '确认名称'}}</button>
                 </view>
@@ -158,8 +158,8 @@
               <text class="form-label">分类</text>
               <view class="form-control form-control-stack">
                 <view class="category-picker-row">
-                  <picker class="field-picker" range="{{categoryItems}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange" disabled="{{busy || pendingSave}}">
-                    <view class="picker-display {{values.category ? '' : 'placeholder'}}"><text class="picker-text">{{categoryLabel || '请选择分类'}}</text><text class="picker-arrow">›</text></view>
+                  <picker mode="selector" class="field-picker" range="{{categoryItems}}" range-key="label" value="{{categoryIndex}}" bindchange="onCategoryChange" disabled="{{busy || pendingSave}}">
+                    <view class="picker-display {{values.category ? '' : 'placeholder'}} form-picker-face {{busy || pendingSave ? 'form-picker-disabled' : ''}}" hover-class="{{busy || pendingSave ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{categoryLabel || '请选择分类'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view>
                   </picker>
                   <button class="category-add-trigger" wx:if="{{purpose !== 'preview' && unmatchedCategory && displayMode !== 'powder_label'}}" catchtap="toggleCategoryCreate" disabled="{{busy || pendingSave}}">{{categoryCreateOpen ? '收起' : '新增'}}</button>
                 </view>
@@ -179,7 +179,7 @@
               </view>
               <view id="recognition-field-unit" class="form-item {{invalidField === 'unit' ? 'field-invalid' : ''}}" wx:if="{{displayMode !== 'powder_label'}}">
                 <text class="form-label">记录单位</text>
-                <view class="form-control"><picker range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{values.unit ? '' : 'placeholder'}}"><text class="picker-text">{{values.unit || '请选择单位'}}</text><text class="picker-arrow">›</text></view></picker><text class="field-error" wx:if="{{invalidField === 'unit'}}" role="alert">{{fieldError}}</text></view>
+                <view class="form-control"><picker mode="selector" range="{{unitItems}}" value="{{unitIndex}}" bindchange="onUnitChange" disabled="{{busy || pendingSave}}"><view class="picker-display {{values.unit ? '' : 'placeholder'}} form-picker-face {{busy || pendingSave ? 'form-picker-disabled' : ''}}" hover-class="{{busy || pendingSave ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{values.unit || '请选择单位'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view></picker><text class="field-error" wx:if="{{invalidField === 'unit'}}" role="alert">{{fieldError}}</text></view>
               </view>
               <view id="recognition-field-baseQuantity" class="form-item {{invalidField === 'baseQuantity' ? 'field-invalid' : ''}}" wx:if="{{displayMode !== 'powder_label'}}">
                 <text class="form-label">营养基准份量</text>
@@ -205,13 +205,17 @@
                 <view id="recognition-field-proteinTypeIndex" class="form-item {{invalidField === 'proteinTypeIndex' ? 'field-invalid' : ''}}" wx:if="{{item.path === 'protein' && displayMode !== 'powder_label'}}">
                   <text class="form-label">蛋白来源</text>
                   <view class="form-control form-control-stack">
-                    <picker range="{{proteinItems}}" range-key="label" value="{{proteinIndex}}" bindchange="onProteinChange" disabled="{{busy || pendingSave}}">
-                      <view class="picker-display {{values.proteinTypeIndex >= 0 ? '' : 'placeholder'}}"><text class="picker-text">{{values.proteinTypeIndex >= 0 ? proteinOptions[values.proteinTypeIndex].label : '请选择蛋白来源'}}</text><text class="picker-arrow">›</text></view>
-                    </picker>
+                    <view class="protein-picker-row">
+                      <picker mode="selector" class="protein-type-picker" range="{{proteinItems}}" range-key="label" value="{{proteinIndex}}" bindchange="onProteinChange" disabled="{{busy || pendingSave}}">
+                        <view class="picker-display protein-picker-display {{values.proteinTypeIndex >= 0 ? '' : 'placeholder'}} form-picker-face {{busy || pendingSave ? 'form-picker-disabled' : ''}}" hover-class="{{busy || pendingSave ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{values.proteinTypeIndex >= 0 ? proteinOptions[values.proteinTypeIndex].label : '请选择蛋白来源'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view>
+                      </picker>
+                      <view wx:if="{{values.proteinTypeIndex >= 0 && proteinOptions[values.proteinTypeIndex].quality === 'mixed'}}" class="protein-help-slot"><protein-help-popover disabled="{{busy || pendingSave}}" /></view>
+                    </view>
                     <text class="field-error" wx:if="{{invalidField === 'proteinTypeIndex'}}" role="alert">{{fieldError}}</text>
                     <button class="text-button special-confirm" wx:if="{{proteinSuggestionSpecial && proteinSuggestionIndex !== values.proteinTypeIndex}}" catchtap="onUseProteinSuggestion" disabled="{{busy || pendingSave}}">确认使用特殊蛋白</button>
                   </view>
                 </view>
+                <protein-composition-editor id="proteinCompositionEditor" wx:if="{{item.path === 'protein' && displayMode !== 'powder_label' && values.proteinTypeIndex >= 0 && proteinOptions[values.proteinTypeIndex].quality === 'mixed'}}" baby-uid="{{babyUid}}" value="{{values.proteinComposition}}" nutrition-basis="{{ {quantity: values.baseQuantity, unit: values.unit} }}" total-protein="{{values.protein}}" disabled="{{busy || pendingSave}}" bind:change="onProteinCompositionChange" />
               </block>
               <view wx:if="{{displayMode === 'powder_label'}}">
                 <view id="recognition-field-ratioPowder" class="form-item {{invalidField === 'ratioPowder' ? 'field-invalid' : ''}}"><text class="form-label">粉量 (g)</text><view class="form-control"><input adjust-position="{{false}}" bindkeyboardheightchange="onKeyboardHeight" bindconfirm="useResults" cursor-spacing="24" class="input" type="digit" value="{{values.ratioPowder}}" placeholder="必填" aria-label="奶粉粉量" data-field="ratioPowder" bindinput="onDialogInput" disabled="{{busy || pendingSave}}" /><text class="field-error" wx:if="{{invalidField === 'ratioPowder'}}" role="alert">{{fieldError}}</text></view></view>

@@ -107,7 +107,7 @@
                 </view>
                 <view class="nutrition-pill-source-row" wx:if="{{item.source || item.premiumRatio > 0}}">
                   <text class="nutrition-pill-source nutrition-pill-source-block" wx:if="{{item.source}}">{{item.source}}</text>
-                  <text class="nutrition-pill-source-accent" wx:if="{{item.premiumRatio > 0}}">优质蛋白 {{item.premiumValue}}g · {{item.premiumRatio}}%</text>
+                  <text class="nutrition-pill-source-accent" wx:if="{{item.premiumRatio > 0 || item.premiumProteinEstimated}}">优质蛋白 {{item.premiumValue}}g · {{item.premiumRatio}}%</text>
                 </view>
               </view>
             </view>

@@ -162,6 +162,7 @@ function roundFoodSummary(summary = {}) {
     naturalProtein: roundValue(summary.naturalProtein),
     specialProtein: roundValue(summary.specialProtein),
     premiumProtein: roundValue(summary.premiumProtein),
+    ...(summary.premiumProteinEstimated ? { premiumProteinEstimated: true, premiumProteinEstimateCount: Number(summary.premiumProteinEstimateCount) || 1 } : {}),
     regularProtein: roundValue(summary.regularProtein),
     fat: roundValue(summary.fat),
     carbs: roundValue(summary.carbs),
@@ -282,6 +283,10 @@ function mergeFoodNutrition(records = []) {
     summary.naturalProtein += naturalProtein;
     summary.specialProtein += toNumber(special);
     summary.premiumProtein += toNumber(qualitySplit.premiumProtein);
+    if (qualitySplit.premiumProteinEstimated) {
+      summary.premiumProteinEstimated = true;
+      summary.premiumProteinEstimateCount = (summary.premiumProteinEstimateCount || 0) + 1;
+    }
     summary.regularProtein += toNumber(qualitySplit.regularProtein);
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);

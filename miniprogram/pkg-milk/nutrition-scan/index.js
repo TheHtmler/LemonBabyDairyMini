@@ -17,7 +17,8 @@ Page({
     proteinOptions: [
       { label: '天然蛋白（优质）', value: 'natural', quality: 'premium' },
       { label: '天然蛋白（普通）', value: 'natural', quality: 'regular' },
-      { label: '特殊蛋白', value: 'special', quality: '' }
+      { label: '特殊蛋白', value: 'special', quality: '' },
+      { label: '天然蛋白（混合）', value: 'natural', quality: 'mixed' }
     ]
   },
   onLoad(options = {}) {

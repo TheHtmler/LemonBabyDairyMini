@@ -413,7 +413,8 @@ source: buildProteinBreakdownLine([
 { label: '食物', value: naturalFoodProtein }
 ]),
 premiumRatio: input.proteinSummaryDisplay?.premiumRatio || 0,
-premiumValue: formatTwoDecimals(input.proteinSummaryDisplay?.premium || 0),
+premiumProteinEstimated: !!input.proteinSummaryDisplay?.premiumProteinEstimated,
+premiumValue: (input.proteinSummaryDisplay?.premiumProteinEstimated ? '约' : '') + formatTwoDecimals(input.proteinSummaryDisplay?.premium || 0),
 detailLabel: '天然蛋白系数',
 detailValue: buildCoefficientParts(input.naturalProteinCoefficient).value,
 detailUnit: buildCoefficientParts(input.naturalProteinCoefficient).unit,

@@ -110,9 +110,9 @@ function withPremiumProteinDisplay(item = {}) {
   return {
     ...item,
     nutrition: withProteinNutritionDisplay(item.nutrition || {}),
-    premiumProteinText: formatProteinText(premiumProtein),
+    premiumProteinText: (split.premiumProteinEstimated ? '约' : '') + formatProteinText(premiumProtein),
     premiumRatio,
-    showPremiumProtein: premiumProtein > 0
+    showPremiumProtein: premiumProtein > 0 || !!split.premiumProteinEstimated
   };
 }
 
@@ -424,9 +424,9 @@ function calculateMealSummary(items = []) {
     protein: roundNumber(summary.protein, 2),
     proteinText: formatProteinText(summary.protein),
     premiumProtein: roundNumber(premiumProtein, 2),
-    premiumProteinText: formatProteinText(premiumProtein),
+    premiumProteinText: (premiumSummary.premiumProteinEstimated ? '约' : '') + formatProteinText(premiumProtein),
     premiumRatio,
-    showPremiumProtein: premiumProtein > 0,
+    showPremiumProtein: premiumProtein > 0 || !!premiumSummary.premiumProteinEstimated,
     carbs: roundNumber(summary.carbs, 2),
     fat: roundNumber(summary.fat, 2),
     fiber: summary.fiber === null ? null : roundNumber(summary.fiber, 2),
@@ -471,6 +471,7 @@ function resolveFoodForNutritionCalc(item = {}, catalogFood = null) {
       proteinSource: snapshot.proteinSource || item.proteinSource || 'natural',
       proteinQuality: snapshot.proteinQuality || item.proteinQuality || '',
       proteinSplit: snapshot.proteinSplit || null,
+    proteinComposition: snapshot.proteinComposition || item.proteinComposition || null,
       sourceType: snapshot.sourceType || item.sourceType || '',
       libraryScope: snapshot.libraryScope || item.libraryScope || ''
     };
@@ -491,7 +492,8 @@ function resolveFoodForNutritionCalc(item = {}, catalogFood = null) {
         || snapshotNutrition,
       proteinSource: base.proteinSource || snapshot.proteinSource || item.proteinSource || 'natural',
       proteinQuality: base.proteinQuality || snapshot.proteinQuality || item.proteinQuality || '',
-      proteinSplit: base.proteinSplit || snapshot.proteinSplit || null
+      proteinSplit: base.proteinSplit || snapshot.proteinSplit || null,
+      proteinComposition: base.proteinComposition || snapshot.proteinComposition || null
     };
   }
   return {
@@ -506,6 +508,7 @@ function resolveFoodForNutritionCalc(item = {}, catalogFood = null) {
     proteinSource: snapshot.proteinSource || item.proteinSource || 'natural',
     proteinQuality: snapshot.proteinQuality || item.proteinQuality || '',
     proteinSplit: snapshot.proteinSplit || null,
+    proteinComposition: snapshot.proteinComposition || item.proteinComposition || null,
     sourceType: item.sourceType || snapshot.sourceType || '',
     libraryScope: item.libraryScope || snapshot.libraryScope || ''
   };
@@ -1812,7 +1815,7 @@ Page({
           quantity: Number(intake.quantity) || 0,
           nutrition: withProteinNutritionDisplay(intake.nutrition || {}),
           proteinSource: snapshot.proteinSource || intake.proteinSource || food.proteinSource || 'natural',
-          proteinQuality: intake.proteinQuality || (catalogFood?.proteinQuality) || '',
+          proteinQuality: snapshot.proteinQuality || intake.proteinQuality || (catalogFood?.proteinQuality) || '',
           libraryScope,
           sourceLabel: intake.sourceLabel || this.getFoodSourceLabel({
             ...food,

@@ -38,6 +38,7 @@ const INDEX_FIELDS = {
   recognitionMeta: true,
   proteinSource: true,
   proteinQuality: true,
+  proteinComposition: true,
   alias: true,
   aliasText: true,
   origin: true
@@ -99,6 +100,7 @@ function toIndexItem(food = {}) {
     nutrientStates: indexNutrientStates(food, food.nutritionPerBasis || food.nutritionPerUnit || {}, nutritionBasis),
     proteinSource: food.proteinSource || 'natural',
     proteinQuality: food.proteinQuality || '',
+    proteinComposition: food.proteinComposition || null,
     aliasText: food.aliasText || (Array.isArray(food.alias) ? food.alias.join(' / ') : (food.alias || '')),
     searchText: buildSearchText(food)
   };

@@ -233,42 +233,23 @@ function resolveMealItemNaturalProtein(item = {}) {
 function summarizeMealItemsPremiumProtein(items = []) {
   let premiumProtein = 0;
   let naturalProtein = 0;
+  let premiumProteinEstimated = false;
   (items || []).forEach((item = {}) => {
     const natural = resolveMealItemNaturalProtein(item);
-    if (!(natural > 0)) return;
+    const record = { ...item,
+      recipeSource: item.recipeSource || ((item.recipeId || item.sourceType === 'recipe') ? {
+        recipeId: item.recipeId, ingredientsSnapshot: item.ingredientsSnapshot || []
+      } : undefined) };
+    const split = resolveFoodIntakePremiumProteinSplit(record, natural);
     naturalProtein += natural;
-
-    const isRecipe = item.sourceType === 'recipe' || !!item.recipeId || !!item.recipeSource;
-    if (isRecipe) {
-      const ingredients = item.ingredientsSnapshot
-        || item.recipeSource?.ingredientsSnapshot
-        || [];
-      const batchWeight = Number(
-        item.batchWeightG
-        || item.yieldWeightG
-        || item.recipeSource?.batchWeightG
-        || item.recipeSource?.yieldWeightG
-      ) || 0;
-      const eaten = Number(item.quantity) || 0;
-      if (ingredients.length && batchWeight > 0 && eaten > 0) {
-        const batchPremium = summarizePremiumProteinFromIngredients(ingredients);
-        premiumProtein += (batchPremium.premiumProtein * eaten) / batchWeight;
-      }
-      return;
-    }
-
-    const quality = item.proteinQuality || item.foodSnapshot?.proteinQuality || '';
-    if (quality === 'premium') {
-      premiumProtein += natural;
-    }
+    premiumProtein += split.premiumProtein;
+    premiumProteinEstimated = premiumProteinEstimated || !!split.premiumProteinEstimated;
   });
   const naturalRounded = roundNumber(naturalProtein, 2);
   const premiumRounded = roundNumber(premiumProtein, 2);
-  return {
-    premiumProtein: premiumRounded,
-    naturalProtein: naturalRounded,
-    premiumRatio: resolvePremiumProteinRatio(premiumRounded, naturalRounded)
-  };
+  return { premiumProtein: premiumRounded, naturalProtein: naturalRounded,
+    premiumRatio: resolvePremiumProteinRatio(premiumRounded, naturalRounded),
+    ...(premiumProteinEstimated ? { premiumProteinEstimated: true } : {}) };
 }
 
 /**

@@ -25,6 +25,9 @@ for (const file of ['dailySummaryV2Utils.js', 'feedingRecordV2Utils.js', 'formul
   const body = fs.readFileSync(path.join(root, 'miniprogram/utils', file), 'utf8').replace(/require\('\.\/search-core\//g, "require('../search/");
   writeGenerated('cloudfunctions/searchManager/lib/intake/' + file, body);
 }
+for (const file of ['recipeProtein.js', 'proteinComposition.js']) {
+  writeGenerated('cloudfunctions/rebuildDailySummaryV2/lib/search/' + file, fs.readFileSync(path.join(root, 'packages/search-core', file)));
+}
 writeGenerated('cloudfunctions/rebuildDailySummaryV2/lib/nutritionProvenance.js', fs.readFileSync(path.join(root, 'miniprogram/utils/nutritionProvenance.js'), 'utf8'));
 writeGenerated('cloudfunctions/searchManager/lib/config/milkCategoryTags.js', fs.readFileSync(path.join(root, 'miniprogram/config/milkCategoryTags.js'), 'utf8'));
 if (fs.existsSync(path.join(root, 'packages/ai-access-core'))) copy('packages/ai-access-core', ['cloudfunctions/searchManager/lib/ai', 'cloudfunctions/recognizeNutritionLabel/lib/ai', 'cloudfunctions/featureFlagManager/lib/ai', 'cloudfunctions/syncAiModelQuota/lib/ai']);

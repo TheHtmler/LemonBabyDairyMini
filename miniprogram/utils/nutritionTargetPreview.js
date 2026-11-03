@@ -40,6 +40,7 @@ function normalizeSummary(summary = {}) {
     naturalProtein: roundValue(toNumber(summary.naturalProtein), 2),
     specialProtein: roundValue(toNumber(summary.specialProtein), 2),
     premiumProtein: roundValue(toNumber(summary.premiumProtein), 2),
+    ...(summary.premiumProteinEstimated ? { premiumProteinEstimated: true, premiumProteinEstimateCount: Math.max(1, toNumber(summary.premiumProteinEstimateCount, 1)) } : {}),
     carbs: roundValue(toNumber(summary.carbs), 2),
     fat: roundValue(toNumber(summary.fat), 2)
   };
@@ -51,7 +52,8 @@ function withDayPremiumFromDailySummary(macroSummary = {}, dailySummary = {}) {
   const dayPremium = resolveDayPremiumProteinBase(dailySummary || {});
   return {
     ...normalized,
-    premiumProtein: dayPremium.premiumProtein
+    premiumProtein: dayPremium.premiumProtein,
+    ...(dayPremium.premiumProteinEstimated ? { premiumProteinEstimated: true, premiumProteinEstimateCount: dayPremium.premiumProteinEstimateCount || 1 } : {})
   };
 }
 
@@ -64,6 +66,7 @@ function addSummaries(left = {}, right = {}) {
     naturalProtein: a.naturalProtein + b.naturalProtein,
     specialProtein: a.specialProtein + b.specialProtein,
     premiumProtein: a.premiumProtein + b.premiumProtein,
+    ...((a.premiumProteinEstimated || b.premiumProteinEstimated) ? { premiumProteinEstimated: true, premiumProteinEstimateCount: (a.premiumProteinEstimateCount || 0) + (b.premiumProteinEstimateCount || 0) } : {}),
     carbs: a.carbs + b.carbs,
     fat: a.fat + b.fat
   });
@@ -78,6 +81,7 @@ function subtractSummaries(left = {}, right = {}) {
     naturalProtein: Math.max(0, a.naturalProtein - b.naturalProtein),
     specialProtein: Math.max(0, a.specialProtein - b.specialProtein),
     premiumProtein: Math.max(0, a.premiumProtein - b.premiumProtein),
+    ...((a.premiumProteinEstimateCount || 0) > (b.premiumProteinEstimateCount || 0) ? { premiumProteinEstimated: true, premiumProteinEstimateCount: a.premiumProteinEstimateCount - (b.premiumProteinEstimateCount || 0) } : {}),
     carbs: Math.max(0, a.carbs - b.carbs),
     fat: Math.max(0, a.fat - b.fat)
   });
@@ -93,7 +97,8 @@ function buildGoalRow({
   target,
   unit = 'g',
   premiumProtein = 0,
-  premiumRatio = 0
+  premiumRatio = 0,
+  premiumProteinEstimated = false
 } = {}) {
   const hasTarget = target > 0;
   const precision = unit === 'kcal' ? 0 : 2;
@@ -139,7 +144,7 @@ function buildGoalRow({
     premiumRatio: premiumRatioValue,
     showPremiumNote,
     premiumNoteText: showPremiumNote
-      ? `优质蛋白 ${formatFixed(premiumValue, 2)}g · ${premiumRatioValue}%`
+      ? `优质蛋白 ${premiumProteinEstimated ? '约' : ''}${formatFixed(premiumValue, 2)}g · ${premiumRatioValue}%`
       : ''
   };
 }
@@ -200,7 +205,8 @@ function buildEntryTargetPreview({
       target: naturalTarget,
       unit: 'g',
       premiumProtein: afterSave.premiumProtein,
-      premiumRatio: dayPremiumRatio
+      premiumRatio: dayPremiumRatio,
+      premiumProteinEstimated: !!afterSave.premiumProteinEstimated
     }),
     buildGoalRow({
       key: 'specialProtein',
@@ -252,6 +258,10 @@ function summarizeFoodItems(items = []) {
     acc.naturalProtein += naturalProtein;
     acc.specialProtein += specialProtein;
     acc.premiumProtein += toNumber(qualitySplit.premiumProtein);
+    if (qualitySplit.premiumProteinEstimated) {
+      acc.premiumProteinEstimated = true;
+      acc.premiumProteinEstimateCount = (acc.premiumProteinEstimateCount || 0) + 1;
+    }
     acc.carbs += toNumber(nutrition.carbs);
     acc.fat += toNumber(nutrition.fat);
     return acc;

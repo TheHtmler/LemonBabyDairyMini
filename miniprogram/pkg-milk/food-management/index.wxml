@@ -83,6 +83,8 @@
                 <view class="food-info">
                   <view class="food-title-row">
                     <text class="food-title">{{item.name}}</text>
+                    <text class="protein-mixed-tag" wx:if="{{item.proteinQuality === 'mixed'}}" aria-label="混合蛋白">混</text>
+                    <text class="protein-premium-tag" wx:elif="{{item.proteinQuality === 'premium'}}" aria-label="优质蛋白">优</text>
                     <text class="food-tag system" wx:if="{{item.isSystem}}">系统预设</text>
                     <text class="food-tag snapshot" wx:elif="{{item.isSystemSnapshot}}">系统修订</text>
                     <text class="food-tag custom" wx:else>我的</text>
@@ -204,10 +206,9 @@
                   range="{{categorySuggestions}}"
                   value="{{categoryPickerIndex}}"
                   bindchange="onCategoryPickerChange"
+                  disabled="{{savingNutrition}}"
                 >
-                  <view class="picker-display category-picker-display {{formData.category ? '' : 'placeholder'}}">
-                    {{formData.category || '请选择分类'}}
-                  </view>
+                  <view class="picker-display category-picker-display {{formData.category ? '' : 'placeholder'}} form-picker-face {{savingNutrition ? 'form-picker-disabled' : ''}}" hover-class="{{savingNutrition ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{formData.category || '请选择分类'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view>
                 </picker>
                 <view class="category-add-trigger" bindtap="toggleCategoryCreator">
                   {{showCategoryCreator ? '收起' : '新增'}}
@@ -234,10 +235,9 @@
                   range="{{unitSuggestions}}"
                   value="{{unitPickerIndex}}"
                   bindchange="onUnitPickerChange"
+                  disabled="{{savingNutrition}}"
                 >
-                  <view class="picker-display category-picker-display {{formData.unit ? '' : 'placeholder'}}">
-                    {{formData.unit || '请选择单位'}}
-                  </view>
+                  <view class="picker-display category-picker-display {{formData.unit ? '' : 'placeholder'}} form-picker-face {{savingNutrition ? 'form-picker-disabled' : ''}}" hover-class="{{savingNutrition ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{formData.unit || '请选择单位'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view>
                 </picker>
                 <view class="category-add-trigger" bindtap="toggleUnitCreator">
                   {{showUnitCreator ? '收起' : '新增'}}
@@ -289,15 +289,18 @@
           <view class="form-item">
             <text class="form-label">蛋白来源</text>
             <view class="form-control form-control-stack">
-              <picker class="picker" mode="selector" range="{{proteinTypeOptions}}" range-key="label" value="{{formData.proteinTypeIndex >= 0 ? formData.proteinTypeIndex : 0}}" bindchange="onProteinTypeChange">
-                <view class="picker-display {{formData.proteinTypeIndex >= 0 ? '' : 'placeholder'}}">
-                  {{formData.proteinTypeIndex >= 0 ? proteinTypeOptions[formData.proteinTypeIndex].label : '请选择蛋白来源'}}
-                </view>
-              </picker>
+              <view class="protein-picker-row">
+                <picker class="protein-type-picker" mode="selector" range="{{proteinTypeOptions}}" range-key="label" value="{{formData.proteinTypeIndex >= 0 ? formData.proteinTypeIndex : 0}}" bindchange="onProteinTypeChange" disabled="{{savingNutrition}}">
+                  <view class="picker-display protein-picker-display {{formData.proteinTypeIndex >= 0 ? '' : 'placeholder'}} form-picker-face {{savingNutrition ? 'form-picker-disabled' : ''}}" hover-class="{{savingNutrition ? 'none' : 'form-picker-pressed'}}" hover-start-time="0" hover-stay-time="100"><text class="form-picker-value">{{formData.proteinTypeIndex >= 0 ? proteinTypeOptions[formData.proteinTypeIndex].label : '请选择蛋白来源'}}</text><view class="form-picker-icon" aria-hidden="{{true}}"><view class="form-picker-chevron"></view></view></view>
+                </picker>
+                <view wx:if="{{formData.proteinTypeIndex >= 0 && proteinTypeOptions[formData.proteinTypeIndex].quality === 'mixed'}}" class="protein-help-slot"><protein-help-popover disabled="{{savingNutrition}}" /></view>
+              </view>
               <text class="field-hint protein-source-hint" wx:if="{{proteinTypeRecommendationText}}">{{proteinTypeRecommendationText}}</text>
               <text class="field-hint protein-source-hint warning" wx:else>会影响天然/特殊蛋白和优质蛋白占比统计</text>
             </view>
           </view>
+
+          <protein-composition-editor id="proteinCompositionEditor" wx:if="{{formData.proteinTypeIndex >= 0 && proteinTypeOptions[formData.proteinTypeIndex].quality === 'mixed'}}" baby-uid="{{babyUid}}" value="{{formData.proteinComposition}}" nutrition-basis="{{ {quantity: formData.baseQuantity, unit: formData.unit} }}" total-protein="{{formData.protein}}" disabled="{{savingNutrition}}" bind:change="onProteinCompositionChange" />
 
           <view class="form-item">
             <text class="form-label">脂肪 (g)</text>

@@ -34,6 +34,11 @@ for (const name of functions) {
       }
     } else fs.writeFileSync(target, body);
   }
+  const compositionBody = fs.readFileSync(path.join(root, 'packages/search-core/proteinComposition.js'));
+  const compositionTarget = path.join(root, 'cloudfunctions', name, 'lib/proteinComposition.js');
+  if (check) {
+    if (!fs.existsSync(compositionTarget) || !compositionBody.equals(fs.readFileSync(compositionTarget))) throw new Error('混合蛋白模块需要重新构建：' + name);
+  } else fs.writeFileSync(compositionTarget, compositionBody);
   // 每个云函数的上传目录内包含完整公共模块，不依赖仓库根目录。
   require(path.join(destination, 'index.js'));
 }

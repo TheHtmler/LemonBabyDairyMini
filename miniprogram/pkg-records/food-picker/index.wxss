@@ -1,3 +1,5 @@
+@import "../../styles/protein-quality-tag.wxss";
+
 .page {
   height: 100vh;
   display: flex;
@@ -425,7 +427,16 @@
   gap: 8rpx;
 }
 
+.cart-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+}
+
 .cart-detail-name {
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 26rpx;
   color: #333333;
   font-weight: 700;

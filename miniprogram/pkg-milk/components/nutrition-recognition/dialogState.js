@@ -1,9 +1,11 @@
+const { validateProteinComposition, validateProteinCompositionDetails } = require('../../../utils/search-core/proteinComposition');
+const { createEmptyProteinComposition } = require('../../../utils/proteinCompositionForm');
 const { FIELDS, UNITS, REQUIRED, number, convertBasis, searchText, normalizeCategoryCatalog,
   normalizeClassification, classificationIdentityKey, matchCategory, recommendCategories, estimateEligibility,
   identityRequirement, isGenericIdentity } = require('./lib/core/index.js');
 const { FIELD_NAMES, isBlank, formatNutritionValue } = require('../../../utils/nutritionComparison');
 const SOURCE_NAMES = { label: '包装标签', reference: '营养参考', model_estimate: 'AI估算', manual: '手填' };
-const FORM_FIELDS = ['name', 'category', 'categoryLevel2', 'unit', 'baseQuantity', 'proteinTypeIndex', 'image', 'images'];
+const FORM_FIELDS = ['name', 'category', 'categoryLevel2', 'unit', 'baseQuantity', 'proteinTypeIndex', 'proteinComposition', 'image', 'images'];
 
 function formKey(draft = {}, mode) {
   const nutrition = mode === 'powder_label' ? draft.nutritionPer100g || {} : draft;
@@ -15,7 +17,7 @@ function createDialogState(properties, paths) {
   const draft = properties.draft || {};
   const mode = ['powder_label', 'food_object', 'auto'].includes(properties.mode) ? properties.mode : 'food_label';
   const nutrition = mode === 'powder_label' ? draft.nutritionPer100g || {} : draft;
-  const values = { name: draft.name || '', category: draft.category || '', categoryLevel2: draft.categoryLevel2 || '',
+  const values = { proteinComposition: draft.proteinComposition || null, name: draft.name || '', category: draft.category || '', categoryLevel2: draft.categoryLevel2 || '',
     unit: draft.unit || '', baseQuantity: draft.baseQuantity == null ? '100' : String(draft.baseQuantity),
     proteinTypeIndex: Number.isInteger(Number(draft.proteinTypeIndex)) && Number(draft.proteinTypeIndex) >= 0 ? Number(draft.proteinTypeIndex) : -1,
     ratioPowder: String((draft.mixRatio || {}).powder ?? ''), ratioWater: String((draft.mixRatio || {}).water ?? '') };
@@ -118,7 +120,16 @@ function clearProposals(state, preserveValues = false) {
   state.categorySuggestion = null; state.proteinSuggestion = null;
   state.newCategoryName = undefined;
   if (!state.categoryManual) state.values.category = '';
-  if (!state.proteinManual) state.values.proteinTypeIndex = -1;
+  if (!state.proteinManual) setProteinType(state, -1);
+}
+
+/** 类型真正变化才丢弃旧草稿，同项重选和首次载入均保留当前明细。 */
+function setProteinType(state, nextIndex) {
+  if (Number(state.values.proteinTypeIndex) !== Number(nextIndex)) {
+    state.values.proteinComposition = state.proteinOptions[nextIndex]?.quality === 'mixed'
+      ? createEmptyProteinComposition() : null;
+  }
+  state.values.proteinTypeIndex = nextIndex;
 }
 
 function applyClassification(state, suggestion) {
@@ -135,7 +146,7 @@ function applyClassification(state, suggestion) {
   const index = state.proteinOptions.findIndex(option => option.value === classification.proteinSource && option.quality === classification.proteinQuality);
   state.proteinSuggestion = index >= 0 ? { index, label: state.proteinOptions[index].label,
     special: classification.proteinSource === 'special', source: classification.proteinQualitySource } : null;
-  if (!state.proteinManual) state.values.proteinTypeIndex = index >= 0 && !state.proteinSuggestion.special ? index : -1;
+  if (!state.proteinManual) setProteinType(state, index >= 0 && !state.proteinSuggestion.special ? index : -1);
 }
 
 function editNutrition(state, field, value) {
@@ -187,6 +198,12 @@ function labelFillWarning(state, rows) {
 
 function validateDialog(state, options) {
   const missing = [];
+  const selectedProtein = options.proteinOptions[state.values.proteinTypeIndex];
+  let compositionIncomplete = false;
+  if (state.mode !== 'powder_label' && selectedProtein?.quality === 'mixed') {
+    try { validateProteinCompositionDetails(state.values.proteinComposition); }
+    catch (error) { missing.push('混合成分：' + error.message); compositionIncomplete = true; }
+  }
   if (!String(state.values.name || '').trim()) missing.push('名称');
   else if (isGenericIdentity({ name: state.values.name })) missing.push('具体种类名称');
   if (!String(state.values.category || '').trim()) missing.push('分类');
@@ -211,6 +228,13 @@ function validateDialog(state, options) {
     if (!(number(state.values.ratioWater) > 0)) missing.push('水量');
   } else {
     if (state.values.proteinTypeIndex < 0 || !options.proteinOptions[state.values.proteinTypeIndex]) missing.push('蛋白来源');
+    const protein = options.proteinOptions[state.values.proteinTypeIndex];
+    if (protein?.quality === 'mixed' && !compositionIncomplete) {
+      try { validateProteinComposition({ proteinSource: protein.value, proteinQuality: protein.quality,
+        proteinComposition: state.values.proteinComposition, nutritionBasis: targetBasis(state),
+        nutritionPerBasis: { protein: state.values.protein } }); }
+      catch (error) { missing.push('混合成分：' + error.message); }
+    }
   }
   if (!options.currentForm && (!state.result || !(state.comparisonVersion > 0) || state.needIdentity ||
       state.identityDeferred || getIdentityRequirement(state).required ||
@@ -227,10 +251,11 @@ function resultPatch(state) {
   });
   if (state.mode === 'powder_label') patch.mixRatio = { powder: state.values.ratioPowder, water: state.values.ratioWater };
   else Object.assign(patch, { unit: state.values.unit, baseQuantity: state.values.baseQuantity,
-    categoryLevel2: state.values.categoryLevel2, proteinTypeIndex: state.values.proteinTypeIndex });
+    categoryLevel2: state.values.categoryLevel2, proteinTypeIndex: state.values.proteinTypeIndex,
+    proteinComposition: state.proteinOptions[state.values.proteinTypeIndex]?.quality === 'mixed' ? state.values.proteinComposition : null });
   return patch;
 }
 
 module.exports = { createDialogState, formKey, targetBasis, offerNutrition, clearProposals, editNutrition,
-  buildRows, validateDialog, resultPatch, applyClassification, getEstimateEligibility, labelFillWarning,
+  buildRows, validateDialog, resultPatch, applyClassification, setProteinType, getEstimateEligibility, labelFillWarning,
   getIdentityRequirement, invalidateIdentityConfirmation };

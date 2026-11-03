@@ -1,3 +1,4 @@
+const { normalizeProteinComposition } = require('../utils/search-core/proteinComposition');
 const { invalidateSearchForBaby } = require('../utils/searchSession');
 const db = wx.cloud.database();
 const foodIntakeCollection = db.collection('food_intake_records');
@@ -96,6 +97,7 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
     nutritionBasis,
     proteinSource: foodSnapshot.proteinSource || 'natural',
     proteinQuality: foodSnapshot.proteinQuality || '',
+    proteinComposition: normalizeProteinComposition(foodSnapshot.proteinComposition),
     proteinSplit: foodSnapshot.proteinSplit || null,
     ...(nutritionPerBasis ? { nutritionPerBasis } : {}),
     sourceType: foodSnapshot.sourceType || '',
@@ -496,5 +498,6 @@ module.exports = {
   findRecentFoodIntakes,
   findByDate,
   normalizeFoodIntakeRecord,
+  normalizeFoodSnapshot,
   normalizeRecipeSource
 };

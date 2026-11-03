@@ -1,3 +1,5 @@
+const { validateProteinComposition, validateProteinCompositionDetails } = require('../../utils/search-core/proteinComposition');
+const { createEmptyProteinComposition } = require('../../utils/proteinCompositionForm');
 const FoodModel = require('../../models/food');
 const FoodCategoryModel = require('../../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
@@ -66,7 +68,8 @@ const createEmptyFormData = (category = '', unit = '') => ({
   fat: '',
   fiber: '',
   sodium: '',
-  proteinTypeIndex: -1
+  proteinTypeIndex: -1,
+  proteinComposition: null
 });
 
 const app = getApp();
@@ -106,7 +109,8 @@ Page({
     proteinTypeOptions: [
       { label: '天然蛋白（优质）', value: 'natural', quality: 'premium' },
       { label: '天然蛋白（普通）', value: 'natural', quality: 'regular' },
-      { label: '特殊蛋白', value: 'special', quality: '' }
+      { label: '特殊蛋白', value: 'special', quality: '' },
+      { label: '天然蛋白（混合）', value: 'natural', quality: 'mixed' }
     ],
     categorySuggestions: [...DEFAULT_CATEGORY_SUGGESTIONS],
     customCategories: [],
@@ -572,6 +576,7 @@ Page({
     const option = this.getProteinTypeOption(index);
     this.setData({
       'formData.proteinTypeIndex': index,
+      ...this.proteinCompositionUpdates(index),
       proteinTypeRecommendationText: option ? `已根据分类推荐：${option.label}` : ''
     });
   },
@@ -606,6 +611,7 @@ Page({
       touchedNutritionFields: Object.keys(this._touchedNutritionFields || {}),
       proteinSource: this.getProteinTypeOption(formData.proteinTypeIndex).value,
       proteinQuality: this.getProteinTypeOption(formData.proteinTypeIndex).quality,
+      proteinComposition: this.getProteinTypeOption(formData.proteinTypeIndex).quality === 'mixed' ? formData.proteinComposition : null,
       foodType: 'food',
       image: formData.image ? formData.image.trim() : '',
       images: formData.images || [],
@@ -643,6 +649,7 @@ Page({
       fat: !(food.recognitionMeta?.missingFields || []).includes('fat') && nutrition.fat != null ? String(nutrition.fat) : '',
       fiber: !(food.recognitionMeta?.missingFields || []).includes('fiber') && nutrition.fiber != null ? String(nutrition.fiber) : '',
       sodium: !(food.recognitionMeta?.missingFields || []).includes('sodium') && nutrition.sodium != null ? String(nutrition.sodium) : '',
+      proteinComposition: food.proteinComposition || null,
       proteinTypeIndex: typeIndex >= 0 ? typeIndex : -1
     };
   },
@@ -764,11 +771,16 @@ Page({
   onNutritionPatch(e) {
     const patch = e.detail.patch || {};
     const updates = {};
-    Object.keys(patch).forEach(field => { updates['formData.' + field] = field === 'images' ? patch[field] : field === 'proteinTypeIndex' ? Number(patch[field]) : String(patch[field]); });
+    Object.keys(patch).forEach(field => { updates['formData.' + field] = ['images', 'proteinComposition'].includes(field) ? patch[field] : field === 'proteinTypeIndex' ? Number(patch[field]) : String(patch[field]); });
     if (patch.images) updates.foodImagePreviewUrls = patch.images;
     if (patch.unit) updates.unitPickerIndex = this.getUnitPickerIndex(patch.unit);
     if (patch.category) updates.categoryPickerIndex = this.getCategoryPickerIndex(patch.category);
-    if (patch.proteinTypeIndex != null) { updates.proteinTypeTouched = true; updates.proteinTypeRecommendationText = ''; }
+    if (patch.proteinTypeIndex != null) {
+      // 识别结果可携带本次新填的成分；仅无明细的类型切换需要生成空草稿。
+      if (!Object.prototype.hasOwnProperty.call(patch, 'proteinComposition')) Object.assign(updates, this.proteinCompositionUpdates(Number(patch.proteinTypeIndex)));
+      if (this.getProteinTypeOption(Number(patch.proteinTypeIndex))?.quality !== 'mixed') updates['formData.proteinComposition'] = null;
+      updates.proteinTypeTouched = true; updates.proteinTypeRecommendationText = '';
+    }
     (e.detail.manualFields || []).forEach(field => {
       if (NUTRITION_NUMBER_FIELDS.includes(field)) this._touchedNutritionFields = { ...(this._touchedNutritionFields || {}), [field]: true };
     });
@@ -984,10 +996,24 @@ Page({
 
     wx.showToast({ title: '分类已添加', icon: 'success' });
   },
+  onProteinCompositionChange(event) {
+    if (this.data.savingNutrition) return;
+    this.setData({ 'formData.proteinComposition': event.detail.value });
+    this.selectComponent('#nutritionRecognition')?.markManual('proteinComposition', event.detail.value);
+  },
+
+  proteinCompositionUpdates(nextIndex) {
+    if (Number(nextIndex) === Number(this.data.formData.proteinTypeIndex)) return {};
+    return { 'formData.proteinComposition': this.getProteinTypeOption(nextIndex)?.quality === 'mixed'
+      ? createEmptyProteinComposition() : null };
+  },
 
   onProteinTypeChange(e) {
+    if (this.data.savingNutrition) return;
+    const nextIndex = Number(e.detail.value);
     this.setData({
-      'formData.proteinTypeIndex': Number(e.detail.value),
+      'formData.proteinTypeIndex': nextIndex,
+      ...this.proteinCompositionUpdates(nextIndex),
       proteinTypeTouched: true,
       proteinTypeRecommendationText: ''
     });
@@ -995,6 +1021,13 @@ Page({
 
   validateForm() {
     const formData = this.data.formData;
+    if (this.getProteinTypeOption(formData.proteinTypeIndex)?.quality === 'mixed') {
+      try { validateProteinCompositionDetails(formData.proteinComposition); }
+      catch (error) {
+        this.selectComponent('#proteinCompositionEditor')?.showValidationError(error.message);
+        wx.showToast({ title: error.message, icon: 'none' }); return false;
+      }
+    }
     if (!formData.name.trim()) {
       wx.showToast({ title: '请填写食物名称', icon: 'none' });
       return false;
@@ -1049,6 +1082,11 @@ Page({
       }
     }
 
+    try { validateProteinComposition(this.prepareFoodPayload(this.data.babyUid)); }
+    catch (error) {
+      this.selectComponent('#proteinCompositionEditor')?.showValidationError(error.message);
+      wx.showToast({ title: error.message, icon: 'none' }); return false;
+    }
     return true;
   },
 

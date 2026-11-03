@@ -616,6 +616,7 @@ function calculateIntakeOverview(feedings = [], intakes = [], weight = 0, nutrit
     overview.food.specialProtein += specialProtein;
     const qualitySplit = resolveFoodIntakePremiumProteinSplit(intake, naturalProtein);
     overview.food.premiumProtein += Number(qualitySplit.premiumProtein) || 0;
+    if (qualitySplit.premiumProteinEstimated) overview.food.premiumProteinEstimated = true;
     overview.food.regularProtein += Number(qualitySplit.regularProtein) || 0;
     overview.food.carbs += Number(nutrition.carbs) || 0;
     overview.food.fat += Number(nutrition.fat) || 0;
@@ -827,7 +828,8 @@ function foodIntakeRecordToLegacyIntake(record = {}) {
     unit: record.unit || 'g',
     quantity: Number(record.quantity) || 0,
     proteinSource: proteinSourceResolved,
-    proteinQuality: record.proteinQuality || '',
+    proteinQuality: record.proteinQuality || foodSnapshot.proteinQuality || '',
+    foodSnapshot: FoodIntakeRecordModel.normalizeFoodSnapshot(foodSnapshot),
     nutrition: normalizeFoodNutritionFields(nutrition, { roundMacros: true }),
     naturalProtein: roundNumber(naturalProteinResolved, 2),
     specialProtein: roundNumber(specialProteinResolved, 2),
@@ -995,6 +997,7 @@ function groupFoodIntakesByMeal(intakes = []) {
     group.summary.calories += Number(nutrition.calories) || 0;
     group.summary.protein += Number(nutrition.protein) || 0;
     group.summary.premiumProtein += Number(premiumSplit.premiumProtein) || 0;
+    if (premiumSplit.premiumProteinEstimated) group.summary.premiumProteinEstimated = true;
     group.summary.naturalProtein += naturalProtein;
     group.summary.carbs += Number(nutrition.carbs) || 0;
     group.summary.fat += Number(nutrition.fat) || 0;
@@ -1042,9 +1045,9 @@ function groupFoodIntakesByMeal(intakes = []) {
             protein: roundNumber(group.summary.protein, 2),
             proteinText: formatProteinText(group.summary.protein),
             premiumProtein,
-            premiumProteinText: formatProteinText(premiumProtein),
+            premiumProteinText: (group.summary.premiumProteinEstimated ? '约' : '') + formatProteinText(premiumProtein),
             premiumRatio,
-            showPremiumProtein: premiumProtein > 0,
+            showPremiumProtein: premiumProtein > 0 || !!group.summary.premiumProteinEstimated,
             carbs: roundNumber(group.summary.carbs, 2),
             fat: roundNumber(group.summary.fat, 2)
           };
@@ -2388,6 +2391,7 @@ function createDataRecordsPageConfig(options = {}) {
       },
       proteinSource: food.proteinSource || 'natural',
       proteinQuality: food.proteinQuality || '',
+      proteinComposition: food.proteinComposition || null,
       proteinSplit: food.proteinSplit || null,
       milkType: food.milkType || '',
       nutritionSource: food.nutritionSource || '',
@@ -2585,7 +2589,11 @@ function createDataRecordsPageConfig(options = {}) {
     }
     await this.loadFoodCatalog();
     const catalogFood = this.getFoodById(target.foodId);
-    const selectedFood = catalogFood || {
+    const selectedFood = target.foodSnapshot?.proteinQuality === 'mixed' ? {
+      ...target.foodSnapshot, _id: target.foodId || '',
+      baseUnit: target.foodSnapshot.nutritionBasis?.unit || target.unit || 'g',
+      baseQuantity: target.foodSnapshot.nutritionBasis?.quantity || 100
+    } : catalogFood || {
       _id: target.foodId || '',
       name: target.nameSnapshot,
       baseUnit: target.unit || 'g',
@@ -4099,6 +4107,7 @@ function createDataRecordsPageConfig(options = {}) {
       naturalProtein: Number(food.naturalProtein) || 0,
       specialProtein: Number(food.specialProtein) || 0,
       premiumProtein: Number(food.premiumProtein) || 0,
+      premiumProteinEstimated: !!food.premiumProteinEstimated,
       regularProtein: Number(food.regularProtein) || 0,
       carbs: Number(food.carbs) || 0,
       fat: Number(food.fat) || 0,
@@ -7022,7 +7031,7 @@ function createDataRecordsPageConfig(options = {}) {
     const naturalNum = Number(natural);
     const premiumRatio = naturalNum > 0 ? Math.round((Number(premium) / naturalNum) * 100) : 0;
 
-    return { natural, special, total, premium, regular, premiumRatio };
+    return { natural, special, total, premium, regular, premiumRatio, premiumProteinEstimated: !!intakeOverview?.food?.premiumProteinEstimated };
   },
 
   buildProteinSummaryDisplayFromMacroSummary(macroSummary = {}, intakeOverview = this.data.intakeOverview) {
@@ -7037,7 +7046,7 @@ function createDataRecordsPageConfig(options = {}) {
     const naturalNum = Number(natural);
     const premiumRatio = naturalNum > 0 ? Math.round((Number(premium) / naturalNum) * 100) : 0;
 
-    return { natural, special, total, premium, regular, premiumRatio };
+    return { natural, special, total, premium, regular, premiumRatio, premiumProteinEstimated: !!intakeOverview?.food?.premiumProteinEstimated };
   },
 
   computeMacroRatios(summary = this.data.macroSummary) {
