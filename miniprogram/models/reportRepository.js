@@ -166,7 +166,7 @@ function buildV2ReportDocument({
     reportDate: normalizedDate,
     reportType,
     reportTypeLabel: ReportModel.getReportTypeName(reportType),
-    ...(labName ? { labName: `${labName}`.trim() } : {}),
+    labName: String(labName || '').trim(),
     indicators: normalizedIndicators,
     summary,
     archive,
@@ -184,6 +184,7 @@ function buildLegacyReportDocument({
   reportType,
   indicators,
   reportId = '',
+  labName = '',
   createdAt = new Date(),
   updatedAt = new Date()
 }) {
@@ -192,6 +193,7 @@ function buildLegacyReportDocument({
     reportId: reportId || ReportModel.generateReportId(),
     reportDate: reportDate instanceof Date ? reportDate : new Date(reportDate),
     reportType,
+    labName: String(labName || '').trim(),
     indicators,
     createdAt,
     updatedAt
@@ -225,7 +227,7 @@ async function safeListFromCollection(db, collectionName, babyUid, limit = 100) 
       .get();
     return (result.data || []).map((record) => normalizeReportRecord(record, collectionName));
   } catch (error) {
-    if (collectionName === COLLECTIONS.PRIMARY) {
+    if (isMissingCollectionError(error)) {
       return [];
     }
     throw error;
@@ -298,7 +300,7 @@ async function getHistoricalRanges(babyUid, reportType) {
   }, {});
 }
 
-async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, reportType, indicators }) {
+async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, reportType, labName = '', indicators }) {
   const db = getDb();
   const normalizedDate = reportDate instanceof Date ? reportDate : new Date(reportDate);
 
@@ -309,6 +311,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
         babyUid,
         reportDate: normalizedDate,
         reportType,
+        labName,
         indicators,
         reportId: existing.reportId,
         createdAt: existing.createdAt || new Date()
@@ -326,6 +329,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
       babyUid,
       reportDate: normalizedDate,
       reportType,
+      labName,
       indicators,
       reportId: existing?.reportId,
       createdAt: existing?.createdAt || new Date()
@@ -343,6 +347,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
     babyUid,
     reportDate: normalizedDate,
     reportType,
+    labName,
     indicators
   });
 
@@ -359,6 +364,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
       babyUid,
       reportDate: normalizedDate,
       reportType,
+      labName,
       indicators
     });
 

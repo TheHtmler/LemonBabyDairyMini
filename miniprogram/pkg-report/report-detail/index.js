@@ -1,293 +1,135 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
-
-const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
+const { buildReportDisplay } = require('../../utils/reportDisplay');
+const { buildReportComparePickerOptions } = require('../../utils/reportWorkbench');
+const RELOAD_KEY = 'analysis_report_reload';
+const FOCUS_KEY = 'analysis_report_focus';
+const currentBaby = () => getApp().globalData.babyInfo;
+const selectVisibleRows = (rows, tab, showMissing) => rows.filter(row => (
+  tab === 'focus' ? row.abnormal : showMissing || row.hasValue
+));
 
 Page({
   data: {
-    // 报告数据
-    reportData: null,
-    reportId: '',
-    
-    // 页面状态
-    loading: true,
-    deleting: false,
-    
-    // 宝宝信息
-    babyInfo: null,
-    
-    // 报告摘要
-    reportSummary: null,
-    
-    // 指标配置
-    indicatorConfigs: []
+    reportData: null, reportId: '', loading: true, loadError: '', deleting: false,
+    babyInfo: null, reportSummary: null, indicatorRows: [], visibleRows: [], detailTab: 'full', showMissing: false,
+    compareLabel: '选择报告对比', comparePeerId: '', hasSingleReport: false
   },
-
-  onLoad: function (options) {
-    const reportId = options.reportId;
-    
-    if (!reportId) {
-      wx.showToast({
-        title: '报告ID无效',
-        icon: 'none'
-      });
-      wx.navigateBack();
-      return;
+  onLoad(options) {
+    if (!options.reportId) {
+      this.setData({ loading: false, loadError: '报告标识无效' }); return;
     }
-
-    this.setData({
-      reportId: reportId
-    });
-
-    this.initPage();
+    this.setData({ reportId: options.reportId });
   },
-
-  // 初始化页面
-  async initPage() {
-    try {
-      // 获取宝宝信息
-      const app = getApp();
-      const babyInfo = app.globalData.babyInfo;
-      
-      this.setData({
-        babyInfo: babyInfo
-      });
-
-      // 加载报告数据
-      await this.loadReportData();
-
-    } catch (error) {
-      console.error('初始化页面失败:', error);
-      wx.showToast({
-        title: '初始化失败',
-        icon: 'none'
-      });
-    }
-  },
-
-  // 加载报告数据
+  onShow() { if (this.data.reportId && !this.data.deleting) this.loadReportData(); },
+  onUnload() { this._requestId = (this._requestId || 0) + 1; },
   async loadReportData() {
+    const babyInfo = currentBaby();
+    const babyUid = babyInfo?.babyUid;
+    if (!babyUid) {
+      this.setData({ reportData: null, loading: false, loadError: '请先选择宝宝' }); return;
+    }
+    if (this.data.babyInfo?.babyUid !== babyUid) this.setData({ reportData: null, babyInfo });
+    const requestId = (this._requestId || 0) + 1;
+    this._requestId = requestId;
+    const isCurrent = () => this._requestId === requestId && currentBaby()?.babyUid === babyUid;
+    this.setData({ loading: !this.data.reportData, loadError: '' });
     try {
-      this.setData({ loading: true });
-
-      const app = getApp();
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid') || '';
-      const reportData = await ReportRepository.getReportById(this.data.reportId, {
-        expectedBabyUid: babyUid
-      });
-      if (!reportData) {
-        throw new Error('report_not_found');
+      const [report, reports] = await Promise.all([
+        ReportRepository.getReportById(this.data.reportId, { expectedBabyUid: babyUid }),
+        ReportRepository.listReportsByBaby(babyUid, { limit: 100 }).catch(() => null)
+      ]);
+      if (!isCurrent()) return;
+      if (!report) {
+        this.setData({ reportData: null, loading: false, loadError: '未能读取报告，请重试或返回列表' }); return;
       }
-      
-      // 获取指标配置
-      const indicatorConfigs = ReportModel.getIndicators(reportData.reportType).map((indicator) => ({
-        ...indicator,
-        displayName: ReportModel.getIndicatorDisplayName(indicator)
-      }));
-      
-      // 计算报告摘要（基于指标配置）
-      const reportSummary = this.calculateReportSummary(reportData, indicatorConfigs);
-      
-      // 格式化报告数据
-      const formattedReportData = {
-        ...reportData,
-        formattedDate: ReportModel.formatDate(reportData.reportDate),
-        reportTypeName: ReportModel.getReportTypeName(reportData.reportType),
-        formattedUpdatedAt: ReportModel.formatDateTime(reportData.updatedAt)
-      };
-
+      const display = buildReportDisplay(report);
+      const options = reports ? buildReportComparePickerOptions(reports, report.reportType) : [];
+      const current = buildReportComparePickerOptions([report], report.reportType)[0];
+      const peer = options.find(item => item.reportId !== this.data.reportId && item.date < current.date);
+      const hasSingleReport = reports !== null && !options.some(item => item.reportId !== this.data.reportId);
       this.setData({
-        reportData: formattedReportData,
-        reportSummary: reportSummary,
-        indicatorConfigs: indicatorConfigs,
-        loading: false
+        reportData: { ...report, formattedDate: ReportModel.formatDate(report.reportDate),
+          reportTypeName: ReportModel.getReportTypeName(report.reportType), formattedUpdatedAt: ReportModel.formatDateTime(report.updatedAt) },
+        babyInfo, reportSummary: display.summary, indicatorRows: display.rows,
+        visibleRows: selectVisibleRows(display.rows, this.data.detailTab, this.data.showMissing),
+        compareLabel: hasSingleReport ? '添加同类报告' : peer ? '与上一份对比' : '选择报告对比',
+        comparePeerId: peer?.reportId || '', hasSingleReport, loading: false
       });
-
-      // 设置分享内容
-      this.setupShareContent();
-
+      wx.setNavigationBarTitle({ title: ReportModel.getReportTypeName(report.reportType) + '报告' });
     } catch (error) {
-      console.error('加载报告数据失败:', error);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'none'
-      });
-      this.setData({ loading: false });
-      
-      // 延迟返回
-      setTimeout(() => {
-        wx.navigateBack();
-      }, 1500);
+      if (!isCurrent()) return;
+      console.error('加载报告详情失败:', error);
+      this.setData({ loading: false, loadError: '报告加载失败，请重试' });
     }
   },
-
-  // 设置分享内容
-  setupShareContent() {
-    const { reportData, babyInfo } = this.data;
-    const babyName = babyInfo ? babyInfo.babyName || '宝宝' : '宝宝';
-    
-    wx.setNavigationBarTitle({
-      title: `${reportData.reportTypeName}报告`
-    });
+  switchDetailTab(e) {
+    const detailTab = e.currentTarget.dataset.tab;
+    this.setData({ detailTab, visibleRows: selectVisibleRows(this.data.indicatorRows, detailTab, this.data.showMissing) });
   },
-
-  // 编辑报告
-  onEditReport: function () {
-    wx.navigateTo({
-      url: `/pkg-report/add-report/index?reportId=${this.data.reportId}&mode=edit`
-    });
+  toggleMissingIndicators() {
+    const showMissing = !this.data.showMissing;
+    this.setData({ showMissing, visibleRows: selectVisibleRows(this.data.indicatorRows, this.data.detailTab, showMissing) });
   },
-
-  // 删除报告
-  onDeleteReport: function () {
-    if (this.data.deleting) return;
-
-    wx.showModal({
-      title: '确认删除',
-      content: '删除后无法恢复，确定要删除这个报告吗？',
-      confirmText: '删除',
-      confirmColor: '#F44336',
-      success: async (res) => {
-        if (res.confirm) {
-          await this.deleteReport();
-        }
-      }
-    });
+  onMoreActions() {
+    if (!this.data.reportData || this.data.deleting) return;
+    wx.showActionSheet({ itemList: ['复制报告', '删除报告'], success: result => {
+      if (result.tapIndex === 0) this.onCopyReport();
+      if (result.tapIndex === 1) this.onDeleteReport();
+    } });
   },
-
-  // 执行删除报告
+  onCompareReport() {
+    if (!this.data.reportData || this.data.deleting) return;
+    if (currentBaby()?.babyUid !== this.data.babyInfo?.babyUid) { this.loadReportData(); return; }
+    if (this.data.hasSingleReport) {
+      wx.navigateTo({ url: '/pkg-report/add-report/index?mode=add&type=' + encodeURIComponent(this.data.reportData.reportType) }); return;
+    }
+    wx.setStorageSync(FOCUS_KEY, {
+      babyUid: this.data.babyInfo.babyUid, reportId: this.data.reportId,
+      reportType: this.data.reportData.reportType, mainTab: 'compare',
+      compareReportBId: this.data.comparePeerId, requireCompareSelection: !this.data.comparePeerId
+    });
+    wx.switchTab({ url: '/pages/analysis-report/index' });
+  },
+  onEditReport() {
+    if (!this.data.reportData || this.data.deleting) return;
+    wx.navigateTo({ url: '/pkg-report/add-report/index?reportId=' + encodeURIComponent(this.data.reportId) + '&mode=edit' });
+  },
+  onDeleteReport() {
+    if (this.data.deleting || !this.data.reportData) return;
+    wx.showModal({ title: '确认删除', content: '删除后无法恢复，确定要删除这个报告吗？', confirmText: '删除', confirmColor: '#A54737',
+      success: result => { if (result.confirm) this.deleteReport(); } });
+  },
   async deleteReport() {
     if (this.data.deleting) return;
-
+    if (currentBaby()?.babyUid !== this.data.babyInfo?.babyUid) { this.loadReportData(); return; }
     try {
       this.setData({ deleting: true });
-
       await ReportRepository.deleteReport(this.data.reportId);
-      wx.setStorageSync(ANALYSIS_REPORT_RELOAD_KEY, Date.now());
-
-      wx.showToast({
-        title: '删除成功',
-        icon: 'success'
-      });
-
-      // 延迟返回上一页
-      setTimeout(() => {
-        wx.navigateBack();
-      }, 1500);
-
+      wx.setStorageSync(RELOAD_KEY, Date.now());
+      wx.showToast({ title: '删除成功', icon: 'success' });
+      wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/analysis-report/index' }) });
     } catch (error) {
       console.error('删除报告失败:', error);
-      wx.showToast({
-        title: '删除失败',
-        icon: 'none'
-      });
+      wx.showToast({ title: '删除失败，请重试', icon: 'none' });
       this.setData({ deleting: false });
     }
   },
-
-  // 下拉刷新
-  onPullDownRefresh: function () {
-    this.loadReportData().finally(() => {
-      wx.stopPullDownRefresh();
+  onCopyReport() {
+    if (!this.data.reportData) return;
+    const report = this.data.reportData;
+    const lines = [report.reportTypeName + '报告', '检测日期：' + report.formattedDate, ''];
+    if (report.labName) lines.splice(2, 0, '检测机构：' + report.labName);
+    this.data.indicatorRows.forEach(row => {
+      lines.push(row.name + '：' + row.valueText + (row.unit ? ' ' + row.unit : '') + ' [' + row.statusText + ']');
+      if (row.rangeText) lines.push('参考范围：' + row.rangeText);
+      if (row.optimalRangeText) lines.push('最优范围：' + row.optimalRangeText);
     });
+    wx.setClipboardData({ data: lines.join('\n') });
   },
-
-  // 获取指标状态显示
-  getIndicatorStatusDisplay: function (status) {
-    return ReportModel.getStatusDisplay(status);
-  },
-
-  // 格式化指标值
-  formatIndicatorValue: function (value, unit) {
-    if (!value && value !== 0) return '-';
-    return `${value} ${unit || ''}`.trim();
-  },
-
-  // 获取指标数据
-  getIndicatorData: function (indicatorKey) {
-    const { reportData } = this.data;
-    if (!reportData || !reportData.indicators) return null;
-    return reportData.indicators[indicatorKey] || null;
-  },
-
-  // 计算报告摘要（基于指标配置）
-  calculateReportSummary: function (reportData, indicatorConfigs) {
-    const totalCount = indicatorConfigs.length;
-    let normalCount = 0;
-    let abnormalCount = 0;
-    let filledCount = 0;
-
-    indicatorConfigs.forEach(config => {
-      const indicatorData = reportData.indicators && reportData.indicators[config.key];
-      if (indicatorData && indicatorData.value) {
-        filledCount++;
-        if (indicatorData.status === 'normal') {
-          normalCount++;
-        } else if (indicatorData.status === 'high' || indicatorData.status === 'low') {
-          abnormalCount++;
-        }
-      }
-    });
-
-    return {
-      normalCount,
-      abnormalCount,
-      totalCount,
-      filledCount,
-      normalRate: filledCount > 0 ? Math.round((normalCount / filledCount) * 100) : 0
-    };
-  },
-
-  // 查看历史趋势（预留功能）
-  onViewTrend: function () {},
-
-  // 复制报告数据
-  onCopyReport: function () {
-    const { reportData, indicatorConfigs } = this.data;
-    
-    let copyText = `${reportData.reportTypeName}报告\n`;
-    copyText += `检测日期：${reportData.formattedDate}\n\n`;
-    
-    indicatorConfigs.forEach(config => {
-      const data = this.getIndicatorData(config.key);
-      if (data && data.value) {
-        const statusDisplay = this.getIndicatorStatusDisplay(data.status);
-        copyText += `${config.name}(${config.abbr})：${data.value} [${statusDisplay.text}]\n`;
-        
-        if (data.minRange && data.maxRange) {
-          copyText += `  参考范围：${data.minRange} - ${data.maxRange}\n`;
-        }
-        
-        if (data.optimalRange) {
-          copyText += `  最优范围：${data.optimalRange.min} - ${data.optimalRange.max}\n`;
-        }
-        copyText += '\n';
-      } else {
-        copyText += `${config.name}(${config.abbr})：未填写\n\n`;
-      }
-    });
-
-    wx.setClipboardData({
-      data: copyText,
-      success: () => {
-        wx.showToast({
-          title: '报告数据已复制',
-          icon: 'success'
-        });
-      }
-    });
-  },
-
-  // 页面分享
-  onShareAppMessage: function () {
-    const { reportData, babyInfo } = this.data;
-    const babyName = babyInfo ? babyInfo.babyName || '宝宝' : '宝宝';
-    
-    return {
-      title: `${babyName}的${reportData.reportTypeName}报告`,
-      desc: `检测日期：${reportData.formattedDate}`,
-      path: `/pkg-report/report-detail/index?reportId=${this.data.reportId}`,
-      imageUrl: '/images/LemonLogo.png'
-    };
+  onPullDownRefresh() { this.loadReportData().finally(() => wx.stopPullDownRefresh()); },
+  onShareAppMessage() {
+    return { title: (this.data.babyInfo?.babyName || '宝宝') + '的' + (this.data.reportData?.reportTypeName || '') + '报告',
+      path: '/pkg-report/report-detail/index?reportId=' + encodeURIComponent(this.data.reportId), imageUrl: '/images/LemonLogo.png' };
   }
-}); 
+});

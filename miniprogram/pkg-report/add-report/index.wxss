@@ -45,49 +45,37 @@
 }
 
 .report-meta-bar {
-  display: block;
-  margin-bottom: 24rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #e1e6ed;
+  border-radius: 14rpx;
+  background: #ffffff;
+  overflow: hidden;
 }
 
 .meta-card {
-  background: #ffffff;
-  border: 1rpx solid #e6ebf2;
-  border-radius: 16rpx;
-  padding: 20rpx 22rpx;
-  box-shadow: 0 4rpx 12rpx rgba(31, 45, 61, 0.04);
-}
-
-.meta-card--tappable {
-  border-color: #c9d7f0;
-  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
 }
 
 .meta-card--tappable:active {
-  background: #eef4ff;
-  border-color: #9db7e8;
+  background: #f7faff;
 }
 
 .meta-label {
-  display: block;
-  font-size: 22rpx;
-  color: #7b8798;
-  margin-bottom: 12rpx;
+  flex-shrink: 0;
+  width: 112rpx;
+  font-size: 24rpx;
+  color: #516072;
 }
 
 .meta-value {
-  display: block;
-  font-size: 32rpx;
-  line-height: 1.3;
-  font-weight: 700;
+  font-size: 26rpx;
+  line-height: 1.4;
   color: #1f2d3d;
-}
-
-.meta-copy {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  line-height: 1.5;
-  color: #7b8798;
+  font-variant-numeric: tabular-nums;
 }
 
 .meta-picker {
@@ -95,35 +83,39 @@
 }
 
 .meta-picker-content {
+  flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 56rpx;
-  padding: 12rpx 16rpx;
-  border-radius: 12rpx;
-  background: #eef4ff;
-  border: 1rpx dashed #9db7e8;
+  min-height: 64rpx;
+  padding: 10rpx 14rpx;
+  border-radius: 9rpx;
+  background: #f9fbfd;
+  border: 1rpx solid #dbe3ee;
   box-sizing: border-box;
 }
 
-.meta-picker-action {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  flex-shrink: 0;
-}
-
-.meta-picker-hint {
-  font-size: 22rpx;
-  color: #2f6fed;
-  font-weight: 600;
-}
-
 .meta-chevron {
-  font-size: 34rpx;
-  line-height: 1;
-  color: #2f6fed;
-  font-weight: 300;
+  font-size: 25rpx;
+  color: #5376b4;
+}
+
+.institution-field {
+  border-top: 1rpx solid #eef2f7;
+}
+
+.meta-input {
+  flex: 1;
+  min-width: 0;
+  height: 64rpx;
+  padding: 0 14rpx;
+  border: 1rpx solid #dbe3ee;
+  border-radius: 9rpx;
+  background: #f9fbfd;
+  font-size: 24rpx;
+  color: #1f2d3d;
+  box-sizing: border-box;
 }
 
 .ocr-entry {
@@ -353,7 +345,7 @@
   width: 100%;
 }
 
-.save-button {
+.container button.save-button {
   width: 100%;
   height: 84rpx;
   line-height: 84rpx;

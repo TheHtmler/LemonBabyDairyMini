@@ -1,5 +1,6 @@
 const { buildDailyNutritionMetricFromSummary } = require('./search-core/dailyMetrics');
 const ReportModel = require('../models/report');
+const { buildReportDisplay, buildIndicatorDisplay, hasReportValue, readReportNumber } = require('./reportDisplay');
 const { calculator: feedingCalculator } = require('./feedingUtils');
 const {
   mergeTreatmentIntoMacroSummary,
@@ -38,34 +39,6 @@ const REPORT_TYPE_FILTERS = [
   { key: ReportModel.REPORT_TYPES.BLOOD_BIOCHEM, label: '大生化' },
   { key: ReportModel.REPORT_TYPES.BLOOD_AMMONIA, label: '血氨' }
 ];
-
-function normalizeSignedNumberText(value = '') {
-  const trimmed = `${value ?? ''}`.trim();
-  const parenMatch = trimmed.match(/^\((-?\d+(?:\.\d+)?)\)$/);
-  return parenMatch ? parenMatch[1] : trimmed;
-}
-
-function formatReportNumber(value, precision = 3) {
-  const text = normalizeSignedNumberText(value);
-  if (!text) return '';
-
-  const num = Number(text);
-  if (!Number.isFinite(num)) {
-    return text;
-  }
-
-  return num.toFixed(precision);
-}
-
-function getIndicatorStatusMeta(status = 'unknown') {
-  const metaMap = {
-    high: { text: '偏高', className: 'high' },
-    low: { text: '偏低', className: 'low' },
-    normal: { text: '正常', className: 'normal' },
-    unknown: { text: '未判定', className: 'unknown' }
-  };
-  return metaMap[status] || metaMap.unknown;
-}
 
 function formatDirectionChangeText(direction = 'flat', delta = '') {
   const normalizedDelta = String(delta || '').replace(/^[+-]/, '');
@@ -948,7 +921,7 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
     : sortedReports.filter((report) => report.reportType === filterType);
 
   const reportCards = filteredReports.map((report) => {
-    const summary = ReportModel.getReportSummary(report);
+    const summary = buildReportDisplay(report).summary;
     const dateKey = toDateKey(report.reportDate);
     const [year, month, day] = dateKey.split('-');
     const metricConfigMap = getMetricConfigMap(report.reportType);
@@ -971,14 +944,18 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
       reportType: report.reportType,
       reportTypeLabel: ReportModel.getReportTypeName(report.reportType),
       formattedDate: dateKey,
+      monthDay: dateKey ? dateKey.slice(5).replace('-', '.') : '—',
+      labName: report.labName || '',
       formattedYear: year,
       formattedMonth: `${Number(month)}月`,
       formattedDay: String(Number(day)),
       abnormalCount: summary.abnormalCount,
       normalCount: summary.normalCount,
       totalCount: summary.totalCount,
-      statusText: summary.abnormalCount > 0 ? `${summary.abnormalCount} 项异常` : '无异常',
-      statusClass: summary.abnormalCount > 0 ? 'warn' : 'ok',
+      filledCount: summary.filledCount,
+      unknownCount: summary.unknownCount,
+      statusText: summary.statusText,
+      statusClass: summary.statusClass,
       keySummary: buildKeySummary(report),
       keyTags
     };
@@ -1194,22 +1171,16 @@ function collectNutritionMetricsForRange(feedingRecords = [], startDate, endDate
     .map((record) => buildDailyNutritionMetric(record, nutritionSettings, fallbackWeight));
 }
 
-
 function collectNutritionMetricsFromSummaries(summaries = [], startDate, endDate, fallbackWeight = 0) {
   const sorted = (summaries || [])
     .map((summary) => ({ summary, dateKey: toDateKey(summary.date) }))
     .filter((item) => item.dateKey && item.dateKey >= startDate && item.dateKey <= endDate)
     .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
-  let carriedWeight = Number(fallbackWeight) || 0;
-
   return sorted
     .map(({ summary, dateKey }) => {
       const dayWeight = Number(summary.basicInfo?.weight) || 0;
-      if (dayWeight > 0) {
-        carriedWeight = dayWeight;
-      }
-      return buildDailyNutritionMetricFromSummary(summary, dateKey, carriedWeight);
+      return buildDailyNutritionMetricFromSummary(summary, dateKey, dayWeight);
     })
     .filter(Boolean);
 }
@@ -1259,7 +1230,7 @@ function buildDailyCoefficientSeries(dailyMetrics = [], startDate, endDate) {
   const buildSeries = (metricKey, precision = 2) => {
     const points = dateKeys.map((dateKey) => {
       const metric = metricsByDate[dateKey];
-      const raw = Number(metric?.[metricKey]);
+      const raw = readReportNumber(metric?.[metricKey]);
       return {
         date: dateKey,
         label: String(Number(dateKey.slice(-2))),
@@ -1364,55 +1335,35 @@ function buildCompareHero(compareRows = []) {
   };
 }
 
-function normalizeRangeValueToken(value = '', precision = 3) {
-  return formatReportNumber(value, precision);
-}
-
-function formatRangeText(minRange = '', maxRange = '') {
-  const min = normalizeRangeValueToken(minRange);
-  const max = normalizeRangeValueToken(maxRange);
-  if (min && max) return `${min}–${max}`;
-  if (min) return `≥${min}`;
-  if (max) return `≤${max}`;
-  return '';
-}
-
-function normalizeRangeKey(minRange = '', maxRange = '') {
-  return `${normalizeRangeValueToken(minRange)}|${normalizeRangeValueToken(maxRange)}`;
-}
-
 function rangesDiffer(minRangeA = '', maxRangeA = '', minRangeB = '', maxRangeB = '') {
-  const keyA = normalizeRangeKey(minRangeA, maxRangeA);
-  const keyB = normalizeRangeKey(minRangeB, maxRangeB);
-  if (!keyA.replace(/\|/g, '') && !keyB.replace(/\|/g, '')) return false;
-  return keyA !== keyB;
+  // 比较原始数值，不因展示精度相同而漏掉范围差异。
+  const normalize = value => {
+    const number = readReportNumber(value);
+    return number === null ? String(value ?? '').trim() : String(number);
+  };
+  return normalize(minRangeA) !== normalize(minRangeB) || normalize(maxRangeA) !== normalize(maxRangeB);
 }
 
 function buildNutritionCompareSeries(windowA = {}, windowB = {}) {
   const seriesA = windowA.coefficientSeries || [];
-  const seriesB = windowB.coefficientSeries || [];
-  return seriesA.map((series, index) => {
-    const peer = seriesB[index] || {};
+  return seriesA.map(series => {
+    const peer = (windowB.coefficientSeries || []).find(item => item.key === series.key) || {};
     const precision = metricPrecisionForSeriesKey(series.key);
-    return {
-      key: series.key,
-      label: series.label,
-      unit: series.unit,
-      reportA: {
-        date: windowA.reportDate,
-        dateRangeShort: windowA.dateRangeShort,
-        coverageText: windowA.coverageText,
-        averageText: averageFromSeriesPoints(series.points, precision),
-        points: series.points || []
-      },
-      reportB: {
-        date: windowB.reportDate,
-        dateRangeShort: windowB.dateRangeShort,
-        coverageText: windowB.coverageText,
-        averageText: averageFromSeriesPoints(peer.points, precision),
-        points: peer.points || []
-      }
-    };
+    const values = [...(series.points || []), ...(peer.points || [])].map(point => point.raw).filter(Number.isFinite);
+    const ceiling = Math.max(0, ...values) || 1;
+    const buildSide = (window, points = []) => ({
+      date: window.reportDate,
+      dateRangeShort: window.dateRangeShort,
+      fullDateRange: window.fullDateRange,
+      coverageText: points.filter(point => Number.isFinite(point.raw)).length + '/' + points.length + ' 天',
+      averageText: averageFromSeriesPoints(points, precision),
+      points: points.map(point => ({
+        ...point,
+        heightRpx: Number.isFinite(point.raw) ? Math.max(2, Math.round(point.raw / ceiling * 68)) : 0
+      }))
+    });
+    return { key: series.key, label: series.label, unit: series.unit,
+      reportA: buildSide(windowA, series.points), reportB: buildSide(windowB, peer.points) };
   });
 }
 
@@ -1421,8 +1372,8 @@ function buildDietCompareSummaryLines(nutritionCompareSeries = []) {
     const precision = metricPrecisionForSeriesKey(series.key);
     const avgA = averageNumberFromSeriesPoints(series.reportA?.points || []);
     const avgB = averageNumberFromSeriesPoints(series.reportB?.points || []);
-    const leftText = Number.isFinite(avgA) ? formatCompactNumber(avgA, precision) : '--';
-    const rightText = Number.isFinite(avgB) ? formatCompactNumber(avgB, precision) : '--';
+    const leftText = Number.isFinite(avgB) ? formatCompactNumber(avgB, precision) : '--';
+    const rightText = Number.isFinite(avgA) ? formatCompactNumber(avgA, precision) : '--';
 
     if (!Number.isFinite(avgA) || !Number.isFinite(avgB)) {
       return `${series.label}：${leftText} → ${rightText}，数据不足。`;
@@ -1431,53 +1382,33 @@ function buildDietCompareSummaryLines(nutritionCompareSeries = []) {
     const delta = avgA - avgB;
     const change = Math.abs(delta) < Number.EPSILON
       ? '持平'
-      : `${delta > 0 ? '下降' : '上升'} ${formatCompactNumber(Math.abs(delta), precision)} ${series.unit}`;
+      : `${delta > 0 ? '上升' : '下降'} ${formatCompactNumber(Math.abs(delta), precision)} ${series.unit}`;
     return `${series.label}：${leftText} → ${rightText}，${change}`;
   });
 }
 
 function buildCompareCardsForKeys(currentReport, previousReport, metricKeys = []) {
-  const metricConfigMap = getMetricConfigMap(currentReport.reportType);
-  return metricKeys
-    .filter((key) => currentReport.indicators?.[key] || previousReport?.indicators?.[key])
-    .map((key) => {
-      const config = metricConfigMap[key] || {};
-      const current = currentReport.indicators?.[key] || {};
-      const previous = previousReport?.indicators?.[key] || {};
-      const currentValue = current.value ?? '--';
-      const previousValue = previous.value ?? '--';
-      const currentNum = Number(currentValue);
-      const previousNum = Number(previousValue);
-      const direction = Number.isFinite(currentNum) && Number.isFinite(previousNum)
-        ? (currentNum === previousNum ? 'flat' : currentNum > previousNum ? 'down' : 'up')
-        : 'flat';
-      const name = config.name || ReportModel.getIndicatorDisplayName(config) || key;
-      const abbr = config.abbr || config.key || '';
-      const currentStatus = getIndicatorStatusMeta(current.status || 'unknown');
-      const previousStatus = getIndicatorStatusMeta(previous.status || 'unknown');
-      const delta = formatDelta(currentValue, previousValue);
-
-      return {
-        key,
-        name,
-        abbr: abbr && abbr !== name ? abbr : '',
-        current: formatCompactNumber(currentValue, 2),
-        previous: formatCompactNumber(previousValue, 2),
-        delta,
-        changeText: formatDirectionChangeText(direction, delta),
-        direction,
-        status: current.status || 'unknown',
-        statusText: currentStatus.text,
-        statusClass: currentStatus.className,
-        previousStatus: previous.status || 'unknown',
-        previousStatusText: previousStatus.text,
-        previousStatusClass: previousStatus.className,
-        unit: config.unit || '',
-        rangeA: formatRangeText(current.minRange, current.maxRange),
-        rangeB: formatRangeText(previous.minRange, previous.maxRange),
-        rangeMismatch: rangesDiffer(current.minRange, current.maxRange, previous.minRange, previous.maxRange)
-      };
-    });
+  const configMap = getMetricConfigMap(currentReport.reportType);
+  return metricKeys.filter(key => configMap[key]).map(key => {
+    const config = configMap[key];
+    const a = buildIndicatorDisplay(config, currentReport.indicators?.[key] || {});
+    const b = buildIndicatorDisplay(config, previousReport.indicators?.[key] || {});
+    const comparable = a.numericValue !== null && b.numericValue !== null;
+    const difference = comparable ? Number((a.numericValue - b.numericValue).toPrecision(12)) : null;
+    const direction = !comparable ? 'missing' : difference > 0 ? 'up' : difference < 0 ? 'down' : 'flat';
+    const delta = comparable ? (difference > 0 ? '+' : '') + String(difference) : '—';
+    return {
+      key, name: a.name, abbr: a.abbr, unit: a.unit, secondaryText: a.secondaryText,
+      current: a.valueText, previous: b.valueText, delta, direction, comparable,
+      changeText: comparable ? formatDirectionChangeText(direction, delta) : '数据不足',
+      status: a.status, statusText: a.statusText, statusClass: a.statusClass, marker: a.marker,
+      previousStatus: b.status, previousStatusText: b.statusText, previousStatusClass: b.statusClass, previousMarker: b.marker,
+      rangeA: a.rangeText, rangeB: b.rangeText,
+      rangeMismatch: rangesDiffer(currentReport.indicators?.[key]?.minRange, currentReport.indicators?.[key]?.maxRange,
+        previousReport.indicators?.[key]?.minRange, previousReport.indicators?.[key]?.maxRange),
+      abnormal: a.abnormal || b.abnormal
+    };
+  });
 }
 
 function buildCompareMetricOptions(reportType, reportA, reportB, selectedMetricKeys = []) {
@@ -1489,7 +1420,7 @@ function buildCompareMetricOptions(reportType, reportA, reportB, selectedMetricK
   return configs.map((config) => {
     const aValue = reportA?.indicators?.[config.key]?.value;
     const bValue = reportB?.indicators?.[config.key]?.value;
-    const hasData = (aValue !== undefined && aValue !== '') || (bValue !== undefined && bValue !== '');
+    const hasData = hasReportValue(aValue) || hasReportValue(bValue);
     const isPrimary = primaryKeys.includes(config.key);
     return {
       key: config.key,
@@ -1503,23 +1434,35 @@ function buildCompareMetricOptions(reportType, reportA, reportB, selectedMetricK
 }
 
 function buildCompareSummary(compareRows = []) {
-  const compareText = compareRows
-    .map((row) => `${row.name}${row.direction === 'up' ? '上升' : row.direction === 'down' ? '下降' : '持平'}`)
-    .join('，');
+  const counts = compareRows.reduce((result, row) => {
+    result[row.direction] += 1;
+    return result;
+  }, { up: 0, down: 0, flat: 0, missing: 0 });
   return [
-    compareText ? `指标变化：${compareText}。` : '请选择要对比的指标。'
+    '可比较 ' + (counts.up + counts.down + counts.flat) + ' 项 · 升高 ' + counts.up + ' · 降低 ' + counts.down + ' · 相同 ' + counts.flat,
+    '数据不足 ' + counts.missing + ' 项 · 全部已录入指标'
   ];
 }
 
 function buildReportComparePickerOptions(reports = [], reportType = '') {
-  return reports
-    .filter((report) => report.reportType === reportType)
-    .sort((a, b) => parseDateKey(toDateKey(b.reportDate)).getTime() - parseDateKey(toDateKey(a.reportDate)).getTime())
-    .map((report) => ({
-      reportId: getReportId(report),
-      label: `${toDateKey(report.reportDate)} · ${buildKeySummary(report)}`,
-      date: toDateKey(report.reportDate)
-    }));
+  const sorted = reports.filter(report => report.reportType === reportType)
+    .sort((a, b) => toDateKey(b.reportDate).localeCompare(toDateKey(a.reportDate)) || getReportId(b).localeCompare(getReportId(a)));
+  const dateCounts = new Map();
+  const datePositions = new Map();
+  sorted.forEach(report => {
+    const date = toDateKey(report.reportDate);
+    dateCounts.set(date, (dateCounts.get(date) || 0) + 1);
+  });
+  return sorted.map(report => {
+    const date = toDateKey(report.reportDate);
+    const position = (datePositions.get(date) || 0) + 1;
+    datePositions.set(date, position);
+    const sameDayLabel = dateCounts.get(date) > 1 ? '同日第 ' + position + ' 份' : '';
+    return {
+      reportId: getReportId(report), date, labName: report.labName || '', sameDayLabel,
+      label: [date, report.labName, sameDayLabel].filter(Boolean).join(' · ')
+    };
+  });
 }
 
 function resolveCompareReportSelection(reports = [], reportType = '', reportAId = '', reportBId = '') {
@@ -1564,17 +1507,13 @@ function findReportById(reports = [], selectedReportId = '') {
 }
 
 function inferDefaultCompareReportType(reports = [], preferredType = '') {
-  if (preferredType && preferredType !== 'all') {
-    return preferredType;
-  }
-  const counts = reports.reduce((map, report) => {
-    const type = report.reportType || '';
-    if (!type) return map;
-    map[type] = (map[type] || 0) + 1;
-    return map;
-  }, {});
-  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  return ranked[0]?.[0] || ReportModel.REPORT_TYPES.BLOOD_MS;
+  if (preferredType && preferredType !== 'all') return preferredType;
+  const sorted = reports.slice().sort((a, b) => toDateKey(b.reportDate).localeCompare(toDateKey(a.reportDate)));
+  const counts = new Map();
+  sorted.forEach(report => counts.set(report.reportType, (counts.get(report.reportType) || 0) + 1));
+  // 无明确选择时优先展示已有两份报告的最近类型，避免进入可避免的空状态。
+  const candidate = sorted.find(report => counts.get(report.reportType) >= 2) || sorted[0];
+  return candidate?.reportType || ReportModel.REPORT_TYPES.BLOOD_MS;
 }
 
 function buildReportComparePreview({
@@ -1651,7 +1590,11 @@ function buildReportComparePreview({
     : null;
   const nutritionWindows = includeNutrition ? [nutritionWindowA, nutritionWindowB] : [];
   const nutritionCompareSeries = includeNutrition ? buildNutritionCompareSeries(nutritionWindowA, nutritionWindowB) : [];
-  const hasRangeMismatch = compareRows.some((row) => row.rangeMismatch);
+  const allCompareRows = buildCompareCardsForKeys(pickerReportA, pickerReportB, metricOptions.map(item => item.key));
+  const primaryKeys = KEY_METRICS_BY_REPORT_TYPE[reportType] || [];
+  const focusMetricKeys = allCompareRows.filter(row => row.abnormal || primaryKeys.includes(row.key))
+    .sort((a, b) => Number(b.abnormal) - Number(a.abnormal)).slice(0, 4).map(row => row.key);
+  const hasRangeMismatch = allCompareRows.some((row) => row.rangeMismatch);
   const hasNutritionData = nutritionCompareSeries.some((series) => (
     (series.reportA.points || []).some((point) => !point.missing)
     || (series.reportB.points || []).some((point) => !point.missing)
@@ -1691,7 +1634,9 @@ function buildReportComparePreview({
     nutritionWindows,
     nutritionCompareSeries,
     dietSummaryLines: buildDietCompareSummaryLines(nutritionCompareSeries),
-    summaryLines: buildCompareSummary(compareRows)
+    summaryLines: buildCompareSummary(allCompareRows),
+    allCompareRows,
+    focusMetricKeys: focusMetricKeys.length ? focusMetricKeys : metricOptions.slice(0, 4).map(item => item.key)
   };
 }
 
@@ -1801,6 +1746,7 @@ module.exports = {
   buildDailyCoefficientSeries,
   buildReportArchivePreview,
   buildReportComparePickerOptions,
+  buildReportNutritionWindow,
   buildReportComparePreview,
   collectNutritionMetricsFromSummaries,
   buildDailyNutritionMetricFromSummary,

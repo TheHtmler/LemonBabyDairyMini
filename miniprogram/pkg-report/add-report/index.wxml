@@ -12,13 +12,14 @@
           <text class="meta-label">检测日期</text>
           <view class="meta-picker-content">
             <text class="meta-value">{{reportDate || '请选择日期'}}</text>
-            <view class="meta-picker-action">
-              <text class="meta-picker-hint">点击修改</text>
-              <text class="meta-chevron">›</text>
-            </view>
+            <text class="meta-chevron">⌄</text>
           </view>
         </view>
       </picker>
+      <view class="meta-card institution-field">
+        <text class="meta-label">检测机构</text>
+        <input class="meta-input" type="text" value="{{labName}}" maxlength="80" placeholder="医院或检验中心（选填）" bindinput="onLabNameInput" disabled="{{saving}}" />
+      </view>
     </view>
 
     <view wx:if="{{ocrEntryVisible}}" class="ocr-entry {{ocrRecognizing ? 'recognizing' : ''}}" bindtap="onRecognizeReportPhoto">

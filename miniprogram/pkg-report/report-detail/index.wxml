@@ -1,97 +1,41 @@
-<view class="container">
-  <view wx:if="{{loading}}" class="loading-container">
-    <view class="loading-spinner"></view>
-    <text class="loading-text">加载中...</text>
-  </view>
-
-  <view wx:else class="content">
-    <view class="report-header">
-      <view class="header-main">
-        <view class="report-title">
-          <text class="title-text">{{reportData.reportTypeName}}</text>
-          <text class="date-text">{{reportData.formattedDate}}</text>
-          <text wx:if="{{reportData.labName}}" class="lab-text">{{reportData.labName}}</text>
-        </view>
-        <view class="header-actions">
-          <view class="action-btn edit" bindtap="onEditReport">
-            <text class="action-icon">✏️</text>
-            <text class="action-label">编辑</text>
-          </view>
-          <view class="action-btn danger" bindtap="onDeleteReport">
-            <text class="action-icon">🗑️</text>
-            <text class="action-label">{{deleting ? '删除中' : '删除'}}</text>
-          </view>
+<view class="detail-page">
+  <view wx:if="{{loading}}" class="empty-state">正在加载报告…</view>
+  <block wx:else>
+    <view wx:if="{{loadError}}" class="error-banner"><text>{{loadError}}</text><button class="text-button" bindtap="loadReportData">重试</button></view>
+    <block wx:if="{{reportData}}">
+      <view class="report-heading">
+        <text class="report-title">{{reportData.reportTypeName}}</text>
+      </view>
+      <view class="report-meta"><text>{{reportData.formattedDate}}</text><text wx:if="{{reportData.labName}}" class="lab-name">{{reportData.labName}}</text></view>
+      <view class="detail-actions">
+        <button class="primary-button" disabled="{{deleting}}" bindtap="onCompareReport">{{compareLabel}}</button>
+        <view class="secondary-actions">
+          <button class="outline-button" disabled="{{deleting}}" bindtap="onEditReport">编辑</button>
+          <button class="outline-button" disabled="{{deleting}}" bindtap="onMoreActions">{{deleting ? '删除中…' : '更多'}}</button>
         </view>
       </view>
-      <view wx:if="{{reportSummary.abnormalCount > 0}}" class="status-banner abnormal">
-        {{reportSummary.abnormalCount}} 项指标异常，请注意
-      </view>
-      <view wx:else class="status-banner normal">本次指标均在参考范围内</view>
-    </view>
-
-    <view class="indicators-section">
-      <text class="section-title">指标详情</text>
-      <view class="indicators-list">
-        <view wx:for="{{indicatorConfigs}}" wx:key="key" class="indicator-item">
-          <view class="indicator-header">
-            <view class="indicator-info">
-              <text class="indicator-name">{{item.displayName || item.name}}</text>
-              <text wx:if="{{item.abbr && item.abbr !== item.displayName && item.abbr !== item.name}}" class="indicator-abbr">{{item.abbr}}</text>
-            </view>
-            <view wx:if="{{reportData.indicators[item.key] && reportData.indicators[item.key].value && reportData.indicators[item.key].status !== 'normal'}}" class="status-badge {{reportData.indicators[item.key].status}}">
-              {{reportData.indicators[item.key].status === 'high' ? '偏高' :
-                reportData.indicators[item.key].status === 'low' ? '偏低' : '未知'}}
-            </view>
-            <view wx:elif="{{!reportData.indicators[item.key] || !reportData.indicators[item.key].value}}" class="status-badge empty">未填写</view>
-          </view>
-
-          <view class="indicator-values">
-            <view class="value-row">
-              <view class="value-label">检测值</view>
-              <view class="value-value">
-                <block wx:if="{{reportData.indicators[item.key] && reportData.indicators[item.key].value}}">
-                  <text class="value-text {{reportData.indicators[item.key].status}}">{{reportData.indicators[item.key].value}}</text>
-                  <text wx:if="{{item.unit}}" class="value-unit">{{item.unit}}</text>
-                </block>
-                <text wx:else class="value-text empty">—</text>
-              </view>
-            </view>
-            <view wx:if="{{(!item.isRatio || item.allowRangeInput) && reportData.indicators[item.key] && reportData.indicators[item.key].minRange}}" class="value-row">
-              <view class="value-label">参考范围</view>
-              <view class="value-value">
-                <text class="value-text">{{reportData.indicators[item.key].minRange}} – {{reportData.indicators[item.key].maxRange}}</text>
-              </view>
-            </view>
-            <view wx:if="{{reportData.indicators[item.key] && reportData.indicators[item.key].optimalRange}}" class="value-row optimal">
-              <view class="value-label">最优范围</view>
-              <view class="value-value">
-                <text class="value-text optimal">{{reportData.indicators[item.key].optimalRange.min}} – {{reportData.indicators[item.key].optimalRange.max}}</text>
-              </view>
-            </view>
+      <view class="detail-sheet">
+        <view class="detail-tabs">
+          <button class="detail-tab {{detailTab === 'full' ? 'active' : ''}}" data-tab="full" bindtap="switchDetailTab">{{showMissing ? '全部项目' : '已录入'}} {{showMissing ? reportSummary.totalCount : reportSummary.filledCount}}</button>
+          <button class="detail-tab {{detailTab === 'focus' ? 'active' : ''}}" data-tab="focus" bindtap="switchDetailTab">仅看异常 <text class="abnormal-count">{{reportSummary.abnormalCount}}</text></button>
+        </view>
+        <view wx:if="{{!visibleRows.length}}" class="empty-state">
+          <text>{{!reportSummary.filledCount ? '尚未录入检测值' : reportSummary.unknownCount ? '没有已判定的超范围指标，部分指标待核对' : '已录入指标在参考范围内'}}</text>
+          <button wx:if="{{!reportSummary.filledCount}}" class="text-button" bindtap="onEditReport">补充检测值</button>
+          <button wx:else class="text-button" data-tab="full" bindtap="switchDetailTab">查看已录入指标</button>
+        </view>
+        <view wx:else class="data-table">
+          <view class="table-row table-head"><text class="name-col">检验项目 / 单位</text><text class="value-col">检测值</text><text class="range-col">参考范围</text></view>
+          <view wx:for="{{visibleRows}}" wx:key="key" class="table-row">
+            <view class="name-col"><text>{{item.name}}</text><text wx:if="{{item.secondaryText}}" class="secondary">{{item.secondaryText}}</text></view>
+            <view class="value-col {{item.statusClass}}"><view class="value-line"><text class="number">{{item.valueText}}</text><text wx:if="{{item.marker}}" class="marker">{{item.marker}}</text></view><text wx:if="{{item.status === 'unknown'}}" class="secondary status-text">{{item.statusText}}</text></view>
+            <view class="range-col"><text>{{item.rangeText || '未提供'}}</text><text wx:if="{{item.optimalRangeText}}" class="secondary">最优 {{item.optimalRangeText}}</text></view>
           </view>
         </view>
+        <button wx:if="{{detailTab === 'full' && reportSummary.missingCount}}" class="missing-toggle" bindtap="toggleMissingIndicators">{{showMissing ? '收起' : '展开'}}未录入的 {{reportSummary.missingCount}} 项 {{showMissing ? '⌃' : '⌄'}}</button>
+        <text class="note">↑ 偏高　↓ 偏低 · 按本份报告参考范围判断</text>
       </view>
-    </view>
-
-    <view class="report-info-section">
-      <text class="section-title">报告信息</text>
-      <view class="info-card">
-        <view class="info-row">
-          <text class="info-label">已填写</text>
-          <text class="info-value">{{reportSummary.filledCount}}/{{reportSummary.totalCount}}</text>
-        </view>
-        <view class="info-row">
-          <text class="info-label">更新时间</text>
-          <text class="info-value">{{reportData.formattedUpdatedAt}}</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="secondary-actions">
-      <button class="secondary-btn" bindtap="onCopyReport">复制报告</button>
-      <button class="secondary-btn danger" bindtap="onDeleteReport" disabled="{{deleting}}">
-        {{deleting ? '删除中...' : '删除报告'}}
-      </button>
-    </view>
-  </view>
+      <text class="updated-at">更新于 {{reportData.formattedUpdatedAt}}</text>
+    </block>
+  </block>
 </view>

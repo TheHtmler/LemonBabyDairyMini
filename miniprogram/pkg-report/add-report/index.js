@@ -73,6 +73,7 @@ Page({
     // 基础信息
     babyInfo: null,
     reportDate: '',
+    labName: '',
     selectedReportType: 'blood_ms',
     
     // 报告类型配置
@@ -188,6 +189,7 @@ Page({
       
       this.setData({
         reportDate: ReportModel.formatDate(reportData.reportDate),
+        labName: reportData.labName || '',
         selectedReportType: reportData.reportType,
         indicatorData: reportData.indicators || {}
       });
@@ -278,6 +280,10 @@ Page({
       reportDate: e.detail.value,
       hasUnsavedChanges: true
     });
+  },
+
+  onLabNameInput(e) {
+    this.setData({ labName: e.detail.value, hasUnsavedChanges: true });
   },
 
   // 切换报告类型
@@ -1019,7 +1025,7 @@ Page({
 
       this.setData({ saving: true });
 
-      const { babyInfo, reportDate, selectedReportType, indicatorData, mode, reportId } = this.data;
+      const { babyInfo, reportDate, labName, selectedReportType, indicatorData, mode, reportId } = this.data;
       
       // 创建报告数据
       await ReportRepository.saveReport({
@@ -1027,6 +1033,7 @@ Page({
         reportId,
         babyUid: babyInfo.babyUid,
         reportDate: new Date(reportDate),
+        labName: labName.trim(),
         reportType: selectedReportType,
         indicators: sanitizeIndicatorsForSave(indicatorData)
       });

@@ -618,6 +618,9 @@ async function rebuildDatesSafely(babyUid, dates = [], options = {}) {
   const datesToRebuild = dates.slice(0, Math.max(0, maxDays));
 
   if (dates.length > datesToRebuild.length) {
+    if (options.strictRebuild === true) {
+      throw new Error('daily_summary_rebuild_limit');
+    }
     console.warn(`[dailyRecordV2] 跳过 ${dates.length - datesToRebuild.length} 天汇总重建，避免云请求过载`);
   }
 
@@ -629,9 +632,13 @@ async function rebuildDatesSafely(babyUid, dates = [], options = {}) {
       if (summary) {
         rememberVerifiedEmptySummary(summary);
         rebuilt.push(summary);
+      } else if (options.strictRebuild === true) {
+        throw new Error('daily_summary_rebuild_empty');
       }
     } catch (error) {
       console.error('重建当日汇总失败:', date, error);
+      // 报告对比要求区分失败与真实空记录，其他调用方保留原有容错方式。
+      if (options.strictRebuild === true) throw error;
       if (isClientRequestRateLimited(error)) {
         console.warn('[dailyRecordV2] 云请求频率受限，停止后续日期重建');
         break;
@@ -651,6 +658,7 @@ async function rebuildDatesSafely(babyUid, dates = [], options = {}) {
 // rebuildMissing=true 时，对范围内“缺失、过期(isDirty)、或无喂养摄入的假 fresh”天按原始记录重建并补齐，
 // 让趋势与「数据记录」页同源（会顺延体重、为缺数据的天写入空汇总）。
 // skipDates 用于排除“调用方另行实时处理”的日期（如首页的今天），避免与 getDailyRecordV2 并发重建产生重复文档。
+// strictRebuild=true 时，重建失败、无结果或超出重建上限向调用方抛错，不使用过期汇总兜底。
 async function getDailySummariesForRange(babyUid, startDate, endDate, options = {}) {
   const rawSummaries = await DailySummaryV2Model.getRange(babyUid, startDate, endDate);
   const summaries = dedupeSummariesByDate(rawSummaries);
