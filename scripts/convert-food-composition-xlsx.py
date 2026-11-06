@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -32,6 +33,10 @@ CORE_FIELD_MAP = {
     "碳水化物(g)": "carbs",
     "膳食纤维(g)": "fiber",
     "钠(mg)": "sodium",
+}
+CORE_FIELD_UNITS = {
+    "calories": "kcal", "protein": "g", "fat": "g",
+    "carbs": "g", "fiber": "g", "sodium": "mg",
 }
 
 EXTRA_FIELD_MAP = {
@@ -141,20 +146,49 @@ def iter_rows(zip_file: ZipFile, target: str, shared_strings: list[str]) -> list
     return rows
 
 
-def to_number(value: str | int | float | None) -> float | int:
-    if value in ("", None):
-        return 0
+def to_number(value: str | int | float | None) -> float | int | None:
+    # 空白和不可解析值必须保留为缺失，不能伪装成确认的零值。
+    if value is None or isinstance(value, bool) or str(value).strip() == "":
+        return None
     try:
         number = float(value)
     except (TypeError, ValueError):
-        return 0
+        return None
+    if not math.isfinite(number) or number < 0:
+        return None
     if number.is_integer():
         return int(number)
-    return round(number, 4)
+    return number
 
 
-def value_for(row: dict[str, str], header: str) -> float | int:
+def value_for(row: dict[str, str], header: str) -> float | int | None:
     return to_number(row.get(header, ""))
+
+
+def parse_nutrient(value: str | int | float | None, unit: str) -> dict:
+    number = to_number(value)
+    result = {
+        "state": "known" if number is not None else "missing",
+        "value": number,
+        "unit": unit,
+        "rawValue": value,
+        "source": SOURCE_NAME,
+    }
+    if number is not None:
+        return result
+    text = str(value).strip() if value is not None else ""
+    if text.lower() in ("tr", "trace", "微量"):
+        result["state"] = "trace"
+        return result
+    # 阈值仅接受原字段单位；带不同单位的文本保留原文，等待人工核对。
+    match = re.fullmatch(r"[<＜]\s*((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(kcal|mg|g)?", text)
+    if match and (not match.group(2) or match.group(2) == unit):
+        limit = to_number(match.group(1))
+        if limit is not None:
+            result.update({"state": "below_limit", "limit": limit})
+            return result
+    result["reason"] = "missing" if not text else "unparsed_source_value"
+    return result
 
 
 def load_workbook_rows(path: Path) -> tuple[list[list[str]], list[list[str]]]:
@@ -216,9 +250,12 @@ def convert_foods(food_rows: list[list[str]], category_rows: list[list[str]]) ->
         root_name = categories.get(root_code, {}).get("name", "")
         level2_name = categories.get(category_code, {}).get("name", "")
         category_name = root_name or level2_name or "未分类"
-        nutrition_per_basis = {
-            target: value_for(row, source)
+        nutrient_states = {
+            target: parse_nutrient(row.get(source, ""), CORE_FIELD_UNITS[target])
             for source, target in CORE_FIELD_MAP.items()
+        }
+        nutrition_per_basis = {
+            field: entry["value"] for field, entry in nutrient_states.items()
         }
         nutrition_extra = {
             target: value_for(row, source)
@@ -243,6 +280,7 @@ def convert_foods(food_rows: list[list[str]], category_rows: list[list[str]]) ->
                 "unit": "g",
             },
             "nutritionPerBasis": nutrition_per_basis,
+            "nutrientStates": nutrient_states,
             "nutritionExtra": nutrition_extra,
             "origin": {
                 "source": SOURCE_NAME,

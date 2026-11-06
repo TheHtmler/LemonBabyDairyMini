@@ -2,7 +2,7 @@ const { normalizeProteinComposition, validateProteinComposition } = require('../
 const { invalidateSearchForBaby } = require('../utils/searchSession');
 // 食物数据模型，支持自定义食物库与营养计算
 const SystemFoodIndex = require('../utils/systemFoodIndex');
-const { updateManualProvenance, withMissingNutrition } = require('../utils/nutritionProvenance');
+const { normalizeFoodNutritionValues, reconcileFoodNutritionForWrite } = require('../utils/nutritionProvenance');
 const { stableHash } = require('../utils/nutritionHash');
 const db = wx.cloud.database();
 const _ = db.command;
@@ -180,7 +180,7 @@ class FoodModel {
     };
     result.proteinText = this._formatProteinText(result.protein);
 
-    return withMissingNutrition(result, nutrition, food);
+    return result;
   }
 
   /**
@@ -235,7 +235,7 @@ class FoodModel {
     try {
       const sourceFood = this._formatFoodDoc(systemFood);
       const sourceFoodCode = sourceFood.sourceFoodCode || sourceFood.origin?.foodCode || '';
-      const snapshotPayload = this._normalizeFoodForWrite({
+      const snapshotInput = {
         ...sourceFood,
         ...foodData,
         isPhotoAiRecognized: foodData.isPhotoAiRecognized === true,
@@ -255,9 +255,9 @@ class FoodModel {
         snapshotCreatedAt: db.serverDate(),
         nutritionSource: 'user_override',
         createdBy: foodData.createdBy || (getApp()?.globalData?.openid) || wx.getStorageSync?.('openid') || ''
-      });
-      delete snapshotPayload._id;
-      delete snapshotPayload.aliasText;
+      };
+      delete snapshotInput._id;
+      delete snapshotInput.aliasText;
 
       const existing = await this.collection
         .where({
@@ -269,11 +269,13 @@ class FoodModel {
 
       if (existing.data && existing.data.length > 0) {
         const existingId = existing.data[0]._id;
-        const { createdAt, createdBy, ...updatePayload } = snapshotPayload;
+        // 覆盖已有副本时仍传递原始输入和编辑字段，不能先归一化后丢失手工确认依据。
+        const { createdAt, createdBy, ...updatePayload } = snapshotInput;
         await this.updateFood(existingId, { ...updatePayload, expectedVersion: Number(existing.data[0].version || 0) }, babyUid);
         return existingId;
       }
 
+      const snapshotPayload = this._normalizeFoodForWrite(snapshotInput, sourceFood);
       const res = await this.collection.add({
         data: {
           ...snapshotPayload,
@@ -342,41 +344,17 @@ class FoodModel {
     }
 
     try {
-      const payload = this._normalizeFoodForWrite(foodData);
-      payload.updatedAt = db.serverDate();
       const currentRes = await this.collection.doc(foodId).get();
       const current = currentRes.data;
       if (!current || current.isSystem || current.babyUid !== babyUid) throw new Error('未找到可更新的自定义食物');
+      const expectedVersion = foodData.expectedVersion;
+      if (!Number.isInteger(expectedVersion) || expectedVersion < 0) throw new Error('缺少读取时的食物版本，请重新打开表单');
+      if (Number(current.version || 0) !== expectedVersion) throw new Error('食物已被其他监护人修改，请重新打开表单');
+      const payload = this._normalizeFoodForWrite(foodData, current);
+      payload.updatedAt = db.serverDate();
       // 保存来源属于条目历史，普通编辑不能把拍照来源改成手动来源。
       if (typeof current.isPhotoAiRecognized === 'boolean') payload.isPhotoAiRecognized = current.isPhotoAiRecognized;
       else delete payload.isPhotoAiRecognized;
-      const expectedVersion = foodData.expectedVersion;
-      if (!Number.isInteger(expectedVersion) || expectedVersion < 0) throw new Error('缺少读取时的食物版本，请重新打开表单');
-      delete payload.expectedVersion;
-      if (Number(current.version || 0) !== expectedVersion) throw new Error('食物已被其他监护人修改，请重新打开表单');
-      const basisChanged = payload.nutritionBasis && (payload.nutritionBasis.unit !== current.nutritionBasis?.unit ||
-        payload.nutritionBasis.quantity !== current.nutritionBasis?.quantity);
-      if (current.recognitionMeta && !basisChanged) {
-        const before = current.nutritionPerBasis || {};
-        const displayed = this._normalizeNutrition(before);
-        const submitted = foodData.rawNutrition || foodData.nutritionPerBasis || foodData.nutritionPerUnit || {};
-        const touched = foodData.touchedNutritionFields || [];
-        // 表单显示的舍入值未被编辑时，保留数据库精度和原来源。
-        Object.keys(displayed).forEach(field => {
-          const value = submitted[field];
-          if (!touched.includes(field) && current.recognitionMeta.fieldSources?.[field] &&
-              value != null && String(value).trim() !== '' && before[field] != null &&
-              Number.isFinite(Number(before[field])) && Number(value) === displayed[field]) {
-            payload.nutritionPerBasis[field] = Number(before[field]);
-          }
-        });
-      }
-      if (current.recognitionMeta) payload.recognitionMeta = updateManualProvenance(current.recognitionMeta,
-        current.nutritionPerBasis, payload.nutritionPerBasis, basisChanged, foodData.rawNutrition, foodData.touchedNutritionFields);
-      payload.nutritionPerBasis = withMissingNutrition(payload.nutritionPerBasis, payload);
-      if (basisChanged && payload.recognitionMeta) payload.recognitionMeta.finalBasis = {
-        ...payload.nutritionBasis, material: 'food'
-      };
       if (payload.recognitionMeta && payload.name && payload.name !== current.name) {
         payload.recognitionMeta.comparisonStatus = 'stale';
         payload.recognitionMeta.identityEdited = true;
@@ -393,6 +371,11 @@ class FoodModel {
         .update({
           data: {
             ...payload,
+            // 整体替换嵌套对象，确保旧的缺失原因和 fieldSources 不被数据库合并保留。
+            nutritionPerBasis: _.set(payload.nutritionPerBasis),
+            nutrientStates: _.set(payload.nutrientStates),
+            missingNutrition: _.set(payload.missingNutrition),
+            ...(payload.recognitionMeta ? { recognitionMeta: _.set(payload.recognitionMeta) } : {}),
             sharedBabyUids: _.addToSet(babyUid)
           }
         });
@@ -448,7 +431,7 @@ class FoodModel {
 
   _normalizeNutritionPerBasis(food = {}) {
     const nutrition = food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {};
-    return withMissingNutrition(this._normalizeNutrition(nutrition), nutrition, food);
+    return this._normalizeNutrition(normalizeFoodNutritionValues(nutrition));
   }
 
   _getDefaultSourceType(food = {}) {
@@ -459,11 +442,12 @@ class FoodModel {
     return 'user_custom';
   }
 
-  _normalizeFoodForWrite(foodData = {}) {
+  _normalizeFoodForWrite(foodData = {}, previous) {
     const images = this._normalizeFoodImages(foodData);
     const nutritionBasis = this._normalizeNutritionBasis(foodData);
     const rawNutrition = foodData.rawNutrition || foodData.nutritionPerBasis || foodData.nutritionPer100g || foodData.nutritionPerUnit || {};
-    const nutritionPerBasis = withMissingNutrition(this._normalizeNutrition(rawNutrition), rawNutrition);
+    const input = { ...foodData, nutritionBasis };
+    const nutritionState = reconcileFoodNutritionForWrite(input, this._normalizeNutrition(rawNutrition), previous || input);
     const sourceType = this._getDefaultSourceType(foodData);
     const isSystem = sourceType === 'system' || foodData.ownerType === 'system' || foodData.isSystem === true;
 
@@ -478,7 +462,7 @@ class FoodModel {
       image: foodData.image ? String(foodData.image).trim() : images[0] || '',
       images,
       nutritionBasis,
-      nutritionPerBasis,
+      ...nutritionState,
       nutritionExtra: foodData.nutritionExtra || {},
       updatedAt: foodData.updatedAt
     };
@@ -578,8 +562,7 @@ class FoodModel {
       baseUnit: nutritionBasis.unit,
       baseQuantity: nutritionBasis.quantity,
       nutritionPerUnit: nutritionPerBasis,
-      missingNutrition: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].map(field =>
-        [field, (food.recognitionMeta?.missingFields || []).includes(field)])),
+      missingNutrition: Object.fromEntries(['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium'].map(field => [field, false])),
       proteinSource: food.proteinSource || 'natural',
       proteinQuality: food.proteinQuality || '',
       nutritionSource: food.nutritionSource || (isSystem ? 'system' : 'manual'),

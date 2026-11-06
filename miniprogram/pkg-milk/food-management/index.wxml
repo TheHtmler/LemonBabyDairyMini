@@ -108,27 +108,27 @@
               <view class="food-nutrition">
                 <view class="nutrition-item highlight calories">
                   <text class="label">热量</text>
-                  <text class="value">{{item.missingNutrition.calories ? '--' : (item.nutritionPerUnit.calories || 0)}}kcal</text>
+                  <text class="value">{{item.nutritionPerUnit.calories || 0}}kcal</text>
                 </view>
                 <view class="nutrition-item highlight protein">
                   <text class="label">蛋白</text>
-                  <text class="value">{{item.missingNutrition.protein ? '--' : (item.nutritionPerUnit.protein || 0)}}g</text>
+                  <text class="value">{{item.nutritionPerUnit.protein || 0}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">碳水</text>
-                  <text class="value">{{item.missingNutrition.carbs ? '--' : (item.nutritionPerUnit.carbs || 0)}}g</text>
+                  <text class="value">{{item.nutritionPerUnit.carbs || 0}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">脂肪</text>
-                  <text class="value">{{item.missingNutrition.fat ? '--' : (item.nutritionPerUnit.fat || 0)}}g</text>
+                  <text class="value">{{item.nutritionPerUnit.fat || 0}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">膳纤</text>
-                  <text class="value">{{item.missingNutrition.fiber ? '--' : (item.nutritionPerUnit.fiber || 0)}}g</text>
+                  <text class="value">{{item.nutritionPerUnit.fiber || 0}}g</text>
                 </view>
                 <view class="nutrition-item">
                   <text class="label">钠</text>
-                  <text class="value">{{item.missingNutrition.sodium ? '--' : (item.nutritionPerUnit.sodium || 0)}}mg</text>
+                  <text class="value">{{item.nutritionPerUnit.sodium || 0}}mg</text>
                 </view>
               </view>
               <view class="food-actions">
@@ -182,7 +182,6 @@
         <text class="modal-subtitle">{{editingFoodIsSystemSource ? '可根据包装说明调整成分后再保存到我的食物库' : (editingFoodId ? '修改后会同步更新我的食物库' : '先完善基础信息，再补充营养和展示信息')}}</text>
       </view>
       <view class="modal-body">
-        <view class="nutrition-photo-entry"><view><text class="nutrition-entry-title">拍照填写营养</text><text class="nutrition-entry-hint">识别、参考查询和缺项补充一次完成</text></view><button size="mini" bindtap="startNutritionRecognition" disabled="{{savingNutrition}}">拍照 / 选图</button></view>
         <view class="form-section">
           <view class="form-section-header">
             <text class="form-section-title">必填信息</text>
@@ -362,5 +361,4 @@
       </view>
     </view>
   </view>
-  <nutrition-recognition wx:if="{{showAddModal}}" id="nutritionRecognition" show-trigger="{{false}}" form-session-id="{{formSessionId}}" baby-uid="{{babyUid}}" mode="food_label" draft="{{formData}}" category-options="{{categorySuggestions}}" protein-options="{{proteinTypeOptions}}" expected-version="{{editingVersion}}" source-system-food-id="{{editingSourceSystemFoodId}}" target-id="{{editingFoodIsSystemSource ? '' : editingFoodId}}" bind:recovered="onRecognitionRecovered" bind:patch="onNutritionPatch" bind:categorycreated="onNutritionCategoryCreated" />
 </view>

@@ -1,7 +1,9 @@
 const {
   resolveFoodIntakePremiumProteinSplit
 } = require('../search/recipeProtein');
-const { withMissingNutrition } = require('./nutritionProvenance');
+const { normalizeFoodNutritionValues } = require('./nutritionProvenance');
+
+const NUTRITION_AGGREGATION_VERSION = 1;
 
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) {
@@ -86,6 +88,7 @@ function createEmptyMacroSummary() {
 function createEmptyDailySummaryV2(babyUid = '', date = '') {
   return {
     schemaVersion: 1,
+    nutritionAggregationVersion: NUTRITION_AGGREGATION_VERSION,
     recordType: 'daily_summary',
     source: 'summary_builder_v2',
     status: 'active',
@@ -156,7 +159,7 @@ function roundMilkSummary(summary = {}) {
 }
 
 function roundFoodSummary(summary = {}) {
-  return withMissingNutrition({
+  return {
     calories: roundValue(summary.calories),
     protein: roundValue(summary.protein),
     naturalProtein: roundValue(summary.naturalProtein),
@@ -168,7 +171,7 @@ function roundFoodSummary(summary = {}) {
     carbs: roundValue(summary.carbs),
     fiber: roundValue(summary.fiber),
     fluidVolume: roundValue(summary.fluidVolume)
-  }, summary);
+  };
 }
 
 function roundTreatmentSummary(summary = {}) {
@@ -274,7 +277,8 @@ function resolveFoodProteinSplit(record = {}) {
 function mergeFoodNutrition(records = []) {
   const summary = createEmptyFoodSummary();
   (Array.isArray(records) ? records : []).forEach((record = {}) => {
-    const nutrition = record.nutrition || {};
+    // 缺失营养值按 0 累加，分类蛋白仍按原记录推导，避免默认零覆盖旧记录的分类依据。
+    const nutrition = normalizeFoodNutritionValues(record.nutrition);
     const { natural, special } = resolveFoodProteinSplit(record);
     const naturalProtein = toNumber(natural);
     const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
@@ -291,8 +295,6 @@ function mergeFoodNutrition(records = []) {
     summary.fat += toNumber(nutrition.fat);
     summary.carbs += toNumber(nutrition.carbs);
     summary.fiber += toNumber(nutrition.fiber);
-    Object.assign(summary, withMissingNutrition(summary, nutrition, record.foodSnapshot,
-      ...((record.recipeSource || {}).ingredientsSnapshot || []).filter(item => Number(item.quantity) > 0).flatMap(item => [item.nutrition, item.foodSnapshot])));
     if (String(record.unit || '').toLowerCase() === 'ml') {
       summary.fluidVolume += toNumber(record.quantity);
     }
@@ -504,6 +506,8 @@ function normalizeDailySummaryV2(summary = {}) {
   return {
     ...createEmptyDailySummaryV2(summary.babyUid, summary.date),
     ...summary,
+    // 仅重新计算原始记录才能升级，不能把旧摘要的空值归一化后冒充新版本。
+    nutritionAggregationVersion: Number(summary.nutritionAggregationVersion) || 0,
     basicInfo: {
       ...createEmptyBasicInfo(),
       ...(summary.basicInfo || {})
@@ -597,6 +601,7 @@ function buildDailySummaryV2(input = {}) {
 }
 
 module.exports = {
+  NUTRITION_AGGREGATION_VERSION,
   createEmptyDailySummaryV2,
   buildDailySummaryV2,
   mergeMilkNutrition,

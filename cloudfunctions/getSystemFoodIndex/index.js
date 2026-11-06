@@ -8,6 +8,7 @@ cloud.init({
 const db = cloud.database();
 
 const FOOD_COLLECTION = 'food_catalog';
+const INDEX_SCHEMA_VERSION = 3;
 const DEFAULT_BATCH_SIZE = 50;
 const MAX_BATCH_SIZE = 100;
 const INDEX_FIELDS = {
@@ -19,6 +20,9 @@ const INDEX_FIELDS = {
   status: true,
   schemaVersion: true,
   sourceFoodCode: true,
+  categoryLevel1Code: true,
+  categoryLevel2Code: true,
+  origin: true,
   nutritionBasis: true,
   servingBasis: true,
   baseQuantity: true,
@@ -54,15 +58,29 @@ function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
 }
 
-function normalizeNutrition(nutrition = {}) {
-  return {
-    calories: Number(nutrition.calories) || 0,
-    protein: Number(nutrition.protein) || 0,
-    carbs: Number(nutrition.carbs) || 0,
-    fat: Number(nutrition.fat) || 0,
-    fiber: Number(nutrition.fiber) || 0,
-    sodium: Number(nutrition.sodium) || 0
-  };
+function nutritionFromStates(states) {
+  return Object.fromEntries(['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'].map(field => {
+    const entry = states[field];
+    // 选择食物时提供可直接展示和计算的零值，来源状态另行保留。
+    return [field, entry?.state === 'known' ? entry.value : 0];
+  }));
+}
+
+function buildIndexNutrientStates(food, nutrition, basis) {
+  const states = indexNutrientStates(food, nutrition, basis);
+  Object.entries(states).forEach(([field, state]) => {
+    const previous = food.nutrientStates?.[field];
+    const proof = previous && typeof previous === 'object' ? previous : {};
+    // 索引保留原始证据，不能在云端、客户端连续归一化时丢失真实零与微量的区别。
+    state.rawValue = Object.prototype.hasOwnProperty.call(proof, 'rawValue')
+      ? proof.rawValue : (nutrition[field] === undefined ? null : nutrition[field]);
+    ['source', 'limit'].forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(proof, key)) state[key] = proof[key];
+    });
+    if (proof.sourceState || proof.state) state.sourceState = proof.sourceState || proof.state;
+    if (state.state !== 'known' && proof.reason) state.reason = proof.reason;
+  });
+  return states;
 }
 
 function buildSearchText(food = {}) {
@@ -77,10 +95,17 @@ function buildSearchText(food = {}) {
 }
 
 function toIndexItem(food = {}) {
-  const nutritionBasis = food.nutritionBasis || {
-    quantity: Number(food.baseQuantity) || 100,
-    unit: food.baseUnit || 'g'
+  const nutrition = food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {};
+  const sourceBasis = food.nutritionBasis || food.servingBasis || {
+    quantity: food.baseQuantity != null ? food.baseQuantity : (food.nutritionPer100g ? 100 : null),
+    unit: food.baseUnit || (food.nutritionPer100g ? 'g' : null)
   };
+  const quantity = Number(sourceBasis.quantity);
+  const nutritionBasis = {
+    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : null,
+    unit: sourceBasis.unit || null
+  };
+  const nutrientStates = buildIndexNutrientStates(food, nutrition, nutritionBasis);
 
   return {
     _id: food._id || '',
@@ -98,12 +123,11 @@ function toIndexItem(food = {}) {
     sourceFoodCode: food.sourceFoodCode || food.origin?.foodCode || '',
     categoryLevel1Code: food.categoryLevel1Code || food.origin?.categoryLevel1Code || '',
     categoryLevel2Code: food.categoryLevel2Code || food.origin?.categoryLevel2Code || '',
-    nutritionBasis: {
-      quantity: Number(nutritionBasis.quantity) || 100,
-      unit: nutritionBasis.unit || 'g'
-    },
-    nutritionPerBasis: normalizeNutrition(food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {}),
-    nutrientStates: indexNutrientStates(food, food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {}, food.nutritionBasis || food.servingBasis || { quantity: food.baseQuantity != null ? food.baseQuantity : food.nutritionPer100g ? 100 : null, unit: food.baseUnit || (food.nutritionPer100g ? 'g' : null) }),
+    nutritionBasis,
+    nutritionPerBasis: nutritionFromStates(nutrientStates),
+    nutrientStates,
+    ...(food.recognitionMeta ? { recognitionMeta: food.recognitionMeta } : {}),
+    origin: food.origin || {},
     proteinSource: food.proteinSource || 'natural',
     proteinQuality: food.proteinQuality || '',
     proteinComposition: food.proteinComposition || null,
@@ -139,7 +163,7 @@ exports.main = async (event = {}) => {
     returned: index.length,
     nextStart,
     hasMore: nextStart !== null,
-    indexSchemaVersion: 2,
+    indexSchemaVersion: INDEX_SCHEMA_VERSION,
     index
   };
 };

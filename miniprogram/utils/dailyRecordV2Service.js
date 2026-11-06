@@ -6,7 +6,8 @@ const WaterRecordModel = require('../models/waterRecord');
 const SleepRecordModel = require('../models/sleepRecord');
 const DailySummaryV2Model = require('../models/dailySummaryV2');
 const {
-  buildDailySummaryV2
+  buildDailySummaryV2,
+  NUTRITION_AGGREGATION_VERSION
 } = require('./dailySummaryV2Utils');
 
 const db = wx.cloud.database();
@@ -231,7 +232,8 @@ function hasTreatmentFluidSummary(summary = {}) {
 }
 
 function hasCompatibleSummarySchema(summary = {}) {
-  return hasFoodProteinQualitySummary(summary) && hasTreatmentFluidSummary(summary);
+  return Number(summary.nutritionAggregationVersion) === NUTRITION_AGGREGATION_VERSION
+    && hasFoodProteinQualitySummary(summary) && hasTreatmentFluidSummary(summary);
 }
 
 // 判断汇总是否已有喂养摄入（奶/辅食）。
@@ -326,7 +328,6 @@ function shouldRefreshCachedSummary(cachedSummary = {}, rebuiltSummary = {}) {
     return true;
   }
   if (!!cachedSummary.food?.premiumProteinEstimated !== !!rebuiltSummary.food?.premiumProteinEstimated) return true;
-  if (JSON.stringify(cachedSummary.food?.missingFields || []) !== JSON.stringify(rebuiltSummary.food?.missingFields || [])) return true;
 
   if ((cachedSummary.food?.premiumProteinEstimateCount || 0) !== (rebuiltSummary.food?.premiumProteinEstimateCount || 0)) return true;
 

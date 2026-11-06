@@ -1,6 +1,7 @@
 const { validateProteinComposition, validateProteinCompositionDetails } = require('../../utils/search-core/proteinComposition');
 const { createEmptyProteinComposition } = require('../../utils/proteinCompositionForm');
 const FoodModel = require('../../models/food');
+const { normalizeFoodNutritionValues } = require('../../utils/nutritionProvenance');
 const FoodCategoryModel = require('../../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
 const { normalizeCategoryName } = require('../components/nutrition-recognition/lib/core/classification');
@@ -157,11 +158,6 @@ Page({
     } catch (error) {
       handleError(error, { title: '加载食物失败' });
     }
-  },
-
-  async onRecognitionRecovered(event) {
-    if (event.detail.babyUid !== this.data.babyUid || event.detail.babyUid !== getBabyUid()) return;
-    this.hideAddModal(true); await this.loadFoods();
   },
 
   async onShow() {
@@ -628,7 +624,7 @@ Page({
       return createEmptyFormData(this.getDefaultCategory(), '');
     }
 
-    const nutrition = food.nutritionPerBasis || food.nutritionPerUnit || {};
+    const nutrition = normalizeFoodNutritionValues(food.nutritionPerBasis || food.nutritionPerUnit);
     const proteinSource = food.proteinSource || 'natural';
     const proteinQuality = food.proteinQuality || '';
     const typeIndex = this.data.proteinTypeOptions.findIndex(
@@ -641,14 +637,14 @@ Page({
       categoryLevel2: food.categoryLevel2 || '',
       unit: food.nutritionBasis?.unit || food.baseUnit || '',
       baseQuantity: String(food.nutritionBasis?.quantity != null ? food.nutritionBasis.quantity : (food.baseQuantity != null ? food.baseQuantity : 100)),
-      calories: !(food.recognitionMeta?.missingFields || []).includes('calories') && nutrition.calories != null ? String(nutrition.calories) : '',
+      calories: String(nutrition.calories),
       image: food.image || '',
       images: food.images || (food.image ? [food.image] : []),
-      protein: !(food.recognitionMeta?.missingFields || []).includes('protein') && nutrition.protein != null ? String(nutrition.protein) : '',
-      carbs: !(food.recognitionMeta?.missingFields || []).includes('carbs') && nutrition.carbs != null ? String(nutrition.carbs) : '',
-      fat: !(food.recognitionMeta?.missingFields || []).includes('fat') && nutrition.fat != null ? String(nutrition.fat) : '',
-      fiber: !(food.recognitionMeta?.missingFields || []).includes('fiber') && nutrition.fiber != null ? String(nutrition.fiber) : '',
-      sodium: !(food.recognitionMeta?.missingFields || []).includes('sodium') && nutrition.sodium != null ? String(nutrition.sodium) : '',
+      protein: String(nutrition.protein),
+      carbs: String(nutrition.carbs),
+      fat: String(nutrition.fat),
+      fiber: String(nutrition.fiber),
+      sodium: String(nutrition.sodium),
       proteinComposition: food.proteinComposition || null,
       proteinTypeIndex: typeIndex >= 0 ? typeIndex : -1
     };
@@ -752,39 +748,6 @@ Page({
     this.setData({
       [`formData.${field}`]: e.detail.value
     });
-    this.selectComponent('#nutritionRecognition')?.markManual(field, e.detail.value);
-  },
-
-  startNutritionRecognition() {
-    if (!this.data.savingNutrition && !this.data.uploadingFoodImage) this.selectComponent('#nutritionRecognition')?.startRecognition();
-  },
-
-  onNutritionCategoryCreated(e) {
-    if (e.detail.babyUid !== this.data.babyUid) return;
-    const name = String(e.detail.name || '').trim();
-    if (!name) return;
-    const customCategories = Array.from(new Set((this.data.customCategories || []).concat(name)));
-    this.setData({ customCategories,
-      categorySuggestions: this.mergeCategorySuggestions((this.data.categorySuggestions || []).concat(name), { customCategories }) });
-  },
-
-  onNutritionPatch(e) {
-    const patch = e.detail.patch || {};
-    const updates = {};
-    Object.keys(patch).forEach(field => { updates['formData.' + field] = ['images', 'proteinComposition'].includes(field) ? patch[field] : field === 'proteinTypeIndex' ? Number(patch[field]) : String(patch[field]); });
-    if (patch.images) updates.foodImagePreviewUrls = patch.images;
-    if (patch.unit) updates.unitPickerIndex = this.getUnitPickerIndex(patch.unit);
-    if (patch.category) updates.categoryPickerIndex = this.getCategoryPickerIndex(patch.category);
-    if (patch.proteinTypeIndex != null) {
-      // 识别结果可携带本次新填的成分；仅无明细的类型切换需要生成空草稿。
-      if (!Object.prototype.hasOwnProperty.call(patch, 'proteinComposition')) Object.assign(updates, this.proteinCompositionUpdates(Number(patch.proteinTypeIndex)));
-      if (this.getProteinTypeOption(Number(patch.proteinTypeIndex))?.quality !== 'mixed') updates['formData.proteinComposition'] = null;
-      updates.proteinTypeTouched = true; updates.proteinTypeRecommendationText = '';
-    }
-    (e.detail.manualFields || []).forEach(field => {
-      if (NUTRITION_NUMBER_FIELDS.includes(field)) this._touchedNutritionFields = { ...(this._touchedNutritionFields || {}), [field]: true };
-    });
-    this.setData(updates);
   },
 
   onEnergyKjInput(e) {
@@ -805,7 +768,6 @@ Page({
     this.setData({
       'formData.calories': kcalValue
     });
-    this.selectComponent('#nutritionRecognition')?.markManual('calories', kcalValue);
     wx.showToast({ title: '已换算为 kcal', icon: 'success' });
   },
 
@@ -885,7 +847,6 @@ Page({
       unitPickerIndex: index,
       'formData.unit': value
     });
-    this.selectComponent('#nutritionRecognition')?.markManual('unit', value);
   },
 
   toggleUnitCreator() {
@@ -916,7 +877,6 @@ Page({
         'formData.unit': value,
         unitSuggestions: currentSuggestions
       });
-      this.selectComponent('#nutritionRecognition')?.markManual('unit', value);
       wx.showToast({ title: '单位已存在', icon: 'none' });
       return;
     }
@@ -929,7 +889,6 @@ Page({
       unitPickerIndex: this.getUnitPickerIndex(value, nextSuggestions),
       'formData.unit': value
     });
-    this.selectComponent('#nutritionRecognition')?.markManual('unit', value);
     wx.showToast({ title: '单位已添加', icon: 'success' });
   },
 
@@ -999,7 +958,6 @@ Page({
   onProteinCompositionChange(event) {
     if (this.data.savingNutrition) return;
     this.setData({ 'formData.proteinComposition': event.detail.value });
-    this.selectComponent('#nutritionRecognition')?.markManual('proteinComposition', event.detail.value);
   },
 
   proteinCompositionUpdates(nextIndex) {
@@ -1091,9 +1049,7 @@ Page({
   },
 
   async saveFood() {
-    const recognition = this.selectComponent('#nutritionRecognition');
-    if (this._saving || this.data.uploadingFoodImage || recognition?.isBusy()) return;
-    if (recognition?.hasPendingSave()) { wx.showToast({ title: '请先恢复上次保存状态', icon: 'none' }); return; }
+    if (this._saving || this.data.uploadingFoodImage) return;
     if (!this.validateForm()) {
       return;
     }
@@ -1111,13 +1067,7 @@ Page({
 
       const editingId = this.data.editingFoodId;
 
-      if (recognition?.hasSession()) {
-        await recognition.confirm({
-          targetId: this.data.editingFoodIsSystemSource ? '' : editingId,
-          sourceSystemFoodId: this.data.editingSourceSystemFoodId || '', form: newFood
-        });
-        FoodModel.markCatalogDirty(babyUid);
-      } else if (editingId && this.data.editingFoodIsSystemSource) {
+      if (editingId && this.data.editingFoodIsSystemSource) {
         const sourceFood = (this.data.foods || []).find(item => item._id === this.data.editingSourceSystemFoodId || item._id === editingId);
         await FoodModel.createSystemFoodSnapshot(sourceFood, newFood, babyUid);
       } else if (editingId) {

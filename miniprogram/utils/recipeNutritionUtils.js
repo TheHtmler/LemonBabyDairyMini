@@ -1,5 +1,5 @@
 const { summarizePremiumProteinFromIngredients, scalePremiumProteinSummary, resolveDayPremiumProteinBase, isRecipeIntakeRecord, resolvePremiumProteinRatio, resolveFoodIntakePremiumProteinSplit } = require('./search-core/recipeProtein');
-const { withMissingNutrition } = require('./nutritionProvenance');
+const { normalizeFoodNutritionValues } = require('./nutritionProvenance');
 const NUTRITION_FIELDS = [
   'calories',
   'protein',
@@ -34,10 +34,12 @@ function emptyNutrition() {
 
 function addNutrition(a = {}, b = {}) {
   const result = emptyNutrition();
+  const left = normalizeFoodNutritionValues(a);
+  const right = normalizeFoodNutritionValues(b);
   NUTRITION_FIELDS.forEach((field) => {
-    result[field] = roundNumber((Number(a[field]) || 0) + (Number(b[field]) || 0), 2);
+    result[field] = roundNumber((Number(left[field]) || 0) + (Number(right[field]) || 0), 2);
   });
-  return withMissingNutrition(result, a, b);
+  return result;
 }
 
 function scaleNutrition(nutritionPer100g = {}, ateG) {
@@ -47,12 +49,13 @@ function scaleNutrition(nutritionPer100g = {}, ateG) {
 
 function scaleNutritionByFactor(nutrition = {}, factor) {
   const scale = Number(factor);
+  const values = normalizeFoodNutritionValues(nutrition);
   const result = emptyNutrition();
   const safeFactor = Number.isFinite(scale) ? scale : 0;
   NUTRITION_FIELDS.forEach((field) => {
-    result[field] = roundNumber((Number(nutrition[field]) || 0) * safeFactor, 2);
+    result[field] = roundNumber((Number(values[field]) || 0) * safeFactor, 2);
   });
-  return withMissingNutrition(result, nutrition);
+  return result;
 }
 
 function summarizeBatchFromIngredients(ingredients = []) {
@@ -153,7 +156,7 @@ function buildIngredientNutrition(food, quantity, deps = {}) {
     calculateNutrition = FoodModel.calculateNutrition.bind(FoodModel);
   }
 
-  const base = calculateNutrition(food, quantity) || {};
+  const base = normalizeFoodNutritionValues(calculateNutrition(food, quantity));
   const proteinSource = (food && food.proteinSource) || 'natural';
   const { naturalProtein, specialProtein } = splitProtein(
     base.protein,
@@ -161,7 +164,7 @@ function buildIngredientNutrition(food, quantity, deps = {}) {
     food && food.proteinSplit
   );
 
-  return withMissingNutrition({
+  return {
     calories: roundNumber(Number(base.calories) || 0, 2),
     protein: roundNumber(Number(base.protein) || 0, 2),
     naturalProtein,
@@ -170,7 +173,7 @@ function buildIngredientNutrition(food, quantity, deps = {}) {
     carbs: roundNumber(Number(base.carbs) || 0, 2),
     fiber: roundNumber(Number(base.fiber) || 0, 2),
     sodium: roundNumber(Number(base.sodium) || 0, 2)
-  }, base, food);
+  };
 }
 
 function hasProteinSplit(nutrition = {}) {
@@ -307,7 +310,7 @@ function summarizeRecipeNutrition(ingredients = [], yieldWeightG) {
 
   return {
     totalNutrition,
-    nutritionPer100g: withMissingNutrition(nutritionPer100g, totalNutrition),
+    nutritionPer100g,
     proteinSource: deriveProteinSource(totalNutrition)
   };
 }

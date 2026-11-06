@@ -2,7 +2,6 @@
   "navigationBarTitleText": "食物管理",
   "enablePullDownRefresh": false,
   "usingComponents": {
-    "nutrition-recognition": "../components/nutrition-recognition/index",
     "protein-composition-editor": "/components/protein-composition-editor/index",
     "protein-help-popover": "/components/protein-help-popover/index"
   }

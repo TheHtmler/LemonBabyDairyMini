@@ -4,7 +4,7 @@ const db = wx.cloud.database();
 const META_COLLECTION = 'system_food_catalog_meta';
 const FOOD_COLLECTION = 'food_catalog';
 const META_KEY = 'system_food_index';
-const INDEX_SCHEMA_VERSION = 2;
+const INDEX_SCHEMA_VERSION = 3;
 const STORAGE_KEYS = {
   version: 'system_food_index_version',
   total: 'system_food_index_total',
@@ -33,6 +33,11 @@ const INDEX_FIELDS = {
   categoryLevel1Code: true,
   categoryLevel2Code: true,
   nutritionBasis: true,
+  servingBasis: true,
+  baseQuantity: true,
+  baseUnit: true,
+  nutritionPer100g: true,
+  nutritionPerUnit: true,
   nutritionPerBasis: true,
   nutrientStates: true,
   recognitionMeta: true,
@@ -48,15 +53,29 @@ function normalizeSearchText(value = '') {
   return value.toString().trim().toLowerCase().replace(/\s+/g, '');
 }
 
-function normalizeNutrition(nutrition = {}) {
-  return {
-    calories: Number(nutrition.calories) || 0,
-    protein: Number(nutrition.protein) || 0,
-    carbs: Number(nutrition.carbs) || 0,
-    fat: Number(nutrition.fat) || 0,
-    fiber: Number(nutrition.fiber) || 0,
-    sodium: Number(nutrition.sodium) || 0
-  };
+function nutritionFromStates(states) {
+  return Object.fromEntries(['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'].map(field => {
+    const entry = states[field];
+    // 选择食物时提供可直接展示和计算的零值，来源状态另行保留。
+    return [field, entry?.state === 'known' ? entry.value : 0];
+  }));
+}
+
+function buildIndexNutrientStates(food, nutrition, basis) {
+  const states = indexNutrientStates(food, nutrition, basis);
+  Object.entries(states).forEach(([field, state]) => {
+    const previous = food.nutrientStates?.[field];
+    const proof = previous && typeof previous === 'object' ? previous : {};
+    // 索引保留原始证据，不能在云端、客户端连续归一化时丢失真实零与微量的区别。
+    state.rawValue = Object.prototype.hasOwnProperty.call(proof, 'rawValue')
+      ? proof.rawValue : (nutrition[field] === undefined ? null : nutrition[field]);
+    ['source', 'limit'].forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(proof, key)) state[key] = proof[key];
+    });
+    if (proof.sourceState || proof.state) state.sourceState = proof.sourceState || proof.state;
+    if (state.state !== 'known' && proof.reason) state.reason = proof.reason;
+  });
+  return states;
 }
 
 function buildSearchText(food = {}) {
@@ -71,10 +90,17 @@ function buildSearchText(food = {}) {
 }
 
 function toIndexItem(food = {}) {
-  const nutritionBasis = food.nutritionBasis || {
-    quantity: Number(food.baseQuantity) || 100,
-    unit: food.baseUnit || 'g'
+  const nutrition = food.nutritionPerBasis || food.nutritionPer100g || food.nutritionPerUnit || {};
+  const sourceBasis = food.nutritionBasis || food.servingBasis || {
+    quantity: food.baseQuantity != null ? food.baseQuantity : (food.nutritionPer100g ? 100 : null),
+    unit: food.baseUnit || (food.nutritionPer100g ? 'g' : null)
   };
+  const quantity = Number(sourceBasis.quantity);
+  const nutritionBasis = {
+    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : null,
+    unit: sourceBasis.unit || null
+  };
+  const nutrientStates = buildIndexNutrientStates(food, nutrition, nutritionBasis);
 
   return {
     _id: food._id || '',
@@ -92,12 +118,11 @@ function toIndexItem(food = {}) {
     sourceFoodCode: food.sourceFoodCode || food.origin?.foodCode || '',
     categoryLevel1Code: food.categoryLevel1Code || food.origin?.categoryLevel1Code || '',
     categoryLevel2Code: food.categoryLevel2Code || food.origin?.categoryLevel2Code || '',
-    nutritionBasis: {
-      quantity: Number(nutritionBasis.quantity) || 100,
-      unit: nutritionBasis.unit || 'g'
-    },
-    nutritionPerBasis: normalizeNutrition(food.nutritionPerBasis || food.nutritionPerUnit || {}),
-    nutrientStates: indexNutrientStates(food, food.nutritionPerBasis || food.nutritionPerUnit || {}, nutritionBasis),
+    nutritionBasis,
+    nutritionPerBasis: nutritionFromStates(nutrientStates),
+    nutrientStates,
+    ...(food.recognitionMeta ? { recognitionMeta: food.recognitionMeta } : {}),
+    origin: food.origin || {},
     proteinSource: food.proteinSource || 'natural',
     proteinQuality: food.proteinQuality || '',
     proteinComposition: food.proteinComposition || null,
@@ -115,6 +140,8 @@ async function getRemoteMeta() {
 }
 
 function getLocalIndex() {
+  // 所有本地读取（包括 preferLocal 和网络失败兜底）统一拒绝旧版零值语义。
+  if (Number(wx.getStorageSync(STORAGE_KEYS.schemaVersion)) !== INDEX_SCHEMA_VERSION) return [];
   const chunkCount = Number(wx.getStorageSync(STORAGE_KEYS.chunkCount)) || 0;
   if (chunkCount > 0) {
     const chunks = [];
@@ -125,7 +152,7 @@ function getLocalIndex() {
       }
       chunks.push(...chunk);
     }
-    return chunks;
+    return chunks.length === Number(wx.getStorageSync(STORAGE_KEYS.chunksTotal)) ? chunks : [];
   }
 
   const index = wx.getStorageSync(STORAGE_KEYS.index);
@@ -208,6 +235,10 @@ async function downloadSystemFoodIndexFromCloudFunction(options = {}) {
       if (!result || result.ok !== true || !Array.isArray(result.index)) {
         return null;
       }
+      if (Number(result.indexSchemaVersion) !== INDEX_SCHEMA_VERSION) {
+        console.warn('系统食物云端索引版本不兼容，请先更新 getSystemFoodIndex 云函数');
+        return null;
+      }
 
       allIndex.push(...result.index.map(toIndexItem));
       if (typeof options.onProgress === 'function') {
@@ -236,6 +267,8 @@ async function downloadSystemFoodIndexFromCloudFunction(options = {}) {
 
 function saveLocalIndex(meta, index) {
   const previousChunkCount = Number(wx.getStorageSync(STORAGE_KEYS.chunkCount)) || 0;
+  // 全部分片写完后再提交版本，写入中断时不读取半份新旧混合缓存。
+  wx.removeStorageSync(STORAGE_KEYS.schemaVersion);
   const chunks = [];
   for (let i = 0; i < index.length; i += MAX_STORAGE_CHUNK_ITEMS) {
     chunks.push(index.slice(i, i + MAX_STORAGE_CHUNK_ITEMS));
@@ -250,10 +283,10 @@ function saveLocalIndex(meta, index) {
 
   wx.setStorageSync(STORAGE_KEYS.version, meta.version);
   wx.setStorageSync(STORAGE_KEYS.total, index.length);
-  wx.setStorageSync(STORAGE_KEYS.schemaVersion, INDEX_SCHEMA_VERSION);
   wx.setStorageSync(STORAGE_KEYS.chunkCount, chunks.length);
   wx.setStorageSync(STORAGE_KEYS.chunksTotal, index.length);
   wx.removeStorageSync(STORAGE_KEYS.index);
+  wx.setStorageSync(STORAGE_KEYS.schemaVersion, INDEX_SCHEMA_VERSION);
 }
 
 function shouldAcceptDownloadedIndex(meta, index) {
@@ -277,7 +310,8 @@ async function getSystemFoodIndex(options = {}) {
     meta = await getRemoteMeta();
   } catch (error) {
     console.warn('读取系统食物索引版本失败，将使用本地缓存:', error);
-    return getLocalIndex();
+    const localIndex = getLocalIndex();
+    if (localIndex.length > 0 && !options.forceRefresh) return localIndex;
   }
 
   if (!options.forceRefresh && isLocalIndexFresh(meta)) {

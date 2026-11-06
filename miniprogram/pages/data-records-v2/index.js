@@ -20,7 +20,7 @@ const WaterRecordModel = require('../../models/waterRecord');
 const SleepRecordModel = require('../../models/sleepRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
-const { withMissingNutrition } = require('../../utils/nutritionProvenance');
+const { normalizeFoodNutritionValues } = require('../../utils/nutritionProvenance');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
@@ -2801,7 +2801,7 @@ function createDataRecordsPageConfig(options = {}) {
       proteinSource,
       proteinQuality,
       sourceType: food.sourceType || (food.isSystem ? 'system' : 'user_custom'),
-      nutrition: withMissingNutrition({
+      nutrition: normalizeFoodNutritionValues({
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
         naturalProtein: roundNumber(naturalProtein, 2),
@@ -2810,7 +2810,7 @@ function createDataRecordsPageConfig(options = {}) {
         fat: roundNumber(Number(nutrition.fat) || 0, 2),
         fiber: roundNumber(Number(nutrition.fiber) || 0, 2),
         sodium: roundNumber(Number(nutrition.sodium) || 0, 2)
-      }, nutrition, food),
+      }),
       naturalProtein: roundNumber(naturalProtein, 2),
       specialProtein: roundNumber(specialProtein, 2),
       milkType: food.milkType || '',
@@ -4364,6 +4364,10 @@ function createDataRecordsPageConfig(options = {}) {
     const summaryMacro = serviceResult.summary?.macroSummary;
     const macroSummary = summaryMacro || calculateMacroSummary(intakes, feedings, this.data.nutritionSettings || {}, treatmentRecordsToSet);
     const intakeOverview = calculateIntakeOverview(feedings, intakes, recordWeight, this.data.nutritionSettings || {}, treatmentRecordsToSet);
+    if (serviceResult.summary?.food) {
+      // 明细和汇总共用逐条按零兜底的合计，避免展开后计算口径变化。
+      intakeOverview.food = this.buildIntakeOverviewFromDailySummary(serviceResult.summary).food;
+    }
     const waterFromSummary = serviceResult.summary?.water || {};
     const waterVolumeFromRecords = waterRecordsToSet.reduce((sum, item) => sum + (Number(item.volumeMl) || 0), 0);
     intakeOverview.water = {
@@ -7037,7 +7041,7 @@ function createDataRecordsPageConfig(options = {}) {
   buildProteinSummaryDisplayFromMacroSummary(macroSummary = {}, intakeOverview = this.data.intakeOverview) {
     const natural = (Number(macroSummary.naturalProtein) || 0).toFixed(2);
     const special = (Number(macroSummary.specialProtein) || 0).toFixed(2);
-    const total = (Number(macroSummary.protein) || (Number(natural) + Number(special))).toFixed(2);
+    const total = (Number(macroSummary.protein) || 0).toFixed(2);
     const milkNormalProtein = intakeOverview?.milk?.normal?.protein || 0;
     const foodPremiumProtein = intakeOverview?.food?.premiumProtein || 0;
     const foodRegularProtein = intakeOverview?.food?.regularProtein || 0;

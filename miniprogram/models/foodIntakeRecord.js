@@ -12,7 +12,7 @@ const {
   stripProtectedAuditFields
 } = require('../utils/auditFields');
 const { recordHardDelete } = require('./auditLog');
-const { copyRecognitionMetaForSnapshot, withMissingNutrition } = require('../utils/nutritionProvenance');
+const { copyRecognitionMetaForSnapshot, normalizeFoodNutritionValues } = require('../utils/nutritionProvenance');
 
 function serverDate() {
   return db.serverDate();
@@ -31,40 +31,25 @@ function hasOwn(record = {}, key) {
 }
 
 function normalizeNutrition(nutrition = {}) {
-  return withMissingNutrition({
-    calories: toNumber(nutrition.calories),
-    protein: toNumber(nutrition.protein),
-    naturalProtein: toNumber(nutrition.naturalProtein),
-    specialProtein: toNumber(nutrition.specialProtein),
-    fat: toNumber(nutrition.fat),
-    carbs: toNumber(nutrition.carbs),
-    fiber: toNumber(nutrition.fiber),
-    sodium: toNumber(nutrition.sodium)
-  }, nutrition);
+  const values = normalizeFoodNutritionValues(nutrition);
+  return {
+    calories: values.calories,
+    protein: values.protein,
+    naturalProtein: toNumber(values.naturalProtein),
+    specialProtein: toNumber(values.specialProtein),
+    fat: values.fat,
+    carbs: values.carbs,
+    fiber: values.fiber,
+    sodium: values.sodium
+  };
 }
 
 function normalizePlannedNutrition(nutrition = {}) {
-  const source = nutrition || {};
-  const normalized = normalizeNutrition(source);
-
-  if (hasOwn(source, 'sodium')) {
-    normalized.sodium = source.missingFields?.includes('sodium') ? null : toNumber(source.sodium);
-  }
-
-  return normalized;
+  return normalizeNutrition(nutrition);
 }
 
 function normalizeNutritionPerBasis(nutrition = {}) {
-  return withMissingNutrition({
-    calories: toNumber(nutrition.calories),
-    protein: toNumber(nutrition.protein),
-    naturalProtein: toNumber(nutrition.naturalProtein),
-    specialProtein: toNumber(nutrition.specialProtein),
-    fat: toNumber(nutrition.fat),
-    carbs: toNumber(nutrition.carbs),
-    fiber: toNumber(nutrition.fiber),
-    sodium: toNumber(nutrition.sodium)
-  }, nutrition);
+  return normalizeNutrition(nutrition);
 }
 
 function normalizeNutritionBasis(basis = {}) {
@@ -83,7 +68,7 @@ function normalizeFoodSnapshot(foodSnapshot = {}, fallbackName = '') {
   const hasNutrition = rawNutrition && ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium']
     .some(field => hasOwn(rawNutrition, field));
   const nutritionPerBasis = hasNutrition
-    ? withMissingNutrition(normalizeNutritionPerBasis(rawNutrition), foodSnapshot) : null;
+    ? normalizeNutritionPerBasis(rawNutrition) : null;
   const recognitionMeta = copyRecognitionMetaForSnapshot(foodSnapshot.recognitionMeta);
 
   return {
@@ -151,7 +136,7 @@ function normalizeFoodIntakeRecord(record = {}) {
     recipeSource,
     quantity: toNumber(record.quantity),
     unit: record.unit || 'g',
-    nutrition: withMissingNutrition(normalizeNutrition(record.nutrition), foodSnapshot),
+    nutrition: normalizeNutrition(record.nutrition),
     completionPercent: toNumber(record.completionPercent, 100),
     notes: record.notes || '',
     legacySource: record.legacySource || {
@@ -166,7 +151,7 @@ function normalizeFoodIntakeRecord(record = {}) {
     normalizedRecord.plannedQuantity = toNumber(record.plannedQuantity);
   }
   if (hasOwn(record, 'plannedNutrition')) {
-    normalizedRecord.plannedNutrition = withMissingNutrition(normalizePlannedNutrition(record.plannedNutrition), foodSnapshot);
+    normalizedRecord.plannedNutrition = normalizePlannedNutrition(record.plannedNutrition);
   }
 
   return normalizedRecord;
@@ -179,7 +164,7 @@ function normalizeFoodIntakeUpdate(data = {}) {
     updateData.quantity = toNumber(updateData.quantity);
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'nutrition')) {
-    updateData.nutrition = withMissingNutrition(normalizeNutrition(updateData.nutrition), updateData.foodSnapshot);
+    updateData.nutrition = normalizeNutrition(updateData.nutrition);
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'foodSnapshot')) {
     updateData.foodSnapshot = normalizeFoodSnapshot(updateData.foodSnapshot, updateData.foodName);
@@ -197,7 +182,7 @@ function normalizeFoodIntakeUpdate(data = {}) {
     updateData.plannedQuantity = toNumber(updateData.plannedQuantity);
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'plannedNutrition')) {
-    updateData.plannedNutrition = withMissingNutrition(normalizePlannedNutrition(updateData.plannedNutrition), updateData.foodSnapshot);
+    updateData.plannedNutrition = normalizePlannedNutrition(updateData.plannedNutrition);
   }
   if (Object.prototype.hasOwnProperty.call(updateData, 'completionPercent')) {
     updateData.completionPercent = toNumber(updateData.completionPercent, 100);
