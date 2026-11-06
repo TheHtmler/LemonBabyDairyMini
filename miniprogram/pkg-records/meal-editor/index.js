@@ -1,5 +1,5 @@
 const FoodModel = require('../../models/food');
-const { withMissingNutrition } = require('../../utils/nutritionProvenance');
+const { normalizeFoodNutritionValues } = require('../../utils/nutritionProvenance');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const RecipeModel = require('../../models/recipe');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
@@ -404,14 +404,13 @@ function createEmptyMealSummary() {
 
 function calculateMealSummary(items = []) {
   const summary = (items || []).reduce((acc, item) => {
-    const nutrition = item?.nutrition || {};
+    const nutrition = normalizeFoodNutritionValues(item?.nutrition);
     acc.calories += Number(nutrition.calories) || 0;
     acc.protein += Number(nutrition.protein) || 0;
     acc.carbs += Number(nutrition.carbs) || 0;
     acc.fat += Number(nutrition.fat) || 0;
     acc.fiber += Number(nutrition.fiber) || 0;
     acc.sodium += Number(nutrition.sodium) || 0;
-    Object.assign(acc, withMissingNutrition(acc, nutrition, item?.foodSnapshot));
     return acc;
   }, createEmptyMealSummary());
 
@@ -429,9 +428,8 @@ function calculateMealSummary(items = []) {
     showPremiumProtein: premiumProtein > 0 || !!premiumSummary.premiumProteinEstimated,
     carbs: roundNumber(summary.carbs, 2),
     fat: roundNumber(summary.fat, 2),
-    fiber: summary.fiber === null ? null : roundNumber(summary.fiber, 2),
-    sodium: summary.sodium === null ? null : roundNumber(summary.sodium, 2),
-    ...(summary.missingFields ? { missingFields: summary.missingFields } : {})
+    fiber: roundNumber(summary.fiber, 2),
+    sodium: roundNumber(summary.sodium, 2)
   };
 }
 
@@ -1362,7 +1360,7 @@ Page({
       category: (food.category || '').toString().trim() || '辅食',
       unit: food.baseUnit || 'g',
       quantity: numQuantity,
-      nutrition: withMissingNutrition({
+      nutrition: normalizeFoodNutritionValues({
         calories: roundCalories(Number(nutrition.calories) || 0),
         protein: roundNumber(Number(nutrition.protein) || 0, 2),
         proteinText: formatProteinText(nutrition.protein),
@@ -1372,7 +1370,7 @@ Page({
         sodium: roundNumber(Number(nutrition.sodium) || 0, 2),
         naturalProtein: roundNumber(naturalProtein, 2),
         specialProtein: roundNumber(specialProtein, 2)
-      }, nutrition, food),
+      }),
       proteinSource,
       proteinQuality: food.proteinQuality || '',
       libraryScope,
@@ -1934,7 +1932,7 @@ Page({
         specialProtein: item.specialProtein || 0,
         milkType: item.milkType || '',
         foodName: item.nameSnapshot || item.food?.name || '',
-        nutrition: withMissingNutrition({
+        nutrition: normalizeFoodNutritionValues({
           calories: item.nutrition?.calories || 0,
           protein: item.nutrition?.protein || 0,
           carbs: item.nutrition?.carbs || 0,
@@ -1943,7 +1941,7 @@ Page({
           sodium: item.nutrition?.sodium || 0,
           naturalProtein: item.naturalProtein || item.nutrition?.naturalProtein || 0,
           specialProtein: item.specialProtein || item.nutrition?.specialProtein || 0
-        }, item.nutrition, item.foodSnapshot)
+        })
       };
     });
   },

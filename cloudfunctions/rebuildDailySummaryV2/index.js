@@ -1,6 +1,6 @@
 const { resolveFoodIntakePremiumProteinSplit } = require('./lib/search/recipeProtein');
 const cloud = require('wx-server-sdk');
-const { withMissingNutrition } = require('./lib/nutritionProvenance');
+const { normalizeFoodNutritionValues } = require('./lib/nutritionProvenance');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -16,6 +16,8 @@ const BOWEL_RECORDS_COLLECTION = 'bowel_records';
 const WATER_RECORDS_COLLECTION = 'water_records';
 const SLEEP_RECORDS_COLLECTION = 'sleep_records';
 const GROWTH_RECORDS_V2_COLLECTION = 'growth_records_v2';
+
+const NUTRITION_AGGREGATION_VERSION = 1;
 
 function toNumber(value, fallback = 0) {
   if (value === '' || value === undefined || value === null) return fallback;
@@ -77,6 +79,7 @@ function createEmptyBasicInfo() {
 function createEmptySummary(babyUid = '', date = '') {
   return {
     schemaVersion: 1,
+    nutritionAggregationVersion: NUTRITION_AGGREGATION_VERSION,
     recordType: 'daily_summary',
     source: 'summary_builder_v2',
     status: 'active',
@@ -217,10 +220,9 @@ function resolveFoodProteinSplit(record = {}) {
 
 function mergeFoodNutrition(records = []) {
   const food = createEmptySummary().food;
-  const sources = [];
   (records || []).forEach((record = {}) => {
-    const nutrition = record.nutrition || {};
-    sources.push(nutrition, record.foodSnapshot, ...((record.recipeSource || {}).ingredientsSnapshot || []).filter(item => Number(item.quantity) > 0).flatMap(item => [item.nutrition, item.foodSnapshot]));
+    // 缺失营养值按 0 累加，分类蛋白仍按原记录推导，避免默认零覆盖旧记录的分类依据。
+    const nutrition = normalizeFoodNutritionValues(record.nutrition);
     const split = resolveFoodProteinSplit(record);
     const naturalProtein = toNumber(split.natural);
     const qualitySplit = resolveFoodIntakePremiumProteinSplit(record, naturalProtein);
@@ -241,8 +243,8 @@ function mergeFoodNutrition(records = []) {
       food.fluidVolume += toNumber(record.quantity);
     }
   });
-  Object.keys(food).forEach(key => { if (key !== 'premiumProteinEstimated') food[key] = roundValue(food[key]); });
-  return withMissingNutrition(food, ...sources);
+  Object.keys(food).forEach(key => { if (typeof food[key] === 'number') food[key] = roundValue(food[key]); });
+  return food;
 }
 
 function shouldCountTreatmentItem(item = {}) {

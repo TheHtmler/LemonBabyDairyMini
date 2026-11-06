@@ -10,6 +10,67 @@ const collection = db.collection('food_catalog');
 const DEFAULT_BATCH_SIZE = 200;
 const MAX_BATCH_SIZE = 200;
 const DEFAULT_LOG_LIMIT = 20;
+const NUTRIENT_UNITS = { calories: 'kcal', protein: 'g', fat: 'g', carbs: 'g', fiber: 'g', sodium: 'mg' };
+
+function nutritionNumber(value) {
+  if (!(typeof value === 'number' || typeof value === 'string' && value.trim() !== '')) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function normalizeSystemNutrition(item, nutrition) {
+  const values = {};
+  const states = {};
+  const meta = item.recognitionMeta || {};
+  Object.entries(NUTRIENT_UNITS).forEach(([field, unit]) => {
+    const previous = item.nutrientStates?.[field];
+    const proof = previous && typeof previous === 'object' ? previous : { state: previous };
+    const raw = nutrition[field];
+    const entry = raw && typeof raw === 'object' ? raw : { value: raw };
+    const declared = proof.state || entry.state;
+    let value = nutritionNumber(entry.value);
+    let state = 'known';
+    let reason = '';
+    if ([item.missingFields, nutrition.missingFields, meta.missingFields]
+      .some(fields => Array.isArray(fields) && fields.includes(field))) {
+      state = 'missing';
+    } else if ((proof.unit || entry.unit || unit) !== unit) {
+      state = 'not_convertible';
+      reason = 'unknown_unit';
+    } else if (['missing', 'trace', 'below_limit', 'unverified', 'not_convertible'].includes(declared)) {
+      state = declared;
+      reason = proof.reason || '';
+    } else if (declared && !['known', 'present'].includes(declared)) {
+      state = 'missing';
+      reason = 'unknown_nutrient_state';
+    } else if (value === null) {
+      state = 'missing';
+      reason = 'missing_or_invalid_value';
+    } else if (value === 0 && !['known', 'present'].includes(declared) && proof.explicit !== true
+      && !['label', 'reference', 'manual', 'model_estimate'].includes(meta.fieldSources?.[field])) {
+      // 旧种子把空白也写为零；没有原始字段证据时，不能批量确认为真实零值。
+      state = 'unverified';
+      reason = 'unverified_zero';
+    }
+    if (state !== 'known') value = null;
+    values[field] = value;
+    states[field] = {
+      ...proof,
+      state,
+      value,
+      unit,
+      reason,
+      rawValue: Object.prototype.hasOwnProperty.call(proof, 'rawValue') ? proof.rawValue : (raw === undefined ? null : raw),
+      source: proof.source || item.origin?.source || item.source || 'china_food_composition_table'
+    };
+  });
+  return {
+    nutritionPerBasis: values,
+    nutrientStates: states,
+    missingFields: Object.keys(states).filter(field => states[field].state !== 'known'),
+    missingNutrition: Object.fromEntries(Object.keys(states).map(field => [field, states[field].state !== 'known']))
+  };
+}
 
 function loadFoods() {
   const candidates = [
@@ -30,6 +91,7 @@ function loadFoods() {
 
 function normalizeFood(item) {
   const nutrition = item.nutritionPerBasis || item.nutritionPer100g || item.nutritionPerUnit || {};
+  const normalizedNutrition = normalizeSystemNutrition(item, nutrition);
   const basis = item.nutritionBasis || {
     quantity: Number(item.baseQuantity) || 100,
     unit: item.baseUnit || 'g'
@@ -60,21 +122,15 @@ function normalizeFood(item) {
       quantity: Number(basis.quantity) || 100,
       unit: basis.unit || 'g'
     },
-    nutritionPerBasis: {
-      calories: Number(nutrition.calories) || 0,
-      carbs: Number(nutrition.carbs) || 0,
-      fat: Number(nutrition.fat) || 0,
-      fiber: Number(nutrition.fiber) || 0,
-      protein: Number(nutrition.protein) || 0,
-      sodium: Number(nutrition.sodium) || 0
-    },
+    ...normalizedNutrition,
+    ...(item.recognitionMeta ? { recognitionMeta: item.recognitionMeta } : {}),
     nutritionExtra: item.nutritionExtra || {},
     origin: {
       source: origin.source || item.source || 'china_food_composition_table',
       foodCode: sourceFoodCode,
       categoryLevel1Code,
       categoryLevel2Code,
-      ediblePercent: Number(origin.ediblePercent) || Number(item.ediblePercent) || 0
+      ediblePercent: nutritionNumber(origin.ediblePercent ?? item.ediblePercent)
     },
     sourceFoodCode,
     categoryLevel1Code,
@@ -235,9 +291,23 @@ exports.main = async (event = {}) => {
 
     if (existing) {
       const id = existing._id;
+      const recognitionMeta = existing.recognitionMeta || payload.recognitionMeta ? {
+        ...(existing.recognitionMeta || {}),
+        ...(payload.recognitionMeta || {}),
+        // 原始识别证据保留，当前营养值的缺项与来源改用本次导入结果。
+        missingFields: payload.missingFields,
+        fieldSources: Object.fromEntries(Object.keys(payload.nutrientStates)
+          .filter(field => payload.nutrientStates[field].state === 'known')
+          .map(field => [field, 'reference'])),
+        finalBasis: { ...payload.nutritionBasis, material: 'food' }
+      } : null;
       await collection.doc(id).update({
         data: {
           ...payload,
+          nutritionPerBasis: _.set(payload.nutritionPerBasis),
+          nutrientStates: _.set(payload.nutrientStates),
+          missingNutrition: _.set(payload.missingNutrition),
+          ...(recognitionMeta ? { recognitionMeta: _.set(recognitionMeta) } : {}),
           createdAt: existing.createdAt || db.serverDate()
         }
       });
