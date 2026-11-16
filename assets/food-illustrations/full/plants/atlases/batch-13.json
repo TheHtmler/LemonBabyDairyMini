@@ -1,0 +1,227 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-046003",
+      "name": "鲜菱角",
+      "description": "鲜菱角，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046003.jpg",
+      "sourceCodes": [
+        "046003",
+        "046011"
+      ]
+    },
+    {
+      "key": "plants-046005",
+      "name": "蒲菜（鲜）[香蒲，甘蒲，野茭白]",
+      "description": "蒲菜（鲜）[香蒲，甘蒲，野茭白]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046005.jpg",
+      "sourceCodes": [
+        "046005"
+      ]
+    },
+    {
+      "key": "plants-046006",
+      "name": "水芹菜",
+      "description": "水芹菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046006.jpg",
+      "sourceCodes": [
+        "046006"
+      ]
+    },
+    {
+      "key": "plants-046007",
+      "name": "茭白（鲜）[茭笋，茭粑]",
+      "description": "茭白（鲜）[茭笋，茭粑]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046007.jpg",
+      "sourceCodes": [
+        "046007"
+      ]
+    },
+    {
+      "key": "plants-046008",
+      "name": "荸荠（鲜）[马蹄，地栗]",
+      "description": "荸荠（鲜）[马蹄，地栗]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046008.jpg",
+      "sourceCodes": [
+        "046008"
+      ]
+    },
+    {
+      "key": "plants-046009",
+      "name": "莼菜（瓶装）[花案菜]",
+      "description": "莼菜（瓶装）[花案菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046009.jpg",
+      "sourceCodes": [
+        "046009"
+      ]
+    },
+    {
+      "key": "plants-046010",
+      "name": "藕[莲藕]",
+      "description": "藕[莲藕]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/046010.jpg",
+      "sourceCodes": [
+        "046010"
+      ]
+    },
+    {
+      "key": "plants-047101",
+      "name": "鲜山药",
+      "description": "鲜山药，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047101.jpg",
+      "sourceCodes": [
+        "047101",
+        "047104"
+      ]
+    },
+    {
+      "key": "plants-047102",
+      "name": "豆薯（鲜）[凉薯，地瓜，沙葛]",
+      "description": "豆薯（鲜）[凉薯，地瓜，沙葛]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047102.jpg",
+      "sourceCodes": [
+        "047102"
+      ]
+    },
+    {
+      "key": "plants-047103",
+      "name": "葛（鲜）[葛署，粉葛]",
+      "description": "葛（鲜）[葛署，粉葛]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047103.jpg",
+      "sourceCodes": [
+        "047103"
+      ]
+    },
+    {
+      "key": "plants-047105",
+      "name": "山药（干）",
+      "description": "山药（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047105.jpg",
+      "sourceCodes": [
+        "047105"
+      ]
+    },
+    {
+      "key": "plants-047202",
+      "name": "槟榔芋（鲜）",
+      "description": "槟榔芋（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047202.jpg",
+      "sourceCodes": [
+        "047202"
+      ]
+    },
+    {
+      "key": "plants-047203",
+      "name": "芋头[芋艿、毛芋]",
+      "description": "芋头[芋艿、毛芋]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047203.jpg",
+      "sourceCodes": [
+        "047203"
+      ]
+    },
+    {
+      "key": "plants-047204",
+      "name": "芋头（煮）",
+      "description": "芋头（煮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047204.jpg",
+      "sourceCodes": [
+        "047204"
+      ]
+    },
+    {
+      "key": "plants-047301",
+      "name": "姜（鲜）[黄姜]",
+      "description": "姜（鲜）[黄姜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047301.jpg",
+      "sourceCodes": [
+        "047301"
+      ]
+    },
+    {
+      "key": "plants-047302",
+      "name": "姜（干）",
+      "description": "姜（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047302.jpg",
+      "sourceCodes": [
+        "047302"
+      ]
+    },
+    {
+      "key": "plants-047303",
+      "name": "姜（子姜,鲜）[嫩姜]",
+      "description": "姜（子姜,鲜）[嫩姜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047303.jpg",
+      "sourceCodes": [
+        "047303"
+      ]
+    },
+    {
+      "key": "plants-047304",
+      "name": "洋姜（鲜）[菊芋，鬼子姜]",
+      "description": "洋姜（鲜）[菊芋，鬼子姜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/047304.jpg",
+      "sourceCodes": [
+        "047304"
+      ]
+    },
+    {
+      "key": "plants-048001",
+      "name": "艾蒿",
+      "description": "艾蒿，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/048001.jpg",
+      "sourceCodes": [
+        "048001"
+      ]
+    },
+    {
+      "key": "plants-048002",
+      "name": "白花菜",
+      "description": "白花菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/048002.jpg",
+      "sourceCodes": [
+        "048002"
+      ]
+    },
+    {
+      "key": "plants-048003",
+      "name": "白花桔梗",
+      "description": "白花桔梗，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/048003.jpg",
+      "sourceCodes": [
+        "048003"
+      ]
+    },
+    {
+      "key": "plants-048004",
+      "name": "白沙蒿（鲜）[沙蒿]",
+      "description": "白沙蒿（鲜）[沙蒿]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/048004.jpg",
+      "sourceCodes": [
+        "048004"
+      ]
+    },
+    {
+      "key": "plants-048005",
+      "name": "白沙蒿子（干）[沙蒿子]",
+      "description": "白沙蒿子（干）[沙蒿子]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/048005.jpg",
+      "sourceCodes": [
+        "048005"
+      ]
+    },
+    {
+      "key": "plants-048007",
+      "name": "百里香（鲜）",
+      "description": "百里香（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/048007.jpg",
+      "sourceCodes": [
+        "048007"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：鲜菱角。\n第1行第2格：蒲菜（鲜）[香蒲，甘蒲，野茭白]。\n第1行第3格：水芹菜。\n第1行第4格：茭白（鲜）[茭笋，茭粑]。\n第1行第5格：荸荠（鲜）[马蹄，地栗]。\n第1行第6格：瓶装莼菜，打开的无标透明玻璃瓶，瓶中是半透明胶质包裹的绿色小嫩叶。\n第2行第1格：藕[莲藕]。\n第2行第2格：鲜山药。\n第2行第3格：豆薯（鲜）[凉薯，地瓜，沙葛]。\n第2行第4格：葛（鲜）[葛署，粉葛]。\n第2行第5格：山药（干）。\n第2行第6格：槟榔芋（鲜）。\n第3行第1格：芋头[芋艿、毛芋]。\n第3行第2格：芋头（煮）。\n第3行第3格：姜（鲜）[黄姜]。\n第3行第4格：姜（干）。\n第3行第5格：姜（子姜,鲜）[嫩姜]。\n第3行第6格：洋姜（鲜）[菊芋，鬼子姜]。\n第4行第1格：艾蒿。\n第4行第2格：白花菜。\n第4行第3格：白花桔梗，鲜嫩长椭圆叶枝，点缀一朵白色五角钟形花。\n第4行第4格：白沙蒿，银灰绿色细羽裂叶短枝。\n第4行第5格：白沙蒿种子，小碗里细小棕色干种子，禁止画叶子。\n第4行第6格：百里香（鲜）。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-13.png",
+  "reviewed": true
+}

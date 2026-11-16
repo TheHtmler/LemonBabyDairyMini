@@ -1,0 +1,232 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-031502",
+      "name": "豆腐丝（干）",
+      "description": "豆腐丝（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031502.jpg",
+      "sourceCodes": [
+        "031502"
+      ]
+    },
+    {
+      "key": "plants-031503",
+      "name": "豆腐丝（油）",
+      "description": "豆腐丝（油），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031503.jpg",
+      "sourceCodes": [
+        "031503"
+      ]
+    },
+    {
+      "key": "plants-031504",
+      "name": "豆腐卷",
+      "description": "豆腐卷，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031504.jpg",
+      "sourceCodes": [
+        "031504"
+      ]
+    },
+    {
+      "key": "plants-031506",
+      "name": "油豆腐",
+      "description": "油豆腐，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031506.jpg",
+      "sourceCodes": [
+        "031506"
+      ]
+    },
+    {
+      "key": "plants-031507",
+      "name": "干腐竹",
+      "description": "干腐竹，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031507.jpg",
+      "sourceCodes": [
+        "031507",
+        "031508"
+      ]
+    },
+    {
+      "key": "plants-031509",
+      "name": "千张[百页]",
+      "description": "千张[百页]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031509.jpg",
+      "sourceCodes": [
+        "031509"
+      ]
+    },
+    {
+      "key": "plants-031510",
+      "name": "白豆腐干",
+      "description": "白豆腐干，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031510.jpg",
+      "sourceCodes": [
+        "031510",
+        "031511",
+        "031515",
+        "031529"
+      ]
+    },
+    {
+      "key": "plants-031512",
+      "name": "豆腐干（臭干）",
+      "description": "豆腐干（臭干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031512.jpg",
+      "sourceCodes": [
+        "031512"
+      ]
+    },
+    {
+      "key": "plants-031513",
+      "name": "褐色卤香干",
+      "description": "褐色卤香干，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031513.jpg",
+      "sourceCodes": [
+        "031513",
+        "031514",
+        "031516",
+        "031517"
+      ]
+    },
+    {
+      "key": "plants-031518",
+      "name": "豆腐干（熏干）",
+      "description": "豆腐干（熏干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031518.jpg",
+      "sourceCodes": [
+        "031518"
+      ]
+    },
+    {
+      "key": "plants-031519",
+      "name": "豆肝尖",
+      "description": "豆肝尖，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031519.jpg",
+      "sourceCodes": [
+        "031519"
+      ]
+    },
+    {
+      "key": "plants-031520",
+      "name": "素大肠",
+      "description": "素大肠，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031520.jpg",
+      "sourceCodes": [
+        "031520"
+      ]
+    },
+    {
+      "key": "plants-031521",
+      "name": "素火腿",
+      "description": "素火腿，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031521.jpg",
+      "sourceCodes": [
+        "031521"
+      ]
+    },
+    {
+      "key": "plants-031522",
+      "name": "素鸡",
+      "description": "素鸡，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031522.jpg",
+      "sourceCodes": [
+        "031522"
+      ]
+    },
+    {
+      "key": "plants-031523",
+      "name": "素鸡丝卷",
+      "description": "素鸡丝卷，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031523.jpg",
+      "sourceCodes": [
+        "031523"
+      ]
+    },
+    {
+      "key": "plants-031524",
+      "name": "素什锦",
+      "description": "素什锦，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031524.jpg",
+      "sourceCodes": [
+        "031524"
+      ]
+    },
+    {
+      "key": "plants-031525",
+      "name": "炸素虾",
+      "description": "炸素虾，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031525.jpg",
+      "sourceCodes": [
+        "031525"
+      ]
+    },
+    {
+      "key": "plants-031526",
+      "name": "烤麸",
+      "description": "烤麸，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031526.jpg",
+      "sourceCodes": [
+        "031526"
+      ]
+    },
+    {
+      "key": "plants-031527",
+      "name": "豆腐皮",
+      "description": "豆腐皮，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031527.jpg",
+      "sourceCodes": [
+        "031527"
+      ]
+    },
+    {
+      "key": "plants-032101",
+      "name": "绿豆（干）",
+      "description": "绿豆（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/032101.jpg",
+      "sourceCodes": [
+        "032101"
+      ]
+    },
+    {
+      "key": "plants-032102",
+      "name": "绿豆面",
+      "description": "绿豆面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/032102.jpg",
+      "sourceCodes": [
+        "032102"
+      ]
+    },
+    {
+      "key": "plants-032201",
+      "name": "绿豆饼",
+      "description": "绿豆饼，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/032201.jpg",
+      "sourceCodes": [
+        "032201"
+      ]
+    },
+    {
+      "key": "plants-033101",
+      "name": "赤小豆（干）[小豆，红小豆]",
+      "description": "赤小豆（干）[小豆，红小豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/033101.jpg",
+      "sourceCodes": [
+        "033101"
+      ]
+    },
+    {
+      "key": "plants-033201",
+      "name": "小豆粥",
+      "description": "小豆粥，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/033201.jpg",
+      "sourceCodes": [
+        "033201"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：干豆腐丝，干燥深米黄色细条。\n第1行第2格：油豆腐丝，油润金黄色细条。\n第1行第3格：豆腐卷。\n第1行第4格：油豆腐。\n第1行第5格：干腐竹。\n第1行第6格：千张[百页]。\n第2行第1格：白豆腐干。\n第2行第2格：豆腐干（臭干）。\n第2行第3格：褐色卤香干。\n第2行第4格：豆腐干（熏干）。\n第2行第5格：豆肝尖。\n第2行第6格：素大肠。\n第3行第1格：素火腿。\n第3行第2格：素鸡。\n第3行第3格：素鸡丝卷。\n第3行第4格：素什锦。\n第3行第5格：炸素虾。\n第3行第6格：烤麸。\n第4行第1格：豆腐皮。\n第4行第2格：绿豆（干）。\n第4行第3格：绿豆面。\n第4行第4格：绿豆饼。\n第4行第5格：赤小豆（干）[小豆，红小豆]。\n第4行第6格：小豆粥。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-05.png",
+  "reviewed": true
+}

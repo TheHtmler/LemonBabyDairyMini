@@ -1,0 +1,3612 @@
+{
+  "generated": [
+    {
+      "key": "prepared-infant-milk-powder",
+      "sourceCodes": [
+        "131001",
+        "131002"
+      ],
+      "name": "婴儿奶粉",
+      "description": "fine ivory infant milk powder heaped in a small ceramic bowl with a measuring spoon",
+      "atlas": "01",
+      "cell": 0,
+      "descriptionZh": "小碗中的细腻象牙色婴儿奶粉，配量勺。"
+    },
+    {
+      "key": "prepared-soy-milk-powder",
+      "sourceCodes": [
+        "133001"
+      ],
+      "name": "豆奶粉",
+      "description": "pale beige soy milk powder mound in a small ceramic bowl",
+      "atlas": "01",
+      "cell": 1,
+      "descriptionZh": "小碗中堆起的浅米黄色豆奶粉。"
+    },
+    {
+      "key": "prepared-infant-rice-powder",
+      "sourceCodes": [
+        "133002",
+        "133003",
+        "133007"
+      ],
+      "name": "婴儿谷物营养粉",
+      "description": "fine off-white infant rice cereal powder in a bowl and a small scoop",
+      "atlas": "01",
+      "cell": 2,
+      "descriptionZh": "小碗中的乳白色婴儿谷物营养粉，配小勺。"
+    },
+    {
+      "key": "prepared-lotus-cereal-powder",
+      "sourceCodes": [
+        "133004"
+      ],
+      "name": "莲子健儿粉",
+      "description": "cream-colored lotus seed infant cereal powder with two dried peeled lotus seeds beside its bowl",
+      "atlas": "01",
+      "cell": 3,
+      "descriptionZh": "浅黄色莲子谷物粉，碗旁放有去皮莲子。"
+    },
+    {
+      "key": "prepared-infant-milk-cake",
+      "sourceCodes": [
+        "133005",
+        "133006",
+        "133008"
+      ],
+      "name": "婴儿乳米糕",
+      "description": "small soft ivory rice and milk cake squares, delicate porous crumb, no filling",
+      "atlas": "01",
+      "cell": 4,
+      "descriptionZh": "乳白色小块乳米糕，切面细密多孔。"
+    },
+    {
+      "key": "prepared-aiwowo",
+      "sourceCodes": [
+        "141001"
+      ],
+      "name": "艾窝窝",
+      "description": "three round white glutinous rice balls dusted in fine rice flour, one cut open showing brown nut and sesame filling",
+      "atlas": "01",
+      "cell": 5,
+      "descriptionZh": "裹白粉的糯米团，切面露出芝麻坚果馅。"
+    },
+    {
+      "key": "prepared-boiled-sheep-head",
+      "sourceCodes": [
+        "141002"
+      ],
+      "name": "白水羊头肉",
+      "description": "thin pale beige slices of boiled sheep head meat and tongue arranged on a white plate, cooked food only",
+      "atlas": "01",
+      "cell": 6,
+      "descriptionZh": "白盘上的熟羊头肉与舌肉薄片。"
+    },
+    {
+      "key": "prepared-sweet-flour-tea",
+      "sourceCodes": [
+        "141003"
+      ],
+      "name": "茶汤",
+      "description": "a small bowl of thick light-brown sweet millet flour paste, sesame on top",
+      "atlas": "01",
+      "cell": 7,
+      "descriptionZh": "小碗中的棕黄色稠糊状茶汤，表面撒芝麻。"
+    },
+    {
+      "key": "prepared-pork-liver-stew",
+      "sourceCodes": [
+        "141004"
+      ],
+      "name": "炒肝",
+      "description": "a bowl of thick glossy brown garlic gravy with cooked pork liver and intestine slices",
+      "atlas": "01",
+      "cell": 8,
+      "descriptionZh": "褐色浓卤中的熟猪肝、肠片与蒜末。"
+    },
+    {
+      "key": "prepared-spring-roll",
+      "sourceCodes": [
+        "141005"
+      ],
+      "name": "春卷",
+      "description": "three golden fried spring rolls, one cut showing cabbage and carrot filling",
+      "atlas": "01",
+      "cell": 9,
+      "descriptionZh": "金黄酥脆春卷，切面露出蔬菜馅。"
+    },
+    {
+      "key": "prepared-savory-tofu-pudding",
+      "sourceCodes": [
+        "141006"
+      ],
+      "name": "带卤豆腐脑",
+      "description": "a bowl of silky white tofu pudding topped with glossy brown mushroom and egg gravy",
+      "atlas": "01",
+      "cell": 10,
+      "descriptionZh": "嫩白豆腐脑，上覆香菇蛋花浓卤。"
+    },
+    {
+      "key": "prepared-bean-sheet",
+      "sourceCodes": [
+        "141007"
+      ],
+      "name": "粉皮",
+      "description": "translucent broad mung-bean starch sheets folded in a neat pile, pale gray white, uncooked and unseasoned",
+      "atlas": "01",
+      "cell": 11,
+      "descriptionZh": "浅白半透明的宽片淀粉粉皮，折叠堆放。"
+    },
+    {
+      "key": "prepared-fried-starch-sausage",
+      "sourceCodes": [
+        "141008"
+      ],
+      "name": "北京灌肠",
+      "description": "Beijing guanchang, pale golden pan-fried triangular slices of firm starch sausage on a small plate, no meat sausages",
+      "atlas": "01",
+      "cell": 12,
+      "descriptionZh": "盘中金黄焦边的三角形北京灌肠煎片。"
+    },
+    {
+      "key": "prepared-jianbing",
+      "sourceCodes": [
+        "141009"
+      ],
+      "name": "煎饼",
+      "description": "thin golden Chinese grain crepe folded into a semicircle, tiny scallion specks",
+      "atlas": "01",
+      "cell": 13,
+      "descriptionZh": "折叠成半圆的金黄薄煎饼，点缀少量葱末。"
+    },
+    {
+      "key": "prepared-fried-dough-ring",
+      "sourceCodes": [
+        "141010"
+      ],
+      "name": "焦圈",
+      "description": "three crisp dark-golden hollow fried dough rings, thin tubular ring shape",
+      "atlas": "01",
+      "cell": 14,
+      "descriptionZh": "深金黄色细环状酥脆焦圈。"
+    },
+    {
+      "key": "prepared-beijing-eight-pastries",
+      "sourceCodes": [
+        "141011"
+      ],
+      "name": "京八件糕点",
+      "description": "three traditional small pale golden Chinese baked pastries in rectangular, round and flower shapes, a cut pastry shows date filling, no text or stamps",
+      "atlas": "01",
+      "cell": 15,
+      "descriptionZh": "圆形、方形与花形京式糕点，切面露甜馅。"
+    },
+    {
+      "key": "prepared-chestnut-yokan",
+      "sourceCodes": [
+        "141012"
+      ],
+      "name": "栗羊羹",
+      "description": "dark chestnut-brown rectangular sweet bean jelly slices with visible yellow chestnut pieces",
+      "atlas": "01",
+      "cell": 16,
+      "descriptionZh": "褐红色块状栗羊羹，切面可见黄色栗粒。"
+    },
+    {
+      "key": "prepared-plain-liangfen",
+      "sourceCodes": [
+        "141013"
+      ],
+      "name": "凉粉",
+      "description": "plain white translucent mung bean jelly cut into rectangular strips, in a small white bowl, no sauce",
+      "atlas": "01",
+      "cell": 17,
+      "descriptionZh": "碗中未加调料的半透明白色凉粉条。"
+    },
+    {
+      "key": "prepared-seasoned-liangfen",
+      "sourceCodes": [
+        "141014"
+      ],
+      "name": "调味凉粉",
+      "description": "white translucent mung bean jelly strips topped with red chili oil, brown soy sauce and green scallions",
+      "atlas": "01",
+      "cell": 18,
+      "descriptionZh": "白色凉粉条上淋红油、酱汁并撒葱末。"
+    },
+    {
+      "key": "prepared-cold-noodles",
+      "sourceCodes": [
+        "141015"
+      ],
+      "name": "凉面",
+      "description": "a small bowl of cold wheat noodles with thin cucumber shreds and light sesame sauce",
+      "atlas": "01",
+      "cell": 19,
+      "descriptionZh": "碗装凉面配黄瓜丝与浅褐芝麻酱。"
+    },
+    {
+      "key": "prepared-prawn-crackers",
+      "sourceCodes": [
+        "141016"
+      ],
+      "name": "龙虾片",
+      "description": "a small pile of airy curled shrimp crackers, cream and light pink, crisp bubbled surface",
+      "atlas": "01",
+      "cell": 20,
+      "descriptionZh": "乳白与浅粉色蓬松卷曲的龙虾脆片。"
+    },
+    {
+      "key": "prepared-bean-flour-rice-roll",
+      "sourceCodes": [
+        "141017"
+      ],
+      "name": "驴打滚",
+      "description": "three yellow soybean-flour coated glutinous rice rolls with dark red bean spiral centers",
+      "atlas": "01",
+      "cell": 21,
+      "descriptionZh": "裹黄豆粉的糯米卷，断面呈红豆馅螺旋。"
+    },
+    {
+      "key": "prepared-crispy-pastry-roll",
+      "sourceCodes": [
+        "141018"
+      ],
+      "name": "香酥卷",
+      "description": "several thin crisp golden layered pastry rolls, hollow spiral ends",
+      "atlas": "01",
+      "cell": 22,
+      "descriptionZh": "层层酥皮卷成的金黄香酥卷。"
+    },
+    {
+      "key": "prepared-honey-ear-pastry",
+      "sourceCodes": [
+        "141019"
+      ],
+      "name": "蜜麻花糖耳朵",
+      "description": "two glossy deep amber fried honey pastries shaped like double-lobed ears",
+      "atlas": "01",
+      "cell": 23,
+      "descriptionZh": "深琥珀色糖耳朵，表面包裹晶亮糖浆。"
+    },
+    {
+      "key": "prepared-honey-sandao",
+      "sourceCodes": [
+        "141020",
+        "141026"
+      ],
+      "name": "蜜三刀",
+      "description": "golden rectangular Chinese fried pastries glazed with honey syrup and sesame, each has three shallow cuts on top",
+      "atlas": "02",
+      "cell": 0,
+      "descriptionZh": "撒芝麻的蜜三刀方块，表面有浅切口。"
+    },
+    {
+      "key": "prepared-fried-rice-doughnut",
+      "sourceCodes": [
+        "141021"
+      ],
+      "name": "面窝",
+      "description": "Wuhan mianwo, two thin golden fried rice-flour doughnuts, irregular broad disk with small central hole",
+      "atlas": "02",
+      "cell": 1,
+      "descriptionZh": "扁圆金黄面窝，中央有小孔。"
+    },
+    {
+      "key": "prepared-rice-cake",
+      "sourceCodes": [
+        "141022"
+      ],
+      "name": "年糕",
+      "description": "white firm glutinous rice cake block with several smooth oval slices in front",
+      "atlas": "02",
+      "cell": 2,
+      "descriptionZh": "白色年糕整块与光滑椭圆切片。"
+    },
+    {
+      "key": "prepared-niangpi",
+      "sourceCodes": [
+        "141023"
+      ],
+      "name": "酿皮",
+      "description": "broad tan wheat starch cold noodle strips with porous wheat gluten cubes, chili sauce and cucumber",
+      "atlas": "02",
+      "cell": 3,
+      "descriptionZh": "浅褐色宽酿皮配面筋块、黄瓜丝与辣椒酱。"
+    },
+    {
+      "key": "prepared-roasted-barley-flour",
+      "sourceCodes": [
+        "141024"
+      ],
+      "name": "青稞炒面",
+      "description": "toasted tan highland barley flour in a small ceramic bowl, loose dry fine powder",
+      "atlas": "02",
+      "cell": 4,
+      "descriptionZh": "碗中松散的浅褐青稞熟粉。"
+    },
+    {
+      "key": "prepared-hot-dry-noodles",
+      "sourceCodes": [
+        "141025"
+      ],
+      "name": "热干面",
+      "description": "Wuhan hot dry noodles, a bowl of yellow wheat noodles coated in thick tan sesame paste with scallion and pickled radish",
+      "atlas": "02",
+      "cell": 5,
+      "descriptionZh": "浓芝麻酱包裹的热干面，配葱花和萝卜丁。"
+    },
+    {
+      "key": "prepared-three-fresh-doupi",
+      "sourceCodes": [
+        "141027"
+      ],
+      "name": "三鲜豆皮",
+      "description": "three square slices of Wuhan fried tofu-skin rice cake, thin golden egg skin enclosing glutinous rice and diced meat mushrooms",
+      "atlas": "02",
+      "cell": 6,
+      "descriptionZh": "金黄薄皮包裹糯米、肉丁和菌菇的方形豆皮。"
+    },
+    {
+      "key": "prepared-broth-soaked-bun",
+      "sourceCodes": [
+        "141028"
+      ],
+      "name": "汤泡",
+      "description": "bowl of pale broth with torn wheat flatbread pieces, small greens, no giant noodles",
+      "atlas": "02",
+      "cell": 7,
+      "descriptionZh": "浅色汤汁中浸泡的面饼块，配少量绿叶。"
+    },
+    {
+      "key": "prepared-sweet-fermented-barley",
+      "sourceCodes": [
+        "141029",
+        "141030"
+      ],
+      "name": "甜醅",
+      "description": "bowl of sweet fermented whole barley grains with a little milky translucent fermentation liquid",
+      "atlas": "02",
+      "cell": 8,
+      "descriptionZh": "碗中带少量浅色发酵液的熟青稞粒。"
+    },
+    {
+      "key": "prepared-pea-jelly-cake",
+      "sourceCodes": [
+        "141031"
+      ],
+      "name": "豌豆黄",
+      "description": "pale yellow smooth pea flour jelly cake cut into rectangular blocks",
+      "atlas": "02",
+      "cell": 9,
+      "descriptionZh": "淡黄色、细腻光滑的长方形豌豆黄。"
+    },
+    {
+      "key": "prepared-sesame-oil-flour",
+      "sourceCodes": [
+        "141032"
+      ],
+      "name": "香油炒面",
+      "description": "bowl of dry beige toasted wheat flour with tiny toasted sesame and chopped nut specks",
+      "atlas": "02",
+      "cell": 10,
+      "descriptionZh": "小碗中的炒面粉，夹有芝麻和碎坚果。"
+    },
+    {
+      "key": "prepared-savory-oil-tea",
+      "sourceCodes": [
+        "141033"
+      ],
+      "name": "油茶",
+      "description": "small bowl of thick tan roasted-flour gruel topped with roasted peanuts and sesame",
+      "atlas": "02",
+      "cell": 11,
+      "descriptionZh": "稠糊状油茶，表面放花生与芝麻。"
+    },
+    {
+      "key": "prepared-fried-broad-beans",
+      "sourceCodes": [
+        "141034"
+      ],
+      "name": "油炸豆瓣",
+      "description": "golden crisp fried broad bean halves in a small white dish",
+      "atlas": "02",
+      "cell": 12,
+      "descriptionZh": "小盘中金黄色酥脆蚕豆瓣。"
+    },
+    {
+      "key": "prepared-fried-tofu-flower",
+      "sourceCodes": [
+        "141035"
+      ],
+      "name": "油炸豆花",
+      "description": "crisp golden airy fried tofu strips with curled craggy edges on a small dish",
+      "atlas": "02",
+      "cell": 13,
+      "descriptionZh": "浅金色蓬松油炸豆花片，边缘卷曲。"
+    },
+    {
+      "key": "prepared-fried-sticky-rice-cake",
+      "sourceCodes": [
+        "141036"
+      ],
+      "name": "炸糕",
+      "description": "two golden deep-fried round glutinous rice cakes, one cut showing dark red bean paste filling",
+      "atlas": "02",
+      "cell": 14,
+      "descriptionZh": "金黄圆炸糕，剖面露出红豆馅。"
+    },
+    {
+      "key": "prepared-barley-tsampa",
+      "sourceCodes": [
+        "141037"
+      ],
+      "name": "糌粑",
+      "description": "three rough brown hand-shaped highland barley tsampa balls with visible grainy texture",
+      "atlas": "02",
+      "cell": 15,
+      "descriptionZh": "粗糙褐色青稞糌粑团，能见谷物颗粒。"
+    },
+    {
+      "key": "prepared-sponge-cake",
+      "sourceCodes": [
+        "142101",
+        "142102",
+        "142104",
+        "142105"
+      ],
+      "name": "黄海绵蛋糕",
+      "description": "a plain yellow sponge cake wedge with fine airy crumb and thin golden crust, no frosting",
+      "atlas": "02",
+      "cell": 16,
+      "descriptionZh": "金黄色原味海绵蛋糕块，切面轻盈多孔。"
+    },
+    {
+      "key": "prepared-angel-food-cake",
+      "sourceCodes": [
+        "142103"
+      ],
+      "name": "蛋清蛋糕",
+      "description": "a wedge of fluffy white angel food cake with very pale golden outside and airy white crumb",
+      "atlas": "02",
+      "cell": 17,
+      "descriptionZh": "浅白色蛋清蛋糕块，边缘微黄。"
+    },
+    {
+      "key": "prepared-cream-layer-cake",
+      "sourceCodes": [
+        "142106"
+      ],
+      "name": "奶油蛋糕",
+      "description": "a slice of pale sponge layer cake with white whipped cream layers and frosting, one small strawberry on top",
+      "atlas": "02",
+      "cell": 18,
+      "descriptionZh": "白奶油夹层蛋糕片，表面点缀草莓。"
+    },
+    {
+      "key": "prepared-western-layer-cake",
+      "sourceCodes": [
+        "142107"
+      ],
+      "name": "西式蛋糕",
+      "description": "a wedge of baked chocolate layer cake with cocoa frosting, clear layers",
+      "atlas": "02",
+      "cell": 19,
+      "descriptionZh": "可可色西式夹层蛋糕片，带巧克力奶油。"
+    },
+    {
+      "key": "prepared-red-bean-mooncake",
+      "sourceCodes": [
+        "142202"
+      ],
+      "name": "豆沙月饼",
+      "description": "a golden round mooncake with simple embossed flower lattice, half cut open with dense dark red bean filling, no letters",
+      "atlas": "02",
+      "cell": 20,
+      "descriptionZh": "金黄圆月饼与半切面，内为深色细豆沙馅。"
+    },
+    {
+      "key": "prepared-cream-fruit-mooncake",
+      "sourceCodes": [
+        "142203"
+      ],
+      "name": "奶油果馅月饼",
+      "description": "a round golden mooncake cut open showing pale cream filling dotted with colorful dried fruit pieces",
+      "atlas": "02",
+      "cell": 21,
+      "descriptionZh": "金黄月饼切面为浅奶油色果粒馅。"
+    },
+    {
+      "key": "prepared-cream-pine-nut-mooncake",
+      "sourceCodes": [
+        "142204"
+      ],
+      "name": "奶油松仁月饼",
+      "description": "a round golden mooncake cut open showing ivory filling with visible long pine nuts",
+      "atlas": "02",
+      "cell": 22,
+      "descriptionZh": "金黄月饼切面为奶油色松仁馅。"
+    },
+    {
+      "key": "prepared-five-nut-mooncake",
+      "sourceCodes": [
+        "142206"
+      ],
+      "name": "五仁月饼",
+      "description": "a golden round mooncake cut open showing chopped walnuts almonds sesame seeds and candied fruit filling",
+      "atlas": "02",
+      "cell": 23,
+      "descriptionZh": "金黄月饼切面可见坚果仁、芝麻与果粒。"
+    },
+    {
+      "key": "prepared-fruit-nut-mooncake",
+      "sourceCodes": [
+        "142207"
+      ],
+      "name": "香油果馅月饼",
+      "description": "a golden round mooncake cut open showing translucent amber candied fruit filling with scattered seeds",
+      "atlas": "03",
+      "cell": 0,
+      "descriptionZh": "金黄月饼切面为琥珀色糖渍果料馅。"
+    },
+    {
+      "key": "prepared-jujube-mooncake",
+      "sourceCodes": [
+        "142208"
+      ],
+      "name": "枣泥月饼",
+      "description": "a golden round mooncake cut open showing smooth dark brown jujube paste filling",
+      "atlas": "03",
+      "cell": 1,
+      "descriptionZh": "金黄月饼切面为深褐色枣泥馅。"
+    },
+    {
+      "key": "prepared-lard-flaky-biscuit",
+      "sourceCodes": [
+        "142301"
+      ],
+      "name": "板油酥饼",
+      "description": "round pale golden Chinese flaky lard pastry with visible thin layers and crumbly broken edge",
+      "atlas": "03",
+      "cell": 2,
+      "descriptionZh": "浅金色圆酥饼，切边露多层酥皮。"
+    },
+    {
+      "key": "prepared-salted-yolk-pastry",
+      "sourceCodes": [
+        "142302"
+      ],
+      "name": "蛋黄酥",
+      "description": "a glossy golden round puff pastry sprinkled black sesame, cut half shows orange salted egg yolk inside dark red bean paste",
+      "atlas": "03",
+      "cell": 3,
+      "descriptionZh": "黑芝麻点缀的蛋黄酥，剖面为橙黄蛋黄和豆沙。"
+    },
+    {
+      "key": "prepared-sesame-egg-crisp",
+      "sourceCodes": [
+        "142303"
+      ],
+      "name": "蛋麻脆",
+      "description": "thin golden rectangular sesame egg crisps, bubbly brittle surface densely speckled with white sesame",
+      "atlas": "03",
+      "cell": 4,
+      "descriptionZh": "薄而金黄的蛋麻脆片，表面密布白芝麻。"
+    },
+    {
+      "key": "prepared-deqing-pastry",
+      "sourceCodes": [
+        "142304"
+      ],
+      "name": "德庆酥",
+      "description": "traditional compact golden rectangular Chinese shortbread pastry with layered crumb and sesame on top",
+      "atlas": "03",
+      "cell": 5,
+      "descriptionZh": "长方形金黄德庆酥，层状断面与芝麻表面。"
+    },
+    {
+      "key": "prepared-goose-fat-roll",
+      "sourceCodes": [
+        "142305"
+      ],
+      "name": "鹅油卷",
+      "description": "golden flaky pastry scrolls with spiral cross-sections and delicate overlapping layers",
+      "atlas": "03",
+      "cell": 6,
+      "descriptionZh": "螺旋卷起的金黄酥皮鹅油卷。"
+    },
+    {
+      "key": "prepared-phoenix-tail-pastry",
+      "sourceCodes": [
+        "142306"
+      ],
+      "name": "凤尾酥",
+      "description": "golden puff pastry fans shaped like layered phoenix tails, distinct fanned laminated edges",
+      "atlas": "03",
+      "cell": 7,
+      "descriptionZh": "层层展开、形似扇尾的金黄凤尾酥。"
+    },
+    {
+      "key": "prepared-fulai-shortbread",
+      "sourceCodes": [
+        "142307"
+      ],
+      "name": "福来酥",
+      "description": "small golden round shortbread pastries with crumbly texture and lightly cracked tops",
+      "atlas": "03",
+      "cell": 8,
+      "descriptionZh": "金黄圆形福来酥，表面细裂且酥松。"
+    },
+    {
+      "key": "prepared-walnut-crisp",
+      "sourceCodes": [
+        "142308"
+      ],
+      "name": "核桃薄脆",
+      "description": "thin golden walnut crisps with chopped walnut pieces embedded in the surface",
+      "atlas": "03",
+      "cell": 9,
+      "descriptionZh": "薄圆核桃脆饼，表面嵌碎核桃仁。"
+    },
+    {
+      "key": "prepared-black-sesame-crisp",
+      "sourceCodes": [
+        "142309"
+      ],
+      "name": "黑麻香酥",
+      "description": "thin crisp pastry rectangles densely coated in black sesame seeds",
+      "atlas": "03",
+      "cell": 10,
+      "descriptionZh": "长方形酥脆糕片，表面密布黑芝麻。"
+    },
+    {
+      "key": "prepared-black-sesame-pastry",
+      "sourceCodes": [
+        "142310"
+      ],
+      "name": "黑洋酥",
+      "description": "Chinese baked round pastry cut open showing dense dark black sesame filling, pale flaky crust",
+      "atlas": "03",
+      "cell": 11,
+      "descriptionZh": "浅色酥皮包裹浓黑芝麻馅的黑洋酥。"
+    },
+    {
+      "key": "prepared-sugar-glazed-cake",
+      "sourceCodes": [
+        "142311"
+      ],
+      "name": "混糖糕点",
+      "description": "pale golden rectangular traditional sweet baked cakes with thin opaque white sugar glaze",
+      "atlas": "03",
+      "cell": 12,
+      "descriptionZh": "方形金黄糕点表面覆盖薄白糖霜。"
+    },
+    {
+      "key": "prepared-drumstick-pastry",
+      "sourceCodes": [
+        "142312"
+      ],
+      "name": "鸡腿酥",
+      "description": "golden baked flaky pastries shaped like small chicken drumsticks, pastry not actual meat",
+      "atlas": "03",
+      "cell": 13,
+      "descriptionZh": "金黄色鸡腿形酥皮糕点，能见层状纹理。"
+    },
+    {
+      "key": "prepared-sandwich-shortbread",
+      "sourceCodes": [
+        "142313"
+      ],
+      "name": "夹心酥饼",
+      "description": "two round golden shortbread sandwich biscuits, one broken open with brown sweet filling",
+      "atlas": "03",
+      "cell": 14,
+      "descriptionZh": "圆形夹心酥饼，断面露出褐色甜馅。"
+    },
+    {
+      "key": "prepared-glutinous-rice-sticks",
+      "sourceCodes": [
+        "142314"
+      ],
+      "name": "江米条",
+      "description": "short golden fried glutinous rice sticks rolled in large white sugar crystals",
+      "atlas": "03",
+      "cell": 15,
+      "descriptionZh": "短条金黄江米条，表面裹白糖晶粒。"
+    },
+    {
+      "key": "prepared-coin-pastry",
+      "sourceCodes": [
+        "142315"
+      ],
+      "name": "金钱酥",
+      "description": "several small golden coin-shaped flaky pastry disks with spiral layers",
+      "atlas": "03",
+      "cell": 16,
+      "descriptionZh": "小圆金钱酥，表面呈同心螺旋酥层。"
+    },
+    {
+      "key": "prepared-beijing-yellow-pastry",
+      "sourceCodes": [
+        "142316"
+      ],
+      "name": "京式黄酥",
+      "description": "round bright golden Chinese shortcrust pastries with softly domed cracked top and yellow crumb",
+      "atlas": "03",
+      "cell": 17,
+      "descriptionZh": "圆形京式黄酥，金黄圆顶带自然裂纹。"
+    },
+    {
+      "key": "prepared-sesame-laughing-balls",
+      "sourceCodes": [
+        "142317"
+      ],
+      "name": "开口笑",
+      "description": "golden sesame coated fried dough balls each with characteristic split crack showing fluffy pale crumb",
+      "atlas": "03",
+      "cell": 18,
+      "descriptionZh": "白芝麻覆盖的炸面球，裂口露出松软内芯。"
+    },
+    {
+      "key": "prepared-liaohua-sesame-puff",
+      "sourceCodes": [
+        "142318"
+      ],
+      "name": "廖花糖",
+      "description": "several oblong puffed glutinous rice candy cylinders coated thickly with white sesame seeds",
+      "atlas": "03",
+      "cell": 19,
+      "descriptionZh": "白芝麻密裹的长椭圆廖花糖。"
+    },
+    {
+      "key": "prepared-mung-bean-cake",
+      "sourceCodes": [
+        "142319"
+      ],
+      "name": "绿豆糕",
+      "description": "pale yellow-green small square mung bean cakes with shallow floral moulded tops, no writing",
+      "atlas": "03",
+      "cell": 20,
+      "descriptionZh": "淡黄绿色方形绿豆糕，表面有浅花纹。"
+    },
+    {
+      "key": "prepared-sesame-rice-cake",
+      "sourceCodes": [
+        "142320"
+      ],
+      "name": "麻烘糕",
+      "description": "white rectangular rice-flour cakes with toasted sesame specks and layered firm texture",
+      "atlas": "03",
+      "cell": 21,
+      "descriptionZh": "白色方块麻烘糕，细层断面与芝麻点。"
+    },
+    {
+      "key": "prepared-fried-dough-twist",
+      "sourceCodes": [
+        "142321"
+      ],
+      "name": "麻花",
+      "description": "two golden brown crisp braided fried dough twists",
+      "atlas": "03",
+      "cell": 22,
+      "descriptionZh": "金黄色交叉编结的酥脆麻花。"
+    },
+    {
+      "key": "prepared-sesame-soft-cake",
+      "sourceCodes": [
+        "142322"
+      ],
+      "name": "麻香糕",
+      "description": "thin pale beige rectangular soft sesame cakes with scattered toasted sesame seeds",
+      "atlas": "03",
+      "cell": 23,
+      "descriptionZh": "浅米色薄方麻香糕，表面有芝麻粒。"
+    },
+    {
+      "key": "prepared-puffed-rice-candy",
+      "sourceCodes": [
+        "142323"
+      ],
+      "name": "米花糖",
+      "description": "rectangular blocks of puffed rice bound in clear golden syrup, visible individual white rice puffs",
+      "atlas": "04",
+      "cell": 0,
+      "descriptionZh": "糖浆粘结的米花糖方块，可见完整爆米粒。"
+    },
+    {
+      "key": "prepared-puff-pastry",
+      "sourceCodes": [
+        "142324",
+        "142326"
+      ],
+      "name": "起酥糕点",
+      "description": "golden rectangular laminated puff pastry with many thin delicate layers visible on the side",
+      "atlas": "04",
+      "cell": 1,
+      "descriptionZh": "长方形金黄起酥糕点，侧面层层分明。"
+    },
+    {
+      "key": "prepared-crystal-pastry",
+      "sourceCodes": [
+        "142325"
+      ],
+      "name": "水晶饼",
+      "description": "round pale golden Chinese shortbread pastry cut open showing translucent candied winter melon sugar and nut filling",
+      "atlas": "04",
+      "cell": 2,
+      "descriptionZh": "浅金圆饼切面露透明果料、糖和坚果馅。"
+    },
+    {
+      "key": "prepared-walnut-cookie",
+      "sourceCodes": [
+        "142327",
+        "142329"
+      ],
+      "name": "桃酥",
+      "description": "large golden round Chinese walnut cookies with coarse cracked tops and sesame specks",
+      "atlas": "04",
+      "cell": 3,
+      "descriptionZh": "大圆桃酥，粗裂表面带芝麻粒。"
+    },
+    {
+      "key": "prepared-hard-crust-pastry",
+      "sourceCodes": [
+        "142328"
+      ],
+      "name": "硬皮糕点",
+      "description": "traditional round golden firm-crust sweet pastry, cut open showing dense brown filling",
+      "atlas": "04",
+      "cell": 4,
+      "descriptionZh": "金黄硬皮圆糕点，剖面露紧实褐色甜馅。"
+    },
+    {
+      "key": "prepared-scholar-pastry",
+      "sourceCodes": [
+        "142330"
+      ],
+      "name": "状元饼",
+      "description": "round golden Chinese sesame shortcrust pastry, cut open revealing mixed sesame and nut filling, no written seal",
+      "atlas": "04",
+      "cell": 5,
+      "descriptionZh": "金黄芝麻状元饼，切面露芝麻坚果馅。"
+    },
+    {
+      "key": "prepared-fuling-wafer",
+      "sourceCodes": [
+        "142331"
+      ],
+      "name": "茯苓夹饼",
+      "description": "thin circular ivory wafers sandwiching translucent amber sugar and nut filling, stacked with one broken edge",
+      "atlas": "04",
+      "cell": 6,
+      "descriptionZh": "薄白圆茯苓夹饼，夹透明糖浆与坚果馅。"
+    },
+    {
+      "key": "prepared-egg-flakes",
+      "sourceCodes": [
+        "152101"
+      ],
+      "name": "蛋片",
+      "description": "thin dry pale yellow egg flakes with curled edges in a shallow white bowl",
+      "atlas": "04",
+      "cell": 7,
+      "descriptionZh": "碗中浅黄色干蛋片，轻薄卷曲。"
+    },
+    {
+      "key": "prepared-wheat-flakes",
+      "sourceCodes": [
+        "152102"
+      ],
+      "name": "麦片",
+      "description": "flattened light tan wheat cereal flakes in a small white bowl",
+      "atlas": "04",
+      "cell": 8,
+      "descriptionZh": "碗中浅褐色压扁小麦片。"
+    },
+    {
+      "key": "prepared-oat-flakes",
+      "sourceCodes": [
+        "152103"
+      ],
+      "name": "燕麦片",
+      "description": "dry rolled oat flakes, flattened oval beige grains in a small bowl",
+      "atlas": "04",
+      "cell": 9,
+      "descriptionZh": "碗中椭圆、扁平的米黄色燕麦片。"
+    },
+    {
+      "key": "prepared-corn-flakes",
+      "sourceCodes": [
+        "152104"
+      ],
+      "name": "玉米片",
+      "description": "golden yellow dry toasted corn flakes in a small bowl",
+      "atlas": "04",
+      "cell": 10,
+      "descriptionZh": "碗中金黄、薄而卷曲的玉米片。"
+    },
+    {
+      "key": "prepared-instant-noodles",
+      "sourceCodes": [
+        "152201"
+      ],
+      "name": "方便面",
+      "description": "a rectangular golden dry instant noodle brick with tightly curled fine noodles",
+      "atlas": "04",
+      "cell": 11,
+      "descriptionZh": "长方形干方便面饼，细面条紧密卷曲。"
+    },
+    {
+      "key": "prepared-croissant",
+      "sourceCodes": [
+        "152303"
+      ],
+      "name": "牛角面包",
+      "description": "a golden crescent croissant, delicate layered flaky crust",
+      "atlas": "04",
+      "cell": 12,
+      "descriptionZh": "弯月形金黄牛角包，表皮薄层酥脆。"
+    },
+    {
+      "key": "prepared-dinner-roll",
+      "sourceCodes": [
+        "152304"
+      ],
+      "name": "法式餐包",
+      "description": "three small oval golden French bread rolls, diagonal scoring on their crust",
+      "atlas": "04",
+      "cell": 13,
+      "descriptionZh": "小椭圆法式餐包，表面有斜向割纹。"
+    },
+    {
+      "key": "prepared-fruit-bread",
+      "sourceCodes": [
+        "152305"
+      ],
+      "name": "果料面包",
+      "description": "a slice of soft golden bread with dark raisins and tiny candied fruit bits in its crumb",
+      "atlas": "04",
+      "cell": 14,
+      "descriptionZh": "面包切片中可见葡萄干和糖渍果粒。"
+    },
+    {
+      "key": "prepared-wheat-germ-bread",
+      "sourceCodes": [
+        "152308"
+      ],
+      "name": "麦胚面包",
+      "description": "a small brown wholegrain bread loaf with a cut slice and visible wheat germ grains",
+      "atlas": "04",
+      "cell": 15,
+      "descriptionZh": "褐色麦胚面包与切片，表面和内芯有谷物点。"
+    },
+    {
+      "key": "prepared-coconut-ring-bread",
+      "sourceCodes": [
+        "152312"
+      ],
+      "name": "椰圈面包",
+      "description": "a golden soft ring-shaped bread topped with pale shredded coconut",
+      "atlas": "04",
+      "cell": 16,
+      "descriptionZh": "圆环状软面包，表面覆盖白色椰丝。"
+    },
+    {
+      "key": "prepared-plain-biscuits",
+      "sourceCodes": [
+        "152401",
+        "152402",
+        "152403",
+        "152404",
+        "152405",
+        "152406",
+        "152407",
+        "152408",
+        "152411"
+      ],
+      "name": "营养酥性饼干",
+      "description": "several golden rectangular plain sweet biscuits with small evenly spaced pinholes and scalloped edges, no letters",
+      "atlas": "04",
+      "cell": 17,
+      "descriptionZh": "有规则针孔和波浪边缘的金黄原味饼干。"
+    },
+    {
+      "key": "prepared-compressed-biscuit",
+      "sourceCodes": [
+        "152409"
+      ],
+      "name": "压缩饼干",
+      "description": "two dense beige rectangular compressed ration biscuit blocks, broken edge reveals compact grain texture, no wrapper",
+      "atlas": "04",
+      "cell": 18,
+      "descriptionZh": "浅褐色长方压缩饼干，断面紧实细碎。"
+    },
+    {
+      "key": "prepared-butter-biscuit",
+      "sourceCodes": [
+        "152410"
+      ],
+      "name": "奶油饼干",
+      "description": "golden ridged round butter shortbread biscuits",
+      "atlas": "04",
+      "cell": 19,
+      "descriptionZh": "圆形金黄奶油饼干，边缘有放射状纹路。"
+    },
+    {
+      "key": "prepared-cookie",
+      "sourceCodes": [
+        "152412"
+      ],
+      "name": "曲奇饼",
+      "description": "three piped golden butter cookies with crisp swirled ridges",
+      "atlas": "04",
+      "cell": 20,
+      "descriptionZh": "花嘴挤出的金黄曲奇，表面有旋转沟纹。"
+    },
+    {
+      "key": "prepared-soda-cracker",
+      "sourceCodes": [
+        "152413"
+      ],
+      "name": "苏打饼干",
+      "description": "pale golden rectangular soda crackers with straight scored edges and small puncture holes",
+      "atlas": "04",
+      "cell": 21,
+      "descriptionZh": "浅金色方苏打饼干，有针孔和整齐折边。"
+    },
+    {
+      "key": "prepared-wafer-biscuit",
+      "sourceCodes": [
+        "152414"
+      ],
+      "name": "威化饼干",
+      "description": "stacked rectangular pale golden wafer biscuits with fine waffle grid and thin cream layers",
+      "atlas": "04",
+      "cell": 22,
+      "descriptionZh": "多层威化饼干，表面细网格与奶油夹层清晰。"
+    },
+    {
+      "key": "prepared-pineapple-bean-cracker",
+      "sourceCodes": [
+        "153001"
+      ],
+      "name": "菠萝豆",
+      "description": "many small round pale golden puffed biscuits with a tiny cracked cross pattern, like little pineapple buns",
+      "atlas": "04",
+      "cell": 23,
+      "descriptionZh": "小粒金黄圆饼干，顶部有细小开裂花纹。"
+    },
+    {
+      "key": "prepared-hollow-fried-snack",
+      "sourceCodes": [
+        "153002"
+      ],
+      "name": "空心果",
+      "description": "golden puffed hollow fried dough balls, one broken showing hollow center",
+      "atlas": "05",
+      "cell": 0,
+      "descriptionZh": "金黄空心炸面球，破口显示中空内部。"
+    },
+    {
+      "key": "prepared-potato-chips",
+      "sourceCodes": [
+        "153003"
+      ],
+      "name": "薯片",
+      "description": "a small pile of thin curled golden fried potato chips",
+      "atlas": "05",
+      "cell": 1,
+      "descriptionZh": "轻薄卷曲的金黄色油炸土豆片。"
+    },
+    {
+      "key": "prepared-orchid-broad-bean",
+      "sourceCodes": [
+        "153004"
+      ],
+      "name": "兰花豆",
+      "description": "crisp fried broad beans with dark split skins opened like petals around pale yellow centers",
+      "atlas": "05",
+      "cell": 2,
+      "descriptionZh": "外皮裂开如花瓣的酥炸蚕豆。"
+    },
+    {
+      "key": "prepared-cola",
+      "sourceCodes": [
+        "161001",
+        "161002"
+      ],
+      "name": "可乐",
+      "description": "a short clear glass of dark brown cola with fine bubbles and two ice cubes, no branding",
+      "atlas": "05",
+      "cell": 3,
+      "descriptionZh": "玻璃杯中深褐色可乐，带细泡与冰块。"
+    },
+    {
+      "key": "prepared-orange-soda",
+      "sourceCodes": [
+        "161003",
+        "161004"
+      ],
+      "name": "橙味汽水",
+      "description": "a clear glass of bright orange fizzy soda with tiny bubbles and an orange wedge beside it",
+      "atlas": "05",
+      "cell": 4,
+      "descriptionZh": "橙色汽水带气泡，杯旁放橙子瓣。"
+    },
+    {
+      "key": "prepared-lemon-soda",
+      "sourceCodes": [
+        "161005",
+        "161006"
+      ],
+      "name": "柠檬汽水",
+      "description": "a clear glass of pale yellow fizzy lemonade, tiny bubbles and a fresh lemon slice beside it",
+      "atlas": "05",
+      "cell": 5,
+      "descriptionZh": "浅黄色柠檬汽水带气泡，旁放柠檬切片。"
+    },
+    {
+      "key": "prepared-clear-soda",
+      "sourceCodes": [
+        "161007"
+      ],
+      "name": "透明汽水",
+      "description": "a clear glass of colorless carbonated soda with tiny bubbles and ice cubes",
+      "atlas": "05",
+      "cell": 6,
+      "descriptionZh": "透明汽水与冰块，杯中可见细小气泡。"
+    },
+    {
+      "key": "prepared-sports-drink",
+      "sourceCodes": [
+        "161008"
+      ],
+      "name": "运动饮料",
+      "description": "a clear unbranded short bottle containing light amber sports drink, blank label, beside small glass",
+      "atlas": "05",
+      "cell": 7,
+      "descriptionZh": "无标识瓶与杯中的浅琥珀色运动饮料。"
+    },
+    {
+      "key": "prepared-orange-juice",
+      "sourceCodes": [
+        "162001",
+        "162003",
+        "162004"
+      ],
+      "name": "橘子汁",
+      "description": "a clear glass of opaque orange juice with a cut mandarin beside it, no carbonation",
+      "atlas": "05",
+      "cell": 8,
+      "descriptionZh": "玻璃杯中的橙色橘汁，杯旁放半颗橘子。"
+    },
+    {
+      "key": "prepared-orange-concentrate",
+      "sourceCodes": [
+        "162002"
+      ],
+      "name": "浓缩橘汁",
+      "description": "a small clear glass cup containing thick deep orange juice concentrate",
+      "atlas": "05",
+      "cell": 9,
+      "descriptionZh": "小玻璃杯中的浓稠深橙色浓缩橘汁。"
+    },
+    {
+      "key": "prepared-rose-juice",
+      "sourceCodes": [
+        "162005"
+      ],
+      "name": "刺玫汁",
+      "description": "a glass of translucent rose-red rosehip juice with two red rosehips beside it",
+      "atlas": "05",
+      "cell": 10,
+      "descriptionZh": "玫红色刺玫汁，杯旁放红色刺玫果。"
+    },
+    {
+      "key": "prepared-sugarcane-juice",
+      "sourceCodes": [
+        "162006"
+      ],
+      "name": "甘蔗汁",
+      "description": "a glass of cloudy pale yellow sugarcane juice with two cut purple sugarcane segments",
+      "atlas": "05",
+      "cell": 11,
+      "descriptionZh": "浑浊浅黄色甘蔗汁，旁放紫皮甘蔗段。"
+    },
+    {
+      "key": "prepared-hawthorn-juice",
+      "sourceCodes": [
+        "162007"
+      ],
+      "name": "山楂汁",
+      "description": "a glass of translucent reddish-brown hawthorn juice with two small red hawthorn fruits",
+      "atlas": "05",
+      "cell": 12,
+      "descriptionZh": "红褐色山楂汁，杯旁放红山楂果。"
+    },
+    {
+      "key": "prepared-lemon-juice",
+      "sourceCodes": [
+        "162008"
+      ],
+      "name": "柠檬汁",
+      "description": "a glass of cloudy pale lemon-yellow juice with half a lemon beside it",
+      "atlas": "05",
+      "cell": 13,
+      "descriptionZh": "浅黄色浑浊柠檬汁，旁放半颗柠檬。"
+    },
+    {
+      "key": "prepared-seabuckthorn-juice",
+      "sourceCodes": [
+        "162009",
+        "162011"
+      ],
+      "name": "沙棘汁",
+      "description": "a glass of rich orange-yellow sea buckthorn juice and a tiny twig bearing orange sea buckthorn berries",
+      "atlas": "05",
+      "cell": 14,
+      "descriptionZh": "浓橙黄色沙棘汁，旁放小枝橙色沙棘果。"
+    },
+    {
+      "key": "prepared-plum-juice",
+      "sourceCodes": [
+        "162010"
+      ],
+      "name": "乌梅汁",
+      "description": "a glass of deep brown sour plum drink with two dark wrinkled dried plums",
+      "atlas": "05",
+      "cell": 15,
+      "descriptionZh": "深褐色乌梅汁，杯旁放深色干乌梅。"
+    },
+    {
+      "key": "prepared-carrot-drink",
+      "sourceCodes": [
+        "163001"
+      ],
+      "name": "胡萝卜饮料",
+      "description": "a clear glass of opaque red-orange carrot juice with a small carrot beside it",
+      "atlas": "05",
+      "cell": 16,
+      "descriptionZh": "不透明橙红色胡萝卜饮料，旁放胡萝卜。"
+    },
+    {
+      "key": "prepared-fruit-milk-drink",
+      "sourceCodes": [
+        "164001"
+      ],
+      "name": "果味奶",
+      "description": "a clear glass of pale pink fruit flavored milk, opaque and smooth",
+      "atlas": "05",
+      "cell": 17,
+      "descriptionZh": "玻璃杯中均匀浅粉色的果味奶。"
+    },
+    {
+      "key": "prepared-lactic-drink",
+      "sourceCodes": [
+        "164002"
+      ],
+      "name": "乳酸饮料",
+      "description": "a small squat unbranded bottle and glass containing opaque milky white yogurt drink",
+      "atlas": "05",
+      "cell": 18,
+      "descriptionZh": "无标识小瓶和玻璃杯中的乳白色乳酸饮料。"
+    },
+    {
+      "key": "prepared-chocolate-soymilk",
+      "sourceCodes": [
+        "165001"
+      ],
+      "name": "巧克力豆奶",
+      "description": "a glass of opaque light cocoa-brown chocolate soy milk with several soybeans beside it",
+      "atlas": "05",
+      "cell": 19,
+      "descriptionZh": "淡可可色巧克力豆奶，旁放几颗黄豆。"
+    },
+    {
+      "key": "prepared-almond-drink",
+      "sourceCodes": [
+        "165002"
+      ],
+      "name": "杏仁露",
+      "description": "a glass of creamy ivory almond drink with three peeled almonds beside it",
+      "atlas": "05",
+      "cell": 20,
+      "descriptionZh": "乳白色杏仁露，杯旁放几粒去皮杏仁。"
+    },
+    {
+      "key": "prepared-brick-tea",
+      "sourceCodes": [
+        "166101",
+        "166102"
+      ],
+      "name": "砖茶",
+      "description": "a compact rectangular dark brown compressed tea brick, broken corner reveals tea leaves, no letters",
+      "atlas": "05",
+      "cell": 21,
+      "descriptionZh": "深褐色压紧茶砖，破角可见干茶叶。"
+    },
+    {
+      "key": "prepared-black-tea-leaves",
+      "sourceCodes": [
+        "166103"
+      ],
+      "name": "红茶",
+      "description": "a small pile of dry twisted dark brown black tea leaves",
+      "atlas": "05",
+      "cell": 22,
+      "descriptionZh": "松散堆起、卷曲细长的深褐红茶干叶。"
+    },
+    {
+      "key": "prepared-jasmine-tea-leaves",
+      "sourceCodes": [
+        "166104"
+      ],
+      "name": "花茶",
+      "description": "a small pile of dry greenish brown jasmine tea leaves with a few tiny dried ivory jasmine blossoms",
+      "atlas": "05",
+      "cell": 23,
+      "descriptionZh": "绿褐色花茶干叶中夹有白色茉莉干花。"
+    },
+    {
+      "key": "prepared-dragonwell-tea",
+      "sourceCodes": [
+        "166105"
+      ],
+      "name": "龙井茶",
+      "description": "a small pile of dry flat bright olive green Longjing tea leaves, distinctive long flattened shape",
+      "atlas": "06",
+      "cell": 0,
+      "descriptionZh": "扁平、修长、橄榄绿色的龙井茶干叶。"
+    },
+    {
+      "key": "prepared-green-tea-leaves",
+      "sourceCodes": [
+        "166106"
+      ],
+      "name": "绿茶",
+      "description": "a small pile of loose dry fine curled olive green tea leaves",
+      "atlas": "06",
+      "cell": 1,
+      "descriptionZh": "纤细卷曲的橄榄绿干绿茶叶。"
+    },
+    {
+      "key": "prepared-pomegranate-flower-tea",
+      "sourceCodes": [
+        "166107"
+      ],
+      "name": "石榴花茶",
+      "description": "a few dry reddish orange pomegranate flowers with thick wrinkled bell-shaped calyces and dry petals",
+      "atlas": "06",
+      "cell": 2,
+      "descriptionZh": "红橙色干石榴花，厚花萼呈钟形。"
+    },
+    {
+      "key": "prepared-persimmon-leaf-tea",
+      "sourceCodes": [
+        "166108"
+      ],
+      "name": "柿叶茶",
+      "description": "dry brittle broad brown-green persimmon leaf tea pieces in a small shallow dish",
+      "atlas": "06",
+      "cell": 3,
+      "descriptionZh": "小盘中褐绿色、宽片状的干柿叶。"
+    },
+    {
+      "key": "prepared-tieguanyin-tea",
+      "sourceCodes": [
+        "166109"
+      ],
+      "name": "铁观音茶",
+      "description": "a small pile of tightly curled dark olive-green oolong tea leaf clusters",
+      "atlas": "06",
+      "cell": 4,
+      "descriptionZh": "紧卷成小团的深橄榄绿色铁观音茶叶。"
+    },
+    {
+      "key": "prepared-gunpowder-tea",
+      "sourceCodes": [
+        "166110"
+      ],
+      "name": "珠茶",
+      "description": "a small pile of dry dark green tea rolled into tiny dense round pellets",
+      "atlas": "06",
+      "cell": 5,
+      "descriptionZh": "细小圆珠状的深绿色珠茶干叶。"
+    },
+    {
+      "key": "prepared-brewed-tea",
+      "sourceCodes": [
+        "166201"
+      ],
+      "name": "茶水",
+      "description": "a transparent small glass cup with clear pale amber brewed tea, no leaves no teabag",
+      "atlas": "06",
+      "cell": 6,
+      "descriptionZh": "透明玻璃小杯中的清亮浅琥珀色茶水。"
+    },
+    {
+      "key": "prepared-malted-drink-powder",
+      "sourceCodes": [
+        "167001",
+        "167005"
+      ],
+      "name": "麦乳精饮品粉",
+      "description": "pale golden fine malted milk drink powder in a small ceramic bowl",
+      "atlas": "06",
+      "cell": 7,
+      "descriptionZh": "小碗中浅金黄色麦乳精饮品粉。"
+    },
+    {
+      "key": "prepared-icecream-powder",
+      "sourceCodes": [
+        "167002"
+      ],
+      "name": "冰淇淋粉",
+      "description": "fine ivory ice cream powder in a bowl, a little wooden scoop resting beside it",
+      "atlas": "06",
+      "cell": 8,
+      "descriptionZh": "象牙白冰淇淋粉盛于小碗，配木勺。"
+    },
+    {
+      "key": "prepared-citrus-drink-powder",
+      "sourceCodes": [
+        "167003",
+        "167008",
+        "167010"
+      ],
+      "name": "橘味饮料晶",
+      "description": "bright orange small granular instant citrus drink crystals in a small white dish",
+      "atlas": "06",
+      "cell": 9,
+      "descriptionZh": "小碟中的橙色颗粒状橘味饮料晶。"
+    },
+    {
+      "key": "prepared-cocoa-powder",
+      "sourceCodes": [
+        "167004"
+      ],
+      "name": "可可粉",
+      "description": "a small heap of rich dark brown cocoa powder in a tiny ceramic bowl",
+      "atlas": "06",
+      "cell": 10,
+      "descriptionZh": "小碗中堆起的深棕色细可可粉。"
+    },
+    {
+      "key": "prepared-hawthorn-crystals",
+      "sourceCodes": [
+        "167006"
+      ],
+      "name": "山楂晶",
+      "description": "pinkish tan granular hawthorn drink crystals in a small dish, two red hawthorn fruits beside it",
+      "atlas": "06",
+      "cell": 11,
+      "descriptionZh": "粉褐色颗粒状山楂晶，旁放两颗山楂。"
+    },
+    {
+      "key": "prepared-plum-crystals",
+      "sourceCodes": [
+        "167007"
+      ],
+      "name": "酸梅晶",
+      "description": "dark amber brown granular sour plum drink crystals in a small white dish",
+      "atlas": "06",
+      "cell": 12,
+      "descriptionZh": "小碟中的深琥珀褐色酸梅晶颗粒。"
+    },
+    {
+      "key": "prepared-kiwi-crystals",
+      "sourceCodes": [
+        "167009"
+      ],
+      "name": "猕猴桃晶",
+      "description": "pale green granular kiwi drink crystals in a dish with a cut kiwi slice beside it",
+      "atlas": "06",
+      "cell": 13,
+      "descriptionZh": "浅绿色猕猴桃晶，碗旁放猕猴桃切片。"
+    },
+    {
+      "key": "prepared-popsicle",
+      "sourceCodes": [
+        "168001"
+      ],
+      "name": "冰棍",
+      "description": "a translucent pale orange fruit ice pop on a plain wooden stick",
+      "atlas": "06",
+      "cell": 14,
+      "descriptionZh": "木棒上的半透明浅橙色果味冰棍。"
+    },
+    {
+      "key": "prepared-icecream-brick",
+      "sourceCodes": [
+        "168002"
+      ],
+      "name": "冰砖",
+      "description": "a small rectangular white vanilla ice cream block on a tiny white dish, no stick",
+      "atlas": "06",
+      "cell": 15,
+      "descriptionZh": "小盘中的长方形白色冰淇淋砖。"
+    },
+    {
+      "key": "prepared-icecream-scoop",
+      "sourceCodes": [
+        "168003"
+      ],
+      "name": "冰淇淋",
+      "description": "two soft rounded scoops of ivory vanilla ice cream in a small plain ceramic bowl",
+      "atlas": "06",
+      "cell": 16,
+      "descriptionZh": "小陶碗中的两球乳白色冰淇淋。"
+    },
+    {
+      "key": "prepared-vanilla-icecream-bar",
+      "sourceCodes": [
+        "168004"
+      ],
+      "name": "大雪糕",
+      "description": "a thick ivory white milk ice cream bar with rounded corners on a wooden stick",
+      "atlas": "06",
+      "cell": 17,
+      "descriptionZh": "木棒上厚实、圆角的乳白色雪糕。"
+    },
+    {
+      "key": "prepared-icecream-sandwich",
+      "sourceCodes": [
+        "168005"
+      ],
+      "name": "三明治冰激淋",
+      "description": "a rectangular vanilla ice cream sandwich between two dark chocolate biscuit layers",
+      "atlas": "06",
+      "cell": 18,
+      "descriptionZh": "深巧克力饼片夹着乳白冰淇淋的三明治冰品。"
+    },
+    {
+      "key": "prepared-twin-ice-pop",
+      "sourceCodes": [
+        "168006"
+      ],
+      "name": "双棒雪糕",
+      "description": "a pale orange double ice pop with two joined long lobes and two wooden sticks",
+      "atlas": "06",
+      "cell": 19,
+      "descriptionZh": "相连双条橙色冰棍，下方为两根木棒。"
+    },
+    {
+      "key": "prepared-chocolate-cap-icecream",
+      "sourceCodes": [
+        "168007"
+      ],
+      "name": "娃娃头雪糕",
+      "description": "a small milk ice cream pop with a dark chocolate rounded cap and ivory lower section on wooden stick, simple original ice pop shape without eyes or face",
+      "atlas": "06",
+      "cell": 20,
+      "descriptionZh": "巧克力色圆帽和奶白下部的木棒雪糕，不带面部图案。"
+    },
+    {
+      "key": "prepared-purple-icecream-bar",
+      "sourceCodes": [
+        "168008"
+      ],
+      "name": "紫雪糕",
+      "description": "a lavender purple rectangular ice cream bar on a wooden stick, creamy solid texture",
+      "atlas": "06",
+      "cell": 21,
+      "descriptionZh": "木棒上的淡紫色长方形奶油雪糕。"
+    },
+    {
+      "key": "prepared-rhodiola-drink",
+      "sourceCodes": [
+        "169001"
+      ],
+      "name": "红景天饮料",
+      "description": "a glass of translucent pale amber herbal drink, a small rhodiola dried root segment beside it",
+      "atlas": "06",
+      "cell": 22,
+      "descriptionZh": "浅琥珀色草本饮料，杯旁放少量红景天干根。"
+    },
+    {
+      "key": "prepared-beer",
+      "sourceCodes": [
+        "171101",
+        "171102",
+        "171103",
+        "171104",
+        "171105",
+        "171106",
+        "171107",
+        "171108",
+        "171109",
+        "171110",
+        "171111",
+        "171112",
+        "171113",
+        "171114"
+      ],
+      "name": "啤酒",
+      "description": "a clear glass beer mug with golden amber beer and white foam head, no logo",
+      "atlas": "06",
+      "cell": 23,
+      "descriptionZh": "透明啤酒杯中的金黄啤酒，上覆细密白泡沫。"
+    },
+    {
+      "key": "prepared-red-wine",
+      "sourceCodes": [
+        "171201",
+        "171203",
+        "171204"
+      ],
+      "name": "红葡萄酒",
+      "description": "a stemmed wine glass containing dark ruby red wine",
+      "atlas": "07",
+      "cell": 0,
+      "descriptionZh": "高脚杯中的深红宝石色红葡萄酒。"
+    },
+    {
+      "key": "prepared-white-wine",
+      "sourceCodes": [
+        "171202"
+      ],
+      "name": "白葡萄酒",
+      "description": "a stemmed wine glass containing clear pale straw yellow white wine",
+      "atlas": "07",
+      "cell": 1,
+      "descriptionZh": "高脚杯中的清澈浅金色白葡萄酒。"
+    },
+    {
+      "key": "prepared-yellow-rice-wine",
+      "sourceCodes": [
+        "171301",
+        "171302",
+        "171303",
+        "171306",
+        "171307",
+        "171308",
+        "173103"
+      ],
+      "name": "黄酒",
+      "description": "a small traditional white ceramic cup holding clear amber Chinese yellow rice wine, plain small brown ceramic wine jar beside it",
+      "atlas": "07",
+      "cell": 2,
+      "descriptionZh": "小陶杯中的琥珀色黄酒，旁放无标识陶酒壶。"
+    },
+    {
+      "key": "prepared-sweet-rice-wine",
+      "sourceCodes": [
+        "171304",
+        "171305",
+        "172102"
+      ],
+      "name": "米酒",
+      "description": "a small clear glass cup of cloudy ivory fermented rice wine with tiny rice grains settled at bottom",
+      "atlas": "07",
+      "cell": 3,
+      "descriptionZh": "小玻璃杯中的乳白浑浊米酒，杯底有少量米粒。"
+    },
+    {
+      "key": "prepared-green-herbal-wine",
+      "sourceCodes": [
+        "172101"
+      ],
+      "name": "碧绿酒",
+      "description": "a small clear spirit glass containing translucent pale jade green herbal liquor",
+      "atlas": "07",
+      "cell": 4,
+      "descriptionZh": "小玻璃杯中的浅翡翠绿色酒液。"
+    },
+    {
+      "key": "prepared-clear-baijiu",
+      "sourceCodes": [
+        "172103",
+        "172104",
+        "172105",
+        "172106",
+        "172107",
+        "172108",
+        "172109",
+        "172110",
+        "172111",
+        "172112",
+        "172113",
+        "172114",
+        "172115",
+        "172116",
+        "172117",
+        "172118",
+        "172119",
+        "172120",
+        "172121",
+        "172122",
+        "172123",
+        "172124",
+        "172125",
+        "172126"
+      ],
+      "name": "白酒",
+      "description": "a tiny clear stemmed Chinese baijiu spirit glass filled with crystal clear colorless liquor, plain narrow-neck clear bottle behind it",
+      "atlas": "07",
+      "cell": 5,
+      "descriptionZh": "无标识细颈瓶和小酒杯中的透明白酒。"
+    },
+    {
+      "key": "prepared-honey-wine",
+      "sourceCodes": [
+        "173101"
+      ],
+      "name": "蜜酒",
+      "description": "a small stemmed glass of translucent light golden honey wine with a tiny honeycomb piece beside it",
+      "atlas": "07",
+      "cell": 6,
+      "descriptionZh": "浅金色蜜酒，杯旁放小块蜂巢。"
+    },
+    {
+      "key": "prepared-seabuckthorn-wine",
+      "sourceCodes": [
+        "173102",
+        "173104"
+      ],
+      "name": "沙棘酒",
+      "description": "a small stemmed glass of clear orange-gold sea buckthorn wine with orange sea buckthorn berries beside it",
+      "atlas": "07",
+      "cell": 7,
+      "descriptionZh": "橙金色沙棘酒，杯旁放橙色沙棘果。"
+    },
+    {
+      "key": "prepared-white-sugar",
+      "sourceCodes": [
+        "181001",
+        "181002"
+      ],
+      "name": "白糖",
+      "description": "white crystalline sugar piled in a small ceramic bowl, visible sparkling fine grains",
+      "atlas": "07",
+      "cell": 8,
+      "descriptionZh": "小碗中洁白、细密的白糖晶粒。"
+    },
+    {
+      "key": "prepared-rock-sugar",
+      "sourceCodes": [
+        "181003"
+      ],
+      "name": "冰糖",
+      "description": "several irregular translucent white rock sugar chunks",
+      "atlas": "07",
+      "cell": 9,
+      "descriptionZh": "不规则半透明白色冰糖块。"
+    },
+    {
+      "key": "prepared-brown-sugar",
+      "sourceCodes": [
+        "181004"
+      ],
+      "name": "红糖",
+      "description": "a small mound of dark reddish-brown crumbly unrefined sugar in a shallow dish",
+      "atlas": "07",
+      "cell": 10,
+      "descriptionZh": "小碟中红褐色、易碎的红糖粉块。"
+    },
+    {
+      "key": "prepared-maltose-syrup",
+      "sourceCodes": [
+        "181005"
+      ],
+      "name": "麦芽糖",
+      "description": "thick glossy golden amber maltose syrup in a small ceramic bowl, short wooden spoon lifting a stretchy ribbon",
+      "atlas": "07",
+      "cell": 11,
+      "descriptionZh": "浓稠金黄麦芽糖，木勺提起拉丝糖浆。"
+    },
+    {
+      "key": "prepared-honey",
+      "sourceCodes": [
+        "181006"
+      ],
+      "name": "蜂蜜",
+      "description": "a small clear glass jar of golden honey with a wooden honey dipper dripping honey, no label",
+      "atlas": "07",
+      "cell": 12,
+      "descriptionZh": "无标识玻璃罐中的金黄蜂蜜，配滴蜜木棒。"
+    },
+    {
+      "key": "prepared-peanut-nougat",
+      "sourceCodes": [
+        "182001"
+      ],
+      "name": "花生牛轧糖",
+      "description": "three rectangular ivory nougat candy pieces showing embedded whole peanut halves",
+      "atlas": "07",
+      "cell": 13,
+      "descriptionZh": "乳白牛轧糖块，内部嵌有花生仁。"
+    },
+    {
+      "key": "prepared-chewing-gum",
+      "sourceCodes": [
+        "182002"
+      ],
+      "name": "胶姆糖",
+      "description": "several small smooth white rectangular chewing gum tablets, no wrapper",
+      "atlas": "07",
+      "cell": 14,
+      "descriptionZh": "白色光滑长方形胶姆糖片，不带包装。"
+    },
+    {
+      "key": "prepared-water-chestnut-gummy",
+      "sourceCodes": [
+        "182003"
+      ],
+      "name": "马蹄软糖",
+      "description": "translucent pale amber soft candy cubes with tiny ivory water chestnut bits",
+      "atlas": "07",
+      "cell": 15,
+      "descriptionZh": "浅琥珀透明软糖块，内有白色马蹄粒。"
+    },
+    {
+      "key": "prepared-cotton-candy",
+      "sourceCodes": [
+        "182004"
+      ],
+      "name": "软质棉花糖",
+      "description": "a small pile of soft white and pale pink cylindrical marshmallow candies, fluffy opaque spongy smooth surfaces with very light powder dust, seven short rounded cylinders",
+      "atlas": "15",
+      "cell": 1,
+      "descriptionZh": "乳白与浅粉色短圆柱软质棉花糖，表面细腻、蓬松。",
+      "originalAtlas": "07",
+      "originalCell": 16
+    },
+    {
+      "key": "prepared-milk-candy",
+      "sourceCodes": [
+        "182005"
+      ],
+      "name": "奶糖",
+      "description": "several small ivory cylindrical chewy milk candies, one cut piece, no wrapper",
+      "atlas": "07",
+      "cell": 17,
+      "descriptionZh": "短圆柱乳白色奶糖，切面紧实略有纹理。"
+    },
+    {
+      "key": "prepared-bubble-gum",
+      "sourceCodes": [
+        "182006"
+      ],
+      "name": "泡泡糖",
+      "description": "several small pastel pink cuboid bubble gum pieces, no wrapper",
+      "atlas": "07",
+      "cell": 18,
+      "descriptionZh": "浅粉色小方块泡泡糖，不带包装。"
+    },
+    {
+      "key": "prepared-chocolate-bar",
+      "sourceCodes": [
+        "182007"
+      ],
+      "name": "巧克力",
+      "description": "a dark milk chocolate bar broken into scored square pieces, no letters",
+      "atlas": "07",
+      "cell": 19,
+      "descriptionZh": "有方格断纹的深棕色巧克力块。"
+    },
+    {
+      "key": "prepared-liqueur-chocolate",
+      "sourceCodes": [
+        "182008"
+      ],
+      "name": "酒芯巧克力",
+      "description": "a round dark chocolate bonbon cut open showing a glossy amber liquid liqueur center",
+      "atlas": "07",
+      "cell": 20,
+      "descriptionZh": "圆巧克力剖开，露出琥珀色流心酒液。"
+    },
+    {
+      "key": "prepared-chocolate-wafer",
+      "sourceCodes": [
+        "182009"
+      ],
+      "name": "巧克力威化",
+      "description": "two chocolate coated wafer bars, cut ends show alternating wafer and cream layers",
+      "atlas": "07",
+      "cell": 21,
+      "descriptionZh": "巧克力包裹的长方威化，断面可见奶油夹层。"
+    },
+    {
+      "key": "prepared-hawthorn-balls",
+      "sourceCodes": [
+        "182010"
+      ],
+      "name": "山楂球",
+      "description": "several small dark red-brown hawthorn candy balls dusted with fine white sugar",
+      "atlas": "07",
+      "cell": 22,
+      "descriptionZh": "深红褐色山楂糖球，表面裹细白糖。"
+    },
+    {
+      "key": "prepared-assorted-candy",
+      "sourceCodes": [
+        "182011"
+      ],
+      "name": "什锦硬糖",
+      "description": "several unwrapped translucent hard candies in red, amber, green and orange, irregular round and oval shapes",
+      "atlas": "07",
+      "cell": 23,
+      "descriptionZh": "红、黄、绿、橙色透明什锦硬糖。"
+    },
+    {
+      "key": "prepared-crystal-candy",
+      "sourceCodes": [
+        "182012"
+      ],
+      "name": "水晶糖",
+      "description": "clear faceted translucent hard sugar candies, mostly colorless with subtle pastel amber tint",
+      "atlas": "08",
+      "cell": 0,
+      "descriptionZh": "透明、带棱角的水晶硬糖块。"
+    },
+    {
+      "key": "prepared-peanut-flaky-candy",
+      "sourceCodes": [
+        "182013"
+      ],
+      "name": "酥糖",
+      "description": "rectangular pale beige peanut flaky candies, cut edge shows many delicate powdery compressed layers",
+      "atlas": "08",
+      "cell": 1,
+      "descriptionZh": "浅米色花生酥糖，切面呈细薄粉酥层。"
+    },
+    {
+      "key": "prepared-three-color-sour-candy",
+      "sourceCodes": [
+        "182014"
+      ],
+      "name": "酸三色糖",
+      "description": "three small round hard candies with distinct red, yellow and green colors and fine sugar coating",
+      "atlas": "08",
+      "cell": 2,
+      "descriptionZh": "红、黄、绿三色酸糖球，表面裹细糖。"
+    },
+    {
+      "key": "prepared-peach-candy",
+      "sourceCodes": [
+        "182015"
+      ],
+      "name": "桃汁糖",
+      "description": "peach pink translucent hard candy drops beside half of a ripe peach, candies are the main subject",
+      "atlas": "08",
+      "cell": 3,
+      "descriptionZh": "粉桃色透明硬糖，旁放桃子切半。"
+    },
+    {
+      "key": "prepared-sesame-slab-candy",
+      "sourceCodes": [
+        "182016"
+      ],
+      "name": "芝麻南糖",
+      "description": "dark amber rectangular crunchy sesame candy slabs densely packed with white sesame seeds",
+      "atlas": "08",
+      "cell": 4,
+      "descriptionZh": "深琥珀色芝麻糖板，密集包裹白芝麻。"
+    },
+    {
+      "key": "prepared-crabapple-preserve",
+      "sourceCodes": [
+        "183001"
+      ],
+      "name": "海棠脯",
+      "description": "several whole small reddish amber dried candied crabapples with short stalks and wrinkled skins",
+      "atlas": "08",
+      "cell": 5,
+      "descriptionZh": "带短柄、红褐色且微皱的小海棠果脯。"
+    },
+    {
+      "key": "prepared-apricot-preserve",
+      "sourceCodes": [
+        "183002",
+        "183008"
+      ],
+      "name": "杏脯",
+      "description": "golden orange dried apricot halves, soft wrinkled translucent flesh",
+      "atlas": "08",
+      "cell": 6,
+      "descriptionZh": "金橙色干杏半片，果肉柔软起皱。"
+    },
+    {
+      "key": "prepared-pumpkin-preserve",
+      "sourceCodes": [
+        "183003"
+      ],
+      "name": "南瓜果脯",
+      "description": "short thick amber orange candied pumpkin strips with light sugar coating",
+      "atlas": "08",
+      "cell": 7,
+      "descriptionZh": "裹少量白糖的短粗橙色南瓜果脯条。"
+    },
+    {
+      "key": "prepared-apple-preserve",
+      "sourceCodes": [
+        "183004"
+      ],
+      "name": "苹果脯",
+      "description": "pale golden translucent dried apple wedges with lightly wrinkled edges",
+      "atlas": "08",
+      "cell": 8,
+      "descriptionZh": "浅金色半透明苹果干片，边缘微皱。"
+    },
+    {
+      "key": "prepared-preserved-green-plum",
+      "sourceCodes": [
+        "183005"
+      ],
+      "name": "青梅果脯",
+      "description": "several whole olive green preserved plums with lightly wrinkled shiny surfaces",
+      "atlas": "08",
+      "cell": 9,
+      "descriptionZh": "整颗橄榄绿色青梅果脯，表面微皱发亮。"
+    },
+    {
+      "key": "prepared-peach-preserve",
+      "sourceCodes": [
+        "183006"
+      ],
+      "name": "桃脯",
+      "description": "large amber orange dried peach halves with red-brown edges and visible pit hollows",
+      "atlas": "08",
+      "cell": 10,
+      "descriptionZh": "琥珀橙色干桃半片，可见果核凹坑。"
+    },
+    {
+      "key": "prepared-watermelon-rind-preserve",
+      "sourceCodes": [
+        "183007"
+      ],
+      "name": "西瓜脯",
+      "description": "pale translucent yellow-green candied watermelon rind strips with sugar crystals",
+      "atlas": "08",
+      "cell": 11,
+      "descriptionZh": "浅黄绿色半透明西瓜皮果脯条，外裹细糖。"
+    },
+    {
+      "key": "prepared-hawthorn-jelly",
+      "sourceCodes": [
+        "183009"
+      ],
+      "name": "金糕",
+      "description": "a deep ruby red smooth hawthorn jelly block with two square slices",
+      "atlas": "08",
+      "cell": 12,
+      "descriptionZh": "深红色光滑山楂糕整块与方切片。"
+    },
+    {
+      "key": "prepared-hawthorn-strips",
+      "sourceCodes": [
+        "183010"
+      ],
+      "name": "山楂条",
+      "description": "several neat deep red rectangular hawthorn candy jelly strips",
+      "atlas": "08",
+      "cell": 13,
+      "descriptionZh": "深红色长方山楂糕条，整齐堆放。"
+    },
+    {
+      "key": "prepared-hawthorn-leather",
+      "sourceCodes": [
+        "183011"
+      ],
+      "name": "山楂果丹皮",
+      "description": "a thin reddish-brown hawthorn fruit leather sheet partly rolled into a spiral",
+      "atlas": "08",
+      "cell": 14,
+      "descriptionZh": "红褐色薄片山楂果丹皮，一端卷成螺旋。"
+    },
+    {
+      "key": "prepared-raw-suet",
+      "sourceCodes": [
+        "191001",
+        "191004",
+        "191006"
+      ],
+      "name": "板油",
+      "description": "pieces of raw ivory animal suet with soft lobed fatty tissue and a fine pale membrane, no muscle meat",
+      "atlas": "08",
+      "cell": 15,
+      "descriptionZh": "乳白略泛粉的生板油块，可见薄膜和柔软脂肪组织。"
+    },
+    {
+      "key": "prepared-rendered-lard",
+      "sourceCodes": [
+        "191002",
+        "191005",
+        "191007"
+      ],
+      "name": "凝固动物油",
+      "description": "white opaque rendered animal fat in a small ceramic bowl with one soft scoop mark",
+      "atlas": "08",
+      "cell": 16,
+      "descriptionZh": "碗中凝固的白色动物油脂，表面留勺痕。"
+    },
+    {
+      "key": "prepared-rendered-duck-fat",
+      "sourceCodes": [
+        "191003"
+      ],
+      "name": "鸭油",
+      "description": "pale golden translucent rendered duck fat in a small clear glass jar",
+      "atlas": "08",
+      "cell": 17,
+      "descriptionZh": "小玻璃罐中的浅金色半透明炼鸭油。"
+    },
+    {
+      "key": "prepared-vegetable-oil",
+      "sourceCodes": [
+        "192001",
+        "192002",
+        "192003",
+        "192004",
+        "192005",
+        "192006",
+        "192007",
+        "192008",
+        "192009",
+        "192012",
+        "192013",
+        "192014",
+        "192016"
+      ],
+      "name": "植物食用油",
+      "description": "a plain small clear glass oil bottle filled with golden yellow vegetable cooking oil, no label no seeds no logo",
+      "atlas": "08",
+      "cell": 18,
+      "descriptionZh": "无标识透明小油瓶中的金黄色植物食用油。"
+    },
+    {
+      "key": "prepared-chili-oil",
+      "sourceCodes": [
+        "192010"
+      ],
+      "name": "辣椒油",
+      "description": "a small clear glass bowl of deep red chili oil with visible red chili flakes settled at bottom",
+      "atlas": "08",
+      "cell": 19,
+      "descriptionZh": "小玻璃碗中的红辣椒油，底部沉有辣椒碎。"
+    },
+    {
+      "key": "prepared-hemp-seeds",
+      "sourceCodes": [
+        "192011"
+      ],
+      "name": "麻子籽",
+      "description": "a small pile of round gray-brown hemp seeds with mottled striped shells",
+      "atlas": "08",
+      "cell": 20,
+      "descriptionZh": "灰褐色小麻籽，表皮有细斑纹。"
+    },
+    {
+      "key": "prepared-coconut-oil",
+      "sourceCodes": [
+        "192015"
+      ],
+      "name": "椰子油",
+      "description": "a clear glass jar of opaque white solid coconut oil with a small scoop on top",
+      "atlas": "08",
+      "cell": 21,
+      "descriptionZh": "透明小罐中的不透明白色凝固椰子油。"
+    },
+    {
+      "key": "prepared-palm-oil",
+      "sourceCodes": [
+        "192018"
+      ],
+      "name": "棕榈油",
+      "description": "a small plain clear glass bottle containing rich orange-red palm oil, no label",
+      "atlas": "08",
+      "cell": 22,
+      "descriptionZh": "无标识小玻璃瓶中的橙红色棕榈油。"
+    },
+    {
+      "key": "prepared-sesame-oil",
+      "sourceCodes": [
+        "192017"
+      ],
+      "name": "芝麻油",
+      "description": "a plain short glass oil bottle filled with deep amber sesame oil beside a few white sesame seeds",
+      "atlas": "08",
+      "cell": 23,
+      "descriptionZh": "深琥珀色芝麻油小瓶，旁放几粒白芝麻。"
+    },
+    {
+      "key": "prepared-olive-oil",
+      "sourceCodes": [
+        "192019"
+      ],
+      "name": "橄榄油",
+      "description": "a plain small glass bottle filled with yellow-green olive oil, two green olives beside it",
+      "atlas": "09",
+      "cell": 0,
+      "descriptionZh": "黄绿色橄榄油小瓶，旁放两颗绿橄榄。"
+    },
+    {
+      "key": "prepared-sorghum-noodles",
+      "sourceCodes": [
+        "192201"
+      ],
+      "name": "高粱面面条",
+      "description": "a small bowl of cooked brownish gray sorghum grain noodles, matte coarse texture",
+      "atlas": "09",
+      "cell": 1,
+      "descriptionZh": "小碗中的灰褐色高粱面条，表面较粗糙。"
+    },
+    {
+      "key": "prepared-soy-sauce",
+      "sourceCodes": [
+        "201001",
+        "201002",
+        "201003",
+        "201004",
+        "201005",
+        "201006",
+        "201007",
+        "201008",
+        "201009",
+        "201010"
+      ],
+      "name": "酱油",
+      "description": "a small plain glass cruet holding dark brown soy sauce with a shallow white dipping dish of glossy brown sauce",
+      "atlas": "09",
+      "cell": 2,
+      "descriptionZh": "小玻璃壶与白色蘸碟中的深褐酱油。"
+    },
+    {
+      "key": "prepared-white-vinegar",
+      "sourceCodes": [
+        "202002"
+      ],
+      "name": "白醋",
+      "description": "a small clear glass cruet of colorless transparent white vinegar with a little white dipping dish",
+      "atlas": "09",
+      "cell": 3,
+      "descriptionZh": "小玻璃壶与白色蘸碟中的透明白醋。"
+    },
+    {
+      "key": "prepared-black-vinegar",
+      "sourceCodes": [
+        "202001",
+        "202003",
+        "202004",
+        "202005",
+        "202006",
+        "202007",
+        "202008"
+      ],
+      "name": "深色食醋",
+      "description": "a small glass cruet of very dark amber brown Chinese vinegar beside a shallow white dipping dish",
+      "atlas": "09",
+      "cell": 4,
+      "descriptionZh": "小玻璃壶与蘸碟中的深琥珀褐色食醋。"
+    },
+    {
+      "key": "prepared-broadbean-paste",
+      "sourceCodes": [
+        "203101"
+      ],
+      "name": "豆瓣酱",
+      "description": "a small white bowl of chunky brown fermented broad bean paste, visible broad bean pieces",
+      "atlas": "09",
+      "cell": 5,
+      "descriptionZh": "碗中褐色发酵豆瓣酱，保留可见豆瓣颗粒。"
+    },
+    {
+      "key": "prepared-chili-broadbean-paste",
+      "sourceCodes": [
+        "203102",
+        "203103",
+        "203115"
+      ],
+      "name": "豆瓣辣酱",
+      "description": "a small white bowl of dark red chunky fermented chili broad bean paste with visible broad bean pieces and red chili oil",
+      "atlas": "09",
+      "cell": 6,
+      "descriptionZh": "深红豆瓣辣酱带红油，可见粗豆瓣与辣椒碎。"
+    },
+    {
+      "key": "prepared-peanut-butter",
+      "sourceCodes": [
+        "203104"
+      ],
+      "name": "花生酱",
+      "description": "a small white bowl of thick smooth tan peanut butter with a small spread swirl",
+      "atlas": "09",
+      "cell": 7,
+      "descriptionZh": "小白碗中的浅棕花生酱，细腻浓稠。"
+    },
+    {
+      "key": "prepared-soybean-paste",
+      "sourceCodes": [
+        "203105"
+      ],
+      "name": "黄酱",
+      "description": "a small white bowl of thick yellow-brown fermented soybean paste with coarse soybean texture",
+      "atlas": "09",
+      "cell": 8,
+      "descriptionZh": "小白碗中的黄褐色发酵黄豆酱，质地粗厚。"
+    },
+    {
+      "key": "prepared-soy-glaze",
+      "sourceCodes": [
+        "203106"
+      ],
+      "name": "酱油膏",
+      "description": "a small shallow white dish of very thick glossy almost black soy glaze, spoon lifting a short viscous ribbon",
+      "atlas": "09",
+      "cell": 9,
+      "descriptionZh": "近黑色浓稠酱油膏，木勺提起黏稠酱汁。"
+    },
+    {
+      "key": "prepared-chili-paste",
+      "sourceCodes": [
+        "203107"
+      ],
+      "name": "辣椒酱",
+      "description": "a small white bowl of vivid red minced chili paste with pale yellow chili seeds",
+      "atlas": "09",
+      "cell": 10,
+      "descriptionZh": "鲜红色辣椒糊，夹浅黄色辣椒籽。"
+    },
+    {
+      "key": "prepared-mala-paste",
+      "sourceCodes": [
+        "203108"
+      ],
+      "name": "麻辣酱",
+      "description": "a small bowl of oily dark red finely minced chili paste with ONLY a few tiny reddish-brown Sichuan peppercorn husks on top. NO star anise, NO whole large spices, NO whole red peppers",
+      "atlas": "14",
+      "cell": 1,
+      "originalAtlas": "09",
+      "originalCell": 11,
+      "descriptionZh": "深红油润麻辣酱，表面有少量细小花椒壳。"
+    },
+    {
+      "key": "prepared-beef-chili-paste",
+      "sourceCodes": [
+        "203109"
+      ],
+      "name": "牛肉辣瓣酱",
+      "description": "a small bowl of dark red chili bean sauce with distinct small cooked beef cubes",
+      "atlas": "09",
+      "cell": 12,
+      "descriptionZh": "深红辣豆瓣酱中可见小块熟牛肉。"
+    },
+    {
+      "key": "prepared-garlic-chili-paste",
+      "sourceCodes": [
+        "203110"
+      ],
+      "name": "蒜蓉辣酱",
+      "description": "a small white bowl of bright red chili sauce speckled with finely minced pale garlic",
+      "atlas": "09",
+      "cell": 13,
+      "descriptionZh": "鲜红辣酱中夹有细碎浅色蒜粒。"
+    },
+    {
+      "key": "prepared-sweet-wheat-paste",
+      "sourceCodes": [
+        "203111"
+      ],
+      "name": "甜面酱",
+      "description": "a small white bowl of thick smooth glossy dark brown sweet fermented wheat paste",
+      "atlas": "09",
+      "cell": 14,
+      "descriptionZh": "深褐色光滑浓稠的甜面酱。"
+    },
+    {
+      "key": "prepared-fermented-black-beans",
+      "sourceCodes": [
+        "203112"
+      ],
+      "name": "五香豆豉",
+      "description": "a small pile of wrinkled shiny black fermented soybeans in a shallow white dish",
+      "atlas": "09",
+      "cell": 15,
+      "descriptionZh": "小碟中皱缩发亮的黑色发酵豆豉。"
+    },
+    {
+      "key": "prepared-sesame-chili-paste",
+      "sourceCodes": [
+        "203113"
+      ],
+      "name": "香油辣酱",
+      "description": "a small white bowl of deep red sesame oil chili sauce with tiny sesame flecks",
+      "atlas": "09",
+      "cell": 16,
+      "descriptionZh": "深红芝麻油辣酱，带少量芝麻碎。"
+    },
+    {
+      "key": "prepared-sesame-paste",
+      "sourceCodes": [
+        "203114"
+      ],
+      "name": "芝麻酱",
+      "description": "a small white bowl of smooth thick beige toasted sesame paste with a spoon mark",
+      "atlas": "09",
+      "cell": 17,
+      "descriptionZh": "小碗中均匀浓稠的浅褐芝麻酱。"
+    },
+    {
+      "key": "prepared-strawberry-jam",
+      "sourceCodes": [
+        "203201"
+      ],
+      "name": "草莓酱",
+      "description": "a small clear open jar of bright red strawberry jam with tiny seeds and a strawberry beside it, no label",
+      "atlas": "09",
+      "cell": 18,
+      "descriptionZh": "无标识玻璃罐中的红草莓酱，旁放草莓。"
+    },
+    {
+      "key": "prepared-ketchup",
+      "sourceCodes": [
+        "203202"
+      ],
+      "name": "番茄酱",
+      "description": "a small white ramekin of smooth glossy bright red tomato ketchup",
+      "atlas": "09",
+      "cell": 19,
+      "descriptionZh": "小白盅中均匀光亮的红色番茄酱。"
+    },
+    {
+      "key": "prepared-lemon-jam",
+      "sourceCodes": [
+        "203203"
+      ],
+      "name": "柠檬酱",
+      "description": "a small clear open jar of translucent lemon-yellow marmalade with tiny lemon peel strips, half lemon beside it",
+      "atlas": "09",
+      "cell": 20,
+      "descriptionZh": "浅黄色柠檬酱中有果皮细丝，旁放柠檬。"
+    },
+    {
+      "key": "prepared-apple-jam",
+      "sourceCodes": [
+        "203204"
+      ],
+      "name": "苹果酱",
+      "description": "a small clear open jar of pale golden chunky apple jam, one apple wedge beside it",
+      "atlas": "09",
+      "cell": 21,
+      "descriptionZh": "玻璃罐中浅金色苹果酱，旁放苹果瓣。"
+    },
+    {
+      "key": "prepared-peach-jam",
+      "sourceCodes": [
+        "203205"
+      ],
+      "name": "桃酱",
+      "description": "a small clear open jar of pale peach orange jam with soft fruit pieces, one peach wedge beside it",
+      "atlas": "09",
+      "cell": 22,
+      "descriptionZh": "玻璃罐中浅桃橙色桃酱，旁放桃子瓣。"
+    },
+    {
+      "key": "prepared-apricot-jam",
+      "sourceCodes": [
+        "203206"
+      ],
+      "name": "杏酱",
+      "description": "a small clear open jar of deep golden orange apricot jam, half a small apricot beside it",
+      "atlas": "09",
+      "cell": 23,
+      "descriptionZh": "玻璃罐中金橙色杏酱，旁放半颗小杏。"
+    },
+    {
+      "key": "prepared-white-fermented-tofu",
+      "sourceCodes": [
+        "204001"
+      ],
+      "name": "白腐乳",
+      "description": "three ivory fermented tofu cubes in a little pale yellow brine in a white saucer",
+      "atlas": "10",
+      "cell": 0,
+      "descriptionZh": "浅黄卤汁中的乳白腐乳方块。"
+    },
+    {
+      "key": "prepared-stinky-fermented-tofu",
+      "sourceCodes": [
+        "204002"
+      ],
+      "name": "臭腐乳",
+      "description": "three soft gray-green fermented stinky tofu cubes in a small white saucer, not fried tofu",
+      "atlas": "10",
+      "cell": 1,
+      "descriptionZh": "灰绿色软臭腐乳方块，盛于白色小碟。"
+    },
+    {
+      "key": "prepared-red-fermented-tofu",
+      "sourceCodes": [
+        "204003",
+        "204005"
+      ],
+      "name": "红腐乳",
+      "description": "three soft crimson-red fermented tofu cubes coated in red rice wine brine in a white saucer",
+      "atlas": "10",
+      "cell": 2,
+      "descriptionZh": "红曲卤汁包裹的深红软腐乳方块。"
+    },
+    {
+      "key": "prepared-chili-fermented-tofu",
+      "sourceCodes": [
+        "204004"
+      ],
+      "name": "桂林腐乳",
+      "description": "three pale fermented tofu cubes covered in red chili flakes and amber chili brine in a white saucer",
+      "atlas": "10",
+      "cell": 3,
+      "descriptionZh": "浅色腐乳方块，上覆红辣椒碎与卤汁。"
+    },
+    {
+      "key": "prepared-mixed-pickled-vegetables",
+      "sourceCodes": [
+        "205001",
+        "205005",
+        "205020"
+      ],
+      "name": "什锦酱菜",
+      "description": "a small dish of finely cut mixed Chinese pickled vegetables: yellow radish, dark cucumber, carrot and leafy mustard",
+      "atlas": "10",
+      "cell": 4,
+      "descriptionZh": "小碟中的黄萝卜、深黄瓜与胡萝卜等细切酱菜。"
+    },
+    {
+      "key": "prepared-winter-preserved-cabbage",
+      "sourceCodes": [
+        "205002"
+      ],
+      "name": "冬菜",
+      "description": "a small dish of finely chopped dry golden brown preserved Chinese cabbage shreds",
+      "atlas": "10",
+      "cell": 5,
+      "descriptionZh": "细切、干皱的金褐色腌制冬菜丝。"
+    },
+    {
+      "key": "prepared-yacai-pickles",
+      "sourceCodes": [
+        "205003"
+      ],
+      "name": "芽菜",
+      "description": "a small pile of finely chopped dark brown fermented mustard shoots, dry wrinkled texture",
+      "atlas": "10",
+      "cell": 6,
+      "descriptionZh": "细碎深褐色发酵芽菜，干皱质地。"
+    },
+    {
+      "key": "prepared-pickled-turnip",
+      "sourceCodes": [
+        "205004",
+        "205008",
+        "205026"
+      ],
+      "name": "酱大头菜",
+      "description": "a small whole brown pickled mustard turnip with several amber brown slices in a white dish",
+      "atlas": "10",
+      "cell": 7,
+      "descriptionZh": "褐色酱大头菜整根与厚圆切片。"
+    },
+    {
+      "key": "prepared-pickled-ginger",
+      "sourceCodes": [
+        "205006"
+      ],
+      "name": "糟姜",
+      "description": "a small white dish of thin pale pink pickled ginger slices with irregular finger shapes",
+      "atlas": "10",
+      "cell": 8,
+      "descriptionZh": "小碟中薄而不规则的浅粉色糟姜片。"
+    },
+    {
+      "key": "prepared-pickled-melon",
+      "sourceCodes": [
+        "205007"
+      ],
+      "name": "酱包瓜",
+      "description": "thick dark green-brown pickled melon segments, cut face shows pale amber flesh and seed cavity",
+      "atlas": "10",
+      "cell": 9,
+      "descriptionZh": "深绿褐色酱包瓜块，切面有浅色果肉与籽腔。"
+    },
+    {
+      "key": "prepared-pickled-crosne",
+      "sourceCodes": [
+        "205009"
+      ],
+      "name": "酱甘露子",
+      "description": "a small white dish of several amber brown spiral segmented crosne tubers, little caterpillar-like vegetable shapes",
+      "atlas": "10",
+      "cell": 10,
+      "descriptionZh": "琥珀色螺旋节状甘露子小块茎。"
+    },
+    {
+      "key": "prepared-pickled-cucumber",
+      "sourceCodes": [
+        "205010",
+        "205019"
+      ],
+      "name": "酱黄瓜",
+      "description": "a small white dish of dark olive-green whole small pickled cucumbers and diagonal cut pieces",
+      "atlas": "10",
+      "cell": 11,
+      "descriptionZh": "橄榄绿小酱黄瓜与斜切薄片。"
+    },
+    {
+      "key": "prepared-pickled-radish",
+      "sourceCodes": [
+        "205011"
+      ],
+      "name": "酱萝卜",
+      "description": "a small white dish of thick amber brown pickled white radish slices, moist glossy edges",
+      "atlas": "10",
+      "cell": 12,
+      "descriptionZh": "小碟中湿润的琥珀褐色厚萝卜片。"
+    },
+    {
+      "key": "prepared-pickled-mushroom",
+      "sourceCodes": [
+        "205012"
+      ],
+      "name": "酱蘑菇",
+      "description": "a small white dish of brown pickled mushrooms with rounded caps and short stems",
+      "atlas": "10",
+      "cell": 13,
+      "descriptionZh": "小碟中褐色酱蘑菇，可见圆菌盖和短柄。"
+    },
+    {
+      "key": "prepared-pickled-kohlrabi",
+      "sourceCodes": [
+        "205013"
+      ],
+      "name": "酱苤蓝丝",
+      "description": "a small mound of thin golden-brown shredded pickled kohlrabi in a white dish",
+      "atlas": "10",
+      "cell": 14,
+      "descriptionZh": "小盘中细长金褐色酱苤蓝丝。"
+    },
+    {
+      "key": "prepared-pickled-lettuce-stem",
+      "sourceCodes": [
+        "205014"
+      ],
+      "name": "酱莴笋",
+      "description": "a small dish of pale green translucent pickled stem lettuce slices with angular cut edges",
+      "atlas": "10",
+      "cell": 15,
+      "descriptionZh": "浅绿色半透明酱莴笋切片，切边有棱角。"
+    },
+    {
+      "key": "prepared-dried-mustard",
+      "sourceCodes": [
+        "205015"
+      ],
+      "name": "芥菜干",
+      "description": "a small bundle of dark brown-green dried mustard greens, long wrinkled leaves and stems",
+      "atlas": "10",
+      "cell": 16,
+      "descriptionZh": "深褐绿色干芥菜，带长皱叶与叶柄。"
+    },
+    {
+      "key": "prepared-coin-radish-pickle",
+      "sourceCodes": [
+        "205016"
+      ],
+      "name": "金钱萝卜",
+      "description": "a small white dish of thin circular slices of DRIED WHITE RADISH, light beige wrinkled soft circles with brown edges, root fiber texture and pale solid interior. NOT citrus fruit, no orange color, no citrus segments, no citrus peel",
+      "atlas": "14",
+      "cell": 3,
+      "originalAtlas": "10",
+      "originalCell": 17,
+      "descriptionZh": "浅米褐色圆干萝卜片，表面有根部纤维纹理。"
+    },
+    {
+      "key": "prepared-chili-radish-strips",
+      "sourceCodes": [
+        "205017"
+      ],
+      "name": "辣萝卜条",
+      "description": "a small dish of pale yellow pickled radish strips coated with bright red chili flakes",
+      "atlas": "10",
+      "cell": 18,
+      "descriptionZh": "黄白色萝卜条外裹鲜红辣椒碎。"
+    },
+    {
+      "key": "prepared-dried-radish",
+      "sourceCodes": [
+        "205018"
+      ],
+      "name": "萝卜干",
+      "description": "a small pile of golden beige dry wrinkled radish strips",
+      "atlas": "10",
+      "cell": 19,
+      "descriptionZh": "金米色干萝卜条，长而皱缩。"
+    },
+    {
+      "key": "prepared-sour-mustard-greens",
+      "sourceCodes": [
+        "205021"
+      ],
+      "name": "酸芥菜",
+      "description": "fermented olive-yellow leafy mustard greens with thick curled stems on a small white plate",
+      "atlas": "10",
+      "cell": 20,
+      "descriptionZh": "橄榄黄色酸芥菜整叶与粗叶柄。"
+    },
+    {
+      "key": "prepared-soy-pickled-garlic",
+      "sourceCodes": [
+        "205022"
+      ],
+      "name": "酱蒜头",
+      "description": "a dark brown glossy whole pickled garlic bulb with several peeled amber cloves",
+      "atlas": "10",
+      "cell": 21,
+      "descriptionZh": "深褐发亮的酱蒜整头与琥珀色蒜瓣。"
+    },
+    {
+      "key": "prepared-sweet-pickled-garlic",
+      "sourceCodes": [
+        "205023"
+      ],
+      "name": "糖蒜",
+      "description": "a pale golden whole sweet pickled garlic bulb with several translucent ivory cloves",
+      "atlas": "10",
+      "cell": 22,
+      "descriptionZh": "浅金色整头糖蒜与半透明乳白蒜瓣。"
+    },
+    {
+      "key": "prepared-sweet-chili-cucumber",
+      "sourceCodes": [
+        "205024"
+      ],
+      "name": "甜辣黄瓜",
+      "description": "green cucumber chunks coated in red chili glaze in a small white dish",
+      "atlas": "10",
+      "cell": 23,
+      "descriptionZh": "青绿黄瓜块外裹红色甜辣酱汁。"
+    },
+    {
+      "key": "prepared-pickled-rakkyo",
+      "sourceCodes": [
+        "205025"
+      ],
+      "name": "甜酸藠头",
+      "description": "a small dish of translucent ivory pickled rakkyo onion bulbs, slender teardrop shape",
+      "atlas": "11",
+      "cell": 0,
+      "descriptionZh": "乳白半透明、细长水滴状甜酸藠头。"
+    },
+    {
+      "key": "prepared-salted-sand-onion",
+      "sourceCodes": [
+        "205027"
+      ],
+      "name": "咸沙葱",
+      "description": "a small dish of slender dark green pickled sand onion stems, narrow curled tubular leaves",
+      "atlas": "11",
+      "cell": 1,
+      "descriptionZh": "深绿色细管状咸沙葱，细长叶茎弯曲交叠。"
+    },
+    {
+      "key": "prepared-pickled-jerusalem-artichoke",
+      "sourceCodes": [
+        "205028"
+      ],
+      "name": "腌洋姜",
+      "description": "knobby amber brown pickled Jerusalem artichoke tubers with a few crisp ivory slices",
+      "atlas": "11",
+      "cell": 2,
+      "descriptionZh": "褐色多节腌洋姜块茎，配浅色脆切片。"
+    },
+    {
+      "key": "prepared-zha-cai",
+      "sourceCodes": [
+        "205029"
+      ],
+      "name": "榨菜",
+      "description": "a small dish of olive-brown knobbly pickled mustard tuber with several thin shredded strips",
+      "atlas": "11",
+      "cell": 3,
+      "descriptionZh": "橄榄褐色不规则榨菜球茎与细切条。"
+    },
+    {
+      "key": "prepared-pickled-bracken",
+      "sourceCodes": [
+        "205030"
+      ],
+      "name": "腌蕨菜",
+      "description": "a small dish of brown-green pickled bracken fern stalks with distinctive curled fern tips",
+      "atlas": "11",
+      "cell": 4,
+      "descriptionZh": "褐绿色腌蕨菜长茎，保留卷曲蕨尖。"
+    },
+    {
+      "key": "prepared-salted-mustard-root",
+      "sourceCodes": [
+        "205031",
+        "205032"
+      ],
+      "name": "腌芥菜头",
+      "description": "a pale yellow whole pickled mustard root with a few thick round slices, no sauce",
+      "atlas": "11",
+      "cell": 5,
+      "descriptionZh": "浅黄色腌芥菜根与几片厚圆切片。"
+    },
+    {
+      "key": "prepared-chive-flower-paste",
+      "sourceCodes": [
+        "205033"
+      ],
+      "name": "腌韭菜花",
+      "description": "a small white ramekin of coarse dark green chive blossom paste",
+      "atlas": "11",
+      "cell": 6,
+      "descriptionZh": "小白盅中的深绿粗粒韭菜花酱。"
+    },
+    {
+      "key": "prepared-pickled-asparagus-lettuce",
+      "sourceCodes": [
+        "205034"
+      ],
+      "name": "腌龙须菜",
+      "description": "a small dish of thin tangled green-brown pickled seaweed-like Gracilaria dragon whisker vegetable strands",
+      "atlas": "11",
+      "cell": 7,
+      "descriptionZh": "细长缠绕的绿褐色腌龙须菜丝。"
+    },
+    {
+      "key": "prepared-pickled-xuelihong",
+      "sourceCodes": [
+        "205035"
+      ],
+      "name": "腌雪里红",
+      "description": "a small dish of chopped olive green pickled potherb mustard leaves and pale stems",
+      "atlas": "11",
+      "cell": 8,
+      "descriptionZh": "小碟中切碎的橄榄绿雪里红叶和浅色茎。"
+    },
+    {
+      "key": "prepared-star-anise",
+      "sourceCodes": [
+        "206001"
+      ],
+      "name": "八角",
+      "description": "three dark reddish brown star anise pods with eight pointed carpels",
+      "atlas": "11",
+      "cell": 9,
+      "descriptionZh": "深红褐色八角，星状尖瓣清晰。"
+    },
+    {
+      "key": "prepared-pepper-powder",
+      "sourceCodes": [
+        "206002"
+      ],
+      "name": "胡椒粉",
+      "description": "a small bowl of finely ground pale gray-white pepper powder",
+      "atlas": "11",
+      "cell": 10,
+      "descriptionZh": "小碗中的灰白色细胡椒粉。"
+    },
+    {
+      "key": "prepared-sichuan-pepper",
+      "sourceCodes": [
+        "206003"
+      ],
+      "name": "花椒",
+      "description": "a small pile of reddish brown Sichuan pepper husks, open hollow wrinkled shells and a few black seeds",
+      "atlas": "11",
+      "cell": 11,
+      "descriptionZh": "红褐色空心花椒壳，夹少数黑色籽。"
+    },
+    {
+      "key": "prepared-huangmao-seeds",
+      "sourceCodes": [
+        "206004"
+      ],
+      "name": "黄毛籽",
+      "description": "a small pile of tiny golden-brown elongated rough spice seeds in a plain shallow white dish",
+      "atlas": "11",
+      "cell": 12,
+      "descriptionZh": "浅盘中金褐色细长粗纹黄毛籽香辛料。"
+    },
+    {
+      "key": "prepared-mustard-paste",
+      "sourceCodes": [
+        "206005"
+      ],
+      "name": "芥末",
+      "description": "a small white ramekin with a smooth mustard-yellow condiment paste swirl",
+      "atlas": "11",
+      "cell": 13,
+      "descriptionZh": "小白盅中的黄芥末酱，表面光滑呈尖旋纹。"
+    },
+    {
+      "key": "prepared-fenugreek-leaves",
+      "sourceCodes": [
+        "206006"
+      ],
+      "name": "苦豆子调味干叶",
+      "description": "a small pile of crushed DRIED fenugreek LEAVES used as Chinese xiangdou seasoning, dull olive green finely crumbled leaves and coarse green herbal powder in a little white dish, one tiny sprig of dried trifoliate leaves. NO seeds",
+      "atlas": "14",
+      "cell": 4,
+      "originalAtlas": "11",
+      "originalCell": 14,
+      "descriptionZh": "橄榄绿色香豆干叶碎与粗粉，保留少量三出叶。"
+    },
+    {
+      "key": "prepared-chili-powder",
+      "sourceCodes": [
+        "206007"
+      ],
+      "name": "辣椒粉",
+      "description": "a small white bowl of finely ground vivid brick-red chili powder",
+      "atlas": "11",
+      "cell": 15,
+      "descriptionZh": "小碗中堆起的砖红色细辣椒粉。"
+    },
+    {
+      "key": "prepared-steamed-meat-rice-powder",
+      "sourceCodes": [
+        "206008"
+      ],
+      "name": "蒸肉粉",
+      "description": "a small bowl of coarse tan spiced crushed rice granules, distinct uneven rice meal grains",
+      "atlas": "11",
+      "cell": 16,
+      "descriptionZh": "小碗中的浅褐蒸肉粉，粗碎米颗粒分明。"
+    },
+    {
+      "key": "prepared-five-spice-powder",
+      "sourceCodes": [
+        "206009"
+      ],
+      "name": "五香粉",
+      "description": "a small bowl of fine warm brown five-spice powder",
+      "atlas": "11",
+      "cell": 17,
+      "descriptionZh": "小碗中的温棕色细五香粉。"
+    },
+    {
+      "key": "prepared-fennel-seeds",
+      "sourceCodes": [
+        "206010"
+      ],
+      "name": "小茴香籽",
+      "description": "a small pile of long thin ribbed olive green fennel seeds",
+      "atlas": "11",
+      "cell": 18,
+      "descriptionZh": "橄榄绿色细长小茴香籽，表面有纵向棱线。"
+    },
+    {
+      "key": "prepared-coarse-salt",
+      "sourceCodes": [
+        "207101",
+        "207103"
+      ],
+      "name": "粗盐",
+      "description": "a small pile of coarse irregular gray-white mineral salt crystals",
+      "atlas": "11",
+      "cell": 19,
+      "descriptionZh": "不规则灰白色粗盐晶粒。"
+    },
+    {
+      "key": "prepared-fine-salt",
+      "sourceCodes": [
+        "207102"
+      ],
+      "name": "精盐",
+      "description": "a small white ceramic bowl with fine bright white table salt",
+      "atlas": "11",
+      "cell": 20,
+      "descriptionZh": "小白碗中的洁白细盐。"
+    },
+    {
+      "key": "prepared-msg-crystals",
+      "sourceCodes": [
+        "207201"
+      ],
+      "name": "味精",
+      "description": "a small pile of translucent white long needle-shaped monosodium glutamate crystals",
+      "atlas": "11",
+      "cell": 21,
+      "descriptionZh": "细长针状、半透明白色味精晶体。"
+    },
+    {
+      "key": "prepared-fresh-yeast",
+      "sourceCodes": [
+        "207301"
+      ],
+      "name": "鲜酵母",
+      "description": "a small beige fresh yeast block with a crumbly broken corner",
+      "atlas": "11",
+      "cell": 22,
+      "descriptionZh": "浅米色鲜酵母方块，破角细碎易裂。"
+    },
+    {
+      "key": "prepared-dry-yeast",
+      "sourceCodes": [
+        "207302"
+      ],
+      "name": "干酵母",
+      "description": "a small bowl of tiny uniform beige dry yeast granules",
+      "atlas": "11",
+      "cell": 23,
+      "descriptionZh": "碗中细小均匀的米黄色干酵母颗粒。"
+    },
+    {
+      "key": "prepared-angelica-root",
+      "sourceCodes": [
+        "211001"
+      ],
+      "name": "白芷",
+      "description": "several round dried Angelica dahurica root slices, pale ivory interior with tiny tan rings and thin brown bark",
+      "atlas": "12",
+      "cell": 0,
+      "descriptionZh": "白芷干根圆切片，浅白内芯与薄褐表皮。"
+    },
+    {
+      "key": "prepared-dried-mint",
+      "sourceCodes": [
+        "211002"
+      ],
+      "name": "干薄荷",
+      "description": "a small pile of dry brittle brown-green mint leaves, crinkled serrated margins",
+      "atlas": "12",
+      "cell": 1,
+      "descriptionZh": "褐绿色干薄荷叶，叶缘锯齿且自然皱曲。"
+    },
+    {
+      "key": "prepared-fresh-mint",
+      "sourceCodes": [
+        "211003"
+      ],
+      "name": "鲜薄荷",
+      "description": "a small sprig of fresh bright green mint with oval wrinkled serrated opposite leaves",
+      "atlas": "12",
+      "cell": 2,
+      "descriptionZh": "鲜绿薄荷枝，卵形对生叶有皱褶和锯齿。"
+    },
+    {
+      "key": "prepared-schisandra-leaf",
+      "sourceCodes": [
+        "211004"
+      ],
+      "name": "鲜五味子叶",
+      "description": "a slender woody twig bearing several fresh glossy oval green schisandra leaves with pointed tips and finely serrated edges",
+      "atlas": "12",
+      "cell": 3,
+      "descriptionZh": "木质小枝上的新鲜绿色五味子叶，叶尖锐。"
+    },
+    {
+      "key": "prepared-plantain-leaf",
+      "sourceCodes": [
+        "211005"
+      ],
+      "name": "鲜车前",
+      "description": "fresh broadleaf plantain rosette with broad oval green leaves, conspicuous parallel curved ribs and several thin upright seed spikes",
+      "atlas": "12",
+      "cell": 4,
+      "descriptionZh": "新鲜车前叶丛，宽卵叶有弧形纵脉与细长果穗。"
+    },
+    {
+      "key": "prepared-plantain-seeds",
+      "sourceCodes": [
+        "211006"
+      ],
+      "name": "鲜车前子植株",
+      "description": "a freshly picked green plantain herb with broad oval ribbed leaves at the base and three long slender green seed spikes growing upward. Whole leafy herb, only fresh green plant parts. NO loose dried brown seeds",
+      "atlas": "14",
+      "cell": 5,
+      "originalAtlas": "12",
+      "originalCell": 5,
+      "descriptionZh": "新鲜车前子植株，宽绿叶和直立绿色果穗并存。"
+    },
+    {
+      "key": "prepared-dried-tangerine-peel",
+      "sourceCodes": [
+        "211007"
+      ],
+      "name": "陈皮",
+      "description": "curled pieces of dried mandarin peel, rusty orange pebbled outer skin and pale cream inner pith",
+      "atlas": "12",
+      "cell": 6,
+      "descriptionZh": "卷曲陈皮片，橙色粗纹外皮与乳白内瓤相对。"
+    },
+    {
+      "key": "prepared-cloves",
+      "sourceCodes": [
+        "211008"
+      ],
+      "name": "丁香",
+      "description": "a small pile of dark brown dried whole cloves, nail-shaped stems with round bud heads",
+      "atlas": "12",
+      "cell": 7,
+      "descriptionZh": "深褐色丁香，细钉形花梗顶部带圆花蕾。"
+    },
+    {
+      "key": "prepared-fresh-saposhnikovia-root",
+      "sourceCodes": [
+        "211009"
+      ],
+      "name": "鲜防风根",
+      "description": "two slender tapered pale tan fresh Saposhnikovia roots with fine rootlets and horizontal ringed wrinkles",
+      "atlas": "12",
+      "cell": 8,
+      "descriptionZh": "浅褐防风鲜根，长锥形根部带细根须和环纹。"
+    },
+    {
+      "key": "prepared-fresh-saposhnikovia-leaf",
+      "sourceCodes": [
+        "211010"
+      ],
+      "name": "鲜防风叶",
+      "description": "a fresh green Saposhnikovia leaf spray with finely divided fern-like pinnate leaflets",
+      "atlas": "12",
+      "cell": 9,
+      "descriptionZh": "新鲜防风叶枝，绿色叶片呈细裂羽状。"
+    },
+    {
+      "key": "prepared-licorice-root",
+      "sourceCodes": [
+        "211011"
+      ],
+      "name": "甘草",
+      "description": "several dried licorice root sticks and round cross-sections with yellow centers and brown outer bark",
+      "atlas": "12",
+      "cell": 10,
+      "descriptionZh": "甘草干根条与圆切片，黄色内芯和褐色外皮。"
+    },
+    {
+      "key": "prepared-dried-galangal",
+      "sourceCodes": [
+        "211012"
+      ],
+      "name": "高良姜",
+      "description": "several DRIED dark reddish-brown galangal root segments and slices, narrow cylindrical woody wrinkled bark with tight horizontal rings, dry orange-tan fibrous cross-sections. Not fresh ginger, not pink moist rhizomes",
+      "atlas": "14",
+      "cell": 2,
+      "originalAtlas": "12",
+      "originalCell": 11,
+      "descriptionZh": "红褐色高良姜干根段与切片，干皱环纹及纤维断面。"
+    },
+    {
+      "key": "prepared-safflower",
+      "sourceCodes": [
+        "211013"
+      ],
+      "name": "红花",
+      "description": "a small pile of fine dried safflower florets, tangled narrow orange-red petals",
+      "atlas": "12",
+      "cell": 12,
+      "descriptionZh": "堆起的细长橙红色干红花花丝。"
+    },
+    {
+      "key": "prepared-japanese-knotweed",
+      "sourceCodes": [
+        "211014"
+      ],
+      "name": "鲜虎杖",
+      "description": "a short spray of fresh green Japanese knotweed with hollow reddish jointed stems and broad triangular green leaves",
+      "atlas": "12",
+      "cell": 13,
+      "descriptionZh": "鲜虎杖枝叶，粗节红色茎与宽三角绿色叶片。"
+    },
+    {
+      "key": "prepared-chrysanthemum",
+      "sourceCodes": [
+        "211015"
+      ],
+      "name": "干菊花",
+      "description": "several dry pale cream chrysanthemum blossoms with tightly layered wrinkled petals and yellow centers",
+      "atlas": "12",
+      "cell": 14,
+      "descriptionZh": "浅乳黄干菊花，细层花瓣围绕黄色花心。"
+    },
+    {
+      "key": "prepared-fresh-cassia",
+      "sourceCodes": [
+        "211016"
+      ],
+      "name": "鲜决明",
+      "description": "a fresh cassia twig with pairs of oval green leaflets and a slender curved green seed pod",
+      "atlas": "12",
+      "cell": 15,
+      "descriptionZh": "鲜决明枝条，成对绿色小叶与细长种荚。"
+    },
+    {
+      "key": "prepared-radish-seeds",
+      "sourceCodes": [
+        "211017"
+      ],
+      "name": "莱菔子",
+      "description": "a small pile of tiny rough reddish brown oval radish seeds",
+      "atlas": "12",
+      "cell": 16,
+      "descriptionZh": "细小椭圆红褐色莱菔子，表皮略粗糙。"
+    },
+    {
+      "key": "prepared-monk-fruit",
+      "sourceCodes": [
+        "211018"
+      ],
+      "name": "罗汉果",
+      "description": "two whole dried brown monk fruits with round papery fibrous shells, one broken open showing tan seeds",
+      "atlas": "12",
+      "cell": 17,
+      "descriptionZh": "褐色圆罗汉果整颗与破壳，可见干籽。"
+    },
+    {
+      "key": "prepared-torreya-nuts",
+      "sourceCodes": [
+        "211019"
+      ],
+      "name": "木榧",
+      "description": "several elongated oval brown torreya nuts with smooth hard shells, one opened to show pale beige kernel",
+      "atlas": "12",
+      "cell": 18,
+      "descriptionZh": "棕色长椭圆木榧果，破壳露浅色种仁。"
+    },
+    {
+      "key": "prepared-nutmeg",
+      "sourceCodes": [
+        "211020"
+      ],
+      "name": "肉豆蔻",
+      "description": "two whole brown oval nutmeg seeds with deeply wrinkled surfaces, one cross-section shows marbled pale brown interior",
+      "atlas": "12",
+      "cell": 19,
+      "descriptionZh": "褐色卵形肉豆蔻，剖面为棕白相间纹理。"
+    },
+    {
+      "key": "prepared-cinnamon",
+      "sourceCodes": [
+        "211021"
+      ],
+      "name": "肉桂",
+      "description": "three thick warm brown dried cassia cinnamon bark rolls with rough exterior and smooth rolled interior",
+      "atlas": "12",
+      "cell": 20,
+      "descriptionZh": "暖褐色卷筒肉桂皮，外侧粗糙、内侧较光滑。"
+    },
+    {
+      "key": "prepared-amomum",
+      "sourceCodes": [
+        "211022"
+      ],
+      "name": "砂仁",
+      "description": "several oval dark reddish brown amomum pods with spiny ridged husks, one cracked shows black seeds",
+      "atlas": "12",
+      "cell": 21,
+      "descriptionZh": "红褐椭圆砂仁果，带纵棱与细刺，破壳见黑籽。"
+    },
+    {
+      "key": "prepared-peach-kernels",
+      "sourceCodes": [
+        "211023"
+      ],
+      "name": "桃仁",
+      "description": "a small pile of flat pointed almond-shaped brown peach kernels with finely wrinkled skins",
+      "atlas": "12",
+      "cell": 22,
+      "descriptionZh": "扁尖杏仁状桃仁，棕色薄皮上有细皱纹。"
+    },
+    {
+      "key": "prepared-smoked-plum",
+      "sourceCodes": [
+        "211024"
+      ],
+      "name": "乌梅",
+      "description": "several whole nearly black dried smoked plums with deeply wrinkled round skins",
+      "atlas": "12",
+      "cell": 23,
+      "descriptionZh": "近黑色整颗干乌梅，表面深皱。"
+    },
+    {
+      "key": "prepared-cherry-kernels",
+      "sourceCodes": [
+        "211025"
+      ],
+      "name": "郁李仁",
+      "description": "a small pile of tiny creamy tan oval cherry kernels with thin reddish skin remnants",
+      "atlas": "13",
+      "cell": 0,
+      "descriptionZh": "小颗乳白椭圆郁李仁，部分保留红褐色薄皮。"
+    },
+    {
+      "key": "prepared-jujube-seeds",
+      "sourceCodes": [
+        "211026"
+      ],
+      "name": "枣仁",
+      "description": "a small pile of reddish brown flattened round sour jujube kernels, shiny smooth surface",
+      "atlas": "13",
+      "cell": 1,
+      "descriptionZh": "红褐色扁圆枣仁，表面光滑略亮。"
+    },
+    {
+      "key": "prepared-dried-perilla",
+      "sourceCodes": [
+        "211027"
+      ],
+      "name": "干紫苏",
+      "description": "a small pile of dry crinkled purple-brown perilla leaves with serrated edges",
+      "atlas": "13",
+      "cell": 2,
+      "descriptionZh": "紫褐色干紫苏叶，叶缘锯齿、自然皱卷。"
+    },
+    {
+      "key": "prepared-fresh-perilla",
+      "sourceCodes": [
+        "211028"
+      ],
+      "name": "鲜紫苏",
+      "description": "a small sprig of fresh purple-green perilla with broad wrinkled serrated leaves, deep purple underside",
+      "atlas": "13",
+      "cell": 3,
+      "descriptionZh": "新鲜紫绿双色紫苏枝，宽叶皱褶明显。"
+    },
+    {
+      "key": "prepared-poria",
+      "sourceCodes": [
+        "211029"
+      ],
+      "name": "茯苓",
+      "description": "several dry white poria fungus cubes with chalky porous texture and a rough brown outer rind piece",
+      "atlas": "13",
+      "cell": 4,
+      "descriptionZh": "白色干茯苓方块，断面粉质，旁放带褐皮部分。"
+    },
+    {
+      "key": "prepared-dried-agastache",
+      "sourceCodes": [
+        "211030"
+      ],
+      "name": "干藿香",
+      "description": "a small bundle of dry brown-green agastache stems and crinkled serrated heart-shaped leaves",
+      "atlas": "13",
+      "cell": 5,
+      "descriptionZh": "褐绿色干藿香枝叶，带皱叶和细茎。"
+    },
+    {
+      "key": "prepared-fresh-agastache",
+      "sourceCodes": [
+        "211031",
+        "211032"
+      ],
+      "name": "鲜藿香",
+      "description": "a fresh green agastache sprig with opposite heart-shaped serrated leaves and a tiny upright purple flower spike",
+      "atlas": "13",
+      "cell": 6,
+      "descriptionZh": "鲜藿香枝，心形锯齿绿叶，顶部有细紫花穗。"
+    },
+    {
+      "key": "prepared-goji-berries",
+      "sourceCodes": [
+        "211033"
+      ],
+      "name": "枸杞子",
+      "description": "a small pile of dried bright orange-red elongated goji berries with wrinkled skins",
+      "atlas": "13",
+      "cell": 7,
+      "descriptionZh": "鲜橙红色干枸杞，长椭圆、自然皱缩。"
+    },
+    {
+      "key": "prepared-softshell-turtle",
+      "sourceCodes": [
+        "219001"
+      ],
+      "name": "甲鱼",
+      "description": "a Chinese softshell turtle from slightly above, olive gray flat leathery oval shell and long narrow snout, neutral natural pose, no water scene",
+      "atlas": "13",
+      "cell": 8,
+      "descriptionZh": "灰橄榄色甲鱼，椭圆扁壳、细长尖吻。"
+    },
+    {
+      "key": "prepared-frog",
+      "sourceCodes": [
+        "219002"
+      ],
+      "name": "田鸡",
+      "description": "a natural realistic small edible green-brown frog sitting in side three-quarter pose, smooth mottled skin, no face expression",
+      "atlas": "13",
+      "cell": 9,
+      "descriptionZh": "自然坐姿的绿褐色田鸡，皮肤有斑纹。"
+    },
+    {
+      "key": "prepared-frog-legs",
+      "sourceCodes": [
+        "219003"
+      ],
+      "name": "田鸡腿",
+      "description": "two prepared pale raw edible frog hind legs, jointed shape, clean food ingredient on a small white dish",
+      "atlas": "13",
+      "cell": 10,
+      "descriptionZh": "白盘中清理好的浅色生田鸡后腿。"
+    },
+    {
+      "key": "prepared-horseshoe-crab",
+      "sourceCodes": [
+        "219004"
+      ],
+      "name": "中国鲎",
+      "description": "a Chinese horseshoe crab from above, brown domed horseshoe-shaped shell, spiny abdomen and long straight tail",
+      "atlas": "13",
+      "cell": 11,
+      "descriptionZh": "棕褐色中国鲎，马蹄形甲壳、带刺后腹和长直尾。"
+    },
+    {
+      "key": "prepared-edible-snake",
+      "sourceCodes": [
+        "219005"
+      ],
+      "name": "蛇",
+      "description": "a natural slender gray-brown snake loosely coiled, smooth subtle scaled pattern, head low, no expression",
+      "atlas": "13",
+      "cell": 12,
+      "descriptionZh": "自然盘曲的灰褐色细长蛇身，鳞纹细致。"
+    },
+    {
+      "key": "prepared-cobra",
+      "sourceCodes": [
+        "219006"
+      ],
+      "name": "饭铲头蛇",
+      "description": "a natural brown Chinese cobra coiled with modestly spread hood, realistic scales, closed mouth, no aggression",
+      "atlas": "13",
+      "cell": 13,
+      "descriptionZh": "自然盘曲的褐色饭铲头蛇，颈部略展成兜帽。"
+    },
+    {
+      "key": "prepared-asian-rat-snake",
+      "sourceCodes": [
+        "219007"
+      ],
+      "name": "过树榕蛇",
+      "description": "a slender olive-brown Oriental rat snake loosely coiled with narrow head and faint dark scale outlines",
+      "atlas": "13",
+      "cell": 14,
+      "descriptionZh": "自然盘曲的橄榄褐色过树榕蛇，头细长。"
+    },
+    {
+      "key": "prepared-beauty-rat-snake",
+      "sourceCodes": [
+        "219008"
+      ],
+      "name": "锦蛇",
+      "description": "a Chinese beauty rat snake loosely coiled, tan body with distinct black ladder-like bars and dark eye stripe",
+      "atlas": "13",
+      "cell": 15,
+      "descriptionZh": "黄褐锦蛇盘曲，背部有深色横向花纹。"
+    },
+    {
+      "key": "prepared-three-striped-snake",
+      "sourceCodes": [
+        "219009"
+      ],
+      "name": "三索线蛇",
+      "description": "a slender pale brown three-striped rat snake loosely coiled with three dark lengthwise stripes along body",
+      "atlas": "13",
+      "cell": 16,
+      "descriptionZh": "浅褐色三索线蛇，体侧有纵向深色条纹。"
+    },
+    {
+      "key": "prepared-water-snake",
+      "sourceCodes": [
+        "219010"
+      ],
+      "name": "水蛇",
+      "description": "a slender olive gray water snake loosely coiled with subtle dark checkered markings, natural closed-mouth pose",
+      "atlas": "13",
+      "cell": 17,
+      "descriptionZh": "橄榄灰色水蛇盘曲，体表有深色棋格斑纹。"
+    },
+    {
+      "key": "prepared-silkworm-pupae",
+      "sourceCodes": [
+        "219011"
+      ],
+      "name": "蚕蛹",
+      "description": "a small dish of several shiny brown oval silkworm pupae with distinct segmented bodies",
+      "atlas": "13",
+      "cell": 18,
+      "descriptionZh": "小白盘中的褐色蚕蛹，椭圆身体分节清晰。"
+    },
+    {
+      "key": "prepared-cordyceps",
+      "sourceCodes": [
+        "219012"
+      ],
+      "name": "冬虫夏草",
+      "description": "three dried cordyceps fungi, yellow-brown segmented caterpillar-like bodies each with one slender dark brown fungal stalk",
+      "atlas": "13",
+      "cell": 19,
+      "descriptionZh": "黄褐色分节虫体与细长深色菌座相连的冬虫夏草。"
+    },
+    {
+      "key": "prepared-scorpion",
+      "sourceCodes": [
+        "219013"
+      ],
+      "name": "蝎子",
+      "description": "a single dried tan-brown edible scorpion with two small pincers, segmented body and curved tail, natural specimen, no expression",
+      "atlas": "13",
+      "cell": 20,
+      "descriptionZh": "黄褐色干蝎子，双螯、分节身体和弯曲尾部清晰。"
+    },
+    {
+      "key": "prepared-oyster-sauce",
+      "sourceCodes": [
+        "219014"
+      ],
+      "name": "蚝油",
+      "description": "a small white ramekin filled with thick glossy dark brown oyster sauce, spoon mark shows viscous texture",
+      "atlas": "13",
+      "cell": 21,
+      "descriptionZh": "白盅中的光亮深褐色蚝油，浓稠有勺痕。"
+    },
+    {
+      "key": "prepared-chu-hou-paste",
+      "sourceCodes": [
+        "219015"
+      ],
+      "name": "柱候酱",
+      "description": "a small white bowl of thick dark brown fermented bean sauce with coarse ground bean texture and oily sheen",
+      "atlas": "13",
+      "cell": 22,
+      "descriptionZh": "碗中的深褐色柱候酱，质地粗厚油润。"
+    },
+    {
+      "key": "prepared-pacific-saury",
+      "sourceCodes": [
+        "219016"
+      ],
+      "name": "秋刀鱼",
+      "description": "a whole fresh Pacific saury fish, long very slender silver body with dark blue back, pointed narrow jaw and small forked tail",
+      "atlas": "13",
+      "cell": 23,
+      "descriptionZh": "细长银白秋刀鱼，深蓝背、尖嘴与小叉尾。"
+    },
+    {
+      "key": "prepared-fish-balls",
+      "sourceCodes": [
+        "219017"
+      ],
+      "name": "鱼丸",
+      "description": "a small white dish with several smooth ivory round fish balls, one halved shows dense white springy interior",
+      "atlas": "14",
+      "cell": 0,
+      "originalAtlas": "14",
+      "originalCell": 0,
+      "descriptionZh": "小白盘中的乳白鱼丸，半切一颗露细密内芯。"
+    },
+    {
+      "key": "prepared-whole-mooncake",
+      "name": "整形月饼",
+      "sourceCodes": [
+        "142201",
+        "142205"
+      ],
+      "description": "two whole round golden baked Cantonese mooncakes with subtle molded flower lattice, closed pastry shells, no visible filling",
+      "descriptionZh": "两枚完整金黄圆月饼，表面有浅花纹，不展示未确定的内馅。",
+      "atlas": "15",
+      "cell": 0
+    }
+  ],
+  "reused": [
+    {
+      "key": "bread",
+      "sourceCodes": [
+        "152301",
+        "152302",
+        "152306",
+        "152307",
+        "152309",
+        "152310",
+        "152311",
+        "152313"
+      ],
+      "name": "面包",
+      "description": "一片原味小麦面包，浅色松软内芯与金黄外皮",
+      "localPath": "miniprogram/images/food-illustrations/bread.jpg"
+    }
+  ]
+}

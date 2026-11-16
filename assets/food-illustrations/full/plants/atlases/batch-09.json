@@ -1,0 +1,231 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-043207",
+      "name": "葫芦条（干）",
+      "description": "葫芦条（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043207.jpg",
+      "sourceCodes": [
+        "043207"
+      ]
+    },
+    {
+      "key": "plants-043209",
+      "name": "节瓜[毛瓜]",
+      "description": "节瓜[毛瓜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043209.jpg",
+      "sourceCodes": [
+        "043209"
+      ]
+    },
+    {
+      "key": "plants-043210",
+      "name": "金黄色小南瓜",
+      "description": "金黄色小南瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043210.jpg",
+      "sourceCodes": [
+        "043210",
+        "043224"
+      ]
+    },
+    {
+      "key": "plants-043211",
+      "name": "金丝瓜[裸瓣瓜]",
+      "description": "金丝瓜[裸瓣瓜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043211.jpg",
+      "sourceCodes": [
+        "043211"
+      ]
+    },
+    {
+      "key": "plants-043212",
+      "name": "苦瓜（鲜）[凉瓜，癞瓜]",
+      "description": "苦瓜（鲜）[凉瓜，癞瓜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043212.jpg",
+      "sourceCodes": [
+        "043212"
+      ]
+    },
+    {
+      "key": "plants-043214",
+      "name": "南瓜粉",
+      "description": "南瓜粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043214.jpg",
+      "sourceCodes": [
+        "043214"
+      ]
+    },
+    {
+      "key": "plants-043215",
+      "name": "蛇瓜[蛇豆，大豆角]",
+      "description": "蛇瓜[蛇豆，大豆角]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043215.jpg",
+      "sourceCodes": [
+        "043215"
+      ]
+    },
+    {
+      "key": "plants-043218",
+      "name": "绿色西葫芦",
+      "description": "绿色西葫芦，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043218.jpg",
+      "sourceCodes": [
+        "043218",
+        "043220"
+      ]
+    },
+    {
+      "key": "plants-043221",
+      "name": "冬瓜",
+      "description": "冬瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043221.jpg",
+      "sourceCodes": [
+        "043221"
+      ]
+    },
+    {
+      "key": "plants-043222",
+      "name": "飞碟瓜",
+      "description": "飞碟瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043222.jpg",
+      "sourceCodes": [
+        "043222"
+      ]
+    },
+    {
+      "key": "plants-043223",
+      "name": "黄金西葫芦",
+      "description": "黄金西葫芦，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043223.jpg",
+      "sourceCodes": [
+        "043223"
+      ]
+    },
+    {
+      "key": "plants-043225",
+      "name": "迷你黄瓜[荷兰乳黄瓜]",
+      "description": "迷你黄瓜[荷兰乳黄瓜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043225.jpg",
+      "sourceCodes": [
+        "043225"
+      ]
+    },
+    {
+      "key": "plants-043228",
+      "name": "丝瓜",
+      "description": "丝瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043228.jpg",
+      "sourceCodes": [
+        "043228"
+      ]
+    },
+    {
+      "key": "plants-044101",
+      "name": "白皮大蒜",
+      "description": "白皮大蒜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044101.jpg",
+      "sourceCodes": [
+        "044101"
+      ]
+    },
+    {
+      "key": "plants-044102",
+      "name": "大蒜（脱水）",
+      "description": "大蒜（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044102.jpg",
+      "sourceCodes": [
+        "044102"
+      ]
+    },
+    {
+      "key": "plants-044103",
+      "name": "大蒜（紫皮，鲜）[蒜头]",
+      "description": "大蒜（紫皮，鲜）[蒜头]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044103.jpg",
+      "sourceCodes": [
+        "044103"
+      ]
+    },
+    {
+      "key": "plants-044104",
+      "name": "青蒜苗",
+      "description": "青蒜苗，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044104.jpg",
+      "sourceCodes": [
+        "044104",
+        "044106"
+      ]
+    },
+    {
+      "key": "plants-044105",
+      "name": "蒜黄（黄色）",
+      "description": "蒜黄（黄色），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044105.jpg",
+      "sourceCodes": [
+        "044105"
+      ]
+    },
+    {
+      "key": "plants-044107",
+      "name": "蒜薹（圆）",
+      "description": "蒜薹（圆），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044107.jpg",
+      "sourceCodes": [
+        "044107"
+      ]
+    },
+    {
+      "key": "plants-044202",
+      "name": "大葱",
+      "description": "大葱，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044202.jpg",
+      "sourceCodes": [
+        "044202",
+        "044206"
+      ]
+    },
+    {
+      "key": "plants-044203",
+      "name": "鲜小香葱",
+      "description": "鲜小香葱，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044203.jpg",
+      "sourceCodes": [
+        "044203",
+        "044205",
+        "044207"
+      ]
+    },
+    {
+      "key": "plants-044301",
+      "name": "洋葱（鲜）[葱头]",
+      "description": "洋葱（鲜）[葱头]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044301.jpg",
+      "sourceCodes": [
+        "044301"
+      ]
+    },
+    {
+      "key": "plants-044302",
+      "name": "洋葱（白皮，脱水）",
+      "description": "洋葱（白皮，脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044302.jpg",
+      "sourceCodes": [
+        "044302"
+      ]
+    },
+    {
+      "key": "plants-044303",
+      "name": "洋葱（紫皮，脱水）",
+      "description": "洋葱（紫皮，脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044303.jpg",
+      "sourceCodes": [
+        "044303"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：葫芦条（干）。\n第1行第2格：节瓜[毛瓜]。\n第1行第3格：金黄色小南瓜。\n第1行第4格：金丝瓜[裸瓣瓜]。\n第1行第5格：苦瓜（鲜）[凉瓜，癞瓜]。\n第1行第6格：南瓜粉。\n第2行第1格：蛇瓜[蛇豆，大豆角]。\n第2行第2格：绿色西葫芦。\n第2行第3格：冬瓜。\n第2行第4格：飞碟瓜。\n第2行第5格：黄金西葫芦。\n第2行第6格：迷你黄瓜[荷兰乳黄瓜]。\n第3行第1格：丝瓜。\n第3行第2格：白皮大蒜。\n第3行第3格：大蒜（脱水）。\n第3行第4格：大蒜（紫皮，鲜）[蒜头]。\n第3行第5格：青蒜苗。\n第3行第6格：蒜黄（黄色）。\n第4行第1格：蒜薹（圆）。\n第4行第2格：大葱。\n第4行第3格：鲜小香葱。\n第4行第4格：洋葱（鲜）[葱头]。\n第4行第5格：洋葱（白皮，脱水）。\n第4行第6格：洋葱（紫皮，脱水）。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-09.png",
+  "reviewed": true
+}

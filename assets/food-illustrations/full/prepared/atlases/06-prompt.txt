@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: a small pile of dry flat bright olive green Longjing tea leaves, distinctive long flattened shape.
+Row 1, column 2: a small pile of loose dry fine curled olive green tea leaves.
+Row 1, column 3: a few dry reddish orange pomegranate flowers with thick wrinkled bell-shaped calyces and dry petals.
+Row 1, column 4: dry brittle broad brown-green persimmon leaf tea pieces in a small shallow dish.
+Row 1, column 5: a small pile of tightly curled dark olive-green oolong tea leaf clusters.
+Row 1, column 6: a small pile of dry dark green tea rolled into tiny dense round pellets.
+Row 2, column 1: a transparent small glass cup with clear pale amber brewed tea, no leaves no teabag.
+Row 2, column 2: pale golden fine malted milk drink powder in a small ceramic bowl.
+Row 2, column 3: fine ivory ice cream powder in a bowl, a little wooden scoop resting beside it.
+Row 2, column 4: bright orange small granular instant citrus drink crystals in a small white dish.
+Row 2, column 5: a small heap of rich dark brown cocoa powder in a tiny ceramic bowl.
+Row 2, column 6: pinkish tan granular hawthorn drink crystals in a small dish, two red hawthorn fruits beside it.
+Row 3, column 1: dark amber brown granular sour plum drink crystals in a small white dish.
+Row 3, column 2: pale green granular kiwi drink crystals in a dish with a cut kiwi slice beside it.
+Row 3, column 3: a translucent pale orange fruit ice pop on a plain wooden stick.
+Row 3, column 4: a small rectangular white vanilla ice cream block on a tiny white dish, no stick.
+Row 3, column 5: two soft rounded scoops of ivory vanilla ice cream in a small plain ceramic bowl.
+Row 3, column 6: a thick ivory white milk ice cream bar with rounded corners on a wooden stick.
+Row 4, column 1: a rectangular vanilla ice cream sandwich between two dark chocolate biscuit layers.
+Row 4, column 2: a pale orange double ice pop with two joined long lobes and two wooden sticks.
+Row 4, column 3: a small milk ice cream pop with a dark chocolate rounded cap and ivory lower section on wooden stick, simple original ice pop shape without eyes or face.
+Row 4, column 4: a lavender purple rectangular ice cream bar on a wooden stick, creamy solid texture.
+Row 4, column 5: a glass of translucent pale amber herbal drink, a small rhodiola dried root segment beside it.
+Row 4, column 6: a clear glass beer mug with golden amber beer and white foam head, no logo.

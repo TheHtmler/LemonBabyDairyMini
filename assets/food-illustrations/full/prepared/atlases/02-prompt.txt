@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: golden rectangular Chinese fried pastries glazed with honey syrup and sesame, each has three shallow cuts on top.
+Row 1, column 2: Wuhan mianwo, two thin golden fried rice-flour doughnuts, irregular broad disk with small central hole.
+Row 1, column 3: white firm glutinous rice cake block with several smooth oval slices in front.
+Row 1, column 4: broad tan wheat starch cold noodle strips with porous wheat gluten cubes, chili sauce and cucumber.
+Row 1, column 5: toasted tan highland barley flour in a small ceramic bowl, loose dry fine powder.
+Row 1, column 6: Wuhan hot dry noodles, a bowl of yellow wheat noodles coated in thick tan sesame paste with scallion and pickled radish.
+Row 2, column 1: three square slices of Wuhan fried tofu-skin rice cake, thin golden egg skin enclosing glutinous rice and diced meat mushrooms.
+Row 2, column 2: bowl of pale broth with torn wheat flatbread pieces, small greens, no giant noodles.
+Row 2, column 3: bowl of sweet fermented whole barley grains with a little milky translucent fermentation liquid.
+Row 2, column 4: pale yellow smooth pea flour jelly cake cut into rectangular blocks.
+Row 2, column 5: bowl of dry beige toasted wheat flour with tiny toasted sesame and chopped nut specks.
+Row 2, column 6: small bowl of thick tan roasted-flour gruel topped with roasted peanuts and sesame.
+Row 3, column 1: golden crisp fried broad bean halves in a small white dish.
+Row 3, column 2: crisp golden airy fried tofu strips with curled craggy edges on a small dish.
+Row 3, column 3: two golden deep-fried round glutinous rice cakes, one cut showing dark red bean paste filling.
+Row 3, column 4: three rough brown hand-shaped highland barley tsampa balls with visible grainy texture.
+Row 3, column 5: a plain yellow sponge cake wedge with fine airy crumb and thin golden crust, no frosting.
+Row 3, column 6: a wedge of fluffy white angel food cake with very pale golden outside and airy white crumb.
+Row 4, column 1: a slice of pale sponge layer cake with white whipped cream layers and frosting, one small strawberry on top.
+Row 4, column 2: a wedge of baked chocolate layer cake with cocoa frosting, clear layers.
+Row 4, column 3: a golden round mooncake with simple embossed flower lattice, half cut open with dense dark red bean filling, no letters.
+Row 4, column 4: a round golden mooncake cut open showing pale cream filling dotted with colorful dried fruit pieces.
+Row 4, column 5: a round golden mooncake cut open showing ivory filling with visible long pine nuts.
+Row 4, column 6: a golden round mooncake cut open showing chopped walnuts almonds sesame seeds and candied fruit filling.

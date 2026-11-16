@@ -1,0 +1,227 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-048008",
+      "name": "败酱（鲜）[胭脂麻]",
+      "description": "败酱，深绿羽状裂叶嫩梢，少量细小黄色聚伞花",
+      "localPath": "assets/food-illustrations/full/plants/images/048008.jpg",
+      "sourceCodes": [
+        "048008"
+      ]
+    },
+    {
+      "key": "plants-048009",
+      "name": "扁蓄菜（鲜）[竹节草]",
+      "description": "扁蓄菜，细长分节匍匐茎上互生小披针叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048009.jpg",
+      "sourceCodes": [
+        "048009"
+      ]
+    },
+    {
+      "key": "plants-048010",
+      "name": "朝鲜蓟（鲜）",
+      "description": "鲜朝鲜蓟，绿色层层尖鳞片的花苞",
+      "localPath": "assets/food-illustrations/full/plants/images/048010.jpg",
+      "sourceCodes": [
+        "048010"
+      ]
+    },
+    {
+      "key": "plants-048011",
+      "name": "刺儿菜（鲜）[小蓟，蓟蓟菜]",
+      "description": "小蓟刺儿菜，绿色狭长羽状裂叶，叶缘小刺",
+      "localPath": "assets/food-illustrations/full/plants/images/048011.jpg",
+      "sourceCodes": [
+        "048011"
+      ]
+    },
+    {
+      "key": "plants-048012",
+      "name": "刺楸（鲜）",
+      "description": "刺楸嫩叶，掌状五至七裂像枫叶，浅绿嫩枝",
+      "localPath": "assets/food-illustrations/full/plants/images/048012.jpg",
+      "sourceCodes": [
+        "048012"
+      ]
+    },
+    {
+      "key": "plants-048013",
+      "name": "达乌里胡枝子（鲜）[牛枝子，豆豆苗]",
+      "description": "达乌里胡枝子嫩枝，三片长椭圆小叶组成复叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048013.jpg",
+      "sourceCodes": [
+        "048013"
+      ]
+    },
+    {
+      "key": "plants-048014",
+      "name": "达乌里胡枝子子[牛枝子子，豆豆苗子 ）",
+      "description": "达乌里胡枝子的干种子，浅褐色小粒豆形种子，禁止画叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048014.jpg",
+      "sourceCodes": [
+        "048014"
+      ]
+    },
+    {
+      "key": "plants-048015",
+      "name": "大玻璃草叶（鲜）[大车前]",
+      "description": "大车前鲜叶，宽大椭圆片呈莲座状，清楚的五条弧形纵叶脉",
+      "localPath": "assets/food-illustrations/full/plants/images/048015.jpg",
+      "sourceCodes": [
+        "048015"
+      ]
+    },
+    {
+      "key": "plants-048016",
+      "name": "大巢菜（鲜）[野苕子，野豌豆]",
+      "description": "大巢菜，细茎上羽状排列的狭椭圆小叶，末端卷须",
+      "localPath": "assets/food-illustrations/full/plants/images/048016.jpg",
+      "sourceCodes": [
+        "048016"
+      ]
+    },
+    {
+      "key": "plants-048017",
+      "name": "大蓟叶（鲜）[飞廉叶]",
+      "description": "大蓟鲜叶，大型深裂绿色叶片，边缘带尖刺",
+      "localPath": "assets/food-illustrations/full/plants/images/048017.jpg",
+      "sourceCodes": [
+        "048017"
+      ]
+    },
+    {
+      "key": "plants-048018",
+      "name": "地肤（鲜）[益明，扫帚苗]",
+      "description": "地肤扫帚苗，直立细枝密生纤细披针形嫩叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048018.jpg",
+      "sourceCodes": [
+        "048018"
+      ]
+    },
+    {
+      "key": "plants-048019",
+      "name": "地笋（鲜）[地古牛，地瓜儿苗叶]",
+      "description": "地笋鲜嫩叶枝，对生狭长锯齿叶，四棱茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048019.jpg",
+      "sourceCodes": [
+        "048019"
+      ]
+    },
+    {
+      "key": "plants-048020",
+      "name": "豆腐柴鲜叶",
+      "description": "豆腐柴，鲜嫩木质小枝上对生卵状披针形绿叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048020.jpg",
+      "sourceCodes": [
+        "048020"
+      ]
+    },
+    {
+      "key": "plants-048021",
+      "name": "独行菜鲜叶",
+      "description": "独行菜，绿色羽裂基生嫩叶和带小圆扁荚的细嫩茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048021.jpg",
+      "sourceCodes": [
+        "048021",
+        "048022"
+      ]
+    },
+    {
+      "key": "plants-048024",
+      "name": "胡枝子（鲜）[山豆子]",
+      "description": "胡枝子，细木质枝上三出椭圆复叶，鲜嫩绿色",
+      "localPath": "assets/food-illustrations/full/plants/images/048024.jpg",
+      "sourceCodes": [
+        "048024"
+      ]
+    },
+    {
+      "key": "plants-048025",
+      "name": "槐花（鲜）[洋槐花，豆槐花]",
+      "description": "鲜洋槐花，一小簇乳白色蝶形花串，花梗浅绿",
+      "localPath": "assets/food-illustrations/full/plants/images/048025.jpg",
+      "sourceCodes": [
+        "048025"
+      ]
+    },
+    {
+      "key": "plants-048026",
+      "name": "黄麻鲜叶",
+      "description": "黄麻鲜叶，长卵形尖端锯齿叶，叶基两条细丝状齿",
+      "localPath": "assets/food-illustrations/full/plants/images/048026.jpg",
+      "sourceCodes": [
+        "048026",
+        "048048"
+      ]
+    },
+    {
+      "key": "plants-048027",
+      "name": "碱蓬（鲜）[棉蓬，猪毛菜]",
+      "description": "碱蓬，嫩茎上肉质细线形叶片，绿中微红",
+      "localPath": "assets/food-illustrations/full/plants/images/048027.jpg",
+      "sourceCodes": [
+        "048027"
+      ]
+    },
+    {
+      "key": "plants-048028",
+      "name": "苦苦菜（鲜）",
+      "description": "苦苦菜，基生莲座状绿色长裂叶，少量乳白色嫩茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048028.jpg",
+      "sourceCodes": [
+        "048028"
+      ]
+    },
+    {
+      "key": "plants-048029",
+      "name": "轮叶党参",
+      "description": "轮叶党参，枝节四枚卵状披针形绿叶轮生",
+      "localPath": "assets/food-illustrations/full/plants/images/048029.jpg",
+      "sourceCodes": [
+        "048029"
+      ]
+    },
+    {
+      "key": "plants-048030",
+      "name": "罗勒[兰香]",
+      "description": "鲜罗勒，宽卵形亮绿对生嫩叶，微褶皱",
+      "localPath": "assets/food-illustrations/full/plants/images/048030.jpg",
+      "sourceCodes": [
+        "048030"
+      ]
+    },
+    {
+      "key": "plants-048031",
+      "name": "马齿苋（）鲜[长寿菜，瓜子菜]",
+      "description": "鲜马齿苋，红褐色肉质细茎配小椭圆肥厚绿叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048031.jpg",
+      "sourceCodes": [
+        "048031"
+      ]
+    },
+    {
+      "key": "plants-048032",
+      "name": "马兰头（鲜）[马兰，鸡儿肠，路边菊]",
+      "description": "鲜马兰头，绿色尖长锯齿嫩叶，细嫩枝梢",
+      "localPath": "assets/food-illustrations/full/plants/images/048032.jpg",
+      "sourceCodes": [
+        "048032"
+      ]
+    },
+    {
+      "key": "plants-048033",
+      "name": "麦瓶草（鲜）[米瓦罐]",
+      "description": "麦瓶草嫩苗，对生披针叶，嫩茎和叶有柔毛",
+      "localPath": "assets/food-illustrations/full/plants/images/048033.jpg",
+      "sourceCodes": [
+        "048033"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：败酱，深绿羽状裂叶嫩梢，少量细小黄色聚伞花。\n第1行第2格：扁蓄菜，细长分节匍匐茎上互生小披针叶。\n第1行第3格：鲜朝鲜蓟，绿色层层尖鳞片的花苞。\n第1行第4格：小蓟刺儿菜，绿色狭长羽状裂叶，叶缘小刺。\n第1行第5格：刺楸嫩叶，掌状五至七裂像枫叶，浅绿嫩枝。\n第1行第6格：达乌里胡枝子嫩枝，三片长椭圆小叶组成复叶。\n第2行第1格：达乌里胡枝子的干种子，浅褐色小粒豆形种子，禁止画叶。\n第2行第2格：大车前鲜叶，宽大椭圆片呈莲座状，清楚的五条弧形纵叶脉。\n第2行第3格：大巢菜，细茎上羽状排列的狭椭圆小叶，末端卷须。\n第2行第4格：大蓟鲜叶，大型深裂绿色叶片，边缘带尖刺。\n第2行第5格：地肤扫帚苗，直立细枝密生纤细披针形嫩叶。\n第2行第6格：地笋鲜嫩叶枝，对生狭长锯齿叶，四棱茎。\n第3行第1格：豆腐柴，鲜嫩木质小枝上对生卵状披针形绿叶。\n第3行第2格：独行菜，绿色羽裂基生嫩叶和带小圆扁荚的细嫩茎。\n第3行第3格：胡枝子，细木质枝上三出椭圆复叶，鲜嫩绿色。\n第3行第4格：鲜洋槐花，一小簇乳白色蝶形花串，花梗浅绿。\n第3行第5格：黄麻鲜叶，长卵形尖端锯齿叶，叶基两条细丝状齿。\n第3行第6格：碱蓬，嫩茎上肉质细线形叶片，绿中微红。\n第4行第1格：苦苦菜，基生莲座状绿色长裂叶，少量乳白色嫩茎。\n第4行第2格：轮叶党参，枝节四枚卵状披针形绿叶轮生。\n第4行第3格：鲜罗勒，宽卵形亮绿对生嫩叶，微褶皱。\n第4行第4格：鲜马齿苋，红褐色肉质细茎配小椭圆肥厚绿叶。\n第4行第5格：鲜马兰头，绿色尖长锯齿嫩叶，细嫩枝梢。\n第4行第6格：麦瓶草嫩苗，对生披针叶，嫩茎和叶有柔毛。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-14.png",
+  "reviewed": true
+}

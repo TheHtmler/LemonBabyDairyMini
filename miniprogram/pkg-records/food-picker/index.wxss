@@ -188,6 +188,7 @@
   width: 88rpx;
   height: 88rpx;
   border-radius: 18rpx;
+  overflow: hidden;
   background: #F6F2E7;
 }
 
@@ -416,6 +417,7 @@
   width: 72rpx;
   height: 72rpx;
   border-radius: 14rpx;
+  overflow: hidden;
   background: #F6F2E7;
 }
 

@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: a plain small glass bottle filled with yellow-green olive oil, two green olives beside it.
+Row 1, column 2: a small bowl of cooked brownish gray sorghum grain noodles, matte coarse texture.
+Row 1, column 3: a small plain glass cruet holding dark brown soy sauce with a shallow white dipping dish of glossy brown sauce.
+Row 1, column 4: a small clear glass cruet of colorless transparent white vinegar with a little white dipping dish.
+Row 1, column 5: a small glass cruet of very dark amber brown Chinese vinegar beside a shallow white dipping dish.
+Row 1, column 6: a small white bowl of chunky brown fermented broad bean paste, visible broad bean pieces.
+Row 2, column 1: a small white bowl of dark red chunky fermented chili broad bean paste with visible broad bean pieces and red chili oil.
+Row 2, column 2: a small white bowl of thick smooth tan peanut butter with a small spread swirl.
+Row 2, column 3: a small white bowl of thick yellow-brown fermented soybean paste with coarse soybean texture.
+Row 2, column 4: a small shallow white dish of very thick glossy almost black soy glaze, spoon lifting a short viscous ribbon.
+Row 2, column 5: a small white bowl of vivid red minced chili paste with pale yellow chili seeds.
+Row 2, column 6: a small white bowl of oily dark red chili paste with visible brown Sichuan peppercorns.
+Row 3, column 1: a small bowl of dark red chili bean sauce with distinct small cooked beef cubes.
+Row 3, column 2: a small white bowl of bright red chili sauce speckled with finely minced pale garlic.
+Row 3, column 3: a small white bowl of thick smooth glossy dark brown sweet fermented wheat paste.
+Row 3, column 4: a small pile of wrinkled shiny black fermented soybeans in a shallow white dish.
+Row 3, column 5: a small white bowl of deep red sesame oil chili sauce with tiny sesame flecks.
+Row 3, column 6: a small white bowl of smooth thick beige toasted sesame paste with a spoon mark.
+Row 4, column 1: a small clear open jar of bright red strawberry jam with tiny seeds and a strawberry beside it, no label.
+Row 4, column 2: a small white ramekin of smooth glossy bright red tomato ketchup.
+Row 4, column 3: a small clear open jar of translucent lemon-yellow marmalade with tiny lemon peel strips, half lemon beside it.
+Row 4, column 4: a small clear open jar of pale golden chunky apple jam, one apple wedge beside it.
+Row 4, column 5: a small clear open jar of pale peach orange jam with soft fruit pieces, one peach wedge beside it.
+Row 4, column 6: a small clear open jar of deep golden orange apricot jam, half a small apricot beside it.

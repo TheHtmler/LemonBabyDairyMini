@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: a golden round mooncake cut open showing translucent amber candied fruit filling with scattered seeds.
+Row 1, column 2: a golden round mooncake cut open showing smooth dark brown jujube paste filling.
+Row 1, column 3: round pale golden Chinese flaky lard pastry with visible thin layers and crumbly broken edge.
+Row 1, column 4: a glossy golden round puff pastry sprinkled black sesame, cut half shows orange salted egg yolk inside dark red bean paste.
+Row 1, column 5: thin golden rectangular sesame egg crisps, bubbly brittle surface densely speckled with white sesame.
+Row 1, column 6: traditional compact golden rectangular Chinese shortbread pastry with layered crumb and sesame on top.
+Row 2, column 1: golden flaky pastry scrolls with spiral cross-sections and delicate overlapping layers.
+Row 2, column 2: golden puff pastry fans shaped like layered phoenix tails, distinct fanned laminated edges.
+Row 2, column 3: small golden round shortbread pastries with crumbly texture and lightly cracked tops.
+Row 2, column 4: thin golden walnut crisps with chopped walnut pieces embedded in the surface.
+Row 2, column 5: thin crisp pastry rectangles densely coated in black sesame seeds.
+Row 2, column 6: Chinese baked round pastry cut open showing dense dark black sesame filling, pale flaky crust.
+Row 3, column 1: pale golden rectangular traditional sweet baked cakes with thin opaque white sugar glaze.
+Row 3, column 2: golden baked flaky pastries shaped like small chicken drumsticks, pastry not actual meat.
+Row 3, column 3: two round golden shortbread sandwich biscuits, one broken open with brown sweet filling.
+Row 3, column 4: short golden fried glutinous rice sticks rolled in large white sugar crystals.
+Row 3, column 5: several small golden coin-shaped flaky pastry disks with spiral layers.
+Row 3, column 6: round bright golden Chinese shortcrust pastries with softly domed cracked top and yellow crumb.
+Row 4, column 1: golden sesame coated fried dough balls each with characteristic split crack showing fluffy pale crumb.
+Row 4, column 2: several oblong puffed glutinous rice candy cylinders coated thickly with white sesame seeds.
+Row 4, column 3: pale yellow-green small square mung bean cakes with shallow floral moulded tops, no writing.
+Row 4, column 4: white rectangular rice-flour cakes with toasted sesame specks and layered firm texture.
+Row 4, column 5: two golden brown crisp braided fried dough twists.
+Row 4, column 6: thin pale beige rectangular soft sesame cakes with scattered toasted sesame seeds.

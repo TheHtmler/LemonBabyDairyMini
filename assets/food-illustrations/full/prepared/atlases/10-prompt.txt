@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: three ivory fermented tofu cubes in a little pale yellow brine in a white saucer.
+Row 1, column 2: three soft gray-green fermented stinky tofu cubes in a small white saucer, not fried tofu.
+Row 1, column 3: three soft crimson-red fermented tofu cubes coated in red rice wine brine in a white saucer.
+Row 1, column 4: three pale fermented tofu cubes covered in red chili flakes and amber chili brine in a white saucer.
+Row 1, column 5: a small dish of finely cut mixed Chinese pickled vegetables: yellow radish, dark cucumber, carrot and leafy mustard.
+Row 1, column 6: a small dish of finely chopped dry golden brown preserved Chinese cabbage shreds.
+Row 2, column 1: a small pile of finely chopped dark brown fermented mustard shoots, dry wrinkled texture.
+Row 2, column 2: a small whole brown pickled mustard turnip with several amber brown slices in a white dish.
+Row 2, column 3: a small white dish of thin pale pink pickled ginger slices with irregular finger shapes.
+Row 2, column 4: thick dark green-brown pickled melon segments, cut face shows pale amber flesh and seed cavity.
+Row 2, column 5: a small white dish of several amber brown spiral segmented crosne tubers, little caterpillar-like vegetable shapes.
+Row 2, column 6: a small white dish of dark olive-green whole small pickled cucumbers and diagonal cut pieces.
+Row 3, column 1: a small white dish of thick amber brown pickled white radish slices, moist glossy edges.
+Row 3, column 2: a small white dish of brown pickled mushrooms with rounded caps and short stems.
+Row 3, column 3: a small mound of thin golden-brown shredded pickled kohlrabi in a white dish.
+Row 3, column 4: a small dish of pale green translucent pickled stem lettuce slices with angular cut edges.
+Row 3, column 5: a small bundle of dark brown-green dried mustard greens, long wrinkled leaves and stems.
+Row 3, column 6: a dish of round thin golden-brown dried pickled radish slices, visible circular pale centers.
+Row 4, column 1: a small dish of pale yellow pickled radish strips coated with bright red chili flakes.
+Row 4, column 2: a small pile of golden beige dry wrinkled radish strips.
+Row 4, column 3: fermented olive-yellow leafy mustard greens with thick curled stems on a small white plate.
+Row 4, column 4: a dark brown glossy whole pickled garlic bulb with several peeled amber cloves.
+Row 4, column 5: a pale golden whole sweet pickled garlic bulb with several translucent ivory cloves.
+Row 4, column 6: green cucumber chunks coated in red chili glaze in a small white dish.

@@ -14,7 +14,6 @@ const FOOD_PICKER_SELECTION_KEY = 'meal_food_picker_selection';
 const RECIPE_INGREDIENT_PICKER_SELECTION_KEY = 'recipe_ingredient_picker_selection';
 const FOOD_PICKER_TARGET_CONTEXT_KEY = 'meal_food_picker_target_context';
 const FOOD_PICKER_LAST_LIBRARY_SCOPE_KEY = 'meal_food_picker_last_library_scope';
-const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 const MAX_RECENT_FOODS = 10;
 const RECENT_FOOD_DAYS = 14;
 const RECENT_FOOD_FETCH_LIMIT = 120;
@@ -292,7 +291,6 @@ Page({
         this.restoreSelectedFoodCartFromIds();
         await this.loadRecentFoodOptions();
         this.filterFoodOptions();
-        this.resolveCatalogImageUrls(catalog);
         if (!options.silent) {
           this.setData({ loading: false });
         }
@@ -324,7 +322,6 @@ Page({
     return [...(foods || [])]
       .map(food => ({
         ...food,
-        displayImage: food.imageUrl || food.image || FOOD_PLACEHOLDER_IMAGE,
         sourceLabel: this.getFoodSourceLabel(food),
         libraryScope: this.getFoodLibraryScope(food)
       }))
@@ -391,32 +388,6 @@ Page({
     }
 
     return null;
-  },
-
-  async resolveCatalogImageUrls(catalog = this.getFoodCatalog()) {
-    const cloudImageFoods = (catalog || []).filter(food =>
-      (food?.image || '').toString().trim().startsWith('cloud://')
-    );
-    if (!cloudImageFoods.length) return;
-    try {
-      const resolvedFoods = await FoodModel.resolveFoodImageUrls(catalog || []);
-      const resolvedCatalog = this.formatFoodCatalog(resolvedFoods || []);
-      const foodCategories = this.buildFoodCategories(
-        resolvedCatalog,
-        this.data.activeLibraryScope,
-        this.data.foodSearchQuery || ''
-      );
-      this.setFoodCatalog(resolvedCatalog);
-      this.setData({
-        foodCategories,
-        activeCategory: this.getNextActiveFoodCategory(foodCategories, this.data.activeCategory)
-      }, () => {
-        this.restoreSelectedFoodCartFromIds();
-        this.filterFoodOptions(this.data.foodSearchQuery || '');
-      });
-    } catch (error) {
-      console.warn('解析食物图片失败:', error);
-    }
   },
 
   getFoodSourceLabel(food = {}) {
@@ -1207,16 +1178,6 @@ Page({
     setTimeout(() => {
       this.setData({ cartBumping: false });
     }, 260);
-  },
-
-  previewFoodOptionImage(e) {
-    const { url } = e.currentTarget.dataset || {};
-    const current = (url || '').toString().trim();
-    if (!current) return;
-    wx.previewImage({
-      current,
-      urls: [current]
-    });
   },
 
   navigateToFoodManagement() {

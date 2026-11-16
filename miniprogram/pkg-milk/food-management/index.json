@@ -2,6 +2,7 @@
   "navigationBarTitleText": "食物管理",
   "enablePullDownRefresh": false,
   "usingComponents": {
+    "food-thumbnail": "/components/food-thumbnail/index",
     "protein-composition-editor": "/components/protein-composition-editor/index",
     "protein-help-popover": "/components/protein-help-popover/index"
   }

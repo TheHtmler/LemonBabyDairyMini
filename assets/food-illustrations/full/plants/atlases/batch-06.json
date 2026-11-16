@@ -1,0 +1,235 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-033202",
+      "name": "红豆沙",
+      "description": "红豆沙，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/033202.jpg",
+      "sourceCodes": [
+        "033202",
+        "033204",
+        "033205"
+      ]
+    },
+    {
+      "key": "plants-034101",
+      "name": "花斑花豆干豆粒",
+      "description": "花斑花豆干豆粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/034101.jpg",
+      "sourceCodes": [
+        "034101",
+        "034102"
+      ]
+    },
+    {
+      "key": "plants-034103",
+      "name": "芸豆（干,白）",
+      "description": "芸豆（干,白），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/034103.jpg",
+      "sourceCodes": [
+        "034103"
+      ]
+    },
+    {
+      "key": "plants-034104",
+      "name": "芸豆（干,红）",
+      "description": "芸豆（干,红），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/034104.jpg",
+      "sourceCodes": [
+        "034104"
+      ]
+    },
+    {
+      "key": "plants-034105",
+      "name": "虎皮花芸豆干豆粒",
+      "description": "虎皮花芸豆干豆粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/034105.jpg",
+      "sourceCodes": [
+        "034105",
+        "034106"
+      ]
+    },
+    {
+      "key": "plants-035101",
+      "name": "带皮干蚕豆",
+      "description": "带皮干蚕豆，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035101.jpg",
+      "sourceCodes": [
+        "035101",
+        "035102"
+      ]
+    },
+    {
+      "key": "plants-035103",
+      "name": "蚕豆（去皮）",
+      "description": "蚕豆（去皮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035103.jpg",
+      "sourceCodes": [
+        "035103"
+      ]
+    },
+    {
+      "key": "plants-035104",
+      "name": "马牙大豆（干）",
+      "description": "马牙大豆（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035104.jpg",
+      "sourceCodes": [
+        "035104"
+      ]
+    },
+    {
+      "key": "plants-035105",
+      "name": "脑豆（干）",
+      "description": "脑豆（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035105.jpg",
+      "sourceCodes": [
+        "035105"
+      ]
+    },
+    {
+      "key": "plants-035201",
+      "name": "蚕豆（烤）",
+      "description": "蚕豆（烤），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035201.jpg",
+      "sourceCodes": [
+        "035201"
+      ]
+    },
+    {
+      "key": "plants-035202",
+      "name": "蚕豆（炸）[开花豆]",
+      "description": "蚕豆（炸）[开花豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035202.jpg",
+      "sourceCodes": [
+        "035202"
+      ]
+    },
+    {
+      "key": "plants-035203",
+      "name": "蚕豆（煮）",
+      "description": "蚕豆（煮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/035203.jpg",
+      "sourceCodes": [
+        "035203"
+      ]
+    },
+    {
+      "key": "plants-039101",
+      "name": "干扁豆粒",
+      "description": "干扁豆粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039101.jpg",
+      "sourceCodes": [
+        "039101",
+        "039102"
+      ]
+    },
+    {
+      "key": "plants-039201",
+      "name": "黑眼眉豆干豆粒",
+      "description": "黑眼眉豆干豆粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039201.jpg",
+      "sourceCodes": [
+        "039201",
+        "039202"
+      ]
+    },
+    {
+      "key": "plants-039203",
+      "name": "豇豆（干,紫）",
+      "description": "豇豆（干,紫），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039203.jpg",
+      "sourceCodes": [
+        "039203"
+      ]
+    },
+    {
+      "key": "plants-039204",
+      "name": "豇豆（煮）",
+      "description": "豇豆（煮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039204.jpg",
+      "sourceCodes": [
+        "039204"
+      ]
+    },
+    {
+      "key": "plants-039301",
+      "name": "豌豆（干）",
+      "description": "豌豆（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039301.jpg",
+      "sourceCodes": [
+        "039301"
+      ]
+    },
+    {
+      "key": "plants-039302",
+      "name": "豌豆（花）",
+      "description": "豌豆（花），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039302.jpg",
+      "sourceCodes": [
+        "039302"
+      ]
+    },
+    {
+      "key": "plants-039303",
+      "name": "豌豆（煮）",
+      "description": "豌豆（煮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039303.jpg",
+      "sourceCodes": [
+        "039303"
+      ]
+    },
+    {
+      "key": "plants-039401",
+      "name": "鹰嘴豆[桃豆]",
+      "description": "鹰嘴豆[桃豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039401.jpg",
+      "sourceCodes": [
+        "039401"
+      ]
+    },
+    {
+      "key": "plants-039901",
+      "name": "荆豆（干）",
+      "description": "荆豆（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039901.jpg",
+      "sourceCodes": [
+        "039901"
+      ]
+    },
+    {
+      "key": "plants-039902",
+      "name": "木豆（干）[扭豆，豆蓉]",
+      "description": "木豆（干）[扭豆，豆蓉]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/039902.jpg",
+      "sourceCodes": [
+        "039902"
+      ]
+    },
+    {
+      "key": "plants-041101",
+      "name": "白萝卜（鲜）[莱菔]",
+      "description": "白萝卜（鲜）[莱菔]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041101.jpg",
+      "sourceCodes": [
+        "041101"
+      ]
+    },
+    {
+      "key": "plants-041102",
+      "name": "红皮白肉萝卜",
+      "description": "红皮白肉萝卜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041102.jpg",
+      "sourceCodes": [
+        "041102",
+        "041104",
+        "041108",
+        "041109"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：红豆沙。\n第1行第2格：花斑花豆干豆粒。\n第1行第3格：芸豆（干,白）。\n第1行第4格：芸豆（干,红）。\n第1行第5格：虎皮花芸豆干豆粒。\n第1行第6格：带皮干蚕豆。\n第2行第1格：蚕豆（去皮）。\n第2行第2格：马牙大豆，乳白色大粒宽扁干豆粒，不是黄豆。\n第2行第3格：脑豆，浅黄色圆粒有豆脐的干豆粒。\n第2行第4格：蚕豆（烤）。\n第2行第5格：蚕豆（炸）[开花豆]。\n第2行第6格：蚕豆（煮）。\n第3行第1格：干扁豆粒。\n第3行第2格：黑眼眉豆干豆粒。\n第3行第3格：豇豆（干,紫）。\n第3行第4格：豇豆（煮）。\n第3行第5格：豌豆（干）。\n第3行第6格：豌豆（花）。\n第4行第1格：豌豆（煮）。\n第4行第2格：鹰嘴豆[桃豆]。\n第4行第3格：干荆豆，黄褐色小粒圆形豆子。\n第4行第4格：木豆，棕红色带斑圆形干豆粒。\n第4行第5格：白萝卜（鲜）[莱菔]。\n第4行第6格：红皮白肉萝卜。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-06.png",
+  "reviewed": true
+}

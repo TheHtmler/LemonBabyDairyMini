@@ -1,0 +1,226 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-048060",
+      "name": "野韭菜（鲜）[山韭]",
+      "description": "野韭菜，狭窄扁平长绿叶及白色细小根茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048060.jpg",
+      "sourceCodes": [
+        "048060"
+      ]
+    },
+    {
+      "key": "plants-048061",
+      "name": "野菊",
+      "description": "野菊，深绿羽状浅裂叶枝，点缀小黄色菊花",
+      "localPath": "assets/food-illustrations/full/plants/images/048061.jpg",
+      "sourceCodes": [
+        "048061"
+      ]
+    },
+    {
+      "key": "plants-048063",
+      "name": "野苋菜（鲜）[假苋菜]",
+      "description": "野苋菜，细枝上菱状卵形嫩绿叶，小绿穗",
+      "localPath": "assets/food-illustrations/full/plants/images/048063.jpg",
+      "sourceCodes": [
+        "048063"
+      ]
+    },
+    {
+      "key": "plants-048064",
+      "name": "茵陈蒿（鲜）[茵陈]",
+      "description": "茵陈蒿，银灰绿色极细羽状分裂叶的鲜嫩枝",
+      "localPath": "assets/food-illustrations/full/plants/images/048064.jpg",
+      "sourceCodes": [
+        "048064"
+      ]
+    },
+    {
+      "key": "plants-048065",
+      "name": "榆钱（鲜）",
+      "description": "鲜榆钱，一小簇圆形薄片状绿色翅果，中部微隆起",
+      "localPath": "assets/food-illustrations/full/plants/images/048065.jpg",
+      "sourceCodes": [
+        "048065"
+      ]
+    },
+    {
+      "key": "plants-048067",
+      "name": "珍珠花菜",
+      "description": "珍珠花菜，绿色小枝上长椭圆嫩叶和密集乳白色珍珠状花苞",
+      "localPath": "assets/food-illustrations/full/plants/images/048067.jpg",
+      "sourceCodes": [
+        "048067"
+      ]
+    },
+    {
+      "key": "plants-048068",
+      "name": "紫花桔梗",
+      "description": "紫花桔梗，鲜嫩长椭圆锯齿叶枝，点缀紫色五角钟形花",
+      "localPath": "assets/food-illustrations/full/plants/images/048068.jpg",
+      "sourceCodes": [
+        "048068"
+      ]
+    },
+    {
+      "key": "plants-048069",
+      "name": "紫萼香茶菜",
+      "description": "紫萼香茶菜，对生卵形锯齿叶的细枝，有细小淡紫花",
+      "localPath": "assets/food-illustrations/full/plants/images/048069.jpg",
+      "sourceCodes": [
+        "048069"
+      ]
+    },
+    {
+      "key": "plants-048072",
+      "name": "苜蓿子（干）[紫苜蓿子]",
+      "description": "干苜蓿种子，黄褐色小肾形种子一小堆，禁止画叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048072.jpg",
+      "sourceCodes": [
+        "048072"
+      ]
+    },
+    {
+      "key": "plants-048073",
+      "name": "茴芹（鲜）",
+      "description": "茴芹鲜叶，绿色小枝上羽状复叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048073.jpg",
+      "sourceCodes": [
+        "048073"
+      ]
+    },
+    {
+      "key": "plants-048074",
+      "name": "荞菜（鲜）[野荞]",
+      "description": "荞菜野荞，红色柔嫩茎和绿色三角心形叶片",
+      "localPath": "assets/food-illustrations/full/plants/images/048074.jpg",
+      "sourceCodes": [
+        "048074"
+      ]
+    },
+    {
+      "key": "plants-048075",
+      "name": "蒌蒿（鲜）",
+      "description": "蒌蒿，柔嫩直立绿茎配细羽裂嫩叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048075.jpg",
+      "sourceCodes": [
+        "048075"
+      ]
+    },
+    {
+      "key": "plants-048076",
+      "name": "蕨菜（鲜）[龙头菜，如意菜]",
+      "description": "鲜蕨菜，紫绿色嫩茎，顶端明显螺旋卷曲拳头状",
+      "localPath": "assets/food-illustrations/full/plants/images/048076.jpg",
+      "sourceCodes": [
+        "048076"
+      ]
+    },
+    {
+      "key": "plants-048077",
+      "name": "蕨菜（脱水）",
+      "description": "脱水蕨菜，深褐色皱缩长干茎，末端卷曲，无鲜绿叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048077.jpg",
+      "sourceCodes": [
+        "048077"
+      ]
+    },
+    {
+      "key": "plants-048078",
+      "name": "蕨麻（干）[鹅绒委陵菜]",
+      "description": "干蕨麻，人参果状小块根，一堆褐红色细长纺锤形干块根",
+      "localPath": "assets/food-illustrations/full/plants/images/048078.jpg",
+      "sourceCodes": [
+        "048078"
+      ]
+    },
+    {
+      "key": "plants-048079",
+      "name": "枸杞鲜叶",
+      "description": "鲜枸杞叶，细枝上长椭圆浅绿叶片",
+      "localPath": "assets/food-illustrations/full/plants/images/048079.jpg",
+      "sourceCodes": [
+        "048079",
+        "048086"
+      ]
+    },
+    {
+      "key": "plants-048080",
+      "name": "酢浆草（鲜）[酸酸草，酸溜溜]",
+      "description": "鲜酢浆草，三枚倒心形绿小叶组成三叶草状复叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048080.jpg",
+      "sourceCodes": [
+        "048080"
+      ]
+    },
+    {
+      "key": "plants-048082",
+      "name": "苜蓿[草头、金花菜]",
+      "description": "鲜苜蓿草头，三片倒卵形锯齿小叶组成复叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048082.jpg",
+      "sourceCodes": [
+        "048082"
+      ]
+    },
+    {
+      "key": "plants-048083",
+      "name": "鱼腥草（叶）[蕺菜，臭菜]",
+      "description": "鱼腥草鲜叶，绿色心形尖端叶片，叶背略紫，红褐细茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048083.jpg",
+      "sourceCodes": [
+        "048083"
+      ]
+    },
+    {
+      "key": "plants-048084",
+      "name": "鱼腥草（根）",
+      "description": "鱼腥草根，白嫩略带红褐色的分节细根，完全没有叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048084.jpg",
+      "sourceCodes": [
+        "048084"
+      ]
+    },
+    {
+      "key": "plants-048085",
+      "name": "刺五加尖",
+      "description": "刺五加尖，鲜嫩小枝，五枚锯齿小叶组成掌状复叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048085.jpg",
+      "sourceCodes": [
+        "048085"
+      ]
+    },
+    {
+      "key": "plants-048087",
+      "name": "灰灰菜（干、藜）",
+      "description": "灰灰菜干叶，灰绿色皱缩三角菱形干碎叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048087.jpg",
+      "sourceCodes": [
+        "048087"
+      ]
+    },
+    {
+      "key": "plants-048088",
+      "name": "荆芥",
+      "description": "荆芥鲜枝，对生狭卵形锯齿嫩绿叶和细小顶生穗",
+      "localPath": "assets/food-illustrations/full/plants/images/048088.jpg",
+      "sourceCodes": [
+        "048088"
+      ]
+    },
+    {
+      "key": "plants-051001",
+      "name": "草菇[大黑头细花草、稻菇]",
+      "description": "草菇[大黑头细花草、稻菇]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051001.jpg",
+      "sourceCodes": [
+        "051001"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：野韭菜，狭窄扁平长绿叶及白色细小根茎。\n第1行第2格：野菊，深绿羽状浅裂叶枝，点缀小黄色菊花。\n第1行第3格：野苋菜，细枝上菱状卵形嫩绿叶，小绿穗。\n第1行第4格：茵陈蒿，银灰绿色极细羽状分裂叶的鲜嫩枝。\n第1行第5格：鲜榆钱，一小簇圆形薄片状绿色翅果，中部微隆起。\n第1行第6格：珍珠花菜，绿色小枝上长椭圆嫩叶和密集乳白色珍珠状花苞。\n第2行第1格：紫花桔梗，鲜嫩长椭圆锯齿叶枝，点缀紫色五角钟形花。\n第2行第2格：紫萼香茶菜，对生卵形锯齿叶的细枝，有细小淡紫花。\n第2行第3格：干苜蓿种子，黄褐色小肾形种子一小堆，禁止画叶。\n第2行第4格：茴芹鲜叶，绿色小枝上羽状复叶。\n第2行第5格：荞菜野荞，红色柔嫩茎和绿色三角心形叶片。\n第2行第6格：蒌蒿，柔嫩直立绿茎配细羽裂嫩叶。\n第3行第1格：鲜蕨菜，紫绿色嫩茎，顶端明显螺旋卷曲拳头状。\n第3行第2格：脱水蕨菜，深褐色皱缩长干茎，末端卷曲，无鲜绿叶。\n第3行第3格：干蕨麻，人参果状小块根，一堆褐红色细长纺锤形干块根。\n第3行第4格：鲜枸杞叶，细枝上长椭圆浅绿叶片。\n第3行第5格：鲜酢浆草，三枚倒心形绿小叶组成三叶草状复叶。\n第3行第6格：鲜苜蓿草头，三片倒卵形锯齿小叶组成复叶。\n第4行第1格：鱼腥草鲜叶，绿色心形尖端叶片，叶背略紫，红褐细茎。\n第4行第2格：鱼腥草根，白嫩略带红褐色的分节细根，完全没有叶。\n第4行第3格：刺五加尖，鲜嫩小枝，五枚锯齿小叶组成掌状复叶。\n第4行第4格：灰灰菜干叶，灰绿色皱缩三角菱形干碎叶。\n第4行第5格：荆芥鲜枝，对生狭卵形锯齿嫩绿叶和细小顶生穗。\n第4行第6格：草菇[大黑头细花草、稻菇]。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-16.png",
+  "reviewed": true
+}

@@ -86,7 +86,12 @@
         "value": "utils/recipeWallUtils.js"
       }
     ],
-    "include": []
+    "include": [
+      {
+        "type": "folder",
+        "value": "images/food-illustrations"
+      }
+    ]
   },
   "editorSetting": {
     "tabIndent": "insertSpaces",

@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: a small dish of translucent ivory pickled rakkyo onion bulbs, slender teardrop shape.
+Row 1, column 2: a small dish of slender dark green pickled sand onion stems, narrow curled tubular leaves.
+Row 1, column 3: knobby amber brown pickled Jerusalem artichoke tubers with a few crisp ivory slices.
+Row 1, column 4: a small dish of olive-brown knobbly pickled mustard tuber with several thin shredded strips.
+Row 1, column 5: a small dish of brown-green pickled bracken fern stalks with distinctive curled fern tips.
+Row 1, column 6: a pale yellow whole pickled mustard root with a few thick round slices, no sauce.
+Row 2, column 1: a small white ramekin of coarse dark green chive blossom paste.
+Row 2, column 2: a small dish of thin tangled green-brown pickled seaweed-like Gracilaria dragon whisker vegetable strands.
+Row 2, column 3: a small dish of chopped olive green pickled potherb mustard leaves and pale stems.
+Row 2, column 4: three dark reddish brown star anise pods with eight pointed carpels.
+Row 2, column 5: a small bowl of finely ground pale gray-white pepper powder.
+Row 2, column 6: a small pile of reddish brown Sichuan pepper husks, open hollow wrinkled shells and a few black seeds.
+Row 3, column 1: a small pile of tiny golden-brown elongated rough spice seeds in a plain shallow white dish.
+Row 3, column 2: a small white ramekin with a smooth mustard-yellow condiment paste swirl.
+Row 3, column 3: a small pile of angular yellow ochre fenugreek seeds with central grooves.
+Row 3, column 4: a small white bowl of finely ground vivid brick-red chili powder.
+Row 3, column 5: a small bowl of coarse tan spiced crushed rice granules, distinct uneven rice meal grains.
+Row 3, column 6: a small bowl of fine warm brown five-spice powder.
+Row 4, column 1: a small pile of long thin ribbed olive green fennel seeds.
+Row 4, column 2: a small pile of coarse irregular gray-white mineral salt crystals.
+Row 4, column 3: a small white ceramic bowl with fine bright white table salt.
+Row 4, column 4: a small pile of translucent white long needle-shaped monosodium glutamate crystals.
+Row 4, column 5: a small beige fresh yeast block with a crumbly broken corner.
+Row 4, column 6: a small bowl of tiny uniform beige dry yeast granules.

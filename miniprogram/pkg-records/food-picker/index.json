@@ -2,6 +2,7 @@
   "navigationBarTitleText": "选择食物",
   "enablePullDownRefresh": false,
   "usingComponents": {
+    "food-thumbnail": "/components/food-thumbnail/index",
     "nutrition-target-preview": "/components/nutrition-target-preview/nutrition-target-preview"
   }
 }

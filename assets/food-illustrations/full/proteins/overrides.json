@@ -1,0 +1,9 @@
+{
+  "proteins-spiny-crayfish": {
+    "sourceImage": "atlases/122104-crayfish-corrected.png",
+    "generationPrompt": "atlases/122104-crayfish-corrected.prompt.txt",
+    "replacedAtlas": "atlases/atlas-14.png",
+    "replacedCell": 7,
+    "reviewRecord": "122104-形态核对记录.md"
+  }
+}

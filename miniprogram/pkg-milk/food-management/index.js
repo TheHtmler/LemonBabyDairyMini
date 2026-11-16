@@ -53,7 +53,6 @@ function fuzzyIncludes(text = '', query = '') {
 }
 
 const DEFAULT_UNIT_SUGGESTIONS = ['g', 'ml', '袋', '勺', '份'];
-const FOOD_PLACEHOLDER_IMAGE = '/images/LemonLogo.png';
 
 const createEmptyFormData = (category = '', unit = '') => ({
   name: '',
@@ -128,8 +127,7 @@ Page({
     editingFoodId: '',
     editingFoodName: '',
     editingFoodIsSystemSource: false,
-    editingSourceSystemFoodId: '',
-    foodPlaceholderImage: FOOD_PLACEHOLDER_IMAGE
+    editingSourceSystemFoodId: ''
   },
 
   async onLoad(options = {}) {
@@ -208,9 +206,7 @@ Page({
           });
         }
       });
-      const foodsWithImageUrls = await FoodModel.resolveFoodImageUrls(foodsFromDb || []);
-
-      this.applyFoodList(foodsWithImageUrls || []);
+      this.applyFoodList(foodsFromDb || []);
     } catch (error) {
       console.error('加载食物数据失败:', error);
       wx.showToast({
@@ -229,7 +225,6 @@ Page({
           const normalizedCategory = this.normalizeCategoryValue(
             food.category || food.categoryLevel1
           );
-          const listImage = food.imageUrl || food.image || '';
           return {
             ...food,
             category: normalizedCategory,
@@ -249,9 +244,6 @@ Page({
             baseUnit: food.nutritionBasis?.unit || food.baseUnit || 'g',
             baseQuantity: Number(food.nutritionBasis?.quantity || food.baseQuantity) || 100,
             image: food.image || '',
-            displayImage: listImage || FOOD_PLACEHOLDER_IMAGE,
-            showListImage: !food.isSystem && !!listImage,
-            showImageSlot: (food.libraryScope || (food.isSystem ? 'system' : 'mine')) === 'mine',
             nutritionPerUnit: food.nutritionPerBasis || food.nutritionPerUnit || {
               calories: 0,
               protein: 0,

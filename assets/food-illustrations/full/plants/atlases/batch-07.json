@@ -1,0 +1,235 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-041103",
+      "name": "樱桃萝卜",
+      "description": "樱桃萝卜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041103.jpg",
+      "sourceCodes": [
+        "041103",
+        "041115"
+      ]
+    },
+    {
+      "key": "plants-041105",
+      "name": "心里美萝卜",
+      "description": "心里美萝卜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041105.jpg",
+      "sourceCodes": [
+        "041105",
+        "041110"
+      ]
+    },
+    {
+      "key": "plants-041106",
+      "name": "花叶萝卜",
+      "description": "花叶萝卜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041106.jpg",
+      "sourceCodes": [
+        "041106"
+      ]
+    },
+    {
+      "key": "plants-041112",
+      "name": "白萝卜（圆）",
+      "description": "白萝卜（圆），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041112.jpg",
+      "sourceCodes": [
+        "041112"
+      ]
+    },
+    {
+      "key": "plants-041113",
+      "name": "青萝卜",
+      "description": "青萝卜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041113.jpg",
+      "sourceCodes": [
+        "041113"
+      ]
+    },
+    {
+      "key": "plants-041202",
+      "name": "胡萝卜（黄）",
+      "description": "胡萝卜（黄），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041202.jpg",
+      "sourceCodes": [
+        "041202"
+      ]
+    },
+    {
+      "key": "plants-041203",
+      "name": "胡萝卜（脱水）",
+      "description": "胡萝卜（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041203.jpg",
+      "sourceCodes": [
+        "041203"
+      ]
+    },
+    {
+      "key": "plants-041301",
+      "name": "芥菜头[大头菜，水芥]",
+      "description": "芥菜头[大头菜，水芥]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041301.jpg",
+      "sourceCodes": [
+        "041301"
+      ]
+    },
+    {
+      "key": "plants-041302",
+      "name": "苤蓝[玉蔓菁，球茎甘蓝，大头菜]",
+      "description": "苤蓝[玉蔓菁，球茎甘蓝，大头菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041302.jpg",
+      "sourceCodes": [
+        "041302"
+      ]
+    },
+    {
+      "key": "plants-041401",
+      "name": "紫红甜菜根",
+      "description": "紫红甜菜根，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041401.jpg",
+      "sourceCodes": [
+        "041401",
+        "041403"
+      ]
+    },
+    {
+      "key": "plants-041402",
+      "name": "根芹[根洋芹、球根塘蒿]",
+      "description": "根芹[根洋芹、球根塘蒿]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/041402.jpg",
+      "sourceCodes": [
+        "041402"
+      ]
+    },
+    {
+      "key": "plants-042101",
+      "name": "鲜扁豆荚",
+      "description": "鲜扁豆荚，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042101.jpg",
+      "sourceCodes": [
+        "042101",
+        "042118"
+      ]
+    },
+    {
+      "key": "plants-042102",
+      "name": "蚕豆（鲜）",
+      "description": "蚕豆（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042102.jpg",
+      "sourceCodes": [
+        "042102"
+      ]
+    },
+    {
+      "key": "plants-042103",
+      "name": "刀豆（鲜）",
+      "description": "刀豆（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042103.jpg",
+      "sourceCodes": [
+        "042103"
+      ]
+    },
+    {
+      "key": "plants-042104",
+      "name": "鲜四季豆荚",
+      "description": "鲜四季豆荚，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042104.jpg",
+      "sourceCodes": [
+        "042104",
+        "042108",
+        "042110",
+        "042115",
+        "042120"
+      ]
+    },
+    {
+      "key": "plants-042105",
+      "name": "豆角（鲜,白）",
+      "description": "豆角（鲜,白），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042105.jpg",
+      "sourceCodes": [
+        "042105"
+      ]
+    },
+    {
+      "key": "plants-042106",
+      "name": "荷兰豆",
+      "description": "荷兰豆，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042106.jpg",
+      "sourceCodes": [
+        "042106"
+      ]
+    },
+    {
+      "key": "plants-042107",
+      "name": "龙豆（鲜）",
+      "description": "龙豆（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042107.jpg",
+      "sourceCodes": [
+        "042107"
+      ]
+    },
+    {
+      "key": "plants-042109",
+      "name": "毛豆（鲜）[青豆，菜用大豆]",
+      "description": "毛豆（鲜）[青豆，菜用大豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042109.jpg",
+      "sourceCodes": [
+        "042109"
+      ]
+    },
+    {
+      "key": "plants-042111",
+      "name": "饱满甜豌豆荚",
+      "description": "饱满甜豌豆荚，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042111.jpg",
+      "sourceCodes": [
+        "042111",
+        "042122"
+      ]
+    },
+    {
+      "key": "plants-042112",
+      "name": "豌豆尖",
+      "description": "豌豆尖，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042112.jpg",
+      "sourceCodes": [
+        "042112"
+      ]
+    },
+    {
+      "key": "plants-042113",
+      "name": "油豆角（鲜）[多花菜豆]",
+      "description": "油豆角（鲜）[多花菜豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042113.jpg",
+      "sourceCodes": [
+        "042113"
+      ]
+    },
+    {
+      "key": "plants-042114",
+      "name": "垅船豆（鲜）",
+      "description": "垅船豆（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042114.jpg",
+      "sourceCodes": [
+        "042114"
+      ]
+    },
+    {
+      "key": "plants-042117",
+      "name": "鲜长豇豆",
+      "description": "鲜长豇豆，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042117.jpg",
+      "sourceCodes": [
+        "042117",
+        "042119"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：樱桃萝卜。\n第1行第2格：心里美萝卜。\n第1行第3格：花叶萝卜，根为上绿下白长圆萝卜，有少量裂叶。\n第1行第4格：白萝卜（圆）。\n第1行第5格：青萝卜。\n第1行第6格：胡萝卜（黄）。\n第2行第1格：胡萝卜（脱水）。\n第2行第2格：芥菜头[大头菜，水芥]。\n第2行第3格：苤蓝[玉蔓菁，球茎甘蓝，大头菜]。\n第2行第4格：紫红甜菜根。\n第2行第5格：根芹[根洋芹、球根塘蒿]。\n第2行第6格：鲜扁豆荚。\n第3行第1格：蚕豆（鲜）。\n第3行第2格：刀豆（鲜）。\n第3行第3格：鲜四季豆荚。\n第3行第4格：豆角（鲜,白）。\n第3行第5格：荷兰豆。\n第3行第6格：鲜龙豆，长而略弯浅绿色豆荚。\n第4行第1格：毛豆（鲜）[青豆，菜用大豆]。\n第4行第2格：饱满甜豌豆荚。\n第4行第3格：豌豆尖。\n第4行第4格：油豆角（鲜）[多花菜豆]。\n第4行第5格：鲜垅船豆，宽扁长形绿色豆荚。\n第4行第6格：鲜长豇豆。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-07.png",
+  "reviewed": true
+}

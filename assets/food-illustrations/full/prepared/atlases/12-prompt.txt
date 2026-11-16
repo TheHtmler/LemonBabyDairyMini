@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: several round dried Angelica dahurica root slices, pale ivory interior with tiny tan rings and thin brown bark.
+Row 1, column 2: a small pile of dry brittle brown-green mint leaves, crinkled serrated margins.
+Row 1, column 3: a small sprig of fresh bright green mint with oval wrinkled serrated opposite leaves.
+Row 1, column 4: a slender woody twig bearing several fresh glossy oval green schisandra leaves with pointed tips and finely serrated edges.
+Row 1, column 5: fresh broadleaf plantain rosette with broad oval green leaves, conspicuous parallel curved ribs and several thin upright seed spikes.
+Row 1, column 6: several green plantain seed spikes and a small pile of tiny brown oval plantain seeds beside them.
+Row 2, column 1: curled pieces of dried mandarin peel, rusty orange pebbled outer skin and pale cream inner pith.
+Row 2, column 2: a small pile of dark brown dried whole cloves, nail-shaped stems with round bud heads.
+Row 2, column 3: two slender tapered pale tan fresh Saposhnikovia roots with fine rootlets and horizontal ringed wrinkles.
+Row 2, column 4: a fresh green Saposhnikovia leaf spray with finely divided fern-like pinnate leaflets.
+Row 2, column 5: several dried licorice root sticks and round cross-sections with yellow centers and brown outer bark.
+Row 2, column 6: several dried reddish brown ringed galangal rhizome segments, one cut reveals orange-tan fibrous inside.
+Row 3, column 1: a small pile of fine dried safflower florets, tangled narrow orange-red petals.
+Row 3, column 2: a short spray of fresh green Japanese knotweed with hollow reddish jointed stems and broad triangular green leaves.
+Row 3, column 3: several dry pale cream chrysanthemum blossoms with tightly layered wrinkled petals and yellow centers.
+Row 3, column 4: a fresh cassia twig with pairs of oval green leaflets and a slender curved green seed pod.
+Row 3, column 5: a small pile of tiny rough reddish brown oval radish seeds.
+Row 3, column 6: two whole dried brown monk fruits with round papery fibrous shells, one broken open showing tan seeds.
+Row 4, column 1: several elongated oval brown torreya nuts with smooth hard shells, one opened to show pale beige kernel.
+Row 4, column 2: two whole brown oval nutmeg seeds with deeply wrinkled surfaces, one cross-section shows marbled pale brown interior.
+Row 4, column 3: three thick warm brown dried cassia cinnamon bark rolls with rough exterior and smooth rolled interior.
+Row 4, column 4: several oval dark reddish brown amomum pods with spiny ridged husks, one cracked shows black seeds.
+Row 4, column 5: a small pile of flat pointed almond-shaped brown peach kernels with finely wrinkled skins.
+Row 4, column 6: several whole nearly black dried smoked plums with deeply wrinkled round skins.

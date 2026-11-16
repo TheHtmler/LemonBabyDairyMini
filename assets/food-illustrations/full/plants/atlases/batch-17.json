@@ -1,0 +1,235 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-051002",
+      "name": "干红菇",
+      "description": "干红菇，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051002.jpg",
+      "sourceCodes": [
+        "051002",
+        "051016",
+        "051052"
+      ]
+    },
+    {
+      "key": "plants-051003",
+      "name": "地衣（水浸）",
+      "description": "水浸地衣，湿润的灰黑绿色不规则薄片状地皮菜，小碟",
+      "localPath": "assets/food-illustrations/full/plants/images/051003.jpg",
+      "sourceCodes": [
+        "051003"
+      ]
+    },
+    {
+      "key": "plants-051004",
+      "name": "干香菇",
+      "description": "干香菇，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051004.jpg",
+      "sourceCodes": [
+        "051004",
+        "051020"
+      ]
+    },
+    {
+      "key": "plants-051005",
+      "name": "猴头菇（罐装）",
+      "description": "猴头菇罐头，打开无标签金属罐，白色毛绒球状猴头菇浸在淡汤中",
+      "localPath": "assets/food-illustrations/full/plants/images/051005.jpg",
+      "sourceCodes": [
+        "051005"
+      ]
+    },
+    {
+      "key": "plants-051006",
+      "name": "干黄蘑",
+      "description": "干黄蘑，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051006.jpg",
+      "sourceCodes": [
+        "051006",
+        "051053"
+      ]
+    },
+    {
+      "key": "plants-051007",
+      "name": "黄蘑（水发）",
+      "description": "泡发黄蘑，金黄褐色小菌盖与完整菌柄，湿润饱满",
+      "localPath": "assets/food-illustrations/full/plants/images/051007.jpg",
+      "sourceCodes": [
+        "051007"
+      ]
+    },
+    {
+      "key": "plants-051008",
+      "name": "金针菇（鲜）[智力菇]",
+      "description": "金针菇（鲜）[智力菇]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051008.jpg",
+      "sourceCodes": [
+        "051008"
+      ]
+    },
+    {
+      "key": "plants-051009",
+      "name": "金针菇（罐装）",
+      "description": "金针菇罐头，打开无标签金属罐，细长乳白菌柄和小菌盖泡在水中",
+      "localPath": "assets/food-illustrations/full/plants/images/051009.jpg",
+      "sourceCodes": [
+        "051009"
+      ]
+    },
+    {
+      "key": "plants-051010",
+      "name": "鲜白蘑菇",
+      "description": "鲜白蘑菇，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051010.jpg",
+      "sourceCodes": [
+        "051010",
+        "051011",
+        "051017",
+        "051028"
+      ]
+    },
+    {
+      "key": "plants-051012",
+      "name": "蘑菇（干）",
+      "description": "干蘑菇，浅褐色皱缩小菌盖菌柄，明显干燥",
+      "localPath": "assets/food-illustrations/full/plants/images/051012.jpg",
+      "sourceCodes": [
+        "051012"
+      ]
+    },
+    {
+      "key": "plants-051013",
+      "name": "木耳（干）[黑木耳，云耳]",
+      "description": "干黑木耳，黑褐色细小皱缩卷曲干耳片",
+      "localPath": "assets/food-illustrations/full/plants/images/051013.jpg",
+      "sourceCodes": [
+        "051013"
+      ]
+    },
+    {
+      "key": "plants-051014",
+      "name": "木耳（水发）[黑木耳，云耳]",
+      "description": "泡发木耳，乌黑湿润宽大波浪薄耳片",
+      "localPath": "assets/food-illustrations/full/plants/images/051014.jpg",
+      "sourceCodes": [
+        "051014"
+      ]
+    },
+    {
+      "key": "plants-051015",
+      "name": "鲜平菇",
+      "description": "鲜平菇，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051015.jpg",
+      "sourceCodes": [
+        "051015",
+        "051048"
+      ]
+    },
+    {
+      "key": "plants-051018",
+      "name": "干松茸",
+      "description": "干松茸，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051018.jpg",
+      "sourceCodes": [
+        "051018",
+        "051050"
+      ]
+    },
+    {
+      "key": "plants-051019",
+      "name": "香菇（鲜）[香蕈，冬菇]",
+      "description": "香菇（鲜）[香蕈，冬菇]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051019.jpg",
+      "sourceCodes": [
+        "051019"
+      ]
+    },
+    {
+      "key": "plants-051021",
+      "name": "香杏丁蘑（干，大）",
+      "description": "干香杏丁蘑，浅褐色干小菇丁",
+      "localPath": "assets/food-illustrations/full/plants/images/051021.jpg",
+      "sourceCodes": [
+        "051021"
+      ]
+    },
+    {
+      "key": "plants-051022",
+      "name": "香杏片口蘑（干）",
+      "description": "干香杏片口蘑，乳棕色干蘑菇切片，可见菌盖菌柄剖面",
+      "localPath": "assets/food-illustrations/full/plants/images/051022.jpg",
+      "sourceCodes": [
+        "051022"
+      ]
+    },
+    {
+      "key": "plants-051023",
+      "name": "羊肚菌（干）[干狼肚]",
+      "description": "羊肚菌（干）[干狼肚]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051023.jpg",
+      "sourceCodes": [
+        "051023"
+      ]
+    },
+    {
+      "key": "plants-051024",
+      "name": "银耳（干）[白木耳]",
+      "description": "银耳（干）[白木耳]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051024.jpg",
+      "sourceCodes": [
+        "051024"
+      ]
+    },
+    {
+      "key": "plants-051025",
+      "name": "珍珠白蘑（干）",
+      "description": "珍珠白蘑干，乳白微黄皱缩的细小圆菇",
+      "localPath": "assets/food-illustrations/full/plants/images/051025.jpg",
+      "sourceCodes": [
+        "051025"
+      ]
+    },
+    {
+      "key": "plants-051026",
+      "name": "干榛蘑",
+      "description": "干榛蘑，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051026.jpg",
+      "sourceCodes": [
+        "051026",
+        "051055"
+      ]
+    },
+    {
+      "key": "plants-051027",
+      "name": "榛蘑（水发）",
+      "description": "泡发榛蘑，棕黄色小菌盖细柄，湿润饱满",
+      "localPath": "assets/food-illustrations/full/plants/images/051027.jpg",
+      "sourceCodes": [
+        "051027"
+      ]
+    },
+    {
+      "key": "plants-051029",
+      "name": "北风菌[荷叶离褶伞、一窝羊]",
+      "description": "北风菌，灰褐色肥厚伞盖乳白菌柄，一簇聚生",
+      "localPath": "assets/food-illustrations/full/plants/images/051029.jpg",
+      "sourceCodes": [
+        "051029"
+      ]
+    },
+    {
+      "key": "plants-051031",
+      "name": "茶树菇（干）[柱状田头菇、油茶菇]",
+      "description": "茶树菇（干）[柱状田头菇、油茶菇]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/051031.jpg",
+      "sourceCodes": [
+        "051031"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：干红菇。\n第1行第2格：水浸地衣，湿润的灰黑绿色不规则薄片状地皮菜，小碟。\n第1行第3格：干香菇。\n第1行第4格：猴头菇罐头，打开无标签金属罐，白色毛绒球状猴头菇浸在淡汤中。\n第1行第5格：干黄蘑。\n第1行第6格：泡发黄蘑，金黄褐色小菌盖与完整菌柄，湿润饱满。\n第2行第1格：金针菇（鲜）[智力菇]。\n第2行第2格：金针菇罐头，打开无标签金属罐，细长乳白菌柄和小菌盖泡在水中。\n第2行第3格：鲜白蘑菇。\n第2行第4格：干蘑菇，浅褐色皱缩小菌盖菌柄，明显干燥。\n第2行第5格：干黑木耳，黑褐色细小皱缩卷曲干耳片。\n第2行第6格：泡发木耳，乌黑湿润宽大波浪薄耳片。\n第3行第1格：鲜平菇。\n第3行第2格：干松茸。\n第3行第3格：香菇（鲜）[香蕈，冬菇]。\n第3行第4格：干香杏丁蘑，浅褐色干小菇丁。\n第3行第5格：干香杏片口蘑，乳棕色干蘑菇切片，可见菌盖菌柄剖面。\n第3行第6格：羊肚菌（干）[干狼肚]。\n第4行第1格：银耳（干）[白木耳]。\n第4行第2格：珍珠白蘑干，乳白微黄皱缩的细小圆菇。\n第4行第3格：干榛蘑。\n第4行第4格：泡发榛蘑，棕黄色小菌盖细柄，湿润饱满。\n第4行第5格：北风菌，灰褐色肥厚伞盖乳白菌柄，一簇聚生。\n第4行第6格：茶树菇（干）[柱状田头菇、油茶菇]。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-17.png",
+  "reviewed": true
+}

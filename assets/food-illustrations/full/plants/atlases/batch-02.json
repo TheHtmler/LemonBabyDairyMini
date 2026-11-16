@@ -1,0 +1,235 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-012301",
+      "name": "干糯米",
+      "description": "干糯米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012301.jpg",
+      "sourceCodes": [
+        "012301",
+        "012302",
+        "012303",
+        "012305",
+        "012306"
+      ]
+    },
+    {
+      "key": "plants-012304",
+      "name": "紫红糯米[血糯米]",
+      "description": "紫红糯米[血糯米]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012304.jpg",
+      "sourceCodes": [
+        "012304"
+      ]
+    },
+    {
+      "key": "plants-012404",
+      "name": "白米粥",
+      "description": "白米粥，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012404.jpg",
+      "sourceCodes": [
+        "012404",
+        "012409"
+      ]
+    },
+    {
+      "key": "plants-012405",
+      "name": "干细米粉条",
+      "description": "干细米粉条，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012405.jpg",
+      "sourceCodes": [
+        "012405",
+        "012406"
+      ]
+    },
+    {
+      "key": "plants-012407",
+      "name": "高蛋白豆米粉（籼米）",
+      "description": "高蛋白豆米粉（籼米），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012407.jpg",
+      "sourceCodes": [
+        "012407"
+      ]
+    },
+    {
+      "key": "plants-012410",
+      "name": "大米粉",
+      "description": "大米粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012410.jpg",
+      "sourceCodes": [
+        "012410"
+      ]
+    },
+    {
+      "key": "plants-012411",
+      "name": "河粉",
+      "description": "河粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012411.jpg",
+      "sourceCodes": [
+        "012411"
+      ]
+    },
+    {
+      "key": "plants-013102",
+      "name": "干白玉米粒",
+      "description": "干白玉米粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013102.jpg",
+      "sourceCodes": [
+        "013102"
+      ]
+    },
+    {
+      "key": "plants-013103",
+      "name": "干黄玉米粒",
+      "description": "干黄玉米粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013103.jpg",
+      "sourceCodes": [
+        "013103",
+        "013108"
+      ]
+    },
+    {
+      "key": "plants-013104",
+      "name": "白玉米面",
+      "description": "白玉米面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013104.jpg",
+      "sourceCodes": [
+        "013104"
+      ]
+    },
+    {
+      "key": "plants-013106",
+      "name": "玉米面（强化豆粉）",
+      "description": "玉米面（强化豆粉），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013106.jpg",
+      "sourceCodes": [
+        "013106"
+      ]
+    },
+    {
+      "key": "plants-013109",
+      "name": "黄玉米面",
+      "description": "黄玉米面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013109.jpg",
+      "sourceCodes": [
+        "013109"
+      ]
+    },
+    {
+      "key": "plants-013110",
+      "name": "玉米糁（黄）",
+      "description": "玉米糁（黄），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013110.jpg",
+      "sourceCodes": [
+        "013110"
+      ]
+    },
+    {
+      "key": "plants-013201",
+      "name": "玉米笋（罐头）",
+      "description": "玉米笋（罐头），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013201.jpg",
+      "sourceCodes": [
+        "013201"
+      ]
+    },
+    {
+      "key": "plants-013202",
+      "name": "玉米面面条",
+      "description": "玉米面面条，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/013202.jpg",
+      "sourceCodes": [
+        "013202"
+      ]
+    },
+    {
+      "key": "plants-014101",
+      "name": "大麦粒",
+      "description": "大麦粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/014101.jpg",
+      "sourceCodes": [
+        "014101",
+        "014201"
+      ]
+    },
+    {
+      "key": "plants-014102",
+      "name": "黑大麦",
+      "description": "黑大麦，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/014102.jpg",
+      "sourceCodes": [
+        "014102"
+      ]
+    },
+    {
+      "key": "plants-014202",
+      "name": "青稞",
+      "description": "青稞，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/014202.jpg",
+      "sourceCodes": [
+        "014202"
+      ]
+    },
+    {
+      "key": "plants-015101",
+      "name": "黄色小米",
+      "description": "黄色小米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/015101.jpg",
+      "sourceCodes": [
+        "015101",
+        "015104"
+      ]
+    },
+    {
+      "key": "plants-015102",
+      "name": "小米面",
+      "description": "小米面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/015102.jpg",
+      "sourceCodes": [
+        "015102"
+      ]
+    },
+    {
+      "key": "plants-015103",
+      "name": "小米粥",
+      "description": "小米粥，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/015103.jpg",
+      "sourceCodes": [
+        "015103"
+      ]
+    },
+    {
+      "key": "plants-015201",
+      "name": "大黄米",
+      "description": "大黄米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/015201.jpg",
+      "sourceCodes": [
+        "015201",
+        "015202"
+      ]
+    },
+    {
+      "key": "plants-019001",
+      "name": "高粱米",
+      "description": "高粱米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019001.jpg",
+      "sourceCodes": [
+        "019001"
+      ]
+    },
+    {
+      "key": "plants-019002",
+      "name": "糜子（带皮）",
+      "description": "糜子（带皮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019002.jpg",
+      "sourceCodes": [
+        "019002"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：干糯米。\n第1行第2格：紫红糯米[血糯米]。\n第1行第3格：白米粥。\n第1行第4格：干细米粉条。\n第1行第5格：高蛋白豆米粉（籼米）。\n第1行第6格：大米粉。\n第2行第1格：河粉。\n第2行第2格：干白玉米粒。\n第2行第3格：干黄玉米粒。\n第2行第4格：白玉米面。\n第2行第5格：玉米面（强化豆粉）。\n第2行第6格：黄玉米面。\n第3行第1格：玉米糁（黄）。\n第3行第2格：玉米笋（罐头）。\n第3行第3格：玉米面面条。\n第3行第4格：大麦粒。\n第3行第5格：黑大麦。\n第3行第6格：青稞。\n第4行第1格：黄色小米。\n第4行第2格：小米面。\n第4行第3格：小米粥。\n第4行第4格：大黄米。\n第4行第5格：高粱米。\n第4行第6格：糜子（带皮）。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-02.png",
+  "reviewed": true
+}

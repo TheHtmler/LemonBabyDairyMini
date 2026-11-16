@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "assetVersion": "v1",
+  "assets": [
+    {
+      "key": "apple",
+      "localPath": "miniprogram/images/food-illustrations/apple.jpg",
+      "cloudPath": "food-illustrations/v1/apple.jpg",
+      "bytes": 6090,
+      "sha256": "f3b851941db14a4d0ad2cf2f1a53c3b273941f725d3e6f70e83a4e1c68190186"
+    },
+    {
+      "key": "broccoli",
+      "localPath": "miniprogram/images/food-illustrations/broccoli.jpg",
+      "cloudPath": "food-illustrations/v1/broccoli.jpg",
+      "bytes": 7400,
+      "sha256": "d6932c71c25770d8df1f5485f8ffe388aa55ddd3d2ac98aacf59d9d774ccb668"
+    },
+    {
+      "key": "rice",
+      "localPath": "miniprogram/images/food-illustrations/rice.jpg",
+      "cloudPath": "food-illustrations/v1/rice.jpg",
+      "bytes": 4060,
+      "sha256": "59ae431dfc6f4d7bb0db7fb4418a83a8b704b378eaa741157ab303085bb393aa"
+    },
+    {
+      "key": "egg",
+      "localPath": "miniprogram/images/food-illustrations/egg.jpg",
+      "cloudPath": "food-illustrations/v1/egg.jpg",
+      "bytes": 4157,
+      "sha256": "acb5cf68cc69a2c16c681d1457ba079ee25d912bb7db53bccee040fdd44f75db"
+    },
+    {
+      "key": "chicken",
+      "localPath": "miniprogram/images/food-illustrations/chicken.jpg",
+      "cloudPath": "food-illustrations/v1/chicken.jpg",
+      "bytes": 5619,
+      "sha256": "7414fb11fd11d5e28d54ae4c0f2549fa20133f4b305802a34213ce98a632129b"
+    },
+    {
+      "key": "milk",
+      "localPath": "miniprogram/images/food-illustrations/milk.jpg",
+      "cloudPath": "food-illustrations/v1/milk.jpg",
+      "bytes": 3011,
+      "sha256": "06995bacbc4ee167d0fb9f6d790f175adee8cc506b94d9952da34c8b409666e9"
+    },
+    {
+      "key": "banana",
+      "localPath": "miniprogram/images/food-illustrations/banana.jpg",
+      "cloudPath": "food-illustrations/v1/banana.jpg",
+      "bytes": 4361,
+      "sha256": "179a2ed0133173e4247fdafdbc40abc68fcc2a1ddc8e6321c7f7af5bb66f7e2c"
+    },
+    {
+      "key": "orange",
+      "localPath": "miniprogram/images/food-illustrations/orange.jpg",
+      "cloudPath": "food-illustrations/v1/orange.jpg",
+      "bytes": 6120,
+      "sha256": "ffe3ee22119291e9524def46c4fdbf37581ac2baf74bb297e6dbf64ec454c8db"
+    },
+    {
+      "key": "carrot",
+      "localPath": "miniprogram/images/food-illustrations/carrot.jpg",
+      "cloudPath": "food-illustrations/v1/carrot.jpg",
+      "bytes": 4149,
+      "sha256": "223addb6be0d41e6d8558add2d3d2f35e6c5f040700d114069fd65e29b25c5a1"
+    },
+    {
+      "key": "potato",
+      "localPath": "miniprogram/images/food-illustrations/potato.jpg",
+      "cloudPath": "food-illustrations/v1/potato.jpg",
+      "bytes": 5179,
+      "sha256": "c9302def367d80c8f8ae5ce9c13e726f9063cda05976cd298d7e56aa5cd40f3e"
+    },
+    {
+      "key": "tomato",
+      "localPath": "miniprogram/images/food-illustrations/tomato.jpg",
+      "cloudPath": "food-illustrations/v1/tomato.jpg",
+      "bytes": 6496,
+      "sha256": "38489e9884a4ee55d7999b809fcb335b5e2e115e8ccad00f4c43162c6af2ede8"
+    },
+    {
+      "key": "pumpkin",
+      "localPath": "miniprogram/images/food-illustrations/pumpkin.jpg",
+      "cloudPath": "food-illustrations/v1/pumpkin.jpg",
+      "bytes": 5698,
+      "sha256": "f0b92e712f59018d6a3c875ed9c89b34a548cb36cc1b882b159852daa06b6438"
+    },
+    {
+      "key": "pear",
+      "localPath": "miniprogram/images/food-illustrations/pear.jpg",
+      "cloudPath": "food-illustrations/v1/pear.jpg",
+      "bytes": 4195,
+      "sha256": "5cf6fc5538932f878cd664e4b66181dbcd85626c8227f9e922252928b60d5e6f"
+    },
+    {
+      "key": "corn",
+      "localPath": "miniprogram/images/food-illustrations/corn.jpg",
+      "cloudPath": "food-illustrations/v1/corn.jpg",
+      "bytes": 5692,
+      "sha256": "a84e4b02f56f65d317694c235ac269051ceb9bafa51e294988662d172b3d1503"
+    },
+    {
+      "key": "cucumber",
+      "localPath": "miniprogram/images/food-illustrations/cucumber.jpg",
+      "cloudPath": "food-illustrations/v1/cucumber.jpg",
+      "bytes": 5781,
+      "sha256": "7263153cf6c1d49cd2f457c8ea54355865744d0d69b979b0954adb45b34e6b2b"
+    },
+    {
+      "key": "spinach",
+      "localPath": "miniprogram/images/food-illustrations/spinach.jpg",
+      "cloudPath": "food-illustrations/v1/spinach.jpg",
+      "bytes": 6640,
+      "sha256": "8c13cfb382f48f120ce7240f2b1ea7124b0c400f4501c0f51e9ed87a9aec7577"
+    },
+    {
+      "key": "tofu",
+      "localPath": "miniprogram/images/food-illustrations/tofu.jpg",
+      "cloudPath": "food-illustrations/v1/tofu.jpg",
+      "bytes": 3507,
+      "sha256": "4ea4cdcfa33d15660c91b19567c8a963e66f9e42b54f58e9378a4d8106831a5c"
+    },
+    {
+      "key": "noodles",
+      "localPath": "miniprogram/images/food-illustrations/noodles.jpg",
+      "cloudPath": "food-illustrations/v1/noodles.jpg",
+      "bytes": 4857,
+      "sha256": "01963ef14b1d6108085b97dca558617000b1d39bda4801d7473da86d771175ec"
+    },
+    {
+      "key": "pork",
+      "localPath": "miniprogram/images/food-illustrations/pork.jpg",
+      "cloudPath": "food-illustrations/v1/pork.jpg",
+      "bytes": 5302,
+      "sha256": "6513c7ff24c473c60bffa62bd609b5b9eff60fa9fdb512dca6256b6411ca9505"
+    },
+    {
+      "key": "beef",
+      "localPath": "miniprogram/images/food-illustrations/beef.jpg",
+      "cloudPath": "food-illustrations/v1/beef.jpg",
+      "bytes": 6588,
+      "sha256": "f07b279d78033799fe8dd5bdd0a08c9eb62118d984583675b8a04492a78f8152"
+    },
+    {
+      "key": "fish",
+      "localPath": "miniprogram/images/food-illustrations/fish.jpg",
+      "cloudPath": "food-illustrations/v1/fish.jpg",
+      "bytes": 4228,
+      "sha256": "be5017110634053ceb8be821b160c60a17de5b6b2141338fa67abe6be558f54d"
+    },
+    {
+      "key": "shrimp",
+      "localPath": "miniprogram/images/food-illustrations/shrimp.jpg",
+      "cloudPath": "food-illustrations/v1/shrimp.jpg",
+      "bytes": 5723,
+      "sha256": "4f96da8a9d38827769a24f0335eea32eaf2adad72db818423aa9065cf13e06a8"
+    },
+    {
+      "key": "bread",
+      "localPath": "miniprogram/images/food-illustrations/bread.jpg",
+      "cloudPath": "food-illustrations/v1/bread.jpg",
+      "bytes": 5179,
+      "sha256": "07c87e4985d61fea356a40da8f3cb9c5a54d50ac5ccfdbd7f94c85d7581309bb"
+    },
+    {
+      "key": "soybeans",
+      "localPath": "miniprogram/images/food-illustrations/soybeans.jpg",
+      "cloudPath": "food-illustrations/v1/soybeans.jpg",
+      "bytes": 4865,
+      "sha256": "92f95416ac8bde86c7afbf62ae0c603d6edf5fdb427b4910b2891174b34a38c1"
+    },
+    {
+      "key": "egg-white",
+      "localPath": "miniprogram/images/food-illustrations/egg-white.jpg",
+      "cloudPath": "food-illustrations/v1/egg-white.jpg",
+      "bytes": 2570,
+      "sha256": "8be3b8a9eca10481a2a19c630664788dd14c61d9c99069174da53b78f4b6c5d8"
+    },
+    {
+      "key": "egg-yolk",
+      "localPath": "miniprogram/images/food-illustrations/egg-yolk.jpg",
+      "cloudPath": "food-illustrations/v1/egg-yolk.jpg",
+      "bytes": 4192,
+      "sha256": "ba13339d79da9544314c3526ed55d1647589faa1b51a5323eded56c821ba6212"
+    }
+  ]
+}

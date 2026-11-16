@@ -1,0 +1,148 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-072006",
+      "name": "葵花子（生）",
+      "description": "葵花子（生），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072006.jpg",
+      "sourceCodes": [
+        "072006"
+      ]
+    },
+    {
+      "key": "plants-072007",
+      "name": "炒带壳葵花子",
+      "description": "炒带壳葵花子，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072007.jpg",
+      "sourceCodes": [
+        "072007",
+        "072023",
+        "072024"
+      ]
+    },
+    {
+      "key": "plants-072008",
+      "name": "葵花子仁",
+      "description": "葵花子仁，无壳浅米白细长籽仁，一小堆",
+      "localPath": "assets/food-illustrations/full/plants/images/072008.jpg",
+      "sourceCodes": [
+        "072008"
+      ]
+    },
+    {
+      "key": "plants-072009",
+      "name": "莲子（干）",
+      "description": "干莲子，干燥米白色圆卵形莲子，中心小孔",
+      "localPath": "assets/food-illustrations/full/plants/images/072009.jpg",
+      "sourceCodes": [
+        "072009"
+      ]
+    },
+    {
+      "key": "plants-072010",
+      "name": "莲子（糖水罐头）",
+      "description": "莲子糖水罐头，打开无标签银色罐，淡糖水中浸着白色圆莲子",
+      "localPath": "assets/food-illustrations/full/plants/images/072010.jpg",
+      "sourceCodes": [
+        "072010"
+      ]
+    },
+    {
+      "key": "plants-072011",
+      "name": "熟带壳南瓜子",
+      "description": "熟带壳南瓜子，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072011.jpg",
+      "sourceCodes": [
+        "072011",
+        "072025"
+      ]
+    },
+    {
+      "key": "plants-072012",
+      "name": "南瓜子仁",
+      "description": "南瓜子仁，去壳绿色扁椭圆籽仁，一小堆",
+      "localPath": "assets/food-illustrations/full/plants/images/072012.jpg",
+      "sourceCodes": [
+        "072012"
+      ]
+    },
+    {
+      "key": "plants-072013",
+      "name": "熟黑西瓜子",
+      "description": "熟黑西瓜子，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072013.jpg",
+      "sourceCodes": [
+        "072013",
+        "072026"
+      ]
+    },
+    {
+      "key": "plants-072014",
+      "name": "西瓜子",
+      "description": "生西瓜子，黑褐色扁卵形籽，光滑无盐，一小堆",
+      "localPath": "assets/food-illustrations/full/plants/images/072014.jpg",
+      "sourceCodes": [
+        "072014"
+      ]
+    },
+    {
+      "key": "plants-072015",
+      "name": "西瓜子仁",
+      "description": "西瓜子仁，去壳乳白色小扁卵形籽仁",
+      "localPath": "assets/food-illustrations/full/plants/images/072015.jpg",
+      "sourceCodes": [
+        "072015"
+      ]
+    },
+    {
+      "key": "plants-072016",
+      "name": "芝麻籽（白）",
+      "description": "芝麻籽（白），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072016.jpg",
+      "sourceCodes": [
+        "072016"
+      ]
+    },
+    {
+      "key": "plants-072017",
+      "name": "芝麻籽（黑）",
+      "description": "芝麻籽（黑），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072017.jpg",
+      "sourceCodes": [
+        "072017"
+      ]
+    },
+    {
+      "key": "plants-072018",
+      "name": "芡实米（鲜）[鸡头米]",
+      "description": "鲜芡实鸡头米，半透明乳白圆球形嫩籽，湿润饱满",
+      "localPath": "assets/food-illustrations/full/plants/images/072018.jpg",
+      "sourceCodes": [
+        "072018"
+      ]
+    },
+    {
+      "key": "plants-072019",
+      "name": "芡实米（干）[鸡头米]",
+      "description": "干芡实鸡头米，米白色干燥圆豆状坚硬籽粒，表面略灰粉",
+      "localPath": "assets/food-illustrations/full/plants/images/072019.jpg",
+      "sourceCodes": [
+        "072019"
+      ]
+    },
+    {
+      "key": "plants-072022",
+      "name": "花生仁（油炸）",
+      "description": "油炸花生仁，红褐色花生仁，小堆，油润金黄熟色",
+      "localPath": "assets/food-illustrations/full/plants/images/072022.jpg",
+      "sourceCodes": [
+        "072022"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：葵花子（生）。\n第1行第2格：炒带壳葵花子。\n第1行第3格：葵花子仁，无壳浅米白细长籽仁，一小堆。\n第1行第4格：干莲子，干燥米白色圆卵形莲子，中心小孔。\n第1行第5格：莲子糖水罐头，打开无标签银色罐，淡糖水中浸着白色圆莲子。\n第1行第6格：熟带壳南瓜子。\n第2行第1格：南瓜子仁，去壳绿色扁椭圆籽仁，一小堆。\n第2行第2格：熟黑生西瓜子，黑褐色扁卵形籽，光滑无盐，一小堆。\n第2行第3格：生西瓜子，黑褐色扁卵形籽，光滑无盐，一小堆。\n第2行第4格：西瓜子仁，去壳乳白色小扁卵形籽仁。\n第2行第5格：芝麻籽（白）。\n第2行第6格：芝麻籽（黑）。\n第3行第1格：鲜芡实鸡头米，半透明乳白圆球形嫩籽，湿润饱满。\n第3行第2格：干芡实鸡头米，米白色干燥圆豆状坚硬籽粒，表面略灰粉。\n第3行第3格：油炸花生仁，红褐色花生仁，小堆，油润金黄熟色。\n第3行第4格：保持空白暖白底，无任何物体。\n第3行第5格：保持空白暖白底，无任何物体。\n第3行第6格：保持空白暖白底，无任何物体。\n第4行第1格：保持空白暖白底，无任何物体。\n第4行第2格：保持空白暖白底，无任何物体。\n第4行第3格：保持空白暖白底，无任何物体。\n第4行第4格：保持空白暖白底，无任何物体。\n第4行第5格：保持空白暖白底，无任何物体。\n第4行第6格：保持空白暖白底，无任何物体。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-24.png",
+  "reviewed": true
+}

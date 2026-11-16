@@ -1,0 +1,236 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-071006",
+      "name": "山核桃（干）",
+      "description": "山核桃（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071006.jpg",
+      "sourceCodes": [
+        "071006"
+      ]
+    },
+    {
+      "key": "plants-071008",
+      "name": "鲜板栗",
+      "description": "鲜板栗，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071008.jpg",
+      "sourceCodes": [
+        "071008",
+        "071027"
+      ]
+    },
+    {
+      "key": "plants-071009",
+      "name": "栗子（干）[板栗]",
+      "description": "干板栗，暗褐色带壳栗子和皱缩浅黄色栗仁，明显干燥",
+      "localPath": "assets/food-illustrations/full/plants/images/071009.jpg",
+      "sourceCodes": [
+        "071009"
+      ]
+    },
+    {
+      "key": "plants-071010",
+      "name": "栗子（熟）[板栗]",
+      "description": "煮熟板栗，棕褐色栗子切开露金黄色粉糯熟仁",
+      "localPath": "assets/food-illustrations/full/plants/images/071010.jpg",
+      "sourceCodes": [
+        "071010"
+      ]
+    },
+    {
+      "key": "plants-071011",
+      "name": "松子（生）",
+      "description": "生带壳松子，褐色长椭圆形坚果，有纵棱",
+      "localPath": "assets/food-illustrations/full/plants/images/071011.jpg",
+      "sourceCodes": [
+        "071011"
+      ]
+    },
+    {
+      "key": "plants-071012",
+      "name": "炒松子带壳",
+      "description": "炒松子带壳，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071012.jpg",
+      "sourceCodes": [
+        "071012",
+        "071033"
+      ]
+    },
+    {
+      "key": "plants-071013",
+      "name": "松子仁",
+      "description": "松子仁，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071013.jpg",
+      "sourceCodes": [
+        "071013"
+      ]
+    },
+    {
+      "key": "plants-071014",
+      "name": "生带褐皮杏仁",
+      "description": "生巴旦木杏仁，带褐皮细长扁椭圆果仁，表面纵向细纹，不能画杏核",
+      "localPath": "assets/food-illustrations/full/plants/images/071014.jpg",
+      "sourceCodes": [
+        "071014",
+        "071015",
+        "071017"
+      ]
+    },
+    {
+      "key": "plants-071016",
+      "name": "熟去壳杏仁",
+      "description": "烤熟巴旦木，金棕色去壳长椭圆果仁，一小堆，略有油润熟色",
+      "localPath": "assets/food-illustrations/full/plants/images/071016.jpg",
+      "sourceCodes": [
+        "071016",
+        "071019",
+        "071020",
+        "071021",
+        "071035"
+      ]
+    },
+    {
+      "key": "plants-071018",
+      "name": "杏仁（漂白后）",
+      "description": "漂白杏仁，完全去褐皮的乳白色细长扁椭圆巴旦木仁",
+      "localPath": "assets/food-illustrations/full/plants/images/071018.jpg",
+      "sourceCodes": [
+        "071018"
+      ]
+    },
+    {
+      "key": "plants-071022",
+      "name": "橡实[橡子，青冈子]",
+      "description": "橡实[橡子，青冈子]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071022.jpg",
+      "sourceCodes": [
+        "071022"
+      ]
+    },
+    {
+      "key": "plants-071024",
+      "name": "榛子（干）",
+      "description": "榛子（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071024.jpg",
+      "sourceCodes": [
+        "071024"
+      ]
+    },
+    {
+      "key": "plants-071025",
+      "name": "熟带壳榛子",
+      "description": "熟带壳榛子，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071025.jpg",
+      "sourceCodes": [
+        "071025",
+        "071037"
+      ]
+    },
+    {
+      "key": "plants-071026",
+      "name": "山核桃（熟）[小核桃]",
+      "description": "山核桃（熟）[小核桃]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071026.jpg",
+      "sourceCodes": [
+        "071026"
+      ]
+    },
+    {
+      "key": "plants-071034",
+      "name": "杏仁（熟，带壳）",
+      "description": "熟带壳杏仁，浅黄褐色有小孔的椭圆硬壳，裂开露长椭圆巴旦木仁",
+      "localPath": "assets/food-illustrations/full/plants/images/071034.jpg",
+      "sourceCodes": [
+        "071034"
+      ]
+    },
+    {
+      "key": "plants-071036",
+      "name": "腰果（熟）",
+      "description": "熟腰果，浅金黄色弯月肾形坚果仁，一小堆",
+      "localPath": "assets/food-illustrations/full/plants/images/071036.jpg",
+      "sourceCodes": [
+        "071036"
+      ]
+    },
+    {
+      "key": "plants-071038",
+      "name": "榛子仁（熟）",
+      "description": "熟榛子仁，一小堆棕金色圆形榛子仁，无外壳",
+      "localPath": "assets/food-illustrations/full/plants/images/071038.jpg",
+      "sourceCodes": [
+        "071038"
+      ]
+    },
+    {
+      "key": "plants-071039",
+      "name": "开心果（熟）",
+      "description": "开心果（熟），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/071039.jpg",
+      "sourceCodes": [
+        "071039"
+      ]
+    },
+    {
+      "key": "plants-071040",
+      "name": "香榧（熟）",
+      "description": "熟香榧，棕褐色细长椭圆坚果，两端尖，剥开一枚露长形榧仁",
+      "localPath": "assets/food-illustrations/full/plants/images/071040.jpg",
+      "sourceCodes": [
+        "071040"
+      ]
+    },
+    {
+      "key": "plants-072001",
+      "name": "胡麻子",
+      "description": "胡麻子亚麻籽，细小光滑的棕色扁椭圆尖头籽粒",
+      "localPath": "assets/food-illustrations/full/plants/images/072001.jpg",
+      "sourceCodes": [
+        "072001"
+      ]
+    },
+    {
+      "key": "plants-072002",
+      "name": "花生（鲜）[落花生，长生果]",
+      "description": "鲜花生，浅黄湿润带壳花生荚，打开一枚露淡粉色鲜花生仁",
+      "localPath": "assets/food-illustrations/full/plants/images/072002.jpg",
+      "sourceCodes": [
+        "072002"
+      ]
+    },
+    {
+      "key": "plants-072003",
+      "name": "熟带壳花生",
+      "description": "熟带壳花生，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072003.jpg",
+      "sourceCodes": [
+        "072003",
+        "072020",
+        "072021"
+      ]
+    },
+    {
+      "key": "plants-072004",
+      "name": "花生仁（生）",
+      "description": "花生仁（生），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072004.jpg",
+      "sourceCodes": [
+        "072004"
+      ]
+    },
+    {
+      "key": "plants-072005",
+      "name": "花生仁（炒）",
+      "description": "花生仁（炒），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/072005.jpg",
+      "sourceCodes": [
+        "072005"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：山核桃（干）。\n第1行第2格：鲜板栗。\n第1行第3格：干板栗，暗褐色带壳栗子和皱缩浅黄色栗仁，明显干燥。\n第1行第4格：煮熟板栗，棕褐色栗子切开露金黄色粉糯熟仁。\n第1行第5格：生带壳松子，褐色长椭圆形坚果，有纵棱。\n第1行第6格：炒松子带壳。\n第2行第1格：松子仁。\n第2行第2格：生巴旦木杏仁，带褐皮细长扁椭圆果仁，表面纵向细纹，不能画杏核。\n第2行第3格：烤熟巴旦木，金棕色去壳长椭圆果仁，一小堆，略有油润熟色。\n第2行第4格：漂白杏仁，完全去褐皮的乳白色细长扁椭圆巴旦木仁。\n第2行第5格：橡实[橡子，青冈子]。\n第2行第6格：榛子（干）。\n第3行第1格：熟带壳榛子。\n第3行第2格：山核桃（熟）[小核桃]。\n第3行第3格：熟带壳杏仁，浅黄褐色有小孔的椭圆硬壳，裂开露长椭圆巴旦木仁。\n第3行第4格：熟腰果，浅金黄色弯月肾形坚果仁，一小堆。\n第3行第5格：熟榛子仁，一小堆棕金色圆形榛子仁，无外壳。\n第3行第6格：开心果（熟）。\n第4行第1格：熟香榧，棕褐色细长椭圆坚果，两端尖，剥开一枚露长形榧仁。\n第4行第2格：胡麻子亚麻籽，细小光滑的棕色扁椭圆尖头籽粒。\n第4行第3格：鲜花生，浅黄湿润带壳花生荚，打开一枚露淡粉色鲜花生仁。\n第4行第4格：熟带壳花生。\n第4行第5格：花生仁（生）。\n第4行第6格：花生仁（炒）。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-23.png",
+  "reviewed": true
+}

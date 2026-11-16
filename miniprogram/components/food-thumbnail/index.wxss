@@ -1,0 +1,6 @@
+:host { display: block; width: 100%; height: 100%; overflow: hidden; border-radius: inherit; }
+.food-thumbnail { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: inherit; background: #fcf9f4; }
+.food-thumbnail-image { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.food-thumbnail-image.is-pending { opacity: 0; }
+.food-thumbnail-empty { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #aa977d; background: #f6f2e9; font-size: 26rpx; font-weight: 500; }
+.food-thumbnail-empty.is-loading { background: #f6f4ef; }

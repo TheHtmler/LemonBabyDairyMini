@@ -1,0 +1,242 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-052007",
+      "name": "苔菜（干）[苔条，条浒苔]",
+      "description": "干苔菜，墨绿色极细丝条状干藻小团",
+      "localPath": "assets/food-illustrations/full/plants/images/052007.jpg",
+      "sourceCodes": [
+        "052007"
+      ]
+    },
+    {
+      "key": "plants-052008",
+      "name": "紫菜（干）",
+      "description": "干紫菜，黑紫色薄脆干藻片卷成小堆",
+      "localPath": "assets/food-illustrations/full/plants/images/052008.jpg",
+      "sourceCodes": [
+        "052008"
+      ]
+    },
+    {
+      "key": "plants-052009",
+      "name": "螺旋藻（干）",
+      "description": "干螺旋藻，深墨绿色细粉装在小白碗中",
+      "localPath": "assets/food-illustrations/full/plants/images/052009.jpg",
+      "sourceCodes": [
+        "052009"
+      ]
+    },
+    {
+      "key": "plants-052010",
+      "name": "裙带菜（干）[海芥菜、海木耳]",
+      "description": "干裙带菜，黑绿色干燥皱缩带叶小片",
+      "localPath": "assets/food-illustrations/full/plants/images/052010.jpg",
+      "sourceCodes": [
+        "052010"
+      ]
+    },
+    {
+      "key": "plants-061110",
+      "name": "黄苹果",
+      "description": "黄苹果，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061110.jpg",
+      "sourceCodes": [
+        "061110",
+        "061111",
+        "061112"
+      ]
+    },
+    {
+      "key": "plants-061113",
+      "name": "青苹果",
+      "description": "青苹果，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061113.jpg",
+      "sourceCodes": [
+        "061113"
+      ]
+    },
+    {
+      "key": "plants-061119",
+      "name": "苹果（罐头）",
+      "description": "苹果（罐头），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061119.jpg",
+      "sourceCodes": [
+        "061119"
+      ]
+    },
+    {
+      "key": "plants-061206",
+      "name": "红皮梨",
+      "description": "红皮梨，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061206.jpg",
+      "sourceCodes": [
+        "061206",
+        "061226"
+      ]
+    },
+    {
+      "key": "plants-061227",
+      "name": "鳄梨",
+      "description": "鳄梨，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061227.jpg",
+      "sourceCodes": [
+        "061227"
+      ]
+    },
+    {
+      "key": "plants-061228",
+      "name": "糖水梨罐头块",
+      "description": "糖水梨罐头块，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061228.jpg",
+      "sourceCodes": [
+        "061228",
+        "061229"
+      ]
+    },
+    {
+      "key": "plants-061301",
+      "name": "红果[山里红，大山楂]",
+      "description": "红果[山里红，大山楂]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061301.jpg",
+      "sourceCodes": [
+        "061301"
+      ]
+    },
+    {
+      "key": "plants-061302",
+      "name": "红果（干）",
+      "description": "红果（干），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061302.jpg",
+      "sourceCodes": [
+        "061302"
+      ]
+    },
+    {
+      "key": "plants-061901",
+      "name": "海棠沙果",
+      "description": "海棠沙果，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061901.jpg",
+      "sourceCodes": [
+        "061901",
+        "061903"
+      ]
+    },
+    {
+      "key": "plants-061902",
+      "name": "海棠（罐头）",
+      "description": "海棠（罐头），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061902.jpg",
+      "sourceCodes": [
+        "061902"
+      ]
+    },
+    {
+      "key": "plants-061904",
+      "name": "小沙果",
+      "description": "小沙果，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061904.jpg",
+      "sourceCodes": [
+        "061904",
+        "061905"
+      ]
+    },
+    {
+      "key": "plants-061906",
+      "name": "酸刺",
+      "description": "酸刺，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/061906.jpg",
+      "sourceCodes": [
+        "061906"
+      ]
+    },
+    {
+      "key": "plants-062101",
+      "name": "粉红鲜桃",
+      "description": "粉红鲜桃，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062101.jpg",
+      "sourceCodes": [
+        "062101",
+        "062102",
+        "062103",
+        "062104",
+        "062106",
+        "062107",
+        "062108",
+        "062110",
+        "062112"
+      ]
+    },
+    {
+      "key": "plants-062105",
+      "name": "黄桃",
+      "description": "黄桃，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062105.jpg",
+      "sourceCodes": [
+        "062105",
+        "062111",
+        "062113"
+      ]
+    },
+    {
+      "key": "plants-062109",
+      "name": "蒲桃",
+      "description": "蒲桃，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062109.jpg",
+      "sourceCodes": [
+        "062109",
+        "065029"
+      ]
+    },
+    {
+      "key": "plants-062116",
+      "name": "桃（糖水罐头）",
+      "description": "桃（糖水罐头），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062116.jpg",
+      "sourceCodes": [
+        "062116"
+      ]
+    },
+    {
+      "key": "plants-062201",
+      "name": "李子",
+      "description": "李子，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062201.jpg",
+      "sourceCodes": [
+        "062201"
+      ]
+    },
+    {
+      "key": "plants-062202",
+      "name": "李子杏",
+      "description": "李子杏，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062202.jpg",
+      "sourceCodes": [
+        "062202"
+      ]
+    },
+    {
+      "key": "plants-062203",
+      "name": "梅[青梅]",
+      "description": "梅[青梅]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062203.jpg",
+      "sourceCodes": [
+        "062203"
+      ]
+    },
+    {
+      "key": "plants-062204",
+      "name": "杏",
+      "description": "杏，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/062204.jpg",
+      "sourceCodes": [
+        "062204"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：干苔菜，墨绿色极细丝条状干藻小团。\n第1行第2格：干紫菜，黑紫色薄脆干藻片卷成小堆。\n第1行第3格：干螺旋藻，深墨绿色细粉装在小白碗中。\n第1行第4格：干裙带菜，黑绿色干燥皱缩带叶小片。\n第1行第5格：黄苹果。\n第1行第6格：青苹果。\n第2行第1格：苹果（罐头）。\n第2行第2格：红皮梨。\n第2行第3格：鳄梨。\n第2行第4格：糖水梨罐头块。\n第2行第5格：红果[山里红，大山楂]。\n第2行第6格：红果（干）。\n第3行第1格：海棠沙果。\n第3行第2格：海棠（罐头）。\n第3行第3格：小沙果。\n第3行第4格：酸刺。\n第3行第5格：粉红鲜桃。\n第3行第6格：黄桃。\n第4行第1格：蒲桃。\n第4行第2格：桃（糖水罐头）。\n第4行第3格：李子。\n第4行第4格：李子杏。\n第4行第5格：梅[青梅]。\n第4行第6格：杏。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-19.png",
+  "reviewed": true
+}

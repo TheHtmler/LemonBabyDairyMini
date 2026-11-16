@@ -80,6 +80,11 @@ function addReference(from, specifier, location, extension = '.js') {
   references++;
   let target = resolveLocal(from, specifier);
   if (!path.extname(target)) target += extension;
+  // 小程序不会像 Node.js 一样把 JSON 注册为可 require 的逻辑层模块。
+  if (from.endsWith('.js') && path.extname(target) !== '.js') {
+    failures.push(location + '：小程序逻辑层只能引用 JS 模块，请将数据改为 module.exports 导出的 .js 文件');
+    return;
+  }
   validateBoundary(from, target, location);
   if (validateFile(target, location)) pending.push(target);
 }

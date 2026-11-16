@@ -1,0 +1,241 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-044402",
+      "name": "韭黄（韭芽，黄色）",
+      "description": "韭黄（韭芽，黄色），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044402.jpg",
+      "sourceCodes": [
+        "044402"
+      ]
+    },
+    {
+      "key": "plants-044403",
+      "name": "韭薹",
+      "description": "韭薹，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044403.jpg",
+      "sourceCodes": [
+        "044403"
+      ]
+    },
+    {
+      "key": "plants-044404",
+      "name": "韭菜",
+      "description": "韭菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044404.jpg",
+      "sourceCodes": [
+        "044404"
+      ]
+    },
+    {
+      "key": "plants-044501",
+      "name": "薤白小蒜头",
+      "description": "薤白小蒜头，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/044501.jpg",
+      "sourceCodes": [
+        "044501",
+        "044502"
+      ]
+    },
+    {
+      "key": "plants-045101",
+      "name": "大白菜",
+      "description": "大白菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045101.jpg",
+      "sourceCodes": [
+        "045101",
+        "045102",
+        "045103",
+        "045104",
+        "045117",
+        "045118"
+      ]
+    },
+    {
+      "key": "plants-045105",
+      "name": "白菜（脱水）",
+      "description": "白菜（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045105.jpg",
+      "sourceCodes": [
+        "045105"
+      ]
+    },
+    {
+      "key": "plants-045108",
+      "name": "绿菜心",
+      "description": "绿菜心，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045108.jpg",
+      "sourceCodes": [
+        "045108",
+        "045116",
+        "045126"
+      ]
+    },
+    {
+      "key": "plants-045109",
+      "name": "红菜薹[紫菜薹]",
+      "description": "红菜薹[紫菜薹]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045109.jpg",
+      "sourceCodes": [
+        "045109"
+      ]
+    },
+    {
+      "key": "plants-045110",
+      "name": "小青菜",
+      "description": "小青菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045110.jpg",
+      "sourceCodes": [
+        "045110",
+        "045115",
+        "045120",
+        "045121",
+        "045125"
+      ]
+    },
+    {
+      "key": "plants-045111",
+      "name": "乌塌菜",
+      "description": "乌塌菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045111.jpg",
+      "sourceCodes": [
+        "045111",
+        "045124"
+      ]
+    },
+    {
+      "key": "plants-045113",
+      "name": "油菜（黑）",
+      "description": "油菜（黑），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045113.jpg",
+      "sourceCodes": [
+        "045113"
+      ]
+    },
+    {
+      "key": "plants-045114",
+      "name": "油菜（脱水）",
+      "description": "油菜（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045114.jpg",
+      "sourceCodes": [
+        "045114"
+      ]
+    },
+    {
+      "key": "plants-045119",
+      "name": "酸白菜[酸菜]",
+      "description": "酸白菜[酸菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045119.jpg",
+      "sourceCodes": [
+        "045119"
+      ]
+    },
+    {
+      "key": "plants-045122",
+      "name": "鸡毛菜",
+      "description": "鸡毛菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045122.jpg",
+      "sourceCodes": [
+        "045122"
+      ]
+    },
+    {
+      "key": "plants-045123",
+      "name": "娃娃菜",
+      "description": "娃娃菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045123.jpg",
+      "sourceCodes": [
+        "045123"
+      ]
+    },
+    {
+      "key": "plants-045201",
+      "name": "绿卷心菜",
+      "description": "绿卷心菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045201.jpg",
+      "sourceCodes": [
+        "045201",
+        "045210"
+      ]
+    },
+    {
+      "key": "plants-045203",
+      "name": "菜花（脱水）[脱水花椰菜]",
+      "description": "菜花（脱水）[脱水花椰菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045203.jpg",
+      "sourceCodes": [
+        "045203"
+      ]
+    },
+    {
+      "key": "plants-045205",
+      "name": "雪里蕻叶",
+      "description": "雪里蕻叶，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045205.jpg",
+      "sourceCodes": [
+        "045205",
+        "045208"
+      ]
+    },
+    {
+      "key": "plants-045206",
+      "name": "大叶盖菜",
+      "description": "大叶盖菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045206.jpg",
+      "sourceCodes": [
+        "045206",
+        "045214"
+      ]
+    },
+    {
+      "key": "plants-045207",
+      "name": "芥菜（茎用,鲜）[青头菜]",
+      "description": "芥菜（茎用,鲜）[青头菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045207.jpg",
+      "sourceCodes": [
+        "045207"
+      ]
+    },
+    {
+      "key": "plants-045211",
+      "name": "结球甘蓝（紫）[圆白菜]",
+      "description": "结球甘蓝（紫）[圆白菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045211.jpg",
+      "sourceCodes": [
+        "045211"
+      ]
+    },
+    {
+      "key": "plants-045212",
+      "name": "抱子甘蓝[小圆白菜]",
+      "description": "抱子甘蓝[小圆白菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045212.jpg",
+      "sourceCodes": [
+        "045212"
+      ]
+    },
+    {
+      "key": "plants-045213",
+      "name": "羽衣甘蓝",
+      "description": "羽衣甘蓝，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045213.jpg",
+      "sourceCodes": [
+        "045213"
+      ]
+    },
+    {
+      "key": "plants-045215",
+      "name": "芥蓝[甘蓝菜，盖蓝菜]",
+      "description": "芥蓝[甘蓝菜，盖蓝菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045215.jpg",
+      "sourceCodes": [
+        "045215"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：韭黄（韭芽，黄色）。\n第1行第2格：韭薹。\n第1行第3格：韭菜。\n第1行第4格：薤白小蒜头。\n第1行第5格：大白菜。\n第1行第6格：白菜（脱水）。\n第2行第1格：绿菜心。\n第2行第2格：红菜薹[紫菜薹]。\n第2行第3格：小青菜。\n第2行第4格：乌塌菜。\n第2行第5格：油菜（黑）。\n第2行第6格：油菜（脱水）。\n第3行第1格：酸白菜[酸菜]。\n第3行第2格：鸡毛菜。\n第3行第3格：娃娃菜。\n第3行第4格：绿卷心菜。\n第3行第5格：菜花（脱水）[脱水花椰菜]。\n第3行第6格：雪里蕻叶。\n第4行第1格：大叶盖菜。\n第4行第2格：芥菜（茎用,鲜）[青头菜]。\n第4行第3格：结球甘蓝（紫）[圆白菜]。\n第4行第4格：抱子甘蓝[小圆白菜]。\n第4行第5格：羽衣甘蓝。\n第4行第6格：芥蓝[甘蓝菜，盖蓝菜]。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-10.png",
+  "reviewed": true
+}

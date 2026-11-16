@@ -1,0 +1,3415 @@
+{
+  "group": "prepared",
+  "foods": {
+    "131001": "prepared-infant-milk-powder",
+    "131002": "prepared-infant-milk-powder",
+    "133001": "prepared-soy-milk-powder",
+    "133002": "prepared-infant-rice-powder",
+    "133003": "prepared-infant-rice-powder",
+    "133007": "prepared-infant-rice-powder",
+    "133004": "prepared-lotus-cereal-powder",
+    "133005": "prepared-infant-milk-cake",
+    "133006": "prepared-infant-milk-cake",
+    "133008": "prepared-infant-milk-cake",
+    "141001": "prepared-aiwowo",
+    "141002": "prepared-boiled-sheep-head",
+    "141003": "prepared-sweet-flour-tea",
+    "141004": "prepared-pork-liver-stew",
+    "141005": "prepared-spring-roll",
+    "141006": "prepared-savory-tofu-pudding",
+    "141007": "prepared-bean-sheet",
+    "141008": "prepared-fried-starch-sausage",
+    "141009": "prepared-jianbing",
+    "141010": "prepared-fried-dough-ring",
+    "141011": "prepared-beijing-eight-pastries",
+    "141012": "prepared-chestnut-yokan",
+    "141013": "prepared-plain-liangfen",
+    "141014": "prepared-seasoned-liangfen",
+    "141015": "prepared-cold-noodles",
+    "141016": "prepared-prawn-crackers",
+    "141017": "prepared-bean-flour-rice-roll",
+    "141018": "prepared-crispy-pastry-roll",
+    "141019": "prepared-honey-ear-pastry",
+    "141020": "prepared-honey-sandao",
+    "141026": "prepared-honey-sandao",
+    "141021": "prepared-fried-rice-doughnut",
+    "141022": "prepared-rice-cake",
+    "141023": "prepared-niangpi",
+    "141024": "prepared-roasted-barley-flour",
+    "141025": "prepared-hot-dry-noodles",
+    "141027": "prepared-three-fresh-doupi",
+    "141028": "prepared-broth-soaked-bun",
+    "141029": "prepared-sweet-fermented-barley",
+    "141030": "prepared-sweet-fermented-barley",
+    "141031": "prepared-pea-jelly-cake",
+    "141032": "prepared-sesame-oil-flour",
+    "141033": "prepared-savory-oil-tea",
+    "141034": "prepared-fried-broad-beans",
+    "141035": "prepared-fried-tofu-flower",
+    "141036": "prepared-fried-sticky-rice-cake",
+    "141037": "prepared-barley-tsampa",
+    "142101": "prepared-sponge-cake",
+    "142102": "prepared-sponge-cake",
+    "142104": "prepared-sponge-cake",
+    "142105": "prepared-sponge-cake",
+    "142103": "prepared-angel-food-cake",
+    "142106": "prepared-cream-layer-cake",
+    "142107": "prepared-western-layer-cake",
+    "142202": "prepared-red-bean-mooncake",
+    "142203": "prepared-cream-fruit-mooncake",
+    "142204": "prepared-cream-pine-nut-mooncake",
+    "142206": "prepared-five-nut-mooncake",
+    "142207": "prepared-fruit-nut-mooncake",
+    "142208": "prepared-jujube-mooncake",
+    "142301": "prepared-lard-flaky-biscuit",
+    "142302": "prepared-salted-yolk-pastry",
+    "142303": "prepared-sesame-egg-crisp",
+    "142304": "prepared-deqing-pastry",
+    "142305": "prepared-goose-fat-roll",
+    "142306": "prepared-phoenix-tail-pastry",
+    "142307": "prepared-fulai-shortbread",
+    "142308": "prepared-walnut-crisp",
+    "142309": "prepared-black-sesame-crisp",
+    "142310": "prepared-black-sesame-pastry",
+    "142311": "prepared-sugar-glazed-cake",
+    "142312": "prepared-drumstick-pastry",
+    "142313": "prepared-sandwich-shortbread",
+    "142314": "prepared-glutinous-rice-sticks",
+    "142315": "prepared-coin-pastry",
+    "142316": "prepared-beijing-yellow-pastry",
+    "142317": "prepared-sesame-laughing-balls",
+    "142318": "prepared-liaohua-sesame-puff",
+    "142319": "prepared-mung-bean-cake",
+    "142320": "prepared-sesame-rice-cake",
+    "142321": "prepared-fried-dough-twist",
+    "142322": "prepared-sesame-soft-cake",
+    "142323": "prepared-puffed-rice-candy",
+    "142324": "prepared-puff-pastry",
+    "142326": "prepared-puff-pastry",
+    "142325": "prepared-crystal-pastry",
+    "142327": "prepared-walnut-cookie",
+    "142329": "prepared-walnut-cookie",
+    "142328": "prepared-hard-crust-pastry",
+    "142330": "prepared-scholar-pastry",
+    "142331": "prepared-fuling-wafer",
+    "152101": "prepared-egg-flakes",
+    "152102": "prepared-wheat-flakes",
+    "152103": "prepared-oat-flakes",
+    "152104": "prepared-corn-flakes",
+    "152201": "prepared-instant-noodles",
+    "152303": "prepared-croissant",
+    "152304": "prepared-dinner-roll",
+    "152305": "prepared-fruit-bread",
+    "152308": "prepared-wheat-germ-bread",
+    "152312": "prepared-coconut-ring-bread",
+    "152401": "prepared-plain-biscuits",
+    "152402": "prepared-plain-biscuits",
+    "152403": "prepared-plain-biscuits",
+    "152404": "prepared-plain-biscuits",
+    "152405": "prepared-plain-biscuits",
+    "152406": "prepared-plain-biscuits",
+    "152407": "prepared-plain-biscuits",
+    "152408": "prepared-plain-biscuits",
+    "152411": "prepared-plain-biscuits",
+    "152409": "prepared-compressed-biscuit",
+    "152410": "prepared-butter-biscuit",
+    "152412": "prepared-cookie",
+    "152413": "prepared-soda-cracker",
+    "152414": "prepared-wafer-biscuit",
+    "153001": "prepared-pineapple-bean-cracker",
+    "153002": "prepared-hollow-fried-snack",
+    "153003": "prepared-potato-chips",
+    "153004": "prepared-orchid-broad-bean",
+    "161001": "prepared-cola",
+    "161002": "prepared-cola",
+    "161003": "prepared-orange-soda",
+    "161004": "prepared-orange-soda",
+    "161005": "prepared-lemon-soda",
+    "161006": "prepared-lemon-soda",
+    "161007": "prepared-clear-soda",
+    "161008": "prepared-sports-drink",
+    "162001": "prepared-orange-juice",
+    "162003": "prepared-orange-juice",
+    "162004": "prepared-orange-juice",
+    "162002": "prepared-orange-concentrate",
+    "162005": "prepared-rose-juice",
+    "162006": "prepared-sugarcane-juice",
+    "162007": "prepared-hawthorn-juice",
+    "162008": "prepared-lemon-juice",
+    "162009": "prepared-seabuckthorn-juice",
+    "162011": "prepared-seabuckthorn-juice",
+    "162010": "prepared-plum-juice",
+    "163001": "prepared-carrot-drink",
+    "164001": "prepared-fruit-milk-drink",
+    "164002": "prepared-lactic-drink",
+    "165001": "prepared-chocolate-soymilk",
+    "165002": "prepared-almond-drink",
+    "166101": "prepared-brick-tea",
+    "166102": "prepared-brick-tea",
+    "166103": "prepared-black-tea-leaves",
+    "166104": "prepared-jasmine-tea-leaves",
+    "166105": "prepared-dragonwell-tea",
+    "166106": "prepared-green-tea-leaves",
+    "166107": "prepared-pomegranate-flower-tea",
+    "166108": "prepared-persimmon-leaf-tea",
+    "166109": "prepared-tieguanyin-tea",
+    "166110": "prepared-gunpowder-tea",
+    "166201": "prepared-brewed-tea",
+    "167001": "prepared-malted-drink-powder",
+    "167005": "prepared-malted-drink-powder",
+    "167002": "prepared-icecream-powder",
+    "167003": "prepared-citrus-drink-powder",
+    "167008": "prepared-citrus-drink-powder",
+    "167010": "prepared-citrus-drink-powder",
+    "167004": "prepared-cocoa-powder",
+    "167006": "prepared-hawthorn-crystals",
+    "167007": "prepared-plum-crystals",
+    "167009": "prepared-kiwi-crystals",
+    "168001": "prepared-popsicle",
+    "168002": "prepared-icecream-brick",
+    "168003": "prepared-icecream-scoop",
+    "168004": "prepared-vanilla-icecream-bar",
+    "168005": "prepared-icecream-sandwich",
+    "168006": "prepared-twin-ice-pop",
+    "168007": "prepared-chocolate-cap-icecream",
+    "168008": "prepared-purple-icecream-bar",
+    "169001": "prepared-rhodiola-drink",
+    "171101": "prepared-beer",
+    "171102": "prepared-beer",
+    "171103": "prepared-beer",
+    "171104": "prepared-beer",
+    "171105": "prepared-beer",
+    "171106": "prepared-beer",
+    "171107": "prepared-beer",
+    "171108": "prepared-beer",
+    "171109": "prepared-beer",
+    "171110": "prepared-beer",
+    "171111": "prepared-beer",
+    "171112": "prepared-beer",
+    "171113": "prepared-beer",
+    "171114": "prepared-beer",
+    "171201": "prepared-red-wine",
+    "171203": "prepared-red-wine",
+    "171204": "prepared-red-wine",
+    "171202": "prepared-white-wine",
+    "171301": "prepared-yellow-rice-wine",
+    "171302": "prepared-yellow-rice-wine",
+    "171303": "prepared-yellow-rice-wine",
+    "171306": "prepared-yellow-rice-wine",
+    "171307": "prepared-yellow-rice-wine",
+    "171308": "prepared-yellow-rice-wine",
+    "173103": "prepared-yellow-rice-wine",
+    "171304": "prepared-sweet-rice-wine",
+    "171305": "prepared-sweet-rice-wine",
+    "172102": "prepared-sweet-rice-wine",
+    "172101": "prepared-green-herbal-wine",
+    "172103": "prepared-clear-baijiu",
+    "172104": "prepared-clear-baijiu",
+    "172105": "prepared-clear-baijiu",
+    "172106": "prepared-clear-baijiu",
+    "172107": "prepared-clear-baijiu",
+    "172108": "prepared-clear-baijiu",
+    "172109": "prepared-clear-baijiu",
+    "172110": "prepared-clear-baijiu",
+    "172111": "prepared-clear-baijiu",
+    "172112": "prepared-clear-baijiu",
+    "172113": "prepared-clear-baijiu",
+    "172114": "prepared-clear-baijiu",
+    "172115": "prepared-clear-baijiu",
+    "172116": "prepared-clear-baijiu",
+    "172117": "prepared-clear-baijiu",
+    "172118": "prepared-clear-baijiu",
+    "172119": "prepared-clear-baijiu",
+    "172120": "prepared-clear-baijiu",
+    "172121": "prepared-clear-baijiu",
+    "172122": "prepared-clear-baijiu",
+    "172123": "prepared-clear-baijiu",
+    "172124": "prepared-clear-baijiu",
+    "172125": "prepared-clear-baijiu",
+    "172126": "prepared-clear-baijiu",
+    "173101": "prepared-honey-wine",
+    "173102": "prepared-seabuckthorn-wine",
+    "173104": "prepared-seabuckthorn-wine",
+    "181001": "prepared-white-sugar",
+    "181002": "prepared-white-sugar",
+    "181003": "prepared-rock-sugar",
+    "181004": "prepared-brown-sugar",
+    "181005": "prepared-maltose-syrup",
+    "181006": "prepared-honey",
+    "182001": "prepared-peanut-nougat",
+    "182002": "prepared-chewing-gum",
+    "182003": "prepared-water-chestnut-gummy",
+    "182004": "prepared-cotton-candy",
+    "182005": "prepared-milk-candy",
+    "182006": "prepared-bubble-gum",
+    "182007": "prepared-chocolate-bar",
+    "182008": "prepared-liqueur-chocolate",
+    "182009": "prepared-chocolate-wafer",
+    "182010": "prepared-hawthorn-balls",
+    "182011": "prepared-assorted-candy",
+    "182012": "prepared-crystal-candy",
+    "182013": "prepared-peanut-flaky-candy",
+    "182014": "prepared-three-color-sour-candy",
+    "182015": "prepared-peach-candy",
+    "182016": "prepared-sesame-slab-candy",
+    "183001": "prepared-crabapple-preserve",
+    "183002": "prepared-apricot-preserve",
+    "183008": "prepared-apricot-preserve",
+    "183003": "prepared-pumpkin-preserve",
+    "183004": "prepared-apple-preserve",
+    "183005": "prepared-preserved-green-plum",
+    "183006": "prepared-peach-preserve",
+    "183007": "prepared-watermelon-rind-preserve",
+    "183009": "prepared-hawthorn-jelly",
+    "183010": "prepared-hawthorn-strips",
+    "183011": "prepared-hawthorn-leather",
+    "191001": "prepared-raw-suet",
+    "191004": "prepared-raw-suet",
+    "191006": "prepared-raw-suet",
+    "191002": "prepared-rendered-lard",
+    "191005": "prepared-rendered-lard",
+    "191007": "prepared-rendered-lard",
+    "191003": "prepared-rendered-duck-fat",
+    "192001": "prepared-vegetable-oil",
+    "192002": "prepared-vegetable-oil",
+    "192003": "prepared-vegetable-oil",
+    "192004": "prepared-vegetable-oil",
+    "192005": "prepared-vegetable-oil",
+    "192006": "prepared-vegetable-oil",
+    "192007": "prepared-vegetable-oil",
+    "192008": "prepared-vegetable-oil",
+    "192009": "prepared-vegetable-oil",
+    "192012": "prepared-vegetable-oil",
+    "192013": "prepared-vegetable-oil",
+    "192014": "prepared-vegetable-oil",
+    "192016": "prepared-vegetable-oil",
+    "192010": "prepared-chili-oil",
+    "192011": "prepared-hemp-seeds",
+    "192015": "prepared-coconut-oil",
+    "192018": "prepared-palm-oil",
+    "192017": "prepared-sesame-oil",
+    "192019": "prepared-olive-oil",
+    "192201": "prepared-sorghum-noodles",
+    "201001": "prepared-soy-sauce",
+    "201002": "prepared-soy-sauce",
+    "201003": "prepared-soy-sauce",
+    "201004": "prepared-soy-sauce",
+    "201005": "prepared-soy-sauce",
+    "201006": "prepared-soy-sauce",
+    "201007": "prepared-soy-sauce",
+    "201008": "prepared-soy-sauce",
+    "201009": "prepared-soy-sauce",
+    "201010": "prepared-soy-sauce",
+    "202002": "prepared-white-vinegar",
+    "202001": "prepared-black-vinegar",
+    "202003": "prepared-black-vinegar",
+    "202004": "prepared-black-vinegar",
+    "202005": "prepared-black-vinegar",
+    "202006": "prepared-black-vinegar",
+    "202007": "prepared-black-vinegar",
+    "202008": "prepared-black-vinegar",
+    "203101": "prepared-broadbean-paste",
+    "203102": "prepared-chili-broadbean-paste",
+    "203103": "prepared-chili-broadbean-paste",
+    "203115": "prepared-chili-broadbean-paste",
+    "203104": "prepared-peanut-butter",
+    "203105": "prepared-soybean-paste",
+    "203106": "prepared-soy-glaze",
+    "203107": "prepared-chili-paste",
+    "203108": "prepared-mala-paste",
+    "203109": "prepared-beef-chili-paste",
+    "203110": "prepared-garlic-chili-paste",
+    "203111": "prepared-sweet-wheat-paste",
+    "203112": "prepared-fermented-black-beans",
+    "203113": "prepared-sesame-chili-paste",
+    "203114": "prepared-sesame-paste",
+    "203201": "prepared-strawberry-jam",
+    "203202": "prepared-ketchup",
+    "203203": "prepared-lemon-jam",
+    "203204": "prepared-apple-jam",
+    "203205": "prepared-peach-jam",
+    "203206": "prepared-apricot-jam",
+    "204001": "prepared-white-fermented-tofu",
+    "204002": "prepared-stinky-fermented-tofu",
+    "204003": "prepared-red-fermented-tofu",
+    "204005": "prepared-red-fermented-tofu",
+    "204004": "prepared-chili-fermented-tofu",
+    "205001": "prepared-mixed-pickled-vegetables",
+    "205005": "prepared-mixed-pickled-vegetables",
+    "205020": "prepared-mixed-pickled-vegetables",
+    "205002": "prepared-winter-preserved-cabbage",
+    "205003": "prepared-yacai-pickles",
+    "205004": "prepared-pickled-turnip",
+    "205008": "prepared-pickled-turnip",
+    "205026": "prepared-pickled-turnip",
+    "205006": "prepared-pickled-ginger",
+    "205007": "prepared-pickled-melon",
+    "205009": "prepared-pickled-crosne",
+    "205010": "prepared-pickled-cucumber",
+    "205019": "prepared-pickled-cucumber",
+    "205011": "prepared-pickled-radish",
+    "205012": "prepared-pickled-mushroom",
+    "205013": "prepared-pickled-kohlrabi",
+    "205014": "prepared-pickled-lettuce-stem",
+    "205015": "prepared-dried-mustard",
+    "205016": "prepared-coin-radish-pickle",
+    "205017": "prepared-chili-radish-strips",
+    "205018": "prepared-dried-radish",
+    "205021": "prepared-sour-mustard-greens",
+    "205022": "prepared-soy-pickled-garlic",
+    "205023": "prepared-sweet-pickled-garlic",
+    "205024": "prepared-sweet-chili-cucumber",
+    "205025": "prepared-pickled-rakkyo",
+    "205027": "prepared-salted-sand-onion",
+    "205028": "prepared-pickled-jerusalem-artichoke",
+    "205029": "prepared-zha-cai",
+    "205030": "prepared-pickled-bracken",
+    "205031": "prepared-salted-mustard-root",
+    "205032": "prepared-salted-mustard-root",
+    "205033": "prepared-chive-flower-paste",
+    "205034": "prepared-pickled-asparagus-lettuce",
+    "205035": "prepared-pickled-xuelihong",
+    "206001": "prepared-star-anise",
+    "206002": "prepared-pepper-powder",
+    "206003": "prepared-sichuan-pepper",
+    "206004": "prepared-huangmao-seeds",
+    "206005": "prepared-mustard-paste",
+    "206006": "prepared-fenugreek-leaves",
+    "206007": "prepared-chili-powder",
+    "206008": "prepared-steamed-meat-rice-powder",
+    "206009": "prepared-five-spice-powder",
+    "206010": "prepared-fennel-seeds",
+    "207101": "prepared-coarse-salt",
+    "207103": "prepared-coarse-salt",
+    "207102": "prepared-fine-salt",
+    "207201": "prepared-msg-crystals",
+    "207301": "prepared-fresh-yeast",
+    "207302": "prepared-dry-yeast",
+    "211001": "prepared-angelica-root",
+    "211002": "prepared-dried-mint",
+    "211003": "prepared-fresh-mint",
+    "211004": "prepared-schisandra-leaf",
+    "211005": "prepared-plantain-leaf",
+    "211006": "prepared-plantain-seeds",
+    "211007": "prepared-dried-tangerine-peel",
+    "211008": "prepared-cloves",
+    "211009": "prepared-fresh-saposhnikovia-root",
+    "211010": "prepared-fresh-saposhnikovia-leaf",
+    "211011": "prepared-licorice-root",
+    "211012": "prepared-dried-galangal",
+    "211013": "prepared-safflower",
+    "211014": "prepared-japanese-knotweed",
+    "211015": "prepared-chrysanthemum",
+    "211016": "prepared-fresh-cassia",
+    "211017": "prepared-radish-seeds",
+    "211018": "prepared-monk-fruit",
+    "211019": "prepared-torreya-nuts",
+    "211020": "prepared-nutmeg",
+    "211021": "prepared-cinnamon",
+    "211022": "prepared-amomum",
+    "211023": "prepared-peach-kernels",
+    "211024": "prepared-smoked-plum",
+    "211025": "prepared-cherry-kernels",
+    "211026": "prepared-jujube-seeds",
+    "211027": "prepared-dried-perilla",
+    "211028": "prepared-fresh-perilla",
+    "211029": "prepared-poria",
+    "211030": "prepared-dried-agastache",
+    "211031": "prepared-fresh-agastache",
+    "211032": "prepared-fresh-agastache",
+    "211033": "prepared-goji-berries",
+    "219001": "prepared-softshell-turtle",
+    "219002": "prepared-frog",
+    "219003": "prepared-frog-legs",
+    "219004": "prepared-horseshoe-crab",
+    "219005": "prepared-edible-snake",
+    "219006": "prepared-cobra",
+    "219007": "prepared-asian-rat-snake",
+    "219008": "prepared-beauty-rat-snake",
+    "219009": "prepared-three-striped-snake",
+    "219010": "prepared-water-snake",
+    "219011": "prepared-silkworm-pupae",
+    "219012": "prepared-cordyceps",
+    "219013": "prepared-scorpion",
+    "219014": "prepared-oyster-sauce",
+    "219015": "prepared-chu-hou-paste",
+    "219016": "prepared-pacific-saury",
+    "219017": "prepared-fish-balls",
+    "142201": "prepared-whole-mooncake",
+    "142205": "prepared-whole-mooncake",
+    "152301": "bread",
+    "152302": "bread",
+    "152306": "bread",
+    "152307": "bread",
+    "152309": "bread",
+    "152310": "bread",
+    "152311": "bread",
+    "152313": "bread"
+  },
+  "assets": [
+    {
+      "key": "prepared-infant-milk-powder",
+      "name": "婴儿奶粉",
+      "sourceCodes": [
+        "131001",
+        "131002"
+      ],
+      "description": "小碗中的细腻象牙色婴儿奶粉，配量勺。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-infant-milk-powder.jpg"
+    },
+    {
+      "key": "prepared-soy-milk-powder",
+      "name": "豆奶粉",
+      "sourceCodes": [
+        "133001"
+      ],
+      "description": "小碗中堆起的浅米黄色豆奶粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-soy-milk-powder.jpg"
+    },
+    {
+      "key": "prepared-infant-rice-powder",
+      "name": "婴儿谷物营养粉",
+      "sourceCodes": [
+        "133002",
+        "133003",
+        "133007"
+      ],
+      "description": "小碗中的乳白色婴儿谷物营养粉，配小勺。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-infant-rice-powder.jpg"
+    },
+    {
+      "key": "prepared-lotus-cereal-powder",
+      "name": "莲子健儿粉",
+      "sourceCodes": [
+        "133004"
+      ],
+      "description": "浅黄色莲子谷物粉，碗旁放有去皮莲子。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-lotus-cereal-powder.jpg"
+    },
+    {
+      "key": "prepared-infant-milk-cake",
+      "name": "婴儿乳米糕",
+      "sourceCodes": [
+        "133005",
+        "133006",
+        "133008"
+      ],
+      "description": "乳白色小块乳米糕，切面细密多孔。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-infant-milk-cake.jpg"
+    },
+    {
+      "key": "prepared-aiwowo",
+      "name": "艾窝窝",
+      "sourceCodes": [
+        "141001"
+      ],
+      "description": "裹白粉的糯米团，切面露出芝麻坚果馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-aiwowo.jpg"
+    },
+    {
+      "key": "prepared-boiled-sheep-head",
+      "name": "白水羊头肉",
+      "sourceCodes": [
+        "141002"
+      ],
+      "description": "白盘上的熟羊头肉与舌肉薄片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-boiled-sheep-head.jpg"
+    },
+    {
+      "key": "prepared-sweet-flour-tea",
+      "name": "茶汤",
+      "sourceCodes": [
+        "141003"
+      ],
+      "description": "小碗中的棕黄色稠糊状茶汤，表面撒芝麻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sweet-flour-tea.jpg"
+    },
+    {
+      "key": "prepared-pork-liver-stew",
+      "name": "炒肝",
+      "sourceCodes": [
+        "141004"
+      ],
+      "description": "褐色浓卤中的熟猪肝、肠片与蒜末。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pork-liver-stew.jpg"
+    },
+    {
+      "key": "prepared-spring-roll",
+      "name": "春卷",
+      "sourceCodes": [
+        "141005"
+      ],
+      "description": "金黄酥脆春卷，切面露出蔬菜馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-spring-roll.jpg"
+    },
+    {
+      "key": "prepared-savory-tofu-pudding",
+      "name": "带卤豆腐脑",
+      "sourceCodes": [
+        "141006"
+      ],
+      "description": "嫩白豆腐脑，上覆香菇蛋花浓卤。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-savory-tofu-pudding.jpg"
+    },
+    {
+      "key": "prepared-bean-sheet",
+      "name": "粉皮",
+      "sourceCodes": [
+        "141007"
+      ],
+      "description": "浅白半透明的宽片淀粉粉皮，折叠堆放。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-bean-sheet.jpg"
+    },
+    {
+      "key": "prepared-fried-starch-sausage",
+      "name": "北京灌肠",
+      "sourceCodes": [
+        "141008"
+      ],
+      "description": "盘中金黄焦边的三角形北京灌肠煎片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-starch-sausage.jpg"
+    },
+    {
+      "key": "prepared-jianbing",
+      "name": "煎饼",
+      "sourceCodes": [
+        "141009"
+      ],
+      "description": "折叠成半圆的金黄薄煎饼，点缀少量葱末。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-jianbing.jpg"
+    },
+    {
+      "key": "prepared-fried-dough-ring",
+      "name": "焦圈",
+      "sourceCodes": [
+        "141010"
+      ],
+      "description": "深金黄色细环状酥脆焦圈。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-dough-ring.jpg"
+    },
+    {
+      "key": "prepared-beijing-eight-pastries",
+      "name": "京八件糕点",
+      "sourceCodes": [
+        "141011"
+      ],
+      "description": "圆形、方形与花形京式糕点，切面露甜馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-beijing-eight-pastries.jpg"
+    },
+    {
+      "key": "prepared-chestnut-yokan",
+      "name": "栗羊羹",
+      "sourceCodes": [
+        "141012"
+      ],
+      "description": "褐红色块状栗羊羹，切面可见黄色栗粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chestnut-yokan.jpg"
+    },
+    {
+      "key": "prepared-plain-liangfen",
+      "name": "凉粉",
+      "sourceCodes": [
+        "141013"
+      ],
+      "description": "碗中未加调料的半透明白色凉粉条。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-plain-liangfen.jpg"
+    },
+    {
+      "key": "prepared-seasoned-liangfen",
+      "name": "调味凉粉",
+      "sourceCodes": [
+        "141014"
+      ],
+      "description": "白色凉粉条上淋红油、酱汁并撒葱末。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-seasoned-liangfen.jpg"
+    },
+    {
+      "key": "prepared-cold-noodles",
+      "name": "凉面",
+      "sourceCodes": [
+        "141015"
+      ],
+      "description": "碗装凉面配黄瓜丝与浅褐芝麻酱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cold-noodles.jpg"
+    },
+    {
+      "key": "prepared-prawn-crackers",
+      "name": "龙虾片",
+      "sourceCodes": [
+        "141016"
+      ],
+      "description": "乳白与浅粉色蓬松卷曲的龙虾脆片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-prawn-crackers.jpg"
+    },
+    {
+      "key": "prepared-bean-flour-rice-roll",
+      "name": "驴打滚",
+      "sourceCodes": [
+        "141017"
+      ],
+      "description": "裹黄豆粉的糯米卷，断面呈红豆馅螺旋。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-bean-flour-rice-roll.jpg"
+    },
+    {
+      "key": "prepared-crispy-pastry-roll",
+      "name": "香酥卷",
+      "sourceCodes": [
+        "141018"
+      ],
+      "description": "层层酥皮卷成的金黄香酥卷。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-crispy-pastry-roll.jpg"
+    },
+    {
+      "key": "prepared-honey-ear-pastry",
+      "name": "蜜麻花糖耳朵",
+      "sourceCodes": [
+        "141019"
+      ],
+      "description": "深琥珀色糖耳朵，表面包裹晶亮糖浆。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-honey-ear-pastry.jpg"
+    },
+    {
+      "key": "prepared-honey-sandao",
+      "name": "蜜三刀",
+      "sourceCodes": [
+        "141020",
+        "141026"
+      ],
+      "description": "撒芝麻的蜜三刀方块，表面有浅切口。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-honey-sandao.jpg"
+    },
+    {
+      "key": "prepared-fried-rice-doughnut",
+      "name": "面窝",
+      "sourceCodes": [
+        "141021"
+      ],
+      "description": "扁圆金黄面窝，中央有小孔。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-rice-doughnut.jpg"
+    },
+    {
+      "key": "prepared-rice-cake",
+      "name": "年糕",
+      "sourceCodes": [
+        "141022"
+      ],
+      "description": "白色年糕整块与光滑椭圆切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-rice-cake.jpg"
+    },
+    {
+      "key": "prepared-niangpi",
+      "name": "酿皮",
+      "sourceCodes": [
+        "141023"
+      ],
+      "description": "浅褐色宽酿皮配面筋块、黄瓜丝与辣椒酱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-niangpi.jpg"
+    },
+    {
+      "key": "prepared-roasted-barley-flour",
+      "name": "青稞炒面",
+      "sourceCodes": [
+        "141024"
+      ],
+      "description": "碗中松散的浅褐青稞熟粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-roasted-barley-flour.jpg"
+    },
+    {
+      "key": "prepared-hot-dry-noodles",
+      "name": "热干面",
+      "sourceCodes": [
+        "141025"
+      ],
+      "description": "浓芝麻酱包裹的热干面，配葱花和萝卜丁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hot-dry-noodles.jpg"
+    },
+    {
+      "key": "prepared-three-fresh-doupi",
+      "name": "三鲜豆皮",
+      "sourceCodes": [
+        "141027"
+      ],
+      "description": "金黄薄皮包裹糯米、肉丁和菌菇的方形豆皮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-three-fresh-doupi.jpg"
+    },
+    {
+      "key": "prepared-broth-soaked-bun",
+      "name": "汤泡",
+      "sourceCodes": [
+        "141028"
+      ],
+      "description": "浅色汤汁中浸泡的面饼块，配少量绿叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-broth-soaked-bun.jpg"
+    },
+    {
+      "key": "prepared-sweet-fermented-barley",
+      "name": "甜醅",
+      "sourceCodes": [
+        "141029",
+        "141030"
+      ],
+      "description": "碗中带少量浅色发酵液的熟青稞粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sweet-fermented-barley.jpg"
+    },
+    {
+      "key": "prepared-pea-jelly-cake",
+      "name": "豌豆黄",
+      "sourceCodes": [
+        "141031"
+      ],
+      "description": "淡黄色、细腻光滑的长方形豌豆黄。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pea-jelly-cake.jpg"
+    },
+    {
+      "key": "prepared-sesame-oil-flour",
+      "name": "香油炒面",
+      "sourceCodes": [
+        "141032"
+      ],
+      "description": "小碗中的炒面粉，夹有芝麻和碎坚果。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-oil-flour.jpg"
+    },
+    {
+      "key": "prepared-savory-oil-tea",
+      "name": "油茶",
+      "sourceCodes": [
+        "141033"
+      ],
+      "description": "稠糊状油茶，表面放花生与芝麻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-savory-oil-tea.jpg"
+    },
+    {
+      "key": "prepared-fried-broad-beans",
+      "name": "油炸豆瓣",
+      "sourceCodes": [
+        "141034"
+      ],
+      "description": "小盘中金黄色酥脆蚕豆瓣。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-broad-beans.jpg"
+    },
+    {
+      "key": "prepared-fried-tofu-flower",
+      "name": "油炸豆花",
+      "sourceCodes": [
+        "141035"
+      ],
+      "description": "浅金色蓬松油炸豆花片，边缘卷曲。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-tofu-flower.jpg"
+    },
+    {
+      "key": "prepared-fried-sticky-rice-cake",
+      "name": "炸糕",
+      "sourceCodes": [
+        "141036"
+      ],
+      "description": "金黄圆炸糕，剖面露出红豆馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-sticky-rice-cake.jpg"
+    },
+    {
+      "key": "prepared-barley-tsampa",
+      "name": "糌粑",
+      "sourceCodes": [
+        "141037"
+      ],
+      "description": "粗糙褐色青稞糌粑团，能见谷物颗粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-barley-tsampa.jpg"
+    },
+    {
+      "key": "prepared-sponge-cake",
+      "name": "黄海绵蛋糕",
+      "sourceCodes": [
+        "142101",
+        "142102",
+        "142104",
+        "142105"
+      ],
+      "description": "金黄色原味海绵蛋糕块，切面轻盈多孔。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sponge-cake.jpg"
+    },
+    {
+      "key": "prepared-angel-food-cake",
+      "name": "蛋清蛋糕",
+      "sourceCodes": [
+        "142103"
+      ],
+      "description": "浅白色蛋清蛋糕块，边缘微黄。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-angel-food-cake.jpg"
+    },
+    {
+      "key": "prepared-cream-layer-cake",
+      "name": "奶油蛋糕",
+      "sourceCodes": [
+        "142106"
+      ],
+      "description": "白奶油夹层蛋糕片，表面点缀草莓。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cream-layer-cake.jpg"
+    },
+    {
+      "key": "prepared-western-layer-cake",
+      "name": "西式蛋糕",
+      "sourceCodes": [
+        "142107"
+      ],
+      "description": "可可色西式夹层蛋糕片，带巧克力奶油。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-western-layer-cake.jpg"
+    },
+    {
+      "key": "prepared-red-bean-mooncake",
+      "name": "豆沙月饼",
+      "sourceCodes": [
+        "142202"
+      ],
+      "description": "金黄圆月饼与半切面，内为深色细豆沙馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-red-bean-mooncake.jpg"
+    },
+    {
+      "key": "prepared-cream-fruit-mooncake",
+      "name": "奶油果馅月饼",
+      "sourceCodes": [
+        "142203"
+      ],
+      "description": "金黄月饼切面为浅奶油色果粒馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cream-fruit-mooncake.jpg"
+    },
+    {
+      "key": "prepared-cream-pine-nut-mooncake",
+      "name": "奶油松仁月饼",
+      "sourceCodes": [
+        "142204"
+      ],
+      "description": "金黄月饼切面为奶油色松仁馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cream-pine-nut-mooncake.jpg"
+    },
+    {
+      "key": "prepared-five-nut-mooncake",
+      "name": "五仁月饼",
+      "sourceCodes": [
+        "142206"
+      ],
+      "description": "金黄月饼切面可见坚果仁、芝麻与果粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-five-nut-mooncake.jpg"
+    },
+    {
+      "key": "prepared-fruit-nut-mooncake",
+      "name": "香油果馅月饼",
+      "sourceCodes": [
+        "142207"
+      ],
+      "description": "金黄月饼切面为琥珀色糖渍果料馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fruit-nut-mooncake.jpg"
+    },
+    {
+      "key": "prepared-jujube-mooncake",
+      "name": "枣泥月饼",
+      "sourceCodes": [
+        "142208"
+      ],
+      "description": "金黄月饼切面为深褐色枣泥馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-jujube-mooncake.jpg"
+    },
+    {
+      "key": "prepared-lard-flaky-biscuit",
+      "name": "板油酥饼",
+      "sourceCodes": [
+        "142301"
+      ],
+      "description": "浅金色圆酥饼，切边露多层酥皮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-lard-flaky-biscuit.jpg"
+    },
+    {
+      "key": "prepared-salted-yolk-pastry",
+      "name": "蛋黄酥",
+      "sourceCodes": [
+        "142302"
+      ],
+      "description": "黑芝麻点缀的蛋黄酥，剖面为橙黄蛋黄和豆沙。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-salted-yolk-pastry.jpg"
+    },
+    {
+      "key": "prepared-sesame-egg-crisp",
+      "name": "蛋麻脆",
+      "sourceCodes": [
+        "142303"
+      ],
+      "description": "薄而金黄的蛋麻脆片，表面密布白芝麻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-egg-crisp.jpg"
+    },
+    {
+      "key": "prepared-deqing-pastry",
+      "name": "德庆酥",
+      "sourceCodes": [
+        "142304"
+      ],
+      "description": "长方形金黄德庆酥，层状断面与芝麻表面。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-deqing-pastry.jpg"
+    },
+    {
+      "key": "prepared-goose-fat-roll",
+      "name": "鹅油卷",
+      "sourceCodes": [
+        "142305"
+      ],
+      "description": "螺旋卷起的金黄酥皮鹅油卷。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-goose-fat-roll.jpg"
+    },
+    {
+      "key": "prepared-phoenix-tail-pastry",
+      "name": "凤尾酥",
+      "sourceCodes": [
+        "142306"
+      ],
+      "description": "层层展开、形似扇尾的金黄凤尾酥。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-phoenix-tail-pastry.jpg"
+    },
+    {
+      "key": "prepared-fulai-shortbread",
+      "name": "福来酥",
+      "sourceCodes": [
+        "142307"
+      ],
+      "description": "金黄圆形福来酥，表面细裂且酥松。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fulai-shortbread.jpg"
+    },
+    {
+      "key": "prepared-walnut-crisp",
+      "name": "核桃薄脆",
+      "sourceCodes": [
+        "142308"
+      ],
+      "description": "薄圆核桃脆饼，表面嵌碎核桃仁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-walnut-crisp.jpg"
+    },
+    {
+      "key": "prepared-black-sesame-crisp",
+      "name": "黑麻香酥",
+      "sourceCodes": [
+        "142309"
+      ],
+      "description": "长方形酥脆糕片，表面密布黑芝麻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-black-sesame-crisp.jpg"
+    },
+    {
+      "key": "prepared-black-sesame-pastry",
+      "name": "黑洋酥",
+      "sourceCodes": [
+        "142310"
+      ],
+      "description": "浅色酥皮包裹浓黑芝麻馅的黑洋酥。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-black-sesame-pastry.jpg"
+    },
+    {
+      "key": "prepared-sugar-glazed-cake",
+      "name": "混糖糕点",
+      "sourceCodes": [
+        "142311"
+      ],
+      "description": "方形金黄糕点表面覆盖薄白糖霜。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sugar-glazed-cake.jpg"
+    },
+    {
+      "key": "prepared-drumstick-pastry",
+      "name": "鸡腿酥",
+      "sourceCodes": [
+        "142312"
+      ],
+      "description": "金黄色鸡腿形酥皮糕点，能见层状纹理。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-drumstick-pastry.jpg"
+    },
+    {
+      "key": "prepared-sandwich-shortbread",
+      "name": "夹心酥饼",
+      "sourceCodes": [
+        "142313"
+      ],
+      "description": "圆形夹心酥饼，断面露出褐色甜馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sandwich-shortbread.jpg"
+    },
+    {
+      "key": "prepared-glutinous-rice-sticks",
+      "name": "江米条",
+      "sourceCodes": [
+        "142314"
+      ],
+      "description": "短条金黄江米条，表面裹白糖晶粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-glutinous-rice-sticks.jpg"
+    },
+    {
+      "key": "prepared-coin-pastry",
+      "name": "金钱酥",
+      "sourceCodes": [
+        "142315"
+      ],
+      "description": "小圆金钱酥，表面呈同心螺旋酥层。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-coin-pastry.jpg"
+    },
+    {
+      "key": "prepared-beijing-yellow-pastry",
+      "name": "京式黄酥",
+      "sourceCodes": [
+        "142316"
+      ],
+      "description": "圆形京式黄酥，金黄圆顶带自然裂纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-beijing-yellow-pastry.jpg"
+    },
+    {
+      "key": "prepared-sesame-laughing-balls",
+      "name": "开口笑",
+      "sourceCodes": [
+        "142317"
+      ],
+      "description": "白芝麻覆盖的炸面球，裂口露出松软内芯。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-laughing-balls.jpg"
+    },
+    {
+      "key": "prepared-liaohua-sesame-puff",
+      "name": "廖花糖",
+      "sourceCodes": [
+        "142318"
+      ],
+      "description": "白芝麻密裹的长椭圆廖花糖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-liaohua-sesame-puff.jpg"
+    },
+    {
+      "key": "prepared-mung-bean-cake",
+      "name": "绿豆糕",
+      "sourceCodes": [
+        "142319"
+      ],
+      "description": "淡黄绿色方形绿豆糕，表面有浅花纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-mung-bean-cake.jpg"
+    },
+    {
+      "key": "prepared-sesame-rice-cake",
+      "name": "麻烘糕",
+      "sourceCodes": [
+        "142320"
+      ],
+      "description": "白色方块麻烘糕，细层断面与芝麻点。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-rice-cake.jpg"
+    },
+    {
+      "key": "prepared-fried-dough-twist",
+      "name": "麻花",
+      "sourceCodes": [
+        "142321"
+      ],
+      "description": "金黄色交叉编结的酥脆麻花。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fried-dough-twist.jpg"
+    },
+    {
+      "key": "prepared-sesame-soft-cake",
+      "name": "麻香糕",
+      "sourceCodes": [
+        "142322"
+      ],
+      "description": "浅米色薄方麻香糕，表面有芝麻粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-soft-cake.jpg"
+    },
+    {
+      "key": "prepared-puffed-rice-candy",
+      "name": "米花糖",
+      "sourceCodes": [
+        "142323"
+      ],
+      "description": "糖浆粘结的米花糖方块，可见完整爆米粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-puffed-rice-candy.jpg"
+    },
+    {
+      "key": "prepared-puff-pastry",
+      "name": "起酥糕点",
+      "sourceCodes": [
+        "142324",
+        "142326"
+      ],
+      "description": "长方形金黄起酥糕点，侧面层层分明。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-puff-pastry.jpg"
+    },
+    {
+      "key": "prepared-crystal-pastry",
+      "name": "水晶饼",
+      "sourceCodes": [
+        "142325"
+      ],
+      "description": "浅金圆饼切面露透明果料、糖和坚果馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-crystal-pastry.jpg"
+    },
+    {
+      "key": "prepared-walnut-cookie",
+      "name": "桃酥",
+      "sourceCodes": [
+        "142327",
+        "142329"
+      ],
+      "description": "大圆桃酥，粗裂表面带芝麻粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-walnut-cookie.jpg"
+    },
+    {
+      "key": "prepared-hard-crust-pastry",
+      "name": "硬皮糕点",
+      "sourceCodes": [
+        "142328"
+      ],
+      "description": "金黄硬皮圆糕点，剖面露紧实褐色甜馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hard-crust-pastry.jpg"
+    },
+    {
+      "key": "prepared-scholar-pastry",
+      "name": "状元饼",
+      "sourceCodes": [
+        "142330"
+      ],
+      "description": "金黄芝麻状元饼，切面露芝麻坚果馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-scholar-pastry.jpg"
+    },
+    {
+      "key": "prepared-fuling-wafer",
+      "name": "茯苓夹饼",
+      "sourceCodes": [
+        "142331"
+      ],
+      "description": "薄白圆茯苓夹饼，夹透明糖浆与坚果馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fuling-wafer.jpg"
+    },
+    {
+      "key": "prepared-egg-flakes",
+      "name": "蛋片",
+      "sourceCodes": [
+        "152101"
+      ],
+      "description": "碗中浅黄色干蛋片，轻薄卷曲。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-egg-flakes.jpg"
+    },
+    {
+      "key": "prepared-wheat-flakes",
+      "name": "麦片",
+      "sourceCodes": [
+        "152102"
+      ],
+      "description": "碗中浅褐色压扁小麦片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-wheat-flakes.jpg"
+    },
+    {
+      "key": "prepared-oat-flakes",
+      "name": "燕麦片",
+      "sourceCodes": [
+        "152103"
+      ],
+      "description": "碗中椭圆、扁平的米黄色燕麦片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-oat-flakes.jpg"
+    },
+    {
+      "key": "prepared-corn-flakes",
+      "name": "玉米片",
+      "sourceCodes": [
+        "152104"
+      ],
+      "description": "碗中金黄、薄而卷曲的玉米片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-corn-flakes.jpg"
+    },
+    {
+      "key": "prepared-instant-noodles",
+      "name": "方便面",
+      "sourceCodes": [
+        "152201"
+      ],
+      "description": "长方形干方便面饼，细面条紧密卷曲。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-instant-noodles.jpg"
+    },
+    {
+      "key": "prepared-croissant",
+      "name": "牛角面包",
+      "sourceCodes": [
+        "152303"
+      ],
+      "description": "弯月形金黄牛角包，表皮薄层酥脆。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-croissant.jpg"
+    },
+    {
+      "key": "prepared-dinner-roll",
+      "name": "法式餐包",
+      "sourceCodes": [
+        "152304"
+      ],
+      "description": "小椭圆法式餐包，表面有斜向割纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dinner-roll.jpg"
+    },
+    {
+      "key": "prepared-fruit-bread",
+      "name": "果料面包",
+      "sourceCodes": [
+        "152305"
+      ],
+      "description": "面包切片中可见葡萄干和糖渍果粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fruit-bread.jpg"
+    },
+    {
+      "key": "prepared-wheat-germ-bread",
+      "name": "麦胚面包",
+      "sourceCodes": [
+        "152308"
+      ],
+      "description": "褐色麦胚面包与切片，表面和内芯有谷物点。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-wheat-germ-bread.jpg"
+    },
+    {
+      "key": "prepared-coconut-ring-bread",
+      "name": "椰圈面包",
+      "sourceCodes": [
+        "152312"
+      ],
+      "description": "圆环状软面包，表面覆盖白色椰丝。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-coconut-ring-bread.jpg"
+    },
+    {
+      "key": "prepared-plain-biscuits",
+      "name": "营养酥性饼干",
+      "sourceCodes": [
+        "152401",
+        "152402",
+        "152403",
+        "152404",
+        "152405",
+        "152406",
+        "152407",
+        "152408",
+        "152411"
+      ],
+      "description": "有规则针孔和波浪边缘的金黄原味饼干。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-plain-biscuits.jpg"
+    },
+    {
+      "key": "prepared-compressed-biscuit",
+      "name": "压缩饼干",
+      "sourceCodes": [
+        "152409"
+      ],
+      "description": "浅褐色长方压缩饼干，断面紧实细碎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-compressed-biscuit.jpg"
+    },
+    {
+      "key": "prepared-butter-biscuit",
+      "name": "奶油饼干",
+      "sourceCodes": [
+        "152410"
+      ],
+      "description": "圆形金黄奶油饼干，边缘有放射状纹路。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-butter-biscuit.jpg"
+    },
+    {
+      "key": "prepared-cookie",
+      "name": "曲奇饼",
+      "sourceCodes": [
+        "152412"
+      ],
+      "description": "花嘴挤出的金黄曲奇，表面有旋转沟纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cookie.jpg"
+    },
+    {
+      "key": "prepared-soda-cracker",
+      "name": "苏打饼干",
+      "sourceCodes": [
+        "152413"
+      ],
+      "description": "浅金色方苏打饼干，有针孔和整齐折边。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-soda-cracker.jpg"
+    },
+    {
+      "key": "prepared-wafer-biscuit",
+      "name": "威化饼干",
+      "sourceCodes": [
+        "152414"
+      ],
+      "description": "多层威化饼干，表面细网格与奶油夹层清晰。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-wafer-biscuit.jpg"
+    },
+    {
+      "key": "prepared-pineapple-bean-cracker",
+      "name": "菠萝豆",
+      "sourceCodes": [
+        "153001"
+      ],
+      "description": "小粒金黄圆饼干，顶部有细小开裂花纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pineapple-bean-cracker.jpg"
+    },
+    {
+      "key": "prepared-hollow-fried-snack",
+      "name": "空心果",
+      "sourceCodes": [
+        "153002"
+      ],
+      "description": "金黄空心炸面球，破口显示中空内部。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hollow-fried-snack.jpg"
+    },
+    {
+      "key": "prepared-potato-chips",
+      "name": "薯片",
+      "sourceCodes": [
+        "153003"
+      ],
+      "description": "轻薄卷曲的金黄色油炸土豆片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-potato-chips.jpg"
+    },
+    {
+      "key": "prepared-orchid-broad-bean",
+      "name": "兰花豆",
+      "sourceCodes": [
+        "153004"
+      ],
+      "description": "外皮裂开如花瓣的酥炸蚕豆。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-orchid-broad-bean.jpg"
+    },
+    {
+      "key": "prepared-cola",
+      "name": "可乐",
+      "sourceCodes": [
+        "161001",
+        "161002"
+      ],
+      "description": "玻璃杯中深褐色可乐，带细泡与冰块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cola.jpg"
+    },
+    {
+      "key": "prepared-orange-soda",
+      "name": "橙味汽水",
+      "sourceCodes": [
+        "161003",
+        "161004"
+      ],
+      "description": "橙色汽水带气泡，杯旁放橙子瓣。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-orange-soda.jpg"
+    },
+    {
+      "key": "prepared-lemon-soda",
+      "name": "柠檬汽水",
+      "sourceCodes": [
+        "161005",
+        "161006"
+      ],
+      "description": "浅黄色柠檬汽水带气泡，旁放柠檬切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-lemon-soda.jpg"
+    },
+    {
+      "key": "prepared-clear-soda",
+      "name": "透明汽水",
+      "sourceCodes": [
+        "161007"
+      ],
+      "description": "透明汽水与冰块，杯中可见细小气泡。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-clear-soda.jpg"
+    },
+    {
+      "key": "prepared-sports-drink",
+      "name": "运动饮料",
+      "sourceCodes": [
+        "161008"
+      ],
+      "description": "无标识瓶与杯中的浅琥珀色运动饮料。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sports-drink.jpg"
+    },
+    {
+      "key": "prepared-orange-juice",
+      "name": "橘子汁",
+      "sourceCodes": [
+        "162001",
+        "162003",
+        "162004"
+      ],
+      "description": "玻璃杯中的橙色橘汁，杯旁放半颗橘子。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-orange-juice.jpg"
+    },
+    {
+      "key": "prepared-orange-concentrate",
+      "name": "浓缩橘汁",
+      "sourceCodes": [
+        "162002"
+      ],
+      "description": "小玻璃杯中的浓稠深橙色浓缩橘汁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-orange-concentrate.jpg"
+    },
+    {
+      "key": "prepared-rose-juice",
+      "name": "刺玫汁",
+      "sourceCodes": [
+        "162005"
+      ],
+      "description": "玫红色刺玫汁，杯旁放红色刺玫果。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-rose-juice.jpg"
+    },
+    {
+      "key": "prepared-sugarcane-juice",
+      "name": "甘蔗汁",
+      "sourceCodes": [
+        "162006"
+      ],
+      "description": "浑浊浅黄色甘蔗汁，旁放紫皮甘蔗段。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sugarcane-juice.jpg"
+    },
+    {
+      "key": "prepared-hawthorn-juice",
+      "name": "山楂汁",
+      "sourceCodes": [
+        "162007"
+      ],
+      "description": "红褐色山楂汁，杯旁放红山楂果。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hawthorn-juice.jpg"
+    },
+    {
+      "key": "prepared-lemon-juice",
+      "name": "柠檬汁",
+      "sourceCodes": [
+        "162008"
+      ],
+      "description": "浅黄色浑浊柠檬汁，旁放半颗柠檬。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-lemon-juice.jpg"
+    },
+    {
+      "key": "prepared-seabuckthorn-juice",
+      "name": "沙棘汁",
+      "sourceCodes": [
+        "162009",
+        "162011"
+      ],
+      "description": "浓橙黄色沙棘汁，旁放小枝橙色沙棘果。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-seabuckthorn-juice.jpg"
+    },
+    {
+      "key": "prepared-plum-juice",
+      "name": "乌梅汁",
+      "sourceCodes": [
+        "162010"
+      ],
+      "description": "深褐色乌梅汁，杯旁放深色干乌梅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-plum-juice.jpg"
+    },
+    {
+      "key": "prepared-carrot-drink",
+      "name": "胡萝卜饮料",
+      "sourceCodes": [
+        "163001"
+      ],
+      "description": "不透明橙红色胡萝卜饮料，旁放胡萝卜。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-carrot-drink.jpg"
+    },
+    {
+      "key": "prepared-fruit-milk-drink",
+      "name": "果味奶",
+      "sourceCodes": [
+        "164001"
+      ],
+      "description": "玻璃杯中均匀浅粉色的果味奶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fruit-milk-drink.jpg"
+    },
+    {
+      "key": "prepared-lactic-drink",
+      "name": "乳酸饮料",
+      "sourceCodes": [
+        "164002"
+      ],
+      "description": "无标识小瓶和玻璃杯中的乳白色乳酸饮料。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-lactic-drink.jpg"
+    },
+    {
+      "key": "prepared-chocolate-soymilk",
+      "name": "巧克力豆奶",
+      "sourceCodes": [
+        "165001"
+      ],
+      "description": "淡可可色巧克力豆奶，旁放几颗黄豆。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chocolate-soymilk.jpg"
+    },
+    {
+      "key": "prepared-almond-drink",
+      "name": "杏仁露",
+      "sourceCodes": [
+        "165002"
+      ],
+      "description": "乳白色杏仁露，杯旁放几粒去皮杏仁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-almond-drink.jpg"
+    },
+    {
+      "key": "prepared-brick-tea",
+      "name": "砖茶",
+      "sourceCodes": [
+        "166101",
+        "166102"
+      ],
+      "description": "深褐色压紧茶砖，破角可见干茶叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-brick-tea.jpg"
+    },
+    {
+      "key": "prepared-black-tea-leaves",
+      "name": "红茶",
+      "sourceCodes": [
+        "166103"
+      ],
+      "description": "松散堆起、卷曲细长的深褐红茶干叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-black-tea-leaves.jpg"
+    },
+    {
+      "key": "prepared-jasmine-tea-leaves",
+      "name": "花茶",
+      "sourceCodes": [
+        "166104"
+      ],
+      "description": "绿褐色花茶干叶中夹有白色茉莉干花。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-jasmine-tea-leaves.jpg"
+    },
+    {
+      "key": "prepared-dragonwell-tea",
+      "name": "龙井茶",
+      "sourceCodes": [
+        "166105"
+      ],
+      "description": "扁平、修长、橄榄绿色的龙井茶干叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dragonwell-tea.jpg"
+    },
+    {
+      "key": "prepared-green-tea-leaves",
+      "name": "绿茶",
+      "sourceCodes": [
+        "166106"
+      ],
+      "description": "纤细卷曲的橄榄绿干绿茶叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-green-tea-leaves.jpg"
+    },
+    {
+      "key": "prepared-pomegranate-flower-tea",
+      "name": "石榴花茶",
+      "sourceCodes": [
+        "166107"
+      ],
+      "description": "红橙色干石榴花，厚花萼呈钟形。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pomegranate-flower-tea.jpg"
+    },
+    {
+      "key": "prepared-persimmon-leaf-tea",
+      "name": "柿叶茶",
+      "sourceCodes": [
+        "166108"
+      ],
+      "description": "小盘中褐绿色、宽片状的干柿叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-persimmon-leaf-tea.jpg"
+    },
+    {
+      "key": "prepared-tieguanyin-tea",
+      "name": "铁观音茶",
+      "sourceCodes": [
+        "166109"
+      ],
+      "description": "紧卷成小团的深橄榄绿色铁观音茶叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-tieguanyin-tea.jpg"
+    },
+    {
+      "key": "prepared-gunpowder-tea",
+      "name": "珠茶",
+      "sourceCodes": [
+        "166110"
+      ],
+      "description": "细小圆珠状的深绿色珠茶干叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-gunpowder-tea.jpg"
+    },
+    {
+      "key": "prepared-brewed-tea",
+      "name": "茶水",
+      "sourceCodes": [
+        "166201"
+      ],
+      "description": "透明玻璃小杯中的清亮浅琥珀色茶水。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-brewed-tea.jpg"
+    },
+    {
+      "key": "prepared-malted-drink-powder",
+      "name": "麦乳精饮品粉",
+      "sourceCodes": [
+        "167001",
+        "167005"
+      ],
+      "description": "小碗中浅金黄色麦乳精饮品粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-malted-drink-powder.jpg"
+    },
+    {
+      "key": "prepared-icecream-powder",
+      "name": "冰淇淋粉",
+      "sourceCodes": [
+        "167002"
+      ],
+      "description": "象牙白冰淇淋粉盛于小碗，配木勺。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-icecream-powder.jpg"
+    },
+    {
+      "key": "prepared-citrus-drink-powder",
+      "name": "橘味饮料晶",
+      "sourceCodes": [
+        "167003",
+        "167008",
+        "167010"
+      ],
+      "description": "小碟中的橙色颗粒状橘味饮料晶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-citrus-drink-powder.jpg"
+    },
+    {
+      "key": "prepared-cocoa-powder",
+      "name": "可可粉",
+      "sourceCodes": [
+        "167004"
+      ],
+      "description": "小碗中堆起的深棕色细可可粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cocoa-powder.jpg"
+    },
+    {
+      "key": "prepared-hawthorn-crystals",
+      "name": "山楂晶",
+      "sourceCodes": [
+        "167006"
+      ],
+      "description": "粉褐色颗粒状山楂晶，旁放两颗山楂。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hawthorn-crystals.jpg"
+    },
+    {
+      "key": "prepared-plum-crystals",
+      "name": "酸梅晶",
+      "sourceCodes": [
+        "167007"
+      ],
+      "description": "小碟中的深琥珀褐色酸梅晶颗粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-plum-crystals.jpg"
+    },
+    {
+      "key": "prepared-kiwi-crystals",
+      "name": "猕猴桃晶",
+      "sourceCodes": [
+        "167009"
+      ],
+      "description": "浅绿色猕猴桃晶，碗旁放猕猴桃切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-kiwi-crystals.jpg"
+    },
+    {
+      "key": "prepared-popsicle",
+      "name": "冰棍",
+      "sourceCodes": [
+        "168001"
+      ],
+      "description": "木棒上的半透明浅橙色果味冰棍。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-popsicle.jpg"
+    },
+    {
+      "key": "prepared-icecream-brick",
+      "name": "冰砖",
+      "sourceCodes": [
+        "168002"
+      ],
+      "description": "小盘中的长方形白色冰淇淋砖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-icecream-brick.jpg"
+    },
+    {
+      "key": "prepared-icecream-scoop",
+      "name": "冰淇淋",
+      "sourceCodes": [
+        "168003"
+      ],
+      "description": "小陶碗中的两球乳白色冰淇淋。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-icecream-scoop.jpg"
+    },
+    {
+      "key": "prepared-vanilla-icecream-bar",
+      "name": "大雪糕",
+      "sourceCodes": [
+        "168004"
+      ],
+      "description": "木棒上厚实、圆角的乳白色雪糕。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-vanilla-icecream-bar.jpg"
+    },
+    {
+      "key": "prepared-icecream-sandwich",
+      "name": "三明治冰激淋",
+      "sourceCodes": [
+        "168005"
+      ],
+      "description": "深巧克力饼片夹着乳白冰淇淋的三明治冰品。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-icecream-sandwich.jpg"
+    },
+    {
+      "key": "prepared-twin-ice-pop",
+      "name": "双棒雪糕",
+      "sourceCodes": [
+        "168006"
+      ],
+      "description": "相连双条橙色冰棍，下方为两根木棒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-twin-ice-pop.jpg"
+    },
+    {
+      "key": "prepared-chocolate-cap-icecream",
+      "name": "娃娃头雪糕",
+      "sourceCodes": [
+        "168007"
+      ],
+      "description": "巧克力色圆帽和奶白下部的木棒雪糕，不带面部图案。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chocolate-cap-icecream.jpg"
+    },
+    {
+      "key": "prepared-purple-icecream-bar",
+      "name": "紫雪糕",
+      "sourceCodes": [
+        "168008"
+      ],
+      "description": "木棒上的淡紫色长方形奶油雪糕。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-purple-icecream-bar.jpg"
+    },
+    {
+      "key": "prepared-rhodiola-drink",
+      "name": "红景天饮料",
+      "sourceCodes": [
+        "169001"
+      ],
+      "description": "浅琥珀色草本饮料，杯旁放少量红景天干根。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-rhodiola-drink.jpg"
+    },
+    {
+      "key": "prepared-beer",
+      "name": "啤酒",
+      "sourceCodes": [
+        "171101",
+        "171102",
+        "171103",
+        "171104",
+        "171105",
+        "171106",
+        "171107",
+        "171108",
+        "171109",
+        "171110",
+        "171111",
+        "171112",
+        "171113",
+        "171114"
+      ],
+      "description": "透明啤酒杯中的金黄啤酒，上覆细密白泡沫。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-beer.jpg"
+    },
+    {
+      "key": "prepared-red-wine",
+      "name": "红葡萄酒",
+      "sourceCodes": [
+        "171201",
+        "171203",
+        "171204"
+      ],
+      "description": "高脚杯中的深红宝石色红葡萄酒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-red-wine.jpg"
+    },
+    {
+      "key": "prepared-white-wine",
+      "name": "白葡萄酒",
+      "sourceCodes": [
+        "171202"
+      ],
+      "description": "高脚杯中的清澈浅金色白葡萄酒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-white-wine.jpg"
+    },
+    {
+      "key": "prepared-yellow-rice-wine",
+      "name": "黄酒",
+      "sourceCodes": [
+        "171301",
+        "171302",
+        "171303",
+        "171306",
+        "171307",
+        "171308",
+        "173103"
+      ],
+      "description": "小陶杯中的琥珀色黄酒，旁放无标识陶酒壶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-yellow-rice-wine.jpg"
+    },
+    {
+      "key": "prepared-sweet-rice-wine",
+      "name": "米酒",
+      "sourceCodes": [
+        "171304",
+        "171305",
+        "172102"
+      ],
+      "description": "小玻璃杯中的乳白浑浊米酒，杯底有少量米粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sweet-rice-wine.jpg"
+    },
+    {
+      "key": "prepared-green-herbal-wine",
+      "name": "碧绿酒",
+      "sourceCodes": [
+        "172101"
+      ],
+      "description": "小玻璃杯中的浅翡翠绿色酒液。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-green-herbal-wine.jpg"
+    },
+    {
+      "key": "prepared-clear-baijiu",
+      "name": "白酒",
+      "sourceCodes": [
+        "172103",
+        "172104",
+        "172105",
+        "172106",
+        "172107",
+        "172108",
+        "172109",
+        "172110",
+        "172111",
+        "172112",
+        "172113",
+        "172114",
+        "172115",
+        "172116",
+        "172117",
+        "172118",
+        "172119",
+        "172120",
+        "172121",
+        "172122",
+        "172123",
+        "172124",
+        "172125",
+        "172126"
+      ],
+      "description": "无标识细颈瓶和小酒杯中的透明白酒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-clear-baijiu.jpg"
+    },
+    {
+      "key": "prepared-honey-wine",
+      "name": "蜜酒",
+      "sourceCodes": [
+        "173101"
+      ],
+      "description": "浅金色蜜酒，杯旁放小块蜂巢。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-honey-wine.jpg"
+    },
+    {
+      "key": "prepared-seabuckthorn-wine",
+      "name": "沙棘酒",
+      "sourceCodes": [
+        "173102",
+        "173104"
+      ],
+      "description": "橙金色沙棘酒，杯旁放橙色沙棘果。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-seabuckthorn-wine.jpg"
+    },
+    {
+      "key": "prepared-white-sugar",
+      "name": "白糖",
+      "sourceCodes": [
+        "181001",
+        "181002"
+      ],
+      "description": "小碗中洁白、细密的白糖晶粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-white-sugar.jpg"
+    },
+    {
+      "key": "prepared-rock-sugar",
+      "name": "冰糖",
+      "sourceCodes": [
+        "181003"
+      ],
+      "description": "不规则半透明白色冰糖块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-rock-sugar.jpg"
+    },
+    {
+      "key": "prepared-brown-sugar",
+      "name": "红糖",
+      "sourceCodes": [
+        "181004"
+      ],
+      "description": "小碟中红褐色、易碎的红糖粉块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-brown-sugar.jpg"
+    },
+    {
+      "key": "prepared-maltose-syrup",
+      "name": "麦芽糖",
+      "sourceCodes": [
+        "181005"
+      ],
+      "description": "浓稠金黄麦芽糖，木勺提起拉丝糖浆。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-maltose-syrup.jpg"
+    },
+    {
+      "key": "prepared-honey",
+      "name": "蜂蜜",
+      "sourceCodes": [
+        "181006"
+      ],
+      "description": "无标识玻璃罐中的金黄蜂蜜，配滴蜜木棒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-honey.jpg"
+    },
+    {
+      "key": "prepared-peanut-nougat",
+      "name": "花生牛轧糖",
+      "sourceCodes": [
+        "182001"
+      ],
+      "description": "乳白牛轧糖块，内部嵌有花生仁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peanut-nougat.jpg"
+    },
+    {
+      "key": "prepared-chewing-gum",
+      "name": "胶姆糖",
+      "sourceCodes": [
+        "182002"
+      ],
+      "description": "白色光滑长方形胶姆糖片，不带包装。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chewing-gum.jpg"
+    },
+    {
+      "key": "prepared-water-chestnut-gummy",
+      "name": "马蹄软糖",
+      "sourceCodes": [
+        "182003"
+      ],
+      "description": "浅琥珀透明软糖块，内有白色马蹄粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-water-chestnut-gummy.jpg"
+    },
+    {
+      "key": "prepared-cotton-candy",
+      "name": "软质棉花糖",
+      "sourceCodes": [
+        "182004"
+      ],
+      "description": "乳白与浅粉色短圆柱软质棉花糖，表面细腻、蓬松。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cotton-candy.jpg"
+    },
+    {
+      "key": "prepared-milk-candy",
+      "name": "奶糖",
+      "sourceCodes": [
+        "182005"
+      ],
+      "description": "短圆柱乳白色奶糖，切面紧实略有纹理。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-milk-candy.jpg"
+    },
+    {
+      "key": "prepared-bubble-gum",
+      "name": "泡泡糖",
+      "sourceCodes": [
+        "182006"
+      ],
+      "description": "浅粉色小方块泡泡糖，不带包装。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-bubble-gum.jpg"
+    },
+    {
+      "key": "prepared-chocolate-bar",
+      "name": "巧克力",
+      "sourceCodes": [
+        "182007"
+      ],
+      "description": "有方格断纹的深棕色巧克力块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chocolate-bar.jpg"
+    },
+    {
+      "key": "prepared-liqueur-chocolate",
+      "name": "酒芯巧克力",
+      "sourceCodes": [
+        "182008"
+      ],
+      "description": "圆巧克力剖开，露出琥珀色流心酒液。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-liqueur-chocolate.jpg"
+    },
+    {
+      "key": "prepared-chocolate-wafer",
+      "name": "巧克力威化",
+      "sourceCodes": [
+        "182009"
+      ],
+      "description": "巧克力包裹的长方威化，断面可见奶油夹层。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chocolate-wafer.jpg"
+    },
+    {
+      "key": "prepared-hawthorn-balls",
+      "name": "山楂球",
+      "sourceCodes": [
+        "182010"
+      ],
+      "description": "深红褐色山楂糖球，表面裹细白糖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hawthorn-balls.jpg"
+    },
+    {
+      "key": "prepared-assorted-candy",
+      "name": "什锦硬糖",
+      "sourceCodes": [
+        "182011"
+      ],
+      "description": "红、黄、绿、橙色透明什锦硬糖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-assorted-candy.jpg"
+    },
+    {
+      "key": "prepared-crystal-candy",
+      "name": "水晶糖",
+      "sourceCodes": [
+        "182012"
+      ],
+      "description": "透明、带棱角的水晶硬糖块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-crystal-candy.jpg"
+    },
+    {
+      "key": "prepared-peanut-flaky-candy",
+      "name": "酥糖",
+      "sourceCodes": [
+        "182013"
+      ],
+      "description": "浅米色花生酥糖，切面呈细薄粉酥层。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peanut-flaky-candy.jpg"
+    },
+    {
+      "key": "prepared-three-color-sour-candy",
+      "name": "酸三色糖",
+      "sourceCodes": [
+        "182014"
+      ],
+      "description": "红、黄、绿三色酸糖球，表面裹细糖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-three-color-sour-candy.jpg"
+    },
+    {
+      "key": "prepared-peach-candy",
+      "name": "桃汁糖",
+      "sourceCodes": [
+        "182015"
+      ],
+      "description": "粉桃色透明硬糖，旁放桃子切半。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peach-candy.jpg"
+    },
+    {
+      "key": "prepared-sesame-slab-candy",
+      "name": "芝麻南糖",
+      "sourceCodes": [
+        "182016"
+      ],
+      "description": "深琥珀色芝麻糖板，密集包裹白芝麻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-slab-candy.jpg"
+    },
+    {
+      "key": "prepared-crabapple-preserve",
+      "name": "海棠脯",
+      "sourceCodes": [
+        "183001"
+      ],
+      "description": "带短柄、红褐色且微皱的小海棠果脯。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-crabapple-preserve.jpg"
+    },
+    {
+      "key": "prepared-apricot-preserve",
+      "name": "杏脯",
+      "sourceCodes": [
+        "183002",
+        "183008"
+      ],
+      "description": "金橙色干杏半片，果肉柔软起皱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-apricot-preserve.jpg"
+    },
+    {
+      "key": "prepared-pumpkin-preserve",
+      "name": "南瓜果脯",
+      "sourceCodes": [
+        "183003"
+      ],
+      "description": "裹少量白糖的短粗橙色南瓜果脯条。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pumpkin-preserve.jpg"
+    },
+    {
+      "key": "prepared-apple-preserve",
+      "name": "苹果脯",
+      "sourceCodes": [
+        "183004"
+      ],
+      "description": "浅金色半透明苹果干片，边缘微皱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-apple-preserve.jpg"
+    },
+    {
+      "key": "prepared-preserved-green-plum",
+      "name": "青梅果脯",
+      "sourceCodes": [
+        "183005"
+      ],
+      "description": "整颗橄榄绿色青梅果脯，表面微皱发亮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-preserved-green-plum.jpg"
+    },
+    {
+      "key": "prepared-peach-preserve",
+      "name": "桃脯",
+      "sourceCodes": [
+        "183006"
+      ],
+      "description": "琥珀橙色干桃半片，可见果核凹坑。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peach-preserve.jpg"
+    },
+    {
+      "key": "prepared-watermelon-rind-preserve",
+      "name": "西瓜脯",
+      "sourceCodes": [
+        "183007"
+      ],
+      "description": "浅黄绿色半透明西瓜皮果脯条，外裹细糖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-watermelon-rind-preserve.jpg"
+    },
+    {
+      "key": "prepared-hawthorn-jelly",
+      "name": "金糕",
+      "sourceCodes": [
+        "183009"
+      ],
+      "description": "深红色光滑山楂糕整块与方切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hawthorn-jelly.jpg"
+    },
+    {
+      "key": "prepared-hawthorn-strips",
+      "name": "山楂条",
+      "sourceCodes": [
+        "183010"
+      ],
+      "description": "深红色长方山楂糕条，整齐堆放。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hawthorn-strips.jpg"
+    },
+    {
+      "key": "prepared-hawthorn-leather",
+      "name": "山楂果丹皮",
+      "sourceCodes": [
+        "183011"
+      ],
+      "description": "红褐色薄片山楂果丹皮，一端卷成螺旋。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hawthorn-leather.jpg"
+    },
+    {
+      "key": "prepared-raw-suet",
+      "name": "板油",
+      "sourceCodes": [
+        "191001",
+        "191004",
+        "191006"
+      ],
+      "description": "乳白略泛粉的生板油块，可见薄膜和柔软脂肪组织。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-raw-suet.jpg"
+    },
+    {
+      "key": "prepared-rendered-lard",
+      "name": "凝固动物油",
+      "sourceCodes": [
+        "191002",
+        "191005",
+        "191007"
+      ],
+      "description": "碗中凝固的白色动物油脂，表面留勺痕。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-rendered-lard.jpg"
+    },
+    {
+      "key": "prepared-rendered-duck-fat",
+      "name": "鸭油",
+      "sourceCodes": [
+        "191003"
+      ],
+      "description": "小玻璃罐中的浅金色半透明炼鸭油。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-rendered-duck-fat.jpg"
+    },
+    {
+      "key": "prepared-vegetable-oil",
+      "name": "植物食用油",
+      "sourceCodes": [
+        "192001",
+        "192002",
+        "192003",
+        "192004",
+        "192005",
+        "192006",
+        "192007",
+        "192008",
+        "192009",
+        "192012",
+        "192013",
+        "192014",
+        "192016"
+      ],
+      "description": "无标识透明小油瓶中的金黄色植物食用油。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-vegetable-oil.jpg"
+    },
+    {
+      "key": "prepared-chili-oil",
+      "name": "辣椒油",
+      "sourceCodes": [
+        "192010"
+      ],
+      "description": "小玻璃碗中的红辣椒油，底部沉有辣椒碎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chili-oil.jpg"
+    },
+    {
+      "key": "prepared-hemp-seeds",
+      "name": "麻子籽",
+      "sourceCodes": [
+        "192011"
+      ],
+      "description": "灰褐色小麻籽，表皮有细斑纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-hemp-seeds.jpg"
+    },
+    {
+      "key": "prepared-coconut-oil",
+      "name": "椰子油",
+      "sourceCodes": [
+        "192015"
+      ],
+      "description": "透明小罐中的不透明白色凝固椰子油。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-coconut-oil.jpg"
+    },
+    {
+      "key": "prepared-palm-oil",
+      "name": "棕榈油",
+      "sourceCodes": [
+        "192018"
+      ],
+      "description": "无标识小玻璃瓶中的橙红色棕榈油。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-palm-oil.jpg"
+    },
+    {
+      "key": "prepared-sesame-oil",
+      "name": "芝麻油",
+      "sourceCodes": [
+        "192017"
+      ],
+      "description": "深琥珀色芝麻油小瓶，旁放几粒白芝麻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-oil.jpg"
+    },
+    {
+      "key": "prepared-olive-oil",
+      "name": "橄榄油",
+      "sourceCodes": [
+        "192019"
+      ],
+      "description": "黄绿色橄榄油小瓶，旁放两颗绿橄榄。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-olive-oil.jpg"
+    },
+    {
+      "key": "prepared-sorghum-noodles",
+      "name": "高粱面面条",
+      "sourceCodes": [
+        "192201"
+      ],
+      "description": "小碗中的灰褐色高粱面条，表面较粗糙。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sorghum-noodles.jpg"
+    },
+    {
+      "key": "prepared-soy-sauce",
+      "name": "酱油",
+      "sourceCodes": [
+        "201001",
+        "201002",
+        "201003",
+        "201004",
+        "201005",
+        "201006",
+        "201007",
+        "201008",
+        "201009",
+        "201010"
+      ],
+      "description": "小玻璃壶与白色蘸碟中的深褐酱油。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-soy-sauce.jpg"
+    },
+    {
+      "key": "prepared-white-vinegar",
+      "name": "白醋",
+      "sourceCodes": [
+        "202002"
+      ],
+      "description": "小玻璃壶与白色蘸碟中的透明白醋。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-white-vinegar.jpg"
+    },
+    {
+      "key": "prepared-black-vinegar",
+      "name": "深色食醋",
+      "sourceCodes": [
+        "202001",
+        "202003",
+        "202004",
+        "202005",
+        "202006",
+        "202007",
+        "202008"
+      ],
+      "description": "小玻璃壶与蘸碟中的深琥珀褐色食醋。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-black-vinegar.jpg"
+    },
+    {
+      "key": "prepared-broadbean-paste",
+      "name": "豆瓣酱",
+      "sourceCodes": [
+        "203101"
+      ],
+      "description": "碗中褐色发酵豆瓣酱，保留可见豆瓣颗粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-broadbean-paste.jpg"
+    },
+    {
+      "key": "prepared-chili-broadbean-paste",
+      "name": "豆瓣辣酱",
+      "sourceCodes": [
+        "203102",
+        "203103",
+        "203115"
+      ],
+      "description": "深红豆瓣辣酱带红油，可见粗豆瓣与辣椒碎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chili-broadbean-paste.jpg"
+    },
+    {
+      "key": "prepared-peanut-butter",
+      "name": "花生酱",
+      "sourceCodes": [
+        "203104"
+      ],
+      "description": "小白碗中的浅棕花生酱，细腻浓稠。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peanut-butter.jpg"
+    },
+    {
+      "key": "prepared-soybean-paste",
+      "name": "黄酱",
+      "sourceCodes": [
+        "203105"
+      ],
+      "description": "小白碗中的黄褐色发酵黄豆酱，质地粗厚。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-soybean-paste.jpg"
+    },
+    {
+      "key": "prepared-soy-glaze",
+      "name": "酱油膏",
+      "sourceCodes": [
+        "203106"
+      ],
+      "description": "近黑色浓稠酱油膏，木勺提起黏稠酱汁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-soy-glaze.jpg"
+    },
+    {
+      "key": "prepared-chili-paste",
+      "name": "辣椒酱",
+      "sourceCodes": [
+        "203107"
+      ],
+      "description": "鲜红色辣椒糊，夹浅黄色辣椒籽。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chili-paste.jpg"
+    },
+    {
+      "key": "prepared-mala-paste",
+      "name": "麻辣酱",
+      "sourceCodes": [
+        "203108"
+      ],
+      "description": "深红油润麻辣酱，表面有少量细小花椒壳。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-mala-paste.jpg"
+    },
+    {
+      "key": "prepared-beef-chili-paste",
+      "name": "牛肉辣瓣酱",
+      "sourceCodes": [
+        "203109"
+      ],
+      "description": "深红辣豆瓣酱中可见小块熟牛肉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-beef-chili-paste.jpg"
+    },
+    {
+      "key": "prepared-garlic-chili-paste",
+      "name": "蒜蓉辣酱",
+      "sourceCodes": [
+        "203110"
+      ],
+      "description": "鲜红辣酱中夹有细碎浅色蒜粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-garlic-chili-paste.jpg"
+    },
+    {
+      "key": "prepared-sweet-wheat-paste",
+      "name": "甜面酱",
+      "sourceCodes": [
+        "203111"
+      ],
+      "description": "深褐色光滑浓稠的甜面酱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sweet-wheat-paste.jpg"
+    },
+    {
+      "key": "prepared-fermented-black-beans",
+      "name": "五香豆豉",
+      "sourceCodes": [
+        "203112"
+      ],
+      "description": "小碟中皱缩发亮的黑色发酵豆豉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fermented-black-beans.jpg"
+    },
+    {
+      "key": "prepared-sesame-chili-paste",
+      "name": "香油辣酱",
+      "sourceCodes": [
+        "203113"
+      ],
+      "description": "深红芝麻油辣酱，带少量芝麻碎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-chili-paste.jpg"
+    },
+    {
+      "key": "prepared-sesame-paste",
+      "name": "芝麻酱",
+      "sourceCodes": [
+        "203114"
+      ],
+      "description": "小碗中均匀浓稠的浅褐芝麻酱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sesame-paste.jpg"
+    },
+    {
+      "key": "prepared-strawberry-jam",
+      "name": "草莓酱",
+      "sourceCodes": [
+        "203201"
+      ],
+      "description": "无标识玻璃罐中的红草莓酱，旁放草莓。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-strawberry-jam.jpg"
+    },
+    {
+      "key": "prepared-ketchup",
+      "name": "番茄酱",
+      "sourceCodes": [
+        "203202"
+      ],
+      "description": "小白盅中均匀光亮的红色番茄酱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-ketchup.jpg"
+    },
+    {
+      "key": "prepared-lemon-jam",
+      "name": "柠檬酱",
+      "sourceCodes": [
+        "203203"
+      ],
+      "description": "浅黄色柠檬酱中有果皮细丝，旁放柠檬。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-lemon-jam.jpg"
+    },
+    {
+      "key": "prepared-apple-jam",
+      "name": "苹果酱",
+      "sourceCodes": [
+        "203204"
+      ],
+      "description": "玻璃罐中浅金色苹果酱，旁放苹果瓣。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-apple-jam.jpg"
+    },
+    {
+      "key": "prepared-peach-jam",
+      "name": "桃酱",
+      "sourceCodes": [
+        "203205"
+      ],
+      "description": "玻璃罐中浅桃橙色桃酱，旁放桃子瓣。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peach-jam.jpg"
+    },
+    {
+      "key": "prepared-apricot-jam",
+      "name": "杏酱",
+      "sourceCodes": [
+        "203206"
+      ],
+      "description": "玻璃罐中金橙色杏酱，旁放半颗小杏。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-apricot-jam.jpg"
+    },
+    {
+      "key": "prepared-white-fermented-tofu",
+      "name": "白腐乳",
+      "sourceCodes": [
+        "204001"
+      ],
+      "description": "浅黄卤汁中的乳白腐乳方块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-white-fermented-tofu.jpg"
+    },
+    {
+      "key": "prepared-stinky-fermented-tofu",
+      "name": "臭腐乳",
+      "sourceCodes": [
+        "204002"
+      ],
+      "description": "灰绿色软臭腐乳方块，盛于白色小碟。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-stinky-fermented-tofu.jpg"
+    },
+    {
+      "key": "prepared-red-fermented-tofu",
+      "name": "红腐乳",
+      "sourceCodes": [
+        "204003",
+        "204005"
+      ],
+      "description": "红曲卤汁包裹的深红软腐乳方块。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-red-fermented-tofu.jpg"
+    },
+    {
+      "key": "prepared-chili-fermented-tofu",
+      "name": "桂林腐乳",
+      "sourceCodes": [
+        "204004"
+      ],
+      "description": "浅色腐乳方块，上覆红辣椒碎与卤汁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chili-fermented-tofu.jpg"
+    },
+    {
+      "key": "prepared-mixed-pickled-vegetables",
+      "name": "什锦酱菜",
+      "sourceCodes": [
+        "205001",
+        "205005",
+        "205020"
+      ],
+      "description": "小碟中的黄萝卜、深黄瓜与胡萝卜等细切酱菜。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-mixed-pickled-vegetables.jpg"
+    },
+    {
+      "key": "prepared-winter-preserved-cabbage",
+      "name": "冬菜",
+      "sourceCodes": [
+        "205002"
+      ],
+      "description": "细切、干皱的金褐色腌制冬菜丝。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-winter-preserved-cabbage.jpg"
+    },
+    {
+      "key": "prepared-yacai-pickles",
+      "name": "芽菜",
+      "sourceCodes": [
+        "205003"
+      ],
+      "description": "细碎深褐色发酵芽菜，干皱质地。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-yacai-pickles.jpg"
+    },
+    {
+      "key": "prepared-pickled-turnip",
+      "name": "酱大头菜",
+      "sourceCodes": [
+        "205004",
+        "205008",
+        "205026"
+      ],
+      "description": "褐色酱大头菜整根与厚圆切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-turnip.jpg"
+    },
+    {
+      "key": "prepared-pickled-ginger",
+      "name": "糟姜",
+      "sourceCodes": [
+        "205006"
+      ],
+      "description": "小碟中薄而不规则的浅粉色糟姜片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-ginger.jpg"
+    },
+    {
+      "key": "prepared-pickled-melon",
+      "name": "酱包瓜",
+      "sourceCodes": [
+        "205007"
+      ],
+      "description": "深绿褐色酱包瓜块，切面有浅色果肉与籽腔。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-melon.jpg"
+    },
+    {
+      "key": "prepared-pickled-crosne",
+      "name": "酱甘露子",
+      "sourceCodes": [
+        "205009"
+      ],
+      "description": "琥珀色螺旋节状甘露子小块茎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-crosne.jpg"
+    },
+    {
+      "key": "prepared-pickled-cucumber",
+      "name": "酱黄瓜",
+      "sourceCodes": [
+        "205010",
+        "205019"
+      ],
+      "description": "橄榄绿小酱黄瓜与斜切薄片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-cucumber.jpg"
+    },
+    {
+      "key": "prepared-pickled-radish",
+      "name": "酱萝卜",
+      "sourceCodes": [
+        "205011"
+      ],
+      "description": "小碟中湿润的琥珀褐色厚萝卜片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-radish.jpg"
+    },
+    {
+      "key": "prepared-pickled-mushroom",
+      "name": "酱蘑菇",
+      "sourceCodes": [
+        "205012"
+      ],
+      "description": "小碟中褐色酱蘑菇，可见圆菌盖和短柄。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-mushroom.jpg"
+    },
+    {
+      "key": "prepared-pickled-kohlrabi",
+      "name": "酱苤蓝丝",
+      "sourceCodes": [
+        "205013"
+      ],
+      "description": "小盘中细长金褐色酱苤蓝丝。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-kohlrabi.jpg"
+    },
+    {
+      "key": "prepared-pickled-lettuce-stem",
+      "name": "酱莴笋",
+      "sourceCodes": [
+        "205014"
+      ],
+      "description": "浅绿色半透明酱莴笋切片，切边有棱角。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-lettuce-stem.jpg"
+    },
+    {
+      "key": "prepared-dried-mustard",
+      "name": "芥菜干",
+      "sourceCodes": [
+        "205015"
+      ],
+      "description": "深褐绿色干芥菜，带长皱叶与叶柄。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-mustard.jpg"
+    },
+    {
+      "key": "prepared-coin-radish-pickle",
+      "name": "金钱萝卜",
+      "sourceCodes": [
+        "205016"
+      ],
+      "description": "浅米褐色圆干萝卜片，表面有根部纤维纹理。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-coin-radish-pickle.jpg"
+    },
+    {
+      "key": "prepared-chili-radish-strips",
+      "name": "辣萝卜条",
+      "sourceCodes": [
+        "205017"
+      ],
+      "description": "黄白色萝卜条外裹鲜红辣椒碎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chili-radish-strips.jpg"
+    },
+    {
+      "key": "prepared-dried-radish",
+      "name": "萝卜干",
+      "sourceCodes": [
+        "205018"
+      ],
+      "description": "金米色干萝卜条，长而皱缩。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-radish.jpg"
+    },
+    {
+      "key": "prepared-sour-mustard-greens",
+      "name": "酸芥菜",
+      "sourceCodes": [
+        "205021"
+      ],
+      "description": "橄榄黄色酸芥菜整叶与粗叶柄。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sour-mustard-greens.jpg"
+    },
+    {
+      "key": "prepared-soy-pickled-garlic",
+      "name": "酱蒜头",
+      "sourceCodes": [
+        "205022"
+      ],
+      "description": "深褐发亮的酱蒜整头与琥珀色蒜瓣。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-soy-pickled-garlic.jpg"
+    },
+    {
+      "key": "prepared-sweet-pickled-garlic",
+      "name": "糖蒜",
+      "sourceCodes": [
+        "205023"
+      ],
+      "description": "浅金色整头糖蒜与半透明乳白蒜瓣。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sweet-pickled-garlic.jpg"
+    },
+    {
+      "key": "prepared-sweet-chili-cucumber",
+      "name": "甜辣黄瓜",
+      "sourceCodes": [
+        "205024"
+      ],
+      "description": "青绿黄瓜块外裹红色甜辣酱汁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sweet-chili-cucumber.jpg"
+    },
+    {
+      "key": "prepared-pickled-rakkyo",
+      "name": "甜酸藠头",
+      "sourceCodes": [
+        "205025"
+      ],
+      "description": "乳白半透明、细长水滴状甜酸藠头。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-rakkyo.jpg"
+    },
+    {
+      "key": "prepared-salted-sand-onion",
+      "name": "咸沙葱",
+      "sourceCodes": [
+        "205027"
+      ],
+      "description": "深绿色细管状咸沙葱，细长叶茎弯曲交叠。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-salted-sand-onion.jpg"
+    },
+    {
+      "key": "prepared-pickled-jerusalem-artichoke",
+      "name": "腌洋姜",
+      "sourceCodes": [
+        "205028"
+      ],
+      "description": "褐色多节腌洋姜块茎，配浅色脆切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-jerusalem-artichoke.jpg"
+    },
+    {
+      "key": "prepared-zha-cai",
+      "name": "榨菜",
+      "sourceCodes": [
+        "205029"
+      ],
+      "description": "橄榄褐色不规则榨菜球茎与细切条。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-zha-cai.jpg"
+    },
+    {
+      "key": "prepared-pickled-bracken",
+      "name": "腌蕨菜",
+      "sourceCodes": [
+        "205030"
+      ],
+      "description": "褐绿色腌蕨菜长茎，保留卷曲蕨尖。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-bracken.jpg"
+    },
+    {
+      "key": "prepared-salted-mustard-root",
+      "name": "腌芥菜头",
+      "sourceCodes": [
+        "205031",
+        "205032"
+      ],
+      "description": "浅黄色腌芥菜根与几片厚圆切片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-salted-mustard-root.jpg"
+    },
+    {
+      "key": "prepared-chive-flower-paste",
+      "name": "腌韭菜花",
+      "sourceCodes": [
+        "205033"
+      ],
+      "description": "小白盅中的深绿粗粒韭菜花酱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chive-flower-paste.jpg"
+    },
+    {
+      "key": "prepared-pickled-asparagus-lettuce",
+      "name": "腌龙须菜",
+      "sourceCodes": [
+        "205034"
+      ],
+      "description": "细长缠绕的绿褐色腌龙须菜丝。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-asparagus-lettuce.jpg"
+    },
+    {
+      "key": "prepared-pickled-xuelihong",
+      "name": "腌雪里红",
+      "sourceCodes": [
+        "205035"
+      ],
+      "description": "小碟中切碎的橄榄绿雪里红叶和浅色茎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pickled-xuelihong.jpg"
+    },
+    {
+      "key": "prepared-star-anise",
+      "name": "八角",
+      "sourceCodes": [
+        "206001"
+      ],
+      "description": "深红褐色八角，星状尖瓣清晰。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-star-anise.jpg"
+    },
+    {
+      "key": "prepared-pepper-powder",
+      "name": "胡椒粉",
+      "sourceCodes": [
+        "206002"
+      ],
+      "description": "小碗中的灰白色细胡椒粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pepper-powder.jpg"
+    },
+    {
+      "key": "prepared-sichuan-pepper",
+      "name": "花椒",
+      "sourceCodes": [
+        "206003"
+      ],
+      "description": "红褐色空心花椒壳，夹少数黑色籽。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-sichuan-pepper.jpg"
+    },
+    {
+      "key": "prepared-huangmao-seeds",
+      "name": "黄毛籽",
+      "sourceCodes": [
+        "206004"
+      ],
+      "description": "浅盘中金褐色细长粗纹黄毛籽香辛料。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-huangmao-seeds.jpg"
+    },
+    {
+      "key": "prepared-mustard-paste",
+      "name": "芥末",
+      "sourceCodes": [
+        "206005"
+      ],
+      "description": "小白盅中的黄芥末酱，表面光滑呈尖旋纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-mustard-paste.jpg"
+    },
+    {
+      "key": "prepared-fenugreek-leaves",
+      "name": "苦豆子调味干叶",
+      "sourceCodes": [
+        "206006"
+      ],
+      "description": "橄榄绿色香豆干叶碎与粗粉，保留少量三出叶。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fenugreek-leaves.jpg"
+    },
+    {
+      "key": "prepared-chili-powder",
+      "name": "辣椒粉",
+      "sourceCodes": [
+        "206007"
+      ],
+      "description": "小碗中堆起的砖红色细辣椒粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chili-powder.jpg"
+    },
+    {
+      "key": "prepared-steamed-meat-rice-powder",
+      "name": "蒸肉粉",
+      "sourceCodes": [
+        "206008"
+      ],
+      "description": "小碗中的浅褐蒸肉粉，粗碎米颗粒分明。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-steamed-meat-rice-powder.jpg"
+    },
+    {
+      "key": "prepared-five-spice-powder",
+      "name": "五香粉",
+      "sourceCodes": [
+        "206009"
+      ],
+      "description": "小碗中的温棕色细五香粉。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-five-spice-powder.jpg"
+    },
+    {
+      "key": "prepared-fennel-seeds",
+      "name": "小茴香籽",
+      "sourceCodes": [
+        "206010"
+      ],
+      "description": "橄榄绿色细长小茴香籽，表面有纵向棱线。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fennel-seeds.jpg"
+    },
+    {
+      "key": "prepared-coarse-salt",
+      "name": "粗盐",
+      "sourceCodes": [
+        "207101",
+        "207103"
+      ],
+      "description": "不规则灰白色粗盐晶粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-coarse-salt.jpg"
+    },
+    {
+      "key": "prepared-fine-salt",
+      "name": "精盐",
+      "sourceCodes": [
+        "207102"
+      ],
+      "description": "小白碗中的洁白细盐。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fine-salt.jpg"
+    },
+    {
+      "key": "prepared-msg-crystals",
+      "name": "味精",
+      "sourceCodes": [
+        "207201"
+      ],
+      "description": "细长针状、半透明白色味精晶体。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-msg-crystals.jpg"
+    },
+    {
+      "key": "prepared-fresh-yeast",
+      "name": "鲜酵母",
+      "sourceCodes": [
+        "207301"
+      ],
+      "description": "浅米色鲜酵母方块，破角细碎易裂。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-yeast.jpg"
+    },
+    {
+      "key": "prepared-dry-yeast",
+      "name": "干酵母",
+      "sourceCodes": [
+        "207302"
+      ],
+      "description": "碗中细小均匀的米黄色干酵母颗粒。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dry-yeast.jpg"
+    },
+    {
+      "key": "prepared-angelica-root",
+      "name": "白芷",
+      "sourceCodes": [
+        "211001"
+      ],
+      "description": "白芷干根圆切片，浅白内芯与薄褐表皮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-angelica-root.jpg"
+    },
+    {
+      "key": "prepared-dried-mint",
+      "name": "干薄荷",
+      "sourceCodes": [
+        "211002"
+      ],
+      "description": "褐绿色干薄荷叶，叶缘锯齿且自然皱曲。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-mint.jpg"
+    },
+    {
+      "key": "prepared-fresh-mint",
+      "name": "鲜薄荷",
+      "sourceCodes": [
+        "211003"
+      ],
+      "description": "鲜绿薄荷枝，卵形对生叶有皱褶和锯齿。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-mint.jpg"
+    },
+    {
+      "key": "prepared-schisandra-leaf",
+      "name": "鲜五味子叶",
+      "sourceCodes": [
+        "211004"
+      ],
+      "description": "木质小枝上的新鲜绿色五味子叶，叶尖锐。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-schisandra-leaf.jpg"
+    },
+    {
+      "key": "prepared-plantain-leaf",
+      "name": "鲜车前",
+      "sourceCodes": [
+        "211005"
+      ],
+      "description": "新鲜车前叶丛，宽卵叶有弧形纵脉与细长果穗。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-plantain-leaf.jpg"
+    },
+    {
+      "key": "prepared-plantain-seeds",
+      "name": "鲜车前子植株",
+      "sourceCodes": [
+        "211006"
+      ],
+      "description": "新鲜车前子植株，宽绿叶和直立绿色果穗并存。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-plantain-seeds.jpg"
+    },
+    {
+      "key": "prepared-dried-tangerine-peel",
+      "name": "陈皮",
+      "sourceCodes": [
+        "211007"
+      ],
+      "description": "卷曲陈皮片，橙色粗纹外皮与乳白内瓤相对。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-tangerine-peel.jpg"
+    },
+    {
+      "key": "prepared-cloves",
+      "name": "丁香",
+      "sourceCodes": [
+        "211008"
+      ],
+      "description": "深褐色丁香，细钉形花梗顶部带圆花蕾。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cloves.jpg"
+    },
+    {
+      "key": "prepared-fresh-saposhnikovia-root",
+      "name": "鲜防风根",
+      "sourceCodes": [
+        "211009"
+      ],
+      "description": "浅褐防风鲜根，长锥形根部带细根须和环纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-saposhnikovia-root.jpg"
+    },
+    {
+      "key": "prepared-fresh-saposhnikovia-leaf",
+      "name": "鲜防风叶",
+      "sourceCodes": [
+        "211010"
+      ],
+      "description": "新鲜防风叶枝，绿色叶片呈细裂羽状。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-saposhnikovia-leaf.jpg"
+    },
+    {
+      "key": "prepared-licorice-root",
+      "name": "甘草",
+      "sourceCodes": [
+        "211011"
+      ],
+      "description": "甘草干根条与圆切片，黄色内芯和褐色外皮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-licorice-root.jpg"
+    },
+    {
+      "key": "prepared-dried-galangal",
+      "name": "高良姜",
+      "sourceCodes": [
+        "211012"
+      ],
+      "description": "红褐色高良姜干根段与切片，干皱环纹及纤维断面。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-galangal.jpg"
+    },
+    {
+      "key": "prepared-safflower",
+      "name": "红花",
+      "sourceCodes": [
+        "211013"
+      ],
+      "description": "堆起的细长橙红色干红花花丝。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-safflower.jpg"
+    },
+    {
+      "key": "prepared-japanese-knotweed",
+      "name": "鲜虎杖",
+      "sourceCodes": [
+        "211014"
+      ],
+      "description": "鲜虎杖枝叶，粗节红色茎与宽三角绿色叶片。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-japanese-knotweed.jpg"
+    },
+    {
+      "key": "prepared-chrysanthemum",
+      "name": "干菊花",
+      "sourceCodes": [
+        "211015"
+      ],
+      "description": "浅乳黄干菊花，细层花瓣围绕黄色花心。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chrysanthemum.jpg"
+    },
+    {
+      "key": "prepared-fresh-cassia",
+      "name": "鲜决明",
+      "sourceCodes": [
+        "211016"
+      ],
+      "description": "鲜决明枝条，成对绿色小叶与细长种荚。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-cassia.jpg"
+    },
+    {
+      "key": "prepared-radish-seeds",
+      "name": "莱菔子",
+      "sourceCodes": [
+        "211017"
+      ],
+      "description": "细小椭圆红褐色莱菔子，表皮略粗糙。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-radish-seeds.jpg"
+    },
+    {
+      "key": "prepared-monk-fruit",
+      "name": "罗汉果",
+      "sourceCodes": [
+        "211018"
+      ],
+      "description": "褐色圆罗汉果整颗与破壳，可见干籽。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-monk-fruit.jpg"
+    },
+    {
+      "key": "prepared-torreya-nuts",
+      "name": "木榧",
+      "sourceCodes": [
+        "211019"
+      ],
+      "description": "棕色长椭圆木榧果，破壳露浅色种仁。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-torreya-nuts.jpg"
+    },
+    {
+      "key": "prepared-nutmeg",
+      "name": "肉豆蔻",
+      "sourceCodes": [
+        "211020"
+      ],
+      "description": "褐色卵形肉豆蔻，剖面为棕白相间纹理。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-nutmeg.jpg"
+    },
+    {
+      "key": "prepared-cinnamon",
+      "name": "肉桂",
+      "sourceCodes": [
+        "211021"
+      ],
+      "description": "暖褐色卷筒肉桂皮，外侧粗糙、内侧较光滑。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cinnamon.jpg"
+    },
+    {
+      "key": "prepared-amomum",
+      "name": "砂仁",
+      "sourceCodes": [
+        "211022"
+      ],
+      "description": "红褐椭圆砂仁果，带纵棱与细刺，破壳见黑籽。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-amomum.jpg"
+    },
+    {
+      "key": "prepared-peach-kernels",
+      "name": "桃仁",
+      "sourceCodes": [
+        "211023"
+      ],
+      "description": "扁尖杏仁状桃仁，棕色薄皮上有细皱纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-peach-kernels.jpg"
+    },
+    {
+      "key": "prepared-smoked-plum",
+      "name": "乌梅",
+      "sourceCodes": [
+        "211024"
+      ],
+      "description": "近黑色整颗干乌梅，表面深皱。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-smoked-plum.jpg"
+    },
+    {
+      "key": "prepared-cherry-kernels",
+      "name": "郁李仁",
+      "sourceCodes": [
+        "211025"
+      ],
+      "description": "小颗乳白椭圆郁李仁，部分保留红褐色薄皮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cherry-kernels.jpg"
+    },
+    {
+      "key": "prepared-jujube-seeds",
+      "name": "枣仁",
+      "sourceCodes": [
+        "211026"
+      ],
+      "description": "红褐色扁圆枣仁，表面光滑略亮。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-jujube-seeds.jpg"
+    },
+    {
+      "key": "prepared-dried-perilla",
+      "name": "干紫苏",
+      "sourceCodes": [
+        "211027"
+      ],
+      "description": "紫褐色干紫苏叶，叶缘锯齿、自然皱卷。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-perilla.jpg"
+    },
+    {
+      "key": "prepared-fresh-perilla",
+      "name": "鲜紫苏",
+      "sourceCodes": [
+        "211028"
+      ],
+      "description": "新鲜紫绿双色紫苏枝，宽叶皱褶明显。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-perilla.jpg"
+    },
+    {
+      "key": "prepared-poria",
+      "name": "茯苓",
+      "sourceCodes": [
+        "211029"
+      ],
+      "description": "白色干茯苓方块，断面粉质，旁放带褐皮部分。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-poria.jpg"
+    },
+    {
+      "key": "prepared-dried-agastache",
+      "name": "干藿香",
+      "sourceCodes": [
+        "211030"
+      ],
+      "description": "褐绿色干藿香枝叶，带皱叶和细茎。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-dried-agastache.jpg"
+    },
+    {
+      "key": "prepared-fresh-agastache",
+      "name": "鲜藿香",
+      "sourceCodes": [
+        "211031",
+        "211032"
+      ],
+      "description": "鲜藿香枝，心形锯齿绿叶，顶部有细紫花穗。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fresh-agastache.jpg"
+    },
+    {
+      "key": "prepared-goji-berries",
+      "name": "枸杞子",
+      "sourceCodes": [
+        "211033"
+      ],
+      "description": "鲜橙红色干枸杞，长椭圆、自然皱缩。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-goji-berries.jpg"
+    },
+    {
+      "key": "prepared-softshell-turtle",
+      "name": "甲鱼",
+      "sourceCodes": [
+        "219001"
+      ],
+      "description": "灰橄榄色甲鱼，椭圆扁壳、细长尖吻。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-softshell-turtle.jpg"
+    },
+    {
+      "key": "prepared-frog",
+      "name": "田鸡",
+      "sourceCodes": [
+        "219002"
+      ],
+      "description": "自然坐姿的绿褐色田鸡，皮肤有斑纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-frog.jpg"
+    },
+    {
+      "key": "prepared-frog-legs",
+      "name": "田鸡腿",
+      "sourceCodes": [
+        "219003"
+      ],
+      "description": "白盘中清理好的浅色生田鸡后腿。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-frog-legs.jpg"
+    },
+    {
+      "key": "prepared-horseshoe-crab",
+      "name": "中国鲎",
+      "sourceCodes": [
+        "219004"
+      ],
+      "description": "棕褐色中国鲎，马蹄形甲壳、带刺后腹和长直尾。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-horseshoe-crab.jpg"
+    },
+    {
+      "key": "prepared-edible-snake",
+      "name": "蛇",
+      "sourceCodes": [
+        "219005"
+      ],
+      "description": "自然盘曲的灰褐色细长蛇身，鳞纹细致。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-edible-snake.jpg"
+    },
+    {
+      "key": "prepared-cobra",
+      "name": "饭铲头蛇",
+      "sourceCodes": [
+        "219006"
+      ],
+      "description": "自然盘曲的褐色饭铲头蛇，颈部略展成兜帽。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cobra.jpg"
+    },
+    {
+      "key": "prepared-asian-rat-snake",
+      "name": "过树榕蛇",
+      "sourceCodes": [
+        "219007"
+      ],
+      "description": "自然盘曲的橄榄褐色过树榕蛇，头细长。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-asian-rat-snake.jpg"
+    },
+    {
+      "key": "prepared-beauty-rat-snake",
+      "name": "锦蛇",
+      "sourceCodes": [
+        "219008"
+      ],
+      "description": "黄褐锦蛇盘曲，背部有深色横向花纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-beauty-rat-snake.jpg"
+    },
+    {
+      "key": "prepared-three-striped-snake",
+      "name": "三索线蛇",
+      "sourceCodes": [
+        "219009"
+      ],
+      "description": "浅褐色三索线蛇，体侧有纵向深色条纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-three-striped-snake.jpg"
+    },
+    {
+      "key": "prepared-water-snake",
+      "name": "水蛇",
+      "sourceCodes": [
+        "219010"
+      ],
+      "description": "橄榄灰色水蛇盘曲，体表有深色棋格斑纹。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-water-snake.jpg"
+    },
+    {
+      "key": "prepared-silkworm-pupae",
+      "name": "蚕蛹",
+      "sourceCodes": [
+        "219011"
+      ],
+      "description": "小白盘中的褐色蚕蛹，椭圆身体分节清晰。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-silkworm-pupae.jpg"
+    },
+    {
+      "key": "prepared-cordyceps",
+      "name": "冬虫夏草",
+      "sourceCodes": [
+        "219012"
+      ],
+      "description": "黄褐色分节虫体与细长深色菌座相连的冬虫夏草。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-cordyceps.jpg"
+    },
+    {
+      "key": "prepared-scorpion",
+      "name": "蝎子",
+      "sourceCodes": [
+        "219013"
+      ],
+      "description": "黄褐色干蝎子，双螯、分节身体和弯曲尾部清晰。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-scorpion.jpg"
+    },
+    {
+      "key": "prepared-oyster-sauce",
+      "name": "蚝油",
+      "sourceCodes": [
+        "219014"
+      ],
+      "description": "白盅中的光亮深褐色蚝油，浓稠有勺痕。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-oyster-sauce.jpg"
+    },
+    {
+      "key": "prepared-chu-hou-paste",
+      "name": "柱候酱",
+      "sourceCodes": [
+        "219015"
+      ],
+      "description": "碗中的深褐色柱候酱，质地粗厚油润。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-chu-hou-paste.jpg"
+    },
+    {
+      "key": "prepared-pacific-saury",
+      "name": "秋刀鱼",
+      "sourceCodes": [
+        "219016"
+      ],
+      "description": "细长银白秋刀鱼，深蓝背、尖嘴与小叉尾。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-pacific-saury.jpg"
+    },
+    {
+      "key": "prepared-fish-balls",
+      "name": "鱼丸",
+      "sourceCodes": [
+        "219017"
+      ],
+      "description": "小白盘中的乳白鱼丸，半切一颗露细密内芯。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-fish-balls.jpg"
+    },
+    {
+      "key": "prepared-whole-mooncake",
+      "name": "整形月饼",
+      "sourceCodes": [
+        "142201",
+        "142205"
+      ],
+      "description": "两枚完整金黄圆月饼，表面有浅花纹，不展示未确定的内馅。",
+      "localPath": "assets/food-illustrations/full/prepared/images/prepared-whole-mooncake.jpg"
+    },
+    {
+      "key": "bread",
+      "sourceCodes": [
+        "152301",
+        "152302",
+        "152306",
+        "152307",
+        "152309",
+        "152310",
+        "152311",
+        "152313"
+      ],
+      "name": "面包",
+      "description": "一片原味小麦面包，浅色松软内芯与金黄外皮",
+      "localPath": "miniprogram/images/food-illustrations/bread.jpg"
+    }
+  ]
+}

@@ -95,14 +95,8 @@
                     <text class="food-basis">每 {{item.baseQuantity}}{{item.baseUnit}}</text>
                   </view>
                 </view>
-                <view class="food-list-image-slot" wx:if="{{item.showImageSlot}}">
-                  <image
-                    class="food-list-image"
-                    src="{{item.displayImage || foodPlaceholderImage}}"
-                    mode="aspectFill"
-                    data-url="{{item.displayImage || foodPlaceholderImage}}"
-                    bindtap="previewFoodImage"
-                  />
+                <view class="food-list-image-slot">
+                  <food-thumbnail food="{{item}}" />
                 </view>
               </view>
               <view class="food-nutrition">

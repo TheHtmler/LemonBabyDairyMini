@@ -64,14 +64,7 @@
         wx:key="_id"
         data-id="{{item._id}}"
       >
-        <image
-          class="food-option-image"
-          src="{{item.displayImage}}"
-          mode="aspectFill"
-          lazy-load="{{true}}"
-          data-url="{{item.displayImage}}"
-          catchtap="previewFoodOptionImage"
-        />
+        <view class="food-option-image"><food-thumbnail food="{{item}}" /></view>
         <view class="food-option-main">
           <view class="food-title-row">
             <text class="food-option-name">{{item.name}}</text>
@@ -111,9 +104,9 @@
         <text class="cart-clear" catchtap="clearSelectionCart">清空</text>
       </view>
     </view>
-    <scroll-view class="cart-detail-list" scroll-y="true" show-scrollbar="{{false}}">
+    <scroll-view wx:if="{{cartExpanded && selectedFoodCart.length > 0}}" class="cart-detail-list" scroll-y="true" show-scrollbar="{{false}}">
       <view class="cart-detail-item" wx:for="{{selectedFoodCart}}" wx:key="_id">
-        <image class="cart-detail-image" src="{{item.displayImage}}" mode="aspectFill" />
+        <view class="cart-detail-image"><food-thumbnail food="{{item}}" /></view>
         <view class="cart-detail-main">
           <view class="cart-detail-title-row">
             <text class="cart-detail-name">{{item.name}}</text>

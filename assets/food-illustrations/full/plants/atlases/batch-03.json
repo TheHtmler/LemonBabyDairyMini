@@ -1,0 +1,226 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-019003",
+      "name": "糜子米（炒米）",
+      "description": "糜子米（炒米），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019003.jpg",
+      "sourceCodes": [
+        "019003"
+      ]
+    },
+    {
+      "key": "plants-019004",
+      "name": "苦荞麦粉",
+      "description": "苦荞麦粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019004.jpg",
+      "sourceCodes": [
+        "019004"
+      ]
+    },
+    {
+      "key": "plants-019005",
+      "name": "荞麦",
+      "description": "荞麦，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019005.jpg",
+      "sourceCodes": [
+        "019005"
+      ]
+    },
+    {
+      "key": "plants-019006",
+      "name": "荞麦（带皮）",
+      "description": "荞麦（带皮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019006.jpg",
+      "sourceCodes": [
+        "019006"
+      ]
+    },
+    {
+      "key": "plants-019008",
+      "name": "薏米[薏仁米，苡米]",
+      "description": "薏米[薏仁米，苡米]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019008.jpg",
+      "sourceCodes": [
+        "019008"
+      ]
+    },
+    {
+      "key": "plants-019009",
+      "name": "薏米面",
+      "description": "薏米面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019009.jpg",
+      "sourceCodes": [
+        "019009"
+      ]
+    },
+    {
+      "key": "plants-019010",
+      "name": "荞麦面",
+      "description": "荞麦面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019010.jpg",
+      "sourceCodes": [
+        "019010"
+      ]
+    },
+    {
+      "key": "plants-019011",
+      "name": "莜麦面",
+      "description": "莜麦面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019011.jpg",
+      "sourceCodes": [
+        "019011"
+      ]
+    },
+    {
+      "key": "plants-019012",
+      "name": "燕麦",
+      "description": "燕麦，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019012.jpg",
+      "sourceCodes": [
+        "019012"
+      ]
+    },
+    {
+      "key": "plants-019013",
+      "name": "藜麦（散装）",
+      "description": "藜麦（散装），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/019013.jpg",
+      "sourceCodes": [
+        "019013"
+      ]
+    },
+    {
+      "key": "plants-021102",
+      "name": "马铃薯丁（脱水）",
+      "description": "马铃薯丁（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021102.jpg",
+      "sourceCodes": [
+        "021102"
+      ]
+    },
+    {
+      "key": "plants-021103",
+      "name": "马铃薯粉",
+      "description": "马铃薯粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021103.jpg",
+      "sourceCodes": [
+        "021103",
+        "021108"
+      ]
+    },
+    {
+      "key": "plants-021105",
+      "name": "马铃薯（烤）",
+      "description": "马铃薯（烤），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021105.jpg",
+      "sourceCodes": [
+        "021105"
+      ]
+    },
+    {
+      "key": "plants-021106",
+      "name": "马铃薯（蒸）",
+      "description": "马铃薯（蒸），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021106.jpg",
+      "sourceCodes": [
+        "021106"
+      ]
+    },
+    {
+      "key": "plants-021107",
+      "name": "马铃薯（煮）",
+      "description": "马铃薯（煮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021107.jpg",
+      "sourceCodes": [
+        "021107"
+      ]
+    },
+    {
+      "key": "plants-021201",
+      "name": "甘薯（白心）[红皮山芋]",
+      "description": "甘薯（白心）[红皮山芋]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021201.jpg",
+      "sourceCodes": [
+        "021201"
+      ]
+    },
+    {
+      "key": "plants-021203",
+      "name": "甘薯片[白薯干]",
+      "description": "甘薯片[白薯干]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021203.jpg",
+      "sourceCodes": [
+        "021203"
+      ]
+    },
+    {
+      "key": "plants-021204",
+      "name": "甘薯粉[地瓜粉]",
+      "description": "甘薯粉[地瓜粉]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021204.jpg",
+      "sourceCodes": [
+        "021204"
+      ]
+    },
+    {
+      "key": "plants-021205",
+      "name": "甘薯（红心）[山芋，红薯]",
+      "description": "甘薯（红心）[山芋，红薯]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021205.jpg",
+      "sourceCodes": [
+        "021205"
+      ]
+    },
+    {
+      "key": "plants-021301",
+      "name": "木薯",
+      "description": "木薯，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/021301.jpg",
+      "sourceCodes": [
+        "021301"
+      ]
+    },
+    {
+      "key": "plants-022101",
+      "name": "蚕豆淀粉",
+      "description": "蚕豆淀粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022101.jpg",
+      "sourceCodes": [
+        "022101"
+      ]
+    },
+    {
+      "key": "plants-022102",
+      "name": "豌豆淀粉",
+      "description": "豌豆淀粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022102.jpg",
+      "sourceCodes": [
+        "022102"
+      ]
+    },
+    {
+      "key": "plants-022103",
+      "name": "玉米淀粉",
+      "description": "玉米淀粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022103.jpg",
+      "sourceCodes": [
+        "022103"
+      ]
+    },
+    {
+      "key": "plants-022104",
+      "name": "团粉淀粉",
+      "description": "团粉淀粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022104.jpg",
+      "sourceCodes": [
+        "022104"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：糜子米（炒米）。\n第1行第2格：苦荞麦粉。\n第1行第3格：荞麦。\n第1行第4格：荞麦（带皮）。\n第1行第5格：薏米[薏仁米，苡米]。\n第1行第6格：薏米面。\n第2行第1格：荞麦面。\n第2行第2格：莜麦面。\n第2行第3格：燕麦。\n第2行第4格：藜麦（散装）。\n第2行第5格：马铃薯丁（脱水）。\n第2行第6格：马铃薯粉。\n第3行第1格：马铃薯（烤）。\n第3行第2格：马铃薯（蒸）。\n第3行第3格：马铃薯（煮）。\n第3行第4格：甘薯（白心）[红皮山芋]。\n第3行第5格：甘薯片[白薯干]。\n第3行第6格：甘薯粉[地瓜粉]。\n第4行第1格：甘薯（红心）[山芋，红薯]。\n第4行第2格：木薯。\n第4行第3格：蚕豆淀粉。\n第4行第4格：豌豆淀粉。\n第4行第5格：玉米淀粉。\n第4行第6格：团粉淀粉。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-03.png",
+  "reviewed": true
+}

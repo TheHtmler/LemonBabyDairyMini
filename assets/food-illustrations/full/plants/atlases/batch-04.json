@@ -1,0 +1,231 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-022105",
+      "name": "藕粉",
+      "description": "藕粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022105.jpg",
+      "sourceCodes": [
+        "022105"
+      ]
+    },
+    {
+      "key": "plants-022106",
+      "name": "桂花藕粉",
+      "description": "桂花藕粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022106.jpg",
+      "sourceCodes": [
+        "022106"
+      ]
+    },
+    {
+      "key": "plants-022107",
+      "name": "魔芋精粉[鬼芋粉，南星粉]",
+      "description": "魔芋精粉[鬼芋粉，南星粉]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022107.jpg",
+      "sourceCodes": [
+        "022107"
+      ]
+    },
+    {
+      "key": "plants-022108",
+      "name": "淀粉（小麦）",
+      "description": "淀粉（小麦），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022108.jpg",
+      "sourceCodes": [
+        "022108"
+      ]
+    },
+    {
+      "key": "plants-022109",
+      "name": "淀粉（大米）",
+      "description": "淀粉（大米），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022109.jpg",
+      "sourceCodes": [
+        "022109"
+      ]
+    },
+    {
+      "key": "plants-022110",
+      "name": "淀粉（马铃薯）",
+      "description": "淀粉（马铃薯），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022110.jpg",
+      "sourceCodes": [
+        "022110"
+      ]
+    },
+    {
+      "key": "plants-022111",
+      "name": "淀粉（甘薯）",
+      "description": "淀粉（甘薯），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022111.jpg",
+      "sourceCodes": [
+        "022111"
+      ]
+    },
+    {
+      "key": "plants-022112",
+      "name": "煎炸粉",
+      "description": "煎炸粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022112.jpg",
+      "sourceCodes": [
+        "022112"
+      ]
+    },
+    {
+      "key": "plants-022201",
+      "name": "干细粉丝",
+      "description": "干细粉丝，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022201.jpg",
+      "sourceCodes": [
+        "022201",
+        "022202"
+      ]
+    },
+    {
+      "key": "plants-022203",
+      "name": "粉条",
+      "description": "粉条，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/022203.jpg",
+      "sourceCodes": [
+        "022203"
+      ]
+    },
+    {
+      "key": "plants-031102",
+      "name": "黑豆（干）[黑大豆]",
+      "description": "黑豆（干）[黑大豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031102.jpg",
+      "sourceCodes": [
+        "031102"
+      ]
+    },
+    {
+      "key": "plants-031103",
+      "name": "青豆（干）[青大豆]",
+      "description": "青豆（干）[青大豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031103.jpg",
+      "sourceCodes": [
+        "031103"
+      ]
+    },
+    {
+      "key": "plants-031201",
+      "name": "黄豆粉",
+      "description": "黄豆粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031201.jpg",
+      "sourceCodes": [
+        "031201"
+      ]
+    },
+    {
+      "key": "plants-031202",
+      "name": "豆腐花粉",
+      "description": "豆腐花粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031202.jpg",
+      "sourceCodes": [
+        "031202"
+      ]
+    },
+    {
+      "key": "plants-031203",
+      "name": "豆浆粉",
+      "description": "豆浆粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031203.jpg",
+      "sourceCodes": [
+        "031203",
+        "031206",
+        "031207",
+        "031208"
+      ]
+    },
+    {
+      "key": "plants-031204",
+      "name": "豆粕",
+      "description": "豆粕，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031204.jpg",
+      "sourceCodes": [
+        "031204"
+      ]
+    },
+    {
+      "key": "plants-031205",
+      "name": "豆粕（膨化）[大豆蛋白]",
+      "description": "豆粕（膨化）[大豆蛋白]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031205.jpg",
+      "sourceCodes": [
+        "031205"
+      ]
+    },
+    {
+      "key": "plants-031304",
+      "name": "嫩豆腐",
+      "description": "嫩豆腐，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031304.jpg",
+      "sourceCodes": [
+        "031304",
+        "031307"
+      ]
+    },
+    {
+      "key": "plants-031305",
+      "name": "豆腐脑[老豆腐]",
+      "description": "豆腐脑[老豆腐]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031305.jpg",
+      "sourceCodes": [
+        "031305"
+      ]
+    },
+    {
+      "key": "plants-031402",
+      "name": "豆奶",
+      "description": "豆奶，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031402.jpg",
+      "sourceCodes": [
+        "031402"
+      ]
+    },
+    {
+      "key": "plants-031403",
+      "name": "豆汁（生）",
+      "description": "豆汁（生），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031403.jpg",
+      "sourceCodes": [
+        "031403"
+      ]
+    },
+    {
+      "key": "plants-031404",
+      "name": "酸豆奶",
+      "description": "酸豆奶，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031404.jpg",
+      "sourceCodes": [
+        "031404"
+      ]
+    },
+    {
+      "key": "plants-031405",
+      "name": "豆浆",
+      "description": "豆浆，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031405.jpg",
+      "sourceCodes": [
+        "031405",
+        "031406"
+      ]
+    },
+    {
+      "key": "plants-031501",
+      "name": "豆腐丝",
+      "description": "豆腐丝，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/031501.jpg",
+      "sourceCodes": [
+        "031501"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：藕粉。\n第1行第2格：桂花藕粉。\n第1行第3格：魔芋精粉[鬼芋粉，南星粉]。\n第1行第4格：淀粉（小麦）。\n第1行第5格：淀粉（大米）。\n第1行第6格：淀粉（马铃薯）。\n第2行第1格：淀粉（甘薯）。\n第2行第2格：煎炸粉。\n第2行第3格：干细粉丝。\n第2行第4格：粉条。\n第2行第5格：黑豆（干）[黑大豆]。\n第2行第6格：青豆（干）[青大豆]。\n第3行第1格：黄豆粉。\n第3行第2格：豆腐花粉，浅米黄色干粉，不能画成豆腐脑或现成豆腐。\n第3行第3格：豆浆粉。\n第3行第4格：豆粕，榨油后大豆碎粕，浅棕色粗颗粒碎片。\n第3行第5格：膨化大豆蛋白，浅黄色干燥多孔块。\n第3行第6格：嫩豆腐。\n第4行第1格：豆腐脑[老豆腐]。\n第4行第2格：豆奶。\n第4行第3格：豆汁，灰绿色发酵豆汁液体，无豆粒。\n第4行第4格：酸豆奶。\n第4行第5格：豆浆。\n第4行第6格：豆腐丝。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-04.png",
+  "reviewed": true
+}

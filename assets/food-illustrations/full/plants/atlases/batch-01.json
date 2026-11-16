@@ -1,0 +1,261 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-011101",
+      "name": "小麦粒",
+      "description": "小麦粒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011101.jpg",
+      "sourceCodes": [
+        "011101",
+        "011102"
+      ]
+    },
+    {
+      "key": "plants-011201",
+      "name": "小麦面粉",
+      "description": "小麦面粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011201.jpg",
+      "sourceCodes": [
+        "011201",
+        "011202",
+        "011203",
+        "011206",
+        "011207",
+        "011208"
+      ]
+    },
+    {
+      "key": "plants-011204",
+      "name": "小麦胚粉",
+      "description": "小麦胚粉，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011204.jpg",
+      "sourceCodes": [
+        "011204"
+      ]
+    },
+    {
+      "key": "plants-011205",
+      "name": "麸皮",
+      "description": "麸皮，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011205.jpg",
+      "sourceCodes": [
+        "011205"
+      ]
+    },
+    {
+      "key": "plants-011301",
+      "name": "干挂面",
+      "description": "干挂面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011301.jpg",
+      "sourceCodes": [
+        "011301",
+        "011302",
+        "011310",
+        "011313"
+      ]
+    },
+    {
+      "key": "plants-011304",
+      "name": "细干龙须面",
+      "description": "细干龙须面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011304.jpg",
+      "sourceCodes": [
+        "011304",
+        "011314"
+      ]
+    },
+    {
+      "key": "plants-011305",
+      "name": "新鲜生切面",
+      "description": "新鲜生切面，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011305.jpg",
+      "sourceCodes": [
+        "011305",
+        "011306",
+        "011308",
+        "011316"
+      ]
+    },
+    {
+      "key": "plants-011311",
+      "name": "面条（虾蓉面）",
+      "description": "面条（虾蓉面），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011311.jpg",
+      "sourceCodes": [
+        "011311"
+      ]
+    },
+    {
+      "key": "plants-011312",
+      "name": "通心面[通心粉]",
+      "description": "通心面[通心粉]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011312.jpg",
+      "sourceCodes": [
+        "011312"
+      ]
+    },
+    {
+      "key": "plants-011315",
+      "name": "龙须面（鸡蛋）",
+      "description": "龙须面（鸡蛋），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011315.jpg",
+      "sourceCodes": [
+        "011315"
+      ]
+    },
+    {
+      "key": "plants-011401",
+      "name": "蒸花卷",
+      "description": "蒸花卷，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011401.jpg",
+      "sourceCodes": [
+        "011401",
+        "011410"
+      ]
+    },
+    {
+      "key": "plants-011402",
+      "name": "烙饼",
+      "description": "烙饼，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011402.jpg",
+      "sourceCodes": [
+        "011402",
+        "011403"
+      ]
+    },
+    {
+      "key": "plants-011404",
+      "name": "白馒头",
+      "description": "白馒头，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011404.jpg",
+      "sourceCodes": [
+        "011404",
+        "011405",
+        "011411"
+      ]
+    },
+    {
+      "key": "plants-011407",
+      "name": "烧饼（加糖）",
+      "description": "烧饼（加糖），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011407.jpg",
+      "sourceCodes": [
+        "011407"
+      ]
+    },
+    {
+      "key": "plants-011408",
+      "name": "油饼",
+      "description": "油饼，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011408.jpg",
+      "sourceCodes": [
+        "011408"
+      ]
+    },
+    {
+      "key": "plants-011409",
+      "name": "油条",
+      "description": "油条，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011409.jpg",
+      "sourceCodes": [
+        "011409"
+      ]
+    },
+    {
+      "key": "plants-011501",
+      "name": "水面筋",
+      "description": "水面筋，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011501.jpg",
+      "sourceCodes": [
+        "011501"
+      ]
+    },
+    {
+      "key": "plants-011502",
+      "name": "油面筋",
+      "description": "油面筋，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011502.jpg",
+      "sourceCodes": [
+        "011502"
+      ]
+    },
+    {
+      "key": "plants-011503",
+      "name": "面筋（肉馅）",
+      "description": "面筋（肉馅），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/011503.jpg",
+      "sourceCodes": [
+        "011503"
+      ]
+    },
+    {
+      "key": "plants-012001",
+      "name": "干粳米",
+      "description": "干粳米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012001.jpg",
+      "sourceCodes": [
+        "012001",
+        "012101",
+        "012102",
+        "012103",
+        "012104",
+        "012105",
+        "012106",
+        "012107",
+        "012108"
+      ]
+    },
+    {
+      "key": "plants-012201",
+      "name": "干长粒籼米",
+      "description": "干长粒籼米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012201.jpg",
+      "sourceCodes": [
+        "012201",
+        "012202",
+        "012203",
+        "012204",
+        "012205",
+        "012206",
+        "012207",
+        "012208",
+        "012209",
+        "012210",
+        "012213",
+        "012214"
+      ]
+    },
+    {
+      "key": "plants-012211",
+      "name": "籼稻谷（红）",
+      "description": "籼稻谷（红），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012211.jpg",
+      "sourceCodes": [
+        "012211"
+      ]
+    },
+    {
+      "key": "plants-012212",
+      "name": "黑米",
+      "description": "黑米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012212.jpg",
+      "sourceCodes": [
+        "012212"
+      ]
+    },
+    {
+      "key": "plants-012216",
+      "name": "糙米",
+      "description": "糙米，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/012216.jpg",
+      "sourceCodes": [
+        "012216"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：小麦粒。\n第1行第2格：小麦面粉。\n第1行第3格：小麦胚粉。\n第1行第4格：麸皮。\n第1行第5格：干挂面。\n第1行第6格：细干龙须面。\n第2行第1格：新鲜生切面。\n第2行第2格：面条（虾蓉面）。\n第2行第3格：通心面[通心粉]。\n第2行第4格：龙须面（鸡蛋）。\n第2行第5格：蒸花卷。\n第2行第6格：烙饼。\n第3行第1格：白馒头。\n第3行第2格：烧饼（加糖）。\n第3行第3格：油饼。\n第3行第4格：油条。\n第3行第5格：水面筋。\n第3行第6格：油面筋。\n第4行第1格：面筋（肉馅）。\n第4行第2格：干粳米。\n第4行第3格：干长粒籼米。\n第4行第4格：籼稻谷（红）。\n第4行第5格：黑米。\n第4行第6格：糙米。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-01.png",
+  "reviewed": true
+}

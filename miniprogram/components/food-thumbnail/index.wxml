@@ -1,0 +1,4 @@
+<view class="food-thumbnail" catchtap="previewImage" aria-label="{{imageLabel}}">
+  <view wx:if="{{!imageReady}}" class="food-thumbnail-empty {{loadingImage ? 'is-loading' : ''}}">{{loadingImage ? '' : placeholderText}}</view>
+  <image wx:if="{{src}}" class="food-thumbnail-image {{imageReady ? '' : 'is-pending'}}" src="{{src}}" data-src="{{src}}" mode="aspectFit" bindload="onImageLoad" binderror="onImageError" />
+</view>

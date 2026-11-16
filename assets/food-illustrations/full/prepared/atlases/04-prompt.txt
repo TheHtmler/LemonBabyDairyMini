@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: rectangular blocks of puffed rice bound in clear golden syrup, visible individual white rice puffs.
+Row 1, column 2: golden rectangular laminated puff pastry with many thin delicate layers visible on the side.
+Row 1, column 3: round pale golden Chinese shortbread pastry cut open showing translucent candied winter melon sugar and nut filling.
+Row 1, column 4: large golden round Chinese walnut cookies with coarse cracked tops and sesame specks.
+Row 1, column 5: traditional round golden firm-crust sweet pastry, cut open showing dense brown filling.
+Row 1, column 6: round golden Chinese sesame shortcrust pastry, cut open revealing mixed sesame and nut filling, no written seal.
+Row 2, column 1: thin circular ivory wafers sandwiching translucent amber sugar and nut filling, stacked with one broken edge.
+Row 2, column 2: thin dry pale yellow egg flakes with curled edges in a shallow white bowl.
+Row 2, column 3: flattened light tan wheat cereal flakes in a small white bowl.
+Row 2, column 4: dry rolled oat flakes, flattened oval beige grains in a small bowl.
+Row 2, column 5: golden yellow dry toasted corn flakes in a small bowl.
+Row 2, column 6: a rectangular golden dry instant noodle brick with tightly curled fine noodles.
+Row 3, column 1: a golden crescent croissant, delicate layered flaky crust.
+Row 3, column 2: three small oval golden French bread rolls, diagonal scoring on their crust.
+Row 3, column 3: a slice of soft golden bread with dark raisins and tiny candied fruit bits in its crumb.
+Row 3, column 4: a small brown wholegrain bread loaf with a cut slice and visible wheat germ grains.
+Row 3, column 5: a golden soft ring-shaped bread topped with pale shredded coconut.
+Row 3, column 6: several golden rectangular plain sweet biscuits with small evenly spaced pinholes and scalloped edges, no letters.
+Row 4, column 1: two dense beige rectangular compressed ration biscuit blocks, broken edge reveals compact grain texture, no wrapper.
+Row 4, column 2: golden ridged round butter shortbread biscuits.
+Row 4, column 3: three piped golden butter cookies with crisp swirled ridges.
+Row 4, column 4: pale golden rectangular soda crackers with straight scored edges and small puncture holes.
+Row 4, column 5: stacked rectangular pale golden wafer biscuits with fine waffle grid and thin cream layers.
+Row 4, column 6: many small round pale golden puffed biscuits with a tiny cracked cross pattern, like little pineapple buns.

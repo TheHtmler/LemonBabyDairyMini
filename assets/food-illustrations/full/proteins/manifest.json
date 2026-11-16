@@ -1,0 +1,4752 @@
+{
+  "group": "proteins",
+  "foods": {
+    "102101": "proteins-milk-powder",
+    "102102": "proteins-milk-powder",
+    "102103": "proteins-milk-powder",
+    "102104": "proteins-milk-powder",
+    "102201": "proteins-milk-powder",
+    "103001": "proteins-plain-yogurt",
+    "103002": "proteins-plain-yogurt",
+    "103003": "proteins-plain-yogurt",
+    "103004": "proteins-plain-yogurt",
+    "103005": "proteins-fruit-yogurt",
+    "103007": "proteins-fruit-yogurt",
+    "103006": "proteins-orange-yogurt",
+    "104001": "proteins-cheese-block",
+    "104012": "proteins-cheese-block",
+    "104013": "proteins-cheese-block",
+    "104014": "proteins-cheese-block",
+    "104002": "proteins-milk-tofu",
+    "104003": "proteins-milk-tofu",
+    "104004": "proteins-dried-curds",
+    "104005": "proteins-cheddar",
+    "104006": "proteins-cheddar",
+    "104007": "proteins-chura",
+    "104008": "proteins-soft-cheese",
+    "104011": "proteins-soft-cheese",
+    "104009": "proteins-sour-curd",
+    "104010": "proteins-goat-cheese",
+    "104015": "proteins-hard-cheese",
+    "105001": "proteins-cream",
+    "105002": "proteins-cream",
+    "105003": "proteins-cream",
+    "105004": "proteins-butter",
+    "105006": "proteins-butter",
+    "105005": "proteins-butter-residue",
+    "105007": "proteins-ghee",
+    "105010": "proteins-ghee",
+    "109001": "proteins-condensed-milk",
+    "109002": "proteins-milk-skin",
+    "109003": "proteins-milk-tablets",
+    "111101": "proteins-raw-brown-egg",
+    "111104": "proteins-raw-brown-egg",
+    "111109": "proteins-raw-brown-egg",
+    "111102": "proteins-raw-white-egg",
+    "111105": "proteins-raw-egg-white",
+    "111106": "proteins-raw-egg-white",
+    "112102": "proteins-raw-egg-white",
+    "113102": "proteins-raw-egg-white",
+    "111107": "proteins-raw-egg-yolk",
+    "111108": "proteins-raw-egg-yolk",
+    "112103": "proteins-raw-egg-yolk",
+    "113103": "proteins-raw-egg-yolk",
+    "111201": "proteins-whole-egg-powder",
+    "111202": "proteins-yolk-powder",
+    "111203": "proteins-century-egg",
+    "112201": "proteins-century-egg",
+    "111205": "proteins-embryo-egg",
+    "111206": "proteins-fried-egg",
+    "111207": "proteins-poached-egg",
+    "112101": "proteins-duck-egg",
+    "112104": "proteins-duck-egg",
+    "112202": "proteins-raw-salted-duck-egg",
+    "112203": "proteins-cooked-salted-duck-egg",
+    "113101": "proteins-goose-egg",
+    "113104": "proteins-boiled-goose-egg",
+    "114101": "proteins-quail-egg",
+    "114201": "proteins-spiced-quail-egg",
+    "081102": "proteins-pork-fat",
+    "081103": "proteins-pork-rump",
+    "081104": "proteins-pork-rear-hock",
+    "081105": "proteins-pork-belly",
+    "081106": "proteins-pork-tenderloin",
+    "081107": "proteins-pork-soft-belly",
+    "081108": "proteins-pork-firm-belly",
+    "081109": "proteins-pork-front-hock",
+    "081110": "proteins-pork-lean",
+    "081111": "proteins-pork-leg",
+    "081112": "proteins-pork-neck",
+    "081113": "proteins-pork-large-intestine",
+    "081114": "proteins-pork-chop",
+    "081115": "proteins-pork-ear",
+    "081116": "proteins-pork-trotter",
+    "081117": "proteins-pork-tendon",
+    "081118": "proteins-pork-scalp",
+    "081119": "proteins-pork-short-ribs",
+    "081120": "proteins-pork-hock-bone",
+    "081130": "proteins-pork-skin",
+    "081201": "proteins-pork-bile-liver",
+    "081202": "proteins-pork-stomach",
+    "081203": "proteins-pork-lung",
+    "081204": "proteins-pork-liver",
+    "081205": "proteins-pork-brain",
+    "081206": "proteins-pork-spleen",
+    "081207": "proteins-pork-tongue",
+    "081208": "proteins-pork-kidney",
+    "081209": "proteins-pork-kidney",
+    "081210": "proteins-pork-small-intestine",
+    "081211": "proteins-pork-heart",
+    "081212": "proteins-pork-blood",
+    "081301": "proteins-char-siu",
+    "081302": "proteins-kungpao-pork-can",
+    "081303": "proteins-sauce-pork",
+    "081304": "proteins-bacon",
+    "081305": "proteins-cured-pork",
+    "081320": "proteins-cured-pork",
+    "081331": "proteins-cured-pork",
+    "081306": "proteins-braised-pork-offal",
+    "081307": "proteins-luncheon-meat",
+    "081308": "proteins-salt-pork",
+    "081309": "proteins-shredded-pork-can",
+    "081310": "proteins-braised-pork-liver",
+    "081311": "proteins-steamed-pork",
+    "081312": "proteins-cooked-pork-trotter",
+    "081313": "proteins-cooked-pork-hock-bone",
+    "081314": "proteins-pork-floss",
+    "081315": "proteins-pork-floss",
+    "081316": "proteins-pork-floss",
+    "081317": "proteins-pork-floss",
+    "081318": "proteins-lean-ham",
+    "081319": "proteins-raw-ham-core",
+    "081322": "proteins-sauce-ribs",
+    "081323": "proteins-wine-pork-can",
+    "081324": "proteins-smoked-tenderloin",
+    "081325": "proteins-pork-jerky-sheet",
+    "081326": "proteins-crispy-meat-floss",
+    "081328": "proteins-braised-pig-face",
+    "081329": "proteins-braised-pork-knuckle",
+    "081330": "proteins-cured-ham",
+    "081401": "proteins-tea-sausage",
+    "081402": "proteins-large-lap-sausage",
+    "081403": "proteins-large-meat-sausage",
+    "081404": "proteins-eggwhite-sausage",
+    "081405": "proteins-kids-sausage",
+    "081406": "proteins-air-dried-sausage",
+    "081407": "proteins-cantonese-sausage",
+    "081410": "proteins-cantonese-sausage",
+    "081408": "proteins-hawthorn-sausage",
+    "081409": "proteins-ham-sausage",
+    "081425": "proteins-ham-sausage",
+    "081411": "proteins-songjiang-sausage",
+    "081412": "proteins-garlic-sausage",
+    "081413": "proteins-sausage",
+    "081414": "proteins-canned-sausage",
+    "081415": "proteins-red-sausage",
+    "081416": "proteins-small-mud-sausage",
+    "081417": "proteins-luncheon-sausage",
+    "081418": "proteins-luncheon-stomach",
+    "081419": "proteins-square-ham",
+    "081420": "proteins-ham",
+    "081421": "proteins-jinhua-ham",
+    "081422": "proteins-round-ham-sausage",
+    "081423": "proteins-crispy-sausage",
+    "081424": "proteins-hotdog-sausage",
+    "082102": "proteins-beef-ribs",
+    "082103": "proteins-beef-hind-leg",
+    "082104": "proteins-beef-rear-shank",
+    "082105": "proteins-beef-tenderloin",
+    "082112": "proteins-beef-tenderloin",
+    "082106": "proteins-beef-front-leg",
+    "082107": "proteins-beef-front-shank",
+    "082108": "proteins-beef-lean",
+    "082109": "proteins-beef-tendon",
+    "082110": "proteins-beef-soaked-tendon",
+    "082111": "proteins-beef-chuck",
+    "082113": "proteins-beef-rump",
+    "082114": "proteins-beef-shoulder",
+    "082115": "proteins-beef-brisket",
+    "082116": "proteins-beef-flank",
+    "082117": "proteins-beef-knuckle",
+    "082122": "proteins-beef-knuckle",
+    "082118": "proteins-beef-inside-round",
+    "082119": "proteins-beef-shank",
+    "082121": "proteins-beef-shank",
+    "082120": "proteins-raw-yak-meat",
+    "082201": "proteins-beef-pizzle",
+    "082202": "proteins-beef-large-intestine",
+    "082203": "proteins-beef-tripe",
+    "082204": "proteins-beef-lung",
+    "082205": "proteins-beef-liver",
+    "082206": "proteins-beef-brain",
+    "082207": "proteins-beef-tongue",
+    "082208": "proteins-beef-kidney",
+    "082209": "proteins-beef-heart",
+    "082210": "proteins-black-tripe",
+    "082301": "proteins-braised-beef",
+    "082307": "proteins-braised-beef",
+    "082302": "proteins-canned-stewed-beef",
+    "082303": "proteins-beef-jerky",
+    "082310": "proteins-beef-jerky",
+    "082311": "proteins-beef-jerky",
+    "082304": "proteins-curry-beef-jerky",
+    "082305": "proteins-beef-floss",
+    "082306": "proteins-cooked-beef-tendon",
+    "082308": "proteins-plain-cooked-beef",
+    "082309": "proteins-cooked-beef-shank",
+    "083101": "proteins-lamb-mixed",
+    "083107": "proteins-lamb-mixed",
+    "083102": "proteins-frozen-lamb",
+    "083110": "proteins-frozen-lamb",
+    "083103": "proteins-lamb-hind-leg",
+    "083104": "proteins-lamb-neck",
+    "083105": "proteins-lamb-tenderloin",
+    "083106": "proteins-lamb-front-leg",
+    "083108": "proteins-lamb-lean",
+    "083109": "proteins-lamb-breast",
+    "083111": "proteins-lamb-tendon",
+    "083112": "proteins-lamb-soaked-tendon",
+    "083113": "proteins-lamb-chuck",
+    "083114": "proteins-lamb-flank",
+    "083117": "proteins-lamb-slices",
+    "083201": "proteins-lamb-large-intestine",
+    "083202": "proteins-lamb-tripe",
+    "083203": "proteins-lamb-lung",
+    "083204": "proteins-lamb-liver",
+    "083205": "proteins-lamb-brain",
+    "083206": "proteins-lamb-tongue",
+    "083207": "proteins-lamb-kidney",
+    "083208": "proteins-lamb-heart",
+    "083209": "proteins-lamb-blood",
+    "083301": "proteins-cured-lamb",
+    "083302": "proteins-cooked-lamb",
+    "083303": "proteins-roast-lamb-skewer",
+    "083304": "proteins-roast-lamb-skewer",
+    "083305": "proteins-fried-lamb-skewer",
+    "083306": "proteins-lamb-jerky",
+    "083307": "proteins-hand-grab-lamb",
+    "083308": "proteins-sauce-goat",
+    "083309": "proteins-spiced-roast-lamb",
+    "083310": "proteins-raw-lamb-skewer",
+    "084101": "proteins-donkey-lean",
+    "084201": "proteins-raw-donkey-pizzle",
+    "084301": "proteins-braised-donkey",
+    "084302": "proteins-braised-donkey",
+    "084304": "proteins-braised-donkey",
+    "084303": "proteins-boiled-donkey",
+    "085101": "proteins-horse-meat",
+    "085201": "proteins-horse-heart",
+    "085301": "proteins-braised-horse",
+    "089001": "proteins-raw-dog-meat",
+    "089002": "proteins-camel-hoof",
+    "089003": "proteins-camel-pad",
+    "089004": "proteins-rabbit-meat",
+    "089005": "proteins-rabbit-meat",
+    "091101": "proteins-raw-chicken",
+    "091102": "proteins-raw-chicken",
+    "091103": "proteins-raw-chicken",
+    "091104": "proteins-raw-chicken",
+    "091105": "proteins-raw-chicken",
+    "091106": "proteins-raw-sandgrouse",
+    "091107": "proteins-raw-silkie",
+    "091111": "proteins-raw-chicken-feet",
+    "091112": "proteins-raw-chicken-breast",
+    "091113": "proteins-raw-chicken-leg",
+    "091114": "proteins-raw-chicken-wing",
+    "091115": "proteins-battered-chicken",
+    "091201": "proteins-raw-chicken-liver",
+    "091202": "proteins-raw-chicken-liver",
+    "091203": "proteins-raw-chicken-heart",
+    "091204": "proteins-chicken-blood",
+    "091205": "proteins-raw-chicken-gizzard",
+    "091301": "proteins-braised-whole-chicken",
+    "091304": "proteins-braised-whole-chicken",
+    "091308": "proteins-braised-whole-chicken",
+    "091303": "proteins-fried-chicken-chunks",
+    "091305": "proteins-chicken-soup-meat",
+    "091306": "proteins-chicken-broth",
+    "091307": "proteins-chicken-floss",
+    "091309": "proteins-roast-chicken",
+    "092101": "proteins-raw-duck",
+    "092102": "proteins-raw-duck",
+    "092103": "proteins-raw-duck",
+    "092302": "proteins-raw-duck",
+    "092104": "proteins-raw-duck-breast",
+    "092105": "proteins-raw-duck-skin",
+    "092106": "proteins-raw-duck-wings",
+    "092107": "proteins-raw-duck-feet",
+    "092201": "proteins-raw-duck-intestine",
+    "092202": "proteins-raw-duck-liver",
+    "092203": "proteins-raw-duck-liver",
+    "092204": "proteins-raw-duck-liver",
+    "092205": "proteins-raw-duck-tongue",
+    "092206": "proteins-raw-duck-heart",
+    "092207": "proteins-raw-duck-blood",
+    "092208": "proteins-raw-duck-blood",
+    "092209": "proteins-raw-duck-blood",
+    "092210": "proteins-raw-duck-pancreas",
+    "092211": "proteins-raw-duck-gizzard",
+    "092212": "proteins-raw-duck-gizzard",
+    "092213": "proteins-raw-duck-gizzard",
+    "092301": "proteins-roast-duck",
+    "092307": "proteins-roast-duck",
+    "092308": "proteins-roast-duck",
+    "092303": "proteins-canned-braised-duck",
+    "092304": "proteins-sauce-duck",
+    "092305": "proteins-mustard-duck-can",
+    "092306": "proteins-salted-duck",
+    "093101": "proteins-raw-goose",
+    "093201": "proteins-raw-goose-liver",
+    "093202": "proteins-raw-goose-gizzard",
+    "093203": "proteins-raw-goose-blood",
+    "093301": "proteins-roast-goose",
+    "093302": "proteins-cured-goose",
+    "094101": "proteins-raw-turkey-leg",
+    "094102": "proteins-raw-turkey-breast",
+    "094201": "proteins-raw-turkey-liver",
+    "094202": "proteins-raw-turkey-gizzard",
+    "094203": "proteins-cooked-turkey-leg",
+    "099001": "proteins-raw-pigeon",
+    "099003": "proteins-raw-pigeon",
+    "099002": "proteins-raw-quail",
+    "099004": "proteins-braised-pigeon",
+    "121101": "proteins-white-strip-fish",
+    "121102": "proteins-grass-carp",
+    "121103": "proteins-red-eye-trout",
+    "121104": "proteins-yellowcheek-carp",
+    "121105": "proteins-walking-catfish",
+    "121106": "proteins-yellow-catfish",
+    "121107": "proteins-rice-eel",
+    "121108": "proteins-eel-strips",
+    "121109": "proteins-sharp-mouth-bream",
+    "121110": "proteins-koutou-fish",
+    "121111": "proteins-common-carp",
+    "121112": "proteins-tilapia",
+    "121113": "proteins-tilapia",
+    "121114": "proteins-loach",
+    "121115": "proteins-black-carp",
+    "121116": "proteins-snakehead",
+    "121117": "proteins-whitebait",
+    "121118": "proteins-naked-carp",
+    "121119": "proteins-naked-carp",
+    "121120": "proteins-catfish",
+    "121121": "proteins-jinhua-fish",
+    "121122": "proteins-silver-carp",
+    "121123": "proteins-crucian-carp",
+    "121124": "proteins-mud-carp",
+    "121125": "proteins-canned-dace",
+    "121126": "proteins-wuchang-bream",
+    "121127": "proteins-freshwater-eel",
+    "121128": "proteins-bighead-carp",
+    "121129": "proteins-mandarin-fish",
+    "121130": "proteins-rainbow-trout",
+    "121201": "proteins-white-croaker",
+    "121202": "proteins-blue-round-scad",
+    "121203": "proteins-whole-hairtail",
+    "121204": "proteins-anchovy-tiyu",
+    "121205": "proteins-dried-anchovy",
+    "121206": "proteins-lizardfish",
+    "121207": "proteins-sea-perch-bream",
+    "121208": "proteins-conger-eel",
+    "121209": "proteins-red-gurnard",
+    "121210": "proteins-yellow-drum",
+    "121211": "proteins-large-yellow-croaker",
+    "121212": "proteins-small-yellow-croaker",
+    "121213": "proteins-stingray",
+    "121214": "proteins-threadfin-bream",
+    "121215": "proteins-filefish",
+    "121216": "proteins-mei-tong-croaker",
+    "121217": "proteins-sardine",
+    "121218": "proteins-sand-whiting",
+    "121219": "proteins-snake-lizardfish",
+    "121220": "proteins-sole",
+    "121221": "proteins-xiang-suo-fish",
+    "121222": "proteins-needlefish",
+    "121223": "proteins-spanish-mackerel",
+    "121224": "proteins-salted-mackerel",
+    "121225": "proteins-bastard-halibut",
+    "121226": "proteins-sea-bass",
+    "121227": "proteins-mackerel",
+    "121228": "proteins-salmon",
+    "121229": "proteins-salmon-roe",
+    "121230": "proteins-anchovy-fengwei",
+    "121231": "proteins-anchovy-fengwei",
+    "121232": "proteins-shark",
+    "121233": "proteins-silver-pomfret",
+    "121234": "proteins-black-seabream",
+    "121235": "proteins-mullet",
+    "121236": "proteins-righteye-flounder",
+    "121237": "proteins-skate",
+    "121238": "proteins-ilish",
+    "121239": "proteins-cod",
+    "121240": "proteins-miichthys",
+    "121241": "proteins-hairtail-sections",
+    "121301": "proteins-dried-fish-slices",
+    "121302": "proteins-fish-sauce",
+    "121304": "proteins-fish-steak",
+    "121305": "proteins-fish-ball",
+    "121306": "proteins-black-caviar",
+    "122101": "proteins-white-small-shrimp",
+    "122102": "proteins-black-tiger-prawn",
+    "122103": "proteins-hairy-prawn",
+    "122104": "proteins-spiny-crayfish",
+    "122105": "proteins-chinese-prawn",
+    "122106": "proteins-raw-prawn",
+    "122107": "proteins-sea-shrimp",
+    "122108": "proteins-river-shrimp",
+    "122110": "proteins-river-shrimp",
+    "122109": "proteins-jinga-shrimp",
+    "122111": "proteins-lobster",
+    "122112": "proteins-banana-prawn",
+    "122113": "proteins-pond-shrimp",
+    "122114": "proteins-shrimp-tiger-mantis",
+    "122115": "proteins-dried-shrimp-skin",
+    "122116": "proteins-crayfish",
+    "122119": "proteins-mantis-shrimp",
+    "122201": "proteins-dried-shrimp",
+    "122202": "proteins-shrimp-paste",
+    "122206": "proteins-raw-peeled-shrimp",
+    "123001": "proteins-sea-crab",
+    "123010": "proteins-sea-crab",
+    "123011": "proteins-sea-crab",
+    "123002": "proteins-hairy-crab",
+    "123009": "proteins-hairy-crab",
+    "123003": "proteins-mud-crab",
+    "123004": "proteins-swimming-crab",
+    "123005": "proteins-crab-meat",
+    "124101": "proteins-fresh-abalone",
+    "124102": "proteins-dried-abalone",
+    "124103": "proteins-razor-clam",
+    "124104": "proteins-dried-razor-clam",
+    "124105": "proteins-ark-shell",
+    "124106": "proteins-river-mussel",
+    "124107": "proteins-freshwater-clam",
+    "124108": "proteins-fresh-oyster",
+    "124109": "proteins-fresh-oyster",
+    "124110": "proteins-blood-cockle",
+    "124111": "proteins-fresh-scallop",
+    "124112": "proteins-dried-scallop",
+    "124113": "proteins-fresh-scallop-meat",
+    "124114": "proteins-silver-cockle",
+    "124115": "proteins-fresh-mussel",
+    "124116": "proteins-dried-mussel",
+    "124201": "proteins-mottled-clam",
+    "124202": "proteins-mottled-clam",
+    "124206": "proteins-mottled-clam",
+    "124203": "proteins-hairy-clam",
+    "124204": "proteins-autumn-clam",
+    "124205": "proteins-sand-clam",
+    "124301": "proteins-fresh-snail",
+    "124302": "proteins-red-whelk",
+    "124303": "proteins-spotted-babylon",
+    "124304": "proteins-small-river-snail",
+    "124305": "proteins-rock-snail",
+    "124306": "proteins-field-snail",
+    "124307": "proteins-sea-whelk",
+    "129001": "proteins-fresh-sea-cucumber",
+    "129002": "proteins-dried-sea-cucumber",
+    "129003": "proteins-soaked-sea-cucumber",
+    "129004": "proteins-jellyfish-skin",
+    "129005": "proteins-jellyfish-head",
+    "129006": "proteins-fresh-cuttlefish",
+    "129007": "proteins-dried-cuttlefish",
+    "129008": "proteins-fresh-squid",
+    "129009": "proteins-dried-squid",
+    "129010": "proteins-soaked-squid",
+    "129011": "proteins-cuttlefish-roe",
+    "129012": "proteins-fresh-octopus",
+    "129013": "proteins-fresh-octopus",
+    "081101": "pork",
+    "082101": "beef",
+    "101101": "milk",
+    "101102": "milk",
+    "101104": "milk",
+    "101105": "milk",
+    "101106": "milk",
+    "101152": "milk",
+    "101161": "milk",
+    "101166": "milk",
+    "101187": "milk",
+    "101201": "milk",
+    "101301": "milk",
+    "101501": "milk",
+    "111204": "egg"
+  },
+  "assets": [
+    {
+      "key": "proteins-milk-powder",
+      "name": "奶粉",
+      "sourceCodes": [
+        "102101",
+        "102102",
+        "102103",
+        "102104",
+        "102201"
+      ],
+      "description": "一小碗乳白微黄的干燥奶粉，旁边小勺盛奶粉；不可画成液体",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-milk-powder.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-plain-yogurt",
+      "name": "原味酸奶",
+      "sourceCodes": [
+        "103001",
+        "103002",
+        "103003",
+        "103004"
+      ],
+      "description": "矮透明玻璃杯中浓稠白色酸奶，表面微有旋纹",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-plain-yogurt.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-fruit-yogurt",
+      "name": "果料酸奶",
+      "sourceCodes": [
+        "103005",
+        "103007"
+      ],
+      "description": "白色浓稠酸奶中有可见小块红莓和桃色果粒，无整果装饰",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fruit-yogurt.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-orange-yogurt",
+      "name": "橘味酸奶",
+      "sourceCodes": [
+        "103006"
+      ],
+      "description": "小杯浅橙黄色浓稠酸奶，旁有一片橘瓣提示口味",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-orange-yogurt.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-cheese-block",
+      "name": "普通奶酪",
+      "sourceCodes": [
+        "104001",
+        "104012",
+        "104013",
+        "104014"
+      ],
+      "description": "淡黄色实体奶酪块与薄切片，无包装无孔洞",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cheese-block.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-milk-tofu",
+      "name": "奶豆腐",
+      "sourceCodes": [
+        "104002",
+        "104003"
+      ],
+      "description": "象牙白色厚实矩形奶豆腐块，乳凝块紧实略有细孔",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-milk-tofu.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-dried-curds",
+      "name": "奶疙瘩",
+      "sourceCodes": [
+        "104004"
+      ],
+      "description": "一小堆米白色不规则干硬奶酪疙瘩，粗糙干燥",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-curds.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-cheddar",
+      "name": "契达干酪",
+      "sourceCodes": [
+        "104005",
+        "104006"
+      ],
+      "description": "橙黄色契达奶酪长方块及两片切片，密实光滑无孔洞",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cheddar.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-chura",
+      "name": "曲拉",
+      "sourceCodes": [
+        "104007"
+      ],
+      "description": "一碗藏式曲拉，米白色小颗粒干燥酪蛋白乳渣，坚硬粗糙",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-chura.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-soft-cheese",
+      "name": "软奶酪",
+      "sourceCodes": [
+        "104008",
+        "104011"
+      ],
+      "description": "白色柔软奶酪圆块，切一角露出润滑凝乳质地",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-soft-cheese.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-sour-curd",
+      "name": "酸酪蛋",
+      "sourceCodes": [
+        "104009"
+      ],
+      "description": "一小碗乳白色酸凝乳块，湿润松散，像凝固鲜奶酪而不是鸡蛋",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sour-curd.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-goat-cheese",
+      "name": "羊乳酪",
+      "sourceCodes": [
+        "104010"
+      ],
+      "description": "白色羊奶奶酪短圆柱，一片横切圆片，质地细腻",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-goat-cheese.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-hard-cheese",
+      "name": "硬质干酪",
+      "sourceCodes": [
+        "104015"
+      ],
+      "description": "淡金黄色硬质奶酪楔块，有坚硬干燥外皮和碎屑",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hard-cheese.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-cream",
+      "name": "奶油",
+      "sourceCodes": [
+        "105001",
+        "105002",
+        "105003"
+      ],
+      "description": "小陶碗中浓稠乳白奶油，勺子提起一个柔和尖峰",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cream.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-butter",
+      "name": "黄油",
+      "sourceCodes": [
+        "105004",
+        "105006"
+      ],
+      "description": "浅黄色黄油方块与一小片黄油卷，光滑油润",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-butter.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-butter-residue",
+      "name": "黄油渣",
+      "sourceCodes": [
+        "105005"
+      ],
+      "description": "一小碟黄褐色细碎黄油渣，松散颗粒与小碎块",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-butter-residue.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-ghee",
+      "name": "酥油",
+      "sourceCodes": [
+        "105007",
+        "105010"
+      ],
+      "description": "金黄色藏式酥油块，略带柔软油润起伏，旁一勺金黄酥油",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-ghee.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-condensed-milk",
+      "name": "甜炼乳",
+      "sourceCodes": [
+        "109001"
+      ],
+      "description": "一小碗亮白黏稠甜炼乳，一把小勺上缓缓挂下浓稠乳液，无罐头标签",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-condensed-milk.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-milk-skin",
+      "name": "奶皮子",
+      "sourceCodes": [
+        "109002"
+      ],
+      "description": "数块淡黄色奶皮子薄片，表面褶皱多孔，侧面层状",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-milk-skin.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-milk-tablets",
+      "name": "奶片",
+      "sourceCodes": [
+        "109003"
+      ],
+      "description": "一小堆白色圆形压制奶片，厚薄均匀干燥，无字无包装",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-milk-tablets.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-raw-brown-egg",
+      "name": "生鸡蛋（棕壳）",
+      "sourceCodes": [
+        "111101",
+        "111104",
+        "111109"
+      ],
+      "description": "两个完整未煮棕色壳鸡蛋，只画完整蛋壳，无切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-brown-egg.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-raw-white-egg",
+      "name": "生鸡蛋（白壳）",
+      "sourceCodes": [
+        "111102"
+      ],
+      "description": "两个完整未煮白色壳鸡蛋，只画完整蛋壳，无切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-white-egg.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-raw-egg-white",
+      "name": "生鸡蛋白",
+      "sourceCodes": [
+        "111105",
+        "111106",
+        "112102",
+        "113102"
+      ],
+      "description": "小玻璃碟中透明微黄的生蛋清，黏稠透明液体，不是固体熟蛋白",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-egg-white.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-raw-egg-yolk",
+      "name": "生鸡蛋黄",
+      "sourceCodes": [
+        "111107",
+        "111108",
+        "112103",
+        "113103"
+      ],
+      "description": "小玻璃碟中两个完整饱满橙黄色生蛋黄，光滑湿润，没有熟蛋黄切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-egg-yolk.jpg",
+      "atlas": "atlases/atlas-01.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-whole-egg-powder",
+      "name": "全蛋粉",
+      "sourceCodes": [
+        "111201"
+      ],
+      "description": "小碗中淡黄色细腻干燥全蛋粉，小勺盛粉，无鸡蛋液",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-whole-egg-powder.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-yolk-powder",
+      "name": "蛋黄粉",
+      "sourceCodes": [
+        "111202"
+      ],
+      "description": "小碗中橙黄色干燥蛋黄粉，小勺盛粉，比全蛋粉更黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-yolk-powder.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-century-egg",
+      "name": "松花蛋",
+      "sourceCodes": [
+        "111203",
+        "112201"
+      ],
+      "description": "深褐近黑透明胶质皮蛋一枚和半个切面，中心灰绿色蛋黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-century-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-embryo-egg",
+      "name": "毛蛋",
+      "sourceCodes": [
+        "111205"
+      ],
+      "description": "一个浅棕色已孵化毛蛋，局部蛋壳打开露出不规则灰黄熟胚组织，不画血腥、不画羽毛面孔",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-embryo-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-fried-egg",
+      "name": "油煎荷包蛋",
+      "sourceCodes": [
+        "111206"
+      ],
+      "description": "一枚煎荷包蛋，白色蛋白边缘轻微金黄焦脆，中间橙黄完整蛋黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fried-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-poached-egg",
+      "name": "水煮荷包蛋",
+      "sourceCodes": [
+        "111207"
+      ],
+      "description": "一枚无壳水煮荷包蛋，湿润柔软不规则白色蛋白包住蛋黄，无煎焦边",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-poached-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-duck-egg",
+      "name": "生鸭蛋",
+      "sourceCodes": [
+        "112101",
+        "112104"
+      ],
+      "description": "两枚完整淡青白色鸭蛋，椭圆略修长，完整蛋壳无切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-duck-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-raw-salted-duck-egg",
+      "name": "生咸鸭蛋",
+      "sourceCodes": [
+        "112202"
+      ],
+      "description": "一枚完整浅青鸭蛋，旁半个裂开蛋壳内是橙红生蛋黄与透明蛋清，尚未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-salted-duck-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-cooked-salted-duck-egg",
+      "name": "熟咸鸭蛋",
+      "sourceCodes": [
+        "112203"
+      ],
+      "description": "熟咸鸭蛋对半切开，实心白色蛋白与油润橙红色熟蛋黄，蛋壳浅青色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-salted-duck-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-goose-egg",
+      "name": "生鹅蛋",
+      "sourceCodes": [
+        "113101"
+      ],
+      "description": "两枚大型完整象牙白鹅蛋，椭圆光滑完整蛋壳，无切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-goose-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-boiled-goose-egg",
+      "name": "煮鹅蛋",
+      "sourceCodes": [
+        "113104"
+      ],
+      "description": "大型白色鹅蛋一枚与半个去壳煮蛋，凝固蛋白和淡黄大蛋黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-boiled-goose-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-quail-egg",
+      "name": "生鹌鹑蛋",
+      "sourceCodes": [
+        "114101"
+      ],
+      "description": "五枚完整小巧鹌鹑蛋，浅米色蛋壳有不规则深棕斑点",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-quail-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-spiced-quail-egg",
+      "name": "五香鹌鹑蛋",
+      "sourceCodes": [
+        "114201"
+      ],
+      "description": "小碗中五枚去壳卤鹌鹑蛋，光滑褐色小卵圆形，一枚切半露出黄色熟蛋黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-spiced-quail-egg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-pork-fat",
+      "name": "生猪肥肉",
+      "sourceCodes": [
+        "081102"
+      ],
+      "description": "大块乳白色生猪肥膘，边缘少量粉色肉，厚实油脂纹理",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-fat.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-pork-rump",
+      "name": "生猪后臀尖",
+      "sourceCodes": [
+        "081103"
+      ],
+      "description": "一块紧实椭圆粉红色生猪臀肉，表面薄层白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-rump.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-pork-rear-hock",
+      "name": "生猪后肘",
+      "sourceCodes": [
+        "081104"
+      ],
+      "description": "一段生猪后肘，浅粉带皮粗圆柱形，截面中央骨头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-rear-hock.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-pork-belly",
+      "name": "生猪肋条肉",
+      "sourceCodes": [
+        "081105"
+      ],
+      "description": "厚块生五花肋条猪肉，清晰红白相间层状，底部细肋骨",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-belly.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-pork-tenderloin",
+      "name": "生猪里脊",
+      "sourceCodes": [
+        "081106"
+      ],
+      "description": "一条细长完整粉红色生猪里脊，几乎无白色脂肪",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-tenderloin.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-pork-soft-belly",
+      "name": "生猪奶脯",
+      "sourceCodes": [
+        "081107"
+      ],
+      "description": "宽扁柔软生猪软五花，粉红肌肉与宽松白脂相间，厚度不均",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-soft-belly.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-pork-firm-belly",
+      "name": "生猪奶面",
+      "sourceCodes": [
+        "081108"
+      ],
+      "description": "规整厚实生猪硬五花方块，紧密整齐粉白分层，带白色皮",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-firm-belly.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-pork-front-hock",
+      "name": "生猪前肘",
+      "sourceCodes": [
+        "081109"
+      ],
+      "description": "生猪前肘一段，较细弯曲形，粉白皮层与中央骨头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-front-hock.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-pork-lean",
+      "name": "生瘦猪肉",
+      "sourceCodes": [
+        "081110"
+      ],
+      "description": "一块鲜粉红色无皮生瘦猪肉，肌肉纹理清楚，几乎无可见脂肪",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-lean.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-pork-leg",
+      "name": "生猪腿肉",
+      "sourceCodes": [
+        "081111"
+      ],
+      "description": "一块带骨大块生猪腿，粉红肌肉厚实，外侧白脂与浅色皮",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-leg.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-pork-neck",
+      "name": "生猪颈肉",
+      "sourceCodes": [
+        "081112"
+      ],
+      "description": "生猪颈肉厚片，粉红色肌肉带细密白色脂肪纹与筋膜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-neck.jpg",
+      "atlas": "atlases/atlas-02.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-pork-large-intestine",
+      "name": "生猪大肠",
+      "sourceCodes": [
+        "081113"
+      ],
+      "description": "浅米粉色清洁生猪大肠，粗管状自然盘绕，管口清晰",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-large-intestine.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-pork-chop",
+      "name": "生猪大排",
+      "sourceCodes": [
+        "081114"
+      ],
+      "description": "两片带弧形肋骨的生猪大排，粉红瘦肉椭圆截面与薄白脂边",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-chop.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-pork-ear",
+      "name": "生猪耳",
+      "sourceCodes": [
+        "081115"
+      ],
+      "description": "一对清洁生猪耳，浅粉色扇形耳廓软骨，无猪头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-ear.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-pork-trotter",
+      "name": "生猪蹄",
+      "sourceCodes": [
+        "081116"
+      ],
+      "description": "一只清洁浅粉生猪蹄，分叉双趾与厚皮，切端有肉骨",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-trotter.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-pork-tendon",
+      "name": "生猪蹄筋",
+      "sourceCodes": [
+        "081117"
+      ],
+      "description": "数段乳白色细长生猪蹄筋，半透明光滑条状",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-tendon.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-pork-scalp",
+      "name": "生猪头皮",
+      "sourceCodes": [
+        "081118"
+      ],
+      "description": "一块摊开的清洁生猪头皮，浅粉厚皮与少量皮下脂肪，无脸无眼",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-scalp.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-pork-short-ribs",
+      "name": "生猪小排",
+      "sourceCodes": [
+        "081119"
+      ],
+      "description": "四段生猪小排骨，粉红肉围住白色小肋骨截面，规整短段",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-short-ribs.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-pork-hock-bone",
+      "name": "生猪肘棒",
+      "sourceCodes": [
+        "081120"
+      ],
+      "description": "粗壮生猪肘棒骨带少量粉红肉，大关节端与长骨结构",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-hock-bone.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-pork-skin",
+      "name": "生猪皮",
+      "sourceCodes": [
+        "081130"
+      ],
+      "description": "三片浅米粉色生猪皮，薄厚均匀长方形，略卷边，几乎无肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-skin.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-pork-bile-liver",
+      "name": "猪胆肝",
+      "sourceCodes": [
+        "081201"
+      ],
+      "description": "一块深棕红色猪胆肝，紧实肝叶形，带暗绿褐小片胆汁浸渍处",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-bile-liver.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-pork-stomach",
+      "name": "生猪肚",
+      "sourceCodes": [
+        "081202"
+      ],
+      "description": "清洁的生猪胃，淡米粉色囊袋形，局部翻开可见褶皱",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-stomach.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-pork-lung",
+      "name": "生猪肺",
+      "sourceCodes": [
+        "081203"
+      ],
+      "description": "一副淡粉色生猪肺，分叶清晰、海绵状细纹，短气管",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-lung.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-pork-liver",
+      "name": "生猪肝",
+      "sourceCodes": [
+        "081204"
+      ],
+      "description": "深红褐色生猪肝叶，平滑湿润，旁有一片薄切肝片",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-liver.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-pork-brain",
+      "name": "生猪脑",
+      "sourceCodes": [
+        "081205"
+      ],
+      "description": "一枚浅粉米白色生猪脑，两半球沟回清晰，整洁无血腥",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-brain.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-pork-spleen",
+      "name": "生猪脾",
+      "sourceCodes": [
+        "081206"
+      ],
+      "description": "一条扁长暗紫红色生猪脾，窄长叶片形光滑",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-spleen.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-pork-tongue",
+      "name": "生猪舌",
+      "sourceCodes": [
+        "081207"
+      ],
+      "description": "一条完整灰粉色生猪舌，圆钝舌尖，表面细小乳头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-tongue.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-pork-kidney",
+      "name": "生猪腰子",
+      "sourceCodes": [
+        "081208",
+        "081209"
+      ],
+      "description": "一枚红褐色生猪腰子和一半切面，典型豆形肾脏与白色内芯",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-kidney.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-pork-small-intestine",
+      "name": "生猪小肠",
+      "sourceCodes": [
+        "081210"
+      ],
+      "description": "一盘清洁生猪小肠，淡粉细管紧密盘绕，明显比大肠细",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-small-intestine.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-pork-heart",
+      "name": "生猪心",
+      "sourceCodes": [
+        "081211"
+      ],
+      "description": "一枚深红色生猪心，圆锥心尖、表面少量淡色筋脂，短切血管口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-heart.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-pork-blood",
+      "name": "猪血",
+      "sourceCodes": [
+        "081212"
+      ],
+      "description": "小碟暗红酒红色猪血凝块，平整柔软方块，光滑湿润",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-blood.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-char-siu",
+      "name": "叉烧肉",
+      "sourceCodes": [
+        "081301"
+      ],
+      "description": "红褐色蜜汁叉烧长条及几片横切片，外层红亮、内部粉褐色熟肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-char-siu.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-kungpao-pork-can",
+      "name": "宫保肉丁罐头",
+      "sourceCodes": [
+        "081302"
+      ],
+      "description": "小碗中酱红色熟猪肉丁，少量花生和红椒丁，罐头菜肴形态无罐身",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-kungpao-pork-can.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-sauce-pork",
+      "name": "酱汁肉",
+      "sourceCodes": [
+        "081303"
+      ],
+      "description": "数块带皮熟猪肉，红褐浓稠酱汁包裹，红白层状熟肉切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sauce-pork.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-bacon",
+      "name": "培根",
+      "sourceCodes": [
+        "081304"
+      ],
+      "description": "数片粉红色培根长薄片，宽窄白脂条纹，生腌制而非煎熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-bacon.jpg",
+      "atlas": "atlases/atlas-03.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-cured-pork",
+      "name": "生腊肉",
+      "sourceCodes": [
+        "081305",
+        "081320",
+        "081331"
+      ],
+      "description": "一条风干腊猪肉，棕褐外表、暗红肌肉和半透明黄白脂层，悬挂孔无绳",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cured-pork.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-braised-pork-offal",
+      "name": "卤猪杂",
+      "sourceCodes": [
+        "081306"
+      ],
+      "description": "一小碟棕褐色卤猪杂，清晰可见卤肠圈、猪肚条和肝片",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-pork-offal.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-luncheon-meat",
+      "name": "午餐肉",
+      "sourceCodes": [
+        "081307"
+      ],
+      "description": "方形粉红色午餐肉厚块与两片切片，密实细碎肉质，边缘圆角",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-luncheon-meat.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-salt-pork",
+      "name": "咸肉",
+      "sourceCodes": [
+        "081308"
+      ],
+      "description": "一块腌咸猪肉，浅粉瘦肉与白脂层相间，表面少许白盐结晶",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-salt-pork.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-shredded-pork-can",
+      "name": "罐头里脊丝",
+      "sourceCodes": [
+        "081309"
+      ],
+      "description": "小碗中细长淡棕色熟猪里脊肉丝，湿润罐头清汁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-shredded-pork-can.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-braised-pork-liver",
+      "name": "卤猪肝",
+      "sourceCodes": [
+        "081310"
+      ],
+      "description": "一小叠深棕褐色卤猪肝片，平滑熟肝切面有细孔",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-pork-liver.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-steamed-pork",
+      "name": "清蒸猪肉",
+      "sourceCodes": [
+        "081311"
+      ],
+      "description": "数片灰粉色清蒸猪肉，白色熟脂与淡褐肌肉，无焦皮酱色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-steamed-pork.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-cooked-pork-trotter",
+      "name": "熟猪蹄",
+      "sourceCodes": [
+        "081312"
+      ],
+      "description": "一只完整红褐色熟猪蹄，双趾清楚，胶质外皮油润",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-pork-trotter.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-cooked-pork-hock-bone",
+      "name": "熟猪肘棒",
+      "sourceCodes": [
+        "081313"
+      ],
+      "description": "带大骨的熟猪肘棒，棕色肉包住粗骨，肉质纤维清楚",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-pork-hock-bone.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-pork-floss",
+      "name": "猪肉松",
+      "sourceCodes": [
+        "081314",
+        "081315",
+        "081316",
+        "081317"
+      ],
+      "description": "一小堆金黄色蓬松细丝猪肉松，干燥绒毛状肉丝，不是肉块",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-floss.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-lean-ham",
+      "name": "精肉火腿心",
+      "sourceCodes": [
+        "081318"
+      ],
+      "description": "深玫红色干腌火腿心厚块与薄片，无明显肥膘，干燥密实",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lean-ham.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-raw-ham-core",
+      "name": "生火腿心肉",
+      "sourceCodes": [
+        "081319"
+      ],
+      "description": "暗红色生腌火腿心肉，边缘薄层黄白脂，切面紧实",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-ham-core.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-sauce-ribs",
+      "name": "酱排骨",
+      "sourceCodes": [
+        "081322"
+      ],
+      "description": "几块红褐色酱烧熟猪排骨，露出短白骨端，浓亮酱汁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sauce-ribs.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-wine-pork-can",
+      "name": "香糟块肉罐头",
+      "sourceCodes": [
+        "081323"
+      ],
+      "description": "小碗中浅棕色带皮猪肉块，淡米色酒糟点附着，少量汁液",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-wine-pork-can.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-smoked-tenderloin",
+      "name": "熏烤小里脊",
+      "sourceCodes": [
+        "081324"
+      ],
+      "description": "一条棕红熏烤猪里脊与横切片，外表深棕、内为淡粉熟肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-smoked-tenderloin.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-pork-jerky-sheet",
+      "name": "猪肉脯",
+      "sourceCodes": [
+        "081325"
+      ],
+      "description": "数片方形薄片猪肉脯，红褐色扁平烤制肉片，半透油亮",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pork-jerky-sheet.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-crispy-meat-floss",
+      "name": "肉酥",
+      "sourceCodes": [
+        "081326"
+      ],
+      "description": "一小堆浅金棕色酥脆短碎肉纤维，颗粒比肉松更粗更短",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-crispy-meat-floss.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-braised-pig-face",
+      "name": "扒猪脸",
+      "sourceCodes": [
+        "081328"
+      ],
+      "description": "一块熟猪脸颊皮肉，红棕色宽扁胶质皮层，侧面软骨和熟肉，无眼无完整头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-pig-face.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-braised-pork-knuckle",
+      "name": "酱肘子",
+      "sourceCodes": [
+        "081329"
+      ],
+      "description": "一整个带皮酱猪肘子，圆滚红褐色皮层，下方切开露出棕色肉和骨",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-pork-knuckle.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-cured-ham",
+      "name": "藏香猪火腿",
+      "sourceCodes": [
+        "081330"
+      ],
+      "description": "一块暗红色藏香猪腌火腿，边缘厚黄白脂层，外表风干色深",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cured-ham.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-tea-sausage",
+      "name": "茶肠",
+      "sourceCodes": [
+        "081401"
+      ],
+      "description": "一根棕红色粗茶肠与圆切片，内为粉棕色细碎肉和小脂粒",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-tea-sausage.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-large-lap-sausage",
+      "name": "大腊肠",
+      "sourceCodes": [
+        "081402"
+      ],
+      "description": "两根粗壮暗红风干大腊肠，皱褶肠衣，切面可见大颗白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-large-lap-sausage.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-large-meat-sausage",
+      "name": "大肉肠",
+      "sourceCodes": [
+        "081403"
+      ],
+      "description": "一根粗粉红大肉肠与厚圆片，肉糜细腻，少量白脂点",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-large-meat-sausage.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-eggwhite-sausage",
+      "name": "蛋清肠",
+      "sourceCodes": [
+        "081404"
+      ],
+      "description": "浅米白蛋清肠短柱与切片，内部淡白细腻，带微粉肉粒",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-eggwhite-sausage.jpg",
+      "atlas": "atlases/atlas-04.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-kids-sausage",
+      "name": "儿童肠",
+      "sourceCodes": [
+        "081405"
+      ],
+      "description": "数根小巧粉红儿童肉肠，光滑短圆柱，无包装无卡通",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-kids-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-air-dried-sausage",
+      "name": "风干肠",
+      "sourceCodes": [
+        "081406"
+      ],
+      "description": "数根弯曲暗棕红风干香肠，表皮明显皱缩干燥，切面暗红白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-air-dried-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-cantonese-sausage",
+      "name": "广东腊肠",
+      "sourceCodes": [
+        "081407",
+        "081410"
+      ],
+      "description": "三根细长红色广式腊肠，透亮肠衣白色肥膘颗粒，表面微皱",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cantonese-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-hawthorn-sausage",
+      "name": "红果肠",
+      "sourceCodes": [
+        "081408"
+      ],
+      "description": "红棕色短粗红果肉肠和几片圆切片，切面为粉红细肉糜小红果颗粒",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hawthorn-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-ham-sausage",
+      "name": "火腿肠",
+      "sourceCodes": [
+        "081409",
+        "081425"
+      ],
+      "description": "一根去包装浅粉红火腿肠及圆片，均匀细腻熟肉糜，表面光滑",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-ham-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-songjiang-sausage",
+      "name": "松江肠",
+      "sourceCodes": [
+        "081411"
+      ],
+      "description": "暗红褐色松江香肠，粗短肠段，切面可见粉棕肉粒和白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-songjiang-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-garlic-sausage",
+      "name": "蒜肠",
+      "sourceCodes": [
+        "081412"
+      ],
+      "description": "一圈弯曲棕红蒜味肉肠，圆切面有细小白色蒜粒与粉色肉糜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-garlic-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-sausage",
+      "name": "香肠",
+      "sourceCodes": [
+        "081413"
+      ],
+      "description": "两根传统棕红肉香肠，略弯曲，切面有红肉与白脂粒",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-canned-sausage",
+      "name": "香肠罐头",
+      "sourceCodes": [
+        "081414"
+      ],
+      "description": "小碟中浅棕色湿润熟香肠短段与切片，少量清汁，无罐身",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-canned-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-red-sausage",
+      "name": "小红肠",
+      "sourceCodes": [
+        "081415"
+      ],
+      "description": "数根红褐色烟熏小红肠，表面紧实，切面浅粉色肉与白脂丁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-red-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-small-mud-sausage",
+      "name": "小泥肠",
+      "sourceCodes": [
+        "081416"
+      ],
+      "description": "几根细短深棕肉泥肠，柔软光滑表皮，切面细腻灰粉色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-small-mud-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-luncheon-sausage",
+      "name": "午餐肠",
+      "sourceCodes": [
+        "081417"
+      ],
+      "description": "浅棕粉色粗午餐肠切成厚圆片，细密肉糜和细白点",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-luncheon-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-luncheon-stomach",
+      "name": "午餐肚",
+      "sourceCodes": [
+        "081418"
+      ],
+      "description": "一块椭圆猪肚包肉熟食与厚切片，外层米褐肚皮，内层粉棕肉糜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-luncheon-stomach.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-square-ham",
+      "name": "方腿",
+      "sourceCodes": [
+        "081419"
+      ],
+      "description": "方形浅粉红方腿火腿厚块及长方薄片，紧实均匀熟肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-square-ham.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-ham",
+      "name": "火腿",
+      "sourceCodes": [
+        "081420"
+      ],
+      "description": "一块粉红熟火腿，外层棕红皮，内层粉色整肉纤维，切两片",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-ham.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-jinhua-ham",
+      "name": "金华火腿",
+      "sourceCodes": [
+        "081421"
+      ],
+      "description": "一只风干金华火腿腿形带细蹄端，深褐外皮，开口处暗红肉与黄脂层",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-jinhua-ham.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-round-ham-sausage",
+      "name": "圆腿火腿肠",
+      "sourceCodes": [
+        "081422"
+      ],
+      "description": "大直径圆柱粉红火腿肠与厚圆片，外层深红色、内层均匀肉色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-round-ham-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-crispy-sausage",
+      "name": "脆皮肠",
+      "sourceCodes": [
+        "081423"
+      ],
+      "description": "三根短粗棕红脆皮肠，绷紧油润肠衣，端部十字浅开口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-crispy-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-hotdog-sausage",
+      "name": "热狗肠",
+      "sourceCodes": [
+        "081424"
+      ],
+      "description": "三根细长浅红棕热狗肠，平滑圆柱圆头，无面包",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hotdog-sausage.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-beef-ribs",
+      "name": "生牛肋条",
+      "sourceCodes": [
+        "082102"
+      ],
+      "description": "一块深红生牛肋条，长条红肉间白脂层，底部肋骨",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-ribs.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-beef-hind-leg",
+      "name": "生牛后腿肉",
+      "sourceCodes": [
+        "082103"
+      ],
+      "description": "一大块深红色生牛后腿瘦肉，粗肌肉纹理、少量筋膜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-hind-leg.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-beef-rear-shank",
+      "name": "生牛后腱",
+      "sourceCodes": [
+        "082104"
+      ],
+      "description": "一块生牛后腱肉，深红圆柱肌肉中纵向白色筋腱，切片有筋花",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-rear-shank.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-beef-tenderloin",
+      "name": "生牛里脊",
+      "sourceCodes": [
+        "082105",
+        "082112"
+      ],
+      "description": "一条细长圆柱形深红生牛里脊，尾端渐细，表面少量银白筋膜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-tenderloin.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-beef-front-leg",
+      "name": "生牛前腿肉",
+      "sourceCodes": [
+        "082106"
+      ],
+      "description": "一块红色生牛前腿肌肉，肩臂多个肌束纹理和薄筋膜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-front-leg.jpg",
+      "atlas": "atlases/atlas-05.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-beef-front-shank",
+      "name": "生牛前腱",
+      "sourceCodes": [
+        "082107"
+      ],
+      "description": "生牛前腱肉较细长，多条白色筋腱包裹深红肉，横截面细密筋花",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-front-shank.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-beef-lean",
+      "name": "生瘦牛肉",
+      "sourceCodes": [
+        "082108"
+      ],
+      "description": "一块深红生瘦牛肉，几乎没有脂肪，平整结实肉纤维",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-lean.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-beef-tendon",
+      "name": "生牛蹄筋",
+      "sourceCodes": [
+        "082109"
+      ],
+      "description": "数条乳白偏黄生牛蹄筋，长条粗筋纤维，致密不透明",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-tendon.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-beef-soaked-tendon",
+      "name": "泡发牛蹄筋",
+      "sourceCodes": [
+        "082110"
+      ],
+      "description": "三段泡发牛蹄筋，半透明乳白色，肥厚柔软胶质形态",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-soaked-tendon.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-beef-chuck",
+      "name": "生牛上脑",
+      "sourceCodes": [
+        "082111"
+      ],
+      "description": "一块红色牛上脑肉，网状脂肪纹和圆形肌肉分区，厚切块",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-chuck.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-beef-rump",
+      "name": "生牛臀肉",
+      "sourceCodes": [
+        "082113"
+      ],
+      "description": "宽大扁块深红色生牛臀肉，表面薄银白筋膜，纹理粗直",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-rump.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-beef-shoulder",
+      "name": "生牛肩肉",
+      "sourceCodes": [
+        "082114"
+      ],
+      "description": "一块多肌束生牛肩肉，红色肌肉之间明显不规则白色筋膜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-shoulder.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-beef-brisket",
+      "name": "生牛胸腩",
+      "sourceCodes": [
+        "082115"
+      ],
+      "description": "厚块生牛胸腩肉，宽厚白色外脂层，下部深红粗纤维肌肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-brisket.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-beef-flank",
+      "name": "生牛腹腩",
+      "sourceCodes": [
+        "082116"
+      ],
+      "description": "扁长生牛腹腩肉，长直肌肉纹理与交错薄白筋层",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-flank.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-beef-knuckle",
+      "name": "生牛膝圆肉",
+      "sourceCodes": [
+        "082117",
+        "082122"
+      ],
+      "description": "近圆球形生牛膝圆瘦肉，深红细密肌肉，表面薄筋膜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-knuckle.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-beef-inside-round",
+      "name": "生牛股内肉",
+      "sourceCodes": [
+        "082118"
+      ],
+      "description": "长椭圆块生牛股内肉，均匀深红细密瘦肉，边缘少许白筋",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-inside-round.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-beef-shank",
+      "name": "生牛腱子",
+      "sourceCodes": [
+        "082119",
+        "082121"
+      ],
+      "description": "红色生牛小腿腱子肉，圆柱形，内部多条显著白筋与横切筋花",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-shank.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-raw-yak-meat",
+      "name": "生牦牛肉",
+      "sourceCodes": [
+        "082120"
+      ],
+      "description": "一块深酒红色牦牛生肉，几乎无脂肪，粗直纤维",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-yak-meat.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-beef-pizzle",
+      "name": "泡发牛鞭",
+      "sourceCodes": [
+        "082201"
+      ],
+      "description": "清洁泡发牛鞭，乳白偏米色的长粗软管弯曲盘绕，平整无血腥",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-pizzle.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-beef-large-intestine",
+      "name": "生牛大肠",
+      "sourceCodes": [
+        "082202"
+      ],
+      "description": "清洁生牛大肠，粗厚米白色软管，大圈盘绕，有褶皱",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-large-intestine.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-beef-tripe",
+      "name": "生牛肚",
+      "sourceCodes": [
+        "082203"
+      ],
+      "description": "米白色生牛蜂窝肚一块，清楚蜂窝状网格与厚边",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-tripe.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-beef-lung",
+      "name": "生牛肺",
+      "sourceCodes": [
+        "082204"
+      ],
+      "description": "浅红粉色生牛肺，宽大分叶与海绵状纹理，短气管",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-lung.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-beef-liver",
+      "name": "生牛肝",
+      "sourceCodes": [
+        "082205"
+      ],
+      "description": "一块暗紫红生牛肝叶，宽厚光滑，旁一片切片",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-liver.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-beef-brain",
+      "name": "生牛脑",
+      "sourceCodes": [
+        "082206"
+      ],
+      "description": "浅粉白生牛脑，两大脑半球圆厚，复杂沟回纹理",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-brain.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-beef-tongue",
+      "name": "生牛舌",
+      "sourceCodes": [
+        "082207"
+      ],
+      "description": "一条厚大长形灰粉牛舌，圆钝舌尖，粗糙乳头表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-tongue.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-beef-kidney",
+      "name": "生牛肾",
+      "sourceCodes": [
+        "082208"
+      ],
+      "description": "一枚深红褐牛肾，多个圆润小叶聚集形成葡萄状分叶表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-kidney.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-beef-heart",
+      "name": "生牛心",
+      "sourceCodes": [
+        "082209"
+      ],
+      "description": "一枚粗大红褐色牛心，锥形心尖与少量淡色脂膜，血管端短切",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-heart.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-black-tripe",
+      "name": "黑牛百叶",
+      "sourceCodes": [
+        "082210"
+      ],
+      "description": "一叠深灰黑色牛百叶，密集细长叶片褶皱与粗糙细粒表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-black-tripe.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-braised-beef",
+      "name": "酱牛肉",
+      "sourceCodes": [
+        "082301",
+        "082307"
+      ],
+      "description": "棕褐色酱熟牛肉厚块与薄切片，肌肉纤维熟褐色、边缘深酱色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-beef.jpg",
+      "atlas": "atlases/atlas-06.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-canned-stewed-beef",
+      "name": "煨牛肉罐头",
+      "sourceCodes": [
+        "082302"
+      ],
+      "description": "一碗红褐汁中的软烂牛肉块，湿润炖熟罐头形态",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-canned-stewed-beef.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-beef-jerky",
+      "name": "牛肉干",
+      "sourceCodes": [
+        "082303",
+        "082310",
+        "082311"
+      ],
+      "description": "数根深棕红色牛肉干条，干燥纤维粗纹理，边缘撕裂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-jerky.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-curry-beef-jerky",
+      "name": "咖喱牛肉干",
+      "sourceCodes": [
+        "082304"
+      ],
+      "description": "数条金棕色咖喱牛肉干，表面黄色咖喱粉末与深褐肉纤维",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-curry-beef-jerky.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-beef-floss",
+      "name": "牛肉松",
+      "sourceCodes": [
+        "082305"
+      ],
+      "description": "一堆棕黄色细丝牛肉松，干燥蓬松肉纤维，颜色比猪肉松深",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-beef-floss.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-cooked-beef-tendon",
+      "name": "熟牛蹄筋",
+      "sourceCodes": [
+        "082306"
+      ],
+      "description": "数块淡棕半透明熟牛蹄筋，软糯油润胶质短块",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-beef-tendon.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-plain-cooked-beef",
+      "name": "清香熟牛肉",
+      "sourceCodes": [
+        "082308"
+      ],
+      "description": "浅灰棕色清煮牛肉块与切片，清淡熟肉纤维，无浓重红酱汁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-plain-cooked-beef.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-cooked-beef-shank",
+      "name": "熟牛腱子",
+      "sourceCodes": [
+        "082309"
+      ],
+      "description": "一段熟牛腱与圆切片，棕色肌肉中有透明白筋花，紧实",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-beef-shank.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-lamb-mixed",
+      "name": "生羊肉",
+      "sourceCodes": [
+        "083101",
+        "083107"
+      ],
+      "description": "一块鲜红生羊肉，肌肉与边缘乳白脂肪，柔软纹理",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-mixed.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-frozen-lamb",
+      "name": "冻羊肉",
+      "sourceCodes": [
+        "083102",
+        "083110"
+      ],
+      "description": "一块冷冻羊肉，深粉红肉表面有少量细霜，白脂层，完整冻肉块",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-frozen-lamb.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-lamb-hind-leg",
+      "name": "生羊后腿",
+      "sourceCodes": [
+        "083103"
+      ],
+      "description": "带骨生羊后腿肉块，红色肌肉和白色脂肪薄层，腿骨关节端",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-hind-leg.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-lamb-neck",
+      "name": "生羊颈肉",
+      "sourceCodes": [
+        "083104"
+      ],
+      "description": "两片带中央颈椎骨的生羊颈横切肉，红肉围绕白骨，少量脂肪",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-neck.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-lamb-tenderloin",
+      "name": "生羊里脊",
+      "sourceCodes": [
+        "083105"
+      ],
+      "description": "两条细长红色生羊里脊，几乎无脂肪，窄长渐细",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-tenderloin.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-lamb-front-leg",
+      "name": "生羊前腿",
+      "sourceCodes": [
+        "083106"
+      ],
+      "description": "生羊前腿肉带细长骨，红色多肌束与薄层白脂，形态细长",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-front-leg.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-lamb-lean",
+      "name": "生瘦羊肉",
+      "sourceCodes": [
+        "083108"
+      ],
+      "description": "一块鲜红色纯瘦生羊肉，细密肌肉纹理，无明显白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-lean.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-lamb-breast",
+      "name": "生羊胸脯肉",
+      "sourceCodes": [
+        "083109"
+      ],
+      "description": "宽扁生羊胸肉带细肋骨，红肉与宽白脂肪分层",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-breast.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-lamb-tendon",
+      "name": "生羊蹄筋",
+      "sourceCodes": [
+        "083111"
+      ],
+      "description": "几根细长乳白色生羊蹄筋，紧密筋纤维，细于牛蹄筋",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-tendon.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-lamb-soaked-tendon",
+      "name": "泡发羊蹄筋",
+      "sourceCodes": [
+        "083112"
+      ],
+      "description": "几根乳白半透明泡发羊蹄筋，光润柔软膨胀条状",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-soaked-tendon.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-lamb-chuck",
+      "name": "生羊上脑",
+      "sourceCodes": [
+        "083113"
+      ],
+      "description": "厚块红色生羊上脑肉，细密白色脂肪纹分布在肌束间",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-chuck.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-lamb-flank",
+      "name": "生羊腰窝肉",
+      "sourceCodes": [
+        "083114"
+      ],
+      "description": "扁薄生羊腰窝肉，红色肌肉与较多薄层乳白脂膜交错",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-flank.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-lamb-slices",
+      "name": "生羊肉片",
+      "sourceCodes": [
+        "083117"
+      ],
+      "description": "一叠薄卷生羊肉片，粉红与白脂螺旋花纹，冷切薄片未烹熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-slices.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-lamb-large-intestine",
+      "name": "生羊大肠",
+      "sourceCodes": [
+        "083201"
+      ],
+      "description": "清洁浅米粉羊大肠，较粗皱褶管状自然卷曲",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-large-intestine.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-lamb-tripe",
+      "name": "生羊肚",
+      "sourceCodes": [
+        "083202"
+      ],
+      "description": "清洁生羊胃，米白色囊状一块，翻开处细蜂窝纹理",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-tripe.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-lamb-lung",
+      "name": "生羊肺",
+      "sourceCodes": [
+        "083203"
+      ],
+      "description": "浅粉红色小型生羊肺，左右分叶及海绵状纹理",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-lung.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-lamb-liver",
+      "name": "生羊肝",
+      "sourceCodes": [
+        "083204"
+      ],
+      "description": "暗棕红生羊肝叶，薄扁边缘与光滑湿润表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-liver.jpg",
+      "atlas": "atlases/atlas-07.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-lamb-brain",
+      "name": "生羊脑",
+      "sourceCodes": [
+        "083205"
+      ],
+      "description": "一枚小型浅粉白羊脑，沟回清晰，左右两半球",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-brain.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-lamb-tongue",
+      "name": "生羊舌",
+      "sourceCodes": [
+        "083206"
+      ],
+      "description": "一条窄长灰粉羊舌，圆尖舌端，细颗粒粗糙表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-tongue.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-lamb-kidney",
+      "name": "生羊腰子",
+      "sourceCodes": [
+        "083207"
+      ],
+      "description": "一枚小型深红褐羊肾和半个切面，表面光滑豆形",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-kidney.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-lamb-heart",
+      "name": "生羊心",
+      "sourceCodes": [
+        "083208"
+      ],
+      "description": "一枚小型深红羊心，细长圆锥，表面少量白脂与短血管口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-heart.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-lamb-blood",
+      "name": "羊血",
+      "sourceCodes": [
+        "083209"
+      ],
+      "description": "小碟暗酒红羊血凝块，柔软方块切面细腻，少量清液",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-blood.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-cured-lamb",
+      "name": "腊羊肉",
+      "sourceCodes": [
+        "083301"
+      ],
+      "description": "一块风干腊羊肉，外表深褐干燥，切面暗红与乳黄脂层",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cured-lamb.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-cooked-lamb",
+      "name": "熟羊肉",
+      "sourceCodes": [
+        "083302"
+      ],
+      "description": "几块浅灰棕色熟羊肉，肉纤维清晰、少量熟白脂，无烤焦皮",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-lamb.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-roast-lamb-skewer",
+      "name": "烤羊肉串",
+      "sourceCodes": [
+        "083303",
+        "083304"
+      ],
+      "description": "三支木签烤羊肉串，棕褐肉块与少量金黄脂肪交替，轻微焦边",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-roast-lamb-skewer.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-fried-lamb-skewer",
+      "name": "炸羊肉串",
+      "sourceCodes": [
+        "083305"
+      ],
+      "description": "三支木签油炸羊肉串，均匀深金棕色酥脆表面，少量油光",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fried-lamb-skewer.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-lamb-jerky",
+      "name": "羊肉干",
+      "sourceCodes": [
+        "083306"
+      ],
+      "description": "数条深红棕羊肉干，干燥粗纤维，细长硬条",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lamb-jerky.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-hand-grab-lamb",
+      "name": "手抓羊肉",
+      "sourceCodes": [
+        "083307"
+      ],
+      "description": "数段白煮带骨羊排，浅灰熟肉与乳白脂边，粗肋骨露端",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hand-grab-lamb.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-sauce-goat",
+      "name": "酱山羊肉",
+      "sourceCodes": [
+        "083308"
+      ],
+      "description": "深褐酱山羊肉块与厚片，紧实熟肉纤维，表层薄酱汁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sauce-goat.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-spiced-roast-lamb",
+      "name": "五香烧羊肉",
+      "sourceCodes": [
+        "083309"
+      ],
+      "description": "一块棕红五香烧羊肉，表面微焦与香料点，切面灰棕熟肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-spiced-roast-lamb.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-raw-lamb-skewer",
+      "name": "生羊肉串",
+      "sourceCodes": [
+        "083310"
+      ],
+      "description": "三支木签生羊肉串，鲜红生肉块与乳白生羊脂交替，完全没有焦色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-lamb-skewer.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-donkey-lean",
+      "name": "生瘦驴肉",
+      "sourceCodes": [
+        "084101"
+      ],
+      "description": "一块深红生瘦驴肉，纤维粗直，几乎无白色脂肪",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-donkey-lean.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-raw-donkey-pizzle",
+      "name": "生驴鞭",
+      "sourceCodes": [
+        "084201"
+      ],
+      "description": "清洁生驴鞭，浅粉色长管状盘曲，表面平滑无血腥",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-donkey-pizzle.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-braised-donkey",
+      "name": "酱卤驴肉",
+      "sourceCodes": [
+        "084301",
+        "084302",
+        "084304"
+      ],
+      "description": "棕褐色酱卤驴肉块及切片，紧实长纤维，表层深棕色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-donkey.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-boiled-donkey",
+      "name": "清煮驴肉",
+      "sourceCodes": [
+        "084303"
+      ],
+      "description": "浅灰棕色清煮驴肉厚块及薄片，清淡无酱色，长肉纤维",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-boiled-donkey.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-horse-meat",
+      "name": "生马肉",
+      "sourceCodes": [
+        "085101"
+      ],
+      "description": "一块暗红生马肉，粗纤维，边缘少量淡黄色脂肪",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-horse-meat.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-horse-heart",
+      "name": "生马心",
+      "sourceCodes": [
+        "085201"
+      ],
+      "description": "一枚大而长的深红生马心，圆锥心尖，表面少许白脂和短血管端",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-horse-heart.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-braised-horse",
+      "name": "卤马肉",
+      "sourceCodes": [
+        "085301"
+      ],
+      "description": "深棕色卤马肉块和薄切片，紧实粗纤维与浅黄色熟脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-horse.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-raw-dog-meat",
+      "name": "生狗肉",
+      "sourceCodes": [
+        "089001"
+      ],
+      "description": "一块深红色生狗肉，带浅米色皮下脂层，仅食材肉块不画活体动物",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-dog-meat.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-camel-hoof",
+      "name": "骆驼蹄",
+      "sourceCodes": [
+        "089002"
+      ],
+      "description": "一段去毛清洁骆驼蹄，宽厚双趾形，浅棕皮与白色胶筋层，食材形态",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-camel-hoof.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-camel-pad",
+      "name": "骆驼掌",
+      "sourceCodes": [
+        "089003"
+      ],
+      "description": "一块清洁骆驼掌垫肉，浅米色宽厚扁圆胶质掌垫，切面多胶筋，食材形态",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-camel-pad.jpg",
+      "atlas": "atlases/atlas-08.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-rabbit-meat",
+      "name": "生兔肉",
+      "sourceCodes": [
+        "089004",
+        "089005"
+      ],
+      "description": "一只去皮清洁生兔胴体，粉红瘦肉，细长后腿，无头无毛无血腥",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-rabbit-meat.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-raw-chicken",
+      "name": "生整鸡",
+      "sourceCodes": [
+        "091101",
+        "091102",
+        "091103",
+        "091104",
+        "091105"
+      ],
+      "description": "一只清洁去毛去内脏的生整鸡，浅粉黄色皮，折起两腿与双翅，无头无毛",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-raw-sandgrouse",
+      "name": "生沙鸡",
+      "sourceCodes": [
+        "091106"
+      ],
+      "description": "一只小型去毛去头清洁生沙鸡胴体，浅灰粉皮，短小翅腿",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-sandgrouse.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-raw-silkie",
+      "name": "生乌骨鸡",
+      "sourceCodes": [
+        "091107"
+      ],
+      "description": "一只清洁去毛生乌骨鸡，深灰近黑色皮肤，折起双腿与翅膀，无头无毛",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-silkie.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-raw-chicken-feet",
+      "name": "生鸡爪",
+      "sourceCodes": [
+        "091111"
+      ],
+      "description": "三只清洁生鸡爪，浅黄白色细长趾爪，关节明显，无熟酱色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-feet.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-raw-chicken-breast",
+      "name": "生鸡胸肉",
+      "sourceCodes": [
+        "091112"
+      ],
+      "description": "两块生鸡胸脯肉，浅粉红色厚水滴状，清晰生肉细纹，无煎熟痕迹",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-breast.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-raw-chicken-leg",
+      "name": "生鸡腿",
+      "sourceCodes": [
+        "091113"
+      ],
+      "description": "两只生鸡腿带骨带皮，浅粉色圆厚上端与细腿骨端，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-leg.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-raw-chicken-wing",
+      "name": "生鸡翅",
+      "sourceCodes": [
+        "091114"
+      ],
+      "description": "三段生鸡翅，浅米粉色带皮，翼中双骨与关节形态清晰",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-wing.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-battered-chicken",
+      "name": "带浆粉鸡块",
+      "sourceCodes": [
+        "091115"
+      ],
+      "description": "一小碟裹淡黄色生面浆和白面粉的鸡肉块，未炸未煮，外表湿润浅色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-battered-chicken.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-raw-chicken-liver",
+      "name": "生鸡肝",
+      "sourceCodes": [
+        "091201",
+        "091202"
+      ],
+      "description": "几叶深红棕色生鸡肝，小型双叶，光滑湿润",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-liver.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-raw-chicken-heart",
+      "name": "生鸡心",
+      "sourceCodes": [
+        "091203"
+      ],
+      "description": "四枚小巧暗红生鸡心，水滴形尖端，上部少量白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-heart.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-chicken-blood",
+      "name": "鸡血",
+      "sourceCodes": [
+        "091204"
+      ],
+      "description": "小碟暗红棕色鸡血凝块，细腻柔软方块切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-chicken-blood.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-raw-chicken-gizzard",
+      "name": "生鸡胗",
+      "sourceCodes": [
+        "091205"
+      ],
+      "description": "两枚清洁生鸡胗，厚实暗红肌肉和白色筋膜，切开处可见肌肉腔",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-chicken-gizzard.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-braised-whole-chicken",
+      "name": "扒鸡",
+      "sourceCodes": [
+        "091301",
+        "091304",
+        "091308"
+      ],
+      "description": "一只完整熟扒鸡，金棕色油亮皮，翅腿折叠，酱卤熟食，无配菜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-whole-chicken.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-fried-chicken-chunks",
+      "name": "炸鸡块",
+      "sourceCodes": [
+        "091303"
+      ],
+      "description": "一碟金黄色炸鸡块，厚而蓬松酥脆面衣，不放品牌包装",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fried-chicken-chunks.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-chicken-soup-meat",
+      "name": "鸡汤中的熟鸡肉",
+      "sourceCodes": [
+        "091305"
+      ],
+      "description": "小碗中浅米色带骨炖鸡肉块，少许淡黄清汤，肉熟而无焦皮",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-chicken-soup-meat.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-chicken-broth",
+      "name": "鸡清汤",
+      "sourceCodes": [
+        "091306"
+      ],
+      "description": "一只浅陶碗装淡金黄色清鸡汤，表面微小油珠，几乎无肉块无配菜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-chicken-broth.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-chicken-floss",
+      "name": "鸡肉松",
+      "sourceCodes": [
+        "091307"
+      ],
+      "description": "一小堆淡金黄色蓬松细丝鸡肉松，干燥柔细肉纤维",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-chicken-floss.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-roast-chicken",
+      "name": "烤鸡",
+      "sourceCodes": [
+        "091309"
+      ],
+      "description": "一只完整烤熟鸡，金黄焦棕色皮，表面微焦，翅腿自然折叠",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-roast-chicken.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-raw-duck",
+      "name": "生整鸭",
+      "sourceCodes": [
+        "092101",
+        "092102",
+        "092103",
+        "092302"
+      ],
+      "description": "一只清洁去毛生整鸭，浅米白带淡粉皮，扁长胴体及折叠短翅腿，无头无毛",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-raw-duck-breast",
+      "name": "生鸭胸肉",
+      "sourceCodes": [
+        "092104"
+      ],
+      "description": "一块带浅白皮的生鸭胸肉与一片切面，深红色肌肉，皮下白脂层",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-breast.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-raw-duck-skin",
+      "name": "生鸭皮",
+      "sourceCodes": [
+        "092105"
+      ],
+      "description": "几片薄而宽生鸭皮，浅乳黄色微毛孔表面，卷边带少许白脂，不带肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-skin.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-raw-duck-wings",
+      "name": "生鸭翅",
+      "sourceCodes": [
+        "092106"
+      ],
+      "description": "两只清洁生鸭翅，较细长浅米黄带皮，弯曲关节与翼尖",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-wings.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-raw-duck-feet",
+      "name": "生鸭掌",
+      "sourceCodes": [
+        "092107"
+      ],
+      "description": "三只清洁浅黄色生鸭掌，扁平蹼状脚趾与短关节端",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-feet.jpg",
+      "atlas": "atlases/atlas-09.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-raw-duck-intestine",
+      "name": "生鸭肠",
+      "sourceCodes": [
+        "092201"
+      ],
+      "description": "一小堆清洁生鸭肠，淡粉半透明很细长的管状，柔软卷曲",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-intestine.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-raw-duck-liver",
+      "name": "生鸭肝",
+      "sourceCodes": [
+        "092202",
+        "092203",
+        "092204"
+      ],
+      "description": "数片深红褐生鸭肝，扁平双叶光滑湿润，小型肝叶形",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-liver.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-raw-duck-tongue",
+      "name": "生鸭舌",
+      "sourceCodes": [
+        "092205"
+      ],
+      "description": "数条清洁生鸭舌，细长浅粉色，中间细骨与分叉小根部，无鸭头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-tongue.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-raw-duck-heart",
+      "name": "生鸭心",
+      "sourceCodes": [
+        "092206"
+      ],
+      "description": "四枚暗红生鸭心，细长小水滴形，上端少量浅脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-heart.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-raw-duck-blood",
+      "name": "鸭血",
+      "sourceCodes": [
+        "092207",
+        "092208",
+        "092209"
+      ],
+      "description": "小碟红褐偏酒红色鸭血凝块，细密软嫩方块与平滑切面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-blood.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-raw-duck-pancreas",
+      "name": "生鸭胰",
+      "sourceCodes": [
+        "092210"
+      ],
+      "description": "几条清洁淡米粉生鸭胰，细长扁平叶片形，微小颗粒表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-pancreas.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-raw-duck-gizzard",
+      "name": "生鸭胗",
+      "sourceCodes": [
+        "092211",
+        "092212",
+        "092213"
+      ],
+      "description": "两枚清洁深红生鸭胗，圆扁厚肌肉、白筋膜，切开显厚实肌壁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-duck-gizzard.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-roast-duck",
+      "name": "北京烤鸭",
+      "sourceCodes": [
+        "092301",
+        "092307",
+        "092308"
+      ],
+      "description": "一只完整北京烤鸭，深枣红色油亮脆皮，长身鸭形，折叠腿翅，旁几片带皮鸭肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-roast-duck.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-canned-braised-duck",
+      "name": "红烧鸭罐头",
+      "sourceCodes": [
+        "092303"
+      ],
+      "description": "小碗中棕红色红烧带骨鸭肉块，湿润浓汁，无罐头标签",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-canned-braised-duck.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-sauce-duck",
+      "name": "酱鸭",
+      "sourceCodes": [
+        "092304"
+      ],
+      "description": "半只酱鸭和几段切件，深棕红色光滑皮层，内是灰褐熟肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sauce-duck.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-mustard-duck-can",
+      "name": "梅菜酱鸭罐头",
+      "sourceCodes": [
+        "092305"
+      ],
+      "description": "小碗中酱鸭肉块与少量深褐细条梅干菜，棕色汁液",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mustard-duck-can.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-salted-duck",
+      "name": "盐水鸭",
+      "sourceCodes": [
+        "092306"
+      ],
+      "description": "半只熟盐水鸭与几片带皮切件，浅米白皮、灰粉熟肉，无红褐酱色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-salted-duck.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-raw-goose",
+      "name": "生整鹅",
+      "sourceCodes": [
+        "093101"
+      ],
+      "description": "一只清洁去毛生鹅胴体，米白皮，宽厚身躯与长腿长颈段，无头无毛",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-goose.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-raw-goose-liver",
+      "name": "生鹅肝",
+      "sourceCodes": [
+        "093201"
+      ],
+      "description": "一块大而饱满浅粉褐生鹅肝，清楚双叶与平滑湿润表面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-goose-liver.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-raw-goose-gizzard",
+      "name": "生鹅胗",
+      "sourceCodes": [
+        "093202"
+      ],
+      "description": "两枚大而厚实生鹅胗，暗红肌肉和白色筋膜，切开显厚肌壁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-goose-gizzard.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-raw-goose-blood",
+      "name": "鹅血",
+      "sourceCodes": [
+        "093203"
+      ],
+      "description": "小碟暗红褐色鹅血凝块，柔软光滑方块，有轻微细孔",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-goose-blood.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-roast-goose",
+      "name": "烧鹅",
+      "sourceCodes": [
+        "093301"
+      ],
+      "description": "半只烧鹅与几块带皮鹅肉，深金棕脆皮，灰棕熟肉和皮下白脂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-roast-goose.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-cured-goose",
+      "name": "腊鹅",
+      "sourceCodes": [
+        "093302"
+      ],
+      "description": "半只风干腊鹅，深红棕干燥皮，压扁胴体，肉色暗红无汁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cured-goose.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-raw-turkey-leg",
+      "name": "生火鸡腿",
+      "sourceCodes": [
+        "094101"
+      ],
+      "description": "一只粗大型生火鸡腿，浅粉红带皮，厚实腿肉和细腿骨端",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-turkey-leg.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-raw-turkey-breast",
+      "name": "生火鸡胸肉",
+      "sourceCodes": [
+        "094102"
+      ],
+      "description": "一块大型浅粉色生火鸡胸脯肉，宽厚水滴状，清楚生肉纤维，无熟烤色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-turkey-breast.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-raw-turkey-liver",
+      "name": "生火鸡肝",
+      "sourceCodes": [
+        "094201"
+      ],
+      "description": "两片深紫红生火鸡肝，宽扁肝叶光滑湿润，中等大小",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-turkey-liver.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-raw-turkey-gizzard",
+      "name": "生火鸡胗",
+      "sourceCodes": [
+        "094202"
+      ],
+      "description": "一枚粗厚生火鸡胗，深红厚肌肉与浅白筋膜，切开一半见厚肌壁",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-turkey-gizzard.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-cooked-turkey-leg",
+      "name": "熟火鸡腿",
+      "sourceCodes": [
+        "094203"
+      ],
+      "description": "一只烤熟大火鸡腿，棕红烤皮、厚实腿肉，长骨端露出",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cooked-turkey-leg.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-raw-pigeon",
+      "name": "生鸽肉",
+      "sourceCodes": [
+        "099001",
+        "099003"
+      ],
+      "description": "一只去头去毛清洁生乳鸽，灰粉偏紫皮，小巧圆胴体与短翼腿",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-pigeon.jpg",
+      "atlas": "atlases/atlas-10.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-raw-quail",
+      "name": "生鹌鹑",
+      "sourceCodes": [
+        "099002"
+      ],
+      "description": "一只去头去毛清洁生鹌鹑，极小圆润胴体，淡粉皮与短小细腿",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-quail.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-braised-pigeon",
+      "name": "红烧乳鸽",
+      "sourceCodes": [
+        "099004"
+      ],
+      "description": "一只完整熟红烧乳鸽，小巧圆润，深红棕光亮皮，折叠细腿与翅",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-braised-pigeon.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-white-strip-fish",
+      "name": "白条鱼",
+      "sourceCodes": [
+        "121101"
+      ],
+      "description": "一条完整新鲜白条鱼，细长侧扁银白身体、青灰背，细小鳞片，头朝左",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-white-strip-fish.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-grass-carp",
+      "name": "草鱼",
+      "sourceCodes": [
+        "121102"
+      ],
+      "description": "一条完整新鲜草鱼，长而厚的圆筒身、青褐大鳞、灰白腹、钝圆头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-grass-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-red-eye-trout",
+      "name": "赤眼鳟",
+      "sourceCodes": [
+        "121103"
+      ],
+      "description": "一条完整赤眼鳟，修长银色鳞身、眼睛上缘明显红色，尾鳍深叉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-red-eye-trout.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-yellowcheek-carp",
+      "name": "鳡鱼",
+      "sourceCodes": [
+        "121104"
+      ],
+      "description": "一条完整鳡鱼，长纺锤形银灰身体、尖长吻、大口、灰黄鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-yellowcheek-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-walking-catfish",
+      "name": "胡子鲇",
+      "sourceCodes": [
+        "121105"
+      ],
+      "description": "一条完整新鲜胡子鲇，黑褐无鳞长身、扁阔头、四对长触须、长背鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-walking-catfish.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-yellow-catfish",
+      "name": "黄颡鱼",
+      "sourceCodes": [
+        "121106"
+      ],
+      "description": "一条完整黄颡鱼，黄褐身带深色斑纹、宽扁头、明显长须与尖背棘",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-yellow-catfish.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-rice-eel",
+      "name": "黄鳝",
+      "sourceCodes": [
+        "121107"
+      ],
+      "description": "一条完整黄鳝，黄褐色无鳞蛇状长身，背部深色斑点，柔弯成S形",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-rice-eel.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-eel-strips",
+      "name": "黄鳝丝",
+      "sourceCodes": [
+        "121108"
+      ],
+      "description": "小碟中生黄鳝肉丝，细长扁条、灰黄皮边和浅粉白肉，未烹熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-eel-strips.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-sharp-mouth-bream",
+      "name": "尖嘴白",
+      "sourceCodes": [
+        "121109"
+      ],
+      "description": "一条完整尖嘴白鱼，长而侧扁银白身体、头尖嘴略上翘、分叉灰尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sharp-mouth-bream.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-koutou-fish",
+      "name": "口头鱼",
+      "sourceCodes": [
+        "121110"
+      ],
+      "description": "一条完整口头鱼，鲤科淡水鱼，椭圆侧扁银灰大鳞身体、圆钝嘴、灰鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-koutou-fish.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-common-carp",
+      "name": "鲤鱼",
+      "sourceCodes": [
+        "121111"
+      ],
+      "description": "一条完整鲜鲤鱼，金褐色大鳞、厚实长椭圆身体、嘴角两对短须、橙红尾鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-common-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-tilapia",
+      "name": "罗非鱼",
+      "sourceCodes": [
+        "121112",
+        "121113"
+      ],
+      "description": "一条完整罗非鱼，灰黑侧扁宽椭圆身体、竖向暗横带、长带棘背鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-tilapia.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-loach",
+      "name": "泥鳅",
+      "sourceCodes": [
+        "121114"
+      ],
+      "description": "三条完整鲜泥鳅，短细圆柱黄褐色身体、有不规则暗斑，小须圆头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-loach.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-black-carp",
+      "name": "青鱼",
+      "sourceCodes": [
+        "121115"
+      ],
+      "description": "一条完整鲜青鱼，修长厚实黑青色大鳞身，灰白腹、深色各鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-black-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-snakehead",
+      "name": "黑鱼",
+      "sourceCodes": [
+        "121116"
+      ],
+      "description": "一条完整乌鳢黑鱼，长圆筒身、灰黑不规则斑块、蛇头状宽头、长低背鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-snakehead.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-whitebait",
+      "name": "鲜银鱼",
+      "sourceCodes": [
+        "121117"
+      ],
+      "description": "一小堆透明乳白鲜银鱼，纤细半透明小鱼、眼睛为极小黑点，不是干鱼",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-whitebait.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-naked-carp",
+      "name": "湟鱼",
+      "sourceCodes": [
+        "121118",
+        "121119"
+      ],
+      "description": "一条完整湟鱼裸鲤，长椭圆身体、黄褐背银黄腹，表面光滑少鳞，小圆头",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-naked-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-catfish",
+      "name": "鲇鱼",
+      "sourceCodes": [
+        "121120"
+      ],
+      "description": "一条完整鲇鱼，灰褐光滑无鳞身、宽扁头、两对长须、小背鳍、长臀鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-catfish.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-jinhua-fish",
+      "name": "鲒花",
+      "sourceCodes": [
+        "121121"
+      ],
+      "description": "一条完整鲒花江鲫，宽椭圆银白鳞身、深灰背、厚身体、钝圆小口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-jinhua-fish.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-silver-carp",
+      "name": "鲢鱼",
+      "sourceCodes": [
+        "121122"
+      ],
+      "description": "一条完整白鲢，银白高侧扁身体、头小眼位偏低、背青灰、细鳞、叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-silver-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-crucian-carp",
+      "name": "鲫鱼",
+      "sourceCodes": [
+        "121123"
+      ],
+      "description": "一条完整鲫鱼，短而高的银灰鳞身、弧背、小头小嘴无须、灰叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-crucian-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-mud-carp",
+      "name": "鲮鱼",
+      "sourceCodes": [
+        "121124"
+      ],
+      "description": "一条完整鲮鱼，长纺锤银色身体、背部青灰，胸侧有一块暗色斑、下位小嘴",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mud-carp.jpg",
+      "atlas": "atlases/atlas-11.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-canned-dace",
+      "name": "鲮鱼罐头",
+      "sourceCodes": [
+        "121125"
+      ],
+      "description": "一只小碗里几段深棕色油浸熟鲮鱼，鱼皮和短鱼段可见，少量豆豉，无罐身",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-canned-dace.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-wuchang-bream",
+      "name": "鳊鱼",
+      "sourceCodes": [
+        "121126"
+      ],
+      "description": "一条完整鳊鱼，银灰色菱形高侧扁身、头小、背鳍高尖、腹缘锐、叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-wuchang-bream.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-freshwater-eel",
+      "name": "河鳗",
+      "sourceCodes": [
+        "121127"
+      ],
+      "description": "一条完整河鳗，深灰背、银白腹、光滑长蛇形身体，头圆、可见小胸鳍，柔弯成S",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-freshwater-eel.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-bighead-carp",
+      "name": "鳙鱼",
+      "sourceCodes": [
+        "121128"
+      ],
+      "description": "一条完整胖头鱼，头部非常大、灰银身不规则黑斑、低眼位、宽大嘴、叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-bighead-carp.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-mandarin-fish",
+      "name": "鳜鱼",
+      "sourceCodes": [
+        "121129"
+      ],
+      "description": "一条完整鳜鱼，黄绿褐色身布满深褐豹斑、大嘴、尖硬背鳍、短高侧扁身",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mandarin-fish.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-rainbow-trout",
+      "name": "鳟鱼",
+      "sourceCodes": [
+        "121130"
+      ],
+      "description": "一条完整虹鳟，银色长纺锤身、背部细黑点、体侧粉红纵带、细尾柄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-rainbow-trout.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-white-croaker",
+      "name": "白姑鱼",
+      "sourceCodes": [
+        "121201"
+      ],
+      "description": "一条完整白姑鱼，银灰色长侧扁身体、背浅灰、腹白、圆钝头大眼、长背鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-white-croaker.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-blue-round-scad",
+      "name": "蓝圆鲹",
+      "sourceCodes": [
+        "121202"
+      ],
+      "description": "一条完整蓝圆鲹，青蓝色背、银白纺锤身、淡黄尾、胸鳍细长、尾柄有硬棱鳞",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-blue-round-scad.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-whole-hairtail",
+      "name": "整条带鱼",
+      "sourceCodes": [
+        "121203"
+      ],
+      "description": "一条完整银白带鱼，长而扁平的金属银色带状身体、尖齿口，弯成松弧，细长尾尖",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-whole-hairtail.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-anchovy-tiyu",
+      "name": "堤鱼",
+      "sourceCodes": [
+        "121204"
+      ],
+      "description": "一条完整堤鱼，银白色小海鱼，青灰背、纤细侧扁长身、较大眼，整鱼食材形态",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-anchovy-tiyu.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-dried-anchovy",
+      "name": "丁香鱼干",
+      "sourceCodes": [
+        "121205"
+      ],
+      "description": "一小堆细小丁香鱼干，银米色干燥小鱼、深色小眼、细长而硬挺",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-anchovy.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-lizardfish",
+      "name": "狗母鱼",
+      "sourceCodes": [
+        "121206"
+      ],
+      "description": "一条完整狗母鱼，长圆筒黄褐身、头大且尖扁、口裂很大、背有暗横斑",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lizardfish.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-sea-perch-bream",
+      "name": "海鲫鱼",
+      "sourceCodes": [
+        "121207"
+      ],
+      "description": "一条完整海鲫鱼，短高椭圆银灰身、背鳍硬棘、体侧暗色竖纹，小口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sea-perch-bream.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-conger-eel",
+      "name": "海鳗",
+      "sourceCodes": [
+        "121208"
+      ],
+      "description": "一条完整海鳗，灰褐背银白腹、蛇状细长身体、尖长嘴大口和小胸鳍，柔弯成S",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-conger-eel.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-red-gurnard",
+      "name": "红娘鱼",
+      "sourceCodes": [
+        "121209"
+      ],
+      "description": "一条完整红娘鱼，鲜橙红色身体、硬角形大头、宽大翼状胸鳍及细长独立胸鳍条",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-red-gurnard.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-yellow-drum",
+      "name": "黄姑鱼",
+      "sourceCodes": [
+        "121210"
+      ],
+      "description": "一条完整黄姑鱼，银灰侧扁长身、体侧淡金黄、口下位、尾柄细、鳍浅黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-yellow-drum.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-large-yellow-croaker",
+      "name": "大黄鱼",
+      "sourceCodes": [
+        "121211"
+      ],
+      "description": "一条完整大黄鱼，修长金黄色身体、黄鳍、银黄色大鳞、尾柄长、头钝嘴大",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-large-yellow-croaker.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-small-yellow-croaker",
+      "name": "小黄鱼",
+      "sourceCodes": [
+        "121212"
+      ],
+      "description": "一条完整小黄花鱼，较短银金色身体、黄腹黄鳍、大眼、短尾柄、尾呈浅叉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-small-yellow-croaker.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-stingray",
+      "name": "黄鲂",
+      "sourceCodes": [
+        "121213"
+      ],
+      "description": "一只完整黄鲂魟鱼，黄褐扁平菱圆盘状身、两眼在顶面，细长鞭状尾，俯视",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-stingray.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-threadfin-bream",
+      "name": "金线鱼",
+      "sourceCodes": [
+        "121214"
+      ],
+      "description": "一条完整金线鱼，粉红背、银白腹，体侧两条细金黄色纵线，黄红尾鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-threadfin-bream.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-filefish",
+      "name": "绿鳍马面鲀",
+      "sourceCodes": [
+        "121215"
+      ],
+      "description": "一条完整马面鱼，灰绿菱形侧扁身、狭小尖嘴、长头、头顶一根背棘、各鳍淡绿",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-filefish.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-mei-tong-croaker",
+      "name": "梅童鱼",
+      "sourceCodes": [
+        "121216"
+      ],
+      "description": "一条完整梅童鱼，短小银黄色身体、头部很大圆钝、黑色大眼、鳍浅黄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mei-tong-croaker.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-sardine",
+      "name": "沙丁鱼",
+      "sourceCodes": [
+        "121217"
+      ],
+      "description": "两条完整沙丁鱼，青蓝背银白长侧扁身，鳃后细排黑点，大鳞叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sardine.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-sand-whiting",
+      "name": "沙钻鱼",
+      "sourceCodes": [
+        "121218"
+      ],
+      "description": "一条完整沙钻鱼，细长银米色身体、尖长嘴，背部淡褐，小透明灰鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sand-whiting.jpg",
+      "atlas": "atlases/atlas-12.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-snake-lizardfish",
+      "name": "蛇鲻",
+      "sourceCodes": [
+        "121219"
+      ],
+      "description": "一条完整蛇鲻鱼，细长圆筒浅黄褐身、尖扁蜥蜴状头，背部细暗斑，叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-snake-lizardfish.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-sole",
+      "name": "舌鳎",
+      "sourceCodes": [
+        "121220"
+      ],
+      "description": "一条完整舌鳎鱼，扁平长椭圆舌形身体、浅棕有细花纹、双眼同侧，周缘连续鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sole.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-xiang-suo-fish",
+      "name": "香梭鱼",
+      "sourceCodes": [
+        "121221"
+      ],
+      "description": "一条完整香梭鱼，长纺锤银白身、灰青背，体侧细暗纵线，尾鳍分叉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-xiang-suo-fish.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-needlefish",
+      "name": "颌针鱼",
+      "sourceCodes": [
+        "121222"
+      ],
+      "description": "一条完整颌针鱼，极细长银绿身体，上下颌都延长成细针状长喙，尾深叉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-needlefish.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-spanish-mackerel",
+      "name": "鲅鱼",
+      "sourceCodes": [
+        "121223"
+      ],
+      "description": "一条完整鲅鱼，蓝灰背银白长梭身、侧面散布暗圆点、尖头大口、尾鳍深叉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-spanish-mackerel.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-salted-mackerel",
+      "name": "咸鲅鱼",
+      "sourceCodes": [
+        "121224"
+      ],
+      "description": "一条剖开压平腌咸鲅鱼，灰银干燥鱼皮，切口粉褐肉，有白盐霜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-salted-mackerel.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-bastard-halibut",
+      "name": "鲆鱼",
+      "sourceCodes": [
+        "121225"
+      ],
+      "description": "一条完整鲆比目鱼，宽椭圆扁平褐色身、双眼在同侧，黑褐细斑，周缘连续鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-bastard-halibut.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-sea-bass",
+      "name": "鲈鱼",
+      "sourceCodes": [
+        "121226"
+      ],
+      "description": "一条完整海鲈鱼，银灰色长侧扁身体、背与体侧黑点、硬棘背鳍、大嘴",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sea-bass.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-mackerel",
+      "name": "鲐鱼",
+      "sourceCodes": [
+        "121227"
+      ],
+      "description": "一条完整青鲐鱼，青蓝色背部有深色波浪斑纹，银白腹，纺锤身、尾深叉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mackerel.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-salmon",
+      "name": "鲑鱼",
+      "sourceCodes": [
+        "121228"
+      ],
+      "description": "一条完整大麻哈鱼，银灰长梭身体、背部细黑斑，旁一块生橙粉色鲑鱼排显白色脂纹",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-salmon.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-salmon-roe",
+      "name": "鲑鱼籽酱",
+      "sourceCodes": [
+        "121229"
+      ],
+      "description": "一小碟晶莹橙红色鲑鱼籽，透明圆球颗粒，湿润亮泽，无其他装饰",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-salmon-roe.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-anchovy-fengwei",
+      "name": "鲚鱼",
+      "sourceCodes": [
+        "121230",
+        "121231"
+      ],
+      "description": "一条完整凤尾鱼，银白长侧扁身、腹薄、长长臀鳍与渐细尾部、尖头大眼",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-anchovy-fengwei.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-shark",
+      "name": "鲨鱼",
+      "sourceCodes": [
+        "121232"
+      ],
+      "description": "一条完整小型灰鲨，灰色纺锤身、三角高背鳍、长胸鳍和异尾形，侧面可见鳃裂",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-shark.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-silver-pomfret",
+      "name": "银鲳鱼",
+      "sourceCodes": [
+        "121233"
+      ],
+      "description": "一条完整银鲳鱼，银白色近菱圆扁身、很小头和嘴、长镰刀状背臀鳍与叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-silver-pomfret.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-black-seabream",
+      "name": "黑鲷",
+      "sourceCodes": [
+        "121234"
+      ],
+      "description": "一条完整黑鲷，深银灰高侧扁椭圆身、硬棘高背鳍、粗大鳞片，黑灰鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-black-seabream.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-mullet",
+      "name": "鲻鱼",
+      "sourceCodes": [
+        "121235"
+      ],
+      "description": "一条完整鲻鱼，长圆筒银灰大鳞身、灰背、数条暗灰纵纹，头宽扁小嘴，叉尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mullet.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-righteye-flounder",
+      "name": "鲽鱼",
+      "sourceCodes": [
+        "121236"
+      ],
+      "description": "一条完整鲽比目鱼，扁平卵圆棕褐身、双眼同侧，细碎暗斑，尾短宽",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-righteye-flounder.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-skate",
+      "name": "鳐鱼",
+      "sourceCodes": [
+        "121237"
+      ],
+      "description": "一只完整鳐鱼，宽菱形灰褐扁平身体、翼状胸鳍、细长尾上有两小鳍，俯视",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-skate.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-ilish",
+      "name": "鳓鱼",
+      "sourceCodes": [
+        "121238"
+      ],
+      "description": "一条完整鳓鱼，银白高侧扁长椭圆身、鳞片亮，腹部锯齿棱、叉形灰尾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-ilish.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-cod",
+      "name": "鳕鱼",
+      "sourceCodes": [
+        "121239"
+      ],
+      "description": "一条完整鳕鱼，灰褐背细斑银白腹，较大头，三段背鳍，下颌一根短须",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cod.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-miichthys",
+      "name": "鳘鱼",
+      "sourceCodes": [
+        "121240"
+      ],
+      "description": "一条完整鳘鱼，灰银长而厚实侧扁身、头大圆钝、大鳞，鳍偏淡褐黄，长背鳍",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-miichthys.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-hairtail-sections",
+      "name": "带鱼段",
+      "sourceCodes": [
+        "121241"
+      ],
+      "description": "四段生带鱼切段，银白金属鱼皮，长方窄条，横截面为白肉与中央骨",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hairtail-sections.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-dried-fish-slices",
+      "name": "鱼片干",
+      "sourceCodes": [
+        "121301"
+      ],
+      "description": "一小堆米黄半透明干鱼片，薄不规则片，干燥纤维、略卷边",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-fish-slices.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-fish-sauce",
+      "name": "鱼露",
+      "sourceCodes": [
+        "121302"
+      ],
+      "description": "无标签透明小玻璃瓶装琥珀棕色鱼露，旁一小陶碟同色透明液体",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fish-sauce.jpg",
+      "atlas": "atlases/atlas-13.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-fish-steak",
+      "name": "鱼排",
+      "sourceCodes": [
+        "121304"
+      ],
+      "description": "两块生带皮鱼排，乳白色湿润鱼肉，灰银皮边，中央有小脊骨截面，无炸面衣",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fish-steak.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-fish-ball",
+      "name": "鱼丸",
+      "sourceCodes": [
+        "121305"
+      ],
+      "description": "一小碗乳白圆鱼丸，光滑弹性圆球，切开一粒显细腻白色鱼糜",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fish-ball.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-black-caviar",
+      "name": "鱼子酱",
+      "sourceCodes": [
+        "121306"
+      ],
+      "description": "一小碟黑灰色细小鱼子酱，颗粒致密亮泽，清楚黑色小珠，不是橙红鲑鱼籽",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-black-caviar.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-white-small-shrimp",
+      "name": "白米虾",
+      "sourceCodes": [
+        "122101"
+      ],
+      "description": "几只小巧完整生白米虾，半透明灰白虾壳、细长须和小尾扇，完全不是熟橙虾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-white-small-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-black-tiger-prawn",
+      "name": "斑节对虾",
+      "sourceCodes": [
+        "122102"
+      ],
+      "description": "两只完整生黑虎虾，灰青壳上清晰黑黄横带、长须和蓝灰尾，未煮不橙红",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-black-tiger-prawn.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-hairy-prawn",
+      "name": "长毛对虾",
+      "sourceCodes": [
+        "122103"
+      ],
+      "description": "两只完整生长毛对虾，半透明淡灰粉壳，细小棕斑，细长须和灰蓝尾尖",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hairy-prawn.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-spiny-crayfish",
+      "name": "刺蛄（蝲蛄类形态）",
+      "sourceCodes": [
+        "122104"
+      ],
+      "description": "一只青褐色完整生蝲蛄类淡水螯虾，头胸甲细长而较平滑，双螯明确，长腹部有清楚分节，末端展开扇状尾肢；食品原始条目未给学名，不断定唯一物种。",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-spiny-crayfish.jpg",
+      "sourceImage": "atlases/122104-crayfish-corrected.png",
+      "generationPrompt": "atlases/122104-crayfish-corrected.prompt.txt",
+      "replacedAtlas": "atlases/atlas-14.png",
+      "replacedCell": 7,
+      "reviewRecord": "122104-形态核对记录.md"
+    },
+    {
+      "key": "proteins-chinese-prawn",
+      "name": "东方对虾",
+      "sourceCodes": [
+        "122105"
+      ],
+      "description": "两只完整生中国对虾，半透明浅灰青身体，细长额剑与长须，尾略青蓝",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-chinese-prawn.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-raw-prawn",
+      "name": "生对虾",
+      "sourceCodes": [
+        "122106"
+      ],
+      "description": "两只完整大生对虾，半透明灰白虾身，长额剑、触须、细足与尾扇，绝非橙色熟虾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-prawn.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-sea-shrimp",
+      "name": "生海虾",
+      "sourceCodes": [
+        "122107"
+      ],
+      "description": "几只生海虾，透明微粉灰色甲壳，细须脚，长尾，完全未煮不橙红",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sea-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-river-shrimp",
+      "name": "河虾",
+      "sourceCodes": [
+        "122108",
+        "122110"
+      ],
+      "description": "几只完整生淡水青虾，灰绿透明细长虾身、长细蓝钳足、长须，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-river-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-jinga-shrimp",
+      "name": "基围虾",
+      "sourceCodes": [
+        "122109"
+      ],
+      "description": "几只完整生基围虾，透明淡灰褐虾身有细浅斑，短额剑、深色尾缘，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-jinga-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-lobster",
+      "name": "龙虾",
+      "sourceCodes": [
+        "122111"
+      ],
+      "description": "一只完整生海龙虾，红褐带斑坚硬甲壳、极长触角、粗宽分节尾，无大型螯，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-lobster.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-banana-prawn",
+      "name": "明虾",
+      "sourceCodes": [
+        "122112"
+      ],
+      "description": "两只完整生明虾，浅灰半透明身、很长尖额剑、淡黄足与灰尾，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-banana-prawn.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-pond-shrimp",
+      "name": "塘水虾",
+      "sourceCodes": [
+        "122113"
+      ],
+      "description": "两只完整生塘水草虾，灰绿色虾壳、身节淡暗横纹、长须，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-pond-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-shrimp-tiger-mantis",
+      "name": "虾虎",
+      "sourceCodes": [
+        "122114"
+      ],
+      "description": "一只完整生虾虎螳螂虾，浅灰黄扁长分节身体、宽尾扇、前端螳螂状捕肢",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-shrimp-tiger-mantis.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-dried-shrimp-skin",
+      "name": "虾皮",
+      "sourceCodes": [
+        "122115"
+      ],
+      "description": "一小堆极小乳白米黄虾皮，透明干燥完整微型虾壳，细碎轻薄",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-shrimp-skin.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-crayfish",
+      "name": "螯虾",
+      "sourceCodes": [
+        "122116"
+      ],
+      "description": "一只完整生淡水螯虾，暗青棕甲壳、大双螯、分节腹尾，未煮成鲜红",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-crayfish.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-mantis-shrimp",
+      "name": "皮皮虾",
+      "sourceCodes": [
+        "122119"
+      ],
+      "description": "两只完整生口虾蛄皮皮虾，浅灰绿扁平分节身体，明显宽尾扇与短足",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mantis-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-dried-shrimp",
+      "name": "虾米海米",
+      "sourceCodes": [
+        "122201"
+      ],
+      "description": "一小堆橙粉色干制去壳小虾米，卷曲短小干虾仁，干燥皱褶，不是生虾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-shrimp-paste",
+      "name": "虾脑酱",
+      "sourceCodes": [
+        "122202"
+      ],
+      "description": "一小碟砖红褐色浓稠虾脑酱，细颗粒糊状表面，少量油亮",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-shrimp-paste.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-raw-peeled-shrimp",
+      "name": "生虾仁",
+      "sourceCodes": [
+        "122206"
+      ],
+      "description": "五只生剥壳虾仁，半透明灰白微青，卷曲肥厚虾肉，无壳无头，绝非橙红熟虾",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-raw-peeled-shrimp.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-sea-crab",
+      "name": "海蟹",
+      "sourceCodes": [
+        "123001",
+        "123010",
+        "123011"
+      ],
+      "description": "一只完整生海蟹，灰褐色宽扁甲壳、两只壮螯和八条腿，未煮熟无橙红色",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sea-crab.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-hairy-crab",
+      "name": "河蟹大闸蟹",
+      "sourceCodes": [
+        "123002",
+        "123009"
+      ],
+      "description": "一只完整生大闸蟹，深青绿色近方圆壳、两只带细毛的螯、八足、白肚边，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hairy-crab.jpg",
+      "atlas": "atlases/atlas-14.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-mud-crab",
+      "name": "青蟹",
+      "sourceCodes": [
+        "123003"
+      ],
+      "description": "一只完整生青蟹，暗青绿宽厚甲壳、巨大双螯、粗脚，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mud-crab.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-swimming-crab",
+      "name": "梭子蟹",
+      "sourceCodes": [
+        "123004"
+      ],
+      "description": "一只完整生梭子蟹，蓝灰青色梭形宽壳、左右尖角，细长螯、后脚桨状，未煮熟",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-swimming-crab.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-crab-meat",
+      "name": "蟹肉",
+      "sourceCodes": [
+        "123005"
+      ],
+      "description": "小碟中剥出的白色蟹肉，细丝与小块，少量红色壳缘色，不放完整蟹",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-crab-meat.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-fresh-abalone",
+      "name": "鲜鲍鱼",
+      "sourceCodes": [
+        "124101"
+      ],
+      "description": "两只鲜鲍鱼，椭圆壳有一排小孔，一只翻面露出米黄色厚实鲍肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-abalone.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-dried-abalone",
+      "name": "干鲍鱼",
+      "sourceCodes": [
+        "124102"
+      ],
+      "description": "三枚去壳干鲍鱼，扁椭圆棕金色干缩肉，环边深褐皱褶",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-abalone.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-razor-clam",
+      "name": "鲜蛏子",
+      "sourceCodes": [
+        "124103"
+      ],
+      "description": "三只鲜蛏子，长而窄黄褐双壳，一只微开露出乳白肉及吸管",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-razor-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-dried-razor-clam",
+      "name": "蛏干",
+      "sourceCodes": [
+        "124104"
+      ],
+      "description": "一小堆去壳蛏干，细长橙米色干缩肉条，深褐肚端",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-razor-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-ark-shell",
+      "name": "赤贝",
+      "sourceCodes": [
+        "124105"
+      ],
+      "description": "两枚赤贝，厚重浅褐扇圆壳有深沟，一枚打开露出鲜橙红色贝肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-ark-shell.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-river-mussel",
+      "name": "河蚌",
+      "sourceCodes": [
+        "124106"
+      ],
+      "description": "一只大河蚌完整壳及一只打开壳，深褐黑椭圆长壳、乳白珠光内面和淡肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-river-mussel.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-freshwater-clam",
+      "name": "河蚬",
+      "sourceCodes": [
+        "124107"
+      ],
+      "description": "数枚小型黄褐色河蚬，圆三角壳、细密同心纹，一枚略开显白肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-freshwater-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-fresh-oyster",
+      "name": "鲜牡蛎生蚝",
+      "sourceCodes": [
+        "124108",
+        "124109"
+      ],
+      "description": "两只打开的新鲜生蚝，不规则粗糙灰白厚壳，饱满灰米色柔软牡蛎肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-oyster.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-blood-cockle",
+      "name": "泥蚶血蚶",
+      "sourceCodes": [
+        "124110"
+      ],
+      "description": "数枚带深放射肋的灰褐短圆血蚶，一枚打开露出暗红贝肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-blood-cockle.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-fresh-scallop",
+      "name": "鲜扇贝",
+      "sourceCodes": [
+        "124111"
+      ],
+      "description": "一只扇贝外壳和一只打开扇贝，放射纹扇形粉褐壳，白色圆柱贝柱和橙色裙边",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-scallop.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-dried-scallop",
+      "name": "干贝",
+      "sourceCodes": [
+        "124112"
+      ],
+      "description": "一小堆去壳金黄色干贝柱，小圆柱形干燥扇贝肉，纵向纤维纹清晰",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-scallop.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-fresh-scallop-meat",
+      "name": "鲜贝肉",
+      "sourceCodes": [
+        "124113"
+      ],
+      "description": "一小碟生鲜扇贝柱，乳白圆柱状湿润贝肉，无贝壳，细嫩透明感",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-scallop-meat.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-silver-cockle",
+      "name": "银蚶",
+      "sourceCodes": [
+        "124114"
+      ],
+      "description": "几枚灰银色圆扇形蚶壳，强烈均匀放射肋，一枚打开露出米白贝肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-silver-cockle.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-fresh-mussel",
+      "name": "鲜贻贝",
+      "sourceCodes": [
+        "124115"
+      ],
+      "description": "三只完整蓝黑色鲜贻贝长三角壳，一枚打开露橙黄色软肉，光亮壳面",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-mussel.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 17
+    },
+    {
+      "key": "proteins-dried-mussel",
+      "name": "淡菜干",
+      "sourceCodes": [
+        "124116"
+      ],
+      "description": "一小堆去壳淡菜干，橙棕黄色不规则干缩贝肉，边缘深褐",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-mussel.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 18
+    },
+    {
+      "key": "proteins-mottled-clam",
+      "name": "花蛤蜊",
+      "sourceCodes": [
+        "124201",
+        "124202",
+        "124206"
+      ],
+      "description": "数枚新鲜花蛤，黄米色卵圆壳带深棕不规则花纹，一枚打开露出乳白肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-mottled-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 19
+    },
+    {
+      "key": "proteins-hairy-clam",
+      "name": "毛蛤蜊",
+      "sourceCodes": [
+        "124203"
+      ],
+      "description": "几枚灰褐色毛蛤，圆卵壳有放射肋和细毛感，一枚打开露淡黄肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-hairy-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 20
+    },
+    {
+      "key": "proteins-autumn-clam",
+      "name": "秋蛤蜊",
+      "sourceCodes": [
+        "124204"
+      ],
+      "description": "几枚鲜秋蛤蜊，厚椭圆壳米黄至褐色、有细同心生长纹，一枚打开露白肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-autumn-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 21
+    },
+    {
+      "key": "proteins-sand-clam",
+      "name": "沙蛤蜊",
+      "sourceCodes": [
+        "124205"
+      ],
+      "description": "几枚沙蛤蜊，浅米白三角圆壳，平滑带细同心纹，一枚微开露乳白肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sand-clam.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 22
+    },
+    {
+      "key": "proteins-fresh-snail",
+      "name": "鲜螺",
+      "sourceCodes": [
+        "124301"
+      ],
+      "description": "两枚完整鲜食用螺，黄褐螺旋圆锥壳，壳口露出灰白螺肉，无植物",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-snail.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 23
+    },
+    {
+      "key": "proteins-red-whelk",
+      "name": "红螺",
+      "sourceCodes": [
+        "124302"
+      ],
+      "description": "一枚大红螺，厚重橙褐螺旋壳，壳口内鲜橙红色，露出灰米色螺肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-red-whelk.jpg",
+      "atlas": "atlases/atlas-15.png",
+      "cell": 24
+    },
+    {
+      "key": "proteins-spotted-babylon",
+      "name": "东风螺",
+      "sourceCodes": [
+        "124303"
+      ],
+      "description": "三枚完整东风螺，米黄螺旋壳有规则深褐方形斑点，长卵壳口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-spotted-babylon.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 1
+    },
+    {
+      "key": "proteins-small-river-snail",
+      "name": "螺蛳",
+      "sourceCodes": [
+        "124304"
+      ],
+      "description": "一小堆小型青褐色螺蛳，细长圆锥螺旋壳、尖顶与圆壳口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-small-river-snail.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 2
+    },
+    {
+      "key": "proteins-rock-snail",
+      "name": "石螺",
+      "sourceCodes": [
+        "124305"
+      ],
+      "description": "几枚深黑褐石螺，短而厚实锥形螺壳，明显螺旋肋纹",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-rock-snail.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 3
+    },
+    {
+      "key": "proteins-field-snail",
+      "name": "田螺",
+      "sourceCodes": [
+        "124306"
+      ],
+      "description": "几枚完整田螺，深青褐大圆螺旋壳，圆鼓体层、短尖顶与大壳口",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-field-snail.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 4
+    },
+    {
+      "key": "proteins-sea-whelk",
+      "name": "香海螺",
+      "sourceCodes": [
+        "124307"
+      ],
+      "description": "一枚香海螺，浅褐尖长螺旋壳，壳上粗肋纹，椭圆壳口露灰白螺肉",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-sea-whelk.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 5
+    },
+    {
+      "key": "proteins-fresh-sea-cucumber",
+      "name": "鲜海参",
+      "sourceCodes": [
+        "129001"
+      ],
+      "description": "两只鲜海参，深灰褐短粗长椭圆软体，明显柔软肉刺，湿润柔韧",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-sea-cucumber.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 6
+    },
+    {
+      "key": "proteins-dried-sea-cucumber",
+      "name": "干海参",
+      "sourceCodes": [
+        "129002"
+      ],
+      "description": "两只干海参，黑褐色干缩坚硬长卵形，密集硬刺与干燥褶皱，不能画湿润",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-sea-cucumber.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 7
+    },
+    {
+      "key": "proteins-soaked-sea-cucumber",
+      "name": "水浸海参",
+      "sourceCodes": [
+        "129003"
+      ],
+      "description": "两只泡发海参，乌灰褐色肥厚饱满软体，表面肉刺圆润，湿润光滑",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-soaked-sea-cucumber.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 8
+    },
+    {
+      "key": "proteins-jellyfish-skin",
+      "name": "海蜇皮",
+      "sourceCodes": [
+        "129004"
+      ],
+      "description": "小碟中半透明米白至浅黄海蜇皮，宽薄柔软片及条状切丝，湿润胶质",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-jellyfish-skin.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 9
+    },
+    {
+      "key": "proteins-jellyfish-head",
+      "name": "海蜇头",
+      "sourceCodes": [
+        "129005"
+      ],
+      "description": "数块半透明米黄海蜇头，厚实卷曲花簇状褶皱，胶质湿润",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-jellyfish-head.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 10
+    },
+    {
+      "key": "proteins-fresh-cuttlefish",
+      "name": "鲜墨鱼",
+      "sourceCodes": [
+        "129006"
+      ],
+      "description": "一只完整鲜墨鱼，宽卵圆灰褐带斑身，体边连续薄鳍，头部短腕，眼真实无拟人",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-cuttlefish.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 11
+    },
+    {
+      "key": "proteins-dried-cuttlefish",
+      "name": "墨鱼干",
+      "sourceCodes": [
+        "129007"
+      ],
+      "description": "一只展开压扁墨鱼干，宽椭圆米棕色干燥身体，边缘卷皱，短腕伸开",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-cuttlefish.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 12
+    },
+    {
+      "key": "proteins-fresh-squid",
+      "name": "鲜鱿鱼",
+      "sourceCodes": [
+        "129008"
+      ],
+      "description": "一只完整新鲜鱿鱼，细长锥形灰粉半透明身、尾端三角鳍、头部八短腕两长触腕",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-squid.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 13
+    },
+    {
+      "key": "proteins-dried-squid",
+      "name": "鱿鱼干",
+      "sourceCodes": [
+        "129009"
+      ],
+      "description": "一只摊平干鱿鱼，浅棕米黄色薄长三角身体、纤维明显、触腕干燥展开",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-dried-squid.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 14
+    },
+    {
+      "key": "proteins-soaked-squid",
+      "name": "水浸鱿鱼",
+      "sourceCodes": [
+        "129010"
+      ],
+      "description": "一只泡发鱿鱼身及几段切条，厚实米白不透明肉，表皮浅棕，湿润饱满",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-soaked-squid.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 15
+    },
+    {
+      "key": "proteins-cuttlefish-roe",
+      "name": "乌鱼蛋",
+      "sourceCodes": [
+        "129011"
+      ],
+      "description": "一小碟乌贼卵腺乌鱼蛋，数片乳白色薄圆卵形软片，平滑半透明，不是鱼卵球",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-cuttlefish-roe.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 16
+    },
+    {
+      "key": "proteins-fresh-octopus",
+      "name": "鲜章鱼",
+      "sourceCodes": [
+        "129012",
+        "129013"
+      ],
+      "description": "一只完整鲜章鱼，灰紫褐色圆囊头，八条卷曲腕足，双排吸盘清楚，无长锥形鱿鱼身",
+      "localPath": "assets/food-illustrations/full/proteins/images/proteins-fresh-octopus.jpg",
+      "atlas": "atlases/atlas-16.png",
+      "cell": 17
+    },
+    {
+      "key": "pork",
+      "name": "生猪肉（肥瘦）",
+      "description": "已有专用粉红色生猪肉块插画，肌肉与白色脂肪相间。",
+      "sourceCodes": [
+        "081101"
+      ],
+      "localPath": "miniprogram/images/food-illustrations/pork.jpg"
+    },
+    {
+      "key": "beef",
+      "name": "生牛肉",
+      "description": "已有专用深红色生牛肉块插画，白色脂肪纹清楚。",
+      "sourceCodes": [
+        "082101"
+      ],
+      "localPath": "miniprogram/images/food-illustrations/beef.jpg"
+    },
+    {
+      "key": "milk",
+      "name": "液态乳",
+      "description": "已有专用一杯白色液态乳插画；这些未调色乳品均为相同外观的白色乳液。",
+      "sourceCodes": [
+        "101101",
+        "101102",
+        "101104",
+        "101105",
+        "101106",
+        "101152",
+        "101161",
+        "101166",
+        "101187",
+        "101201",
+        "101301",
+        "101501"
+      ],
+      "localPath": "miniprogram/images/food-illustrations/milk.jpg"
+    },
+    {
+      "key": "egg",
+      "name": "煮鸡蛋",
+      "description": "已有专用煮鸡蛋插画，半个切面露出凝固白蛋白与黄色熟蛋黄。",
+      "sourceCodes": [
+        "111204"
+      ],
+      "localPath": "miniprogram/images/food-illustrations/egg.jpg"
+    }
+  ]
+}

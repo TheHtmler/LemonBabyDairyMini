@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: a small pile of tiny creamy tan oval cherry kernels with thin reddish skin remnants.
+Row 1, column 2: a small pile of reddish brown flattened round sour jujube kernels, shiny smooth surface.
+Row 1, column 3: a small pile of dry crinkled purple-brown perilla leaves with serrated edges.
+Row 1, column 4: a small sprig of fresh purple-green perilla with broad wrinkled serrated leaves, deep purple underside.
+Row 1, column 5: several dry white poria fungus cubes with chalky porous texture and a rough brown outer rind piece.
+Row 1, column 6: a small bundle of dry brown-green agastache stems and crinkled serrated heart-shaped leaves.
+Row 2, column 1: a fresh green agastache sprig with opposite heart-shaped serrated leaves and a tiny upright purple flower spike.
+Row 2, column 2: a small pile of dried bright orange-red elongated goji berries with wrinkled skins.
+Row 2, column 3: a Chinese softshell turtle from slightly above, olive gray flat leathery oval shell and long narrow snout, neutral natural pose, no water scene.
+Row 2, column 4: a natural realistic small edible green-brown frog sitting in side three-quarter pose, smooth mottled skin, no face expression.
+Row 2, column 5: two prepared pale raw edible frog hind legs, jointed shape, clean food ingredient on a small white dish.
+Row 2, column 6: a Chinese horseshoe crab from above, brown domed horseshoe-shaped shell, spiny abdomen and long straight tail.
+Row 3, column 1: a natural slender gray-brown snake loosely coiled, smooth subtle scaled pattern, head low, no expression.
+Row 3, column 2: a natural brown Chinese cobra coiled with modestly spread hood, realistic scales, closed mouth, no aggression.
+Row 3, column 3: a slender olive-brown Oriental rat snake loosely coiled with narrow head and faint dark scale outlines.
+Row 3, column 4: a Chinese beauty rat snake loosely coiled, tan body with distinct black ladder-like bars and dark eye stripe.
+Row 3, column 5: a slender pale brown three-striped rat snake loosely coiled with three dark lengthwise stripes along body.
+Row 3, column 6: a slender olive gray water snake loosely coiled with subtle dark checkered markings, natural closed-mouth pose.
+Row 4, column 1: a small dish of several shiny brown oval silkworm pupae with distinct segmented bodies.
+Row 4, column 2: three dried cordyceps fungi, yellow-brown segmented caterpillar-like bodies each with one slender dark brown fungal stalk.
+Row 4, column 3: a single dried tan-brown edible scorpion with two small pincers, segmented body and curved tail, natural specimen, no expression.
+Row 4, column 4: a small white ramekin filled with thick glossy dark brown oyster sauce, spoon mark shows viscous texture.
+Row 4, column 5: a small white bowl of thick dark brown fermented bean sauce with coarse ground bean texture and oily sheen.
+Row 4, column 6: a whole fresh Pacific saury fish, long very slender silver body with dark blue back, pointed narrow jaw and small forked tail.

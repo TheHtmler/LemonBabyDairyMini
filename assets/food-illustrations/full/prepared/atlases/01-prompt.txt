@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: fine ivory infant milk powder heaped in a small ceramic bowl with a measuring spoon.
+Row 1, column 2: pale beige soy milk powder mound in a small ceramic bowl.
+Row 1, column 3: fine off-white infant rice cereal powder in a bowl and a small scoop.
+Row 1, column 4: cream-colored lotus seed infant cereal powder with two dried peeled lotus seeds beside its bowl.
+Row 1, column 5: small soft ivory rice and milk cake squares, delicate porous crumb, no filling.
+Row 1, column 6: three round white glutinous rice balls dusted in fine rice flour, one cut open showing brown nut and sesame filling.
+Row 2, column 1: thin pale beige slices of boiled sheep head meat and tongue arranged on a white plate, cooked food only.
+Row 2, column 2: a small bowl of thick light-brown sweet millet flour paste, sesame on top.
+Row 2, column 3: a bowl of thick glossy brown garlic gravy with cooked pork liver and intestine slices.
+Row 2, column 4: three golden fried spring rolls, one cut showing cabbage and carrot filling.
+Row 2, column 5: a bowl of silky white tofu pudding topped with glossy brown mushroom and egg gravy.
+Row 2, column 6: translucent broad mung-bean starch sheets folded in a neat pile, pale gray white, uncooked and unseasoned.
+Row 3, column 1: Beijing guanchang, pale golden pan-fried triangular slices of firm starch sausage on a small plate, no meat sausages.
+Row 3, column 2: thin golden Chinese grain crepe folded into a semicircle, tiny scallion specks.
+Row 3, column 3: three crisp dark-golden hollow fried dough rings, thin tubular ring shape.
+Row 3, column 4: three traditional small pale golden Chinese baked pastries in rectangular, round and flower shapes, a cut pastry shows date filling, no text or stamps.
+Row 3, column 5: dark chestnut-brown rectangular sweet bean jelly slices with visible yellow chestnut pieces.
+Row 3, column 6: plain white translucent mung bean jelly cut into rectangular strips, in a small white bowl, no sauce.
+Row 4, column 1: white translucent mung bean jelly strips topped with red chili oil, brown soy sauce and green scallions.
+Row 4, column 2: a small bowl of cold wheat noodles with thin cucumber shreds and light sesame sauce.
+Row 4, column 3: a small pile of airy curled shrimp crackers, cream and light pink, crisp bubbled surface.
+Row 4, column 4: three yellow soybean-flour coated glutinous rice rolls with dark red bean spiral centers.
+Row 4, column 5: several thin crisp golden layered pastry rolls, hollow spiral ends.
+Row 4, column 6: two glossy deep amber fried honey pastries shaped like double-lobed ears.

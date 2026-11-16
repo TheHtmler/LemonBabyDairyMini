@@ -1,0 +1,228 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-048034",
+      "name": "牛至",
+      "description": "鲜牛至，细茎上成对小卵圆绿叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048034.jpg",
+      "sourceCodes": [
+        "048034"
+      ]
+    },
+    {
+      "key": "plants-048035",
+      "name": "牛蒡叶（鲜）",
+      "description": "鲜牛蒡叶，宽大心状卵形叶，表面柔软微皱",
+      "localPath": "assets/food-illustrations/full/plants/images/048035.jpg",
+      "sourceCodes": [
+        "048035"
+      ]
+    },
+    {
+      "key": "plants-048036",
+      "name": "爬景天（鲜）[石头菜]",
+      "description": "爬景天，匍匐小茎，细小肥厚倒卵形肉质叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048036.jpg",
+      "sourceCodes": [
+        "048036"
+      ]
+    },
+    {
+      "key": "plants-048037",
+      "name": "喷瓜",
+      "description": "喷瓜，绿色椭圆短瓜有密生硬毛，旁配一片粗糙心形叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048037.jpg",
+      "sourceCodes": [
+        "048037"
+      ]
+    },
+    {
+      "key": "plants-048038",
+      "name": "婆罗门参（白，鲜）",
+      "description": "白婆罗门参，细长奶白色根带褐色皮和少量绿叶基",
+      "localPath": "assets/food-illustrations/full/plants/images/048038.jpg",
+      "sourceCodes": [
+        "048038"
+      ]
+    },
+    {
+      "key": "plants-048039",
+      "name": "婆罗门参（黑，鲜）[鸦葱]",
+      "description": "黑婆罗门参鸦葱，细长黑褐色根，切口奶白",
+      "localPath": "assets/food-illustrations/full/plants/images/048039.jpg",
+      "sourceCodes": [
+        "048039"
+      ]
+    },
+    {
+      "key": "plants-048040",
+      "name": "苦苣菜蒲公英形锯齿叶",
+      "description": "苦苣菜鲜叶，绿色长披针基生叶深锯齿，嫩梗",
+      "localPath": "assets/food-illustrations/full/plants/images/048040.jpg",
+      "sourceCodes": [
+        "048040",
+        "048070",
+        "048081"
+      ]
+    },
+    {
+      "key": "plants-048041",
+      "name": "掐不齐（鲜）[鸡眼草，牛黄草]",
+      "description": "掐不齐鸡眼草，细枝上三枚倒卵圆小叶组成复叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048041.jpg",
+      "sourceCodes": [
+        "048041"
+      ]
+    },
+    {
+      "key": "plants-048042",
+      "name": "清明菜（）鲜[鼠曲菜]",
+      "description": "鼠曲草清明菜，灰绿绒毛倒卵叶和细小黄色花簇",
+      "localPath": "assets/food-illustrations/full/plants/images/048042.jpg",
+      "sourceCodes": [
+        "048042"
+      ]
+    },
+    {
+      "key": "plants-048044",
+      "name": "沙参叶（鲜）[白参]",
+      "description": "沙参嫩叶，狭长椭圆形锯齿绿叶，小枝",
+      "localPath": "assets/food-illustrations/full/plants/images/048044.jpg",
+      "sourceCodes": [
+        "048044"
+      ]
+    },
+    {
+      "key": "plants-048045",
+      "name": "沙蓬子（鲜）[沙米]",
+      "description": "鲜沙蓬种子沙米，一小堆细小扁卵圆浅褐种子，禁止画叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048045.jpg",
+      "sourceCodes": [
+        "048045"
+      ]
+    },
+    {
+      "key": "plants-048046",
+      "name": "山苦荬叶（鲜）[启明菜叶]",
+      "description": "山苦荬鲜叶，披针状叶深锯齿，鲜嫩绿色基生叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048046.jpg",
+      "sourceCodes": [
+        "048046"
+      ]
+    },
+    {
+      "key": "plants-048047",
+      "name": "食用大黄（鲜）",
+      "description": "食用大黄，粗壮红色叶柄切段，旁有一片大绿叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048047.jpg",
+      "sourceCodes": [
+        "048047"
+      ]
+    },
+    {
+      "key": "plants-048049",
+      "name": "酸模（鲜）",
+      "description": "酸模，鲜绿长椭圆披针叶，基部箭形，红色细柄",
+      "localPath": "assets/food-illustrations/full/plants/images/048049.jpg",
+      "sourceCodes": [
+        "048049"
+      ]
+    },
+    {
+      "key": "plants-048050",
+      "name": "汤菜（鲜）",
+      "description": "汤菜，鲜嫩绿色宽卵形叶与柔软绿茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048050.jpg",
+      "sourceCodes": [
+        "048050"
+      ]
+    },
+    {
+      "key": "plants-048051",
+      "name": "土三七（鲜）[景天三七]",
+      "description": "景天三七，肥厚长椭圆锯齿绿叶，直立肉质茎",
+      "localPath": "assets/food-illustrations/full/plants/images/048051.jpg",
+      "sourceCodes": [
+        "048051"
+      ]
+    },
+    {
+      "key": "plants-048052",
+      "name": "歪头菜（鲜）[草豆，二叶萩]",
+      "description": "歪头菜，一对卵形绿叶的复叶嫩梢",
+      "localPath": "assets/food-illustrations/full/plants/images/048052.jpg",
+      "sourceCodes": [
+        "048052"
+      ]
+    },
+    {
+      "key": "plants-048053",
+      "name": "梧桐子（鲜）[瓢儿果]",
+      "description": "鲜梧桐子，棕绿色圆形小种子堆，不画树叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048053.jpg",
+      "sourceCodes": [
+        "048053"
+      ]
+    },
+    {
+      "key": "plants-048054",
+      "name": "夏枯草（鲜）[铁色草]",
+      "description": "夏枯草，绿色对生卵形叶和紫褐色短圆柱花穗",
+      "localPath": "assets/food-illustrations/full/plants/images/048054.jpg",
+      "sourceCodes": [
+        "048054"
+      ]
+    },
+    {
+      "key": "plants-048055",
+      "name": "香椿（鲜）[香椿芽]",
+      "description": "鲜香椿芽，红褐色嫩枝上羽状排列细长锯齿嫩叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048055.jpg",
+      "sourceCodes": [
+        "048055"
+      ]
+    },
+    {
+      "key": "plants-048056",
+      "name": "香茅",
+      "description": "香茅，浅绿白色根部、极长窄线形绿叶，一小束",
+      "localPath": "assets/food-illustrations/full/plants/images/048056.jpg",
+      "sourceCodes": [
+        "048056"
+      ]
+    },
+    {
+      "key": "plants-048057",
+      "name": "小旋花（鲜）[狗儿蔓]",
+      "description": "小旋花，缠绕细茎上箭形绿色叶，小小浅粉漏斗花",
+      "localPath": "assets/food-illustrations/full/plants/images/048057.jpg",
+      "sourceCodes": [
+        "048057"
+      ]
+    },
+    {
+      "key": "plants-048058",
+      "name": "鸭跖草（鲜）[竹叶菜，淡竹叶]",
+      "description": "鸭跖草，竹叶状披针叶与肉质茎，点缀一朵蓝色小花",
+      "localPath": "assets/food-illustrations/full/plants/images/048058.jpg",
+      "sourceCodes": [
+        "048058"
+      ]
+    },
+    {
+      "key": "plants-048059",
+      "name": "野小蒜",
+      "description": "野小蒜，小白色蒜头和纤细圆管状绿色叶",
+      "localPath": "assets/food-illustrations/full/plants/images/048059.jpg",
+      "sourceCodes": [
+        "048059",
+        "048062"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：鲜牛至，细茎上成对小卵圆绿叶。\n第1行第2格：鲜牛蒡叶，宽大心状卵形叶，表面柔软微皱。\n第1行第3格：爬景天，匍匐小茎，细小肥厚倒卵形肉质叶。\n第1行第4格：喷瓜，绿色椭圆短瓜有密生硬毛，旁配一片粗糙心形叶。\n第1行第5格：白婆罗门参，细长奶白色根带褐色皮和少量绿叶基。\n第1行第6格：黑婆罗门参鸦葱，细长黑褐色根，切口奶白。\n第2行第1格：苦苣菜鲜叶，绿色长披针基生叶深锯齿，嫩梗。\n第2行第2格：掐不齐鸡眼草，细枝上三枚倒卵圆小叶组成复叶。\n第2行第3格：鼠曲草清明菜，灰绿绒毛倒卵叶和细小黄色花簇。\n第2行第4格：沙参嫩叶，狭长椭圆形锯齿绿叶，小枝。\n第2行第5格：鲜沙蓬种子沙米，一小堆细小扁卵圆浅褐种子，禁止画叶。\n第2行第6格：山苦荬鲜叶，披针状叶深锯齿，鲜嫩绿色基生叶。\n第3行第1格：食用大黄，粗壮红色叶柄切段，旁有一片大绿叶。\n第3行第2格：酸模，鲜绿长椭圆披针叶，基部箭形，红色细柄。\n第3行第3格：汤菜，鲜嫩绿色宽卵形叶与柔软绿茎。\n第3行第4格：景天三七，肥厚长椭圆锯齿绿叶，直立肉质茎。\n第3行第5格：歪头菜，一对卵形绿叶的复叶嫩梢。\n第3行第6格：鲜梧桐子，棕绿色圆形小种子堆，不画树叶。\n第4行第1格：夏枯草，绿色对生卵形叶和紫褐色短圆柱花穗。\n第4行第2格：鲜香椿芽，红褐色嫩枝上羽状排列细长锯齿嫩叶。\n第4行第3格：香茅，浅绿白色根部、极长窄线形绿叶，一小束。\n第4行第4格：小旋花，缠绕细茎上箭形绿色叶，小小浅粉漏斗花。\n第4行第5格：鸭跖草，竹叶状披针叶与肉质茎，点缀一朵蓝色小花。\n第4行第6格：野小蒜，小白色蒜头和纤细圆管状绿色叶。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-15.png",
+  "reviewed": true
+}

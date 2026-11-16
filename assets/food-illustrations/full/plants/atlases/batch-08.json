@@ -1,0 +1,233 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-042121",
+      "name": "四棱豆[杨桃豆、翅豆]",
+      "description": "四棱豆[杨桃豆、翅豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042121.jpg",
+      "sourceCodes": [
+        "042121"
+      ]
+    },
+    {
+      "key": "plants-042201",
+      "name": "发芽豆",
+      "description": "发芽豆，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042201.jpg",
+      "sourceCodes": [
+        "042201"
+      ]
+    },
+    {
+      "key": "plants-042202",
+      "name": "黄豆芽",
+      "description": "黄豆芽，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042202.jpg",
+      "sourceCodes": [
+        "042202"
+      ]
+    },
+    {
+      "key": "plants-042206",
+      "name": "绿豆芽",
+      "description": "绿豆芽，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042206.jpg",
+      "sourceCodes": [
+        "042206"
+      ]
+    },
+    {
+      "key": "plants-042207",
+      "name": "黑豆苗",
+      "description": "黑豆苗，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042207.jpg",
+      "sourceCodes": [
+        "042207"
+      ]
+    },
+    {
+      "key": "plants-042208",
+      "name": "豌豆苗",
+      "description": "豌豆苗，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/042208.jpg",
+      "sourceCodes": [
+        "042208"
+      ]
+    },
+    {
+      "key": "plants-043101",
+      "name": "紫色圆茄子",
+      "description": "紫色圆茄子，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043101.jpg",
+      "sourceCodes": [
+        "043101",
+        "043103",
+        "043117"
+      ]
+    },
+    {
+      "key": "plants-043102",
+      "name": "茄子（绿皮）",
+      "description": "茄子（绿皮），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043102.jpg",
+      "sourceCodes": [
+        "043102"
+      ]
+    },
+    {
+      "key": "plants-043106",
+      "name": "番茄（整个，罐头）",
+      "description": "番茄（整个，罐头），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043106.jpg",
+      "sourceCodes": [
+        "043106"
+      ]
+    },
+    {
+      "key": "plants-043108",
+      "name": "干红尖辣椒",
+      "description": "干红尖辣椒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043108.jpg",
+      "sourceCodes": [
+        "043108",
+        "043122"
+      ]
+    },
+    {
+      "key": "plants-043109",
+      "name": "鲜小红尖辣椒",
+      "description": "鲜小红尖辣椒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043109.jpg",
+      "sourceCodes": [
+        "043109",
+        "043121"
+      ]
+    },
+    {
+      "key": "plants-043112",
+      "name": "甜椒（脱水）",
+      "description": "甜椒（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043112.jpg",
+      "sourceCodes": [
+        "043112"
+      ]
+    },
+    {
+      "key": "plants-043113",
+      "name": "长葫芦瓜",
+      "description": "长葫芦瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043113.jpg",
+      "sourceCodes": [
+        "043113",
+        "043206"
+      ]
+    },
+    {
+      "key": "plants-043115",
+      "name": "茄子（白皮，长）",
+      "description": "茄子（白皮，长），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043115.jpg",
+      "sourceCodes": [
+        "043115"
+      ]
+    },
+    {
+      "key": "plants-043116",
+      "name": "茄子（紫皮，长）",
+      "description": "茄子（紫皮，长），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043116.jpg",
+      "sourceCodes": [
+        "043116"
+      ]
+    },
+    {
+      "key": "plants-043118",
+      "name": "香瓜茄",
+      "description": "香瓜茄，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043118.jpg",
+      "sourceCodes": [
+        "043118"
+      ]
+    },
+    {
+      "key": "plants-043120",
+      "name": "樱桃番茄[小西红柿]",
+      "description": "樱桃番茄[小西红柿]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043120.jpg",
+      "sourceCodes": [
+        "043120"
+      ]
+    },
+    {
+      "key": "plants-043123",
+      "name": "辣椒（青，尖）",
+      "description": "辣椒（青，尖），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043123.jpg",
+      "sourceCodes": [
+        "043123"
+      ]
+    },
+    {
+      "key": "plants-043124",
+      "name": "绿色灯笼甜椒",
+      "description": "绿色灯笼甜椒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043124.jpg",
+      "sourceCodes": [
+        "043124"
+      ]
+    },
+    {
+      "key": "plants-043125",
+      "name": "彩椒",
+      "description": "彩椒，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043125.jpg",
+      "sourceCodes": [
+        "043125"
+      ]
+    },
+    {
+      "key": "plants-043126",
+      "name": "秋葵[黄秋葵，羊角豆]",
+      "description": "秋葵[黄秋葵，羊角豆]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043126.jpg",
+      "sourceCodes": [
+        "043126"
+      ]
+    },
+    {
+      "key": "plants-043201",
+      "name": "浅绿白瓜",
+      "description": "浅绿白瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043201.jpg",
+      "sourceCodes": [
+        "043201",
+        "043202"
+      ]
+    },
+    {
+      "key": "plants-043204",
+      "name": "笋瓜",
+      "description": "笋瓜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043204.jpg",
+      "sourceCodes": [
+        "043204",
+        "043217",
+        "043219"
+      ]
+    },
+    {
+      "key": "plants-043205",
+      "name": "佛手瓜[棒瓜，菜肴梨]",
+      "description": "佛手瓜[棒瓜，菜肴梨]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/043205.jpg",
+      "sourceCodes": [
+        "043205"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：四棱豆[杨桃豆、翅豆]。\n第1行第2格：发芽豆。\n第1行第3格：黄豆芽。\n第1行第4格：绿豆芽。\n第1行第5格：黑豆苗。\n第1行第6格：豌豆苗。\n第2行第1格：紫色圆茄子。\n第2行第2格：茄子（绿皮）。\n第2行第3格：番茄（整个，罐头）。\n第2行第4格：干红尖辣椒。\n第2行第5格：鲜小红尖辣椒。\n第2行第6格：甜椒（脱水）。\n第3行第1格：长葫芦瓜。\n第3行第2格：茄子（白皮，长）。\n第3行第3格：茄子（紫皮，长）。\n第3行第4格：香瓜茄。\n第3行第5格：樱桃番茄[小西红柿]。\n第3行第6格：辣椒（青，尖）。\n第4行第1格：绿色灯笼甜椒。\n第4行第2格：彩椒。\n第4行第3格：秋葵[黄秋葵，羊角豆]。\n第4行第4格：浅绿白瓜。\n第4行第5格：笋瓜。\n第4行第6格：佛手瓜[棒瓜，菜肴梨]。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-08.png",
+  "reviewed": true
+}

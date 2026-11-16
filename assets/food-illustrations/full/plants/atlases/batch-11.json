@@ -1,0 +1,233 @@
+{
+  "rows": 4,
+  "columns": 6,
+  "cells": [
+    {
+      "key": "plants-045216",
+      "name": "菜花（白色）[花椰菜]",
+      "description": "菜花（白色）[花椰菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045216.jpg",
+      "sourceCodes": [
+        "045216"
+      ]
+    },
+    {
+      "key": "plants-045302",
+      "name": "菠菜（脱水）",
+      "description": "菠菜（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045302.jpg",
+      "sourceCodes": [
+        "045302"
+      ]
+    },
+    {
+      "key": "plants-045303",
+      "name": "冬寒菜（鲜）[冬苋菜，冬葵]",
+      "description": "冬寒菜（鲜）[冬苋菜，冬葵]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045303.jpg",
+      "sourceCodes": [
+        "045303"
+      ]
+    },
+    {
+      "key": "plants-045305",
+      "name": "胡萝卜缨（红，鲜）",
+      "description": "胡萝卜缨（红，鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045305.jpg",
+      "sourceCodes": [
+        "045305"
+      ]
+    },
+    {
+      "key": "plants-045306",
+      "name": "苦菜[节节花，拒马菜]",
+      "description": "苦菜[节节花，拒马菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045306.jpg",
+      "sourceCodes": [
+        "045306"
+      ]
+    },
+    {
+      "key": "plants-045307",
+      "name": "鲜萝卜缨",
+      "description": "鲜萝卜缨，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045307.jpg",
+      "sourceCodes": [
+        "045307",
+        "045308",
+        "045309",
+        "045328"
+      ]
+    },
+    {
+      "key": "plants-045310",
+      "name": "落葵[木耳菜，软浆菜]",
+      "description": "落葵[木耳菜，软浆菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045310.jpg",
+      "sourceCodes": [
+        "045310"
+      ]
+    },
+    {
+      "key": "plants-045312",
+      "name": "芹菜茎",
+      "description": "芹菜茎，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045312.jpg",
+      "sourceCodes": [
+        "045312",
+        "045331"
+      ]
+    },
+    {
+      "key": "plants-045313",
+      "name": "芹菜叶（鲜）",
+      "description": "芹菜叶（鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045313.jpg",
+      "sourceCodes": [
+        "045313"
+      ]
+    },
+    {
+      "key": "plants-045314",
+      "name": "油麦菜",
+      "description": "油麦菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045314.jpg",
+      "sourceCodes": [
+        "045314",
+        "045334"
+      ]
+    },
+    {
+      "key": "plants-045316",
+      "name": "叶甜菜",
+      "description": "叶甜菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045316.jpg",
+      "sourceCodes": [
+        "045316",
+        "045335",
+        "045338"
+      ]
+    },
+    {
+      "key": "plants-045317",
+      "name": "香菜（鲜）[芫荽]",
+      "description": "香菜（鲜）[芫荽]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045317.jpg",
+      "sourceCodes": [
+        "045317"
+      ]
+    },
+    {
+      "key": "plants-045318",
+      "name": "香菜（脱水）",
+      "description": "香菜（脱水），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045318.jpg",
+      "sourceCodes": [
+        "045318"
+      ]
+    },
+    {
+      "key": "plants-045319",
+      "name": "苋菜（绿，鲜）",
+      "description": "苋菜（绿，鲜），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045319.jpg",
+      "sourceCodes": [
+        "045319"
+      ]
+    },
+    {
+      "key": "plants-045320",
+      "name": "苋菜（紫，鲜）[红苋]",
+      "description": "苋菜（紫，鲜）[红苋]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045320.jpg",
+      "sourceCodes": [
+        "045320"
+      ]
+    },
+    {
+      "key": "plants-045321",
+      "name": "茼蒿（鲜）[蓬蒿菜，艾菜]",
+      "description": "茼蒿（鲜）[蓬蒿菜，艾菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045321.jpg",
+      "sourceCodes": [
+        "045321"
+      ]
+    },
+    {
+      "key": "plants-045322",
+      "name": "茴香（鲜）[小茴香]",
+      "description": "茴香（鲜）[小茴香]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045322.jpg",
+      "sourceCodes": [
+        "045322"
+      ]
+    },
+    {
+      "key": "plants-045323",
+      "name": "荠菜（鲜）[蓟菜，菱角菜]",
+      "description": "荠菜（鲜）[蓟菜，菱角菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045323.jpg",
+      "sourceCodes": [
+        "045323"
+      ]
+    },
+    {
+      "key": "plants-045324",
+      "name": "莴笋（鲜）[莴苣]",
+      "description": "莴笋（鲜）[莴苣]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045324.jpg",
+      "sourceCodes": [
+        "045324"
+      ]
+    },
+    {
+      "key": "plants-045327",
+      "name": "番杏叶",
+      "description": "番杏叶，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045327.jpg",
+      "sourceCodes": [
+        "045327",
+        "048023"
+      ]
+    },
+    {
+      "key": "plants-045329",
+      "name": "白凤菜",
+      "description": "白凤菜，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045329.jpg",
+      "sourceCodes": [
+        "045329"
+      ]
+    },
+    {
+      "key": "plants-045330",
+      "name": "紫背天葵[红风菜、血皮菜]",
+      "description": "紫背天葵[红风菜、血皮菜]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045330.jpg",
+      "sourceCodes": [
+        "045330"
+      ]
+    },
+    {
+      "key": "plants-045332",
+      "name": "西芹[西洋芹菜，美芹]",
+      "description": "西芹[西洋芹菜，美芹]，准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045332.jpg",
+      "sourceCodes": [
+        "045332"
+      ]
+    },
+    {
+      "key": "plants-045333",
+      "name": "生菜（叶用莴苣）",
+      "description": "生菜（叶用莴苣），准确呈现该具体食材的颜色、形状、表皮和断面；只画此种食物，暖白底、精细柔和手绘、无文字。",
+      "localPath": "assets/food-illustrations/full/plants/images/045333.jpg",
+      "sourceCodes": [
+        "045333"
+      ]
+    }
+  ],
+  "prompt": "Use case: scientific-educational. 本图是宝宝饮食记录应用的具体食物插画图集，用于裁切为24张小方图。只借鉴参考图的绘画风格，不复用参考图的食材。\n生成横向1536×1024像素图，严格6列×4行，每格256×256，24个等大正方形，均匀隐形网格，纯净统一暖白色背景#FFFCF8，无格线无文字。每格仅有指定的一种具体食物，形态准确，每个物体完整在格子中央，四边留15%空白，绝不跨格。相邻格互不接触，不合并食物，不添加装饰或其他食材。所有食品同一精细柔和手绘插画风，接近实物的真实颜色纹理和解剖特征，细腻彩铅水彩混合、柔和自然投影。不是照片、不是3D、不是卡通，不拟人，无字、无数字、无标签、无水印、无商标。生食画生食，粉画小碗细粉，干食画干燥状态，熟食画熟食；罐头画打开的无标签简单罐与可见的指定内容，饮品画透明玻璃杯。每格只能画本格列出的食物。\n请严格按行从左到右：\n第1行第1格：菜花（白色）[花椰菜]。\n第1行第2格：脱水菠菜，深墨绿干燥皱缩碎叶小堆，不画完整鲜菜。\n第1行第3格：冬寒菜（鲜）[冬苋菜，冬葵]。\n第1行第4格：胡萝卜缨（红，鲜）。\n第1行第5格：苦菜[节节花，拒马菜]。\n第1行第6格：鲜萝卜缨。\n第2行第1格：落葵[木耳菜，软浆菜]。\n第2行第2格：芹菜茎。\n第2行第3格：芹菜叶（鲜）。\n第2行第4格：油麦菜。\n第2行第5格：叶甜菜。\n第2行第6格：香菜（鲜）[芫荽]。\n第3行第1格：脱水香菜，黄褐绿色皱缩干碎叶，不画完整鲜菜。\n第3行第2格：苋菜（绿，鲜）。\n第3行第3格：苋菜（紫，鲜）[红苋]。\n第3行第4格：茼蒿（鲜）[蓬蒿菜，艾菜]。\n第3行第5格：茴香（鲜）[小茴香]。\n第3行第6格：荠菜（鲜）[蓟菜，菱角菜]。\n第4行第1格：莴笋（鲜）[莴苣]。\n第4行第2格：番杏叶。\n第4行第3格：白凤菜。\n第4行第4格：紫背天葵[红风菜、血皮菜]。\n第4行第5格：西芹[西洋芹菜，美芹]。\n第4行第6格：生菜（叶用莴苣）。\n",
+  "localAtlasPath": "assets/food-illustrations/full/plants/atlases/batch-11.png",
+  "reviewed": true
+}

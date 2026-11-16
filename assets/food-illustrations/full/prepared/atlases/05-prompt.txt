@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: golden puffed hollow fried dough balls, one broken showing hollow center.
+Row 1, column 2: a small pile of thin curled golden fried potato chips.
+Row 1, column 3: crisp fried broad beans with dark split skins opened like petals around pale yellow centers.
+Row 1, column 4: a short clear glass of dark brown cola with fine bubbles and two ice cubes, no branding.
+Row 1, column 5: a clear glass of bright orange fizzy soda with tiny bubbles and an orange wedge beside it.
+Row 1, column 6: a clear glass of pale yellow fizzy lemonade, tiny bubbles and a fresh lemon slice beside it.
+Row 2, column 1: a clear glass of colorless carbonated soda with tiny bubbles and ice cubes.
+Row 2, column 2: a clear unbranded short bottle containing light amber sports drink, blank label, beside small glass.
+Row 2, column 3: a clear glass of opaque orange juice with a cut mandarin beside it, no carbonation.
+Row 2, column 4: a small clear glass cup containing thick deep orange juice concentrate.
+Row 2, column 5: a glass of translucent rose-red rosehip juice with two red rosehips beside it.
+Row 2, column 6: a glass of cloudy pale yellow sugarcane juice with two cut purple sugarcane segments.
+Row 3, column 1: a glass of translucent reddish-brown hawthorn juice with two small red hawthorn fruits.
+Row 3, column 2: a glass of cloudy pale lemon-yellow juice with half a lemon beside it.
+Row 3, column 3: a glass of rich orange-yellow sea buckthorn juice and a tiny twig bearing orange sea buckthorn berries.
+Row 3, column 4: a glass of deep brown sour plum drink with two dark wrinkled dried plums.
+Row 3, column 5: a clear glass of opaque red-orange carrot juice with a small carrot beside it.
+Row 3, column 6: a clear glass of pale pink fruit flavored milk, opaque and smooth.
+Row 4, column 1: a small squat unbranded bottle and glass containing opaque milky white yogurt drink.
+Row 4, column 2: a glass of opaque light cocoa-brown chocolate soy milk with several soybeans beside it.
+Row 4, column 3: a glass of creamy ivory almond drink with three peeled almonds beside it.
+Row 4, column 4: a compact rectangular dark brown compressed tea brick, broken corner reveals tea leaves, no letters.
+Row 4, column 5: a small pile of dry twisted dark brown black tea leaves.
+Row 4, column 6: a small pile of dry greenish brown jasmine tea leaves with a few tiny dried ivory jasmine blossoms.

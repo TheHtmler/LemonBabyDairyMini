@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: a stemmed wine glass containing dark ruby red wine.
+Row 1, column 2: a stemmed wine glass containing clear pale straw yellow white wine.
+Row 1, column 3: a small traditional white ceramic cup holding clear amber Chinese yellow rice wine, plain small brown ceramic wine jar beside it.
+Row 1, column 4: a small clear glass cup of cloudy ivory fermented rice wine with tiny rice grains settled at bottom.
+Row 1, column 5: a small clear spirit glass containing translucent pale jade green herbal liquor.
+Row 1, column 6: a tiny clear stemmed Chinese baijiu spirit glass filled with crystal clear colorless liquor, plain narrow-neck clear bottle behind it.
+Row 2, column 1: a small stemmed glass of translucent light golden honey wine with a tiny honeycomb piece beside it.
+Row 2, column 2: a small stemmed glass of clear orange-gold sea buckthorn wine with orange sea buckthorn berries beside it.
+Row 2, column 3: white crystalline sugar piled in a small ceramic bowl, visible sparkling fine grains.
+Row 2, column 4: several irregular translucent white rock sugar chunks.
+Row 2, column 5: a small mound of dark reddish-brown crumbly unrefined sugar in a shallow dish.
+Row 2, column 6: thick glossy golden amber maltose syrup in a small ceramic bowl, short wooden spoon lifting a stretchy ribbon.
+Row 3, column 1: a small clear glass jar of golden honey with a wooden honey dipper dripping honey, no label.
+Row 3, column 2: three rectangular ivory nougat candy pieces showing embedded whole peanut halves.
+Row 3, column 3: several small smooth white rectangular chewing gum tablets, no wrapper.
+Row 3, column 4: translucent pale amber soft candy cubes with tiny ivory water chestnut bits.
+Row 3, column 5: a fluffy cloud of pale pink and white spun cotton candy on a paper stick, no face.
+Row 3, column 6: several small ivory cylindrical chewy milk candies, one cut piece, no wrapper.
+Row 4, column 1: several small pastel pink cuboid bubble gum pieces, no wrapper.
+Row 4, column 2: a dark milk chocolate bar broken into scored square pieces, no letters.
+Row 4, column 3: a round dark chocolate bonbon cut open showing a glossy amber liquid liqueur center.
+Row 4, column 4: two chocolate coated wafer bars, cut ends show alternating wafer and cream layers.
+Row 4, column 5: several small dark red-brown hawthorn candy balls dusted with fine white sugar.
+Row 4, column 6: several unwrapped translucent hard candies in red, amber, green and orange, irregular round and oval shapes.

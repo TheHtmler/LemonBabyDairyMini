@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "build:food-illustrations": "node scripts/build-food-illustrations.js --build",
+    "check:food-illustrations": "node scripts/build-food-illustrations.js",
+    "prepare:food-illustrations": "node scripts/prepare-full-food-illustrations.js --build",
+    "upload:food-illustrations": "node scripts/upload-food-illustrations.js",
     "build:search": "node scripts/build-search-functions.js",
     "check:search": "node scripts/build-search-functions.js --check",
     "check:miniprogram-imports": "node scripts/check-miniprogram-imports.js",

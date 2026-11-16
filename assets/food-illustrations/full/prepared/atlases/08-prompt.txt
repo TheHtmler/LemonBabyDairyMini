@@ -1,0 +1,28 @@
+Use case: scientific-educational. Asset type: a single food illustration atlas for a food diary app.
+Create ONE landscape 1536 by 1024 pixel image, an EXACT 6-column by 4-row invisible regular grid of 24 SQUARE tiles, each tile 256 by 256 pixels. Follow the reference image ONLY for style, warm off-white background and realistic soft painterly illustration. These 24 new subjects replace the subjects of the reference.
+Each tile is a distinct isolated ingredient/food, centered entirely inside its own tile with a generous 12% margin. A single subject or the stated small arrangement per tile, all at a consistent visual scale. All tile backgrounds the same solid warm ivory #fcfaf6 with only faint soft grounding shadows. No borders, no grid lines, no labels, no numerals, no letters, no trademarks, no packaging text. Soft refined hand-painted colored pencil and gouache texture, recognizably close to the actual food, delicate realistic detail. Not photography, not 3D, not cartoon faces. Match the reference's botanical/food illustration character.
+The grid cell locations are a strict specification. Read left to right across each row, then next row, with no omissions, duplicates, rearrangements, overlaps or extra ingredients. Each item's distinctive visible form matters.
+Row 1, column 1: clear faceted translucent hard sugar candies, mostly colorless with subtle pastel amber tint.
+Row 1, column 2: rectangular pale beige peanut flaky candies, cut edge shows many delicate powdery compressed layers.
+Row 1, column 3: three small round hard candies with distinct red, yellow and green colors and fine sugar coating.
+Row 1, column 4: peach pink translucent hard candy drops beside half of a ripe peach, candies are the main subject.
+Row 1, column 5: dark amber rectangular crunchy sesame candy slabs densely packed with white sesame seeds.
+Row 1, column 6: several whole small reddish amber dried candied crabapples with short stalks and wrinkled skins.
+Row 2, column 1: golden orange dried apricot halves, soft wrinkled translucent flesh.
+Row 2, column 2: short thick amber orange candied pumpkin strips with light sugar coating.
+Row 2, column 3: pale golden translucent dried apple wedges with lightly wrinkled edges.
+Row 2, column 4: several whole olive green preserved plums with lightly wrinkled shiny surfaces.
+Row 2, column 5: large amber orange dried peach halves with red-brown edges and visible pit hollows.
+Row 2, column 6: pale translucent yellow-green candied watermelon rind strips with sugar crystals.
+Row 3, column 1: a deep ruby red smooth hawthorn jelly block with two square slices.
+Row 3, column 2: several neat deep red rectangular hawthorn candy jelly strips.
+Row 3, column 3: a thin reddish-brown hawthorn fruit leather sheet partly rolled into a spiral.
+Row 3, column 4: pieces of raw ivory animal suet with soft lobed fatty tissue and a fine pale membrane, no muscle meat.
+Row 3, column 5: white opaque rendered animal fat in a small ceramic bowl with one soft scoop mark.
+Row 3, column 6: pale golden translucent rendered duck fat in a small clear glass jar.
+Row 4, column 1: a plain small clear glass oil bottle filled with golden yellow vegetable cooking oil, no label no seeds no logo.
+Row 4, column 2: a small clear glass bowl of deep red chili oil with visible red chili flakes settled at bottom.
+Row 4, column 3: a small pile of round gray-brown hemp seeds with mottled striped shells.
+Row 4, column 4: a clear glass jar of opaque white solid coconut oil with a small scoop on top.
+Row 4, column 5: a small plain clear glass bottle containing rich orange-red palm oil, no label.
+Row 4, column 6: a plain short glass oil bottle filled with deep amber sesame oil beside a few white sesame seeds.
