@@ -2930,7 +2930,7 @@ function createDataRecordsPageConfig(options = {}) {
       console.error('data-records 初始化失败:', error);
     } finally {
       this._initializingRecords = false;
-      wx.hideLoading();
+      if (!this._dailyRecordsLoading) wx.hideLoading();
       this.maybeOpenDayMarkFormFromFlag();
     }
   },
@@ -3582,12 +3582,20 @@ function createDataRecordsPageConfig(options = {}) {
   async loadDayMarksForDate(dateStr) {
     const babyUid = this.getDayMarkBabyUid();
     const date = dateStr || this.data.selectedDate;
+    const recordsRequest = this._dailyRecordsRequest;
+    const request = {};
+    this._dayMarksRequest = request;
+    const isCurrent = () => this._dayMarksRequest === request
+      && this._dailyRecordsRequest === recordsRequest
+      && this.data.selectedDate === date
+      && this.getDayMarkBabyUid() === babyUid;
     if (!babyUid || !date) {
-      this.setData({ dayMarks: [] });
+      if (isCurrent()) this.setData({ dayMarks: [] });
       return [];
     }
 
     const records = await DayCalendarMarkModel.findByDate(babyUid, date);
+    if (!isCurrent()) return records;
     const dayMarks = records.map((record) => formatDayMarkForDisplay(record));
     this.setData({
       dayMarks
@@ -4232,6 +4240,8 @@ function createDataRecordsPageConfig(options = {}) {
   },
 
   applyV2DailySummary(summary, dateStr) {
+    // 汇总会重置明细，已在途的 Tab 请求也应同步失效。
+    this._recordTabRequests = {};
     this.setData(this.buildV2SummaryState(dateStr, summary || {}));
   },
 
@@ -4327,13 +4337,28 @@ function createDataRecordsPageConfig(options = {}) {
     }
   },
 
+  isCurrentRecordsRequest(request) {
+    return !!request && this._dailyRecordsRequest === request
+      && this.data.selectedDate === request.date
+      && getBabyUid() === request.babyUid;
+  },
+
   async loadActiveTabDetails(dateStr = this.data.selectedDate, babyUid = getBabyUid(), options = {}) {
+    const recordsRequest = this._dailyRecordsRequest;
+    if (!this.isCurrentRecordsRequest(recordsRequest)
+      || recordsRequest.date !== dateStr || recordsRequest.babyUid !== babyUid) return;
+
     const tab = this.data.activeTab || 'feeding';
     const loadedRecordTabs = this.data.loadedRecordTabs || {};
     if (!options.force && loadedRecordTabs[tab]) {
       return;
     }
 
+    const request = {};
+    this._recordTabRequests = this._recordTabRequests || {};
+    this._recordTabRequests[tab] = request;
+    const isCurrent = () => this.isCurrentRecordsRequest(recordsRequest)
+      && this._recordTabRequests[tab] === request;
     this.setData({
       loadingRecordTabs: {
         ...(this.data.loadingRecordTabs || {}),
@@ -4341,8 +4366,23 @@ function createDataRecordsPageConfig(options = {}) {
       }
     });
 
-    const details = await DailyRecordV2Service.getDailyRecordTabDetails(babyUid, dateStr, tab);
-    this.applyDailyRecordTabDetails(tab, details);
+    try {
+      const details = await DailyRecordV2Service.getDailyRecordTabDetails(babyUid, dateStr, tab);
+      if (isCurrent()) this.applyDailyRecordTabDetails(tab, details);
+    } catch (error) {
+      if (isCurrent()) throw error;
+    } finally {
+      // 只清理本次请求，避免旧请求关闭新请求的加载状态。
+      if (isCurrent()) {
+        delete this._recordTabRequests[tab];
+        this.setData({
+          loadingRecordTabs: {
+            ...(this.data.loadingRecordTabs || {}),
+            [tab]: false
+          }
+        });
+      }
+    }
   },
 
   async applyV2DailyServiceResult(dateStr, babyUid, serviceResult = {}) {
@@ -4507,22 +4547,44 @@ function createDataRecordsPageConfig(options = {}) {
 
   // 获取当天的详细记录
   async fetchDailyRecords(dateStr, options = {}) {
+    if (dateStr !== this.data.selectedDate) return;
     const silent = options.silent;
+    const babyUid = getBabyUid();
+    const previousRequest = this._dailyRecordsRequest;
+    const request = { date: dateStr, babyUid };
+    this._dailyRecordsRequest = request;
+    this._recordTabRequests = {};
+    const isCurrent = () => this.isCurrentRecordsRequest(request);
     if (!silent) {
       // 先设置数据区域透明，创建平滑过渡效果
       this.setData({
         isDataLoading: true
       });
+      this._dailyRecordsLoading = true;
       wx.showLoading({ title: '加载中...' });
     }
     
     try {
       const useV2Records = this.isV2RecordsSource();
+      if (useV2Records) {
+        const contextChanged = previousRequest?.date !== dateStr || previousRequest?.babyUid !== babyUid;
+        // 换日期或宝宝时清空旧内容，加载失败也不会展示另一日期的记录。
+        const resetState = contextChanged
+          ? { ...this.buildV2SummaryState(dateStr), dayMarks: [] }
+          : {};
+        this.setData({
+          ...resetState,
+          loadedRecordTabs: {},
+          loadingRecordTabs: {},
+          isDataLoading: this.data.isDataLoading
+        });
+      }
 
       // 确保配奶设置已加载；v2 记录已带营养快照，不读取旧配奶设置回退。
       if (!useV2Records && !this.data.nutritionSettings) {
         await this.loadNutritionSettings();
       }
+      if (!isCurrent()) return;
       
       const db = wx.cloud.database();
       const _ = db.command;
@@ -4532,10 +4594,6 @@ function createDataRecordsPageConfig(options = {}) {
       const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
       const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
       
-      // 获取宝宝UID
-      const app = getApp();
-      const babyUid = app.globalData.babyUid || wx.getStorageSync('baby_uid');
-
       if (!babyUid) {
         console.error('未找到宝宝UID，跳过数据查询');
         if (!silent) {
@@ -4546,9 +4604,16 @@ function createDataRecordsPageConfig(options = {}) {
       }
 
       if (useV2Records) {
-        const summary = await DailyRecordV2Service.getDailySummaryForDate(babyUid, dateStr);
+        // 汇总的喂奶条数和奶品明细依赖喂奶记录，不应受当前 Tab 影响。
+        const [summary, feedingDetails] = await Promise.all([
+          DailyRecordV2Service.getDailySummaryForDate(babyUid, dateStr),
+          DailyRecordV2Service.getDailyRecordTabDetails(babyUid, dateStr, 'feeding')
+        ]);
+        if (!isCurrent()) return;
         this.applyV2DailySummary(summary, dateStr);
-        await this.loadActiveTabDetails(dateStr, babyUid, { force: true });
+        this.applyDailyRecordTabDetails('feeding', feedingDetails);
+        await this.loadActiveTabDetails(dateStr, babyUid);
+        if (!isCurrent()) return;
         this.markSkipNextOnShowRefresh(dateStr, options);
         return;
       }
@@ -4564,6 +4629,7 @@ function createDataRecordsPageConfig(options = {}) {
       const feedingResult = useV2Records
         ? await this.loadV2FeedingResult(babyUid, dateStr)
         : await legacyDailyRecordResultPromise;
+      if (!isCurrent()) return;
       const [medicationResult, treatmentResult, bowelResult, legacyDailyRecordResult, v2FoodIntakeRecords] = await Promise.all([
         MedicationRecordModel.findByDate(dateStr, babyUid),
         TreatmentRecordModel.findByDate(dateStr, babyUid),
@@ -4575,13 +4641,16 @@ function createDataRecordsPageConfig(options = {}) {
         useV2Records ? FoodIntakeRecordModel.findByDate(babyUid, dateStr) : Promise.resolve([])
       ]);
       const historicalBasicInfoSnapshot = await this.loadBasicInfoSnapshotForRecords(dateStr, babyUid);
+      if (!isCurrent()) return;
       const treatmentRecordsToSet = formatTreatmentRecords((treatmentResult.success ? treatmentResult.data : []) || []);
       const effectiveFeedingResult = useV2Records
         ? await this.mergeV2FeedingWithV2FoodIntakes(feedingResult, v2FoodIntakeRecords, dateStr, babyUid)
         : feedingResult;
+      if (!isCurrent()) return;
 
       if (effectiveFeedingResult.data && effectiveFeedingResult.data.length > 0) {
         const record = await this.consolidateFeedingRecords(effectiveFeedingResult.data);
+        if (!isCurrent()) return;
         const feedings = record.feedings || [];
         const intakes = normalizeIntakes(record.intakes || []);
         const foodIntakes = intakes.filter(item => item.type !== 'milk');
@@ -4748,6 +4817,7 @@ function createDataRecordsPageConfig(options = {}) {
       this.markSkipNextOnShowRefresh(dateStr, options);
       
     } catch (error) {
+      if (!isCurrent()) return;
       console.error('获取当日记录失败:', error);
       wx.showToast({
         title: '获取记录失败',
@@ -4759,9 +4829,18 @@ function createDataRecordsPageConfig(options = {}) {
         isDataLoading: false
       });
     } finally {
-      await this.loadDayMarksForDate(dateStr);
-      if (!silent) {
-        wx.hideLoading();
+      if (isCurrent()) {
+        this.setData({ isDataLoading: false });
+        // 最新请求接管加载提示，包括静默刷新接续普通刷新的情况。
+        if (this._dailyRecordsLoading) {
+          this._dailyRecordsLoading = false;
+          wx.hideLoading();
+        }
+        try {
+          await this.loadDayMarksForDate(dateStr);
+        } catch (error) {
+          if (isCurrent()) console.error('加载当日备忘失败:', error);
+        }
       }
     }
   },
