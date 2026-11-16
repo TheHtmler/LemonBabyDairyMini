@@ -11,8 +11,9 @@ const TOKEN_HOST = 'modelstudio.cn-beijing.aliyuncs.com';
 const TOKEN_PATH = '/modelstudio/cli/generateAccessToken';
 let cachedAuthorization = null;
 
-function failure(code, reason, stage, httpStatus) {
-  return Object.assign(new Error(reason), { code, reason, stage, ...(httpStatus ? { httpStatus } : {}) });
+function failure(code, reason, stage, httpStatus, diagnostic) {
+  return Object.assign(new Error(reason), { code, reason, stage, ...(httpStatus ? { httpStatus } : {}),
+    ...(diagnostic ? { diagnostic } : {}) });
 }
 
 function requestJson({ host, requestPath, body, headers, deadline, stage }) {
@@ -124,18 +125,41 @@ async function readQuotaRows(token, models, deadline) {
   if (rejected) throw rejected.reason;
   const statuses = new Map();
   for (const row of results[1].value) {
-    if (!row || !models.includes(row.model) || statuses.has(row.model) || typeof row.freeTierOnly !== 'boolean') {
+    if (!row || !models.includes(row.model) || statuses.has(row.model) ||
+        row.freeTierOnly != null && typeof row.freeTierOnly !== 'boolean') {
       throw failure('QUERY_INVALID_RESULT', 'PROTECTION_STATUS_INVALID', 'protection');
     }
-    statuses.set(row.model, row.freeTierOnly);
+    statuses.set(row.model, row.freeTierOnly ?? null);
   }
-  return results[0].value.map(row => {
-    const expires = row && row.quotaValidityPeriod;
-    if (!row || !Number.isSafeInteger(expires) || expires <= 0 || !statuses.has(row.model)) {
+  const quotas = new Map();
+  for (const row of results[0].value) {
+    if (!row || !models.includes(row.model) || quotas.has(row.model)) {
       throw failure('QUERY_INVALID_RESULT', 'QUOTA_STATUS_INVALID', 'quota');
     }
-    return { model: row.model, remaining: row.quotaTotal, total: row.quotaInitTotal,
-      expires: new Date(expires + 28800000).toISOString().slice(0, 10), autoStop: statuses.get(row.model) };
+    quotas.set(row.model, row);
+  }
+  return models.map(model => {
+    const row = quotas.get(model);
+    const hasQuota = row && (row.quotaTotal != null || row.quotaInitTotal != null);
+    if (hasQuota && (!Number.isSafeInteger(row.quotaTotal) || row.quotaTotal < 0 ||
+        !Number.isSafeInteger(row.quotaInitTotal) || row.quotaInitTotal < row.quotaTotal)) {
+      throw failure('QUERY_INVALID_RESULT', 'QUOTA_VALUES_INVALID', 'quota', null, { model, field: 'quotaTotal/quotaInitTotal' });
+    }
+    const timestamp = row?.quotaValidityPeriod;
+    let expires = null;
+    // 动态名单可能包含没有免费额度、没有截止日期或不支持免费保护的模型，缺失值不能伪装为零或已保护。
+    if (timestamp != null && timestamp !== 0) {
+      if (!Number.isSafeInteger(timestamp) || timestamp < 0 || !Number.isFinite(new Date(timestamp + 28800000).getTime())) {
+        throw failure('QUERY_INVALID_RESULT', 'QUOTA_EXPIRY_INVALID', 'quota', null, { model, field: 'quotaValidityPeriod' });
+      }
+      expires = new Date(timestamp + 28800000).toISOString().slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(expires)) {
+        throw failure('QUERY_INVALID_RESULT', 'QUOTA_EXPIRY_INVALID', 'quota', null, { model, field: 'quotaValidityPeriod' });
+      }
+    }
+    return { model, quotaStatus: hasQuota ? 'reported' : 'not_provided',
+      remaining: hasQuota ? row.quotaTotal : null, total: hasQuota ? row.quotaInitTotal : null,
+      expires, autoStop: statuses.has(model) ? statuses.get(model) : null };
   });
 }
 

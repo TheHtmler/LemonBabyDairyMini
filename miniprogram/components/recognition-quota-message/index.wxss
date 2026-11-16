@@ -1,0 +1,22 @@
+:host {
+  display: inline;
+}
+
+.quota-message {
+  display: inline;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: normal;
+}
+
+.feedback-link {
+  display: inline;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.feedback-link-hover {
+  opacity: 0.7;
+}

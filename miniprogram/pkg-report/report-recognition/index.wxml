@@ -1,0 +1,73 @@
+<view class="recognition-page">
+  <scroll-view wx:if="{{!error}}" class="photo-scroll" scroll-x="true">
+    <view class="photo-list">
+      <button wx:for="{{pages}}" wx:key="id" class="photo-button {{item.status === 'failed' ? 'photo-failed' : ''}}"
+        data-id="{{item.id}}" bindtap="onPhotoTap" bindlongpress="managePhoto" aria-label="{{item.status === 'failed' ? item.modelQuotaExhausted ? '图片识别失败，模型额度用完' : '图片识别失败，点击重试或移除' : '查看报告图片，长按可移除'}}">
+        <image class="report-photo" src="{{item.imagePath}}" mode="aspectFill" />
+        <text wx:if="{{item.status === 'failed'}}" class="photo-failure">{{item.modelQuotaExhausted ? '识别失败' : '重试'}}</text>
+      </button>
+      <button wx:if="{{pages.length < maxPhotos}}" class="photo-add" bindtap="addPhotos"
+        disabled="{{loading || sending || choosingPhotos}}" aria-label="添加报告图片">＋</button>
+    </view>
+  </scroll-view>
+
+  <view class="result-heading">
+    <text class="result-title">{{reportTypeName || '识别结果'}}</text>
+    <view class="result-count">
+      <view wx:if="{{loading}}" class="loading-spinner" aria-hidden="true"></view>
+      <text>{{loading ? pages.length ? '正在识别 ' + pages.length + ' 张图片' : '识别中…' : rows.length + ' 项'}}</text>
+    </view>
+  </view>
+  <text wx:if="{{error}}" class="notice">{{error}}</text>
+  <view wx:elif="{{!loading && failedCount}}" class="notice">
+    <recognition-quota-message wx:if="{{modelQuotaExhausted}}" />
+    <text wx:else>{{failureMessage || '部分图片未识别成功'}}，点击失败图片重试。</text>
+  </view>
+  <text wx:if="{{!loading && !error && unrecognizedCount}}" class="empty-note">部分原行不在支持范围或未能确认，未自动回填，请对照原图。</text>
+  <text wx:if="{{!loading && !error && !failedCount && pages.length && !rows.length}}" class="empty-note">没有可回填的指标，请重新拍摄或手工填写。</text>
+
+  <view wx:if="{{loading && !rows.length && !error}}" class="loading-table" aria-label="正在识别并汇总报告指标">
+    <view wx:for="{{[0, 1, 2, 3]}}" wx:key="*this" class="loading-row" aria-hidden="true">
+      <view class="loading-cell loading-name"></view>
+      <view class="loading-cell loading-value"></view>
+      <view class="loading-cell loading-range"></view>
+    </view>
+  </view>
+  <view wx:elif="{{rows.length || (!loading && pages.length)}}" class="result-table">
+    <view class="result-row table-head">
+      <text class="metric-name">检验项目</text>
+      <text class="metric-result">结果</text>
+      <text class="metric-range">参考范围</text>
+    </view>
+    <view wx:for="{{rows}}" wx:key="key" class="result-row {{item.hasConflict ? 'review-row' : ''}}"
+      data-key="{{item.key}}" bindtap="reviewResult" aria-role="{{item.hasConflict ? 'button' : 'text'}}"
+      aria-label="{{item.hasConflict ? '核对' + item.name + '的识别结果' : item.name}}">
+      <view class="metric-name">
+        <text>{{item.name}}</text>
+        <text wx:if="{{!item.needsReview && item.sourceName}}" class="source-note">{{item.sourceName}}</text>
+        <text wx:if="{{!item.needsReview && item.sourceLabel}}" class="source-note">{{item.sourceLabel}}</text>
+      </view>
+      <view class="metric-result {{item.status}}">
+        <text>{{item.needsReview ? '核对结果' : item.valueText + (item.marker ? ' ' + item.marker : '')}}{{item.hasConflict ? ' ⌄' : ''}}</text>
+        <text wx:if="{{!item.needsReview && item.unit}}" class="source-note">{{item.unit}}</text>
+      </view>
+      <text class="metric-range">{{item.needsReview ? '—' : item.rangeText || '未识别'}}</text>
+      <view wx:if="{{item.needsReview}}" class="row-evidence">
+        <text class="source-note">{{item.reviewHint}}</text>
+        <view wx:for="{{item.evidence}}" wx:for-item="source" wx:key="signature" class="source-note">
+          <text>{{source.sourceLabel}} · {{source.sourceText}}：{{source.valueText}} {{source.unit}}；{{source.rangeText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <text wx:elif="{{!loading && !error && !pages.length}}" class="empty-note">添加报告图片开始识别</text>
+
+  <view wx:if="{{originalsEnabled && !error && pages.length}}" class="originals-option">
+    <text>保存原报告</text>
+    <switch checked="{{saveOriginals}}" bindchange="onSaveOriginalsChange" disabled="{{sending}}" color="#4a7b67" aria-label="保存原报告，便于日后查看" />
+  </view>
+  <view class="action-bar">
+    <button class="retake-button" bindtap="retake" disabled="{{sending}}">{{fillExisting ? '重新选择' : '重新拍摄'}}</button>
+    <button class="confirm-button" bindtap="confirmRecognition" loading="{{sending}}" disabled="{{!canConfirm || sending || choosingPhotos}}">继续录入</button>
+  </view>
+</view>

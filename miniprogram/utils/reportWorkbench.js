@@ -1,6 +1,8 @@
 const { buildDailyNutritionMetricFromSummary } = require('./search-core/dailyMetrics');
 const ReportModel = require('../models/report');
-const { buildReportDisplay, buildIndicatorDisplay, hasReportValue, readReportNumber } = require('./reportDisplay');
+const { buildReportDisplay, buildIndicatorDisplay, hasReportValue, readReportNumber, formatReportValue } = require('./reportDisplay');
+const { toExactReportNumber } = require('./reportNumeric');
+const { areReportUnitsComparable } = require('./reportUnits');
 const { calculator: feedingCalculator } = require('./feedingUtils');
 const {
   mergeTreatmentIntoMacroSummary,
@@ -578,7 +580,7 @@ function mergeFeedingRecords(records = [], nutritionSettings = {}) {
 }
 
 function formatCompactNumber(value, precision = 2) {
-  const num = Number(value);
+  const num = toExactReportNumber(value);
   if (!Number.isFinite(num)) {
     return value === undefined || value === null ? '--' : String(value);
   }
@@ -587,10 +589,12 @@ function formatCompactNumber(value, precision = 2) {
 }
 
 function formatDelta(currentValue, previousValue) {
-  const current = Number(currentValue);
-  const previous = Number(previousValue);
+  const current = toExactReportNumber(currentValue);
+  const previous = toExactReportNumber(previousValue);
   if (!Number.isFinite(current) || !Number.isFinite(previous)) return '';
-  const delta = roundNumber(current - previous, 2);
+  const difference = current - previous;
+  if (!Number.isFinite(difference)) return '';
+  const delta = roundNumber(difference, 2);
   if (delta === 0) return '0';
   return `${delta > 0 ? '+' : ''}${formatCompactNumber(delta, 2)}`;
 }
@@ -691,23 +695,26 @@ function buildCompareCards(currentReport, previousReport) {
       const config = metricConfigMap[key] || {};
       const current = currentReport.indicators[key] || {};
       const previous = previousReport?.indicators?.[key] || {};
-      const currentValue = current.value ?? '--';
-      const previousValue = previous.value ?? '--';
-      const currentNum = Number(currentValue);
-      const previousNum = Number(previousValue);
-      const direction = Number.isFinite(currentNum) && Number.isFinite(previousNum)
+      const currentValue = current.value;
+      const previousValue = previous.value;
+      const currentNum = toExactReportNumber(currentValue);
+      const previousNum = toExactReportNumber(previousValue);
+      const unitsComparable = areReportUnitsComparable(current.unit, previous.unit, config);
+      const comparable = unitsComparable && Number.isFinite(currentNum) && Number.isFinite(previousNum);
+      const display = buildIndicatorDisplay(config, current);
+      const direction = comparable
         ? (currentNum === previousNum ? 'flat' : currentNum > previousNum ? 'up' : 'down')
-        : 'flat';
+        : 'missing';
 
       return {
         key,
         name: ReportModel.getIndicatorDisplayName(config) || key,
-        current: formatCompactNumber(currentValue, 2),
-        previous: formatCompactNumber(previousValue, 2),
-        delta: formatDelta(currentValue, previousValue),
-        direction,
-        status: current.status || 'unknown',
-        unit: config.unit || ''
+        current: formatReportValue(currentValue),
+        previous: [formatReportValue(previousValue), !unitsComparable ? previous.unit : ''].filter(Boolean).join(' '),
+        delta: comparable ? formatDelta(currentValue, previousValue) : '',
+        direction, comparable,
+        status: display.status,
+        unit: display.unit
       };
     });
 }
@@ -727,17 +734,25 @@ function buildTrendMetrics(currentReport, sameTypeReports = []) {
       key,
       name: metricConfigMap[key]?.abbr || metricConfigMap[key]?.name || key,
       overlayLabel: TREND_OVERLAY_LABELS[index] || '叠加：总蛋白系数',
-      points: pointsBase.map((report) => ({
-        date: toDateKey(report.reportDate).slice(5),
-        value: formatCompactNumber(report.indicators?.[key]?.value, 2),
-        active: getReportId(report) === getReportId(currentReport)
-      }))
+      points: pointsBase.map((report) => {
+        const indicator = report.indicators?.[key] || {};
+        const config = metricConfigMap[key] || {};
+        const unitsComparable = areReportUnitsComparable(indicator.unit, currentReport.indicators?.[key]?.unit, config);
+        const value = unitsComparable ? readReportNumber(indicator.value) : null;
+        return {
+          date: toDateKey(report.reportDate).slice(5),
+          value: value === null ? null : formatCompactNumber(value, 2),
+          valueText: [formatReportValue(indicator.value), indicator.unit].filter(Boolean).join(' '),
+          missing: value === null,
+          active: getReportId(report) === getReportId(currentReport)
+        };
+      })
     }));
 }
 
 function buildDoctorSummary(compareCards, intervalSummary, shortTermSummary) {
   const compareText = compareCards
-    .map((card) => `${card.name}${card.direction === 'up' ? '上升' : card.direction === 'down' ? '下降' : '基本持平'}`)
+    .map((card) => `${card.name}${card.direction === 'missing' ? '暂不比较' : card.direction === 'up' ? '上升' : card.direction === 'down' ? '下降' : '基本持平'}`)
     .join('，');
   return [
     `本次较上次：${compareText}。`,
@@ -753,43 +768,47 @@ function buildKeySummary(report = {}) {
   const summaryParts = keys
     .filter((key) => report.indicators?.[key]?.value !== undefined && report.indicators?.[key]?.value !== '')
     .slice(0, 2)
-    .map((key) => `${ReportModel.getIndicatorDisplayName(metricConfigMap[key]) || key} ${formatCompactNumber(report.indicators[key].value, 2)}`);
+    .map((key) => `${ReportModel.getIndicatorDisplayName(metricConfigMap[key]) || key} ${formatReportValue(report.indicators[key].value)}`);
   return summaryParts.length ? summaryParts.join('，') : '可进入详情页补充查看完整指标。';
 }
 
 function buildIndicatorItem(config = {}, currentReport = {}, previousReport = {}) {
   const current = currentReport.indicators?.[config.key] || {};
   const previous = previousReport?.indicators?.[config.key] || {};
-  const currentValue = current.value ?? '--';
-  const previousValue = previous.value ?? '--';
-  const currentNum = Number(currentValue);
-  const previousNum = Number(previousValue);
-  const direction = Number.isFinite(currentNum) && Number.isFinite(previousNum)
+  const currentValue = current.value;
+  const previousValue = previous.value;
+  const currentNum = toExactReportNumber(currentValue);
+  const previousNum = toExactReportNumber(previousValue);
+  const unitsComparable = areReportUnitsComparable(current.unit, previous.unit, config);
+  const comparable = unitsComparable && Number.isFinite(currentNum) && Number.isFinite(previousNum);
+  const display = buildIndicatorDisplay(config, current);
+  const direction = comparable
     ? (currentNum === previousNum ? 'flat' : currentNum > previousNum ? 'up' : 'down')
-    : 'flat';
+    : 'missing';
 
   return {
     key: config.key,
     name: ReportModel.getIndicatorDisplayName(config) || config.key,
     abbr: config.abbr || config.key,
-    current: formatCompactNumber(currentValue, 2),
-    previous: formatCompactNumber(previousValue, 2),
-    delta: formatDelta(currentValue, previousValue),
-    direction,
-    status: current.status || 'unknown',
-    unit: config.unit || ''
+    current: formatReportValue(currentValue),
+    previous: [formatReportValue(previousValue), !unitsComparable ? previous.unit : ''].filter(Boolean).join(' '),
+    delta: comparable ? formatDelta(currentValue, previousValue) : '',
+    direction, comparable,
+    status: display.status,
+    unit: display.unit
   };
 }
 
 function buildDetailIndicatorItem(config = {}, currentReport = {}) {
   const current = currentReport.indicators?.[config.key] || {};
+  const display = buildIndicatorDisplay(config, current);
   return {
     key: config.key,
     name: ReportModel.getIndicatorDisplayName(config) || config.key,
     abbr: config.abbr || config.key,
-    current: formatCompactNumber(current.value, 3),
-    status: current.status || 'unknown',
-    unit: config.unit || '',
+    current: display.valueText,
+    status: display.status,
+    unit: display.unit,
     minRange: current.minRange || '',
     maxRange: current.maxRange || ''
   };
@@ -931,8 +950,9 @@ function buildReportArchivePreview({ reports = [], filterType = 'all', selectedC
       .slice(0, 3)
       .map((key) => {
         const config = metricConfigMap[key] || {};
-        const value = formatCompactNumber(report.indicators[key].value, 2);
-        const abnormal = report.indicators[key].status === 'high' || report.indicators[key].status === 'low';
+        const display = buildIndicatorDisplay(config, report.indicators[key]);
+        const value = display.valueText;
+        const abnormal = display.abnormal;
         return {
           key,
           text: `${ReportModel.getIndicatorDisplayName(config) || key} ${value}`,
@@ -1393,14 +1413,16 @@ function buildCompareCardsForKeys(currentReport, previousReport, metricKeys = []
     const config = configMap[key];
     const a = buildIndicatorDisplay(config, currentReport.indicators?.[key] || {});
     const b = buildIndicatorDisplay(config, previousReport.indicators?.[key] || {});
-    const comparable = a.numericValue !== null && b.numericValue !== null;
-    const difference = comparable ? Number((a.numericValue - b.numericValue).toPrecision(12)) : null;
+    const unitsComparable = areReportUnitsComparable(a.unit, b.unit, config);
+    const rawDifference = unitsComparable && a.numericValue !== null && b.numericValue !== null ? a.numericValue - b.numericValue : null;
+    const comparable = Number.isFinite(rawDifference);
+    const difference = comparable ? Number(rawDifference.toPrecision(12)) : null;
     const direction = !comparable ? 'missing' : difference > 0 ? 'up' : difference < 0 ? 'down' : 'flat';
     const delta = comparable ? (difference > 0 ? '+' : '') + String(difference) : '—';
     return {
       key, name: a.name, abbr: a.abbr, unit: a.unit, secondaryText: a.secondaryText,
-      current: a.valueText, previous: b.valueText, delta, direction, comparable,
-      changeText: comparable ? formatDirectionChangeText(direction, delta) : '数据不足',
+      current: a.valueText, previous: [b.valueText, !unitsComparable ? b.unit : ''].filter(Boolean).join(' '), delta, direction, comparable,
+      changeText: comparable ? formatDirectionChangeText(direction, delta) : unitsComparable ? '数据不足' : '单位未确认一致，暂不比较',
       status: a.status, statusText: a.statusText, statusClass: a.statusClass, marker: a.marker,
       previousStatus: b.status, previousStatusText: b.statusText, previousStatusClass: b.statusClass, previousMarker: b.marker,
       rangeA: a.rangeText, rangeB: b.rangeText,

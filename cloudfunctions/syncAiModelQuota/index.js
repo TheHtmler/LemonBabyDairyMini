@@ -2,6 +2,7 @@
 
 const cloud = require('wx-server-sdk');
 const { syncModelQuota } = require('./lib/ai/quotaSync');
+const { syncModelCatalog } = require('./lib/ai/modelCatalogSync');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 exports.main = async (event = {}) => {
@@ -13,7 +14,8 @@ exports.main = async (event = {}) => {
     const env = context.ENV || process.env.TCB_ENV || process.env.SCF_NAMESPACE;
     if (!env) throw new Error('无法确定当前云环境');
     const db = require('@cloudbase/node-sdk').init({ env }).database();
-    return { ok: true, ...await syncModelQuota(db, process.env) };
+    const catalogSync = await syncModelCatalog(db, process.env);
+    return { ok: true, ...await syncModelQuota(db, process.env), catalogSync };
   }
   catch (_) { return { ok: false, code: 'QUOTA_SYNC_FAILED', message: '额度同步状态保存失败，请检查云端配置' }; }
 };

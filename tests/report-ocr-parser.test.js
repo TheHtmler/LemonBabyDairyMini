@@ -287,13 +287,13 @@ test('parseStructuredReportItems maps format-report items to indicator keys', ()
   assert.equal(result.ammonia.flag, 'normal');
 });
 
-test('parseStructuredReportItems resolves indicator_key and label fields from custom OCR', () => {
+test('结构化结果按原项目名和缩写识别，不依赖旧服务只给编号的格式', () => {
   const bloodMs = parseStructuredReportItems({
     reportType: 'blood_ms',
     structuredItems: [
-      { indicator_key: 'c3', value: '8.000', ref_range: '0.500-5.000' },
+      { indicator_key: 'c3', name: 'C3', value: '8.000', ref_range: '0.500-5.000' },
       { label: 'C0', value: '20.000', ref_range: '10.000-40.000' },
-      { code: 'iso_leu', value: '42.125', ref_range: '10-40' }
+      { code: 'iso_leu', name: 'Iso/Leu', value: '42.125', ref_range: '10-40' }
     ]
   });
 
@@ -304,7 +304,7 @@ test('parseStructuredReportItems resolves indicator_key and label fields from cu
   const urineMs = parseStructuredReportItems({
     reportType: 'urine_ms',
     structuredItems: [
-      { indicator_key: 'mma', value: '120', ref_range: '0-100' },
+      { indicator_key: 'mma', name: 'MMA', value: '120', ref_range: '0-100' },
       { name: '甲基枸橼酸(1)', value: '9', ref_range: '0-5' }
     ]
   });
@@ -313,11 +313,11 @@ test('parseStructuredReportItems resolves indicator_key and label fields from cu
   assert.equal(urineMs.methylcitric_acid_1.value, '9');
 });
 
-test('parseStructuredReportItems treats Va1 as OCR typo for valine abbreviation', () => {
+test('结构化原名称中的 Va1 仍可按既有别名识别为缬氨酸', () => {
   const result = parseStructuredReportItems({
     reportType: 'blood_ms',
     structuredItems: [
-      { indicator_key: 'Va1', value: '80.000', ref_range: '60.000-250.000' }
+      { indicator_key: 'Va1', name: 'Va1', value: '80.000', ref_range: '60.000-250.000' }
     ]
   });
 
@@ -367,10 +367,10 @@ test('parseStructuredReportItems disambiguates duplicate MCA keys using name suf
   assert.equal(result.methylcitric_acid_2.value, '4.2');
 });
 
-test('parseStructuredReportItems maps blood gas pCO2 variants', () => {
+test('结构化原名称保留 pCO2 的缩写和中文变体识别', () => {
   const byKey = parseStructuredReportItems({
     reportType: 'blood_gas',
-    structuredItems: [{ indicator_key: 'pCO2', value: '38.5', ref_range: '35-45' }]
+    structuredItems: [{ indicator_key: 'pCO2', name: 'pCO2', value: '38.5', ref_range: '35-45' }]
   });
   assert.equal(byKey.pco2.value, '38.5');
 
@@ -387,11 +387,11 @@ test('parseStructuredReportItems maps blood gas pCO2 variants', () => {
   assert.equal(byChinese.pco2.value, '42.0');
 });
 
-test('parseStructuredReportItems maps HCO3std indicator key to hco3', () => {
+test('结构化原名称 HCO3std 识别为标准碳酸氢根', () => {
   const result = parseStructuredReportItems({
     reportType: 'blood_gas',
     structuredItems: [
-      { indicator_key: 'HCO3std', value: '24.5', ref_range: '22-26' }
+      { indicator_key: 'HCO3std', name: 'HCO3std', value: '24.5', ref_range: '22-26' }
     ]
   });
 

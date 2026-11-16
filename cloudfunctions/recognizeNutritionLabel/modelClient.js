@@ -1,6 +1,7 @@
 'use strict';
 
 const https = require('https');
+const { MODEL_QUOTA_EXHAUSTED_MESSAGE, isModelQuotaExhausted } = require('./lib/ai/recognitionErrors');
 const { fail, FIELDS, UNITS } = require('./lib/core/contracts');
 const { normalizeObservation, normalizeAutomaticObservation } = require('./lib/core/normalize');
 const { normalizeModelEstimate, estimateEligibility, ESTIMATE_BASIS } = require('./lib/core/estimate');
@@ -134,9 +135,8 @@ function post(config, body, deadline) {
             { code: 'INVALID_MODEL_RESULT', nativeCode: 'NON_JSON_RESPONSE', httpStatus: response.statusCode }));
         }
         if (response.statusCode >= 400) {
-          const free = (parsed.error || {}).code === 'AllocationQuota.FreeTierOnly' ||
-            parsed.code === 'AllocationQuota.FreeTierOnly';
-          const nativeCode = free ? 'AllocationQuota.FreeTierOnly' : (parsed.error || {}).code || parsed.code;
+          const nativeCode = (parsed.error || {}).code || parsed.code;
+          const free = isModelQuotaExhausted({ code: nativeCode });
           const messages = {
             400: '模型请求参数不被支持，请核对所选模型及接口',
             401: '模型服务鉴权失败，请检查API Key、地域及业务空间权限',
@@ -144,7 +144,7 @@ function post(config, body, deadline) {
             404: '模型或接口地址不可用，请检查模型名及Base URL',
             429: '模型服务请求过多，请稍后重试'
           };
-          return finish(Object.assign(new Error(free ? '该模型免费额度已用尽或到期' :
+          return finish(Object.assign(new Error(free ? MODEL_QUOTA_EXHAUSTED_MESSAGE :
             messages[response.statusCode] || '模型服务不可用，请检查配置或稍后重试'),
             { code: free ? 'FREE_QUOTA_EXHAUSTED' : 'MODEL_UNAVAILABLE', nativeCode, httpStatus: response.statusCode }));
         }

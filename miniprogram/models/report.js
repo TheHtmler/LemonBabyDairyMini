@@ -1,4 +1,6 @@
 // 报告数据模型
+const { normalizeReportDetectionValue, toExactReportNumber } = require('../utils/reportNumeric');
+
 class ReportModel {
   // 报告类型枚举
   static REPORT_TYPES = {
@@ -55,14 +57,14 @@ class ReportModel {
 
   // 血常规：仅血红蛋白、血小板必填
   static BLOOD_CBC_INDICATORS = [
-    { key: 'hgb', name: '血红蛋白', unit: '', abbr: 'HGB' },
-    { key: 'plt', name: '血小板', unit: '', abbr: 'PLT' },
-    { key: 'wbc', name: '白细胞', unit: '', abbr: 'WBC', optional: true },
-    { key: 'neut_abs', name: '中性粒细胞绝对值', unit: '', abbr: 'NEUT#', optional: true },
-    { key: 'neut_pct', name: '中性粒细胞百分比', unit: '', abbr: 'NEUT%', optional: true },
-    { key: 'hct', name: '红细胞压积', unit: '', abbr: 'Hct', optional: true },
-    { key: 'lym_pct', name: '淋巴细胞百分比', unit: '', abbr: 'LYM%', optional: true },
-    { key: 'mcv', name: '平均红细胞体积', unit: '', abbr: 'MCV', optional: true }
+    { key: 'hgb', name: '血红蛋白', unit: 'g/L', abbr: 'HGB' },
+    { key: 'plt', name: '血小板', unit: '10^9/L', abbr: 'PLT' },
+    { key: 'wbc', name: '白细胞', unit: '10^9/L', abbr: 'WBC', optional: true },
+    { key: 'neut_abs', name: '中性粒细胞绝对值', unit: '10^9/L', abbr: 'NEUT#', optional: true },
+    { key: 'neut_pct', name: '中性粒细胞百分比', unit: '%', abbr: 'NEUT%', optional: true },
+    { key: 'hct', name: '红细胞压积', unit: '%', abbr: 'Hct', optional: true },
+    { key: 'lym_pct', name: '淋巴细胞百分比', unit: '%', abbr: 'LYM%', optional: true },
+    { key: 'mcv', name: '平均红细胞体积', unit: 'fL', abbr: 'MCV', optional: true }
   ];
 
   // 血氨指标配置（待补充）
@@ -154,11 +156,11 @@ class ReportModel {
 
   // 计算指标状态（正常/偏高/偏低）
   static calculateIndicatorStatus(value, minRange, maxRange) {
-    const numValue = parseFloat(value);
-    const numMin = parseFloat(minRange);
-    const numMax = parseFloat(maxRange);
+    const numValue = toExactReportNumber(value);
+    const numMin = toExactReportNumber(minRange);
+    const numMax = toExactReportNumber(maxRange);
 
-    if (isNaN(numValue) || isNaN(numMin) || isNaN(numMax)) {
+    if (![numValue, numMin, numMax].every(Number.isFinite) || numMin > numMax) {
       return 'unknown';
     }
 
@@ -173,14 +175,15 @@ class ReportModel {
 
   // 计算最优参考范围（针对氨基酸指标）
   static calculateOptimalRange(minRange, maxRange) {
-    const numMin = parseFloat(minRange);
-    const numMax = parseFloat(maxRange);
-    
-    if (isNaN(numMin) || isNaN(numMax)) {
+    const numMin = toExactReportNumber(minRange);
+    const numMax = toExactReportNumber(maxRange);
+
+    if (!Number.isFinite(numMin) || !Number.isFinite(numMax) || numMin > numMax) {
       return null;
     }
 
     const optimalMax = numMin + (numMax - numMin) * 0.25;
+    if (!Number.isFinite(optimalMax)) return null;
     return {
       min: numMin,
       max: parseFloat(optimalMax.toFixed(2))
@@ -252,14 +255,15 @@ class ReportModel {
 
   // 计算比值指标（如C3/C0, C3/C2）
   static calculateRatio(numerator, denominator, precision = 3) {
-    const num = parseFloat(numerator);
-    const den = parseFloat(denominator);
-    
-    if (isNaN(num) || isNaN(den) || den === 0) {
+    const num = toExactReportNumber(numerator);
+    const den = toExactReportNumber(denominator);
+
+    if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) {
       return null;
     }
-    
-    return parseFloat((num / den).toFixed(precision));
+
+    const ratio = num / den;
+    return Number.isFinite(ratio) ? Number(ratio.toFixed(precision)) : null;
   }
 
   // 验证报告数据完整性
@@ -269,23 +273,26 @@ class ReportModel {
 
     requiredIndicators.forEach(indicator => {
       const data = indicators[indicator.key];
-      
+      const hasValue = data && data.value !== null && data.value !== undefined && String(data.value).trim() !== '';
+
       // 如果是可选指标且没有数据，跳过验证
-      if (indicator.optional && (!data || (!data.value || data.value.trim() === ''))) {
+      if (indicator.optional && !hasValue) {
         return;
       }
-      
+
       if (!data) {
         errors.push(`缺少指标：${indicator.name}`);
         return;
       }
 
-      if (!data.value || data.value.trim() === '') {
+      if (!hasValue) {
         errors.push(`${indicator.name} 的值不能为空`);
+      } else if (!normalizeReportDetectionValue(data.value)) {
+        errors.push(`${indicator.name} 的值不是有效检测数值`);
       }
 
       if (!indicator.isRatio || indicator.allowRangeInput) {
-        const missingRange = !data.minRange || !data.maxRange;
+        const missingRange = [data.minRange, data.maxRange].some(value => value === null || value === undefined || String(value).trim() === '');
         if (missingRange && !indicator.optional) {
           errors.push(`${indicator.name} 需要设置参考范围`);
         }
@@ -298,7 +305,7 @@ class ReportModel {
     ) {
       const hasAnyValue = requiredIndicators.some((indicator) => {
         const data = indicators[indicator.key];
-        return data && data.value && String(data.value).trim() !== '';
+        return data && normalizeReportDetectionValue(data.value) !== '';
       });
       if (!hasAnyValue) {
         const typeLabel = reportType === this.REPORT_TYPES.BLOOD_CBC_CRP
@@ -349,6 +356,7 @@ class ReportModel {
     let abnormalCount = 0;
 
     indicators.forEach(indicator => {
+      if (!Number.isFinite(toExactReportNumber(indicator.value))) return;
       if (indicator.status === 'normal') {
         normalCount++;
       } else if (indicator.status === 'high' || indicator.status === 'low') {
@@ -365,4 +373,4 @@ class ReportModel {
   }
 }
 
-module.exports = ReportModel; 
+module.exports = ReportModel;

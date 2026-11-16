@@ -1,3 +1,4 @@
 {
-  "triggers": [{ "name": "sync-ai-model-quota", "type": "timer", "config": "0 */5 * * * * *" }]
+  "triggers": [{ "name": "sync-ai-model-quota", "type": "timer", "config": "0 */5 * * * * *" }],
+  "timeout": 40
 }

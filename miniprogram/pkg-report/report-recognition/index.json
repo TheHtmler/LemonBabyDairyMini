@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "报告识别结果",
+  "navigationBarBackgroundColor": "#faf6ed",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#faf6ed",
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "recognition-quota-message": "/components/recognition-quota-message/index"
+  }
+}

@@ -4,16 +4,22 @@ const { recognitionCapabilities, pendingConfirmation, recoverConfirmation,
   chooseRecognitionImages, prepareRecognitionImages } = require('../../utils/nutritionRecognition');
 const { measureCaptureRegion, cropCaptureImage } = require('./captureImage');
 const FoodCategoryModel = require('../../models/foodCategory');
+const { REPORT_OCR_TYPES, REPORT_MAX_PHOTOS } = require('../../constants/reportTypes');
+const { REPORT_OCR_ENTRY_ENABLED, getReportOcrAccess } = require('../../utils/reportOcrAccess');
+const { isModelQuotaExhausted } = require('../../utils/recognitionErrors');
 const FOOD_CATEGORIES = ['主食及谷薯', '蔬菜类', '水果类', '肉禽类', '水产类', '乳类及制品', '蛋类', '豆制品', '婴幼儿辅食', '零食', '饮品', '甜品', '油脂及调味品'];
 
 Page({
   data: {
     babyUid: '', babyName: '', formSessionId: 0, available: false, loading: true, loadingSlow: false,
-    error: '', reasonCode: '', pending: null, recovering: false, capturing: false,
+    error: '', reasonCode: '', modelQuotaExhausted: false, pending: null, recovering: false, capturing: false,
     existing: null, categories: FOOD_CATEGORIES,
     cameraActive: false, cameraReady: false, cameraError: '', cameraPermissionDenied: false,
     cameraGeneration: 0, recognitionOpen: false, navTop: 24, navHeight: 44, navRight: 100,
-    packageCapture: false, photoSlots: [{ label: '① 营养成分表', path: '' }, { label: '② 包装正面', path: '' }], activePhotoSlot: 0, packageReady: false,
+    packageCapture: false, reportCapture: false, reportType: '', reportTypeName: '选择报告类型',
+    reportOcrEntryEnabled: REPORT_OCR_ENTRY_ENABLED,
+    reportPhotos: [], maxReportPhotos: REPORT_MAX_PHOTOS,
+    photoSlots: [{ label: '① 营养成分表', path: '' }, { label: '② 包装正面', path: '' }], activePhotoSlot: 0, packageReady: false,
     proteinOptions: [
       { label: '天然蛋白（优质）', value: 'natural', quality: 'premium' },
       { label: '天然蛋白（普通）', value: 'natural', quality: 'regular' },
@@ -24,6 +30,7 @@ Page({
   onLoad(options = {}) {
     this._epoch = 0; this._captureEpoch = 0; this._unloaded = false;
     this._pageVisible = false; this._cameraSuspended = false; this._layoutVersion = 0;
+    this._reportPhotoSequence = 0;
     this.setData({ fromSearch: options.from === 'search' });
     this.updateNavigationLayout();
   },
@@ -42,7 +49,7 @@ Page({
     this._pageVisible = true;
     const epoch = ++this._epoch;
     clearTimeout(this._availabilityTimer);
-    this.setData({ loading: true, loadingSlow: false, error: '', reasonCode: '' });
+    this.setData({ loading: true, loadingSlow: false, error: '', reasonCode: '', modelQuotaExhausted: false });
     this._availabilityTimer = setTimeout(() => {
       if (!this._unloaded && epoch === this._epoch && this.data.loading) this.setData({ loadingSlow: true });
     }, 1200);
@@ -59,14 +66,14 @@ Page({
         this.resetPhotoSlots();
         this.setData({ babyUid: context.babyUid, babyName: context.babyName,
           formSessionId: this.data.formSessionId + 1, existing: null,
-          available: false, capturing: false, recovering: false, recognitionOpen: false, categories: FOOD_CATEGORIES });
+          available: false, capturing: false, recovering: false, recognitionOpen: false, reportPhotos: [], categories: FOOD_CATEGORIES });
       }
       if (!context.accountKey || !context.babyUid) {
         this.setData({ loading: false, available: false, pending: null,
           reasonCode: 'FORBIDDEN', error: '请先选择宝宝，再识别资料' });
         return;
       }
-      this.setData({ pending: pendingConfirmation(context.babyUid) });
+      this.setData({ pending: this.data.reportCapture ? null : pendingConfirmation(context.babyUid) });
       this.syncCamera();
       // 分类读取和识别能力分别处理，分类故障不阻断相机及识别服务。
       FoodCategoryModel.getCategories(context.babyUid).then(custom => {
@@ -76,10 +83,12 @@ Page({
       const config = await this.getAvailability(key, context.babyUid);
       if (!this.isCurrent(epoch, key)) return;
       this.setData({ available: config.available === true, loading: false,
+        modelQuotaExhausted: !config.available && isModelQuotaExhausted(config),
         reasonCode: config.reasonCode || '', error: config.available ? '' : config.message || '识别服务暂时不可用，请重试' });
     } catch (error) {
       if (epoch !== this._epoch || this._unloaded) return;
       this.setData({ loading: false, available: false,
+        modelQuotaExhausted: isModelQuotaExhausted(error),
         reasonCode: error.code || 'SERVICE_UNAVAILABLE', error: error.message || '暂时无法识别，请重试' });
     } finally {
       if (epoch === this._epoch && !this._unloaded) {
@@ -89,12 +98,14 @@ Page({
   },
   async getAvailability(key, babyUid) {
     // 从相册或权限设置返回时复用短期预检；正式识别仍由云端逐次验证权限与额度。
+    const reportCapture = this.data.reportCapture;
+    const capabilityKey = key + (reportCapture ? ':report' : ':nutrition');
     const cached = this._availability;
-    if (cached && cached.key === key && cached.result.available && Date.now() - cached.at < 60000) return cached.result;
-    if (this._availabilityRequest && this._availabilityRequest.key === key) return this._availabilityRequest.promise;
-    const request = { key };
-    request.promise = recognitionCapabilities({ babyUid }).then(result => {
-      if (!this._unloaded && key === this._contextKey) this._availability = { key, result, at: Date.now() };
+    if (cached && cached.key === capabilityKey && cached.result.available && Date.now() - cached.at < 60000) return cached.result;
+    if (this._availabilityRequest && this._availabilityRequest.key === capabilityKey) return this._availabilityRequest.promise;
+    const request = { key: capabilityKey };
+    request.promise = (reportCapture ? getReportOcrAccess(babyUid) : recognitionCapabilities({ babyUid })).then(result => {
+      if (!this._unloaded && key === this._contextKey) this._availability = { key: capabilityKey, result, at: Date.now() };
       return result;
     }).finally(() => { if (this._availabilityRequest === request) this._availabilityRequest = null; });
     this._availabilityRequest = request;
@@ -175,19 +186,45 @@ Page({
   showPhotoHelp() {
     if (this.data.capturing) return;
     wx.showModal({ title: '拍摄提示',
-      content: '食材、做好的菜选“拍食物”，拍清全貌；有营养成分表的食品选“拍包装”，分别拍营养表和包装正面。系统会自动判断类型。奶粉请到奶粉管理中按包装手动填写。', showCancel: false, confirmText: '知道了' });
+      content: this.data.reportCapture
+        ? '同一份报告最多添加6张，可逐页拍摄或从相册多选，不要混入不同检测日期的报告。拍齐后点右侧识别；点缩略图可查看或移除。每张图片计一次识别，结果合并后再确认创建。大生化暂仅支持手动录入。'
+        : `食材、做好的菜选“拍食物”，拍清全貌；有营养成分表的食品选“拍包装”，分别拍营养表和包装正面。${REPORT_OCR_ENTRY_ENABLED ? '检测报告选“报告”。' : ''}奶粉请到奶粉管理中按包装手动填写。`, showCancel: false, confirmText: '知道了' });
   },
   retryAvailability() {
     if (!this.data.loading && !this.data.capturing) { this._availability = null; return this.onShow(); }
   },
-  selectCaptureMode(event) {
+  async selectCaptureMode(event) {
     const mode = event.currentTarget.dataset.mode;
-    if (!['food', 'package'].includes(mode) || (mode === 'package') === this.data.packageCapture ||
-        this.data.capturing || this.data.recovering || this.data.pending) return;
+    if (mode === 'report' && !REPORT_OCR_ENTRY_ENABLED) return;
+    const currentMode = this.data.reportCapture ? 'report' : this.data.packageCapture ? 'package' : 'food';
+    if (!['food', 'package', 'report'].includes(mode) || mode === currentMode ||
+        this.data.capturing || this.data.recovering || this.data.pending || this._reportTypeChoosing) return;
     const component = this.selectComponent('#scanner');
     if (component && component.isBusy()) return;
+    const serviceChanged = this.data.reportCapture !== (mode === 'report');
     this.resetPhotoSlots();
-    this.setData({ packageCapture: mode === 'package', error: '' });
+    this._captureEpoch++;
+    this.setData({ packageCapture: mode === 'package', reportCapture: mode === 'report', error: '' });
+    if (serviceChanged) await this.onShow();
+    if (!this._unloaded && this._pageVisible && this.data.reportCapture && this.data.available && !this.data.reportType) this.chooseReportType();
+  },
+  async chooseReportType() {
+    if (!this.data.reportCapture || this.data.capturing || this._reportTypeChoosing) return '';
+    this._reportTypeChoosing = true;
+    const key = this._contextKey;
+    try {
+      const result = await wx.showActionSheet({ itemList: REPORT_OCR_TYPES.map(type => type.name) });
+      if (this._unloaded || !this.data.reportCapture || !this.isCurrent(this._epoch, key)) return '';
+      const type = REPORT_OCR_TYPES[result.tapIndex];
+      if (!type) return '';
+      this.setData({ reportType: type.key, reportTypeName: type.name });
+      return type.key;
+    } catch (error) {
+      if (!this._unloaded && !/cancel/i.test(error.errMsg || error.message || '')) wx.showToast({ title: '无法选择报告类型，请重试', icon: 'none' });
+      return '';
+    } finally {
+      this._reportTypeChoosing = false;
+    }
   },
   resetPhotoSlots() {
     this.invalidatePreparationBatch();
@@ -234,8 +271,96 @@ Page({
       } });
     return batch;
   },
-  takePhoto() { return this.data.packageCapture && this.data.packageReady ? this.recognizePackage() : this.start('camera'); },
-  chooseAlbum() { return this.start('album'); },
+  takePhoto() { return this.data.reportCapture ? this.startReport('camera') : this.data.packageCapture && this.data.packageReady ? this.recognizePackage() : this.start('camera'); },
+  chooseAlbum() { return this.data.reportCapture ? this.startReport('album') : this.start('album'); },
+  async startReport(source) {
+    if (!this.data.reportCapture || !this.data.available || this.data.loading || this.data.capturing || this._reportTypeChoosing || this._reportPhotoManaging) return;
+    if (this.data.reportPhotos.length >= REPORT_MAX_PHOTOS) {
+      wx.showToast({ title: '最多添加6张，请先移除不需要的图片', icon: 'none' }); return;
+    }
+    const reportType = this.data.reportType || await this.chooseReportType();
+    if (!reportType || !this.data.reportCapture || !this.data.available || this.data.loading || this.data.capturing) return;
+    if (source === 'camera' && (!this.data.cameraReady || !this._cameraContext)) return;
+    const epoch = ++this._captureEpoch;
+    const key = this._contextKey;
+    this.setData({ capturing: true, error: '' });
+    try {
+      let photos;
+      if (source === 'camera') {
+        // 分页或分段拍摄时仍保留原图，不按食物取景框裁切。
+        const captured = await this.capturePhoto();
+        photos = [{ tempFilePath: captured.tempImagePath }];
+      } else {
+        const media = await wx.chooseMedia({ count: REPORT_MAX_PHOTOS - this.data.reportPhotos.length,
+          mediaType: ['image'], sizeType: ['original'], sourceType: ['album'] });
+        photos = media?.tempFiles || [];
+      }
+      if (!this.isCurrentCapture(epoch, key)) return;
+      const additions = photos.filter(photo => photo?.tempFilePath).map(photo => ({
+        id: 'report-photo-' + (++this._reportPhotoSequence), tempFilePath: photo.tempFilePath, size: photo.size || 0
+      }));
+      this.setReportPhotos([...this.data.reportPhotos, ...additions].slice(0, REPORT_MAX_PHOTOS));
+      if (source === 'camera' && additions.length) wx.showToast({ title: '已添加，可继续拍摄', icon: 'none' });
+    } catch (error) {
+      if (this.isCurrentCapture(epoch, key) && !/cancel/i.test(error.errMsg || error.message || '')) {
+        this.setData({ error: error.message || '无法添加图片，请重试' });
+      }
+    } finally {
+      if (this.isCurrentCapture(epoch, key)) { this.setData({ capturing: false }); this.syncCamera(); }
+    }
+  },
+  setReportPhotos(photos) {
+    this.setData({ reportPhotos: photos.map((photo, index) => ({ ...photo, number: index + 1 })) });
+  },
+  async manageReportPhoto(event) {
+    const photo = this.data.reportPhotos.find(item => item.id === event.currentTarget.dataset.id);
+    if (!photo || this.data.capturing || this._reportPhotoManaging) return;
+    this._reportPhotoManaging = true;
+    const key = this._contextKey;
+    try {
+      const result = await wx.showActionSheet({ itemList: ['查看原图', '移除这一张'] });
+      if (!this.isCurrent(this._epoch, key)) return;
+      if (result.tapIndex === 0) wx.previewImage({ current: photo.tempFilePath,
+        urls: this.data.reportPhotos.map(item => item.tempFilePath) });
+      else if (result.tapIndex === 1) this.setReportPhotos(this.data.reportPhotos.filter(item => item.id !== photo.id));
+    } catch (_) { /* 取消操作时保留已有图片。 */ }
+    finally { this._reportPhotoManaging = false; }
+  },
+  onRightAction() {
+    if (this.data.reportCapture && this.data.reportPhotos.length) return this.submitReportPhotos();
+    this.showPhotoHelp();
+  },
+  async submitReportPhotos() {
+    if (!this.data.reportCapture || !this.data.reportPhotos.length || this.data.loading || !this.data.available
+      || this.data.capturing || this._reportPhotoManaging || this._reportTypeChoosing) return;
+    const context = currentContext();
+    const key = this._contextKey;
+    const epoch = ++this._captureEpoch;
+    const photos = this.data.reportPhotos.map(photo => ({ ...photo }));
+    this._cameraSuspended = true;
+    this.setData({ capturing: true, error: '' });
+    this.syncCamera();
+    try {
+      await new Promise((resolve, reject) => wx.navigateTo({
+        url: '/pkg-report/report-recognition/index?type=' + encodeURIComponent(this.data.reportType),
+        success: result => {
+          try {
+            result.eventChannel.emit('reportPhotosSelected', { photos, babyUid: context.babyUid, accountKey: context.accountKey });
+            // 结果页接管本次图片，返回相机即可开始下一份报告。
+            this.setReportPhotos([]);
+            resolve();
+          } catch (error) { reject(error); }
+        },
+        fail: reject
+      }));
+    } catch (error) {
+      if (this.isCurrentCapture(epoch, key)) this.setData({ error: '无法打开识别结果页，请重试' });
+    } finally {
+      if (this.isCurrentCapture(epoch, key)) {
+        this._cameraSuspended = false; this.setData({ capturing: false }); this.syncCamera();
+      }
+    }
+  },
   async recognizePackage() {
     if (!this.data.packageReady || this.data.capturing || !this.data.available || this.data.loading || this.data.pending) return;
     const component = this.selectComponent('#scanner');
@@ -378,7 +503,10 @@ Page({
     }
   },
   openManual() {
-    wx.navigateTo({ url: '/pkg-milk/food-management/index' });
+    if (!this.data.reportCapture) { wx.navigateTo({ url: '/pkg-milk/food-management/index' }); return; }
+    this.chooseReportType().then(type => {
+      if (type && !this._unloaded) wx.navigateTo({ url: '/pkg-report/add-report/index?mode=add&type=' + encodeURIComponent(type) });
+    });
   },
   openLibrary() {
     if (!this.isCurrent(this._epoch, this._contextKey)) { wx.showToast({ title: '宝宝已切换，请重新打开资料', icon: 'none' }); return; }

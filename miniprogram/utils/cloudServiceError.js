@@ -1,3 +1,5 @@
+const { MODEL_QUOTA_EXHAUSTED_MESSAGE, isModelQuotaExhausted } = require('./recognitionErrors');
+
 // 将云函数和网络异常转换为可恢复的页面提示，保留错误码供本地排查。
 function normalizeCloudServiceError(error, scene = 'search') {
   const source = error || {};
@@ -5,7 +7,9 @@ function normalizeCloudServiceError(error, scene = 'search') {
   const service = scene === 'search' ? '搜索' : '识别';
   let code = String(source.code || source.errCode || 'SERVICE_UNAVAILABLE');
   let message = source.message || '';
-  if (/FUNCTION_NOT_(FOUND|EXIST)|function[^\n]*(not found|not exist|could not be found)/i.test(code + ' ' + raw)) {
+  if (scene !== 'search' && isModelQuotaExhausted(source)) {
+    code = 'FREE_QUOTA_EXHAUSTED'; message = MODEL_QUOTA_EXHAUSTED_MESSAGE;
+  } else if (/FUNCTION_NOT_(FOUND|EXIST)|function[^\n]*(not found|not exist|could not be found)/i.test(code + ' ' + raw)) {
     code = 'SERVICE_NOT_DEPLOYED'; message = service + '服务尚未准备好，请稍后重试';
   } else if (/timeout|timed out|超时/i.test(raw) && !source.code) {
     code = 'NETWORK_TIMEOUT'; message = '等待' + service + '超时，请重试';

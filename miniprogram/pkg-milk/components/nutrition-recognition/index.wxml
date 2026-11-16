@@ -34,7 +34,7 @@
       <button size="mini" wx:if="{{!previewOnly}}" class="close-button" catchtap="cancelDialog" aria-label="关闭识别弹窗" disabled="{{saving || pendingSave}}"><view class="close-icon" aria-hidden="true"></view></button>
       <scroll-view class="dialog-body" scroll-y="true" scroll-into-view="{{scrollToField}}" scroll-with-animation="{{false}}">
         <text class="preview-note" wx:if="{{longWaiting}}" aria-live="polite">仍在处理中，请稍候</text>
-        <view class="error-row" wx:if="{{error && previewOnly}}"><text class="error-text">{{error}}</text><button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy || pendingSave}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button></view>
+        <view class="error-row" wx:if="{{error && previewOnly}}"><view wx:if="{{error === modelQuotaMessage}}" class="error-text"><recognition-quota-message /></view><text wx:else class="error-text">{{error}}</text><button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy || pendingSave}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button></view>
         <button wx:if="{{canRestoreDraft}}" class="text-button" catchtap="restorePreviousDraft" disabled="{{busy || pendingSave}}">恢复重新识别前的草稿</button>
         <view class="reference-warning" wx:if="{{!previewOnly && labelFillWarning}}"><text>{{labelFillWarning}}</text></view>
         <view wx:if="{{!previewOnly && canRetryReference}}" class="reference-warning"><text>营养查询失败</text><button class="text-button" catchtap="retryReference" disabled="{{busy || pendingSave}}">重试查询</button></view>
@@ -269,7 +269,8 @@
       </scroll-view>
       <view class="dialog-footer">
         <view class="save-feedback" wx:if="{{error && !previewOnly && !saving}}" role="alert" aria-live="polite">
-          <text class="error-text">{{error}}</text>
+          <view wx:if="{{error === modelQuotaMessage}}" class="error-text"><recognition-quota-message /></view>
+          <text wx:else class="error-text">{{error}}</text>
           <button wx:if="{{canRetryRecognition}}" class="retry-button" catchtap="retryRecognition" disabled="{{busy || pendingSave}}">{{retryRecognitionRequired ? '重新识别' : '重试'}}</button>
         </view>
         <view class="footer-actions">

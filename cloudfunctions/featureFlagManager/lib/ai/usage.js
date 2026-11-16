@@ -8,8 +8,9 @@ async function get(db, collection, id) {
 }
 async function transact(db, action) { return db.runTransaction(action); }
 function dayKey(now) { return new Date(now + 28800000).toISOString().slice(0, 10); }
-async function reserveInvocation({ db, openid, babyUid, scene, requestId, requestHash, now = Date.now(), dailyLimit, reusedResult }) {
-  if (!openid || !babyUid || !['search', 'scan'].includes(scene) || typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{8,100}$/.test(requestId)) fail('INVALID_INPUT', '请求编号无效');
+async function reserveInvocation({ db, openid, babyUid, scene, requestId, requestHash, now = Date.now(), dailyLimit, reusedResult, leaseMs = 60000 }) {
+  if (!openid || !babyUid || !['search', 'scan', 'report'].includes(scene) || typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{8,100}$/.test(requestId)) fail('INVALID_INPUT', '请求编号无效');
+  if (!Number.isSafeInteger(leaseMs) || leaseMs < 1000 || leaseMs > 600000) fail('CONFIG_MISSING', '请求有效期配置无效');
   const id = hash([openid, babyUid, scene, requestId]); const counterId = hash([openid, scene, dayKey(now)]);
   return transact(db, async tx => {
     const existing = await get(tx, 'ai_search_requests', id);
@@ -30,7 +31,7 @@ async function reserveInvocation({ db, openid, babyUid, scene, requestId, reques
     if (count >= dailyLimit) fail('DAILY_LIMIT', '今日智能调用次数已用完，可使用普通查询或手动录入');
     await tx.collection('ai_usage_counters').doc(counterId).set({ ownerOpenid: openid, scene, date: dayKey(now), count: count + 1, expiresAt: new Date(now + 7 * 86400000) });
     await tx.collection('ai_search_requests').doc(id).set({ ownerOpenid: openid, babyUid, scene, requestHash, counterId,
-      state: 'running', dispatched: false, leaseUntil: now + 60000, createdAt: new Date(now), expiresAt: new Date(now + 86400000) });
+      state: 'running', dispatched: false, leaseUntil: now + leaseMs, createdAt: new Date(now), expiresAt: new Date(now + 86400000) });
     return { state: 'reserved', id, counterId };
   });
 }

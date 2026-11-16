@@ -2,6 +2,7 @@
 
 const { fail } = require('./policy');
 const NUTRITION_QUOTA_KEY = 'nutrition_daily_quota';
+const REPORT_QUOTA_KEY = 'report_daily_quota';
 const MAX_DAILY_LIMIT = 10000;
 
 function isDailyLimit(value) {
@@ -9,10 +10,10 @@ function isDailyLimit(value) {
 }
 
 // 管理配置使用固定文档，避免并发保存创建多条互相冲突的额度记录。
-async function readNutritionQuota(db, fallbackLimit = 20) {
+async function readDailyQuota(db, key, fallbackLimit) {
   let document;
   try {
-    const result = await db.collection('feature_flags').doc(NUTRITION_QUOTA_KEY).get();
+    const result = await db.collection('feature_flags').doc(key).get();
     document = Array.isArray(result.data) ? result.data[0] : result.data;
   } catch (error) {
     if (!/DOCUMENT_NOT_FOUND|DOCUMENT_NOT_EXIST/.test(String(error.code || error.errCode)) &&
@@ -28,4 +29,12 @@ async function readNutritionQuota(db, fallbackLimit = 20) {
   return { dailyLimit: document.dailyLimit, version: document.version, configured: true };
 }
 
-module.exports = { NUTRITION_QUOTA_KEY, MAX_DAILY_LIMIT, isDailyLimit, readNutritionQuota };
+function readNutritionQuota(db, fallbackLimit = 20) {
+  return readDailyQuota(db, NUTRITION_QUOTA_KEY, fallbackLimit);
+}
+
+function readReportQuota(db, fallbackLimit = 20) {
+  return readDailyQuota(db, REPORT_QUOTA_KEY, fallbackLimit);
+}
+
+module.exports = { NUTRITION_QUOTA_KEY, REPORT_QUOTA_KEY, MAX_DAILY_LIMIT, isDailyLimit, readNutritionQuota, readReportQuota };

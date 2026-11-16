@@ -10,8 +10,8 @@ const CONFIG_ITEMS = [
   },
   {
     id: 'nutrition-quota',
-    name: '营养识别次数',
-    description: '设置每个账号每天的识别上限',
+    name: '识别次数配置',
+    description: '配置食物、包装与报告的每日识别上限',
     path: '/pkg-misc/nutrition-quota-settings/index'
   },
   {

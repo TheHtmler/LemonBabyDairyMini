@@ -10,7 +10,7 @@ const CHINESE_TYPO_REPLACEMENTS = [
 ];
 
 const EXTRA_ALIASES = {
-  iso_leu: ['iso/leu', 'ile/leu', '异亮氨酸/亮氨酸', '异亮氨酸', '亮氨酸'],
+  iso_leu: ['iso/leu', 'ile/leu', 'leu', 'leucine', '异亮氨酸/亮氨酸', '异亮氨酸', '亮氨酸'],
   met: ['met', '蛋氨酸', '甲硫氨酸', '蛋氨酸/甲硫氨酸'],
   val: ['val', 'va1', '缬氨酸'],
   thr: ['thr', '苏氨酸'],
@@ -18,21 +18,22 @@ const EXTRA_ALIASES = {
   c0: ['游离肉碱(c0)', '游离肉碱'],
   c2: ['乙酰基肉碱(c2)', '酰基肉碱(c2)', '乙酰基肉碱', '乙酰肉碱'],
   c3: ['丙酰基肉碱(c3)', '丙酰肉碱(c3)', '丙酰基肉碱', '丙酰肉碱'],
-  methylmalonic_acid: ['mma', '甲基丙二酸'],
-  hydroxypropionic_acid: ['3-hpa', '3hpa', '3-羟基丙酸'],
+  // 仅收录已核对的报告完整写法，不统一删除数字后缀，以免混入其他化合物或峰编号。
+  methylmalonic_acid: ['mma', '甲基丙二酸', '甲基丙二酸-2'],
+  hydroxypropionic_acid: ['3-hpa', '3hpa', '3-羟基丙酸', '3-羟基丙酸-2'],
   hydroxybutyric_acid: [
     '3-hba', '3hba',
     '3-羟基丁酸-2', '3-羟基丁酸(2)', '3-羟基丁酸2', '3-羟基丁酸 2', '3羟基丁酸-2',
     '3-羟基丁酸'
   ],
   methylcitric_acid_1: [
-    'mca(1)', 'mca1', '甲基枸橼酸(1)', '甲基枸橼酸1', '甲基枸橼酸-1',
+    'mca(1)', 'mca1', '甲基枸橼酸(1)', '甲基枸橼酸1', '甲基枸橼酸-1', '甲基枸橼酸-4(1)',
     '甲基枸橼酸', 'mca'
   ],
   methylcitric_acid_2: [
-    'mca(2)', 'mca2', '甲基枸橼酸(2)', '甲基枸橼酸2', '甲基枸橼酸-2'
+    'mca(2)', 'mca2', '甲基枸橼酸(2)', '甲基枸橼酸2', '甲基枸橼酸-2', '甲基枸橼酸-4(2)'
   ],
-  lactate: ['lac', '乳酸'],
+  lactate: ['lac', '乳酸', '乳酸-2'],
   hgb: ['hgb', 'hb', 'hemoglobin', '血红蛋白'],
   plt: ['plt', 'platelet', '血小板', '血小板计数'],
   wbc: ['wbc', '白细胞', '白细胞计数'],
@@ -211,6 +212,12 @@ function isCarnitineAbbrevInsideRatio(normalizedLine = '', matchIndex = 0, match
 
 function isBareCarnitineAbbrev(alias = '') {
   return CARNITINE_ABBREVS.has(`${alias || ''}`.toLowerCase());
+}
+
+// 相似名称是不同项目，不能因精氨酸前缀或 Arg 缩写而合并。
+function isArginineInterferenceName(name = '') {
+  const normalized = normalizeIndicatorText(name);
+  return /丙氨酸|alanine|(?:^|[^a-z])ala(?:$|[^a-z])|精氨(?:酰|酸)?琥珀酸|arginino[\s_-]*succin|(?:^|[^a-z])arg[\s_-]*suc/.test(normalized);
 }
 
 function extractParenCarnitineCode(name = '') {
@@ -400,5 +407,6 @@ module.exports = {
   shouldParseRatioIndicator,
   isCarnitineAbbrevInsideRatio,
   isBareCarnitineAbbrev,
+  isArginineInterferenceName,
   CARNITINE_ABBREVS
 };

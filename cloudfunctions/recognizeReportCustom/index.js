@@ -1,373 +1,160 @@
+'use strict';
 const cloud = require('wx-server-sdk');
-const { adaptOcrResponse } = require('./customOcrAdapter');
-const { requestCustomOcrWithRetry, checkOcrHealth } = require('./customOcrClient');
-const { preprocessImageForOcr } = require('./imagePreprocess');
-const { resolveImageBuffer } = require('./imagePayload');
-const { OCR_MODES, resolveOcrEndpoint, resolveHealthUrl, inferContentType } = require('./ocrConfig');
+const { validateReportFileIDs, resolveReportImageBatch } = require('./imagePayload');
+const { requestReportOcr, resolveReportDeadline } = require('./customOcrClient');
+const { REPORT_OCR_TYPES, REPORT_OCR_TIMING, REPORT_RECOGNITION_VERSION } = require('./lib/config/reportTypes');
+const { getAiPolicy, resolveModelPolicy, usageStatus, reserveInvocation, markDispatched, completeInvocation } = require('./lib/ai');
+const { readReportQuota } = require('./lib/ai/nutritionQuota');
+const { handleOriginalImages } = require('./originalImages');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+const accessDb = cloud.database();
+const ACCESS_MESSAGE = '报告拍照识别暂未对当前用户开放';
 
-const db = cloud.database();
-const FEATURE_FLAG_COLLECTION = 'feature_flags';
-const REPORT_OCR_ACCESS_KEY = 'report_ocr_access';
-const MISSING_FILE_MESSAGE = '缺少识别图片';
-const MISSING_CONFIG_MESSAGE = '未配置 CUSTOM_OCR_API_KEY 云函数环境变量';
-const OCR_ACCESS_DENIED_MESSAGE = '拍照识别功能调试中，暂未对当前用户开放';
-
-function getCustomOcrConfig(event = {}) {
-  return resolveOcrEndpoint(process.env, event.mode);
+function modelDatabase() {
+  const env = cloud.getWXContext().ENV || process.env.TCB_ENV || process.env.SCF_NAMESPACE;
+  if (!env) throw Object.assign(new Error('无法确定报告识别的云环境'), { code: 'CONFIG_MISSING' });
+  return require('@cloudbase/node-sdk').init({ env }).database();
 }
 
-function hasImagePayload(event = {}) {
-  return Boolean(event.fileID || event.avatarFileId || event.imageBase64);
-}
-
-function normalizeOpenid(value = '') {
-  return String(value || '').trim();
-}
-
-function normalizeOpenids(openids = []) {
-  const source = Array.isArray(openids)
-    ? openids
-    : String(openids || '').split(/[\n,，\s]+/);
-  return Array.from(new Set(source.map(normalizeOpenid).filter(Boolean)));
-}
-
-function normalizeScope(scope = '') {
-  return scope === 'all' ? 'all' : 'whitelist';
-}
-
-function normalizeReportOcrAccess(config = {}) {
-  return {
-    scope: normalizeScope(config.scope),
-    allowOpenids: normalizeOpenids(config.allowOpenids),
-    message: String(config.message || OCR_ACCESS_DENIED_MESSAGE).trim() || OCR_ACCESS_DENIED_MESSAGE
-  };
-}
-
-async function getReportOcrAccessConfig() {
-  try {
-    const res = await db.collection(FEATURE_FLAG_COLLECTION)
-      .where({ key: REPORT_OCR_ACCESS_KEY })
-      .limit(1)
-      .get();
-    return normalizeReportOcrAccess(res.data?.[0] || {});
-  } catch (error) {
-    console.warn('[recognizeReportCustom] access config missing', error);
-    return normalizeReportOcrAccess({});
+// 仅返回程序固定类别，不能把服务原文、图片或检验数据带入错误详情。
+function reportFailureDetails(error = {}) {
+  const source = error.diagnostic || {};
+  const details = {};
+  if (['transcription', 'mapping', 'source_merge'].includes(source.stage)) details.stage = source.stage;
+  if (typeof source.validationReason === 'string' && /^[A-Z][A-Z_]{0,63}$/.test(source.validationReason)) {
+    details.validationReason = source.validationReason;
   }
+  if (['n', 'v', 'r', 'u', 'f', 'name', 'value', 'ref_range', 'unit', 'flag'].includes(source.field)) details.field = source.field;
+  if (['null', 'string', 'number', 'boolean'].includes(source.rootType)) details.rootType = source.rootType;
+  if (Number.isSafeInteger(source.batchIndex) && source.batchIndex >= 1 && source.batchIndex <= 6) details.batchIndex = source.batchIndex;
+  if (typeof source.segmentPath === 'string' && /^\d{1,3}(?:\.[12]){0,3}$/.test(source.segmentPath)) details.segmentPath = source.segmentPath;
+  if (typeof source.mappingPath === 'string' && /^\d{1,3}(?:\.[12]){0,5}$/.test(source.mappingPath)) details.mappingPath = source.mappingPath;
+  return details;
 }
 
-async function resolveReportOcrAccess(openid = '') {
-  const config = await getReportOcrAccessConfig();
-  const normalizedOpenid = normalizeOpenid(openid);
-  const allowed = config.scope === 'all' || config.allowOpenids.includes(normalizedOpenid);
-  return {
-    allowed,
-    scope: config.scope,
-    message: allowed ? '' : config.message
-  };
-}
-
-function resolveUserMessage(error = {}) {
-  if (error.code === 'OCR_TIMEOUT') {
-    return 'OCR 服务 55 秒内无响应，请检查 Mac mini 服务是否卡住';
+async function reportAccess(openid, babyUid, checkQuota = false) {
+  if (!openid || !/^[A-Za-z0-9_-]{1,128}$/.test(babyUid || '')) {
+    throw Object.assign(new Error('请先登录并选择宝宝'), { code: 'FORBIDDEN' });
   }
-  if (error.code === 'OCR_GATEWAY_ERROR') {
-    return 'OCR 后端无响应（502），请确认 Mac mini 在运行，且 nginx 超时 ≥ 120 秒';
+  const response = await accessDb.collection('feature_flags').where({ key: 'report_ocr_access' }).limit(1).get();
+  const config = response.data?.[0] || {};
+  const scope = config.scope === 'all' ? 'all' : 'whitelist';
+  const openids = Array.isArray(config.allowOpenids) ? config.allowOpenids
+    : String(config.allowOpenids || '').split(/[\n,，\s]+/);
+  const allowed = scope === 'all' || openids.some(value => String(value).trim() === openid);
+  if (!allowed) return { allowed: false, scope, reasonCode: 'OCR_NOT_ALLOWED', message: config.message || ACCESS_MESSAGE };
+  const db = modelDatabase();
+  let authorized = false;
+  for (const collection of ['baby_creators', 'baby_participants']) {
+    const membership = await db.collection(collection).where({ _openid: openid, babyUid }).limit(1).get();
+    if (membership.data?.length) { authorized = true; break; }
   }
-  if (error.code === 'OCR_NOT_READY' || error.code === 'OCR_HEALTH_FAILED') {
-    return 'OCR 服务未就绪，请先在 Mac mini 上确认 /api/v1/health 正常';
+  if (!authorized) throw Object.assign(new Error('无权访问该宝宝的检测报告'), { code: 'FORBIDDEN' });
+  const policy = await resolveModelPolicy(db, 'report', process.env, false);
+  if (!policy.available) return { allowed: false, scope, reasonCode: policy.unavailableReason,
+    message: policy.unavailableMessage || '请管理员启用报告 OCR 模型' };
+  const configuredQuota = await readReportQuota(db, policy.dailyLimit);
+  policy.dailyLimit = configuredQuota.dailyLimit;
+  if (checkQuota) {
+    const quota = await usageStatus(db, openid, 'report', policy.dailyLimit);
+    if (!quota.available) return { allowed: false, scope, reasonCode: 'DAILY_LIMIT',
+      message: policy.dailyLimit === 0 ? '管理员已暂停报告识别' : '今日报告识别次数已用完（每天 ' + policy.dailyLimit + ' 次），请明天再试或手动录入' };
   }
-  if (error.code === 'OCR_BUSY') {
-    return 'OCR 服务正在处理其他请求，请稍后再试';
-  }
-  if (error.code === 'OCR_UNAVAILABLE') {
-    return 'OCR 服务暂不可用，请稍后再试';
-  }
-  return error.message || '自建 OCR 识别失败';
+  return { allowed: true, scope, message: '', policy, db };
 }
 
 exports.main = async (event = {}) => {
-  const { OPENID } = cloud.getWXContext();
-  const ocrConfig = getCustomOcrConfig(event);
-  const { url, apiKey, mode, urlMigrated, rawCustomUrl } = ocrConfig;
-  const healthUrl = resolveHealthUrl(process.env);
-
-  if (event.action === 'checkAccess') {
-    const access = await resolveReportOcrAccess(OPENID);
-    return {
-      ok: true,
-      action: 'checkAccess',
-      allowed: access.allowed,
-      scope: access.scope,
-      message: access.message || ''
-    };
-  }
-
-  if (event.action === 'probe') {
-    const startedAt = Date.now();
-    try {
-      const health = await checkOcrHealth(healthUrl, 8000);
-      return {
-        ok: true,
-        action: 'probe',
-        config: {
-          endpoint: url,
-          healthUrl,
-          mode,
-          urlMigrated: Boolean(urlMigrated),
-          rawCustomUrl: rawCustomUrl || undefined,
-          hasApiKey: Boolean(apiKey)
-        },
-        health: health.health,
-        responseServer: health.responseServer,
-        elapsedMs: Date.now() - startedAt,
-        hint: health.responseServer === 'nginx'
-          ? '命中 nginx 说明仍在访问 80 端口，请删除 CUSTOM_OCR_URL 并改用 CUSTOM_OCR_BASE_URL=http://60.205.243.92:8080'
-          : '正常应看到 responseServer=uvicorn'
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        action: 'probe',
-        code: error?.code || 'PROBE_FAILED',
-        message: resolveUserMessage(error),
-        config: {
-          endpoint: url,
-          healthUrl,
-          mode,
-          urlMigrated: Boolean(urlMigrated),
-          rawCustomUrl: rawCustomUrl || undefined,
-          hasApiKey: Boolean(apiKey)
-        },
-        debug: {
-          statusCode: error?.statusCode,
-          responseServer: error?.responseServer,
-          bodyPreview: error?.bodyPreview,
-          elapsedMs: Date.now() - startedAt
-        },
-        hint: error?.responseServer === 'nginx' || `${error?.bodyPreview || ''}`.includes('nginx')
-          ? '502/504 且 server=nginx：云函数打到了 80 端口。请删除环境变量 CUSTOM_OCR_URL，只保留 CUSTOM_OCR_BASE_URL=http://60.205.243.92:8080'
-          : undefined
-      };
-    }
-  }
-
-  console.log('[recognizeReportCustom] invoke', {
-    ocrRequestId: event.ocrRequestId || '',
-    hasFileID: Boolean(event.fileID || event.avatarFileId),
-    hasImageBase64: Boolean(event.imageBase64),
-    mode,
-    endpoint: url,
-    healthUrl,
-    urlMigrated: Boolean(urlMigrated),
-    rawCustomUrl: rawCustomUrl || undefined,
-    hasApiKey: Boolean(apiKey)
-  });
-
-  const access = await resolveReportOcrAccess(OPENID);
-  if (!access.allowed) {
-    return {
-      ok: false,
-      code: 'OCR_NOT_ALLOWED',
-      message: access.message || OCR_ACCESS_DENIED_MESSAGE
-    };
-  }
-
-  if (!hasImagePayload(event)) {
-    return { ok: false, code: 'MISSING_FILE', message: MISSING_FILE_MESSAGE };
-  }
-
-  if (!apiKey) {
-    return { ok: false, code: 'MISSING_CONFIG', message: MISSING_CONFIG_MESSAGE };
-  }
-
   const startedAt = Date.now();
-
+  const action = event.action || 'recognize';
+  const timings = {};
+  let phase = 'start';
+  const runStage = async (name, task) => {
+    phase = name;
+    const stageStartedAt = Date.now();
+    if (action === 'recognize') console.info('[report-ocr-stage]', { phase, elapsedMs: stageStartedAt - startedAt });
+    try { return await task(); }
+    finally { timings[name + 'Ms'] = Math.max(0, Date.now() - stageStartedAt); }
+  };
+  const { OPENID } = cloud.getWXContext();
+  let reservation; let db; let dispatched = false; let output; let temporaryFileIDs = [];
   try {
-    const imagePayload = await resolveImageBuffer(cloud, event);
-    if (!imagePayload?.buffer?.length) {
-      return { ok: false, code: 'MISSING_FILE', message: MISSING_FILE_MESSAGE };
+    if (['originalsCapabilities', 'prepareOriginals', 'getOriginals', 'deleteReportWithOriginals'].includes(action)) {
+      const env = cloud.getWXContext().ENV || process.env.TCB_ENV || process.env.SCF_NAMESPACE;
+      return await handleOriginalImages({ event, cloud, db: modelDatabase(), openid: OPENID, env });
     }
-
-    const shouldPreprocess = event.skipPreprocess === false;
-    const preprocessed = shouldPreprocess
-      ? await preprocessImageForOcr(imagePayload.buffer)
-      : {
-        buffer: imagePayload.buffer,
-        preprocessMs: 0,
-        resized: false,
-        skipped: true,
-        originalBytes: imagePayload.buffer.length,
-        outputBytes: imagePayload.buffer.length
-      };
-    const preprocessMs = preprocessed.preprocessMs || 0;
-    const uploadFileName = imagePayload.fileName || 'report.jpg';
-    const uploadContentType = inferContentType(uploadFileName);
-
-    console.log('[recognizeReportCustom] payload', {
-      ocrRequestId: event.ocrRequestId || '',
-      source: imagePayload.source,
-      mode,
-      bufferBytes: imagePayload.buffer.length,
-      outputBytes: preprocessed.outputBytes || preprocessed.buffer.length,
-      resized: Boolean(preprocessed.resized),
-      skipped: preprocessed.skipped !== false,
-      fileName: uploadFileName,
-      downloadMs: imagePayload.downloadMs || 0,
-      preprocessMs
-    });
-
-    if (event.skipHealthCheck !== true && healthUrl) {
-      const healthStartedAt = Date.now();
-      try {
-        const health = await checkOcrHealth(healthUrl, 5000);
-        console.log('[recognizeReportCustom] health', {
-          ocrRequestId: event.ocrRequestId || '',
-          ok: health.ok,
-          elapsedMs: Date.now() - healthStartedAt,
-          ocrLoaded: health.health?.ocr_loaded,
-          responseServer: health.responseServer
-        });
-        if (!health.ok) {
-          return {
-            ok: false,
-            code: health.code || 'OCR_NOT_READY',
-            message: resolveUserMessage({ code: health.code || 'OCR_NOT_READY', message: health.message })
-          };
-        }
-      } catch (error) {
-        console.warn('[recognizeReportCustom] health failed', {
-          ocrRequestId: event.ocrRequestId || '',
-          healthUrl,
-          code: error?.code,
-          statusCode: error?.statusCode,
-          message: error?.message
-        });
-        return {
-          ok: false,
-          code: error?.code === 'OCR_GATEWAY_ERROR' ? 'OCR_GATEWAY_ERROR' : 'OCR_HEALTH_FAILED',
-          message: resolveUserMessage(error),
-          debug: {
-            healthUrl,
-            endpoint: url,
-            statusCode: error?.statusCode,
-            responseServer: error?.responseServer,
-            hint: error?.responseServer === 'nginx'
-              ? '命中 nginx=80 端口，请删除 CUSTOM_OCR_URL，改用 CUSTOM_OCR_BASE_URL=http://60.205.243.92:8080'
-              : '请确认 Mac mini frp 8080 可从公网访问'
-          }
-        };
-      }
+    if (action === 'getDailyLimit') {
+      if (!OPENID) return { ok: false, code: 'FORBIDDEN', message: '请先登录' };
+      // 仅返回公开额度及版本，服务暂停或未选择宝宝时仍可读取并配置。
+      const policy = getAiPolicy({ scene: 'report', env: process.env });
+      return { ok: true, config: await readReportQuota(modelDatabase(), policy.dailyLimit) };
     }
-
-    const ocrStartedAt = Date.now();
-    const ocrResponse = await requestCustomOcrWithRetry({
-      buffer: preprocessed.buffer,
-      fileName: uploadFileName,
-      contentType: uploadContentType,
-      url,
-      apiKey
-    });
-    const ocrMs = Date.now() - ocrStartedAt;
-
-    const adapted = adaptOcrResponse(ocrResponse, mode);
-    const elapsedMs = Date.now() - startedAt;
-
-    console.log('[recognizeReportCustom] result', {
-      ocrRequestId: event.ocrRequestId || '',
-      mode: adapted.mode,
-      structuredCount: adapted.structuredItems.length,
-      lineCount: adapted.lines.length,
-      itemCount: adapted.items.length,
-      warningCount: adapted.warnings.length,
-      source: imagePayload.source,
-      downloadMs: imagePayload.downloadMs || 0,
-      preprocessMs,
-      ocrMs,
-      elapsedMs,
-      originalBytes: preprocessed.originalBytes,
-      outputBytes: preprocessed.outputBytes
-    });
-
-    return {
-      ok: true,
-      mode: adapted.mode,
-      structuredItems: adapted.structuredItems,
-      warnings: adapted.warnings,
-      reportType: adapted.reportType,
-      parserVersion: adapted.parserVersion,
-      lines: adapted.lines,
-      items: adapted.items,
-      rawText: adapted.rawText,
-      meta: {
-        provider: 'mac-mini-ocr',
-        client: adapted.client,
-        mode: adapted.mode,
-        endpoint: url,
-        source: imagePayload.source,
-        structuredCount: adapted.structuredItems.length,
-        lineCount: adapted.lines.length,
-        itemCount: adapted.items.length,
-        warningCount: adapted.warnings.length,
-        bufferBytes: imagePayload.buffer.length,
-        downloadMs: imagePayload.downloadMs || 0,
-        preprocessMs,
-        ocrMs,
-        elapsedMs,
-        originalBytes: preprocessed.originalBytes,
-        outputBytes: preprocessed.outputBytes,
-        resized: Boolean(preprocessed.resized),
-        skipped: preprocessed.skipped !== false
-      }
-    };
+    if (!['checkAccess', 'recognize'].includes(action)) {
+      return { ok: false, code: 'INVALID_INPUT', message: '不支持的报告识别操作' };
+    }
+    const access = await runStage('access', () => reportAccess(OPENID, event.babyUid, action === 'checkAccess'));
+    if (action === 'checkAccess') return { ok: true, action, allowed: access.allowed,
+      scope: access.scope, reasonCode: access.reasonCode || '', message: access.message };
+    if (!access.allowed) return { ok: false, code: access.reasonCode || 'OCR_NOT_ALLOWED', message: access.message };
+    if (!REPORT_OCR_TYPES.some(type => type.key === event.reportType)) {
+      return { ok: false, code: 'INVALID_INPUT', message: '该报告类型暂不支持识别' };
+    }
+    const imageEnv = cloud.getWXContext().ENV || process.env.TCB_ENV || process.env.SCF_NAMESPACE;
+    temporaryFileIDs = validateReportFileIDs(event.fileIDs, event.babyUid, imageEnv);
+    if (event.protocolVersion !== REPORT_RECOGNITION_VERSION) {
+      throw Object.assign(new Error('报告识别版本不一致，请更新小程序及识别云函数后重试'), { code: 'REPORT_VERSION_MISMATCH' });
+    }
+    const images = await runStage('download', () => resolveReportImageBatch(cloud, temporaryFileIDs, event.reportType));
+    db = access.db;
+    reservation = await runStage('reserve', () => reserveInvocation({ db, openid: OPENID, babyUid: event.babyUid, scene: 'report',
+      requestId: event.ocrRequestId, requestHash: images.requestHash, dailyLimit: access.policy.dailyLimit,
+      leaseMs: REPORT_OCR_TIMING.leaseMs }));
+    if (reservation.state === 'cached') return reservation.result;
+    const deadline = resolveReportDeadline(startedAt);
+    if (deadline <= Date.now()) throw Object.assign(new Error('报告准备耗时过长，请稍后重试'), { code: 'REPORT_PREPARATION_TIMEOUT' });
+    await runStage('dispatch', () => markDispatched(db, reservation));
+    dispatched = true;
+    const result = await runStage('model', () => requestReportOcr({ buffers: images.buffers,
+      reportType: event.reportType, policy: access.policy, deadline }));
+    output = { ok: true, mode: result.mode, protocolVersion: result.protocolVersion,
+      structuredItems: result.structuredItems, warnings: result.warnings,
+      reportType: result.reportType, parserVersion: result.parserVersion, lines: [], items: [], rawText: '',
+      modelInfo: result.modelInfo, meta: { provider: 'bailian-ocr', actualModel: result.modelInfo.actualModel,
+        structuredCount: result.structuredItems.length, imageCount: images.buffers.length,
+        sourceValues: result.statistics.sourceValues, resultValues: result.statistics.resultValues } };
+    await runStage('finalize', () => completeInvocation({ db, reservation, dispatched, result: output, usage: result.usage }));
+    console.info('[report-ocr-result]', { model: result.modelInfo.actualModel, reportType: event.reportType,
+      parserVersion: result.parserVersion, imageBytes: images.totalBytes, imageCount: images.buffers.length,
+      itemCount: result.structuredItems.length, ...result.statistics, ...timings,
+      functionElapsedMs: Date.now() - startedAt });
+    return output;
   } catch (error) {
-    console.error('[recognizeReportCustom] failed', {
-      ocrRequestId: event.ocrRequestId || '',
-      elapsedMs: Date.now() - startedAt,
-      code: error?.code,
-      statusCode: error?.statusCode,
-      message: error?.message
-    });
-
-    if (error?.code === 'DOWNLOAD_FAILED' || `${error?.message || ''}`.includes('empty_file_content') || `${error?.message || ''}`.includes('empty_image_base64')) {
-      return { ok: false, code: 'DOWNLOAD_FAILED', message: '读取图片失败，请重新拍摄后再试' };
+    const failedPhase = phase;
+    if (reservation?.state === 'reserved' && db) {
+      await runStage('failureFinalize', () => completeInvocation({ db, reservation, dispatched, error, usage: error.usage })).catch(() => {});
     }
-
-    if (error?.code === 'IMAGE_TOO_LARGE') {
-      return { ok: false, code: 'IMAGE_TOO_LARGE', message: '图片过大，请重新拍摄或压缩后再试' };
+    console.warn('[report-ocr-failed]', JSON.stringify({ code: error.code || 'RECOGNIZE_FAILED', httpStatus: error.httpStatus || null,
+      phase: failedPhase, ...timings, functionElapsedMs: Date.now() - startedAt,
+      ...(error.diagnostic || {}) }));
+    if (event.action === 'checkAccess') return { ok: true, allowed: false,
+      reasonCode: error.code || 'CONFIG_MISSING', message: error.message || '报告识别暂不可用，请稍后重试' };
+    const details = reportFailureDetails(error);
+    const stageLabel = details.stage === 'transcription'
+      ? (details.batchIndex ? '第' + details.batchIndex + '张图片' : '图片') +
+        (details.segmentPath ? '分块' + details.segmentPath : '') + '取字'
+      : details.stage === 'mapping' ? '指标分类' + (details.mappingPath ? '分批' + details.mappingPath : '')
+        : details.stage === 'source_merge' ? '原表汇总' : '';
+    const failureMessage = error.code === 'DOWNLOAD_FAILED' ? '读取报告图片失败，请重新拍摄'
+      : error.message || '报告识别失败，请稍后重试';
+    return { ok: false, code: error.code || 'RECOGNIZE_FAILED', diagnostic: details,
+      message: stageLabel && details.validationReason ? stageLabel + '：' + failureMessage : failureMessage };
+  } finally {
+    if (temporaryFileIDs.length) {
+      try {
+        const removed = await runStage('cleanup', () => cloud.deleteFile({ fileList: temporaryFileIDs }));
+        if (removed.fileList?.length !== temporaryFileIDs.length || removed.fileList.some(file => file.status !== 0)) console.warn('[report-temp-cleanup]', { code: 'DELETE_INCOMPLETE' });
+      } catch (_) { console.warn('[report-temp-cleanup]', { code: 'DELETE_FAILED' }); }
     }
-
-    return {
-      ok: false,
-      code: error?.code || 'RECOGNIZE_FAILED',
-      message: resolveUserMessage(error),
-      debug: {
-        statusCode: error?.statusCode,
-        responseServer: error?.responseServer,
-        bodyPreview: error?.bodyPreview,
-        endpoint: url,
-        healthUrl,
-        mode,
-        urlMigrated: Boolean(urlMigrated),
-        rawCustomUrl: rawCustomUrl || undefined,
-        elapsedMs: Date.now() - startedAt,
-        hint: error?.responseServer === 'nginx' || `${error?.bodyPreview || ''}`.includes('nginx')
-          ? 'server=nginx 表示打到 80 端口。删除 CUSTOM_OCR_URL，仅保留 CUSTOM_OCR_BASE_URL=http://60.205.243.92:8080 后重新部署'
-          : undefined
-      }
-    };
+    if (action === 'recognize') console.info('[report-ocr-finished]', { ...timings, functionElapsedMs: Date.now() - startedAt });
   }
-};
-
-exports._internal = {
-  getCustomOcrConfig,
-  hasImagePayload,
-  resolveImageBuffer,
-  preprocessImageForOcr,
-  adaptOcrResponse,
-  requestCustomOcrWithRetry,
-  checkOcrHealth,
-  OCR_MODES
 };

@@ -1,48 +1,15 @@
 const ReportModel = require('../../models/report');
 const ReportRepository = require('../../models/reportRepository');
-const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
-const { parseReportOcrResult, parseStructuredReportItems } = require('../utils/reportOcrParser');
-const { sanitizeSignedDecimalInput } = require('../utils/reportNumberFormat');
+const { REPORT_ENTRY_TYPES, REPORT_OCR_TYPES, REPORT_MAX_PHOTOS } = require('../../constants/reportTypes');
+const { getReportOcrAccess } = require('../../utils/reportOcrAccess');
+const { currentContext } = require('../../utils/searchSession');
+const { getOcrFailureMessage } = require('../utils/reportRecognition');
+const { sanitizeSignedDecimalInput, formatReportNumber } = require('../utils/reportNumberFormat');
+const { normalizeReportDetectionValue, toExactReportNumber, summarizeReportValues } = require('../../utils/reportNumeric');
 const { countFilledIndicators } = require('../utils/reportFilledCount');
+const { uploadReportOriginals, sameContext } = require('../../utils/reportOriginals');
 
 const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
-
-const CUSTOM_OCR_CLOUD_PATH_PREFIX = 'custom_ocr_temp';
-const CUSTOM_OCR_MAX_BYTES = 2 * 1024 * 1024;
-const CUSTOM_OCR_CALL_TIMEOUT_MS = 70000;
-
-function normalizeSignedNumberText(value = '') {
-  const trimmed = `${value ?? ''}`.trim();
-  const parenMatch = trimmed.match(/^\((-?\d+(?:\.\d+)?)\)$/);
-  return parenMatch ? parenMatch[1] : trimmed;
-}
-
-function formatReportNumber(value, precision = 3) {
-  const text = normalizeSignedNumberText(value);
-  if (!text) return '';
-
-  const num = Number(text);
-  if (!Number.isFinite(num)) {
-    return text;
-  }
-
-  return num.toFixed(precision);
-}
-
-function inferFileNameFromPath(filePath = '') {
-  const lower = `${filePath || ''}`.toLowerCase();
-  if (lower.endsWith('.png')) return 'report.png';
-  if (lower.endsWith('.webp')) return 'report.webp';
-  if (lower.endsWith('.jpeg')) return 'report.jpeg';
-  return 'report.jpg';
-}
-
-function mapOcrResultToIndicators({ structuredItems = [], items = [], reportType = '' } = {}) {
-  if (Array.isArray(structuredItems) && structuredItems.length > 0) {
-    return parseStructuredReportItems({ structuredItems, reportType });
-  }
-  return parseReportOcrResult({ items: items || [], reportType });
-}
 
 function buildOcrPendingSaveTip(pendingCount = 0) {
   const count = Math.max(Number(pendingCount) || 0, 0);
@@ -50,10 +17,14 @@ function buildOcrPendingSaveTip(pendingCount = 0) {
   return `含 ${count} 项拍照识别数据，请对照原报告确认后再保存`;
 }
 
+function hasReportValue(value) {
+  return `${value ?? ''}`.trim() !== '';
+}
+
 function sanitizeIndicatorsForSave(indicatorData = {}) {
   return Object.keys(indicatorData).reduce((result, key) => {
     const indicator = indicatorData[key] || {};
-    const { ocrPending, ...rest } = indicator;
+    const { ocrPending, rangePending, ...rest } = indicator;
     result[key] = {
       ...rest,
       value: formatReportNumber(rest.value),
@@ -84,6 +55,9 @@ Page({
     
     // 指标数据
     indicatorData: {},
+    originalImages: [],
+    originalPhotos: [],
+    focusedMetricKey: '',
 
     // 拍照识别：已自动填入但用户还没核对过的指标 key 列表
     ocrPendingKeys: [],
@@ -92,11 +66,12 @@ Page({
     ocrEntryVisible: false,
     ocrAccessChecked: false,
     ocrAccessMessage: '拍照识别功能调试中，仅对白名单用户开放',
-    ocrEntryHint: '拍下报告单自动填值，请逐项核对',
+    ocrEntryHint: '同一份报告最多6张，核对合并结果后填入',
 
     // 页面状态：默认 loading，避免指标异步就绪前空白闪一下
     loading: true,
     saving: false,
+    saveSucceeded: false,
     hasUnsavedChanges: false,
 
     // 已填进度
@@ -104,10 +79,12 @@ Page({
     totalCount: 0
   },
 
-  onLoad: function (options) {
+  onLoad: function (options = {}) {
     const mode = options.mode || 'add';
     const reportId = options.reportId || '';
     const selectedReportType = options.type || this.data.selectedReportType;
+    this._pendingMetricKey = typeof options.metricKey === 'string' ? options.metricKey : '';
+    this._returnDelta = options.from === 'recognition' && mode === 'add' ? 2 : 1;
     
     this.setData({
       mode: mode,
@@ -116,7 +93,88 @@ Page({
     });
     this.refreshNavigationTitle();
 
+    if (options.from === 'recognition' && mode === 'add') {
+      const channel = this.getOpenerEventChannel();
+      // 直接打开填写页时可能没有来源通道，仍允许正常手动填写。
+      if (typeof channel.once === 'function') {
+        this._recognitionChannel = channel;
+        channel.once('reportRecognitionConfirmed', recognition => {
+          if (this._pageUnloaded) return;
+          this._pendingReportRecognition = recognition;
+          this.consumeReportRecognition();
+        });
+      }
+    }
     this.initPage();
+  },
+
+  onReady() {
+    this._pageReady = true;
+    this.focusRequestedIndicator();
+    this.consumeReportRecognition();
+  },
+
+  onUnload() {
+    this._pageUnloaded = true;
+    this._pendingReportRecognition = null;
+    if (this._recognitionChannel) this._recognitionChannel.off('reportRecognitionConfirmed');
+    if (this.data.ocrRecognizing) wx.hideLoading();
+    if (this._returnTimer) {
+      clearTimeout(this._returnTimer);
+      this._returnTimer = null;
+    }
+  },
+
+  // 只接收用户在结果页明确确认过的数据，进入表单后不再重复识别。
+  consumeReportRecognition() {
+    if (this._pageUnloaded || !this._pageReady || this.data.loading || !this.data.ocrAccessChecked || !this._pendingReportRecognition) return;
+    const recognition = this._pendingReportRecognition;
+    this._pendingReportRecognition = null;
+    const context = currentContext();
+    if (recognition.babyUid !== this.data.babyInfo?.babyUid || recognition.babyUid !== context.babyUid
+      || recognition.accountKey !== context.accountKey || recognition.reportType !== this.data.selectedReportType) {
+      wx.showToast({ title: '宝宝或账号已切换，请重新识别报告', icon: 'none' });
+      return;
+    }
+    if (!recognition.indicators || typeof recognition.indicators !== 'object' || Array.isArray(recognition.indicators)) return;
+    this.applyOcrRecognitionResult(recognition.indicators, recognition.context || {});
+    this.receiveOriginalPhotos(recognition.originalPhotos);
+  },
+
+  receiveOriginalPhotos(photos) {
+    if (!Array.isArray(photos) || !photos.length) return;
+    if (photos.some(path => typeof path !== 'string' || !path || path.startsWith('cloud://'))) return;
+    const context = currentContext();
+    if (this._originalPhotosContext && !sameContext(this._originalPhotosContext)) {
+      wx.showToast({ title: '宝宝或账号已切换，请重新打开报告', icon: 'none' }); return;
+    }
+    const pending = [...new Set([...this.data.originalPhotos, ...photos])];
+    if (this.data.originalImages.length + pending.length > REPORT_MAX_PHOTOS) {
+      wx.showToast({ title: '指标已填入，原图超过6张，未追加', icon: 'none' }); return;
+    }
+    this._originalPhotosContext = context;
+    this.setData({ originalPhotos: pending, hasUnsavedChanges: true });
+  },
+
+  onDiscardOriginalPhotos() {
+    if (!this.data.saving) this.setData({ originalPhotos: [], hasUnsavedChanges: true });
+  },
+
+  // 等页面与指标都就绪后定位，避免异步加载时找不到目标节点。
+  focusRequestedIndicator() {
+    const metricKey = this._pendingMetricKey;
+    if (!this._pageReady || this.data.loading || !metricKey) return;
+
+    this._pendingMetricKey = '';
+    if (!this.data.currentIndicators.some((indicator) => indicator.key === metricKey)) return;
+
+    this.setData({ focusedMetricKey: metricKey }, () => {
+      wx.pageScrollTo({
+        selector: `#indicator-${metricKey}`,
+        offsetTop: -16,
+        duration: 200
+      });
+    });
   },
 
   refreshNavigationTitle() {
@@ -157,6 +215,7 @@ Page({
       });
 
       await this.loadOcrAccess();
+      if (this._pageUnloaded) return;
 
       // 如果是编辑模式，加载报告数据
       if (this.data.mode === 'edit' && this.data.reportId) {
@@ -164,10 +223,15 @@ Page({
       } else {
         // 新建模式，初始化指标后再关 loading
         await this.initIndicators();
-        this.setData({ loading: false });
+        if (this._pageUnloaded) return;
+        this.setData({ loading: false }, () => {
+          this.focusRequestedIndicator();
+          this.consumeReportRecognition();
+        });
       }
 
     } catch (error) {
+      if (this._pageUnloaded) return;
       console.error('初始化页面失败:', error);
       this.setData({ loading: false });
       wx.showToast({
@@ -191,6 +255,7 @@ Page({
         reportDate: ReportModel.formatDate(reportData.reportDate),
         labName: reportData.labName || '',
         selectedReportType: reportData.reportType,
+        originalImages: Array.isArray(reportData.originalImages) ? reportData.originalImages : [],
         indicatorData: reportData.indicators || {}
       });
       this.refreshNavigationTitle();
@@ -199,7 +264,7 @@ Page({
       // 初始化指标配置完成后再关 loading，避免表单空闪
       await this.initIndicators();
       this.refreshFilledCount();
-      this.setData({ loading: false });
+      this.setData({ loading: false }, () => this.focusRequestedIndicator());
 
     } catch (error) {
       console.error('加载报告数据失败:', error);
@@ -241,7 +306,8 @@ Page({
 
   // 初始化指标配置
   async initIndicators() {
-    const indicators = ReportModel.getIndicators(this.data.selectedReportType);
+    const indicators = ReportModel.getIndicators(this.data.selectedReportType).map(config => ({ ...config,
+      unit: this.data.indicatorData[config.key]?.unit || config.unit }));
     const indicatorData = { ...this.data.indicatorData };
 
     // 如果是新建模式，尝试从历史记录中获取范围值
@@ -250,14 +316,18 @@ Page({
       historicalRanges = await this.getHistoricalRanges(this.data.selectedReportType);
     }
 
+    if (this._pageUnloaded) return;
     // 初始化指标数据
     indicators.forEach(indicator => {
       if (!indicatorData[indicator.key]) {
         const historical = historicalRanges[indicator.key] || {};
+        const minRange = historical.minRange ?? '';
+        const maxRange = historical.maxRange ?? '';
         indicatorData[indicator.key] = {
           value: '',
-          minRange: historical.minRange || '',
-          maxRange: historical.maxRange || '',
+          minRange,
+          maxRange,
+          rangePending: hasReportValue(minRange) || hasReportValue(maxRange),
           status: 'unknown',
           optimalRange: null
         };
@@ -313,6 +383,7 @@ Page({
     this.setData({
       selectedReportType: reportType,
       indicatorData: {},
+      focusedMetricKey: '',
       ocrPendingKeys: [],
       hasUnsavedChanges: false,
       loading: true
@@ -330,18 +401,16 @@ Page({
 
   // 格式化数字为小数点后三位
   formatToThreeDecimalPlaces(value) {
-    if (!value || value === '') return '';
+    if (!hasReportValue(value)) return '';
     const formatted = formatReportNumber(value);
     return formatted || value;
   },
 
   // 验证是否为有效数字
-  isValidNumber(value) {
+  isValidNumber(value, field = 'value') {
     if (!value || value === '') return true; // 空值允许
     
-    // 检查是否为有效的数字格式（包括整数、小数、科学计数法）
-    const numberRegex = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
-    return numberRegex.test(value.toString().trim());
+    return field === 'value' ? Boolean(normalizeReportDetectionValue(value)) : Number.isFinite(toExactReportNumber(value));
   },
 
   // 指标值输入
@@ -354,7 +423,9 @@ Page({
       indicatorData[indicator] = {};
     }
     
+    // 历史范围按整项核对，修改任一边界后仍需明确确认上下限。
     indicatorData[indicator][field] = value;
+    if (field === 'value') indicatorData[indicator].calculated = false;
 
     const update = {
       indicatorData: indicatorData,
@@ -408,6 +479,22 @@ Page({
     this.clearOcrPendingReview([indicator]);
   },
 
+  clearRangePendingReview(indicatorKeys = []) {
+    const indicatorData = { ...this.data.indicatorData };
+    const keys = indicatorKeys.length > 0 ? indicatorKeys : Object.keys(indicatorData);
+    keys.forEach((key) => {
+      if (!indicatorData[key] || !indicatorData[key].rangePending) return;
+      indicatorData[key] = { ...indicatorData[key], rangePending: false };
+    });
+    this.setData({ indicatorData });
+  },
+
+  onConfirmRangeIndicator(e) {
+    const indicator = e.currentTarget.dataset.indicator;
+    if (!indicator || !this.data.indicatorData[indicator]?.rangePending) return;
+    this.clearRangePendingReview([indicator]);
+  },
+
   // 指标值失去焦点时验证和格式化
   onIndicatorValueBlur: function (e) {
     const { indicator, field } = e.currentTarget.dataset;
@@ -415,7 +502,7 @@ Page({
     
     // 验证数字格式
     if (value && value !== '') {
-      if (!this.isValidNumber(value)) {
+      if (!this.isValidNumber(value, field)) {
         wx.showToast({
           title: '请输入有效的数字',
           icon: 'none',
@@ -438,7 +525,7 @@ Page({
         return;
       }
       
-      // 格式化为小数点后三位
+      // 统一书写但不舍入原值，保留比较符与科学计数法。
       const formattedValue = this.formatToThreeDecimalPlaces(value);
       
       const indicatorData = { ...this.data.indicatorData };
@@ -464,7 +551,10 @@ Page({
   // 计算单个指标状态
   calculateIndicatorStatus(indicatorKey) {
     const data = this.data.indicatorData[indicatorKey];
-    if (!data || !data.value || !data.minRange || !data.maxRange) {
+    if (!data || !hasReportValue(data.value) || !hasReportValue(data.minRange) || !hasReportValue(data.maxRange)) {
+      if (data && (data.status !== 'unknown' || data.optimalRange)) {
+        this.setData({ [`indicatorData.${indicatorKey}.status`]: 'unknown', [`indicatorData.${indicatorKey}.optimalRange`]: null });
+      }
       return;
     }
 
@@ -475,7 +565,7 @@ Page({
       data.maxRange
     );
 
-    // 计算最优范围（仅限氨基酸指标）
+    // 沿用项目既有的 25% 计算规则（仅限氨基酸指标）。
     let optimalRange = null;
     if (ReportModel.isAminoAcidIndicator(indicatorKey)) {
       optimalRange = ReportModel.calculateOptimalRange(
@@ -500,58 +590,24 @@ Page({
   // 计算比值指标
   calculateRatioIndicators() {
     const { indicatorData, selectedReportType } = this.data;
-    
-    if (selectedReportType === 'blood_ms') {
-      // 计算 C3/C0
-      if (indicatorData.c3 && indicatorData.c0 && 
-          indicatorData.c3.value && indicatorData.c0.value) {
-        const ratio = ReportModel.calculateRatio(
-          indicatorData.c3.value, 
-          indicatorData.c0.value
-        );
-        
-        if (ratio !== null) {
-          const newIndicatorData = { ...indicatorData };
-          if (!newIndicatorData.c3_c0) {
-            newIndicatorData.c3_c0 = {};
-          }
-          if (!newIndicatorData.c3_c0.ocrPending) {
-            newIndicatorData.c3_c0.value = ratio.toString();
-          }
-
-          this.setData({ indicatorData: newIndicatorData });
-          this.refreshFilledCount();
-
-          // 计算比值指标的状态
-          this.calculateIndicatorStatus('c3_c0');
-        }
-      }
-
-      // 计算 C3/C2
-      if (indicatorData.c3 && indicatorData.c2 &&
-          indicatorData.c3.value && indicatorData.c2.value) {
-        const ratio = ReportModel.calculateRatio(
-          indicatorData.c3.value,
-          indicatorData.c2.value
-        );
-
-        if (ratio !== null) {
-          const newIndicatorData = { ...this.data.indicatorData };
-          if (!newIndicatorData.c3_c2) {
-            newIndicatorData.c3_c2 = {};
-          }
-          if (!newIndicatorData.c3_c2.ocrPending) {
-            newIndicatorData.c3_c2.value = ratio.toString();
-          }
-
-          this.setData({ indicatorData: newIndicatorData });
-          this.refreshFilledCount();
-
-          // 计算比值指标的状态
-          this.calculateIndicatorStatus('c3_c2');
-        }
-      }
+    if (selectedReportType !== 'blood_ms') return;
+    const updated = { ...indicatorData };
+    const changed = [];
+    for (const [key, denominator] of [['c3_c0', 'c0'], ['c3_c2', 'c2']]) {
+      const existing = indicatorData[key] || {};
+      // 手工填写与原图比值不能被派生值覆盖，只有程序生成的结果才随基础值更新。
+      if (existing.ocrPending || hasReportValue(existing.value) && existing.calculated !== true) continue;
+      const ratio = ReportModel.calculateRatio(indicatorData.c3?.value, indicatorData[denominator]?.value);
+      if (ratio === null && !existing.calculated) continue;
+      updated[key] = { ...existing, value: ratio === null ? '' : String(ratio),
+        calculated: true, status: 'unknown', optimalRange: null };
+      changed.push(key);
     }
+    if (!changed.length) return;
+    this.setData({ indicatorData: updated }, () => {
+      changed.forEach(key => this.calculateIndicatorStatus(key));
+      this.refreshFilledCount();
+    });
   },
 
   // 重新计算所有指标状态
@@ -565,18 +621,9 @@ Page({
     this.calculateRatioIndicators();
   },
 
-  getCloudEnvId() {
-    const app = getApp();
-    return app?.globalData?.cloudEnvId || '';
-  },
-
-  getCloudCallConfig(cloudEnvId = '') {
-    return cloudEnvId ? { config: { env: cloudEnvId } } : {};
-  },
-
   refreshOcrEntryVisible() {
     const visible = !!this.data.ocrAllowed
-      && this.data.selectedReportType !== 'blood_biochem';
+      && REPORT_OCR_TYPES.some(type => type.key === this.data.selectedReportType);
     if (this.data.ocrEntryVisible !== visible) {
       this.setData({ ocrEntryVisible: visible });
     }
@@ -592,134 +639,30 @@ Page({
 
   async loadOcrAccess() {
     try {
-      const cloudEnvId = this.getCloudEnvId();
-      const response = await wx.cloud.callFunction({
-        name: 'recognizeReportCustom',
-        data: {
-          action: 'checkAccess',
-          babyUid: this.data.babyInfo?.babyUid || ''
-        },
-        ...this.getCloudCallConfig(cloudEnvId)
-      });
-      const result = response?.result || {};
-      const allowed = result.ok === true && result.allowed === true;
+      const result = await getReportOcrAccess(this.data.babyInfo?.babyUid || '');
+      if (this._pageUnloaded) return;
       this.setData({
-        ocrAllowed: allowed,
+        ocrAllowed: result.available,
         ocrAccessChecked: true,
         ocrAccessMessage: result.message || this.data.ocrAccessMessage
       });
       this.refreshOcrEntryVisible();
     } catch (error) {
+      if (this._pageUnloaded) return;
       console.warn('[report-ocr] access check failed', error);
       this.setData({
         ocrAllowed: false,
-        ocrAccessChecked: true
+        ocrAccessChecked: true,
+        ocrAccessMessage: error.message || '报告识别权限检查失败，请稍后重试'
       });
       this.refreshOcrEntryVisible();
     }
   },
 
-  getLocalFileSize(filePath) {
-    return new Promise((resolve, reject) => {
-      wx.getFileSystemManager().getFileInfo({
-        filePath,
-        success: (res) => resolve(res.size || 0),
-        fail: reject
-      });
-    });
-  },
-
-  // 只向云函数传 fileID 等短字段，图片走云存储，避免 callFunction 超 512KB
-  async buildRecognizeReportPayload({ fileID = '', babyUid = '', reportType = '', ocrRequestId = '' }) {
-    if (!fileID) {
-      throw new Error('上传识别图片失败');
-    }
-
-    return {
-      fileID,
-      fileName: inferFileNameFromPath(fileID),
-      babyUid: babyUid || this.data.babyInfo?.babyUid || '',
-      reportType: reportType || this.data.selectedReportType,
-      ocrRequestId
-    };
-  },
-
-  async prepareOcrImagePath(tempFilePath, fileSize = 0) {
-    let currentPath = tempFilePath;
-    let currentSize = fileSize;
-
-    const refreshSize = async () => {
-      try {
-        currentSize = await this.getLocalFileSize(currentPath);
-      } catch (error) {
-        currentSize = currentSize || 0;
-      }
-      return currentSize;
-    };
-
-    if (!currentSize) {
-      await refreshSize();
-    }
-
-    const compressWithQuality = async (quality) => {
-      const compressed = await wx.compressImage({
-        src: currentPath,
-        quality
-      });
-      currentPath = compressed.tempFilePath || currentPath;
-      await refreshSize();
-      return currentPath;
-    };
-
-    try {
-      if (currentSize <= CUSTOM_OCR_MAX_BYTES) {
-        return compressWithQuality(80);
-      }
-
-      for (const quality of [60, 45, 30, 20]) {
-        await compressWithQuality(quality);
-        if (currentSize <= CUSTOM_OCR_MAX_BYTES) {
-          return currentPath;
-        }
-      }
-    } catch (error) {
-      console.warn('压缩识别图片失败，使用原图继续:', error);
-    }
-
-    return currentPath;
-  },
-
-  getOcrFailureMessage(error = {}, cloudResult = null) {
-    if (cloudResult?.message) {
-      return cloudResult.message;
-    }
-
-    const errMsg = `${error?.errMsg || error?.message || ''}`;
-    if (errMsg.includes('data exceed max size')) {
-      return '图片数据过大，请重新拍摄后再试';
-    }
-    if (errMsg.includes('FUNCTION_NOT_FOUND') || errMsg.includes('-501000')) {
-      return '识别服务未部署，请在开发者工具部署 recognizeReportCustom';
-    }
-    if (errMsg.includes('502') || errMsg.includes('OCR_GATEWAY_ERROR') || errMsg.includes('后端无响应')) {
-      return 'OCR 服务暂时不可用，请稍后再试';
-    }
-    if (errMsg.includes('OCR_BUSY') || errMsg.includes('繁忙')) {
-      return 'OCR 服务正在处理其他请求，请稍后再试';
-    }
-    if (errMsg.includes('OCR_NOT_ALLOWED')) {
-      return '拍照识别功能调试中，暂未对当前用户开放';
-    }
-    if (errMsg.includes('识别超时') || errMsg.includes('timeout') || errMsg.includes('timed out')) {
-      return '识别超时，请稍后重试或手动填写';
-    }
-    if (errMsg.includes('cloud.callFunction:fail')) {
-      return '调用识别服务失败，请检查云函数是否已部署';
-    }
-    return '识别失败，请重新拍摄后再试';
-  },
+  getOcrFailureMessage,
 
   reportOcrFeedback(title, extra = {}) {
+    if (this._pageUnloaded) return;
     wx.hideLoading();
     console.warn('[report-ocr]', {
       title,
@@ -733,149 +676,50 @@ Page({
     });
   },
 
-  callRecognizeReportCloudFunction(payload, cloudEnvId = '') {
-    const callPromise = wx.cloud.callFunction({
-      name: 'recognizeReportCustom',
-      data: payload,
-      ...this.getCloudCallConfig(cloudEnvId)
-    });
-
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('识别超时，请稍后重试或手动填写'));
-      }, CUSTOM_OCR_CALL_TIMEOUT_MS);
-    });
-
-    return Promise.race([callPromise, timeoutPromise]);
-  },
-
-  // 拍照识别：选图 -> 压缩 -> 上传 -> 自建 OCR 云函数 -> 解析并填充表单
+  // 创建和编辑报告均先核对多页识别结果，再只填入表单中的空白项。
   async onRecognizeReportPhoto() {
-    if (this.data.ocrRecognizing) return;
+    if (this._pageUnloaded || this.data.loading || this.data.ocrRecognizing || this.data.saving) return;
     if (!this.data.ocrAllowed) {
-      wx.showToast({
-        title: this.data.ocrAccessMessage || '拍照识别功能暂未开放',
-        icon: 'none'
-      });
-      return;
+      wx.showToast({ title: this.data.ocrAccessMessage || '拍照识别功能暂未开放', icon: 'none' }); return;
     }
-
-    let media;
-    try {
-      media = await wx.chooseMedia({
-        count: 1,
-        mediaType: ['image'],
-        sourceType: ['album', 'camera']
-      });
-    } catch (error) {
-      // 用户取消选择，不提示错误
-      return;
-    }
-
-    const tempFile = media?.tempFiles?.[0];
-    const tempFilePath = tempFile?.tempFilePath;
-    if (!tempFilePath) return;
-
+    const context = currentContext();
+    const reportType = this.data.selectedReportType;
+    const babyUid = this.data.babyInfo?.babyUid;
+    if (!REPORT_OCR_TYPES.some(type => type.key === reportType)) return;
+    const isCurrent = () => {
+      const current = currentContext();
+      return !this._pageUnloaded && current.accountKey === context.accountKey && current.babyUid === babyUid
+        && getApp().globalData.babyInfo?.babyUid === babyUid && this.data.selectedReportType === reportType;
+    };
+    if (!isCurrent()) return;
     this.setData({ ocrRecognizing: true });
-    wx.showLoading({ title: '识别中...', mask: true });
-    let fileID = '';
-
     try {
-      const uploadPath = await this.prepareOcrImagePath(tempFilePath, tempFile.size || 0);
-      const cloudEnvId = this.getCloudEnvId();
-      const cloudPath = `${CUSTOM_OCR_CLOUD_PATH_PREFIX}/${this.data.babyInfo?.babyUid || 'unknown'}_${Date.now()}.jpg`;
-      const uploadResult = await wx.cloud.uploadFile({
-        cloudPath,
-        filePath: uploadPath,
-        ...this.getCloudCallConfig(cloudEnvId)
-      });
-      fileID = uploadResult.fileID || uploadResult.fileId || '';
-      const ocrRequestId = `custom_ocr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const recognizePayload = await this.buildRecognizeReportPayload({
-        fileID,
-        babyUid: this.data.babyInfo?.babyUid || '',
-        reportType: this.data.selectedReportType,
-        ocrRequestId
-      });
-
-      console.warn('[report-ocr] invoke start', {
-        ocrRequestId,
-        fileID,
-        reportType: this.data.selectedReportType
-      });
-
-      const cloudResponse = await this.callRecognizeReportCloudFunction(recognizePayload, cloudEnvId);
-      const result = cloudResponse?.result;
-      const structuredCount = Array.isArray(result?.structuredItems) ? result.structuredItems.length : 0;
-      const itemCount = Array.isArray(result?.items) ? result.items.length : 0;
-      const sampleTexts = (result?.items || []).slice(0, 5).map((item) => item?.text).filter(Boolean);
-
-      console.warn('[report-ocr] cloud function result', {
-        ocrRequestId,
-        ok: result?.ok,
-        code: result?.code,
-        message: result?.message,
-        structuredCount,
-        itemCount,
-        sampleTexts,
-        fileID
-      });
-
-      if (!result || result.ok !== true) {
-        const message = this.getOcrFailureMessage({}, result);
-        this.reportOcrFeedback(message, {
-          phase: 'cloud-function-failed',
-          code: result?.code,
-          cloudResult: result,
-          fileID,
-          duration: 5000
-        });
-        return;
-      }
-
-      const recognized = mapOcrResultToIndicators({
-        structuredItems: result.structuredItems || [],
-        items: result.items || [],
-        reportType: this.data.selectedReportType
-      });
-      const recognizedKeys = Object.keys(recognized);
-      console.warn('[report-ocr] parsed indicators', {
-        reportType: this.data.selectedReportType,
-        structuredCount,
-        itemCount,
-        recognizedKeyCount: recognizedKeys.length,
-        keys: recognizedKeys
-      });
-
-      if (recognizedKeys.length === 0 && (structuredCount > 0 || itemCount > 0)) {
-        this.reportOcrFeedback(`识别到 ${structuredCount || itemCount} 项，但未匹配到指标`, {
-          phase: 'parse-no-match',
-          itemCount: structuredCount || itemCount,
-          sampleTexts,
-          duration: 4000
-        });
-        return;
-      }
-
-      this.applyOcrRecognitionResult(recognized, {
-        itemCount: structuredCount || itemCount,
-        sampleTexts,
-        structuredNames: (result.structuredItems || []).map((item) => item.name || item.label || item.indicatorKey || item.indicator_key || '')
-      });
+      const media = await wx.chooseMedia({ count: REPORT_MAX_PHOTOS, mediaType: ['image'], sizeType: ['original'], sourceType: ['album', 'camera'] });
+      const photos = (media?.tempFiles || []).filter(photo => photo?.tempFilePath);
+      if (!photos.length || !isCurrent()) return;
+      await new Promise((resolve, reject) => wx.navigateTo({
+        url: '/pkg-report/report-recognition/index?type=' + encodeURIComponent(reportType) + '&target=existing',
+        events: {
+          reportRecognitionConfirmed: recognition => {
+            if (!isCurrent() || !recognition || recognition.babyUid !== babyUid || recognition.accountKey !== context.accountKey
+              || recognition.reportType !== reportType) return;
+            if (!recognition.indicators || typeof recognition.indicators !== 'object' || Array.isArray(recognition.indicators)) return;
+            this.applyOcrRecognitionResult(recognition.indicators, recognition.context || {});
+            this.receiveOriginalPhotos(recognition.originalPhotos);
+          }
+        },
+        success: response => {
+          try {
+            response.eventChannel.emit('reportPhotosSelected', { photos, babyUid, accountKey: context.accountKey });
+            resolve();
+          } catch (error) { reject(error); }
+        },
+        fail: reject
+      }));
     } catch (error) {
-      const message = this.getOcrFailureMessage(error);
-      console.error('[report-ocr] recognize failed', error);
-      this.reportOcrFeedback(message, {
-        phase: 'recognize-exception',
-        error,
-        duration: 5000
-      });
+      if (isCurrent() && !/cancel/i.test(error.errMsg || error.message || '')) this.reportOcrFeedback(this.getOcrFailureMessage(error));
     } finally {
-      wx.hideLoading();
-      this.setData({ ocrRecognizing: false });
-      if (fileID) {
-        wx.cloud.deleteFile({ fileList: [fileID] }).catch(() => {});
-      }
+      if (!this._pageUnloaded) this.setData({ ocrRecognizing: false });
     }
   },
 
@@ -909,23 +753,31 @@ Page({
 
       const existing = indicatorData[key] || {};
       const recognizedItem = recognizedIndicators[key];
+      if (!recognizedItem || recognizedItem.needsReview || recognizedItem.confirmationBlocked) return;
       const hasExistingValue = existing.value !== '' && existing.value !== undefined && existing.value !== null;
       if (hasExistingValue) return;
 
-      const recognizedMinRange = `${recognizedItem.minRange || ''}`.trim();
-      const recognizedMaxRange = `${recognizedItem.maxRange || ''}`.trim();
+      const recognizedMinRange = `${recognizedItem.minRange ?? ''}`.trim();
+      const recognizedMaxRange = `${recognizedItem.maxRange ?? ''}`.trim();
       const isBloodRatio = this.data.selectedReportType === 'blood_ms'
         && (key === 'c3_c0' || key === 'c3_c2');
+      // 识别范围替换历史范围后，由识别待核对接管；仍沿用任一历史边界时保留提醒。
+      const retainsHistoricalRange = !isBloodRatio && (
+        (!recognizedMinRange && hasReportValue(existing.minRange))
+        || (!recognizedMaxRange && hasReportValue(existing.maxRange))
+      );
 
       indicatorData[key] = {
         ...existing,
-        value: formatReportNumber(recognizedItem.value || ''),
+        value: formatReportNumber(recognizedItem.value ?? ''),
+        unit: recognizedItem.unit || existing.unit || '',
         minRange: isBloodRatio
           ? formatReportNumber(recognizedMinRange)
-          : formatReportNumber(recognizedMinRange || existing.minRange || ''),
+          : formatReportNumber(recognizedMinRange || (existing.minRange ?? '')),
         maxRange: isBloodRatio
           ? formatReportNumber(recognizedMaxRange)
-          : formatReportNumber(recognizedMaxRange || existing.maxRange || ''),
+          : formatReportNumber(recognizedMaxRange || (existing.maxRange ?? '')),
+        rangePending: Boolean(existing.rangePending && retainsHistoricalRange),
         ocrPending: true
       };
       newlyFilledKeys.push(key);
@@ -940,18 +792,20 @@ Page({
           indicatorData[ratioKey] = {
             ...indicatorData[ratioKey],
             minRange: '',
-            maxRange: ''
+            maxRange: '',
+            rangePending: false
           };
           return;
         }
 
-        const recognizedMinRange = `${recognizedRatio.minRange || ''}`.trim();
-        const recognizedMaxRange = `${recognizedRatio.maxRange || ''}`.trim();
+        const recognizedMinRange = `${recognizedRatio.minRange ?? ''}`.trim();
+        const recognizedMaxRange = `${recognizedRatio.maxRange ?? ''}`.trim();
         if (!recognizedMinRange && !recognizedMaxRange) {
           indicatorData[ratioKey] = {
             ...indicatorData[ratioKey],
             minRange: '',
-            maxRange: ''
+            maxRange: '',
+            rangePending: false
           };
         }
       });
@@ -967,12 +821,15 @@ Page({
 
     this.setData({
       indicatorData,
+      currentIndicators: this.data.currentIndicators.map(config => ({ ...config, unit: indicatorData[config.key]?.unit || config.unit })),
       ocrPendingKeys: [...new Set([...this.data.ocrPendingKeys, ...newlyFilledKeys])],
       hasUnsavedChanges: true
     }, () => {
       this.recalculateAllIndicators();
       this.refreshFilledCount();
     });
+    console.info('[report-recognition-values]', { stage: 'filled', reportType: this.data.selectedReportType,
+      values: summarizeReportValues(newlyFilledKeys.map(key => indicatorData[key].value)) });
 
     this.reportOcrFeedback(`识别到 ${newlyFilledKeys.length} 项，请核对`, {
       phase: 'apply-success',
@@ -982,15 +839,37 @@ Page({
 
   // 保存报告
   async onSaveReport() {
-    if (this.data.saving) return;
+    if (this.data.saving || this.data.loading || this._saveConfirmationPending) return;
+
+    // 先检查必填项，再合并核对提示，避免一次保存接连出现多个确认弹窗。
+    const validation = this.validateReportData();
+    if (!validation.isValid) {
+      wx.showModal({
+        title: '数据验证失败',
+        content: validation.errors.join('\n'),
+        showCancel: false
+      });
+      return;
+    }
 
     const pendingCount = this.data.ocrPendingKeys.length;
-    if (pendingCount > 0) {
-      const tip = buildOcrPendingSaveTip(pendingCount);
+    const rangePendingCount = this.data.currentIndicators.filter(
+      (indicator) => {
+        const data = this.data.indicatorData[indicator.key];
+        return data?.rangePending && hasReportValue(data.value);
+      }
+    ).length;
+    if (pendingCount > 0 || rangePendingCount > 0) {
+      const tips = [];
+      if (rangePendingCount > 0) {
+        tips.push(`${rangePendingCount} 项初始参考范围来自历史报告，请对照本次原报告核对上下限`);
+      }
+      if (pendingCount > 0) tips.push(buildOcrPendingSaveTip(pendingCount));
+      this._saveConfirmationPending = true;
       wx.showModal({
-        title: '保存前请核对识别数据',
-        content: `${tip}。不必逐项点确认，对照原报告看一眼即可；如已核对，可直接继续保存。`,
-        confirmText: '继续保存',
+        title: '保存前请核对报告',
+        content: `${tips.join('；')}。核对完成后即可保存。`,
+        confirmText: '已核对，保存',
         cancelText: '返回修改',
         success: async (res) => {
           if (!res.confirm) {
@@ -1001,8 +880,10 @@ Page({
             return;
           }
           this.clearOcrPendingReview();
+          this.clearRangePendingReview();
           await this.performSaveReport();
-        }
+        },
+        complete: () => { this._saveConfirmationPending = false; }
       });
       return;
     }
@@ -1011,6 +892,8 @@ Page({
   },
 
   async performSaveReport() {
+    if (this.data.saving || this.data.saveSucceeded) return;
+
     try {
       // 验证数据
       const validation = this.validateReportData();
@@ -1026,7 +909,17 @@ Page({
       this.setData({ saving: true });
 
       const { babyInfo, reportDate, labName, selectedReportType, indicatorData, mode, reportId } = this.data;
-      
+      const context = currentContext();
+      if (context.babyUid !== babyInfo.babyUid || !sameContext(context)) throw new Error('宝宝或账号已切换，请重新打开报告');
+      this._originalUploads = this._originalUploads || {};
+      const photos = this.data.originalPhotos;
+      if (photos.length && !sameContext(this._originalPhotosContext)) throw new Error('宝宝或账号已切换，请重新打开报告');
+      const missing = photos.filter(path => !this._originalUploads[path]);
+      const uploaded = await uploadReportOriginals(missing, context, () => !this._pageUnloaded);
+      missing.forEach((path, index) => { this._originalUploads[path] = uploaded[index]; });
+      if (this._pageUnloaded || !sameContext(context)) throw new Error('宝宝或账号已切换，请重新打开报告');
+      const originalImages = [...new Set([...this.data.originalImages, ...photos.map(path => this._originalUploads[path])])];
+
       // 创建报告数据
       await ReportRepository.saveReport({
         mode,
@@ -1034,8 +927,17 @@ Page({
         babyUid: babyInfo.babyUid,
         reportDate: new Date(reportDate),
         labName: labName.trim(),
+        originalImages,
         reportType: selectedReportType,
         indicators: sanitizeIndicatorsForSave(indicatorData)
+      });
+
+      // 写入成功后保持保存锁，返回前只能导航，避免重复新增同一份报告。
+      this.setData({
+        saving: true,
+        saveSucceeded: true,
+        hasUnsavedChanges: false,
+        ocrPendingKeys: []
       });
 
       wx.showToast({
@@ -1045,25 +947,48 @@ Page({
 
       wx.setStorageSync(ANALYSIS_REPORT_RELOAD_KEY, Date.now());
 
-      this.setData({
-        saving: false,
-        hasUnsavedChanges: false,
-        ocrPendingKeys: []
-      });
-
       // 延迟返回上一页
-      setTimeout(() => {
-        wx.navigateBack();
-      }, 1500);
+      if (!this._pageUnloaded) {
+        this._returnTimer = setTimeout(() => this.returnAfterSave(), 1500);
+      }
 
     } catch (error) {
+      if (this.data.saveSucceeded) {
+        console.error('报告已保存，页面更新失败:', error);
+        wx.showToast({ title: '报告已保存，请点击返回', icon: 'none' });
+        return;
+      }
       console.error('保存报告失败:', error);
       wx.showToast({
-        title: '保存失败',
+        title: error.message || '保存失败',
         icon: 'none'
       });
       this.setData({ saving: false });
     }
+  },
+
+  returnAfterSave() {
+    if (this._returnTimer) {
+      clearTimeout(this._returnTimer);
+      this._returnTimer = null;
+    }
+    if (this._pageUnloaded || this._returnInProgress || !this.data.saveSucceeded) return;
+
+    this._returnInProgress = true;
+    wx.navigateBack({
+      delta: this._returnDelta || 1,
+      fail: () => {
+        if (this._pageUnloaded) return;
+        // 无可返回页面时回到报告分析，仍保持保存锁，导航失败可再次点击返回。
+        wx.switchTab({
+          url: '/pages/analysis-report/index',
+          fail: () => {
+            this._returnInProgress = false;
+            wx.showToast({ title: '报告已保存，请重试返回', icon: 'none' });
+          }
+        });
+      }
+    });
   },
 
   // 验证报告数据

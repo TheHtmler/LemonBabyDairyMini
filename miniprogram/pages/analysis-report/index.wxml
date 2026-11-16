@@ -1,129 +1,193 @@
 <view class="report-page">
-  <view wx:if="{{loading}}" class="empty-state">正在加载报告…</view>
+  <view wx:if="{{loading}}" class="empty-state"><text class="empty-title">正在加载报告…</text></view>
   <block wx:else>
     <view class="main-tabs">
       <button class="main-tab {{mainTab === 'archive' ? 'active' : ''}}" data-tab="archive" bindtap="switchMainTab">报告列表</button>
       <button class="main-tab {{mainTab === 'compare' ? 'active' : ''}}" data-tab="compare" bindtap="switchMainTab">报告对比</button>
     </view>
-    <view wx:if="{{loadError}}" class="error-banner"><text>{{loadError}}</text><button class="text-button" bindtap="retryReports">重试</button></view>
-    <view wx:if="{{mainTab === 'archive'}}" class="archive-panel">
-      <view class="type-filters">
-        <button wx:for="{{reportTypeTabs}}" wx:key="key" class="type-pill {{item.active ? 'active' : ''}}" data-type="{{item.key}}" bindtap="handleTypeFilterChange">{{item.label}}<text class="count">{{item.count}}</text></button>
-      </view>
-      <view wx:if="{{!archiveReportCards.length && !loadError}}" class="empty-state">
-        <text class="empty-title">还没有这类报告</text><text class="muted">可拍照识别或手动录入</text><button class="primary-button" bindtap="onAddReport">录入第一份报告</button>
-      </view>
-      <view class="report-timeline">
-        <view wx:for="{{reportYearGroups}}" wx:for-item="group" wx:for-index="yearIndex" wx:key="year" class="year-group">
-          <view class="year-heading">
-            <text>{{group.year === '未知' ? '日期未录入' : group.year + ' 年'}}</text>
-            <button wx:if="{{yearIndex === 0}}" class="add-button" bindtap="onAddReport">＋ 添加报告</button>
-          </view>
-          <view class="report-list">
-            <button wx:for="{{group.reports}}" wx:key="reportId" class="report-row" data-report-id="{{item.reportId}}" bindtap="openDetailView">
-              <text class="date-column">{{item.monthDay}}</text>
-              <view class="report-body">
-                <view class="report-title-row"><text class="report-name">{{item.reportTypeLabel}}</text><text class="status-badge {{item.statusClass}}">{{item.statusText}}</text></view>
-                <view class="report-meta"><text>已录入 {{item.filledCount}}/{{item.totalCount}} 项</text><text wx:if="{{item.labName}}" class="lab-name">{{item.labName}}</text></view>
-              </view>
-              <text class="chevron">›</text>
-            </button>
-          </view>
-        </view>
-      </view>
+    <view wx:if="{{!babyInfo}}" class="empty-state">
+      <text class="empty-title">先选择宝宝，再查看报告</text><button class="primary-button" bindtap="openBabyProfile">完善宝宝信息</button>
     </view>
-    <view wx:else class="compare-panel">
-      <view class="type-filters">
-        <button wx:for="{{compareTypeTabs}}" wx:key="key" class="type-pill {{compareReportType === item.key ? 'active' : ''}}" data-type="{{item.key}}" bindtap="handleCompareTypeChange">{{item.label}}</button>
-      </view>
-      <view wx:if="{{compareReportOptions.length < 2 && !loadError}}" class="empty-state">
-        <text class="empty-title">{{compareReportOptions.length ? '还需要一份同类报告' : '还没有这类报告'}}</text>
-        <text class="muted">两份同类报告可查看指标变化</text><button class="primary-button" bindtap="onAddReport">添加同类报告</button>
-      </view>
-      <block wx:if="{{compareReportOptions.length >= 2}}">
-        <view class="compare-actions">
-          <button class="diet-button" bindtap="openCompareDiet" disabled="{{!currentCompareView.canCompare}}"><text>检测前 7 天饮食对比</text><text>›</text></button>
+    <block wx:else>
+      <view wx:if="{{loadError}}" class="error-banner"><text>{{loadError}}{{reportsCache.length ? '，当前保留上次加载的报告' : ''}}</text><button class="text-button" bindtap="retryReports">重试</button></view>
+      <view wx:if="{{mainTab === 'archive'}}" class="archive-panel">
+        <view class="report-controls">
+          <picker class="report-type-picker" range="{{reportTypeTabs}}" range-key="label" value="{{archiveTypeIndex}}" bindchange="handleTypeFilterChange"><view class="toolbar-select"><text>{{archiveTypeLabel}}</text><view class="down-chevron"></view></view></picker>
           <button class="add-button" bindtap="onAddReport">＋ 添加报告</button>
         </view>
-        <button class="choose-reports" bindtap="openReportChooser"><text>选择对比报告（{{compareReportIds.length}}）</text><text>＋</text></button>
-        <view wx:if="{{!currentCompareView.canCompare}}" class="selection-hint">请至少选择两份同类报告。</view>
-        <block wx:else>
-          <view wx:if="{{currentCompareView.metricOptions.length}}" class="metric-toolbar">
-            <view class="metric-modes">
-              <button class="mode-button {{!compareSelectedMetricKeys.length ? 'selected' : ''}}" data-mode="all" bindtap="setCompareMetricMode">全部指标</button>
-              <button class="mode-button {{compareFocusOnly ? 'selected' : ''}}" data-mode="focus" bindtap="setCompareMetricMode">重点指标</button>
+        <view wx:if="{{!archiveReportCards.length && !loadError}}" class="empty-state">
+          <text class="empty-title">{{selectedFilterType === 'all' ? '还没有检测报告' : '还没有这类报告'}}</text><text class="muted">手动录入报告，之后查看历次变化</text><button class="primary-button" bindtap="onAddReport">录入第一份报告</button>
+        </view>
+        <view class="report-timeline">
+          <view wx:for="{{reportYearGroups}}" wx:for-item="group" wx:key="year" class="year-group">
+            <view class="year-heading"><text>{{group.year === '未知' ? '日期未录入' : group.year + ' 年'}}</text></view>
+            <view class="report-list">
+              <button wx:for="{{group.reports}}" wx:key="reportId" class="report-row" data-report-id="{{item.reportId}}" bindtap="openDetailView">
+                <text class="date-column">{{item.monthDay}}</text>
+                <view class="report-body">
+                  <view class="report-title-row"><text class="report-name">{{item.reportTypeLabel}}</text><text class="status-badge {{item.statusClass}}">{{item.statusText}}</text></view>
+                  <view class="report-meta"><text>已录入 {{item.filledCount}} 项</text><text wx:if="{{item.abnormalCount && item.unknownCount}}" class="pending-count">另有 {{item.unknownCount}} 项待核对</text></view>
+                  <text wx:if="{{item.labName}}" class="lab-name">{{item.labName}}</text>
+                </view>
+                <text class="chevron">›</text>
+              </button>
             </view>
-            <button class="filter-button {{compareFilterVisible || (compareSelectedMetricKeys.length && !compareFocusOnly) ? 'selected' : ''}}" bindtap="toggleCompareFilter">{{compareFilterVisible ? '收起筛选' : '自选指标'}}</button>
           </view>
-          <view wx:if="{{compareFilterVisible}}" class="metric-filters"><button wx:for="{{currentCompareView.metricOptions}}" wx:key="key" class="metric-chip {{item.selected ? 'selected' : ''}}" data-key="{{item.key}}" bindtap="toggleCompareMetric">{{item.name}}</button></view>
-          <scroll-view scroll-x="true" enhanced="true" show-scrollbar="{{true}}" class="comparison-scroll">
-            <view class="multi-table" style="width: {{currentCompareView.tableWidthRpx}}rpx;">
-              <view class="multi-row multi-head">
-                <view class="multi-name">检验项目 / 单位</view>
-                <view wx:for="{{currentCompareView.columns}}" wx:key="reportId" class="multi-cell multi-column">
-                  <button class="column-date" data-report-id="{{item.reportId}}" bindtap="openDetailView">{{item.date}} ›</button>
-                  <text wx:if="{{item.labName}}" class="secondary">{{item.labName}}</text>
-                  <text wx:if="{{item.sameDayLabel}}" class="secondary">{{item.sameDayLabel}}</text>
-                  <button class="baseline-button {{item.isBaseline ? 'selected' : ''}}" data-report-id="{{item.reportId}}" bindtap="setCompareBaseline" disabled="{{item.isBaseline}}">{{item.isBaseline ? '对照报告' : '设为对照'}}</button>
+        </view>
+      </view>
+      <view wx:else class="compare-panel">
+        <view class="report-controls">
+          <picker class="report-type-picker" range="{{compareTypeTabs}}" range-key="label" value="{{compareTypeIndex}}" bindchange="handleCompareTypeChange"><view class="toolbar-select"><text>{{compareTypeLabel}}</text><view class="down-chevron"></view></view></picker>
+          <button wx:if="{{compareReportOptions.length}}" class="choose-reports" bindtap="openReportChooser"><text>{{compareReportIds.length}} 份报告</text><view class="down-chevron"></view></button>
+          <button class="add-button" bindtap="onAddReport">＋ 录入</button>
+        </view>
+        <view wx:if="{{!compareReportOptions.length && !loadError}}" class="empty-state">
+          <text class="empty-title">还没有这类报告</text><button class="primary-button" bindtap="onAddReport">添加报告</button>
+        </view>
+        <block wx:if="{{compareReportOptions.length}}">
+            <view class="analysis-tools">
+              <button class="diet-shortcut" bindtap="openCompareDiet"><view class="diet-icon" aria-hidden="true"><view></view><view></view><view></view></view><text>检测前7天饮食</text><view class="small-chevron"></view></button>
+              <view class="analysis-secondary-actions"><button wx:if="{{currentCompareView.metricOptions.length}}" class="metric-filter" bindtap="openMetricFilter"><text>{{compareMetricLabel}}</text><view class="down-chevron"></view></button><button class="export-button" bindtap="onExportComparison" disabled="{{exporting}}">{{exporting ? '导出中' : '导出'}}</button></view>
+            </view>
+            <view wx:if="{{currentCompareView.compareRows.length}}" class="comparison-section">
+              <view class="compare-sticky">
+                <view class="multi-head">
+                  <view class="multi-name head-name"><text>检验项目</text><text wx:if="{{currentCompareView.canCompare}}" class="baseline-reference">对照 {{currentCompareView.baselineColumn.date}}</text></view>
+                  <view class="header-values-clip">
+                    <view class="header-values" style="width: {{currentCompareView.tableWidthRpx - 200}}rpx; transform: translateX(-{{compareScrollLeft}}px);">
+                      <view wx:for="{{currentCompareView.columns}}" wx:key="reportId" class="multi-cell multi-column {{item.isBaseline && currentCompareView.canCompare ? 'baseline-cell' : ''}}" style="width: {{currentCompareView.columnWidthRpx}}rpx; flex-basis: {{currentCompareView.columnWidthRpx}}rpx;">
+                        <button class="column-date" data-report-id="{{item.reportId}}" bindtap="openDetailView">{{item.date}}</button>
+                        <text wx:if="{{item.sameDayLabel}}" class="secondary">{{item.sameDayLabel}}</text>
+                        <text wx:if="{{item.labName}}" class="column-lab">{{item.labName}}</text>
+                        <button wx:if="{{currentCompareView.canCompare}}" class="baseline-button {{item.isBaseline ? 'selected' : ''}}" data-report-id="{{item.reportId}}" bindtap="setCompareBaseline" disabled="{{item.isBaseline}}">{{item.isBaseline ? '对照' : '设为对照'}}</button>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+                <view wx:if="{{currentCompareView.columns.length > 2}}" class="horizontal-track" aria-hidden="true"><view class="horizontal-thumb" style="width: {{502 / (currentCompareView.tableWidthRpx - 200) * 100}}%; left: {{compareScrollOffsetPercent}}%;"></view></view>
+                <view wx:if="{{currentCompareView.columns.length > 2 && !compareAtEnd}}" class="scroll-edge scroll-edge--right"></view>
+              </view>
+              <view class="table-body">
+              <scroll-view scroll-x="true" enhanced="true" show-scrollbar="{{true}}" class="comparison-scroll" scroll-left="{{compareScrollTarget}}" bindscroll="onCompareScroll">
+                <view class="multi-table" style="width: {{currentCompareView.tableWidthRpx}}rpx;">
+                  <view wx:for="{{currentCompareView.compareRows}}" wx:for-item="row" wx:key="key" class="multi-row">
+                    <button class="multi-name metric-button" data-key="{{row.key}}" bindtap="openMetricDetail" aria-label="查看{{row.name}}明细">
+                      <view class="metric-title"><text class="metric-name">{{row.name}}</text><view class="metric-chevron" aria-hidden="true"></view></view><text wx:if="{{row.secondaryText}}" class="secondary">{{row.secondaryText}}</text>
+                      <text wx:if="{{row.sharedRange && row.rangeText}}" class="inline-range">{{row.rangeText}}</text>
+                    </button>
+                    <view wx:for="{{row.cells}}" wx:for-item="cell" wx:key="reportId" class="multi-cell {{cell.isBaseline && currentCompareView.canCompare ? 'baseline-cell' : ''}}" style="width: {{currentCompareView.columnWidthRpx}}rpx; flex-basis: {{currentCompareView.columnWidthRpx}}rpx;" data-key="{{row.key}}" bindtap="openMetricDetail" aria-role="button" aria-label="查看{{row.name}}的历次结果">
+                      <view class="value-line {{cell.status}}"><text class="number">{{cell.valueText}}</text><text wx:if="{{cell.marker}}" class="marker">{{cell.marker}}</text></view>
+                      <block wx:if="{{cell.hasValue}}">
+                        <text wx:if="{{!row.sharedRange && cell.rangeText}}" class="inline-range">{{cell.rangeText}}</text>
+                      </block>
+                      <view wx:if="{{currentCompareView.canCompare}}" class="cell-delta"><text wx:if="{{cell.hasValue && (cell.isBaseline || cell.deltaComparable)}}">{{cell.isBaseline ? '对照' : '较对照 ' + cell.deltaText}}</text></view>
+                    </view>
+                  </view>
+                </view>
+              </scroll-view>
+              <view wx:if="{{currentCompareView.columns.length > 2 && !compareAtEnd}}" class="scroll-edge scroll-edge--right"></view>
+              <view wx:if="{{compareScrollLeft > 1}}" class="scroll-edge scroll-edge--left"></view>
+              </view>
+            </view>
+            <view wx:else class="empty-state">
+              <text class="empty-title">{{!currentCompareView.metricOptions.length ? '尚无已录入指标' : compareMetricMode === 'abnormal' ? '暂无已判定的超范围指标' : compareMetricMode === 'pending' ? '暂无待核对指标' : '当前筛选下没有指标'}}</text>
+              <button wx:if="{{compareMetricMode === 'abnormal' && currentCompareView.summary.pendingCount}}" class="text-button" data-mode="pending" bindtap="setCompareMetricMode">待核对 {{currentCompareView.summary.pendingCount}} 项 ›</button>
+              <button wx:if="{{currentCompareView.metricOptions.length}}" class="text-button" data-mode="all" bindtap="setCompareMetricMode">查看全部指标</button>
+              <block wx:else><button wx:for="{{currentCompareView.columns}}" wx:key="reportId" class="text-button" data-report-id="{{item.reportId}}" bindtap="openDetailView">查看 {{item.date}} 报告 ›</button></block>
+            </view>
+        </block>
+      </view>
+    </block>
+  </block>
+
+  <view wx:if="{{reportChooserVisible}}" class="modal-mask" bindtap="closeReportChooser" catchtouchmove="preventScroll">
+    <view class="bottom-sheet" catchtap="stopPropagation">
+      <view class="sheet-heading"><text class="sheet-title">选择对比报告</text><button class="modal-close" bindtap="closeReportChooser">取消</button></view>
+      <view class="search-wrap"><input class="sheet-search" value="{{reportSearch}}" bindinput="onReportSearch" placeholder="搜索日期或检测机构" confirm-type="search" maxlength="80" /></view>
+      <view class="choice-tools"><button class="text-button" bindtap="selectRecentReports">最近两份</button><button class="text-button" bindtap="selectAllReports">全选</button><button class="text-button" bindtap="clearReportChoices">清空</button></view>
+      <scroll-view scroll-y="true" class="choice-scroll">
+        <button wx:for="{{reportChoiceOptions}}" wx:key="reportId" class="report-choice {{item.selected ? 'selected' : ''}}" data-report-id="{{item.reportId}}" bindtap="toggleReportChoice">
+          <view class="choice-copy"><text>{{item.date}}</text><text wx:if="{{item.labName}}" class="secondary">{{item.labName}}</text><text wx:if="{{item.sameDayLabel}}" class="secondary">{{item.sameDayLabel}}</text></view><text class="selection-check">{{item.selected ? '✓' : ''}}</text>
+        </button>
+        <view wx:if="{{!reportChoiceOptions.length}}" class="empty-state"><text>没有匹配的报告</text><text class="muted">请换个日期或机构名称</text></view>
+      </scroll-view>
+      <view class="choice-footer"><text class="muted">已选 {{draftReportIds.length}} 份</text><button class="primary-button" bindtap="confirmReportChoices" disabled="{{!draftReportIds.length}}">确认</button></view>
+    </view>
+  </view>
+
+  <view wx:if="{{metricPickerVisible}}" class="modal-mask" bindtap="closeMetricPicker" catchtouchmove="preventScroll">
+    <view class="bottom-sheet" catchtap="stopPropagation">
+      <view class="sheet-heading"><text class="sheet-title">{{metricPickerStage === 'mode' ? '筛选指标' : '自选指标'}}</text><button class="modal-close" bindtap="closeMetricPicker">取消</button></view>
+      <view wx:if="{{metricPickerStage === 'mode'}}" class="filter-options">
+        <button wx:for="{{metricFilterOptions}}" wx:key="key" class="filter-option {{compareMetricMode === item.key ? 'selected' : ''}}" data-mode="{{item.key}}" bindtap="setCompareMetricMode"><view class="filter-option-label"><text>{{item.label}}</text><text class="filter-option-count">{{item.count}}</text></view><text class="filter-check">{{compareMetricMode === item.key ? '✓' : ''}}</text></button>
+        <button class="filter-option {{compareMetricMode === 'custom' ? 'selected' : ''}}" bindtap="openMetricPicker"><text>自选指标</text><text wx:if="{{compareMetricMode === 'custom'}}" class="filter-check">✓</text><view wx:else class="small-chevron"></view></button>
+      </view>
+      <block wx:else>
+      <view class="search-wrap"><input class="sheet-search" value="{{metricSearch}}" bindinput="onMetricSearch" placeholder="搜索指标名称或缩写" confirm-type="search" maxlength="80" /></view>
+      <view class="choice-tools"><button class="text-button" bindtap="selectAllMetrics">全选</button><button class="text-button" bindtap="clearMetricChoices">清空</button></view>
+      <scroll-view scroll-y="true" class="choice-scroll">
+        <button wx:for="{{metricChoiceOptions}}" wx:key="key" class="report-choice {{item.selected ? 'selected' : ''}}" data-key="{{item.key}}" bindtap="toggleMetricChoice"><text class="choice-copy">{{item.name}}</text><text class="selection-check">{{item.selected ? '✓' : ''}}</text></button>
+        <view wx:if="{{!metricChoiceOptions.length}}" class="empty-state">没有匹配的指标</view>
+      </scroll-view>
+      <view class="choice-footer"><text class="muted">已选 {{draftMetricKeys.length}} 项</text><button class="primary-button" bindtap="confirmMetricChoices" disabled="{{!draftMetricKeys.length}}">应用筛选</button></view>
+      </block>
+    </view>
+  </view>
+
+  <view wx:if="{{metricDetail}}" class="modal-mask" bindtap="closeMetricDetail" catchtouchmove="preventScroll">
+    <view class="bottom-sheet" catchtap="stopPropagation">
+      <view class="sheet-heading"><view class="sheet-title-wrap"><text class="sheet-title">{{metricDetail.name}}</text><text class="secondary">{{metricDetail.secondaryText}}</text></view><button class="modal-close" bindtap="closeMetricDetail">关闭</button></view>
+      <scroll-view scroll-y="true" class="detail-scroll">
+        <view class="metric-detail-body">
+          <view wx:for="{{metricDetail.cells}}" wx:key="reportId" class="result-entry {{item.isBaseline ? 'result-baseline' : ''}}">
+            <view class="result-heading"><text>{{item.date}}{{item.isBaseline && currentCompareView.canCompare ? ' · 对照' : ''}}</text><button class="text-button" data-report-id="{{item.reportId}}" data-key="{{metricDetail.key}}" bindtap="openDetailView">报告 ›</button></view>
+            <text wx:if="{{item.labName || item.sameDayLabel}}" class="secondary">{{item.labName}} {{item.sameDayLabel}}</text>
+            <view class="result-value {{item.status}}"><text>{{item.valueText}} {{item.marker}}</text><text wx:if="{{!metricDetail.sharedUnit && item.hasValue && item.unitText}}" class="result-unit">{{item.unitText}}</text></view>
+            <text wx:if="{{item.rangeText}}" class="result-line">参考范围 {{item.rangeText}}</text>
+            <text wx:if="{{item.unknownReason}}" class="result-line pending-count">{{item.unknownReason}}</text>
+            <text wx:if="{{currentCompareView.canCompare && item.hasValue && !item.isBaseline}}" class="result-line">{{item.deltaComparable ? '较对照 ' + item.deltaText : item.deltaReason}}</text>
+            <button wx:if="{{item.status === 'unknown' || item.status === 'empty'}}" class="text-button" data-report-id="{{item.reportId}}" data-key="{{metricDetail.key}}" bindtap="editMetricReport">核对并补充此项 ›</button>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{compareDietVisible}}" class="modal-mask" bindtap="closeCompareDiet" catchtouchmove="preventScroll">
+    <view class="bottom-sheet" catchtap="stopPropagation">
+      <view class="sheet-heading"><text class="sheet-title">检测前7天摄入汇总</text><button class="modal-close" bindtap="closeCompareDiet">关闭</button></view>
+      <scroll-view scroll-y="true" class="detail-scroll"><view class="nutrition-summary-body">
+        <text wx:if="{{compareDietLoading}}" class="note">正在加载饮食记录…</text>
+        <view wx:elif="{{compareDietError}}" class="error-banner"><text>{{compareDietError}}</text><button class="text-button" bindtap="retryDiet">重试</button></view>
+        <block wx:else>
+          <scroll-view scroll-x="true" enhanced="true" show-scrollbar="{{true}}" class="nutrition-scroll">
+            <view class="nutrition-table" style="width: {{currentCompareView.tableWidthRpx}}rpx;">
+              <view class="nutrition-row nutrition-head">
+                <view class="nutrition-name"><text>日均摄入</text></view>
+                <view wx:for="{{currentCompareView.nutritionSummary.columns}}" wx:key="reportId" class="nutrition-cell {{item.isBaseline && currentCompareView.canCompare ? 'baseline-cell' : ''}}" style="width: {{currentCompareView.columnWidthRpx}}rpx; flex-basis: {{currentCompareView.columnWidthRpx}}rpx;">
+                  <text class="nutrition-date">{{item.date}}{{item.isBaseline && currentCompareView.canCompare ? ' · 对照' : ''}}</text>
+                  <text wx:if="{{item.sameDayLabel || item.labName}}" class="secondary nutrition-lab">{{item.sameDayLabel}} {{item.labName}}</text>
+                  <text class="secondary">{{item.dateRangeShort}}</text>
                 </view>
               </view>
-              <view wx:for="{{currentCompareView.compareRows}}" wx:for-item="row" wx:key="key" class="multi-row">
-                <view class="multi-name"><text>{{row.name}}</text><text wx:if="{{row.secondaryText}}" class="secondary">{{row.secondaryText}}</text><text wx:if="{{row.sharedRange}}" class="inline-range">参考范围 {{row.rangeText || '未提供'}}</text></view>
-                <view wx:for="{{row.cells}}" wx:for-item="cell" wx:key="reportId" class="multi-cell">
-                  <view class="value-line {{cell.status}}"><text class="number">{{cell.valueText}}</text><text wx:if="{{cell.marker}}" class="marker">{{cell.marker}}</text></view>
-                  <text wx:if="{{cell.status === 'unknown'}}" class="secondary">待核对</text>
-                  <text wx:if="{{!row.sharedRange}}" class="inline-range">{{cell.rangeText || '未提供'}}</text>
-                  <text wx:if="{{!cell.isBaseline}}" class="cell-delta">较对照 {{cell.deltaText}}</text>
+              <view wx:for="{{currentCompareView.nutritionSummary.rows}}" wx:for-item="row" wx:key="key" class="nutrition-row">
+                <view class="nutrition-name"><text>{{row.label}}</text></view>
+                <view wx:for="{{row.cells}}" wx:for-item="cell" wx:key="reportId" class="nutrition-cell {{cell.isBaseline && currentCompareView.canCompare ? 'baseline-cell' : ''}}" style="width: {{currentCompareView.columnWidthRpx}}rpx; flex-basis: {{currentCompareView.columnWidthRpx}}rpx;">
+                  <view class="intake-value"><text>{{cell.averageText}}</text><text wx:if="{{cell.validDays}}" class="intake-unit">{{cell.unit}}</text></view>
+                  <text wx:if="{{row.valueKind !== 'ratio'}}" class="coefficient-value">{{cell.coefficientText}} {{cell.coefficientDays ? cell.coefficientUnit : ''}}</text>
+                  <view wx:if="{{currentCompareView.canCompare}}" class="nutrition-delta"><text wx:if="{{cell.isBaseline && cell.validDays}}">对照</text><text wx:elif="{{cell.deltaComparable}}">{{cell.deltaText}}</text></view>
                 </view>
               </view>
             </view>
           </scroll-view>
-          <view wx:if="{{!currentCompareView.metricOptions.length}}" class="empty-state"><text class="empty-title">尚无可对比指标</text><text class="muted">所选报告均未录入检测值，可进入报告编辑补充。</text></view>
-          <text class="note">↑ 偏高　↓ 偏低 · 升降不代表好转或恶化。</text>
+          <view class="nutrition-footer"><text>基于已录入营养数据</text><button class="text-button" bindtap="showNutritionMethod">统计口径 ⓘ</button></view>
         </block>
-      </block>
-    </view>
-  </block>
-  <view wx:if="{{reportChooserVisible}}" class="diet-modal-mask" bindtap="closeReportChooser" catchtouchmove="preventScroll">
-    <view class="diet-modal" catchtap="stopPropagation">
-      <view class="diet-modal-heading"><text class="diet-modal-title">选择对比报告</text><button class="modal-close" bindtap="closeReportChooser">取消</button></view>
-      <view class="choice-tools"><button class="text-button" bindtap="selectRecentReports">最近两份</button><button class="text-button" bindtap="selectAllReports">全选</button></view>
-      <scroll-view scroll-y="true" class="report-choice-scroll">
-        <button wx:for="{{reportChoiceOptions}}" wx:key="reportId" class="report-choice {{item.selected ? 'selected' : ''}}" data-report-id="{{item.reportId}}" bindtap="toggleReportChoice">
-          <view class="choice-copy"><text>{{item.date}}</text><text wx:if="{{item.labName}}" class="secondary">{{item.labName}}</text><text wx:if="{{item.sameDayLabel}}" class="secondary">{{item.sameDayLabel}}</text></view>
-          <text class="selection-check">{{item.selected ? '✓' : ''}}</text>
-        </button>
-      </scroll-view>
-      <view class="choice-footer"><text class="muted">已选 {{draftReportIds.length}} 份</text><button class="add-button" bindtap="confirmReportChoices" disabled="{{draftReportIds.length < 2}}">确认对比</button></view>
+      </view></scroll-view>
     </view>
   </view>
-  <view wx:if="{{compareDietVisible}}" class="diet-modal-mask" bindtap="closeCompareDiet" catchtouchmove="preventScroll">
-    <view class="diet-modal" catchtap="stopPropagation">
-      <view class="diet-modal-heading">
-        <text class="diet-modal-title">检测前 7 天饮食对比</text>
-        <button class="modal-close" bindtap="closeCompareDiet" aria-label="关闭饮食对比">关闭</button>
-      </view>
-      <scroll-view scroll-y="true" class="diet-modal-scroll">
-        <view class="diet-modal-body">
-            <text wx:if="{{compareDietLoading}}" class="note">正在加载饮食记录…</text>
-            <view wx:elif="{{compareDietError}}" class="error-banner"><text>{{compareDietError}}</text><button class="text-button" bindtap="retryDiet">重试</button></view>
-            <block wx:else>
-              <text wx:if="{{!currentCompareView.hasNutritionData}}" class="note">未找到可计算系数的记录，请核对对应日期的饮食和体重。</text>
-              <view wx:for="{{currentCompareView.nutritionCompareSeries}}" wx:key="key" class="diet-metric">
-                <view class="diet-heading"><text>{{item.label}}</text><text class="secondary">{{item.unit}}</text></view>
-                <view class="diet-sides"><view wx:for="{{item.sides}}" wx:for-item="side" wx:key="reportId" class="diet-side"><text class="diet-report-date">{{side.label}}{{side.isBaseline ? ' · 对照' : ''}}</text><text wx:if="{{side.labName}}" class="secondary">{{side.labName}}</text><text wx:if="{{side.sameDayLabel}}" class="secondary">{{side.sameDayLabel}}</text><text class="secondary">{{side.fullDateRange}}</text><text class="secondary">有效 {{side.coverageText}} · 均值 {{side.averageText || '—'}}</text><view class="sparkline"><view wx:for="{{side.points}}" wx:for-item="point" wx:key="date" class="spark-column"><view class="spark-track"><view class="spark-bar {{point.missing ? 'missing' : ''}}" style="height: {{point.heightRpx}}rpx;"></view></view><text class="secondary">{{point.label}}</text></view></view></view></view>
-              </view>
-              <text class="note">各指标仅统计有效记录；历史系数使用对应日期汇总中的体重，不推断饮食与化验变化的因果关系。</text>
-            </block>
-        </view>
-      </scroll-view>
-    </view>
+
+  <view wx:if="{{typePickerVisible}}" class="modal-mask" bindtap="onCloseTypePicker" catchtouchmove="preventScroll">
+    <view class="bottom-sheet type-sheet" catchtap="stopPropagation"><view class="sheet-heading"><text class="sheet-title">选择报告类型</text><button class="modal-close" bindtap="onCloseTypePicker">取消</button></view><scroll-view scroll-y="true" class="type-choice-scroll"><button wx:for="{{reportEntryTypes}}" wx:key="key" class="report-type-item" data-type="{{item.key}}" bindtap="onSelectReportType">{{item.name}}<text>›</text></button></scroll-view></view>
   </view>
-  <view wx:if="{{typePickerVisible}}" class="report-type-mask" bindtap="onCloseTypePicker" catchtouchmove="preventScroll">
-    <view class="report-type-sheet" catchtap="stopPropagation">
-      <text class="sheet-title">选择报告类型</text>
-      <button wx:for="{{reportEntryTypes}}" wx:key="key" class="report-type-item" data-type="{{item.key}}" bindtap="onSelectReportType">{{item.name}}<text>›</text></button>
-      <button class="text-button full-width" bindtap="onCloseTypePicker">取消</button>
-    </view>
-  </view>
+  <canvas type="2d" id="report-export-canvas" class="report-export-canvas" aria-hidden="true" />
 </view>

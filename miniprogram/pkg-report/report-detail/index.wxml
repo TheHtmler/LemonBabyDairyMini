@@ -2,40 +2,68 @@
   <view wx:if="{{loading}}" class="empty-state">正在加载报告…</view>
   <block wx:else>
     <view wx:if="{{loadError}}" class="error-banner"><text>{{loadError}}</text><button class="text-button" bindtap="loadReportData">重试</button></view>
+    <button wx:if="{{!reportData && loadError}}" class="text-button" bindtap="onBackToReports">返回报告列表</button>
     <block wx:if="{{reportData}}">
       <view class="report-heading">
         <text class="report-title">{{reportData.reportTypeName}}</text>
+        <text wx:if="{{babyInfo.babyName}}" class="baby-name">{{babyInfo.babyName}}</text>
       </view>
       <view class="report-meta"><text>{{reportData.formattedDate}}</text><text wx:if="{{reportData.labName}}" class="lab-name">{{reportData.labName}}</text></view>
+      <button wx:if="{{reportData.originalImages.length}}" class="text-button originals-link" bindtap="onViewOriginals" loading="{{openingOriginals}}" disabled="{{deleting || openingOriginals}}">查看原报告（{{reportData.originalImages.length}}张）</button>
       <view class="detail-actions">
         <button class="primary-button" disabled="{{deleting}}" bindtap="onCompareReport">{{compareLabel}}</button>
         <view class="secondary-actions">
+          <button class="outline-button" disabled="{{deleting || exporting}}" bindtap="onExportReport">{{exporting ? '导出中' : '导出'}}</button>
           <button class="outline-button" disabled="{{deleting}}" bindtap="onEditReport">编辑</button>
           <button class="outline-button" disabled="{{deleting}}" bindtap="onMoreActions">{{deleting ? '删除中…' : '更多'}}</button>
         </view>
       </view>
       <view class="detail-sheet">
         <view class="detail-tabs">
-          <button class="detail-tab {{detailTab === 'full' ? 'active' : ''}}" data-tab="full" bindtap="switchDetailTab">{{showMissing ? '全部项目' : '已录入'}} {{showMissing ? reportSummary.totalCount : reportSummary.filledCount}}</button>
-          <button class="detail-tab {{detailTab === 'focus' ? 'active' : ''}}" data-tab="focus" bindtap="switchDetailTab">仅看异常 <text class="abnormal-count">{{reportSummary.abnormalCount}}</text></button>
+          <button class="detail-tab {{detailTab === 'full' ? 'active' : ''}}" data-tab="full" bindtap="switchDetailTab">{{showMissing ? '全部项目' : '已录入'}} <text class="tab-count">{{showMissing ? reportSummary.totalCount : reportSummary.filledCount}}</text></button>
+          <button class="detail-tab {{detailTab === 'focus' ? 'active' : ''}}" data-tab="focus" bindtap="switchDetailTab">超范围 <text class="tab-count {{reportSummary.abnormalCount ? 'abnormal-count' : ''}}">{{reportSummary.abnormalCount}}</text></button>
+          <button class="detail-tab {{detailTab === 'review' ? 'active' : ''}}" data-tab="review" bindtap="switchDetailTab">待核对 <text class="tab-count {{reportSummary.unknownCount ? 'review-count' : ''}}">{{reportSummary.unknownCount}}</text></button>
         </view>
         <view wx:if="{{!visibleRows.length}}" class="empty-state">
-          <text>{{!reportSummary.filledCount ? '尚未录入检测值' : reportSummary.unknownCount ? '没有已判定的超范围指标，部分指标待核对' : '已录入指标在参考范围内'}}</text>
+          <text wx:if="{{!reportSummary.filledCount}}">尚未录入检测值</text>
+          <text wx:elif="{{detailTab === 'review'}}">暂无待核对项</text>
+          <text wx:elif="{{detailTab === 'focus'}}">{{reportSummary.unknownCount ? '暂无已判定超范围项，另有 ' + reportSummary.unknownCount + ' 项待核对' : '已录入项均在参考范围内'}}</text>
+          <text wx:else>当前没有可显示的指标</text>
           <button wx:if="{{!reportSummary.filledCount}}" class="text-button" bindtap="onEditReport">补充检测值</button>
+          <button wx:elif="{{detailTab === 'focus' && reportSummary.unknownCount}}" class="text-button" data-tab="review" bindtap="switchDetailTab">查看待核对指标</button>
           <button wx:else class="text-button" data-tab="full" bindtap="switchDetailTab">查看已录入指标</button>
         </view>
         <view wx:else class="data-table">
           <view class="table-row table-head"><text class="name-col">检验项目 / 单位</text><text class="value-col">检测值</text><text class="range-col">参考范围</text></view>
-          <view wx:for="{{visibleRows}}" wx:key="key" class="table-row">
+          <view wx:for="{{visibleRows}}" wx:key="key" id="{{item.rowId}}" class="table-row indicator-row {{focusedMetricKey === item.key ? 'focused-row' : ''}}" data-key="{{item.key}}" bindtap="onOpenIndicator" hover-class="indicator-row-pressed" aria-role="button" aria-label="{{item.name + '，检测值 ' + item.valueText + '，' + item.statusText + '，查看详情'}}">
             <view class="name-col"><text>{{item.name}}</text><text wx:if="{{item.secondaryText}}" class="secondary">{{item.secondaryText}}</text></view>
-            <view class="value-col {{item.statusClass}}"><view class="value-line"><text class="number">{{item.valueText}}</text><text wx:if="{{item.marker}}" class="marker">{{item.marker}}</text></view><text wx:if="{{item.status === 'unknown'}}" class="secondary status-text">{{item.statusText}}</text></view>
-            <view class="range-col"><text>{{item.rangeText || '未提供'}}</text><text wx:if="{{item.optimalRangeText}}" class="secondary">最优 {{item.optimalRangeText}}</text></view>
+            <view class="value-col {{item.statusClass}}"><view class="value-line"><text class="number">{{item.valueText}}</text><text wx:if="{{item.marker}}" class="marker">{{item.marker}}</text></view></view>
+            <view class="range-col"><text>{{item.rangeText || '—'}}</text></view>
           </view>
         </view>
-        <button wx:if="{{detailTab === 'full' && reportSummary.missingCount}}" class="missing-toggle" bindtap="toggleMissingIndicators">{{showMissing ? '收起' : '展开'}}未录入的 {{reportSummary.missingCount}} 项 {{showMissing ? '⌃' : '⌄'}}</button>
-        <text class="note">↑ 偏高　↓ 偏低 · 按本份报告参考范围判断</text>
+        <button wx:if="{{detailTab === 'full' && reportSummary.missingCount}}" class="missing-toggle" bindtap="toggleMissingIndicators"><text>{{showMissing ? '收起' : '展开'}}未录入 {{reportSummary.missingCount}} 项</text><view class="toggle-chevron {{showMissing ? 'expanded' : ''}}"></view></button>
       </view>
-      <text class="updated-at">更新于 {{reportData.formattedUpdatedAt}}</text>
     </block>
   </block>
+  <view wx:if="{{selectedIndicator}}" class="indicator-mask" bindtap="onCloseIndicator" catchtouchmove="stopPanelTouchMove">
+    <view class="indicator-panel" catchtap="stopPanelTouchMove">
+      <view class="panel-heading">
+        <view class="panel-title-block"><text class="panel-title">{{selectedIndicator.name}}</text><text wx:if="{{selectedIndicator.secondaryText}}" class="secondary">{{selectedIndicator.secondaryText}}</text></view>
+        <button class="panel-close" bindtap="onCloseIndicator" aria-label="关闭指标详情">关闭</button>
+      </view>
+      <scroll-view class="panel-scroll" scroll-y="{{true}}">
+        <view class="panel-content">
+          <view class="fact-row"><text class="fact-label">原始结果</text><view class="fact-value {{selectedIndicator.statusClass}}"><text selectable="{{true}}">{{selectedIndicator.rawValueText}}</text><text wx:if="{{selectedIndicator.marker}}" class="marker">{{selectedIndicator.marker}}</text></view></view>
+          <view class="fact-row"><text class="fact-label">参考范围</text><text class="fact-value" selectable="{{true}}">{{selectedIndicator.rangeText || '—'}}</text></view>
+          <text wx:if="{{selectedIndicator.unknownReason}}" class="review-explanation">{{selectedIndicator.unknownReason}}</text>
+          <block wx:if="{{selectedIndicator.optimalRangeText}}">
+            <view class="fact-row"><text class="fact-label">项目计算范围</text><text class="fact-value">{{selectedIndicator.optimalRangeText}}</text></view>
+            <text class="panel-explanation">{{calculatedRangeNote}}</text>
+          </block>
+        </view>
+      </scroll-view>
+      <view class="panel-actions"><button class="primary-button" data-key="{{selectedIndicator.key}}" disabled="{{deleting}}" bindtap="onEditReport">{{selectedIndicator.status === 'unknown' ? '核对并编辑' : selectedIndicator.hasValue ? '编辑' : '补充结果'}}</button></view>
+    </view>
+  </view>
+  <canvas type="2d" id="report-export-canvas" class="report-export-canvas" aria-hidden="true" />
 </view>

@@ -43,6 +43,7 @@
       "pages": [
         "data-analysis/index",
         "add-report/index",
+        "report-recognition/index",
         "report-detail/index"
       ]
     },

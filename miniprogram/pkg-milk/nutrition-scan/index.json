@@ -5,6 +5,7 @@
   "navigationBarTextStyle": "white",
   "disableScroll": true,
   "usingComponents": {
+    "recognition-quota-message": "/components/recognition-quota-message/index",
     "nutrition-recognition": "../components/nutrition-recognition/index"
   }
 }

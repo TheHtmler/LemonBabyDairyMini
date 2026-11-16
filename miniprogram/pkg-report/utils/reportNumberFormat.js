@@ -1,42 +1,27 @@
+const { normalizeReportDetectionValue } = require('../../utils/reportNumeric');
+
 function normalizeSignedNumberText(value = '') {
   const trimmed = `${value ?? ''}`.trim();
-  const parenMatch = trimmed.match(/^\((-?\d+(?:\.\d+)?)\)$/);
-  return parenMatch ? parenMatch[1] : trimmed;
+  const parenMatch = trimmed.match(/^\(([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\)$/);
+  const text = parenMatch ? parenMatch[1] : trimmed;
+  return normalizeReportDetectionValue(text) || text;
 }
 
-function formatReportNumber(value, precision = 3) {
-  const text = normalizeSignedNumberText(value);
-  if (!text) return '';
-
-  const num = Number(text);
-  if (!Number.isFinite(num)) {
-    return text;
-  }
-
-  return num.toFixed(precision);
+function formatReportNumber(value) {
+  // 识别交接、编辑失焦和保存共用原值文本，避免三位小数掩盖来源冲突。
+  return normalizeSignedNumberText(value);
 }
 
-// 输入过程中保留可选负号与小数点，兼容华为等机型纯数字键盘无法输入负号的问题（需配合 type="text"）。
+// 保留比较符、正负号与科学计数法的编辑中状态；非法文字交给保存校验，不能删字后变成另一数值。
 function sanitizeSignedDecimalInput(value = '') {
-  const raw = `${value ?? ''}`;
-  if (raw === '') return '';
-
-  const trimmed = raw.trim();
-  const leadingMinus = trimmed.startsWith('-');
-  let body = leadingMinus ? trimmed.slice(1) : trimmed;
-
-  body = body.replace(/-/g, '').replace(/[^\d.]/g, '');
-
-  const dotIndex = body.indexOf('.');
-  if (dotIndex !== -1) {
-    body = body.slice(0, dotIndex + 1) + body.slice(dotIndex + 1).replace(/\./g, '');
-  }
-
-  if (leadingMinus) {
-    return body === '' ? '-' : `-${body}`;
-  }
-
-  return body;
+  const text = `${value ?? ''}`.trim()
+    .replace(/[０-９]/g, character => String(character.charCodeAt(0) - 0xFF10))
+    .replace(/[−﹣－]/g, '-').replace(/＋/g, '+').replace(/．/g, '.')
+    .replace(/＜/g, '<').replace(/＞/g, '>').replace(/＝/g, '=')
+    .replace(/≦/g, '≤').replace(/≧/g, '≥')
+    .replace(/^<\s*=/, '≤').replace(/^>\s*=/, '≥')
+    .replace(/^([<>≤≥])\s+/, '$1');
+  return normalizeReportDetectionValue(text) || text;
 }
 
 module.exports = {

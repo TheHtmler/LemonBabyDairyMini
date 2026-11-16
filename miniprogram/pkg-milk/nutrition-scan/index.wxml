@@ -1,4 +1,4 @@
-<view class="scan-page">
+<view class="scan-page {{reportCapture ? 'report-capture' : ''}}">
   <camera wx:if="{{cameraActive}}" id="scanCamera" class="camera-preview" mode="normal" device-position="back" flash="off" data-generation="{{cameraGeneration}}" bindinitdone="onCameraReady" binderror="onCameraError" bindstop="onCameraStopped"></camera>
 
   <block wx:if="{{!recognitionOpen}}">
@@ -6,6 +6,8 @@
       <cover-view class="camera-back-button" style="top: {{(navHeight - 44) / 2}}px;" bindtap="goBack" aria-role="button" aria-label="返回">‹</cover-view>
       <cover-view class="nav-title" style="line-height: {{navHeight}}px;">拍照识别</cover-view>
     </cover-view>
+
+    <cover-view wx:if="{{reportCapture && !pending && !existing}}" class="report-type-button" style="top: {{navTop + navHeight + 12}}px;" bindtap="chooseReportType" aria-role="button" aria-label="选择报告类型，当前{{reportTypeName}}">{{reportTypeName}} ▾</cover-view>
 
     <cover-view wx:if="{{packageCapture && !pending && !existing}}" class="package-slots" style="top: {{navTop + navHeight + 3}}px;">
       <cover-view wx:for="{{photoSlots}}" wx:key="label" class="photo-slot-wrapper">
@@ -19,13 +21,13 @@
     </cover-view>
 
     <block wx:if="{{cameraActive}}">
-      <cover-view class="camera-hint">{{packageCapture ? packageReady ? '两面已拍齐，点击识别' : activePhotoSlot === 0 ? '拍清完整营养成分表，包含表头' : '拍清包装正面，包含名称与品牌' : '食物拍清全貌，有营养表可选“拍包装”'}}</cover-view>
-      <cover-view id="captureFrame" class="viewfinder" aria-label="框内为识别范围"></cover-view>
+      <cover-view class="camera-hint">{{reportCapture ? '同一份报告可分多张拍，拍齐后点右侧识别' : packageCapture ? packageReady ? '两面已拍齐，点击识别' : activePhotoSlot === 0 ? '拍清完整营养成分表，包含表头' : '拍清包装正面，包含名称与品牌' : '食物拍清全貌，有营养表可选“拍包装”'}}</cover-view>
+      <cover-view id="captureFrame" class="viewfinder" aria-label="{{reportCapture ? '请将整张报告拍摄清楚' : '框内为识别范围'}}"></cover-view>
     </block>
 
-    <cover-view wx:if="{{(loadingSlow || capturing || error) && !pending && !existing && (loading || available)}}" class="camera-status" style="top: {{navTop + navHeight + (packageCapture ? 86 : 16)}}px;">{{loadingSlow ? '正在准备拍照…' : capturing ? '正在准备图片…' : error}}</cover-view>
+    <cover-view wx:if="{{(loadingSlow || capturing || error) && !pending && !existing && (loading || available)}}" class="camera-status" style="top: {{navTop + navHeight + (packageCapture ? 86 : reportCapture ? 66 : 16)}}px;">{{loadingSlow ? '正在准备拍照…' : capturing ? '正在准备图片…' : error}}</cover-view>
 
-    <view class="screen-state {{pending || existing ? 'result-state' : ''}}" wx:if="{{pending || existing || cameraError || (!loading && !available)}}" style="top: {{navTop + navHeight + 40}}px;">
+    <view class="screen-state {{pending || existing ? 'result-state' : ''}}" wx:if="{{pending || existing || cameraError || (!loading && !available)}}" style="top: {{navTop + navHeight + (reportCapture ? 100 : 40)}}px;">
       <scroll-view class="state-scroll" scroll-y="true">
         <view class="state-content" wx:if="{{pending}}">
           <text class="state-title">上次保存结果待确认</text>
@@ -42,9 +44,10 @@
         </view>
         <view class="state-content" wx:elif="{{!loading && !available}}">
           <text class="state-title">暂时无法识别</text>
-          <text class="state-description">{{error}}</text>
+          <view wx:if="{{modelQuotaExhausted}}" class="state-description"><recognition-quota-message /></view>
+          <text wx:else class="state-description">{{error}}</text>
           <button class="state-primary" bindtap="retryAvailability" disabled="{{capturing}}">重试</button>
-          <button class="state-link" bindtap="openManual">手动填写食物资料</button>
+          <button class="state-link" bindtap="openManual">{{reportCapture ? '手动填写检测报告' : '手动填写食物资料'}}</button>
         </view>
         <view class="state-content" wx:else>
           <text class="state-title">{{cameraPermissionDenied ? '允许使用相机' : '相机暂不可用'}}</text>
@@ -55,9 +58,16 @@
     </view>
 
     <cover-view class="camera-controls" wx:if="{{!pending && !existing}}">
+      <cover-view wx:if="{{reportCapture && reportPhotos.length}}" class="report-photo-strip">
+        <cover-view wx:for="{{reportPhotos}}" wx:key="id" class="report-photo-item" data-id="{{item.id}}" bindtap="manageReportPhoto" aria-role="button" aria-label="查看或移除第{{item.number}}张">
+          <cover-image class="report-photo-image" src="{{item.tempFilePath}}"></cover-image>
+          <cover-view class="report-photo-label">第{{item.number}}张</cover-view>
+        </cover-view>
+      </cover-view>
       <cover-view class="recognition-tabs {{capturing ? 'controls-disabled' : ''}}">
-        <cover-view class="recognition-tab {{!packageCapture ? 'selected' : ''}}" data-mode="food" bindtap="selectCaptureMode" aria-role="button" aria-label="拍食物，全貌单张{{!packageCapture ? '，已选中' : ''}}">拍食物</cover-view>
+        <cover-view class="recognition-tab {{!packageCapture && !reportCapture ? 'selected' : ''}}" data-mode="food" bindtap="selectCaptureMode" aria-role="button" aria-label="拍食物，全貌单张{{!packageCapture && !reportCapture ? '，已选中' : ''}}">拍食物</cover-view>
         <cover-view class="recognition-tab {{packageCapture ? 'selected' : ''}}" data-mode="package" bindtap="selectCaptureMode" aria-role="button" aria-label="拍包装，营养表与正面各一张{{packageCapture ? '，已选中' : ''}}">拍包装</cover-view>
+        <cover-view wx:if="{{reportOcrEntryEnabled}}" class="recognition-tab {{reportCapture ? 'selected' : ''}}" data-mode="report" bindtap="selectCaptureMode" aria-role="button" aria-label="识别检测报告{{reportCapture ? '，已选中' : ''}}">报告</cover-view>
       </cover-view>
       <cover-view class="capture-actions">
         <cover-view class="side-action {{!available || loading || capturing ? 'controls-disabled' : ''}}" bindtap="chooseAlbum" aria-role="button" aria-label="从相册选择">
@@ -69,9 +79,9 @@
         <cover-view class="shutter {{!available || loading || capturing || (!packageReady && !cameraReady) ? 'controls-disabled' : ''}}" bindtap="takePhoto" aria-role="button" aria-label="{{packageReady ? '开始识别两张图片' : '拍照'}}">
           <cover-view class="shutter-core">{{packageReady ? '识别' : ''}}</cover-view>
         </cover-view>
-        <cover-view class="side-action {{capturing ? 'controls-disabled' : ''}}" bindtap="showPhotoHelp" aria-role="button" aria-label="拍摄提示">
-          <cover-view class="tool-circle help-icon">?</cover-view>
-          <cover-view class="action-label">提示</cover-view>
+        <cover-view class="side-action {{capturing ? 'controls-disabled' : ''}}" bindtap="onRightAction" aria-role="button" aria-label="{{reportCapture && reportPhotos.length ? '识别已选图片' : '拍摄提示'}}">
+          <cover-view class="tool-circle help-icon {{reportCapture && reportPhotos.length ? 'report-submit-icon' : ''}}">{{reportCapture && reportPhotos.length ? '✓' : '?'}}</cover-view>
+          <cover-view class="action-label">{{reportCapture && reportPhotos.length ? '识别 ' + reportPhotos.length + ' 张' : '提示'}}</cover-view>
         </cover-view>
       </cover-view>
     </cover-view>

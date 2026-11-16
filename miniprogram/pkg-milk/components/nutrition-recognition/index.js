@@ -8,6 +8,8 @@ const { createDialogState, formKey, targetBasis, clearProposals, editNutrition, 
   getEstimateEligibility, labelFillWarning, getIdentityRequirement, invalidateIdentityConfirmation, setProteinType } = require('./dialogState');
 const { runWorkflow, providerName } = require('./workflow');
 const { buildProgressView } = require('./progressView');
+const { retainedFoodPhotos } = require('./imageRetention');
+const { MODEL_QUOTA_EXHAUSTED_MESSAGE, isModelQuotaExhausted } = require('../../../utils/recognitionErrors');
 const { buildPreviewView, buildDuplicateComparison } = require('./evidenceView');
 const { previewPreparationBinding, invalidatePreviewPreparation, isPreviewPreparationCurrent,
   startPreviewPreparation } = require('./preparation');
@@ -19,7 +21,7 @@ Component({
     navigationTop: { type: Number, value: 0 }, navigationHeight: { type: Number, value: 44 },
     sourceSystemFoodId: String, targetId: String, formSessionId: Number,
     showTrigger: { type: Boolean, value: true }, categoryOptions: Array, proteinOptions: Array },
-  data: { dialogOpen: false, busy: false, phase: '', phaseDetail: '', error: '', values: {},
+  data: { dialogOpen: false, busy: false, phase: '', phaseDetail: '', error: '', modelQuotaMessage: MODEL_QUOTA_EXHAUSTED_MESSAGE, values: {},
     nutrientRows: [], requiredNutrientRows: [], optionalNutrientRows: [], categoryItems: [], categoryIndex: 0, categoryLabel: '',
     unitItems: ['请选择单位', 'g', 'ml', '份'], unitIndex: 0, proteinItems: [], proteinIndex: 0,
     unmatchedCategory: false, newCategoryName: '', categoryCreateOpen: false,
@@ -250,7 +252,8 @@ Component({
         needIdentity: state.needIdentity, needReference: state.status === 'reference',
         canUse: !this.data.busy && !state.pendingSave && !state.identityDeferred &&
           !(identitySafety && identitySafety.required) && (previewOnly ? !!state.result && !state.needType && !state.needIdentity && state.status !== 'failed' : missing.every(label => label.startsWith('混合成分：'))),
-        error: previewOnly && !state.result && state.status === 'failed' ? '未识别成功，请重拍或重试' : state.error || '' }, () => {
+        error: isModelQuotaExhausted(state.error) ? MODEL_QUOTA_EXHAUSTED_MESSAGE
+          : previewOnly && !state.result && state.status === 'failed' ? '未识别成功，请重拍或重试' : state.error || '' }, () => {
         // 等缺项提示和提交蒙层更新到界面后，再定位到实际表单项。
         if (scrollTarget && this._pending === state && this.isCurrentState(state) && state.validationField === scrollTarget) {
           this.setData({ scrollToField: 'recognition-field-' + scrollTarget });
@@ -547,9 +550,9 @@ Component({
       const patch = resultPatch(state);
       this.setData({ busy: true });
       try {
-        const images = await uploadFoodImages(state.foodImagePaths, state.prepared.envId, state.foodImageUploads);
+        const images = await uploadFoodImages(retainedFoodPhotos(state), state.prepared.envId, state.foodImageUploads);
         if (this._pending !== state || !this.isCurrentState(state)) return;
-        Object.assign(patch, { images, image: images[Math.max(0, state.foodImagePaths.indexOf(state.coverImagePath))] || '' });
+        Object.assign(patch, { images, image: images[0] || '' });
       } catch (error) {
         if (this._pending === state && this.isCurrentState(state)) { state.error = error.message || '图片保存失败，请重试'; this.renderDialog(); }
         return;
@@ -748,8 +751,8 @@ Component({
         const decisions = buildRows(state).filter(row => !isBlank(row.value))
           .map(row => ({ path: row.path, source: row.source || 'manual', value: row.value }));
         if (state.mode !== 'powder_label') {
-          form.images = await uploadFoodImages(state.foodImagePaths, state.prepared.envId, state.foodImageUploads);
-          form.image = form.images[Math.max(0, state.foodImagePaths.indexOf(state.coverImagePath))] || '';
+          form.images = await uploadFoodImages(retainedFoodPhotos(state), state.prepared.envId, state.foodImageUploads);
+          form.image = form.images[0] || '';
         }
         if (this._pending !== state || !this.isCurrentState(state)) return;
         state.submittedName = form.name;

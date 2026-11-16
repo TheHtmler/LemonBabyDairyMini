@@ -1,10 +1,11 @@
 'use strict';
 
 const { randomUUID } = require('crypto');
-const { MODEL_CATALOG, MODEL_QUOTA_KEY, COLLECTION, readModelQuota, expiresAt } = require('./modelRegistry');
+const { MODEL_QUOTA_KEY, COLLECTION, readModelQuota, readModelConfig, readModelCatalog, expiresAt } = require('./modelRegistry');
 const { queryDiagnostic, diagnosticMessage } = require('./quotaDiagnostics');
 const { queryBailianQuota } = require('./bailianQuotaGateway');
 const SYNC_MESSAGES = {
+  MODEL_LIST_NOT_READY: '模型名单尚未就绪，请先同步模型名单后再刷新额度',
   QUERY_NOT_CONFIGURED: '云端缺少百炼查询授权，请配置 BAILIAN_QUOTA_ACCESS_TOKEN；本机 CLI 登录不能代替云端授权',
   QUERY_CREDENTIAL_INCOMPLETE: '云端续期凭证不完整，请成对配置 BAILIAN_QUOTA_ACCESS_KEY_ID 和 BAILIAN_QUOTA_ACCESS_KEY_SECRET',
   QUERY_TOKEN_FORMAT: '查询令牌格式不正确，请填写原始令牌，不加 Bearer 前缀、引号或换行',
@@ -21,28 +22,35 @@ function queryError(code, diagnostic) {
   return Object.assign(new Error(SYNC_MESSAGES[code]), { code, ...(diagnostic ? { diagnostic } : {}) });
 }
 
-function normalizeQuotaRows(rows) {
-  if (!Array.isArray(rows) || rows.length > MODEL_CATALOG.length) throw queryError('QUERY_INVALID_RESULT');
+function normalizeQuotaRows(rows, allowedModels) {
+  if (!Array.isArray(rows) || !Array.isArray(allowedModels) || rows.length > allowedModels.length) throw queryError('QUERY_INVALID_RESULT');
   const models = {};
   for (const row of rows) {
-    if (!row || !MODEL_CATALOG.some(model => model.code === row.model) || models[row.model] ||
-        !Number.isSafeInteger(row.remaining) || row.remaining < 0 || !Number.isSafeInteger(row.total) ||
-        row.total < row.remaining || !expiresAt(row.expires) || typeof row.autoStop !== 'boolean') {
+    if (!row || !allowedModels.includes(row.model) || models[row.model] ||
+        !['reported', 'not_provided'].includes(row.quotaStatus)) throw queryError('QUERY_INVALID_RESULT');
+    const missing = row.quotaStatus === 'not_provided';
+    if (missing ? row.remaining !== null || row.total !== null :
+      !Number.isSafeInteger(row.remaining) || row.remaining < 0 || !Number.isSafeInteger(row.total) || row.total < row.remaining) {
       throw queryError('QUERY_INVALID_RESULT');
     }
-    models[row.model] = { remaining: row.remaining, total: row.total, expires: row.expires, autoStop: row.autoStop };
+    if (row.expires !== null && !expiresAt(row.expires) || row.autoStop !== null && typeof row.autoStop !== 'boolean') {
+      throw queryError('QUERY_INVALID_RESULT');
+    }
+    models[row.model] = { quotaStatus: missing ? 'not_provided' : 'reported', remaining: row.remaining,
+      total: row.total, expires: row.expires, autoStop: row.autoStop };
   }
   return models;
 }
 
-async function queryFreeQuota(env) {
+async function queryFreeQuota(env, models) {
   try {
-    const rows = await queryBailianQuota(env, MODEL_CATALOG.map(model => model.code));
-    return normalizeQuotaRows(rows);
+    if (!Array.isArray(models) || !models.length) throw queryError('MODEL_LIST_NOT_READY');
+    const rows = await queryBailianQuota(env, models);
+    return normalizeQuotaRows(rows, models);
   } catch (error) {
     const stage = error.stage || 'response';
     if (Object.prototype.hasOwnProperty.call(SYNC_MESSAGES, error.code)) {
-      error.diagnostic = { stage, nodeVersion: process.versions.node, adapter: 'https-v1', reason: error.reason || error.code,
+      error.diagnostic = { ...error.diagnostic, stage, nodeVersion: process.versions.node, adapter: 'https-v1', reason: error.reason || error.code,
         ...(error.httpStatus ? { httpStatus: error.httpStatus } : {}) };
       error.message = SYNC_MESSAGES[error.code];
       throw error;
@@ -81,7 +89,12 @@ async function syncModelQuota(db, env = process.env, { force = false } = {}) {
   if (claim !== 'claimed') return { refreshed: false, status: claim,
     message: claim === 'syncing' ? '额度正在同步，请稍后刷新状态' : '已使用最近同步结果，请稍后再刷新' };
   let models;
-  try { models = await queryFreeQuota(env); }
+  try {
+    const catalog = await readModelCatalog(db);
+    const config = await readModelConfig(db, catalog);
+    const codes = [...new Set(Object.values(config.pools).flat().filter(entry => entry.authorized !== false).map(entry => entry.model))];
+    models = await queryFreeQuota(env, codes);
+  }
   catch (error) {
     const code = Object.prototype.hasOwnProperty.call(SYNC_MESSAGES, error.code) ? error.code : 'QUERY_FAILED';
     const diagnostic = error.diagnostic || { stage: 'query', nodeVersion: process.versions.node, reason: code };

@@ -1,4 +1,5 @@
 const ReportModel = require('./report');
+const { callOriginals } = require('../utils/reportOriginals');
 
 const COLLECTIONS = {
   PRIMARY: 'baby_reports_v2',
@@ -150,6 +151,7 @@ function buildV2ReportDocument({
   indicators,
   reportId = '',
   labName = '',
+  originalImages = [],
   createdAt = new Date(),
   updatedAt = new Date()
 }) {
@@ -167,6 +169,7 @@ function buildV2ReportDocument({
     reportType,
     reportTypeLabel: ReportModel.getReportTypeName(reportType),
     labName: String(labName || '').trim(),
+    originalImages,
     indicators: normalizedIndicators,
     summary,
     archive,
@@ -185,6 +188,7 @@ function buildLegacyReportDocument({
   indicators,
   reportId = '',
   labName = '',
+  originalImages = [],
   createdAt = new Date(),
   updatedAt = new Date()
 }) {
@@ -194,6 +198,7 @@ function buildLegacyReportDocument({
     reportDate: reportDate instanceof Date ? reportDate : new Date(reportDate),
     reportType,
     labName: String(labName || '').trim(),
+    originalImages,
     indicators,
     createdAt,
     updatedAt
@@ -290,7 +295,10 @@ async function getHistoricalRanges(babyUid, reportType) {
       return ranges;
     }
     const indicator = latestReport.indicators[indicatorKey];
-    if (indicator?.minRange && indicator?.maxRange) {
+    // 数值零是有效边界，不能因真值判断在历史回填时丢失。
+    if (indicator && indicator.minRange !== null && indicator.minRange !== undefined
+      && String(indicator.minRange).trim() !== '' && indicator.maxRange !== null
+      && indicator.maxRange !== undefined && String(indicator.maxRange).trim() !== '') {
       ranges[indicatorKey] = {
         minRange: indicator.minRange,
         maxRange: indicator.maxRange
@@ -300,14 +308,19 @@ async function getHistoricalRanges(babyUid, reportType) {
   }, {});
 }
 
-async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, reportType, labName = '', indicators }) {
+async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, reportType, labName = '', indicators, originalImages }) {
   const db = getDb();
   const normalizedDate = reportDate instanceof Date ? reportDate : new Date(reportDate);
 
   if (mode === 'edit' && reportId) {
     const existing = await getReportById(reportId);
+    if (!existing || existing.babyUid !== babyUid) throw new Error('报告与当前宝宝不匹配，请重新打开');
+    // 当前表单只追加附件；保留其他成员在表单打开后已追加的原图。
+    const retainedImages = [...new Set([...(existing.originalImages || []), ...(originalImages || [])])];
+    if (retainedImages.length > 6) throw new Error('原报告最多保存6张，请重新打开后核对');
     if (existing?.sourceCollection === COLLECTIONS.LEGACY) {
       const legacyPayload = buildLegacyReportDocument({
+        originalImages: retainedImages,
         babyUid,
         reportDate: normalizedDate,
         reportType,
@@ -326,6 +339,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
     }
 
     const v2Payload = buildV2ReportDocument({
+      originalImages: retainedImages,
       babyUid,
       reportDate: normalizedDate,
       reportType,
@@ -344,6 +358,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
   }
 
   const v2Payload = buildV2ReportDocument({
+    originalImages: originalImages || [],
     babyUid,
     reportDate: normalizedDate,
     reportType,
@@ -361,6 +376,7 @@ async function saveReport({ mode = 'add', reportId = '', babyUid, reportDate, re
     }
 
     const legacyPayload = buildLegacyReportDocument({
+      originalImages: originalImages || [],
       babyUid,
       reportDate: normalizedDate,
       reportType,
@@ -381,6 +397,10 @@ async function deleteReport(reportId) {
   }
 
   const db = getDb();
+  if (existing.originalImages?.length) {
+    return callOriginals({ action: 'deleteReportWithOriginals', babyUid: existing.babyUid,
+      reportId, collection: existing.sourceCollection });
+  }
   return db.collection(existing.sourceCollection).doc(reportId).remove();
 }
 

@@ -1,5 +1,5 @@
 const cloud = require('wx-server-sdk');
-const { NUTRITION_QUOTA_KEY, isDailyLimit, readNutritionQuota } = require('./lib/ai/nutritionQuota');
+const { NUTRITION_QUOTA_KEY, REPORT_QUOTA_KEY, isDailyLimit, readNutritionQuota, readReportQuota } = require('./lib/ai/nutritionQuota');
 const { getModelAdminView, saveModelConfig } = require('./lib/ai/modelRegistry');
 const { syncModelQuota } = require('./lib/ai/quotaSync');
 const SEARCH_SCAN_KEYS = ['home_search_enabled', 'ai_search_enabled', 'nutrition_scan_enabled'];
@@ -131,20 +131,23 @@ async function updateReportOcrAccessConfig(event = {}, operatorOpenid = '') {
   return await getReportOcrAccessConfig();
 }
 
-async function updateNutritionQuota(event, operatorOpenid) {
+async function updateDailyQuota(event, operatorOpenid, scene) {
   if (!isDailyLimit(event.dailyLimit) || !Number.isSafeInteger(event.expectedVersion) || event.expectedVersion < 0) {
     throw Object.assign(new Error('每日识别次数须为 0～10000 的整数'), { code: 'INVALID_INPUT' });
   }
+  const { key, read } = scene === 'report'
+    ? { key: REPORT_QUOTA_KEY, read: readReportQuota }
+    : { key: NUTRITION_QUOTA_KEY, read: readNutritionQuota };
   return db.runTransaction(async transaction => {
-    const current = await readNutritionQuota(transaction);
+    const current = await read(transaction);
     // 网络中断后再次保存相同目标值，可直接确认上次保存结果。
     if (current.configured && current.dailyLimit === event.dailyLimit) return current;
     if (current.version !== event.expectedVersion) {
       throw Object.assign(new Error('配置已被其他管理员更新，请重新加载后再保存'), { code: 'CONFIG_CONFLICT' });
     }
     const version = current.version + 1;
-    await transaction.collection(FEATURE_FLAG_COLLECTION).doc(NUTRITION_QUOTA_KEY).set({
-      data: { key: NUTRITION_QUOTA_KEY, dailyLimit: event.dailyLimit, version,
+    await transaction.collection(FEATURE_FLAG_COLLECTION).doc(key).set({
+      data: { key, dailyLimit: event.dailyLimit, version,
         updatedAt: db.serverDate(), updatedBy: operatorOpenid }
     });
     return { dailyLimit: event.dailyLimit, version, configured: true };
@@ -174,20 +177,22 @@ exports.main = async (event = {}) => {
       return { ok: false, code: 'NO_PERMISSION', message: '无权限配置实验功能' };
     }
 
-    if (['getAiModelConfig', 'updateAiModelConfig', 'refreshAiModelQuota'].includes(action)) {
+    if (['getAiModelConfig', 'updateAiModelConfig', 'refreshAiModelQuota', 'refreshAiModelCatalog'].includes(action)) {
       // AI 共享模块统一使用 CloudBase 的直接文档接口，其他开关沿用微信 SDK。
       const env = cloud.getWXContext().ENV || process.env.TCB_ENV || process.env.SCF_NAMESPACE;
       if (!env) throw Object.assign(new Error('无法确定当前云环境'), { code: 'CONFIG_MISSING' });
       const modelDb = require('@cloudbase/node-sdk').init({ env }).database();
+      const catalogSync = ['getAiModelConfig', 'refreshAiModelCatalog'].includes(action)
+        ? await require('./lib/ai/modelCatalogSync').syncModelCatalog(modelDb, process.env, { force: action === 'refreshAiModelCatalog' }) : null;
       if (action === 'updateAiModelConfig') {
         await saveModelConfig(modelDb, event.config && { ...event.config, expectedVersion: event.expectedVersion }, OPENID);
       }
       const sync = action === 'refreshAiModelQuota' ? await syncModelQuota(modelDb, process.env, { force: true }) : null;
-      return { ok: true, ...(sync ? { sync } : {}), view: await getModelAdminView(modelDb) };
+      return { ok: true, ...(sync ? { sync } : {}), ...(catalogSync ? { catalogSync } : {}), view: await getModelAdminView(modelDb) };
     }
 
-    if (action === 'updateNutritionQuota') {
-      return { ok: true, config: await updateNutritionQuota(event, OPENID) };
+    if (action === 'updateNutritionQuota' || action === 'updateReportQuota') {
+      return { ok: true, config: await updateDailyQuota(event, OPENID, action === 'updateReportQuota' ? 'report' : 'scan') };
     }
     if (action === 'getReportOcrAccessConfig') {
       return {

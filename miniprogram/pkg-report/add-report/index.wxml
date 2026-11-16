@@ -7,7 +7,7 @@
 
   <view wx:else class="content">
     <view class="report-meta-bar">
-      <picker mode="date" value="{{reportDate}}" bindchange="onDateChange" class="meta-picker">
+      <picker mode="date" value="{{reportDate}}" bindchange="onDateChange" class="meta-picker" disabled="{{saving}}">
         <view class="meta-card meta-card--tappable">
           <text class="meta-label">检测日期</text>
           <view class="meta-picker-content">
@@ -25,11 +25,15 @@
     <view wx:if="{{ocrEntryVisible}}" class="ocr-entry {{ocrRecognizing ? 'recognizing' : ''}}" bindtap="onRecognizeReportPhoto">
       <text class="ocr-entry-icon">📷</text>
       <view class="ocr-entry-copy">
-        <text class="ocr-entry-title">{{ocrRecognizing ? '识别中…' : '拍照识别填指标'}}</text>
+        <text class="ocr-entry-title">{{ocrRecognizing ? '正在打开…' : '拍照或多选报告'}}</text>
         <text class="ocr-entry-desc">{{ocrEntryHint}}</text>
       </view>
     </view>
 
+    <view wx:if="{{originalPhotos.length || originalImages.length}}" class="originals-summary">
+      <text>{{originalPhotos.length ? '随报告保存 ' + originalPhotos.length + ' 张原图' : ''}}{{originalPhotos.length && originalImages.length ? '，' : ''}}{{originalImages.length ? '已保留 ' + originalImages.length + ' 张原图' : ''}}</text>
+      <button wx:if="{{originalPhotos.length}}" class="originals-discard" bindtap="onDiscardOriginalPhotos" disabled="{{saving}}">不保存新原图</button>
+    </view>
     <view class="filled-progress">
       <text>已填 {{filledCount}} / 共 {{totalCount}}</text>
     </view>
@@ -39,7 +43,8 @@
         wx:for="{{currentIndicators}}"
         wx:key="key"
         wx:for-item="indicator"
-        class="indicator-row {{indicatorData[indicator.key].ocrPending ? 'pending-ocr' : ''}}"
+        id="indicator-{{indicator.key}}"
+        class="indicator-row {{indicatorData[indicator.key].ocrPending ? 'pending-ocr' : ''}} {{focusedMetricKey === indicator.key ? 'focused-indicator' : ''}}"
       >
         <view class="indicator-row-top">
           <view class="indicator-meta">
@@ -47,6 +52,7 @@
               <text class="indicator-name">{{indicator.name}}</text>
               <text class="indicator-abbr">{{indicator.abbr}}</text>
               <text wx:if="{{!indicator.optional && !indicator.isRatio}}" class="required-mark">*</text>
+              <text wx:if="{{focusedMetricKey === indicator.key}}" class="focused-indicator-tag">已定位</text>
               <text
                 wx:if="{{indicatorData[indicator.key].ocrPending}}"
                 class="ocr-pending-tag"
@@ -72,13 +78,14 @@
               data-field="value"
               bindinput="onIndicatorValueInput"
               bindblur="onIndicatorValueBlur"
+              disabled="{{saving}}"
             />
           </view>
 
           <block wx:if="{{!indicator.isRatio || indicator.allowRangeInput}}">
             <view class="compact-cell">
               <view class="compact-label-row">
-                <text class="compact-label">最小值</text>
+                <text class="compact-label">参考下限</text>
               </view>
               <input
                 class="compact-input"
@@ -89,11 +96,12 @@
                 data-field="minRange"
                 bindinput="onIndicatorValueInput"
                 bindblur="onIndicatorValueBlur"
+                disabled="{{saving}}"
               />
             </view>
             <view class="compact-cell">
               <view class="compact-label-row">
-                <text class="compact-label">最大值</text>
+                <text class="compact-label">参考上限</text>
               </view>
               <input
                 class="compact-input"
@@ -104,16 +112,28 @@
                 data-field="maxRange"
                 bindinput="onIndicatorValueInput"
                 bindblur="onIndicatorValueBlur"
+                disabled="{{saving}}"
               />
             </view>
           </block>
         </view>
 
+        <view wx:if="{{indicatorData[indicator.key].rangePending}}" class="range-review">
+          <text class="range-review-note">参考范围待核对 · 初始值来自历史报告</text>
+          <button
+            class="range-confirm-button"
+            catchtap="onConfirmRangeIndicator"
+            data-indicator="{{indicator.key}}"
+            disabled="{{saving}}"
+          >已核对</button>
+        </view>
+
         <view wx:if="{{indicatorData[indicator.key].optimalRange}}" class="optimal-range">
-          <text class="optimal-label">最优范围</text>
+          <text class="optimal-label">项目计算范围</text>
           <text class="optimal-value">
             {{indicatorData[indicator.key].optimalRange.min}} - {{indicatorData[indicator.key].optimalRange.max}}
           </text>
+          <text class="optimal-note">沿用项目既有规则：从参考下限起取区间宽度的 25%，不代表临床目标。</text>
         </view>
       </view>
     </view>
@@ -124,7 +144,10 @@
       <text class="disclaimer-text">仅用于记录检测结果，不能替代医生解读。</text>
     </view>
     <view class="save-section">
-      <button class="save-button" bindtap="onSaveReport" disabled="{{saving}}">
+      <button wx:if="{{saveSucceeded}}" class="save-button" bindtap="returnAfterSave">
+        <text class="save-text">已保存，返回</text>
+      </button>
+      <button wx:else class="save-button" bindtap="onSaveReport" disabled="{{saving || loading}}">
         <text class="save-text">{{saving ? '保存中...' : '保存报告'}}</text>
       </button>
     </view>

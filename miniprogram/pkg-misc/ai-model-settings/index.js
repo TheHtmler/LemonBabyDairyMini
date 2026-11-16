@@ -14,7 +14,7 @@ Page({
     hasAccess: false, loading: true, busy: false, ready: false, dirty: false,
     scene: 'search', enabled: false, rows: [], errorText: '',
     queryConfigured: false, renewalConfigured: false, actual: '', actualTime: '', switchReason: '',
-    operation: '', detailsExpanded: false, summary: {}, quotaFeedback: {}, saveBlocked: false, saveHint: '', summaryLabel: ''
+    operation: '', detailsExpanded: false, summary: {}, quotaFeedback: {}, catalogFeedback: {}, saveBlocked: false, saveHint: '', summaryLabel: ''
   },
 
   async onLoad() {
@@ -68,7 +68,7 @@ Page({
 
   applyView(view, keepDraft = false) {
     if (!view || !view.config || !view.quota || !view.pools || !view.config.pools ||
-        !Number.isSafeInteger(view.config.version) || !['search', 'scan'].every(scene =>
+        !Number.isSafeInteger(view.config.version) || !['search', 'scan', 'report'].every(scene =>
           Array.isArray(view.config.pools[scene]) && Array.isArray(view.pools[scene]))) {
       throw new Error('模型配置返回格式无效，请更新云函数后重试');
     }
@@ -81,8 +81,21 @@ Page({
       this._draft = JSON.parse(JSON.stringify({ enabled: view.config.enabled, pools: view.config.pools }));
       this._version = view.config.version;
       this.setData({ dirty: false, errorText: '' });
-    } else if (view.config.version !== this._version) {
-      this.setData({ errorText: '云端配置已有更新；当前修改仍保留，保存前请重新加载并调整' });
+    } else {
+      // 刷新目录时保留本地选择和排序，只更新授权状态并补入新发现的停用模型。
+      for (const scene of ['search', 'scan', 'report']) {
+        const sources = new Map(view.config.pools[scene].map(entry => [entry.model, entry]));
+        this._draft.pools[scene] = this._draft.pools[scene].map(entry => ({
+          ...entry, authorized: sources.get(entry.model)?.authorized ?? false
+        }));
+        const seen = new Set(this._draft.pools[scene].map(entry => entry.model));
+        for (const entry of view.config.pools[scene]) {
+          if (!seen.has(entry.model)) this._draft.pools[scene].push({ ...entry, enabled: false, verified: false });
+        }
+      }
+      if (view.config.version !== this._version) {
+        this.setData({ errorText: '云端配置已有更新；当前修改仍保留，保存前请重新加载并调整' });
+      }
     }
     this.setData({ ready: true, queryConfigured: view.queryConfigured, renewalConfigured: view.renewalConfigured });
     this.renderView();
@@ -121,7 +134,7 @@ Page({
   onReload() { return this.loadConfig(false, true); },
   onSceneTap(event) {
     const scene = event.currentTarget.dataset.scene;
-    if (!['search', 'scan'].includes(scene) || this.data.busy) return;
+    if (!['search', 'scan', 'report'].includes(scene) || this.data.busy) return;
     this.setData({ scene }); this.renderView();
   },
   canEdit() { return this.isCurrentAccount() && this.data.ready && !this.data.busy && !this.data.loading; },
@@ -137,6 +150,8 @@ Page({
     const scene = this.data.scene;
     let entry = this._draft.pools[scene].find(row => row.model === model);
     if (!entry) return;
+    if (this._view.pools[scene].some(row => row.model === model && row.blocked)) return;
+    if (entry.authorized === false && !entry.enabled) return;
     if (!entry.enabled && !entry.verified) {
       // 合并启用与核验操作；只有管理员明确确认才记录新模型已核验。
       ++this._requestEpoch;
@@ -173,6 +188,27 @@ Page({
     if (![-1, 1].includes(offset) || index < 0 || index + offset < 0 || index + offset >= rows.length) return;
     [rows[index], rows[index + offset]] = [rows[index + offset], rows[index]];
     this.setData({ dirty: true }); this.renderView();
+  },
+
+  async onRefreshModels() {
+    if (!this.canEdit()) return;
+    const epoch = ++this._requestEpoch;
+    this.setData({ busy: true, operation: 'catalog', errorText: '' });
+    try {
+      const result = await this.callApi('refreshAiModelCatalog');
+      if (!this.isCurrentAccount() || epoch !== this._requestEpoch) return;
+      this.applyView(result.view, this.data.dirty);
+      const sync = result.catalogSync || {};
+      const failed = result.view.catalog?.syncError;
+      if (failed) this.setData({ errorText: failed });
+      wx.showToast({ title: failed ? '模型名单同步失败' : sync.refreshed ? '模型名单已同步'
+        : sync.status === 'syncing' ? '模型名单同步中' : '已读取最近名单', icon: 'none' });
+    } catch (error) {
+      if (this.isCurrentAccount() && epoch === this._requestEpoch) {
+        if (error.code === 'NO_PERMISSION') this.setData({ hasAccess: false, ready: false });
+        else this.setData({ errorText: error.message || '模型名单同步失败' });
+      }
+    } finally { if (this.isCurrentAccount() && epoch === this._requestEpoch) this.setData({ busy: false, operation: '' }); }
   },
 
   async onRefreshQuota() {

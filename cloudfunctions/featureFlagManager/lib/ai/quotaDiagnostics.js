@@ -19,7 +19,7 @@ function queryDiagnostic(error, stage) {
 
 function diagnosticMessage(message, diagnostic) {
   if (!diagnostic) return message;
-  return message + '（诊断：' + [diagnostic.reason, 'Node ' + diagnostic.nodeVersion].filter(Boolean).join('；') + '）';
+  return message + '（诊断：' + [diagnostic.reason, diagnostic.model, diagnostic.field, 'Node ' + diagnostic.nodeVersion].filter(Boolean).join('；') + '）';
 }
 
 module.exports = { queryDiagnostic, diagnosticMessage };

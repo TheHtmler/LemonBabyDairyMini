@@ -4,6 +4,12 @@ const path = require('path');
 const { staticJsDependencies } = require('./lib/static-js-dependencies');
 const root = path.resolve(__dirname, '..');
 const check = process.argv.includes('--check');
+const { REPORT_OCR_TIMING } = require('../miniprogram/constants/reportTypes');
+if (REPORT_OCR_TIMING.modelMs + REPORT_OCR_TIMING.finalizeMs >= REPORT_OCR_TIMING.functionMs
+  || REPORT_OCR_TIMING.functionMs >= REPORT_OCR_TIMING.clientMs
+  || REPORT_OCR_TIMING.clientMs >= REPORT_OCR_TIMING.leaseMs) throw new Error('报告识别时间预算缺少收尾或前后端等待余量');
+const reportFunctionConfig = JSON.parse(fs.readFileSync(path.join(root, 'cloudfunctions/recognizeReportCustom/config.json'), 'utf8'));
+if (reportFunctionConfig.timeout * 1000 !== REPORT_OCR_TIMING.functionMs) throw new Error('报告云函数执行超时与共享识别预算不一致');
 const outputs = new Map();
 function writeGenerated(relative, body) {
   const target = path.join(root, relative);
@@ -30,7 +36,22 @@ for (const file of ['recipeProtein.js', 'proteinComposition.js']) {
 }
 writeGenerated('cloudfunctions/rebuildDailySummaryV2/lib/nutritionProvenance.js', fs.readFileSync(path.join(root, 'miniprogram/utils/nutritionProvenance.js'), 'utf8'));
 writeGenerated('cloudfunctions/searchManager/lib/config/milkCategoryTags.js', fs.readFileSync(path.join(root, 'miniprogram/config/milkCategoryTags.js'), 'utf8'));
-if (fs.existsSync(path.join(root, 'packages/ai-access-core'))) copy('packages/ai-access-core', ['cloudfunctions/searchManager/lib/ai', 'cloudfunctions/recognizeNutritionLabel/lib/ai', 'cloudfunctions/featureFlagManager/lib/ai', 'cloudfunctions/syncAiModelQuota/lib/ai']);
+if (fs.existsSync(path.join(root, 'packages/ai-access-core'))) copy('packages/ai-access-core', ['cloudfunctions/searchManager/lib/ai', 'cloudfunctions/recognizeNutritionLabel/lib/ai', 'cloudfunctions/featureFlagManager/lib/ai', 'cloudfunctions/syncAiModelQuota/lib/ai', 'cloudfunctions/recognizeReportCustom/lib/ai']);
+// 识别额度的用户文案与错误分类在前端、独立云函数之间保持同源。
+writeGenerated('miniprogram/utils/recognitionErrors.js', fs.readFileSync(path.join(root, 'packages/ai-access-core/recognitionErrors.js')));
+writeGenerated('cloudfunctions/recognizeReportCustom/lib/config/reportTypes.js', fs.readFileSync(path.join(root, 'miniprogram/constants/reportTypes.js')));
+// 模型目标名单、云端名称校验与前端解析使用同一份纯规则，避免三处词典漂移。
+writeGenerated('cloudfunctions/recognizeReportCustom/lib/report/reportNumeric.js', fs.readFileSync(path.join(root, 'miniprogram/utils/reportNumeric.js')));
+writeGenerated('cloudfunctions/recognizeReportCustom/lib/report/reportUnits.js', fs.readFileSync(path.join(root, 'miniprogram/utils/reportUnits.js')));
+writeGenerated('cloudfunctions/recognizeReportCustom/lib/report/reportReferenceRange.js', fs.readFileSync(path.join(root, 'miniprogram/utils/reportReferenceRange.js')));
+writeGenerated('cloudfunctions/recognizeReportCustom/lib/report/reportModel.js', fs.readFileSync(path.join(root, 'miniprogram/models/report.js'), 'utf8')
+  .replace(/require\('\.\.\/utils\/reportNumeric'\)/g, "require('./reportNumeric')"));
+for (const file of ['reportIndicatorLexicon.js', 'reportRecognitionRules.js']) {
+  const source = fs.readFileSync(path.join(root, 'miniprogram/pkg-report/utils', file), 'utf8')
+    .replace(/require\('\.\.\/\.\.\/models\/report'\)/g, "require('./reportModel')")
+    .replace(/require\('\.\.\/\.\.\/utils\/reportUnits'\)/g, "require('./reportUnits')");
+  writeGenerated('cloudfunctions/recognizeReportCustom/lib/report/' + file, source);
+}
 // 全部生成内容先校验；依赖优先落盘，避免调用方先更新而依赖尚未生成。
 const ordered = [];
 const visited = new Set();

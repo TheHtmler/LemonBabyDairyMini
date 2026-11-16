@@ -1,9 +1,3 @@
-const MODEL_LABELS = {
-  'qwen3.8-max-0902': 'Qwen3.8 Max · 0902', 'qwen3.8-max': 'Qwen3.8 Max',
-  'qwen3.7-max': 'Qwen3.7 Max', 'qwen3.7-max-2026-05-20': 'Qwen3.7 Max · 0520',
-  'qwen3.7-plus-2026-05-26': 'Qwen3.7 Plus · 0526',
-  'qwen3.5-122b-a10b': 'Qwen3.5 122B', 'qwen3.7-plus': 'Qwen3.7 Plus'
-};
 const SYNC_TITLES = {
   QUERY_NOT_CONFIGURED: '云端查询授权未配置', QUERY_CREDENTIAL_INCOMPLETE: '云端续期凭证不完整',
   QUERY_TOKEN_FORMAT: '云端查询令牌格式错误',
@@ -24,9 +18,10 @@ function formatTokens(value) {
 }
 
 function rowState(entry, source) {
+  if (source.authorized === false) return { code: 'UNAUTHORIZED', text: '已撤销授权或不支持当前场景' };
+  if (source.blocked) return { code: 'BLOCKED', text: '免费额度已用完或到期，已自动停用' };
   if (!entry.enabled) return { code: 'DISABLED', text: '未启用' };
   if (!entry.verified) return { code: 'UNVERIFIED', text: '业务效果待核验' };
-  if (source.blocked) return { code: 'BLOCKED', text: '调用已确认免费额度不可用' };
   return { code: 'READY', text: '已加入调用顺序' };
 }
 
@@ -51,23 +46,33 @@ function buildSettingsPresentation(view, draft, scene, now, dirty) {
   const maxAge = (view.quotaMaxAgeMinutes || 15) * 60000;
   const fresh = Number.isSafeInteger(quota.checkedAt) && quota.checkedAt > 0 && now >= quota.checkedAt && now - quota.checkedAt < maxAge;
   const pools = {};
-  for (const key of ['search', 'scan']) {
+  for (const key of ['search', 'scan', 'report']) {
     const sources = Object.fromEntries(view.pools[key].map(entry => [entry.model, entry]));
     pools[key] = draft.pools[key].map((entry, index, entries) => {
       const source = sources[entry.model] || {};
       const state = rowState(entry, source);
-      return { ...entry, title: MODEL_LABELS[entry.model] || entry.model, reason: state.text, reasonCode: state.code,
+      return { ...entry, enabled: entry.enabled && !source.blocked, blocked: !!source.blocked,
+        authorized: source.authorized !== false, title: source.name || entry.model, reason: state.text, reasonCode: state.code,
         available: state.code === 'READY', first: index === 0, last: index === entries.length - 1, number: index + 1,
-        remainingText: formatTokens(source.remaining), expiresText: source.expires || '',
-        protectionText: source.autoStop === true ? '已开启' : source.autoStop === false ? '未开启' : '待查询' };
+        remainingText: source.quotaStatus === 'not_provided' ? '未返回免费额度' : formatTokens(source.remaining),
+        expiresText: source.expires ? source.expires + ' 到期' : source.quotaStatus === 'reported' ? '有效期未提供' : '',
+        protectionText: source.autoStop === true ? '已开启' : source.autoStop === false ? '未开启' : source.autoStop === null ? '未提供' : '待查询' };
     });
   }
   const rows = pools[scene];
   const selected = rows.filter(entry => entry.enabled);
   const available = rows.filter(entry => entry.available);
   const quotaFeedback = quotaStatus(view, fresh);
+  const catalog = view.catalog || {};
+  const catalogFeedback = catalog.syncError ? { title: '模型名单同步失败', detail: catalog.syncError, tone: 'error' }
+    : catalog.syncing ? { title: '模型名单正在同步', detail: '同步完成后更新可选模型。', tone: 'muted' }
+      : catalog.checkedAt ? { title: '已同步千问授权模型', detail: '更新时间 ' + timeText(catalog.checkedAt) + '（北京时间）', tone: 'muted' }
+        : { title: '模型名单尚未同步', detail: '同步后显示当前业务空间已授权且支持本场景的模型。', tone: 'muted' };
   let summary;
-  if (!view.config.configured && !dirty) summary = {
+  if (scene === 'report' && !view.config.configured && !dirty) summary = {
+    title: '报告模型尚未启用', detail: '同步模型名单后，启用适用的 OCR 模型并保存。', tone: 'warning'
+  };
+  else if (!view.config.configured && !dirty) summary = {
     title: '沿用原有配置', detail: '调整模型后，保存即可生效。', tone: 'muted'
   };
   else if (!draft.enabled) summary = { title: 'AI 服务已关闭', detail: '关闭后暂停新的搜索理解与识别请求。', tone: 'muted' };
@@ -79,7 +84,7 @@ function buildSettingsPresentation(view, draft, scene, now, dirty) {
     '按顺序调用 ' + available.length + ' 个模型，接口确认免费额度不可用时自动切换。' : '当前有 1 个待调用模型，可继续添加备用。', tone: 'ready' };
   const selectedAnywhere = Object.values(pools).some(entries => entries.some(entry => entry.enabled));
   const saveBlocked = draft.enabled && !selectedAnywhere;
-  return { rows, summary, quotaFeedback, fresh, saveBlocked,
+  return { rows, summary, quotaFeedback, catalogFeedback, fresh, saveBlocked,
     saveHint: saveBlocked ? '请至少启用一个模型' : dirty ? '有修改待保存' : '暂无未保存的修改',
     summaryLabel: dirty ? '保存后预览' : '当前配置' };
 }

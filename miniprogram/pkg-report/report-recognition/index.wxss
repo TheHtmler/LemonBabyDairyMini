@@ -1,0 +1,42 @@
+page { background: #faf6ed; color: #283b32; font-size: 26rpx; }
+.recognition-page { box-sizing: border-box; padding: 20rpx 24rpx calc(148rpx + env(safe-area-inset-bottom)); }
+.recognition-page button { box-sizing: border-box; margin: 0; padding: 0; font-size: 26rpx; line-height: 1.4; border-radius: 8rpx; }
+.recognition-page button::after { border: 0; }
+.recognition-page button[disabled] { opacity: .45; }
+.photo-scroll { width: 100%; white-space: nowrap; }
+.photo-list { display: inline-flex; gap: 12rpx; padding: 4rpx 0 16rpx; }
+.recognition-page .photo-button, .recognition-page .photo-add { position: relative; flex: 0 0 136rpx; width: 136rpx; height: 168rpx; overflow: hidden; background: #f0f1e6; }
+.recognition-page .photo-button { border: 1rpx solid #d5dccf; }
+.report-photo { display: block; width: 100%; height: 100%; }
+.recognition-page .photo-add { display: flex; align-items: center; justify-content: center; border: 1rpx dashed #a8bba1; font-size: 44rpx; color: #376c55; background: transparent; }
+.recognition-page .photo-failed { border-color: #a54737; }
+.photo-failure { position: absolute; left: 0; right: 0; bottom: 0; padding: 6rpx 0; background: #a54737; color: #fffdf8; text-align: center; font-size: 22rpx; }
+.result-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20rpx; padding: 16rpx 0; }
+.result-title { min-width: 0; font-size: 28rpx; font-weight: 600; }
+.result-count { display: flex; align-items: center; gap: 12rpx; flex-shrink: 0; color: #5f6d5c; font-size: 23rpx; }
+.loading-spinner { width: 24rpx; height: 24rpx; box-sizing: border-box; border: 3rpx solid #d5dccf; border-top-color: #376c55; border-radius: 50%; animation: report-loading-spin .9s linear infinite; }
+.loading-table { border-top: 1rpx solid #d5dccf; }
+.loading-row { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; height: 76rpx; box-sizing: border-box; padding: 12rpx; border-bottom: 1rpx solid #e0e5d9; }
+.loading-cell { height: 18rpx; border-radius: 4rpx; background: #e2e7d9; }
+.loading-name { width: 36%; }
+.loading-value { width: 16%; margin-left: auto; }
+.loading-range { width: 25%; }
+@keyframes report-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading-spinner { animation: none; } }
+.notice { display: block; margin: 8rpx 0 16rpx; font-size: 23rpx; line-height: 1.6; color: #a54737; overflow-wrap: anywhere; }
+.result-table { background: #fffdf8; border-top: 1rpx solid #cbd4c5; }
+.result-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .8fr) minmax(0, 1fr); align-items: center; gap: 12rpx; min-height: 76rpx; box-sizing: border-box; border-bottom: 1rpx solid #e0e5d9; padding: 12rpx; line-height: 1.5; }
+.source-note { display: block; font-size: 21rpx; color: #63716b; overflow-wrap: anywhere; }
+.row-evidence { grid-column: 1 / -1; padding-top: 8rpx; border-top: 1rpx dashed #d5dccf; }
+.table-head { background: #f2f3e9; color: #5f6d5c; font-size: 23rpx; }
+.metric-name { flex: 1 1 42%; min-width: 0; overflow-wrap: break-word; }
+.metric-result { flex: 0 1 26%; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.metric-range { flex: 0 1 32%; min-width: 0; text-align: right; color: #5f6d5c; font-size: 23rpx; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.high, .low, .review-row .metric-result { color: #a54737; }
+.unknown { color: #78602c; }
+.empty-note { display: block; padding: 24rpx 0; color: #5f6d5c; font-size: 24rpx; line-height: 1.6; }
+.action-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 16rpx; padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom)); background: #faf6ed; border-top: 1rpx solid #d5dccf; }
+.action-bar button { display: flex; align-items: center; justify-content: center; min-height: 88rpx; padding: 18rpx 20rpx; }
+.retake-button { flex: 0 0 32%; background: #fffdf8; color: #376c55; border: 1rpx solid #a8bba1; }
+.confirm-button { flex: 1; background: #f3cf64; color: #3c351c; font-weight: 500; }
+.originals-option { display: flex; align-items: center; justify-content: space-between; padding: 20rpx 0; font-size: 26rpx; color: #63716b; }

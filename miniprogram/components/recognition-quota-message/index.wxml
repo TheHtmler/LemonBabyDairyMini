@@ -1,0 +1,1 @@
+<view class="quota-message"><text>{{prefix}}</text><navigator class="feedback-link" url="/pkg-misc/feedback/index" open-type="navigate" hover-class="feedback-link-hover">{{feedbackLabel}}</navigator><text>{{suffix}}</text></view>

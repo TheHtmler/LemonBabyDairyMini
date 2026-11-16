@@ -1,0 +1,16 @@
+{
+  "Rules": [
+    {
+      "ID": "expire-report-recognition-temp",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "custom_ocr_temp/" },
+      "Expiration": { "Days": 1 }
+    },
+    {
+      "ID": "expire-nutrition-recognition-temp",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "nutrition_recognition/" },
+      "Expiration": { "Days": 2 }
+    }
+  ]
+}

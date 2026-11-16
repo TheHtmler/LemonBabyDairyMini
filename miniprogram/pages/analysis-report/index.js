@@ -1,5 +1,5 @@
 const ReportRepository = require('../../models/reportRepository');
-const NutritionModel = require('../../models/nutrition');
+const { buildComparisonExportDocument, showReportExport, cancelReportExport } = require('../../utils/reportExport');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
 const {
@@ -19,17 +19,25 @@ const TYPE_TABS = [
   { key: 'blood_ammonia', label: '血氨' }
 ];
 const currentBaby = () => getApp().globalData.babyInfo;
+const METRIC_FILTERS = [
+  { key: 'all', label: '全部指标' }, { key: 'focus', label: '重点指标' },
+  { key: 'abnormal', label: '超范围' }, { key: 'pending', label: '待核对' }
+];
 
 Page({
   data: {
-    mainTab: 'archive', loading: true, loadError: '', babyInfo: null,
-    reportsCache: [], nutritionSettings: {}, dailySummariesCache: [],
+    mainTab: 'archive', loading: true, loadError: '', babyInfo: null, exporting: false,
+    reportsCache: [], dailySummariesCache: [],
     selectedFilterType: 'all', reportTypeTabs: [], archiveReportCards: [], reportYearGroups: [],
-    compareTypeTabs: TYPE_TABS, compareReportType: '', compareReportOptions: [],
+    archiveTypeIndex: 0, archiveTypeLabel: '全部报告',
+    compareTypeTabs: TYPE_TABS, compareTypeIndex: 0, compareTypeLabel: '', compareReportType: '', compareReportOptions: [],
     compareReportIds: [], compareBaselineId: '',
-    reportChooserVisible: false, reportChoiceOptions: [], draftReportIds: [],
-    compareSelectedMetricKeys: [], compareFilterVisible: false,
-    compareFocusOnly: false,
+    reportChooserVisible: false, reportChoiceOptions: [], draftReportIds: [], reportSearch: '',
+    compareSelectedMetricKeys: [], compareMetricMode: 'all',
+    metricPickerVisible: false, metricPickerStage: 'mode', metricFilterOptions: METRIC_FILTERS,
+    compareMetricLabel: '全部指标', metricChoiceOptions: [], draftMetricKeys: [], metricSearch: '',
+    metricDetail: null, compareScrollLeft: 0, compareScrollTarget: 0,
+    compareAtEnd: false, compareScrollOffsetPercent: 0,
     compareDietVisible: false, compareDietLoading: false, compareDietError: '',
     currentCompareView: null, typePickerVisible: false, reportEntryTypes: REPORT_ENTRY_TYPES
   },
@@ -43,11 +51,13 @@ Page({
   },
 
   onUnload() {
+    cancelReportExport(this);
+    this._exportDisposed = true;
     this._requestId = (this._requestId || 0) + 1;
     this._dietRequestId = (this._dietRequestId || 0) + 1;
   },
 
-  onHide() { this.closeCompareDiet(); this.closeReportChooser(); },
+  onHide() { cancelReportExport(this); this.closeCompareDiet(); this.closeReportChooser(); this.closeMetricPicker(); this.closeMetricDetail(); },
 
   onPullDownRefresh() {
     this.loadReportData({ force: true }).finally(() => wx.stopPullDownRefresh());
@@ -64,7 +74,9 @@ Page({
       this.setData({ babyInfo: null, loading: false, loadError: '请先完善宝宝信息',
         reportsCache: [], archiveReportCards: [], reportYearGroups: [], currentCompareView: null, reportTypeTabs: [],
         compareReportOptions: [], compareReportIds: [], compareBaselineId: '', compareReportType: '',
-        compareSelectedMetricKeys: [], compareDietVisible: false, reportChooserVisible: false, reportChoiceOptions: [], draftReportIds: [],
+        compareSelectedMetricKeys: [], compareMetricMode: 'all', compareDietVisible: false,
+        reportChooserVisible: false, reportChoiceOptions: [], draftReportIds: [],
+        metricPickerVisible: false, metricDetail: null, metricChoiceOptions: [], draftMetricKeys: [],
         selectedFilterType: 'all', mainTab: 'archive', typePickerVisible: false });
       return;
     }
@@ -74,8 +86,11 @@ Page({
       this._loadedAt = 0;
       this.setData({ babyInfo, reportsCache: [], archiveReportCards: [], reportYearGroups: [], currentCompareView: null,
         compareReportIds: [], compareBaselineId: '', compareReportType: '', selectedFilterType: 'all',
-        compareSelectedMetricKeys: [], compareDietVisible: false, reportChooserVisible: false, reportChoiceOptions: [], draftReportIds: [],
-        compareFilterVisible: false, mainTab: 'archive' });
+        compareSelectedMetricKeys: [], compareMetricMode: 'all', compareDietVisible: false,
+        reportChooserVisible: false, reportChoiceOptions: [], draftReportIds: [],
+        metricPickerVisible: false, metricDetail: null, metricChoiceOptions: [], draftMetricKeys: [],
+        typePickerVisible: false, mainTab: 'archive' });
+      this.resetCompareScroll();
     }
     if (!force && this._loadedAt && Date.now() - this._loadedAt < CACHE_TTL) {
       this.refreshAnalysisState(this.consumeFocus());
@@ -89,13 +104,10 @@ Page({
     this.setData({ loading: !this.data.reportsCache.length, loadError: '' });
     const promise = (async () => {
       try {
-        const [reports, nutritionSettings] = await Promise.all([
-          ReportRepository.listReportsByBaby(babyUid, { limit: 100 }),
-          NutritionModel.getNutritionSettings(babyUid).catch(() => ({}))
-        ]);
+        const reports = await ReportRepository.listReportsByBaby(babyUid, { limit: 100 });
         if (!isCurrent()) return;
         this.invalidateDiet();
-        this.setData({ reportsCache: reports, nutritionSettings: nutritionSettings || {}, babyInfo });
+        this.setData({ reportsCache: reports, babyInfo });
         this._loadedAt = Date.now();
         this.refreshAnalysisState(this.consumeFocus());
       } catch (error) {
@@ -132,15 +144,20 @@ Page({
     const selection = resolveMultiReportSelection(reports, compareType, requestedIds,
       focus.reportId ? focus.compareReportBId : this.data.compareBaselineId);
     const mainTab = focus.mainTab === 'compare' || focus.previewMode === 'compare' ? 'compare' : this.data.mainTab;
+    const archiveTypeIndex = Math.max(0, archive.tabs.findIndex(tab => tab.key === archive.filterType));
+    const compareTypeIndex = Math.max(0, TYPE_TABS.findIndex(tab => tab.key === compareType));
     this.setData({
       reportTypeTabs: archive.tabs, archiveReportCards: archive.reportCards, reportYearGroups: archive.reportYearGroups,
+      archiveTypeIndex, archiveTypeLabel: archive.tabs[archiveTypeIndex]?.label || '全部报告',
+      compareTypeIndex, compareTypeLabel: TYPE_TABS[compareTypeIndex].label,
       selectedFilterType: archive.filterType,
       mainTab, compareReportType: compareType,
       compareReportOptions: selection.options, compareReportIds: selection.reportIds,
       compareBaselineId: selection.baselineId,
-      ...(focus.reportId ? { compareSelectedMetricKeys: [], compareFocusOnly: false } : {}), loading: false
+      ...(focus.reportId ? { compareSelectedMetricKeys: [], compareMetricMode: 'all', metricDetail: null } : {}), loading: false
     });
     this.refreshCompareView();
+    if (focus.reportId) this.resetCompareScroll();
     if (this.data.reportChooserVisible) this.updateReportChoices(this.data.draftReportIds);
     if (focus.requireCompareSelection && selection.options.length >= 2) this.openReportChooser();
     if (mainTab === 'compare' && this.data.compareDietVisible) this.ensureCompareFeedingData();
@@ -148,19 +165,33 @@ Page({
 
   refreshCompareView() {
     const d = this.data;
+    const previousColumns = (d.currentCompareView?.columns || []).map(column => column.reportId).join('|');
+    const hadVisibleRows = !!d.currentCompareView?.compareRows.length;
     const view = buildMultiReportComparison({ reportType: d.compareReportType,
       reportIds: d.compareReportIds, baselineId: d.compareBaselineId,
-      selectedMetricKeys: d.compareSelectedMetricKeys, reports: d.reportsCache,
-      dailySummaries: d.dailySummariesCache, nutritionSettings: d.nutritionSettings,
+      selectedMetricKeys: d.compareSelectedMetricKeys, metricMode: d.compareMetricMode, reports: d.reportsCache,
+      dailySummaries: d.dailySummariesCache,
       includeNutrition: d.compareDietVisible && !d.compareDietLoading && !d.compareDietError });
-    this.setData({ currentCompareView: view });
+    const counts = { all: view.summary.totalCount, focus: view.focusMetricKeys.length,
+      abnormal: view.summary.abnormalCount, pending: view.summary.pendingCount };
+    this.setData({ currentCompareView: view,
+      compareMetricLabel: METRIC_FILTERS.find(item => item.key === d.compareMetricMode)?.label || '自选指标',
+      metricFilterOptions: METRIC_FILTERS.map(item => ({ ...item, count: counts[item.key] }))
+    });
+    const nextColumns = view.columns.map(column => column.reportId).join('|');
+    if (previousColumns !== nextColumns || (!hadVisibleRows && view.compareRows.length)) {
+      this.resetCompareScroll();
+    }
+    if (d.metricDetail) this.updateMetricDetail(d.metricDetail.key);
   },
 
   switchMainTab(e) {
     const mainTab = e.currentTarget.dataset.tab;
     if (!['archive', 'compare'].includes(mainTab) || mainTab === this.data.mainTab) return;
+    this.closeMetricDetail();
     this.setData({ mainTab });
     if (mainTab === 'compare') {
+      this.resetCompareScroll();
       const type = inferDefaultCompareReportType(this.data.reportsCache, this._pendingCompareType || this.data.compareReportType);
       this._pendingCompareType = '';
       if (type !== this.data.compareReportType) this.selectCompareType(type);
@@ -170,7 +201,8 @@ Page({
   },
 
   handleTypeFilterChange(e) {
-    const type = e.currentTarget.dataset.type;
+    const type = this.data.reportTypeTabs[Number(e.detail.value)]?.key;
+    if (!type) return;
     this._pendingCompareType = type === 'all' ? '' : type;
     this.setData({ selectedFilterType: type });
     this.refreshAnalysisState();
@@ -178,29 +210,35 @@ Page({
 
   selectCompareType(type) {
     const selection = resolveMultiReportSelection(this.data.reportsCache, type);
-    this.setData({ compareReportType: type, compareReportOptions: selection.options,
+    const compareTypeIndex = Math.max(0, TYPE_TABS.findIndex(tab => tab.key === type));
+    this.setData({ compareReportType: type, compareTypeIndex, compareTypeLabel: TYPE_TABS[compareTypeIndex].label,
+      compareReportOptions: selection.options,
       compareReportIds: selection.reportIds, compareBaselineId: selection.baselineId,
       reportChooserVisible: false, draftReportIds: [], reportChoiceOptions: [] });
     this.refreshCompareAfterSelectionChange();
   },
 
   handleCompareTypeChange(e) {
-    const type = e.currentTarget.dataset.type;
-    if (type !== this.data.compareReportType) this.selectCompareType(type);
+    const type = TYPE_TABS[Number(e.detail.value)]?.key;
+    if (type && type !== this.data.compareReportType) this.selectCompareType(type);
   },
   openReportChooser() {
+    this.setData({ reportSearch: '' });
     this.updateReportChoices(this.data.compareReportIds);
     this.setData({ reportChooserVisible: true });
   },
-  closeReportChooser() { this.setData({ reportChooserVisible: false, draftReportIds: [], reportChoiceOptions: [] }); },
+  closeReportChooser() { this.setData({ reportChooserVisible: false, draftReportIds: [], reportChoiceOptions: [], reportSearch: '' }); },
   updateReportChoices(ids) {
     const valid = new Set(this.data.compareReportOptions.map(option => option.reportId));
     const draftReportIds = [...new Set(ids)].filter(id => valid.has(id));
     this.setData({ draftReportIds,
-      reportChoiceOptions: this.data.compareReportOptions.map(option => ({
+      reportChoiceOptions: this.data.compareReportOptions.filter(option => (
+        [option.date, option.labName, option.sameDayLabel].join(' ').toLowerCase().includes(this.data.reportSearch.trim().toLowerCase())
+      )).map(option => ({
         ...option, selected: draftReportIds.includes(option.reportId)
       })) });
   },
+  onReportSearch(e) { this.setData({ reportSearch: e.detail.value }); this.updateReportChoices(this.data.draftReportIds); },
   toggleReportChoice(e) {
     const id = e.currentTarget.dataset.reportId;
     const ids = this.data.draftReportIds;
@@ -208,12 +246,13 @@ Page({
   },
   selectAllReports() { this.updateReportChoices(this.data.compareReportOptions.map(option => option.reportId)); },
   selectRecentReports() { this.updateReportChoices(this.data.compareReportOptions.slice(0, 2).map(option => option.reportId)); },
+  clearReportChoices() { this.updateReportChoices([]); },
   confirmReportChoices() {
     const availableIds = new Set(this.data.compareReportOptions.map(option => option.reportId));
     const validIds = this.data.draftReportIds.filter(id => availableIds.has(id));
-    if (validIds.length < 2) {
+    if (!validIds.length) {
       this.updateReportChoices(validIds);
-      wx.showToast({ title: '请至少选择两份报告', icon: 'none' }); return;
+      wx.showToast({ title: '请选择报告', icon: 'none' }); return;
     }
     const selection = resolveMultiReportSelection(this.data.reportsCache, this.data.compareReportType,
       validIds, this.data.compareBaselineId);
@@ -226,30 +265,91 @@ Page({
     if (!this.data.compareReportIds.includes(id) || id === this.data.compareBaselineId) return;
     this.setData({ compareBaselineId: id });
     this.refreshCompareView();
+    wx.showToast({ title: '已更换对照报告', icon: 'none' });
   },
   refreshCompareAfterSelectionChange() {
     this.invalidateDiet();
-    this.setData({ compareSelectedMetricKeys: [], compareFocusOnly: false });
+    this.setData({ compareSelectedMetricKeys: [], compareMetricMode: 'all', metricDetail: null });
+    this.closeMetricPicker();
+    this.resetCompareScroll();
     this.refreshCompareView();
     if (this.data.compareDietVisible) this.ensureCompareFeedingData();
   },
 
-  toggleCompareFilter() { this.setData({ compareFilterVisible: !this.data.compareFilterVisible }); },
   setCompareMetricMode(e) {
-    const focusOnly = e.currentTarget.dataset.mode === 'focus';
-    this.setData({ compareFocusOnly: focusOnly, compareSelectedMetricKeys: focusOnly ? this.data.currentCompareView.focusMetricKeys : [] });
+    const mode = e.currentTarget.dataset.mode;
+    if (!['all', 'focus', 'abnormal', 'pending'].includes(mode)) return;
+    this.setData({ compareMetricMode: mode, compareSelectedMetricKeys: [], metricDetail: null });
+    this.closeMetricPicker();
+    this.resetCompareScroll();
     this.refreshCompareView();
   },
-  toggleCompareMetric(e) {
-    const key = e.currentTarget.dataset.key;
+  openMetricFilter() { this.setData({ metricPickerVisible: true, metricPickerStage: 'mode' }); },
+  openMetricPicker() {
+    const keys = (this.data.currentCompareView?.compareRows || []).map(row => row.key);
+    this.setData({ metricPickerVisible: true, metricPickerStage: 'custom', metricSearch: '' });
+    this.updateMetricChoices(keys);
+  },
+  closeMetricPicker() { this.setData({ metricPickerVisible: false, draftMetricKeys: [], metricChoiceOptions: [], metricSearch: '' }); },
+  updateMetricChoices(keys) {
     const options = this.data.currentCompareView?.metricOptions || [];
-    if (!options.some(item => item.key === key)) return;
-    const selected = options.filter(item => item.selected).map(item => item.key);
-    if (selected.length === 1 && selected[0] === key) {
-      wx.showToast({ title: '请至少保留一个指标', icon: 'none' }); return;
-    }
-    this.setData({ compareSelectedMetricKeys: selected.includes(key) ? selected.filter(item => item !== key) : [...selected, key], compareFocusOnly: false });
+    const validKeys = new Set(options.map(item => item.key));
+    const draftMetricKeys = [...new Set(keys)].filter(key => validKeys.has(key));
+    const query = this.data.metricSearch.trim().toLowerCase();
+    this.setData({ draftMetricKeys, metricChoiceOptions: options.filter(item => (
+      (item.name + ' ' + item.key).toLowerCase().includes(query)
+    )).map(item => ({ ...item, selected: draftMetricKeys.includes(item.key) })) });
+  },
+  onMetricSearch(e) { this.setData({ metricSearch: e.detail.value }); this.updateMetricChoices(this.data.draftMetricKeys); },
+  toggleMetricChoice(e) {
+    const key = e.currentTarget.dataset.key;
+    const keys = this.data.draftMetricKeys;
+    this.updateMetricChoices(keys.includes(key) ? keys.filter(item => item !== key) : [...keys, key]);
+  },
+  selectAllMetrics() { this.updateMetricChoices((this.data.currentCompareView?.metricOptions || []).map(item => item.key)); },
+  clearMetricChoices() { this.updateMetricChoices([]); },
+  confirmMetricChoices() {
+    const valid = new Set((this.data.currentCompareView?.metricOptions || []).map(item => item.key));
+    const keys = this.data.draftMetricKeys.filter(key => valid.has(key));
+    if (!keys.length) { wx.showToast({ title: '请至少选择一个指标', icon: 'none' }); return; }
+    this.setData({ compareSelectedMetricKeys: keys, compareMetricMode: 'custom' });
+    this.closeMetricPicker();
+    this.resetCompareScroll();
     this.refreshCompareView();
+  },
+  onCompareScroll(e) {
+    const left = Math.max(0, Number(e.detail.scrollLeft) || 0);
+    const windowWidth = wx.getWindowInfo().windowWidth;
+    const pixelsPerRpx = windowWidth / 750;
+    const valuesWidth = Math.max(1, (this.data.currentCompareView?.tableWidthRpx || 702) - 200);
+    const maxScroll = Math.max(0, valuesWidth - 502) * pixelsPerRpx;
+    if (Math.abs(left - this.data.compareScrollLeft) >= 1 || this.data.compareAtEnd !== (left >= maxScroll - 1)) {
+      this.setData({ compareScrollLeft: left, compareAtEnd: left >= maxScroll - 1,
+        compareScrollOffsetPercent: Math.min(Math.max(0, 100 - 502 / valuesWidth * 100), left / pixelsPerRpx / valuesWidth * 100) });
+    }
+  },
+  resetCompareScroll() {
+    // 先同步实际位置，再归零，确保重复切换报告时也能触发原生滚动属性。
+    this.setData({ compareScrollTarget: this.data.compareScrollLeft }, () => {
+      this.setData({ compareScrollTarget: 0, compareScrollLeft: 0, compareAtEnd: false, compareScrollOffsetPercent: 0 });
+    });
+  },
+  openMetricDetail(e) { this.updateMetricDetail(e.currentTarget.dataset.key); },
+  updateMetricDetail(key) {
+    const view = this.data.currentCompareView;
+    const row = view?.compareRows.find(item => item.key === key);
+    if (!row) { this.closeMetricDetail(); return; }
+    const columns = new Map(view.columns.map(column => [column.reportId, column]));
+    this.setData({ metricDetail: { ...row,
+      cells: row.cells.map(cell => ({ ...columns.get(cell.reportId), ...cell })),
+      baselineLabel: view.baselineLabel
+    } });
+  },
+  closeMetricDetail() { this.setData({ metricDetail: null }); },
+  onExportComparison() {
+    if (!this.data.currentCompareView?.columns.length) return;
+    return showReportExport(this, buildComparisonExportDocument({ view: this.data.currentCompareView,
+      babyInfo: this.data.babyInfo, reportType: this.data.compareReportType }));
   },
 
   invalidateDiet() {
@@ -258,9 +358,13 @@ Page({
     this.setData({ dailySummariesCache: [], compareDietError: '', compareDietLoading: false });
   },
   openCompareDiet() {
-    if (!this.data.currentCompareView?.canCompare) return;
+    if (!this.data.currentCompareView?.columns.length) return;
     this.setData({ compareDietVisible: true });
     this.ensureCompareFeedingData();
+  },
+  showNutritionMethod() {
+    wx.showModal({ title: '统计口径', showCancel: false, confirmText: '知道了',
+      content: '窗口为检测前第7天至前1天。均值按有营养记录的日期计算；未记录日期不作为0。未录全食物或营养成分时，汇总量可能少于实际摄入。\n\n每公斤摄入按对应日期可用体重换算，体重可能沿用此前测量。优质占比为窗口内优质蛋白总量÷天然蛋白总量，沿用饮食模块的分类。\n\n两份报告对应指标均有7天数据时才显示差值；占比差值用百分点表示。' });
   },
   closeCompareDiet() {
     if (!this.data.compareDietVisible) return;
@@ -271,7 +375,7 @@ Page({
   },
   async ensureCompareFeedingData() {
     const d = this.data;
-    if (!d.compareDietVisible || !d.currentCompareView?.canCompare) return;
+    if (!d.compareDietVisible || !d.currentCompareView?.columns.length) return;
     const babyUid = d.babyInfo?.babyUid;
     const windows = resolveMultiNutritionWindows(d.currentCompareView.columns);
     const cacheKey = [babyUid, ...d.compareReportIds, ...windows.map(w => w.startDate + '_' + w.endDate)].join('|');
@@ -317,8 +421,16 @@ Page({
 
   openDetailView(e) {
     const reportId = e.currentTarget.dataset.reportId;
-    if (reportId) wx.navigateTo({ url: '/pkg-report/report-detail/index?reportId=' + encodeURIComponent(reportId) });
+    const metricKey = e.currentTarget.dataset.key;
+    if (reportId) wx.navigateTo({ url: '/pkg-report/report-detail/index?reportId=' + encodeURIComponent(reportId)
+      + (metricKey ? '&metricKey=' + encodeURIComponent(metricKey) : '') });
   },
+  editMetricReport(e) {
+    const { reportId, key } = e.currentTarget.dataset;
+    if (reportId && key) wx.navigateTo({ url: '/pkg-report/add-report/index?mode=edit&reportId='
+      + encodeURIComponent(reportId) + '&metricKey=' + encodeURIComponent(key) });
+  },
+  openBabyProfile() { wx.switchTab({ url: '/pages/profile/index' }); },
   onAddReport() {
     if (!this.data.babyInfo?.babyUid) { wx.switchTab({ url: '/pages/profile/index' }); return; }
     const type = this.data.mainTab === 'compare' ? this.data.compareReportType : this.data.selectedFilterType;
