@@ -299,6 +299,17 @@ Page({
     });
   },
 
+  openPowderAminoAcids(event) {
+    const { babyUid } = this.data;
+    if (!babyUid || babyUid !== getBabyUid()) {
+      wx.showToast({ title: '请重新打开奶粉管理', icon: 'none' });
+      return;
+    }
+    const { id } = event.currentTarget.dataset;
+    if (!id) return;
+    wx.navigateTo({ url: `/pkg-milk/amino-acid-archive/index?babyUid=${encodeURIComponent(babyUid)}&powderId=${encodeURIComponent(id)}` });
+  },
+
   async loadPowders(options = {}) {
     try {
       this.setData({ loading: true });

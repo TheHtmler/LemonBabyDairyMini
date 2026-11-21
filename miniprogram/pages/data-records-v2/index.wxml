@@ -130,6 +130,9 @@
           </view>
         </view>
 
+        <amino-acid-summary wx:if="{{selectedDate && !isSelectedFuture && aminoAcidBabyUid}}" date="{{selectedDate}}"
+          baby-uid="{{aminoAcidBabyUid}}" refresh-key="{{aminoAcidRefreshKey}}" />
+
         <view class="overview-card">
           <view class="overview-head">
             <view>

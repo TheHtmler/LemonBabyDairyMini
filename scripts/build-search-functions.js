@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { staticJsDependencies } = require('./lib/static-js-dependencies');
+const { AMINO_ACIDS } = require('../miniprogram/utils/aminoAcidIntake');
 const root = path.resolve(__dirname, '..');
 const check = process.argv.includes('--check');
 const { REPORT_OCR_TIMING } = require('../miniprogram/constants/reportTypes');
@@ -26,6 +27,42 @@ function copy(source, destinations) {
 }
 // 普通分包复用主包的搜索模块；云函数仍各自携带独立部署所需的副本。
 copy('packages/search-core', ['cloudfunctions/searchManager/lib/search', 'miniprogram/utils/search-core', 'cloudfunctions/getSystemFoodIndex/lib/search', 'cloudfunctions/getSystemPowderIndex/lib/search']);
+// 模拟器和云函数按同一套规则筛选，随包数据只压缩重复的字段名和来源信息。
+const aminoCloudDir = 'cloudfunctions/searchAminoAcidReferences';
+const aminoPageDir = 'miniprogram/pkg-milk/amino-acid-archive';
+writeGenerated(aminoPageDir + '/referenceSearch.js', fs.readFileSync(path.join(root, aminoCloudDir, 'referenceSearch.js')));
+const aminoReferences = require('../cloudfunctions/searchAminoAcidReferences/references.json');
+const dictionaries = [new Map(), new Map(), new Map()];
+function dictionaryIndex(dictionary, value) {
+  if (!dictionary.has(value)) dictionary.set(value, dictionary.size);
+  return dictionary.get(value);
+}
+const aminoSamples = aminoReferences.map(row => {
+  const { id, name, category, states, profile, aliases, composition = {} } = row;
+  const { recordId, version } = profile.source;
+  const dataset = id.split(':')[0];
+  const sample = dataset === 'USDA' ? Number(recordId) : recordId;
+  if (!['USDA', 'TFDA'].includes(dataset) || id !== dataset + ':' + sample || profile.basis !== 'g'
+    || (dataset === 'USDA' && !Number.isSafeInteger(sample))) {
+    throw new Error('氨基酸参考资料的来源或单位无法随包保存：' + id);
+  }
+  const tail = [aliases.length ? aliases : null, row.simplifiedName, row.description, row.englishNames,
+    row.localAliases, row.verifiedNames];
+  while (tail.length && !tail[tail.length - 1]) tail.pop();
+  return [
+    sample, name,
+    dictionaryIndex(dictionaries[0], category),
+    dictionaryIndex(dictionaries[1], version),
+    dictionaryIndex(dictionaries[2], states.join(',')),
+    AMINO_ACIDS.map(({ key }) => profile.values[key]),
+    [composition.protein, composition.fat, composition.water],
+    ...tail
+  ];
+});
+const aminoDictionaryRows = dictionaries.map(dictionary => JSON.stringify([...dictionary.keys()]));
+writeGenerated(aminoPageDir + '/referenceSamples.js',
+  '// 由 npm run build:search 生成。\nmodule.exports = [\n'
+  + aminoDictionaryRows.join(',\n') + ',[\n' + aminoSamples.map(row => JSON.stringify(row)).join(',\n') + '\n]];\n');
 // 服务端复用页面现有的纯计算源，不复制另一套营养和剩奶算法。
 for (const file of ['dailySummaryV2Utils.js', 'feedingRecordV2Utils.js', 'formulaPowderUtils.js', 'nutritionProvenance.js', 'growthChartUtils.js']) {
   const body = fs.readFileSync(path.join(root, 'miniprogram/utils', file), 'utf8').replace(/require\('\.\/search-core\//g, "require('../search/");

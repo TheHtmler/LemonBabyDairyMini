@@ -1,0 +1,137 @@
+<view wx:if="{{!referenceOpen}}" class="amino-page {{!readOnly && !loading && !loadError ? 'with-save-bar' : ''}}">
+  <view class="card state" wx:if="{{loading}}">正在读取氨基酸资料…</view>
+  <view class="card state" wx:elif="{{loadError}}">
+    <text>{{loadError}}</text>
+    <button class="button secondary" bindtap="load">重试</button>
+  </view>
+  <view class="card" wx:else>
+    <view class="archive-header">
+      <view class="archive-identity">
+        <text class="title">{{name}}</text>
+        <text wx:if="{{supplementDate}}" class="basis">摄入记录 · {{supplementDate}} · {{intakeLabel}}</text>
+        <text wx:if="{{identityLabel}}" class="basis">{{identityLabel}}</text>
+      </view>
+      <button wx:if="{{canSearch}}" class="button secondary search-link" bindtap="openReferenceSearch" disabled="{{saving}}">搜索参考值</button>
+    </view>
+    <text wx:if="{{supplementDate}}" class="hint field-note">保存到当前宝宝的档案，并重新计算这一天的摄入量。</text>
+    <view class="basis-row">
+      <view wx:if="{{isPowder}}" class="powder-bases">
+        <text class="basis-title">计量方式 · 含量（mg）</text>
+        <view class="basis-options">
+          <button wx:for="{{powderBases}}" wx:key="*this" class="button basis-option {{index === powderBasisIndex ? 'basis-selected' : ''}}"
+            disabled="{{saving || readOnly}}" aria-pressed="{{index === powderBasisIndex}}" data-index="{{index}}"
+            bindtap="onPowderBasisChange">{{item}}</button>
+        </view>
+      </view>
+      <text wx:else class="basis-title">{{basisLabel}} 含量（mg）{{foodPreparationLabel ? ' · ' + foodPreparationLabel : ''}}</text>
+      <text wx:if="{{readOnly}}" class="hint basis-note">仅供查看</text>
+    </view>
+    <text wx:if="{{!readOnly}}" class="hint form-hint">只填已知项。留空表示无数据，实测为零时填 0。</text>
+    <view wx:if="{{isPowder && powderBasisIndex === 1}}" class="conversion">
+      <text class="hint">每 100 mL 冲调奶用多少克奶粉</text>
+      <input class="field-input" type="digit" maxlength="18" disabled="{{saving}}" value="{{gramsPer100ml}}"
+        placeholder="按包装标注填写" aria-label="每百毫升冲调奶的奶粉克数" bindinput="onGramsInput" />
+      <text class="hint form-hint">填写后，可按实际摄入的奶粉克数换算。</text>
+    </view>
+    <text class="hint field-note">★ MMA／PA 关注项</text>
+    <view class="fields">
+      <view class="field" wx:for="{{fields}}" wx:key="key">
+        <view class="field-label">
+          <text>{{item.label}}</text>
+          <text wx:if="{{item.mmaPa}}" class="focus-star" aria-label="MMA／PA 关注"> ★</text>
+          <text wx:if="{{referenceFields[item.key]}}" class="estimate-tag">参考值</text>
+        </view>
+        <text wx:if="{{readOnly}}" class="field-value {{values[item.key] === '' ? 'muted' : ''}}">{{values[item.key] === '' ? '无数据' : values[item.key]}}</text>
+        <input wx:else class="field-input" type="digit" maxlength="18" disabled="{{saving}}" placeholder="—"
+          value="{{values[item.key]}}" data-key="{{item.key}}" bindinput="onAmountInput"
+          aria-label="{{item.label + '毫克，选填'}}" />
+      </view>
+    </view>
+    <view wx:if="{{sourceName}}" class="source-block">
+      <text class="hint">参考来源 · {{sourceName}}{{sourceRecordId ? ' · 样品 ' + sourceRecordId : ''}}</text>
+      <button wx:if="{{sourceUrl}}" class="button text-link" data-url="{{sourceUrl}}" bindtap="copySource">复制来源链接</button>
+    </view>
+    <view wx:if="{{!readOnly}}" class="save-bar">
+      <text wx:if="{{error}}" class="error" role="alert">{{error}}</text>
+      <button class="button primary action" loading="{{saving}}" disabled="{{saving}}" bindtap="saveAmounts">{{supplementDate ? '保存并补算当天' : '保存氨基酸'}}</button>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="amino-page">
+  <view class="card">
+    <view class="reference-heading">
+      <text class="title">{{selectedReference ? '参考值预览' : '搜索参考值'}}</text>
+      <button wx:if="{{selectedReference}}" class="button search-link" bindtap="backToReferenceResults" disabled="{{saving}}">返回结果</button>
+      <button wx:else class="button search-link" bindtap="closeReferenceSearch">返回手填</button>
+    </view>
+    <view wx:if="{{!selectedReference}}" class="reference-search">
+      <input class="reference-input" value="{{referenceQuery}}" maxlength="80" confirm-type="search"
+        confirm-hold="{{false}}" placeholder="食物名或生熟状态" aria-label="参考食物名称"
+        bindinput="onReferenceQueryInput" bindconfirm="searchReferences" />
+      <button class="button secondary reference-submit" bindtap="searchReferences"
+        loading="{{referenceBusy}}" disabled="{{referenceBusy || !referenceQuery}}">搜索</button>
+    </view>
+    <view class="reference-content">
+      <view wx:if="{{selectedReference}}">
+        <text class="reference-name preview-name">{{selectedReference.displayName || selectedReference.name}}</text>
+        <text class="hint reference-origin">{{selectedReference.stateLabel}} · {{selectedReference.dataset}}</text>
+        <text class="hint reference-origin">每 100 g 含量（mg）{{selectedReference.profile.source.recordId ? ' · 样品 ' + selectedReference.profile.source.recordId : ''}}</text>
+        <text class="hint reference-origin" wx:if="{{selectedReference.description}}">{{selectedReference.description}}</text>
+        <block wx:if="{{selectedReference.canApply || selectedReference.preparationToConfirm}}">
+          <text wx:if="{{selectedReference.preparationToConfirm}}" class="hint reference-origin">
+            仅在你用{{selectedReference.preparationToConfirm === 'raw' ? '生重' : '熟重'}}记录「{{name}}」时使用。保存后，这项个人食物会沿用此口径，其他做法请另建食物。
+          </text>
+          <text wx:else class="hint reference-origin">高匹配 · 食物身份和计量口径一致，已核对可用的成分数据。</text>
+          <text class="hint reference-origin">保留已手填的数值。{{supplementDate ? '保存后补算 ' + supplementDate + ' 的摄入量。' : '参考值将保存到「' + name + '」的氨基酸资料。'}}</text>
+          <button class="button primary action" loading="{{saving}}" disabled="{{saving}}" bindtap="confirmReference">
+            {{selectedReference.preparationToConfirm === 'raw' ? '确认生重并使用' : selectedReference.preparationToConfirm === 'cooked' ? '确认熟重并使用' : supplementDate ? '使用并补算当天' : '使用并保存'}}
+          </button>
+        </block>
+        <block wx:else>
+          <text class="hint reference-origin">仅供查看。{{selectedReference.matchReason || '这条参考未通过高匹配校验。'}}</text>
+          <button class="button secondary action" bindtap="closeReferenceSearch">返回手填</button>
+        </block>
+        <text wx:if="{{referenceError}}" class="error" role="alert">{{referenceError}}</text>
+        <view class="fields">
+          <view class="field" wx:for="{{fields}}" wx:key="key">
+            <text class="field-label">{{item.label}}<text wx:if="{{item.mmaPa}}" class="focus-star"> ★</text></text>
+            <text class="field-value {{selectedReference.profile.values[item.key] == null ? 'muted' : ''}}">{{selectedReference.profile.values[item.key] == null ? '无数据' : selectedReference.profile.values[item.key]}}</text>
+          </view>
+        </view>
+        <button wx:if="{{selectedReference.profile.source.url}}" class="button text-link"
+          data-url="{{selectedReference.profile.source.url}}" bindtap="copySource">复制来源链接</button>
+      </view>
+      <text wx:elif="{{referenceBusy}}" class="reference-message">正在查找参考值…</text>
+      <text wx:elif="{{referenceError}}" class="error" role="alert">{{referenceError}}</text>
+      <block wx:elif="{{applicableReferences.length || reviewReferences.length}}">
+        <text wx:if="{{applicableReferences.length}}" class="reference-section">可使用的参考值</text>
+        <text wx:else class="reference-message">没有可用的高匹配结果。可换个名称搜索，或返回手填。</text>
+        <button class="button reference-option" wx:for="{{applicableReferences}}" wx:key="id" data-id="{{item.id}}"
+          hover-class="reference-option-pressed" bindtap="previewReference">
+          <view class="reference-item">
+            <text class="reference-name">{{item.displayName || item.name}}</text>
+            <text class="hint reference-origin">{{item.stateLabel}} · {{item.dataset}} · {{item.canApply ? '高匹配' : '待确认生熟'}}</text>
+          </view>
+          <text class="reference-choice reference-choice-eligible">{{item.canApply ? '选择使用' : '确认后使用'}}</text>
+        </button>
+        <button wx:if="{{reviewReferences.length}}" class="button review-toggle" aria-expanded="{{showReviewReferences}}" bindtap="toggleReviewReferences">
+          <text>仅供查看 · {{reviewReferences.length}}</text><text>{{showReviewReferences ? '收起' : '展开'}}</text>
+        </button>
+        <block wx:if="{{showReviewReferences}}">
+          <button class="button reference-option" wx:for="{{reviewReferences}}" wx:key="id" data-id="{{item.id}}"
+            hover-class="reference-option-pressed" bindtap="previewReference">
+            <view class="reference-item">
+              <text class="reference-name">{{item.displayName || item.name}}</text>
+              <text class="hint reference-origin">{{item.stateLabel}} · {{item.dataset}}</text>
+              <text wx:if="{{item.matchReason}}" class="hint reference-origin">{{item.matchReason}}</text>
+            </view>
+            <text class="reference-choice">查看详情</text>
+          </button>
+        </block>
+        <text wx:if="{{referenceTotal > applicableReferences.length + reviewReferences.length}}" class="reference-message">结果较多，可加上品种或生熟状态再搜。</text>
+      </block>
+      <text wx:elif="{{referenceSearched}}" class="reference-message">没有找到参考资料。可换个名称搜索，或返回手填。</text>
+    </view>
+  </view>
+</view>

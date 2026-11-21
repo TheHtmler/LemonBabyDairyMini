@@ -146,6 +146,7 @@
               </view>
 
               <view class="food-actions">
+                <button wx:if="{{babyUid && activeLibraryScope === 'mine'}}" class="action-btn amino" size="mini" data-id="{{item.powderId || item._id}}" bindtap="openPowderAminoAcids">氨基酸资料</button>
                 <block wx:if="{{activeLibraryScope === 'system'}}">
                   <button
                     class="action-btn edit"

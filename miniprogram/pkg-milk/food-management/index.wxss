@@ -457,6 +457,7 @@
 .food-actions {
   margin-top: 14rpx;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 16rpx;
 }
@@ -475,6 +476,15 @@
   background: #f0f5ff;
   color: #3a7afe;
   border: none;
+}
+
+.food-actions .action-btn.amino {
+  background: #fff2d3;
+  color: #805617;
+}
+
+.food-actions .action-btn.amino::after {
+  border: 0;
 }
 
 .food-load-more {

@@ -11,6 +11,7 @@
     "feeding-modal": "/components/feeding-modal/feeding-modal",
     "food-intake-modal": "/components/food-intake-modal/food-intake-modal",
     "fat-ratio-popup": "/components/fat-ratio-popup/fat-ratio-popup",
-    "medication-modal": "/components/medication-modal/medication-modal"
+    "medication-modal": "/components/medication-modal/medication-modal",
+    "amino-acid-summary": "/components/amino-acid-summary/index"
   }
 }

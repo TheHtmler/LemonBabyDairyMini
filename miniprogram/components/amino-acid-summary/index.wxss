@@ -1,0 +1,239 @@
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.amino-panel {
+  margin-top: 16rpx;
+  border: 2rpx solid #ede8d7;
+  border-radius: 16rpx;
+  color: #2e291f;
+  background: #fff;
+  overflow: hidden;
+}
+
+.amino-panel button {
+  box-sizing: border-box;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.4;
+}
+
+.amino-panel button::after {
+  border: 0;
+}
+
+.amino-panel .amino-toggle,
+.amino-panel .amino-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  width: 100%;
+  max-width: 100%;
+  min-height: 88rpx;
+  padding: 16rpx 24rpx;
+  text-align: left;
+  font-size: 27rpx;
+}
+
+.amino-toggle {
+  font-weight: 600;
+}
+
+.amino-row {
+  border-top: 2rpx solid #f3efe6;
+  color: inherit;
+}
+
+.amino-row[disabled] {
+  color: #6b6050;
+  background: transparent;
+}
+
+.amino-panel .amino-row-open,
+.amino-panel .amino-pressed {
+  background: #faf5e8;
+}
+
+.amino-label {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.amino-body {
+  padding-bottom: 8rpx;
+}
+
+.amino-reading {
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
+}
+
+.amino-value {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8rpx;
+}
+
+.amino-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.amino-muted {
+  color: #6b6050;
+  font-weight: 400;
+}
+
+.amino-amount,
+.amino-gap,
+.amino-action,
+.estimate-tag {
+  white-space: nowrap;
+}
+
+.amino-reading > .amino-gap {
+  display: block;
+  margin-top: 4rpx;
+}
+
+.amino-chevron {
+  flex: 0 0 auto;
+  width: 11rpx;
+  height: 11rpx;
+  margin: 0 4rpx 0 6rpx;
+  border-top: 2rpx solid #785700;
+  border-right: 2rpx solid #785700;
+  transform: rotate(45deg);
+}
+
+.amino-row-open .amino-chevron {
+  transform: rotate(135deg);
+}
+
+.estimate-tag {
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  background: #fff2d3;
+  color: #785700;
+  font-size: 22rpx;
+}
+
+.amino-note,
+.amino-source,
+.amino-gap {
+  color: #6b6050;
+  font-size: 23rpx;
+}
+
+.amino-note {
+  display: block;
+  padding: 0 24rpx 16rpx;
+}
+
+.amino-action,
+.amino-panel .amino-link,
+.amino-panel .amino-retry {
+  color: #785700;
+  font-size: 24rpx;
+}
+
+.amino-detail {
+  padding: 0 24rpx;
+  background: #faf8f2;
+}
+
+.amino-detail-row {
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.amino-detail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.amino-detail-head .amino-value {
+  flex-shrink: 0;
+}
+
+.amino-detail-name {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.amino-detail-row + .amino-detail-row {
+  border-top: 2rpx solid #ede8d7;
+}
+
+.amino-pending {
+  margin: 0 20rpx 16rpx;
+  padding: 16rpx 16rpx 0;
+  border: 1rpx solid #f2ddb3;
+  border-radius: 14rpx;
+  background: #fffaee;
+}
+
+.pending-head {
+  align-items: center;
+}
+
+.amino-quantity {
+  margin-left: 10rpx;
+  color: #6b6050;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.amino-source {
+  display: block;
+  margin-top: 6rpx;
+  line-height: 1.45;
+}
+
+.amino-missing-title {
+  display: block;
+  color: #785700;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.amino-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rpx 20rpx;
+}
+
+.amino-panel .amino-retry {
+  width: 100%;
+  min-height: 88rpx;
+  padding: 20rpx 24rpx;
+  text-align: left;
+}
+
+.amino-panel .amino-link {
+  min-height: 72rpx;
+  padding: 0;
+  line-height: 72rpx;
+}
+
+.amino-panel .amino-supplement {
+  flex: 0 0 auto;
+  min-height: 88rpx;
+  padding: 0 16rpx;
+  border-radius: 10rpx;
+  background: #ffedc8;
+  font-weight: 600;
+  line-height: 88rpx;
+}

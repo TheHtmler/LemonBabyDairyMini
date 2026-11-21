@@ -20,7 +20,7 @@ const WaterRecordModel = require('../../models/waterRecord');
 const SleepRecordModel = require('../../models/sleepRecord');
 // 引入食物模型
 const FoodModel = require('../../models/food');
-const { normalizeFoodNutritionValues } = require('../../utils/nutritionProvenance');
+const { normalizeFoodNutritionValues, copyRecognitionMetaForSnapshot } = require('../../utils/nutritionProvenance');
 const FoodIntakeRecordModel = require('../../models/foodIntakeRecord');
 const DailySummaryV2Model = require('../../models/dailySummaryV2');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
@@ -1676,6 +1676,8 @@ function createDataRecordsPageConfig(options = {}) {
     customizeRecordTabs: [],
     loadedRecordTabs: {},
     loadingRecordTabs: {},
+    aminoAcidRefreshKey: 0,
+    aminoAcidBabyUid: '',
     summaryPreview: buildDataRecordsSummaryPreview({ isV2RecordsPage: options.recordSource === 'v2' }),
     activeMetricInfoLabel: '',
     activeMetricInfoTitle: '',
@@ -2395,6 +2397,7 @@ function createDataRecordsPageConfig(options = {}) {
       proteinSplit: food.proteinSplit || null,
       milkType: food.milkType || '',
       nutritionSource: food.nutritionSource || '',
+      ...(food.recognitionMeta ? { recognitionMeta: copyRecognitionMetaForSnapshot(food.recognitionMeta) } : {}),
       sourceType: food.sourceType || (food.isSystem ? 'system' : 'user_custom'),
       sourceSystemFoodId: food.sourceSystemFoodId || '',
       sourceFoodCode: food.sourceFoodCode || '',
@@ -2589,7 +2592,10 @@ function createDataRecordsPageConfig(options = {}) {
     }
     await this.loadFoodCatalog();
     const catalogFood = this.getFoodById(target.foodId);
-    const selectedFood = target.foodSnapshot?.proteinQuality === 'mixed' ? {
+    // 只改份量或备注时，沿用摄入当时的食物成分和制备信息。
+    const hasSnapshot = target.foodSnapshot?.nutritionPerBasis || target.foodSnapshot?.proteinQuality === 'mixed';
+    const selectedFood = hasSnapshot ? {
+      ...(catalogFood || {}),
       ...target.foodSnapshot, _id: target.foodId || '',
       baseUnit: target.foodSnapshot.nutritionBasis?.unit || target.unit || 'g',
       baseQuantity: target.foodSnapshot.nutritionBasis?.quantity || 100
@@ -4242,7 +4248,10 @@ function createDataRecordsPageConfig(options = {}) {
   applyV2DailySummary(summary, dateStr) {
     // 汇总会重置明细，已在途的 Tab 请求也应同步失效。
     this._recordTabRequests = {};
-    this.setData(this.buildV2SummaryState(dateStr, summary || {}));
+    this.setData({
+      ...this.buildV2SummaryState(dateStr, summary || {}),
+      aminoAcidRefreshKey: this.data.aminoAcidRefreshKey + 1
+    });
   },
 
   applyDailyRecordTabDetails(tab, details = {}) {
@@ -4574,6 +4583,7 @@ function createDataRecordsPageConfig(options = {}) {
           : {};
         this.setData({
           ...resetState,
+          aminoAcidBabyUid: babyUid || '',
           loadedRecordTabs: {},
           loadingRecordTabs: {},
           isDataLoading: this.data.isDataLoading

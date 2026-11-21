@@ -221,11 +221,11 @@ class FoodModel {
     }
   }
 
-  async createSystemFoodSnapshot(systemFood, foodData, babyUid) {
+  async createSystemFoodSnapshot(systemFood, foodData, babyUid, { copyOnly = false } = {}) {
     if (!systemFood || !systemFood._id) {
       throw new Error('缺少系统食物信息');
     }
-    if (!foodData || !foodData.name) {
+    if (!copyOnly && (!foodData || !foodData.name)) {
       throw new Error('缺少快照食物数据');
     }
     if (!babyUid) {
@@ -234,11 +234,13 @@ class FoodModel {
 
     try {
       const sourceFood = this._formatFoodDoc(systemFood);
+      if (copyOnly && !sourceFood.isSystem) throw new Error('只能从系统食物创建副本');
+      const draft = copyOnly ? sourceFood : foodData;
       const sourceFoodCode = sourceFood.sourceFoodCode || sourceFood.origin?.foodCode || '';
       const snapshotInput = {
         ...sourceFood,
-        ...foodData,
-        isPhotoAiRecognized: foodData.isPhotoAiRecognized === true,
+        ...draft,
+        isPhotoAiRecognized: draft.isPhotoAiRecognized === true,
         isSystem: false,
         babyUid,
         sharedBabyUids: [babyUid],
@@ -254,21 +256,23 @@ class FoodModel {
         },
         snapshotCreatedAt: db.serverDate(),
         nutritionSource: 'user_override',
-        createdBy: foodData.createdBy || (getApp()?.globalData?.openid) || wx.getStorageSync?.('openid') || ''
+        createdBy: (!copyOnly && draft.createdBy) || (getApp()?.globalData?.openid) || wx.getStorageSync?.('openid') || ''
       };
       delete snapshotInput._id;
       delete snapshotInput.aliasText;
 
-      const existing = await this.collection
+      const findExisting = () => this.collection
         .where({
           sourceSystemFoodId: sourceFood._id,
           babyUid: _.eq(babyUid)
         })
         .limit(1)
         .get();
+      const existing = await findExisting();
 
       if (existing.data && existing.data.length > 0) {
         const existingId = existing.data[0]._id;
+        if (copyOnly) return existingId;
         // 覆盖已有副本时仍传递原始输入和编辑字段，不能先归一化后丢失手工确认依据。
         const { createdAt, createdBy, ...updatePayload } = snapshotInput;
         await this.updateFood(existingId, { ...updatePayload, expectedVersion: Number(existing.data[0].version || 0) }, babyUid);
@@ -276,15 +280,25 @@ class FoodModel {
       }
 
       const snapshotPayload = this._normalizeFoodForWrite(snapshotInput, sourceFood);
-      const res = await this.collection.add({
-        data: {
-          ...snapshotPayload,
-          _id: stableHash('food-source:' + babyUid + ':' + sourceFood._id),
-          version: 1,
-          createdAt: db.serverDate(),
-          updatedAt: db.serverDate()
+      let res;
+      try {
+        res = await this.collection.add({
+          data: {
+            ...snapshotPayload,
+            _id: stableHash('food-source:' + babyUid + ':' + sourceFood._id),
+            version: 1,
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          }
+        });
+      } catch (error) {
+        // 另一个监护人刚建了同一副本时，沿用对方的副本。
+        if (copyOnly) {
+          const concurrent = await findExisting();
+          if (concurrent.data?.[0]?._id) return concurrent.data[0]._id;
         }
-      });
+        throw error;
+      }
       this.markCatalogDirty(babyUid);
       return res._id;
     } catch (error) {

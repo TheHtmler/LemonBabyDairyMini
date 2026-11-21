@@ -126,15 +126,25 @@
                 </view>
               </view>
               <view class="food-actions">
+                <button wx:if="{{item.showAminoAcids}}" class="action-btn amino" size="mini" data-id="{{item._id}}" bindtap="openFoodAminoAcids">{{item.isSystem ? '氨基酸参考值' : '氨基酸资料'}}</button>
                 <button
+                  wx:if="{{item.isSystem}}"
+                  class="action-btn edit"
+                  size="mini"
+                  data-id="{{item._id}}"
+                  bindtap="addSystemFood"
+                  disabled="{{addingSystemFoodId !== ''}}"
+                  loading="{{addingSystemFoodId === item._id}}"
+                  type="default"
+                >加入我的食物</button>
+                <button
+                  wx:else
                   class="action-btn edit"
                   size="mini"
                   data-id="{{item._id}}"
                   bindtap="showEditModal"
                   type="default"
-                >
-                  {{item.isSystem ? '加入我的食物' : '编辑'}}
-                </button>
+                >编辑</button>
                 <button
                   wx:if="{{!item.isSystem}}"
                   class="action-btn delete"

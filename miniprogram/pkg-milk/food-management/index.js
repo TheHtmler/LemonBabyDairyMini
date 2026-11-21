@@ -1,6 +1,8 @@
 const { validateProteinComposition, validateProteinCompositionDetails } = require('../../utils/search-core/proteinComposition');
 const { createEmptyProteinComposition } = require('../../utils/proteinCompositionForm');
 const FoodModel = require('../../models/food');
+const NutritionProfile = require('../../models/nutritionProfile');
+const { fromFoodCatalog, getSystemAminoReference, selectProfile } = require('../../utils/aminoAcidIntake');
 const { normalizeFoodNutritionValues } = require('../../utils/nutritionProvenance');
 const FoodCategoryModel = require('../../models/foodCategory');
 const SystemFoodIndex = require('../../utils/systemFoodIndex');
@@ -97,6 +99,7 @@ Page({
     categoryNavScrollIntoView: '',
     foodPanelScrollTop: 0,
     showAddModal: false,
+    addingSystemFoodId: '',
     savingNutrition: false,
     formSessionId: 0,
     editingVersion: 0,
@@ -161,6 +164,7 @@ Page({
   async onShow() {
     await this.loadCustomCategories();
     this.loadLibraryUpdateHint();
+    if (FoodModel.hasCatalogChanged(this._seenCatalogGeneration)) await this.loadFoods();
   },
 
   // 曾经从其他宝宝导入过数据时，检查来源宝宝的库是否有新变化，有则提示可再同步
@@ -182,6 +186,68 @@ Page({
     wx.navigateTo({
       url: `/pkg-misc/baby-info/index?from=library&importFrom=${hint.babyUid}`
     });
+  },
+
+  openFoodAminoAcids(event) {
+    const { babyUid } = this.data;
+    if (babyUid !== (getBabyUid() || '')) {
+      wx.showToast({ title: '请重新打开食物管理', icon: 'none' });
+      return;
+    }
+    const { id } = event.currentTarget.dataset;
+    if (!id) return;
+    wx.navigateTo({
+      url: `/pkg-milk/amino-acid-archive/index?babyUid=${encodeURIComponent(babyUid)}&foodId=${encodeURIComponent(id)}`
+    });
+  },
+
+  async addSystemFood(event) {
+    if (this.data.addingSystemFoodId || this._saving) return;
+    const { babyUid } = this.data;
+    if (!babyUid || babyUid !== getBabyUid()) {
+      wx.showToast({ title: '请先选择宝宝', icon: 'none' });
+      return;
+    }
+    const { id } = event.currentTarget.dataset;
+    const source = this.data.foods.find(food => food._id === id && food.isSystem);
+    if (!source) return;
+    this.setData({ addingSystemFoodId: id });
+    try {
+      const copyId = await FoodModel.createSystemFoodSnapshot(source, null, babyUid, { copyOnly: true });
+      if (babyUid !== getBabyUid()) return;
+      const catalogGeneration = FoodModel.getCatalogGeneration();
+      const foods = await FoodModel.getAvailableFoods(babyUid, { preferLocalSystemIndex: true });
+      if (babyUid !== getBabyUid()) return;
+      const copy = foods.find(food => food._id === copyId && food.babyUid === babyUid && food.status !== 'archived');
+      if (!copy) throw new Error('暂时无法读取我的食物，请重试。');
+      const entry = fromFoodCatalog(copy);
+      const reference = getSystemAminoReference(fromFoodCatalog(source));
+      // 估算只写入相同食物的个人副本，保留已手填或已保存的资料。
+      if (reference && getSystemAminoReference(entry) === reference) {
+        const archive = await NutritionProfile.getAminoAcidArchive(babyUid);
+        if (babyUid !== getBabyUid()) return;
+        if (!selectProfile({ ...entry, at: Number.MAX_SAFE_INTEGER }, archive)) {
+          await NutritionProfile.saveAminoAcidProfiles(babyUid, [{ key: entry.key, profile: reference.profile }], {
+            expectedArchive: archive,
+            applyReference: true
+          });
+        }
+      }
+      if (babyUid !== getBabyUid()) return;
+      this.setData({
+        activeLibraryScope: 'mine',
+        activeCategory: this.normalizeCategoryValue(copy.category),
+        searchQuery: '',
+        foodPanelScrollTop: 0
+      });
+      this.applyFoodList(foods);
+      this._seenCatalogGeneration = catalogGeneration;
+      wx.showToast({ title: '已加入我的食物', icon: 'success' });
+    } catch (error) {
+      if (babyUid === getBabyUid()) handleError(error, { title: '加入失败' });
+    } finally {
+      this.setData({ addingSystemFoodId: '' });
+    }
   },
 
   async loadFoods() {
@@ -207,6 +273,7 @@ Page({
         }
       });
       this.applyFoodList(foodsFromDb || []);
+      this._seenCatalogGeneration = FoodModel.getCatalogGeneration();
     } catch (error) {
       console.error('加载食物数据失败:', error);
       wx.showToast({
@@ -413,7 +480,10 @@ Page({
       items.length
     );
     return {
-      activeFoods: items.slice(0, limit),
+      activeFoods: items.slice(0, limit).map(food => ({
+        ...food,
+        showAminoAcids: food.isSystem ? !!getSystemAminoReference(fromFoodCatalog(food)) : !!this.data.babyUid
+      })),
       activeFoodTotal: items.length,
       activeFoodRenderLimit: limit,
       hasMoreActiveFoods: limit < items.length

@@ -1,0 +1,61 @@
+<view class="amino-panel">
+  <button class="amino-toggle" hover-class="amino-pressed" bindtap="toggle" aria-expanded="{{open}}">
+    <text>氨基酸摄入汇总</text>
+    <text class="amino-action">{{open ? '收起' : '查看'}}</text>
+  </button>
+  <block wx:if="{{open}}">
+    <text wx:if="{{busy}}" class="amino-note">正在汇总当天摄入…</text>
+    <button wx:elif="{{error}}" class="amino-retry" bindtap="loadDay">无法读取氨基酸汇总，点击重试</button>
+    <view wx:else class="amino-body">
+      <text class="amino-note">{{hasIntakes ? (pending.length ? '缺少资料的摄入项尚未计入对应数值。' : '按当天已记录的食物和奶量汇总。') : '当天暂无食物或奶类摄入记录。'}}</text>
+      <view wx:if="{{pending.length}}" class="amino-pending">
+        <text class="amino-missing-title">缺失项 · {{pending.length}}</text>
+        <view wx:for="{{pending}}" wx:for-item="item" wx:key="intakeIndex" class="amino-detail-row">
+          <view class="amino-detail-head pending-head">
+            <view class="amino-detail-name">
+              <text>{{item.name}}</text>
+              <text wx:if="{{item.quantityLabel}}" class="amino-quantity">{{item.quantityLabel}}</text>
+            </view>
+            <button wx:if="{{item.recordId}}" class="amino-link amino-supplement" data-record-id="{{item.recordId}}"
+              data-component-index="{{item.componentIndex}}" bindtap="supplementIntake">补录氨基酸</button>
+          </view>
+          <text class="amino-source">{{item.detail}}</text>
+        </view>
+      </view>
+      <text wx:if="{{hasReferences}}" class="amino-note">含参考值的项目按样品含量估算。</text>
+      <block wx:if="{{hasIntakes}}" wx:for="{{rows}}" wx:key="key" wx:for-item="row">
+        <button class="amino-row {{expandedKey === row.key ? 'amino-row-open' : ''}}" data-key="{{row.key}}"
+          hover-class="amino-pressed" bindtap="toggleDetails" disabled="{{!row.contributions.length}}" aria-expanded="{{expandedKey === row.key}}">
+          <text class="amino-label">{{row.label}}</text>
+          <view class="amino-reading">
+            <view class="amino-value">
+              <text class="amino-gap" wx:if="{{row.status === 'partial'}}">已计</text>
+              <text class="amino-amount {{row.status === 'missing' || row.status === 'empty' ? 'amino-muted' : ''}}">{{row.valueText}}</text>
+              <text class="estimate-tag" wx:if="{{row.estimated}}">含参考值</text>
+            </view>
+            <text class="amino-gap" wx:if="{{row.missingCount}}">{{row.missingCount}} 项缺资料</text>
+          </view>
+          <view class="amino-chevron" wx:if="{{row.contributions.length}}" aria-hidden="{{true}}"></view>
+        </button>
+        <view wx:if="{{row.contributions.length && expandedKey === row.key}}" class="amino-detail">
+          <view wx:for="{{row.contributions}}" wx:for-item="contribution" wx:key="listKey" class="amino-detail-row">
+            <view class="amino-detail-head">
+              <text class="amino-detail-name">{{contribution.name}}</text>
+              <view class="amino-value">
+                <text class="amino-amount">{{contribution.amount}}</text>
+                <text class="estimate-tag" wx:if="{{contribution.estimated}}">参考值</text>
+              </view>
+            </view>
+            <text class="amino-source">{{contribution.quantity}} {{contribution.unit}}{{contribution.sourceLabel ? ' · ' + contribution.sourceLabel : ''}}</text>
+            <view class="amino-links" wx:if="{{contribution.source.url || (contribution.estimated && contribution.catalogId)}}">
+              <button wx:if="{{contribution.source.url}}" class="amino-link"
+                data-url="{{contribution.source.url}}" bindtap="copySource">复制来源链接</button>
+              <button wx:if="{{contribution.estimated && contribution.catalogId}}" class="amino-link"
+                data-food-id="{{contribution.catalogId}}" bindtap="openFoodAminoAcids">查看食物资料</button>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </block>
+</view>

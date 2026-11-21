@@ -1,4 +1,6 @@
 const { invalidateSearchForBaby } = require('../utils/searchSession');
+const { applyProfiles, getManualAminoAcidError, normalizeProfile } = require('../utils/aminoAcidIntake');
+const PENDING_AMINO_TIME = Number.MAX_SAFE_INTEGER;
 // 新版配奶营养档案模型：milk_nutrition_profiles 是配奶设置的主数据源
 const {
   POWDER_CATEGORIES,
@@ -200,7 +202,94 @@ function withPowderLifecycle(powder, timestamp) {
   };
 }
 
+function mapAminoArchiveTimes(archive, mapTime) {
+  return Array.isArray(archive) ? archive.map(item => ({
+    ...item,
+    versions: (item.versions || []).map(version => ({
+      ...version,
+      effectiveAt: mapTime(version.effectiveAt),
+      ...(version.appliedAtByDate ? {
+        appliedAtByDate: Object.fromEntries(
+          Object.entries(version.appliedAtByDate).map(([date, time]) => [date, mapTime(time)])
+        )
+      } : {})
+    }))
+  })) : [];
+}
+
+function readAminoArchive(document) {
+  return mapAminoArchiveTimes(document?.aminoAcidArchive,
+    value => getTimeValue(value?.$date ?? value) || null);
+}
+
 class MilkNutritionProfileModel {
+  async getAminoAcidArchive(babyUid) {
+    if (!babyUid) return [];
+    const [profile] = await getDocumentsByFreshness(milkNutritionProfileCollection, babyUid);
+    return readAminoArchive(profile);
+  }
+
+  async saveAminoAcidProfiles(babyUid, updates, { date = '', expectedArchive, applyReference = false } = {}) {
+    if (!babyUid) throw new Error('请先选择宝宝');
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('补算日期无效');
+    if (!Array.isArray(updates) || !updates.length) throw new Error('请核对待保存的氨基酸资料');
+    for (const item of updates) {
+      const error = getManualAminoAcidError(item?.profile?.values);
+      if (error) throw new Error(error);
+      const profile = normalizeProfile(item?.profile);
+      if (!item?.key || !profile) throw new Error('请核对待保存的氨基酸资料');
+      if (profile.estimated && !applyReference) throw new Error('请先确认要应用的参考资料');
+      if (applyReference) {
+        const recordId = profile.estimated ? profile.source.recordId
+          : profile.estimatedKeys?.length && profile.estimateSource?.recordId;
+        if (!recordId) throw new Error('这条参考资料缺少官方样品编号');
+      }
+    }
+
+    let [document] = await getDocumentsByFreshness(milkNutritionProfileCollection, babyUid);
+    if (!document) {
+      await this.ensureNutritionProfileSettings(babyUid, { throwOnError: true });
+      [document] = await getDocumentsByFreshness(milkNutritionProfileCollection, babyUid);
+    }
+    if (!document) throw new Error('未找到宝宝的营养档案');
+
+    const archive = readAminoArchive(document);
+    // 家人可以补不同食物；同一食物已更新时先重新核对。
+    if (Array.isArray(expectedArchive)) {
+      const original = new Map(expectedArchive.map(item => [item.key, item.versions]));
+      const current = new Map(archive.map(item => [item.key, item.versions]));
+      if (updates.some(({ key }) => JSON.stringify(original.get(key)) !== JSON.stringify(current.get(key)))) {
+        throw new Error('这份资料已被其他监护人更新，请刷新后再保存');
+      }
+    }
+
+    const next = applyProfiles(archive, updates, { effectiveAt: PENDING_AMINO_TIME, date });
+    if (JSON.stringify(next) === JSON.stringify(archive)) return archive;
+    // 与摄入记录共用云端时钟，手机时间偏差不会把旧记录套进新档案。
+    const stored = mapAminoArchiveTimes(next,
+      time => time === PENDING_AMINO_TIME ? db.serverDate() : time);
+
+    const version = Number(document.version || 0);
+    const versionCondition = version === 0
+      ? db.command.or(db.command.eq(0), db.command.exists(false)) : db.command.eq(version);
+    const result = await milkNutritionProfileCollection.where({
+      _id: document._id, babyUid, version: versionCondition
+    }).update({
+      data: {
+        aminoAcidArchive: stored,
+        version: version + 1,
+        updatedAt: db.serverDate()
+      }
+    });
+    if (result.stats?.updated !== 1) throw new Error('营养档案已变化，请刷新后再保存');
+    try {
+      const { data } = await milkNutritionProfileCollection.doc(document._id).get();
+      return readAminoArchive(data);
+    } catch (error) {
+      throw new Error('资料已保存，请重新加载以查看新版本');
+    }
+  }
+
   buildProfileDataFromSettings(babyUid, settings = {}) {
     const timestamp = db.serverDate();
     const explicitPowders = normalizeFormulaPowders(settings.formulaPowders || []);

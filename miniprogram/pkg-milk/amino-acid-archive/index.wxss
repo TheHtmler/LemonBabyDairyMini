@@ -1,0 +1,418 @@
+page {
+  background: #fef8ec;
+  color: #342d22;
+  font-size: 28rpx;
+}
+
+.amino-page {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+}
+
+.amino-page.with-save-bar {
+  padding-bottom: calc(204rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+  padding: 24rpx;
+  border: 1rpx solid #f0e3cb;
+  border-radius: 20rpx;
+  background: #fff;
+}
+
+.state {
+  text-align: center;
+  color: #746249;
+}
+
+.title {
+  display: block;
+  margin: 0;
+  font-size: 34rpx;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.archive-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.archive-identity {
+  flex: 1 1 200rpx;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.basis,
+.hint {
+  color: #746249;
+  font-size: 24rpx;
+}
+
+.basis {
+  display: block;
+  margin-top: 8rpx;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  display: block;
+  margin-top: 16rpx;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.field-note {
+  color: #805617;
+}
+
+.basis-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8rpx 16rpx;
+  margin-top: 24rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0e3cb;
+}
+
+.basis-title {
+  font-size: 27rpx;
+  font-weight: 600;
+}
+
+.powder-bases {
+  width: 100%;
+}
+
+.basis-options {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 10rpx;
+}
+
+.button.basis-option {
+  flex: 1;
+  min-width: 0;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 12rpx;
+  border: 1rpx solid #ece2cf;
+  border-radius: 12rpx;
+  background: #f9f5eb;
+  color: #5e503b;
+  font-size: 25rpx;
+  line-height: 1.3;
+}
+
+.button.basis-selected {
+  border-color: #cc9843;
+  background: #ffedc8;
+  color: #805617;
+  font-weight: 650;
+}
+
+.basis-note,
+.form-hint {
+  margin-top: 6rpx;
+}
+
+.fields {
+  margin-top: 12rpx;
+}
+
+.field {
+  min-height: 84rpx;
+  border-top: 1rpx solid #f1e9db;
+}
+
+.field-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-value {
+  flex-shrink: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.field-value,
+.field-input {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: #746249;
+  font-weight: 400;
+}
+
+.field-input {
+  box-sizing: border-box;
+  flex: 0 1 240rpx;
+  min-width: 0;
+  min-height: 64rpx;
+  border: 1rpx solid #eee5d5;
+  padding: 8rpx 14rpx;
+  border-radius: 10rpx;
+  background: #f9f5eb;
+  text-align: right;
+}
+
+.conversion .field-input {
+  width: 100%;
+  margin-top: 8rpx;
+  text-align: left;
+}
+
+.estimate-tag {
+  display: inline-block;
+  margin-left: 8rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  background: #fff2d3;
+  color: #785700;
+  font-size: 22rpx;
+}
+
+.focus-star {
+  color: #805617;
+}
+
+.button {
+  box-sizing: border-box;
+  margin-top: 20rpx;
+  border-radius: 14rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.button[disabled] {
+  opacity: 0.55;
+}
+
+.button.action {
+  width: 100%;
+  max-width: 100%;
+  min-height: 88rpx;
+}
+
+.save-bar {
+  position: fixed;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #f0e3cb;
+  background: #fff;
+}
+
+.save-bar .button,
+.save-bar .error {
+  margin-top: 0;
+}
+
+.save-bar .error {
+  margin-bottom: 10rpx;
+}
+
+.source-block {
+  padding-top: 8rpx;
+  border-top: 1rpx solid #f0e3cb;
+}
+
+.button.text-link {
+  width: auto;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #805617;
+  font-size: 26rpx;
+  line-height: 88rpx;
+  text-align: left;
+}
+
+.button::after {
+  border: 0;
+}
+
+.primary {
+  background: #ffca58;
+  color: #33220d;
+  font-weight: 650;
+}
+
+.secondary {
+  background: #fff2d3;
+  color: #805617;
+}
+
+.error {
+  display: block;
+  margin-top: 16rpx;
+  color: #a52923;
+  font-size: 24rpx;
+}
+
+.button.search-link {
+  flex-shrink: 0;
+  width: auto;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0 16rpx;
+  line-height: 88rpx;
+  color: #805617;
+  font-size: 26rpx;
+  white-space: nowrap;
+}
+
+.reference-heading .search-link {
+  padding-left: 8rpx;
+  padding-right: 0;
+  background: transparent;
+}
+
+.reference-heading,
+.reference-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.reference-heading .title {
+  flex: 1;
+  min-width: 0;
+}
+
+.reference-search {
+  margin-top: 20rpx;
+}
+
+.reference-input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 88rpx;
+  padding: 0 16rpx;
+  border-radius: 12rpx;
+  background: #f9f5eb;
+  font-size: 28rpx;
+}
+
+.button.reference-submit {
+  flex: 0 0 156rpx;
+  height: 88rpx;
+  margin: 0;
+  padding: 0 10rpx;
+  line-height: 88rpx;
+  white-space: nowrap;
+}
+
+.reference-content {
+  margin-top: 16rpx;
+}
+
+.reference-section {
+  display: block;
+  margin-top: 24rpx;
+  color: #746249;
+  font-size: 24rpx;
+}
+
+.button.review-toggle {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 88rpx;
+  padding: 0 16rpx;
+  background: #f9f5eb;
+  color: #805617;
+  font-size: 26rpx;
+  line-height: 88rpx;
+}
+
+.button.reference-option {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  width: 100%;
+  max-width: 100%;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f0e3cb;
+  border-radius: 0;
+  background: transparent;
+  color: #342d22;
+  text-align: left;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.button.reference-option-pressed {
+  background: #faf5e8;
+}
+
+.reference-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.reference-origin {
+  margin-top: 6rpx;
+  font-weight: 400;
+}
+
+.reference-choice {
+  flex: 0 0 auto;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  color: #805617;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.reference-choice-eligible {
+  background: #fff2d3;
+  font-weight: 600;
+}
+
+.reference-name,
+.reference-message {
+  display: block;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.reference-name {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.preview-name {
+  font-size: 32rpx;
+  line-height: 1.35;
+}
+
+.reference-message {
+  padding: 14rpx 0 2rpx;
+  color: #746249;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
