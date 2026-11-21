@@ -188,7 +188,7 @@ Page({
         return;
       }
       const choice = await wx.showActionSheet({ itemList: selectable.map(variant =>
-        [variant.sourceLabel, variant.sourceText, variant.valueText, variant.unit, '参考范围 ' + variant.rangeText,
+        [variant.sourceLabel, variant.sourceText, variant.valueText, '参考范围 ' + variant.rangeText,
           variant.confirmationBlocked ? '单位需核对，不能自动填入' : '']
           .filter(Boolean).join(' ')) });
       const variant = selectable[choice.tapIndex];

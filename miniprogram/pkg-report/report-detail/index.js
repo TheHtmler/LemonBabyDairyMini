@@ -226,10 +226,9 @@ Page({
       '已录入 ' + rows.length + ' 项', ''];
     rows.forEach(row => {
       lines.push(row.name + '：' + row.rawValueText + ' [' + row.statusText + ']');
-      if (row.unitText) lines.push('单位：' + row.unitText);
-      lines.push('参考范围：' + (row.rangeWithUnitText || '未录入'));
+      lines.push('参考范围：' + (row.rangeText || '未录入'));
       if (row.unknownReason) lines.push('待核对原因：' + row.unknownReason);
-      if (row.optimalRangeText) lines.push('项目计算范围：' + row.optimalRangeWithUnitText);
+      if (row.optimalRangeText) lines.push('项目计算范围：' + row.optimalRangeText);
       lines.push('');
     });
     lines.push('参考范围为已录入内容，请对照本次原报告核实。');

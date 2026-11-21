@@ -270,6 +270,7 @@ class ReportModel {
   static validateReportData(reportType, indicators) {
     const requiredIndicators = this.getIndicators(reportType);
     const errors = [];
+    const fieldErrors = {};
 
     requiredIndicators.forEach(indicator => {
       const data = indicators[indicator.key];
@@ -282,21 +283,25 @@ class ReportModel {
 
       if (!data) {
         errors.push(`缺少指标：${indicator.name}`);
+        fieldErrors[indicator.key] = { value: '必填' };
         return;
       }
 
+      const fields = {};
       if (!hasValue) {
         errors.push(`${indicator.name} 的值不能为空`);
+        fields.value = '必填';
       } else if (!normalizeReportDetectionValue(data.value)) {
         errors.push(`${indicator.name} 的值不是有效检测数值`);
+        fields.value = '数值无效';
       }
 
       if (!indicator.isRatio || indicator.allowRangeInput) {
-        const missingRange = [data.minRange, data.maxRange].some(value => value === null || value === undefined || String(value).trim() === '');
-        if (missingRange && !indicator.optional) {
-          errors.push(`${indicator.name} 需要设置参考范围`);
-        }
+        if (!String(data.minRange ?? '').trim()) fields.minRange = '必填';
+        if (!String(data.maxRange ?? '').trim()) fields.maxRange = '必填';
+        if (fields.minRange || fields.maxRange) errors.push(`${indicator.name} 需要设置参考范围`);
       }
+      if (Object.keys(fields).length) fieldErrors[indicator.key] = fields;
     });
 
     if (
@@ -312,12 +317,16 @@ class ReportModel {
           ? '血五分类CRP'
           : '大生化';
         errors.push(`请至少填写一项${typeLabel}指标`);
+        if (!Object.keys(fieldErrors).length) {
+          fieldErrors[requiredIndicators[0].key] = { value: '至少填一项' };
+        }
       }
     }
 
     return {
       isValid: errors.length === 0,
-      errors: errors
+      errors,
+      fieldErrors
     };
   }
 

@@ -49,13 +49,12 @@
       </view>
       <view class="metric-result {{item.status}}">
         <text>{{item.needsReview ? '核对结果' : item.valueText + (item.marker ? ' ' + item.marker : '')}}{{item.hasConflict ? ' ⌄' : ''}}</text>
-        <text wx:if="{{!item.needsReview && item.unit}}" class="source-note">{{item.unit}}</text>
       </view>
       <text class="metric-range">{{item.needsReview ? '—' : item.rangeText || '未识别'}}</text>
       <view wx:if="{{item.needsReview}}" class="row-evidence">
         <text class="source-note">{{item.reviewHint}}</text>
         <view wx:for="{{item.evidence}}" wx:for-item="source" wx:key="signature" class="source-note">
-          <text>{{source.sourceLabel}} · {{source.sourceText}}：{{source.valueText}} {{source.unit}}；{{source.rangeText}}</text>
+          <text>{{source.sourceLabel}} · {{source.sourceText}}：{{source.valueText}}；{{source.rangeText}}</text>
         </view>
       </view>
     </view>

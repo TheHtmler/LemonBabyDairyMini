@@ -1,3 +1,5 @@
+const { reportCellParts } = require('./reportExportCell');
+
 const BASE_WIDTH = 1240;
 const IMAGE_MARGIN = 64;
 const NAME_COLUMN_WIDTH = 320;
@@ -9,6 +11,12 @@ const TOO_MUCH_CONTENT = '内容过多，请减少报告数量或导出Excel';
 const CELL_PADDING = 16;
 const BODY_FONT_SIZE = 24;
 const BODY_LINE_HEIGHT = 34;
+const CELL_STYLES = {
+  body: { size: BODY_FONT_SIZE, lineHeight: BODY_LINE_HEIGHT, color: '#283b32' },
+  header: { size: BODY_FONT_SIZE, lineHeight: BODY_LINE_HEIGHT, color: '#283b32', bold: true },
+  value: { size: 30, lineHeight: 40, color: '#203329', bold: true },
+  muted: { size: 21, lineHeight: 30, color: '#59675f' }
+};
 const activePages = new WeakSet();
 
 const toText = value => value === null || value === undefined ? '' : String(value);
@@ -67,14 +75,24 @@ function getColumnWidths(count, contentWidth, requestedWidths) {
 function getRenderSize(width, height) {
   const scale = Math.min(1, MAX_IMAGE_SIDE / width, MAX_IMAGE_SIDE / height,
     Math.sqrt(MAX_IMAGE_PIXELS / width / height));
-  if (!Number.isFinite(scale) || BODY_FONT_SIZE * scale < MIN_BODY_FONT_SIZE) {
+  if (!Number.isFinite(scale) || CELL_STYLES.muted.size * scale < MIN_BODY_FONT_SIZE) {
     throw new Error(TOO_MUCH_CONTENT);
   }
   return { width: Math.floor(width * scale), height: Math.floor(height * scale), scale };
 }
 
-function wrapCells(context, cells, widths) {
-  return widths.map((width, index) => wrapText(context, cells[index], width - CELL_PADDING * 2));
+function wrapCells(context, cells, widths, columnStyles, header = false) {
+  return widths.map((width, index) => reportCellParts(toText(cells[index]), header ? 'header' : columnStyles[index])
+    .map(part => {
+      const style = CELL_STYLES[part.style];
+      setFont(context, style.size, style.bold);
+      return { style, lines: wrapText(context, part.text, width - CELL_PADDING * 2) };
+    }));
+}
+
+function rowHeight(cells) {
+  return Math.max(...cells.map(parts => parts.reduce((height, part) => height + part.lines.length * part.style.lineHeight, 0)))
+    + CELL_PADDING * 2;
 }
 
 function buildLayout(context, document) {
@@ -90,6 +108,7 @@ function buildLayout(context, document) {
     throw new Error('报告分区行标识无效');
   }
   const sections = new Set(sectionRows);
+  const columnStyles = document.bodyColumnStyles || [];
   const width = Math.max(BASE_WIDTH, IMAGE_MARGIN * 2 + NAME_COLUMN_WIDTH + DATA_COLUMN_WIDTH * (columnCount - 1));
   // 先检查宽度，避免为明显超出内存或可读性限制的列数继续排版。
   getRenderSize(width, IMAGE_MARGIN * 2);
@@ -102,21 +121,17 @@ function buildLayout(context, document) {
   const subtitleLines = subtitle ? wrapText(context, subtitle, contentWidth) : [];
   const headingBottom = IMAGE_MARGIN + titleLines.length * 54 + 16
     + (subtitleLines.length ? subtitleLines.length * BODY_LINE_HEIGHT + 20 : 0);
-  setFont(context, BODY_FONT_SIZE, true);
-  const headerCells = wrapCells(context, document.headers, widths);
-  const headerHeight = Math.max(...headerCells.map(lines => lines.length)) * BODY_LINE_HEIGHT + CELL_PADDING * 2;
+  const headerCells = wrapCells(context, document.headers, widths, columnStyles, true);
+  const headerHeight = rowHeight(headerCells);
   let cursor = headingBottom + headerHeight;
   getRenderSize(width, cursor + IMAGE_MARGIN);
   const rows = document.rows.map((row, index) => {
     throwIfCancelled(document);
     const sectionHeader = sections.has(index);
-    // 分区标题按实际粗体测量，后续行从完整标题高度之后连续排布。
-    setFont(context, BODY_FONT_SIZE, sectionHeader);
-    const cells = wrapCells(context, row, widths);
-    const lineCount = Math.max(...cells.map(lines => lines.length));
-    const rowHeight = lineCount * BODY_LINE_HEIGHT + CELL_PADDING * 2;
-    const result = { cells, y: cursor, height: rowHeight, sectionHeader };
-    cursor += rowHeight;
+    const cells = wrapCells(context, row, widths, columnStyles, sectionHeader);
+    const height = rowHeight(cells);
+    const result = { cells, y: cursor, height, sectionHeader };
+    cursor += height;
     getRenderSize(width, cursor + IMAGE_MARGIN);
     return result;
   });
@@ -144,10 +159,8 @@ function drawCells(context, cells, layout, y, height, header = false) {
   context.strokeStyle = '#d6ded5';
   context.lineWidth = scale;
   context.strokeRect(IMAGE_MARGIN * scale, y * scale, layout.contentWidth * scale, height * scale);
-  context.fillStyle = '#283b32';
-  setFont(context, BODY_FONT_SIZE * scale, header);
   let x = IMAGE_MARGIN;
-  cells.forEach((lines, index) => {
+  cells.forEach((parts, index) => {
     const width = layout.widths[index];
     if (index) {
       context.beginPath();
@@ -155,7 +168,13 @@ function drawCells(context, cells, layout, y, height, header = false) {
       context.lineTo(x * scale, (y + height) * scale);
       context.stroke();
     }
-    drawLines(context, lines, x + CELL_PADDING, y + CELL_PADDING, BODY_LINE_HEIGHT, width - CELL_PADDING * 2, scale);
+    let textY = y + CELL_PADDING;
+    for (const { style, lines } of parts) {
+      setFont(context, style.size * scale, style.bold);
+      context.fillStyle = style.color;
+      drawLines(context, lines, x + CELL_PADDING, textY, style.lineHeight, width - CELL_PADDING * 2, scale);
+      textY += lines.length * style.lineHeight;
+    }
     x += width;
   });
 }

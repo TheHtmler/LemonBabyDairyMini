@@ -1,4 +1,6 @@
 // 格式层只处理传入内容，不访问页面、文件系统或网络，兼容小程序运行环境。
+const { reportCellParts } = require('./reportExportCell');
+
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const SHEET_NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
 const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
@@ -109,15 +111,41 @@ function textWidth(value) {
   return Array.from(value).reduce((width, character) => width + (character.codePointAt(0) > 255 ? 2 : 1), 0);
 }
 
-function rowHeight(values, widths, minimum) {
-  const lines = values.reduce((maximum, value, index) => Math.max(maximum,
-    value.split('\n').reduce((total, line) => total + Math.max(1, Math.ceil(textWidth(line) / Math.max(1, widths[index] - 2))), 0)), 1);
-  return Math.min(409, Math.max(minimum, lines * 15 + 10));
+const CELL_TEXT_STYLES = {
+  value: { size: 14, lineHeight: 19, color: 'FF203329', bold: true },
+  muted: { size: 10, lineHeight: 14, color: 'FF59675F' }
+};
+
+function rowHeight(values, widths, minimum, columnStyles) {
+  const height = values.reduce((maximum, value, index) => {
+    const cellHeight = reportCellParts(value, columnStyles[index]).reduce((total, part) => {
+      const style = CELL_TEXT_STYLES[part.style];
+      const size = style?.size || 11;
+      const lineHeight = style?.lineHeight || 15;
+      const lineCount = part.text.split('\n').reduce((lines, line) =>
+        lines + Math.max(1, Math.ceil(textWidth(line) * size / 11 / Math.max(1, widths[index] - 2))), 0);
+      return total + lineCount * lineHeight;
+    }, 0);
+    return Math.max(maximum, cellHeight);
+  }, 0);
+  return Math.min(409, Math.max(minimum, height + 10));
 }
 
-function sheetRow(values, index, style, widths, minimum) {
-  const cells = values.map((value, column) => '<c r="' + columnName(column) + index + '" s="' + style + '" t="inlineStr"><is><t xml:space="preserve">' + escapeXml(value) + '</t></is></c>').join('');
-  return '<row r="' + index + '" ht="' + rowHeight(values, widths, minimum) + '" customHeight="1">' + cells + '</row>';
+function cellXmlText(value, tone) {
+  const textNode = text => '<t xml:space="preserve">' + escapeXml(text) + '</t>';
+  if (!CELL_TEXT_STYLES[tone]) return textNode(value);
+  return reportCellParts(value, tone).map((part, index) => {
+    const style = CELL_TEXT_STYLES[part.style];
+    return '<r><rPr><rFont val="Calibri"/>' + (style.bold ? '<b/>' : '')
+      + '<color rgb="' + style.color + '"/><sz val="' + style.size + '"/></rPr>'
+      + textNode((index ? '\n' : '') + part.text) + '</r>';
+  }).join('');
+}
+
+function sheetRow(values, index, style, widths, minimum, columnStyles = []) {
+  const cells = values.map((value, column) => '<c r="' + columnName(column) + index + '" s="' + style
+    + '" t="inlineStr"><is>' + cellXmlText(value, columnStyles[column]) + '</is></c>').join('');
+  return '<row r="' + index + '" ht="' + rowHeight(values, widths, minimum, columnStyles) + '" customHeight="1">' + cells + '</row>';
 }
 
 function buildStyles() {
@@ -136,7 +164,7 @@ function buildStyles() {
 
 // 所有内容使用内联文本单元格，不创建公式或外部链接；数字零不会因真假判断丢失。
 function buildXlsx(options = {}) {
-  const { title, subtitle, headers, rows, columnWidths = [], sectionRows = [], filterRowCount } = options;
+  const { title, subtitle, headers, rows, columnWidths = [], bodyColumnStyles = [], sectionRows = [], filterRowCount } = options;
   if (!Array.isArray(headers) || !headers.length || headers.length > 16384 || !Array.isArray(rows)) throw new Error('工作簿需要有效的表头和数据行');
   if (!Array.isArray(columnWidths)) throw new Error('列宽必须为数组');
   if (!Array.isArray(sectionRows) || sectionRows.some(index => !Number.isInteger(index) || index < 0 || index >= rows.length)) throw new Error('工作簿分区行标识无效');
@@ -168,7 +196,8 @@ function buildXlsx(options = {}) {
   sheetRows.push(sheetRow(heading, headerRow, 3, widths, 32));
   content.forEach((row, index) => {
     const sectionHeader = sections.has(index);
-    sheetRows.push(sheetRow(row, headerRow + index + 1, sectionHeader ? 3 : 0, widths, sectionHeader ? 32 : 28));
+    sheetRows.push(sheetRow(row, headerRow + index + 1, sectionHeader ? 3 : 0, widths,
+      sectionHeader ? 32 : 28, sectionHeader ? [] : bodyColumnStyles));
   });
   const mergedRows = heading.length > 1 ? [1, ...(subtitleText ? [2] : [])] : [];
   const columns = widths.map((width, index) => '<col min="' + (index + 1) + '" max="' + (index + 1) + '" width="' + width + '" customWidth="1"/>').join('');
@@ -218,7 +247,9 @@ function jpegInfo(bytes) {
 // 单张长图完整填满连续页面，固定宽度并按比例延伸高度；交叉引用按字节计数。
 function buildPdf(image) {
   if (!image || Array.isArray(image) || !Number.isFinite(image.width) || !Number.isFinite(image.height) || image.width <= 0 || image.height <= 0) throw new Error('PDF 需要一张尺寸为正数的图片');
-  const jpeg = image.jpeg instanceof Uint8Array ? image.jpeg : image.jpeg instanceof ArrayBuffer ? new Uint8Array(image.jpeg) : null;
+  const input = image.jpeg;
+  const jpeg = ArrayBuffer.isView(input) ? new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
+    : Object.prototype.toString.call(input) === '[object ArrayBuffer]' ? new Uint8Array(input) : null;
   if (!jpeg) throw new Error('PDF 页面图像必须为二进制 JPEG');
   const info = jpegInfo(jpeg);
   if (image.width !== info.width || image.height !== info.height) throw new Error('PDF 页面尺寸与 JPEG 图像不一致');

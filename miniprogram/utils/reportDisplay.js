@@ -67,27 +67,15 @@ function buildIndicatorDisplay(config = {}, indicator = {}) {
     high: '偏高', low: '偏低', normal: '范围内', empty: '未录入',
     unknown: unknown?.label || '状态待核对'
   }[status];
-  const originalUnit = typeof indicator.unit === 'string' ? indicator.unit.trim() : '';
-  const configuredUnit = typeof config.unit === 'string' ? config.unit.trim() : '';
-  // 优先展示已保存的原单位，不能把另一尺度的原值配上配置单位。
-  const dimensionless = (!!config.isRatio || config.key === 'ph') && !originalUnit && !configuredUnit;
-  const unit = originalUnit || configuredUnit;
-  const unitSource = originalUnit ? 'report' : configuredUnit ? 'configured'
-    : dimensionless ? 'dimensionless' : 'missing';
   const optimalRangeText = indicator.optimalRange
     ? formatReportRange(indicator.optimalRange.min, indicator.optimalRange.max) : '';
-  const rangeWithUnitText = rangeText ? [rangeText, unit].filter(Boolean).join(' ') : '';
-  const optimalRangeWithUnitText = optimalRangeText ? [optimalRangeText, unit].filter(Boolean).join(' ') : '';
   const name = ReportModel.getIndicatorDisplayName(config) || config.name || config.key;
-  const secondaryText = [config.abbr && config.abbr !== name ? config.abbr : '', unit]
-    .filter(Boolean).join(' · ');
+  const secondaryText = config.abbr && config.abbr !== name ? config.abbr : '';
   return {
     key: config.key,
     name, secondaryText,
-    abbr: config.abbr || '', unit, unitText: unit, unitSource,
-    hasValue, numericValue, resultKind, valueText: formatReportValue(value), rangeText, rangeWithUnitText,
-    rangeSource: rangeText ? 'report' : 'missing',
-    optimalRangeText, optimalRangeWithUnitText,
+    abbr: config.abbr || '',
+    hasValue, numericValue, resultKind, valueText: formatReportValue(value), rangeText, optimalRangeText,
     status, statusText, statusClass: status, unknownReason: unknown?.text || '', unknownReasonCode: unknown?.code || '',
     abnormal: status === 'high' || status === 'low',
     marker: status === 'high' ? '↑' : status === 'low' ? '↓' : ''

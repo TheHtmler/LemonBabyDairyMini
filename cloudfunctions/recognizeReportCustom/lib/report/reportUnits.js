@@ -21,12 +21,4 @@ function areReportUnitsEquivalent(first, second) {
   return normalizeReportUnit(first) === normalizeReportUnit(second);
 }
 
-// 跨报告比较必须确认尺度相同，缺单位不能被当成同一种测量尺度。
-function areReportUnitsComparable(first, second, config = {}) {
-  const left = normalizeReportUnit(first || config.unit);
-  const right = normalizeReportUnit(second || config.unit);
-  if (left !== right) return false;
-  return Boolean(left) || config.key === 'ph' || config.isRatio === true;
-}
-
-module.exports = { normalizeReportUnit, areReportUnitsEquivalent, areReportUnitsComparable };
+module.exports = { normalizeReportUnit, areReportUnitsEquivalent };

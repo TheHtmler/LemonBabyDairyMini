@@ -136,7 +136,7 @@ function mergeReportPages(pages, reportType, choices = {}) {
       return;
     }
     indicators[config.key] = { ...selected.indicator, needsReview: false, reviewReason: '' };
-    rows.push({ ...buildIndicatorDisplay({ ...config, unit: selected.indicator.unit || config.unit }, selected.indicator),
+    rows.push({ ...buildIndicatorDisplay(config, selected.indicator),
       needsReview: false, hasConflict: needsChoice, evidence,
       valueText: selected.raw.rawValue ?? selected.raw.value,
       rangeText: selected.raw.refRange || formatReportRange(selected.raw.minRange, selected.raw.maxRange),

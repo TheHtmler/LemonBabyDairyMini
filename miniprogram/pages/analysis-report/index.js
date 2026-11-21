@@ -2,6 +2,7 @@ const ReportRepository = require('../../models/reportRepository');
 const { buildComparisonExportDocument, showReportExport, cancelReportExport } = require('../../utils/reportExport');
 const DailyRecordV2Service = require('../../utils/dailyRecordV2Service');
 const { REPORT_ENTRY_TYPES } = require('../../constants/reportTypes');
+const { buildReportMetricTrend } = require('../../utils/reportMetricTrend');
 const {
   buildReportArchivePreview, inferDefaultCompareReportType
 } = require('../../utils/reportWorkbench');
@@ -52,6 +53,7 @@ Page({
 
   onUnload() {
     cancelReportExport(this);
+    this._metricTrendRequest = null;
     this._exportDisposed = true;
     this._requestId = (this._requestId || 0) + 1;
     this._dietRequestId = (this._dietRequestId || 0) + 1;
@@ -187,9 +189,11 @@ Page({
 
   switchMainTab(e) {
     const mainTab = e.currentTarget.dataset.tab;
-    if (!['archive', 'compare'].includes(mainTab) || mainTab === this.data.mainTab) return;
+    if (!['archive', 'compare'].includes(mainTab)) return;
+    const tabChanged = mainTab !== this.data.mainTab;
+    if (!tabChanged && mainTab === 'archive') return;
     this.closeMetricDetail();
-    this.setData({ mainTab });
+    if (tabChanged) this.setData({ mainTab });
     if (mainTab === 'compare') {
       this.resetCompareScroll();
       const type = inferDefaultCompareReportType(this.data.reportsCache, this._pendingCompareType || this.data.compareReportType);
@@ -340,12 +344,49 @@ Page({
     const row = view?.compareRows.find(item => item.key === key);
     if (!row) { this.closeMetricDetail(); return; }
     const columns = new Map(view.columns.map(column => [column.reportId, column]));
-    this.setData({ metricDetail: { ...row,
-      cells: row.cells.map(cell => ({ ...columns.get(cell.reportId), ...cell })),
-      baselineLabel: view.baselineLabel
-    } });
+    const cells = row.cells.map(cell => ({ ...columns.get(cell.reportId), ...cell }));
+    const validIndices = cells.flatMap((cell, index) => Number.isFinite(cell.numericValue) ? [index] : []);
+    let trendIndex = -1;
+    if (validIndices.length >= 2) {
+      const previous = this.data.metricDetail;
+      const selectedReportId = previous?.key === key ? previous.cells[previous.trendIndex]?.reportId : '';
+      trendIndex = validIndices.find(index => cells[index].reportId === selectedReportId)
+        ?? validIndices[validIndices.length - 1];
+    }
+    this._metricTrendRect = null;
+    this._metricTrendRequest = null;
+    this.setData({ metricDetail: { ...row, cells, trendIndex } }, () => this.measureMetricTrend());
   },
-  closeMetricDetail() { this.setData({ metricDetail: null }); },
+  onResize() { this.measureMetricTrend(); },
+  measureMetricTrend() {
+    const detail = this.data.metricDetail;
+    if (!detail || detail.trendIndex < 0) return;
+    const request = {};
+    this._metricTrendRequest = request;
+    const query = typeof this.createSelectorQuery === 'function' ? this.createSelectorQuery() : wx.createSelectorQuery().in(this);
+    query.select('#report-metric-trend').boundingClientRect().exec(([rect] = []) => {
+      const current = this.data.metricDetail;
+      if (this._metricTrendRequest !== request || !rect || !current || current.trendIndex < 0) return;
+      this._metricTrendRect = rect;
+      this.setData({ 'metricDetail.trendChart': buildReportMetricTrend(current.cells, rect.width, rect.height, current.trendIndex) });
+    });
+  },
+  onMetricTrendTap(e) {
+    const detail = this.data.metricDetail;
+    const rect = this._metricTrendRect;
+    const chart = detail?.trendChart;
+    const tapX = e.changedTouches?.[0]?.clientX ?? e.detail?.x;
+    if (!rect || !chart || !Number.isFinite(tapX)) return;
+    const index = Math.round((tapX - rect.left - chart.left) / chart.step);
+    if (index === detail.trendIndex || !Number.isFinite(detail.cells[index]?.numericValue)) return;
+    this.setData({ 'metricDetail.trendIndex': index,
+      'metricDetail.trendChart': buildReportMetricTrend(detail.cells, rect.width, rect.height, index) });
+  },
+  closeMetricDetail() {
+    this._metricTrendRequest = null;
+    this._metricTrendRect = null;
+    this.setData({ metricDetail: null });
+  },
   onExportComparison() {
     if (!this.data.currentCompareView?.columns.length) return;
     return showReportExport(this, buildComparisonExportDocument({ view: this.data.currentCompareView,

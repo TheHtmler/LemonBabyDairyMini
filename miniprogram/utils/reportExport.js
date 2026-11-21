@@ -3,19 +3,7 @@ const { toDateKey } = require('./reportWorkbench');
 
 const textOf = value => value === null || value === undefined ? '' : String(value);
 const resultText = row => [row.valueText, row.marker].filter(Boolean).join(' ');
-const metricName = row => [row.name, [row.abbr && row.abbr !== row.name ? row.abbr : '', row.unit]
-  .filter(Boolean).join(' · ')].filter(Boolean).join('\n');
-
-function comparisonMetricName(row, columns) {
-  const units = [...new Set(row.cells.map(cell => cell.unit).filter(Boolean))];
-  if (units.length <= 1) return metricName({ ...row, unit: units[0] || '' });
-  // 不同单位只在左侧项目说明中逐报告列明，保留离线导出的对应关系。
-  const cellsById = new Map(row.cells.map(cell => [cell.reportId, cell]));
-  return [row.name, row.abbr && row.abbr !== row.name ? row.abbr : '', ...columns.map(column => {
-    const unit = cellsById.get(column.reportId)?.unit;
-    return unit ? [column.date, column.sameDayLabel, unit].filter(Boolean).join(' ') : '';
-  })].filter(Boolean).join('\n');
-}
+const metricName = row => [row.name, row.abbr !== row.name ? row.abbr : ''].filter(Boolean).join('\n');
 
 function buildReportExportDocument({ report, babyInfo, rows }) {
   const selectedRows = rows.filter(row => row.hasValue);
@@ -28,6 +16,7 @@ function buildReportExportDocument({ report, babyInfo, rows }) {
       date: toDateKey(report.reportDate), labName: report.labName || '', isBaseline: true }],
     headers: ['检验项目', '检测值', '参考范围'], columnWidths: [34, 28, 38],
     excelColumnWidths: [32, 26, 36],
+    bodyColumnStyles: ['body', 'value', 'muted'],
     rows: selectedRows.map(row => [metricName(row), resultText(row), row.rangeText || '—'])
   };
 }
@@ -51,9 +40,10 @@ function buildComparisonExportDocument({ view, babyInfo, reportType }) {
       column.labName, view.canCompare && column.isBaseline ? '对照' : ''].filter(Boolean).join('\n'))],
     columnWidths: [320, ...view.columns.map(() => 280)],
     excelColumnWidths: [32, ...view.columns.map(() => 34)],
+    bodyColumnStyles: ['body', ...view.columns.map(() => 'value')],
     rows: view.compareRows.map(row => {
       const cellsById = new Map(row.cells.map(cell => [cell.reportId, cell]));
-      return [comparisonMetricName(row, view.columns), ...view.columns.map(column => {
+      return [metricName(row), ...view.columns.map(column => {
         const cell = cellsById.get(column.reportId);
         if (!cell?.hasValue) return '—';
         const lines = [resultText(cell)];
@@ -112,10 +102,16 @@ function callWx(method, options) {
   });
 }
 
-function readFile(filePath) {
+function readJpegFile(filePath) {
+  // Latin-1 每个字符对应一个字节，读回后在当前运行环境构造 JPEG 字节数组。
   return new Promise((resolve, reject) => wx.getFileSystemManager().readFile({
-    filePath, success: result => resolve(result.data), fail: reject
-  }));
+    filePath, encoding: 'latin1', success: result => resolve(result.data), fail: reject
+  })).then(data => {
+    if (typeof data !== 'string') return data;
+    const bytes = new Uint8Array(data.length);
+    for (let index = 0; index < data.length; index++) bytes[index] = data.charCodeAt(index);
+    return bytes;
+  });
 }
 
 function writeFile(filePath, data) {
@@ -175,10 +171,7 @@ async function showReportExport(page, document) {
     let filePath = '';
     let image;
     if (format === 'xlsx') {
-      const workbook = { title: exportDocument.title, subtitle: exportDocument.subtitle,
-        headers: exportDocument.headers, rows: exportDocument.rows, columnWidths: exportDocument.excelColumnWidths,
-        sectionRows: exportDocument.sectionRows, filterRowCount: exportDocument.filterRowCount };
-      const data = buildXlsx(workbook);
+      const data = buildXlsx({ ...exportDocument, columnWidths: exportDocument.excelColumnWidths });
       filePath = exportPath(exportDocument.fileName, format);
       await writeFile(filePath, data);
     } else {
@@ -187,7 +180,9 @@ async function showReportExport(page, document) {
       image = await renderReportImage(page, { ...exportDocument, isCancelled: () => !isCurrent() });
       if (!isCurrent()) return;
       if (format === 'pdf') {
-        const data = buildPdf({ ...image, jpeg: await readFile(image.path) });
+        const jpeg = await readJpegFile(image.path);
+        if (!isCurrent()) return;
+        const data = buildPdf({ ...image, jpeg });
         filePath = exportPath(exportDocument.fileName, format);
         await writeFile(filePath, data);
       }

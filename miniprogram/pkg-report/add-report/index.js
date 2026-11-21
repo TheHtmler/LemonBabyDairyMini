@@ -11,12 +11,6 @@ const { uploadReportOriginals, sameContext } = require('../../utils/reportOrigin
 
 const ANALYSIS_REPORT_RELOAD_KEY = 'analysis_report_reload';
 
-function buildOcrPendingSaveTip(pendingCount = 0) {
-  const count = Math.max(Number(pendingCount) || 0, 0);
-  if (count <= 0) return '';
-  return `含 ${count} 项拍照识别数据，请对照原报告确认后再保存`;
-}
-
 function hasReportValue(value) {
   return `${value ?? ''}`.trim() !== '';
 }
@@ -55,12 +49,12 @@ Page({
     
     // 指标数据
     indicatorData: {},
+    fieldErrors: {},
     originalImages: [],
     originalPhotos: [],
     focusedMetricKey: '',
 
-    // 拍照识别：已自动填入但用户还没核对过的指标 key 列表
-    ocrPendingKeys: [],
+    applyingHistoricalRanges: false,
     ocrRecognizing: false,
     ocrAllowed: false,
     ocrEntryVisible: false,
@@ -285,49 +279,54 @@ Page({
     return `${year}-${month}-${day}`;
   },
 
-  // 获取历史范围值
-  async getHistoricalRanges(reportType) {
-    try {
-      if (!this.data.babyInfo || !this.data.babyInfo.babyUid) {
-        return {};
-      }
+  async onApplyHistoricalRanges() {
+    const { babyInfo, mode, selectedReportType, applyingHistoricalRanges, loading, saving } = this.data;
+    const babyUid = babyInfo?.babyUid;
+    if (!babyUid || mode !== 'add' || applyingHistoricalRanges || loading || saving) return;
 
-      const historicalRanges = await ReportRepository.getHistoricalRanges(
-        this.data.babyInfo.babyUid,
-        reportType
-      );
-      console.log('获取到历史范围值:', historicalRanges);
-      return historicalRanges;
+    this.setData({ applyingHistoricalRanges: true });
+    try {
+      const historicalRanges = await ReportRepository.getHistoricalRanges(babyUid, selectedReportType);
+      if (this._pageUnloaded || this.data.saving || this.data.loading
+        || this.data.selectedReportType !== selectedReportType || this.data.babyInfo?.babyUid !== babyUid) return;
+
+      const indicatorData = { ...this.data.indicatorData };
+      let appliedCount = 0;
+      for (const { key } of this.data.currentIndicators) {
+        const historical = historicalRanges[key];
+        const current = indicatorData[key] || {};
+        // 仅回填完整区间，避免把历史边界与本次已填写的边界混用。
+        if (!historical || hasReportValue(current.minRange) || hasReportValue(current.maxRange)) continue;
+        const min = toExactReportNumber(historical.minRange);
+        const max = toExactReportNumber(historical.maxRange);
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) continue;
+        indicatorData[key] = { ...current,
+          minRange: formatReportNumber(historical.minRange), maxRange: formatReportNumber(historical.maxRange) };
+        appliedCount++;
+      }
+      if (appliedCount) {
+        this.setData({ indicatorData, hasUnsavedChanges: true }, () => this.recalculateAllIndicators());
+      }
+      wx.showToast({ title: appliedCount ? `已沿用 ${appliedCount} 项参考范围` : '没有可沿用的空白参考范围', icon: 'none' });
     } catch (error) {
-      console.error('获取历史范围值失败:', error);
-      return {};
+      console.error('获取历史参考范围失败:', error);
+      if (!this._pageUnloaded) wx.showToast({ title: '获取上次参考范围失败，请重试', icon: 'none' });
+    } finally {
+      if (!this._pageUnloaded) this.setData({ applyingHistoricalRanges: false });
     }
   },
 
   // 初始化指标配置
-  async initIndicators() {
-    const indicators = ReportModel.getIndicators(this.data.selectedReportType).map(config => ({ ...config,
-      unit: this.data.indicatorData[config.key]?.unit || config.unit }));
-    const indicatorData = { ...this.data.indicatorData };
-
-    // 如果是新建模式，尝试从历史记录中获取范围值
-    let historicalRanges = {};
-    if (this.data.mode === 'add') {
-      historicalRanges = await this.getHistoricalRanges(this.data.selectedReportType);
-    }
-
+  initIndicators() {
     if (this._pageUnloaded) return;
-    // 初始化指标数据
+    const indicators = ReportModel.getIndicators(this.data.selectedReportType);
+    const indicatorData = { ...this.data.indicatorData };
     indicators.forEach(indicator => {
       if (!indicatorData[indicator.key]) {
-        const historical = historicalRanges[indicator.key] || {};
-        const minRange = historical.minRange ?? '';
-        const maxRange = historical.maxRange ?? '';
         indicatorData[indicator.key] = {
           value: '',
-          minRange,
-          maxRange,
-          rangePending: hasReportValue(minRange) || hasReportValue(maxRange),
+          minRange: '',
+          maxRange: '',
           status: 'unknown',
           optimalRange: null
         };
@@ -350,6 +349,7 @@ Page({
       reportDate: e.detail.value,
       hasUnsavedChanges: true
     });
+    this.refreshValidationErrors();
   },
 
   onLabNameInput(e) {
@@ -383,8 +383,8 @@ Page({
     this.setData({
       selectedReportType: reportType,
       indicatorData: {},
+      fieldErrors: {},
       focusedMetricKey: '',
-      ocrPendingKeys: [],
       hasUnsavedChanges: false,
       loading: true
     });
@@ -423,76 +423,18 @@ Page({
       indicatorData[indicator] = {};
     }
     
-    // 历史范围按整项核对，修改任一边界后仍需明确确认上下限。
     indicatorData[indicator][field] = value;
     if (field === 'value') indicatorData[indicator].calculated = false;
 
-    const update = {
-      indicatorData: indicatorData,
+    this.setData({
+      indicatorData,
       hasUnsavedChanges: true
-    };
-
-    if (this.data.ocrPendingKeys.includes(indicator)) {
-      update.ocrPendingKeys = this.data.ocrPendingKeys.filter((key) => key !== indicator);
-      indicatorData[indicator].ocrPending = false;
-    }
-
-    this.setData(update);
+    });
+    this.refreshValidationErrors();
 
     if (field === 'value') {
       this.refreshFilledCount();
     }
-  },
-
-  clearOcrPendingReview(indicatorKeys = []) {
-    const keysToClear = Array.isArray(indicatorKeys) && indicatorKeys.length > 0
-      ? indicatorKeys
-      : [...this.data.ocrPendingKeys];
-
-    if (keysToClear.length === 0) {
-      return;
-    }
-
-    const indicatorData = { ...this.data.indicatorData };
-    keysToClear.forEach((key) => {
-      if (!indicatorData[key]) {
-        return;
-      }
-      indicatorData[key] = {
-        ...indicatorData[key],
-        ocrPending: false
-      };
-    });
-
-    this.setData({
-      indicatorData,
-      ocrPendingKeys: this.data.ocrPendingKeys.filter((key) => !keysToClear.includes(key))
-    });
-  },
-
-  onConfirmOcrIndicator(e) {
-    const indicator = e.currentTarget.dataset.indicator;
-    if (!indicator || !this.data.ocrPendingKeys.includes(indicator)) {
-      return;
-    }
-
-    this.clearOcrPendingReview([indicator]);
-  },
-
-  clearRangePendingReview(indicatorKeys = []) {
-    const indicatorData = { ...this.data.indicatorData };
-    const keys = indicatorKeys.length > 0 ? indicatorKeys : Object.keys(indicatorData);
-    keys.forEach((key) => {
-      if (!indicatorData[key] || !indicatorData[key].rangePending) return;
-      indicatorData[key] = { ...indicatorData[key], rangePending: false };
-    });
-    this.setData({ indicatorData });
-  },
-
-  onConfirmRangeIndicator(e) {
-    const indicator = e.currentTarget.dataset.indicator;
-    if (!indicator || !this.data.indicatorData[indicator]?.rangePending) return;
-    this.clearRangePendingReview([indicator]);
   },
 
   // 指标值失去焦点时验证和格式化
@@ -519,6 +461,7 @@ Page({
         this.setData({
           indicatorData: indicatorData
         });
+        this.refreshValidationErrors();
         if (field === 'value') {
           this.refreshFilledCount();
         }
@@ -546,6 +489,7 @@ Page({
     // 重新计算该指标状态
     this.calculateIndicatorStatus(indicator);
     this.calculateRatioIndicators();
+    this.refreshValidationErrors();
   },
 
   // 计算单个指标状态
@@ -596,7 +540,7 @@ Page({
     for (const [key, denominator] of [['c3_c0', 'c0'], ['c3_c2', 'c2']]) {
       const existing = indicatorData[key] || {};
       // 手工填写与原图比值不能被派生值覆盖，只有程序生成的结果才随基础值更新。
-      if (existing.ocrPending || hasReportValue(existing.value) && existing.calculated !== true) continue;
+      if (hasReportValue(existing.value) && existing.calculated !== true) continue;
       const ratio = ReportModel.calculateRatio(indicatorData.c3?.value, indicatorData[denominator]?.value);
       if (ratio === null && !existing.calculated) continue;
       updated[key] = { ...existing, value: ratio === null ? '' : String(ratio),
@@ -619,6 +563,7 @@ Page({
       }
     });
     this.calculateRatioIndicators();
+    this.refreshValidationErrors();
   },
 
   refreshOcrEntryVisible() {
@@ -723,7 +668,7 @@ Page({
     }
   },
 
-  // 把识别结果合并进表单：只填空字段，不覆盖用户已经手填的值；命中的字段标记为"待核对"
+  // 只将通过识别核对的结果填入空白指标。
   applyOcrRecognitionResult(recognizedIndicators = {}, context = {}) {
     const keys = Object.keys(recognizedIndicators);
     if (keys.length === 0) {
@@ -757,59 +702,18 @@ Page({
       const hasExistingValue = existing.value !== '' && existing.value !== undefined && existing.value !== null;
       if (hasExistingValue) return;
 
-      const recognizedMinRange = `${recognizedItem.minRange ?? ''}`.trim();
-      const recognizedMaxRange = `${recognizedItem.maxRange ?? ''}`.trim();
-      const isBloodRatio = this.data.selectedReportType === 'blood_ms'
-        && (key === 'c3_c0' || key === 'c3_c2');
-      // 识别范围替换历史范围后，由识别待核对接管；仍沿用任一历史边界时保留提醒。
-      const retainsHistoricalRange = !isBloodRatio && (
-        (!recognizedMinRange && hasReportValue(existing.minRange))
-        || (!recognizedMaxRange && hasReportValue(existing.maxRange))
-      );
+      const hasExistingRange = hasReportValue(existing.minRange) || hasReportValue(existing.maxRange);
 
       indicatorData[key] = {
         ...existing,
         value: formatReportNumber(recognizedItem.value ?? ''),
         unit: recognizedItem.unit || existing.unit || '',
-        minRange: isBloodRatio
-          ? formatReportNumber(recognizedMinRange)
-          : formatReportNumber(recognizedMinRange || (existing.minRange ?? '')),
-        maxRange: isBloodRatio
-          ? formatReportNumber(recognizedMaxRange)
-          : formatReportNumber(recognizedMaxRange || (existing.maxRange ?? '')),
-        rangePending: Boolean(existing.rangePending && retainsHistoricalRange),
-        ocrPending: true
+        minRange: hasExistingRange ? existing.minRange : formatReportNumber(recognizedItem.minRange),
+        maxRange: hasExistingRange ? existing.maxRange : formatReportNumber(recognizedItem.maxRange),
+        calculated: false
       };
       newlyFilledKeys.push(key);
     });
-
-    if (this.data.selectedReportType === 'blood_ms') {
-      ['c3_c0', 'c3_c2'].forEach((ratioKey) => {
-        if (!indicatorData[ratioKey]) return;
-
-        const recognizedRatio = recognizedIndicators[ratioKey];
-        if (!recognizedRatio) {
-          indicatorData[ratioKey] = {
-            ...indicatorData[ratioKey],
-            minRange: '',
-            maxRange: '',
-            rangePending: false
-          };
-          return;
-        }
-
-        const recognizedMinRange = `${recognizedRatio.minRange ?? ''}`.trim();
-        const recognizedMaxRange = `${recognizedRatio.maxRange ?? ''}`.trim();
-        if (!recognizedMinRange && !recognizedMaxRange) {
-          indicatorData[ratioKey] = {
-            ...indicatorData[ratioKey],
-            minRange: '',
-            maxRange: '',
-            rangePending: false
-          };
-        }
-      });
-    }
 
     if (newlyFilledKeys.length === 0) {
       this.reportOcrFeedback('识别到的指标都已经有数值了', {
@@ -821,8 +725,6 @@ Page({
 
     this.setData({
       indicatorData,
-      currentIndicators: this.data.currentIndicators.map(config => ({ ...config, unit: indicatorData[config.key]?.unit || config.unit })),
-      ocrPendingKeys: [...new Set([...this.data.ocrPendingKeys, ...newlyFilledKeys])],
       hasUnsavedChanges: true
     }, () => {
       this.recalculateAllIndicators();
@@ -831,7 +733,7 @@ Page({
     console.info('[report-recognition-values]', { stage: 'filled', reportType: this.data.selectedReportType,
       values: summarizeReportValues(newlyFilledKeys.map(key => indicatorData[key].value)) });
 
-    this.reportOcrFeedback(`识别到 ${newlyFilledKeys.length} 项，请核对`, {
+    this.reportOcrFeedback(`已填入 ${newlyFilledKeys.length} 项识别结果`, {
       phase: 'apply-success',
       newlyFilledKeys
     });
@@ -839,74 +741,26 @@ Page({
 
   // 保存报告
   async onSaveReport() {
-    if (this.data.saving || this.data.loading || this._saveConfirmationPending) return;
-
-    // 先检查必填项，再合并核对提示，避免一次保存接连出现多个确认弹窗。
-    const validation = this.validateReportData();
-    if (!validation.isValid) {
-      wx.showModal({
-        title: '数据验证失败',
-        content: validation.errors.join('\n'),
-        showCancel: false
-      });
-      return;
-    }
-
-    const pendingCount = this.data.ocrPendingKeys.length;
-    const rangePendingCount = this.data.currentIndicators.filter(
-      (indicator) => {
-        const data = this.data.indicatorData[indicator.key];
-        return data?.rangePending && hasReportValue(data.value);
-      }
-    ).length;
-    if (pendingCount > 0 || rangePendingCount > 0) {
-      const tips = [];
-      if (rangePendingCount > 0) {
-        tips.push(`${rangePendingCount} 项初始参考范围来自历史报告，请对照本次原报告核对上下限`);
-      }
-      if (pendingCount > 0) tips.push(buildOcrPendingSaveTip(pendingCount));
-      this._saveConfirmationPending = true;
-      wx.showModal({
-        title: '保存前请核对报告',
-        content: `${tips.join('；')}。核对完成后即可保存。`,
-        confirmText: '已核对，保存',
-        cancelText: '返回修改',
-        success: async (res) => {
-          if (!res.confirm) {
-            wx.showToast({
-              title: '已取消保存',
-              icon: 'none'
-            });
-            return;
-          }
-          this.clearOcrPendingReview();
-          this.clearRangePendingReview();
-          await this.performSaveReport();
-        },
-        complete: () => { this._saveConfirmationPending = false; }
-      });
-      return;
-    }
-
-    await this.performSaveReport();
-  },
-
-  async performSaveReport() {
-    if (this.data.saving || this.data.saveSucceeded) return;
+    if (this.data.saving || this.data.loading || this.data.saveSucceeded) return;
 
     try {
       // 验证数据
       const validation = this.validateReportData();
       if (!validation.isValid) {
-        wx.showModal({
-          title: '数据验证失败',
-          content: validation.errors.join('\n'),
-          showCancel: false
+        const { fieldErrors } = validation;
+        const firstKey = Object.keys(fieldErrors)[0];
+        this.setData({ fieldErrors }, () => {
+          if (this._pageUnloaded || !firstKey) return;
+          wx.pageScrollTo({
+            selector: firstKey === 'reportDate' ? '#report-date-field' : '#indicator-' + firstKey,
+            offsetTop: -16,
+            duration: 200
+          });
         });
         return;
       }
 
-      this.setData({ saving: true });
+      this.setData({ saving: true, fieldErrors: {} });
 
       const { babyInfo, reportDate, labName, selectedReportType, indicatorData, mode, reportId } = this.data;
       const context = currentContext();
@@ -936,8 +790,7 @@ Page({
       this.setData({
         saving: true,
         saveSucceeded: true,
-        hasUnsavedChanges: false,
-        ocrPendingKeys: []
+        hasUnsavedChanges: false
       });
 
       wx.showToast({
@@ -991,13 +844,19 @@ Page({
     });
   },
 
+  refreshValidationErrors() {
+    if (!Object.keys(this.data.fieldErrors).length) return;
+    const { fieldErrors } = this.validateReportData();
+    this.setData({ fieldErrors });
+  },
+
   // 验证报告数据
   validateReportData() {
     const { selectedReportType, indicatorData, reportDate } = this.data;
 
     // 验证日期
     if (!reportDate) {
-      return { isValid: false, errors: ['请选择检测日期'] };
+      return { isValid: false, fieldErrors: { reportDate: '必填' } };
     }
 
     // 验证指标数据
@@ -1028,6 +887,5 @@ Page({
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports.buildOcrPendingSaveTip = buildOcrPendingSaveTip;
   module.exports.sanitizeIndicatorsForSave = sanitizeIndicatorsForSave;
 }

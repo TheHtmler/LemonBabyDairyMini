@@ -122,12 +122,28 @@ page { background: #faf6ed; color: #283b32; font-size: 26rpx; }
 .report-page .filter-check { color: #376c55; }
 .report-page .detail-scroll { height: 62vh; width: 100%; min-height: 0; flex-shrink: 1; }
 .report-page .metric-detail-body { padding: 8rpx 24rpx 24rpx; }
+.report-page .metric-trend { padding: 18rpx 16rpx 12rpx; margin: 8rpx 0; border: 1rpx solid #d5dccf; border-radius: 12rpx; background: #f8faf4; }
+.report-page .metric-trend-heading { display: block; padding: 0 4rpx; font-size: 24rpx; font-weight: 600; }
+.report-page .metric-trend-chart { position: relative; width: 100%; height: 324rpx; overflow: hidden; }
+.report-page .metric-trend-chart > view, .report-page .metric-trend-chart > text { position: absolute; pointer-events: none; }
+.report-page .metric-trend-grid { border-top: 1px solid #d5dccf; }
+.report-page .metric-trend-tick, .report-page .metric-trend-date { color: #5f6d5c; font-size: 20rpx; line-height: 1.3; white-space: nowrap; }
+.report-page .metric-trend-tick { left: 0; text-align: right; transform: translateY(-50%); }
+.report-page .metric-trend-tick.reference { color: #77591f; }
+.report-page .metric-trend-date { transform: translateX(-50%); }
+.report-page .metric-trend-reference, .report-page .metric-trend-legend-mark { border-top: 1px dashed #8d6b34; }
+.report-page .metric-trend-segment { height: 2px; background: #376c55; transform-origin: left top; }
+.report-page .metric-trend-point { width: 6px; height: 6px; border-radius: 50%; background: #376c55; transform: translate(-50%, -50%); }
+.report-page .metric-trend-point.selected { width: 10px; height: 10px; background: #a76517; }
+.report-page .metric-trend-selection { display: flex; justify-content: space-between; align-items: baseline; gap: 12rpx; padding: 10rpx 4rpx 0; border-top: 1rpx solid #d5dccf; font-size: 22rpx; color: #5f6d5c; overflow-wrap: anywhere; }
+.report-page .metric-trend-value { color: #283b32; font-size: 26rpx; font-weight: 600; }
+.report-page .metric-trend-legend { display: flex; align-items: center; gap: 10rpx; padding: 8rpx 4rpx 0; font-size: 22rpx; color: #77591f; overflow-wrap: anywhere; }
+.report-page .metric-trend-legend-mark { flex: 0 0 32rpx; }
 .report-page .result-entry { padding: 16rpx 0; border-bottom: 1rpx solid #d5dccf; }
 .report-page .result-baseline { border-bottom-color: #8fa886; }
 .report-page .result-heading { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; font-size: 26rpx; font-weight: 500; }
 .report-page .result-heading > text { min-width: 0; flex: 1; }
 .report-page .result-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8rpx 16rpx; margin: 10rpx 0; font-size: 32rpx; font-weight: 500; overflow-wrap: anywhere; }
-.report-page .result-unit { font-size: 24rpx; font-weight: 400; }
 .report-page .result-line { display: block; font-size: 24rpx; line-height: 1.6; padding-top: 6rpx; overflow-wrap: break-word; }
 .report-page .nutrition-summary-body { padding: 16rpx 24rpx 24rpx; }
 .report-page .nutrition-scroll { width: 100%; background: #fffdf8; }

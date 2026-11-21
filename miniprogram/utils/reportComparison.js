@@ -1,6 +1,5 @@
 const ReportModel = require('../models/report');
 const { buildIndicatorDisplay, readReportNumber } = require('./reportDisplay');
-const { areReportUnitsComparable } = require('./reportUnits');
 const { resolveDayPremiumProteinBase } = require('./search-core/recipeProtein');
 const {
   buildReportComparePickerOptions, resolveWeekBeforeReport, toDateKey,
@@ -43,10 +42,6 @@ function buildCellDifference(base, current) {
   } else if (base.numericValue === null || current.numericValue === null) {
     reasonCode = 'non_numeric';
     reason = '非数值结果，无法直接计算差值';
-  } else if (!areReportUnitsComparable(base.unit, current.unit, { key: current.key,
-    isRatio: ['c3_c0', 'c3_c2'].includes(current.key) })) {
-    reasonCode = 'unit_mismatch';
-    reason = '单位不同，未计算差值';
   }
   if (reasonCode) {
     return {
@@ -218,34 +213,26 @@ function buildMultiReportComparison({
     const base = buildIndicatorDisplay(config, baseline?.indicators?.[config.key] || {});
     const rawIndicators = columns.map(column => reportsById.get(column.reportId)?.indicators?.[config.key] || {});
     const cells = columns.map((column, index) => {
-      const display = buildIndicatorDisplay(config, rawIndicators[index]);
+      const raw = rawIndicators[index];
+      const display = buildIndicatorDisplay(config, raw);
       return {
         reportId: column.reportId, isBaseline: column.isBaseline, hasValue: display.hasValue,
         valueText: display.valueText, numericValue: display.numericValue, resultKind: display.resultKind,
         status: display.status, statusText: display.statusText, marker: display.marker,
         unknownReason: display.unknownReason, unknownReasonCode: display.unknownReasonCode,
-        unit: display.unit, unitText: display.unitText, unitSource: display.unitSource,
-        rangeText: display.rangeText, rangeWithUnitText: display.rangeWithUnitText,
-        rangeSource: display.rangeSource, abnormal: display.abnormal,
+        rangeText: display.rangeText, abnormal: display.abnormal,
+        referenceMin: readReportNumber(raw.minRange), referenceMax: readReportNumber(raw.maxRange),
         ...buildCellDifference(base, display)
       };
     });
-    const unitKeys = cells.map(cell => cell.unit);
-    const unitMismatch = new Set(unitKeys.filter(Boolean)).size > 1;
-    const sharedUnit = unitKeys.every(key => key === unitKeys[0]);
-    const unitText = [...new Set(unitKeys.filter(Boolean))].join(' / ');
-    // 数值边界相同但单位不同，也不能合并成一个参考范围。
-    const sharedRange = sharedUnit && rawIndicators.every(item => referenceKey(item) === referenceKey(rawIndicators[0]));
+    const sharedRange = rawIndicators.every(item => referenceKey(item) === referenceKey(rawIndicators[0]));
     return {
       key: config.key, name: base.name, abbr: base.abbr,
-      secondaryText: [base.abbr && base.abbr !== base.name ? base.abbr : '', unitText].filter(Boolean).join(' · '),
-      unitText,
-      unitMismatch, sharedUnit, cells,
+      secondaryText: base.secondaryText, cells,
       abnormal: cells.some(cell => cell.abnormal), hasValue: cells.some(cell => cell.hasValue),
       pending: cells.some(cell => cell.status === 'unknown'),
       sharedRange, rangeMismatch: !sharedRange,
       rangeText: cells[0]?.rangeText || '',
-      rangeWithUnitText: cells[0]?.rangeWithUnitText || '',
       isPrimary: primaryKeys.includes(config.key)
     };
   }).filter(row => row.hasValue);
@@ -275,8 +262,7 @@ function buildMultiReportComparison({
     summary: {
       totalCount: allRows.length, abnormalCount: allRows.filter(row => row.abnormal).length,
       pendingCount: allRows.filter(row => row.pending).length, visibleCount: compareRows.length,
-      rangeMismatchCount: allRows.filter(row => row.rangeMismatch).length,
-      unitMismatchCount: allRows.filter(row => row.unitMismatch).length
+      rangeMismatchCount: allRows.filter(row => row.rangeMismatch).length
     },
     columnWidthRpx, tableWidthRpx: 200 + columns.length * columnWidthRpx,
     nutritionSummary, hasNutritionData: nutritionSummary.hasData

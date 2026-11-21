@@ -8,9 +8,12 @@
   <view wx:else class="content">
     <view class="report-meta-bar">
       <picker mode="date" value="{{reportDate}}" bindchange="onDateChange" class="meta-picker" disabled="{{saving}}">
-        <view class="meta-card meta-card--tappable">
-          <text class="meta-label">检测日期</text>
-          <view class="meta-picker-content">
+        <view id="report-date-field" class="meta-card meta-card--tappable">
+          <view class="meta-label meta-date-label">
+            <text>检测日期</text>
+            <text wx:if="{{fieldErrors.reportDate}}" class="field-error">{{fieldErrors.reportDate}}</text>
+          </view>
+          <view class="meta-picker-content {{fieldErrors.reportDate ? 'field-invalid' : ''}}">
             <text class="meta-value">{{reportDate || '请选择日期'}}</text>
             <text class="meta-chevron">⌄</text>
           </view>
@@ -36,6 +39,8 @@
     </view>
     <view class="filled-progress">
       <text>已填 {{filledCount}} / 共 {{totalCount}}</text>
+      <button wx:if="{{mode === 'add'}}" class="historical-range-button" bindtap="onApplyHistoricalRanges"
+        loading="{{applyingHistoricalRanges}}" disabled="{{saving || applyingHistoricalRanges}}">沿用上次参考范围</button>
     </view>
 
     <view class="indicator-list">
@@ -44,7 +49,7 @@
         wx:key="key"
         wx:for-item="indicator"
         id="indicator-{{indicator.key}}"
-        class="indicator-row {{indicatorData[indicator.key].ocrPending ? 'pending-ocr' : ''}} {{focusedMetricKey === indicator.key ? 'focused-indicator' : ''}}"
+        class="indicator-row {{focusedMetricKey === indicator.key ? 'focused-indicator' : ''}}"
       >
         <view class="indicator-row-top">
           <view class="indicator-meta">
@@ -53,12 +58,6 @@
               <text class="indicator-abbr">{{indicator.abbr}}</text>
               <text wx:if="{{!indicator.optional && !indicator.isRatio}}" class="required-mark">*</text>
               <text wx:if="{{focusedMetricKey === indicator.key}}" class="focused-indicator-tag">已定位</text>
-              <text
-                wx:if="{{indicatorData[indicator.key].ocrPending}}"
-                class="ocr-pending-tag"
-                catchtap="onConfirmOcrIndicator"
-                data-indicator="{{indicator.key}}"
-              >识别待核对</text>
             </view>
           </view>
         </view>
@@ -67,10 +66,10 @@
           <view class="compact-cell value-cell">
             <view class="compact-label-row">
               <text class="compact-label">检测值</text>
-              <text wx:if="{{indicator.unit}}" class="value-unit">{{indicator.unit}}</text>
+              <text wx:if="{{fieldErrors[indicator.key].value}}" class="field-error">{{fieldErrors[indicator.key].value}}</text>
             </view>
             <input
-              class="compact-input"
+              class="compact-input {{fieldErrors[indicator.key].value ? 'field-invalid' : ''}}"
               type="text"
               placeholder="数值"
               value="{{indicatorData[indicator.key].value}}"
@@ -86,9 +85,11 @@
             <view class="compact-cell">
               <view class="compact-label-row">
                 <text class="compact-label">参考下限</text>
+                <text wx:if="{{fieldErrors[indicator.key].minRange}}" class="field-error">{{fieldErrors[indicator.key].minRange}}</text>
+                <text wx:elif="{{!indicator.optional || indicatorData[indicator.key].value || indicatorData[indicator.key].value === 0}}" class="required-mark">*</text>
               </view>
               <input
-                class="compact-input"
+                class="compact-input {{fieldErrors[indicator.key].minRange ? 'field-invalid' : ''}}"
                 type="text"
                 placeholder="{{indicatorData[indicator.key].minRange ? '已填' : '最小'}}"
                 value="{{indicatorData[indicator.key].minRange}}"
@@ -102,9 +103,11 @@
             <view class="compact-cell">
               <view class="compact-label-row">
                 <text class="compact-label">参考上限</text>
+                <text wx:if="{{fieldErrors[indicator.key].maxRange}}" class="field-error">{{fieldErrors[indicator.key].maxRange}}</text>
+                <text wx:elif="{{!indicator.optional || indicatorData[indicator.key].value || indicatorData[indicator.key].value === 0}}" class="required-mark">*</text>
               </view>
               <input
-                class="compact-input"
+                class="compact-input {{fieldErrors[indicator.key].maxRange ? 'field-invalid' : ''}}"
                 type="text"
                 placeholder="{{indicatorData[indicator.key].maxRange ? '已填' : '最大'}}"
                 value="{{indicatorData[indicator.key].maxRange}}"
@@ -116,16 +119,6 @@
               />
             </view>
           </block>
-        </view>
-
-        <view wx:if="{{indicatorData[indicator.key].rangePending}}" class="range-review">
-          <text class="range-review-note">参考范围待核对 · 初始值来自历史报告</text>
-          <button
-            class="range-confirm-button"
-            catchtap="onConfirmRangeIndicator"
-            data-indicator="{{indicator.key}}"
-            disabled="{{saving}}"
-          >已核对</button>
         </view>
 
         <view wx:if="{{indicatorData[indicator.key].optimalRange}}" class="optimal-range">
