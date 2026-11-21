@@ -31,20 +31,44 @@
 
     <view class="message-list" wx:if="{{activeTab !== 'admin-feedback'}}">
       <block wx:if="{{activeTab === 'all' || activeTab === 'notice'}}">
-        <button wx:if="{{noticeVisible && noticeText}}" class="message-row" bindtap="openNotice" hover-class="message-pressed" aria-label="{{noticeUnread ? '公告与更新，1 条未读，查看完整公告' : '公告与更新，已读，查看完整公告'}}">
-          <view class="message-avatar notice-avatar">
-            <image class="notice-logo" src="/images/LemonLogo.png" mode="aspectFit" aria-hidden="true"></image>
-            <text wx:if="{{noticeUnread}}" class="count-badge avatar-badge" aria-hidden="true">1</text>
-          </view>
-          <view class="message-main">
-            <view class="message-heading">
-              <text class="message-name">公告与更新</text>
-              <text class="message-meta">{{noticeUnread ? '新公告' : '已读'}}</text>
+        <block wx:if="{{noticeVisible && noticeGroups.length}}">
+          <button wx:if="{{activeTab === 'all'}}" class="message-row" data-tab="notice" bindtap="onTabTap" hover-class="message-pressed" aria-label="{{noticeUnreadCount > 0 ? '公告与更新，' + noticeUnreadCount + ' 条未读，查看公告历史' : '公告与更新，查看公告历史'}}">
+            <view class="message-avatar notice-avatar">
+              <image class="notice-logo" src="/images/LemonLogo.png" mode="aspectFit" aria-hidden="true"></image>
+              <text wx:if="{{noticeUnreadCount > 0}}" class="count-badge avatar-badge" aria-hidden="true">{{noticeUnreadCount > 99 ? '99+' : noticeUnreadCount}}</text>
             </view>
-            <text class="message-preview">{{noticeText}}</text>
-          </view>
-          <text class="message-arrow" aria-hidden="true">›</text>
-        </button>
+            <view class="message-main">
+              <view class="message-heading">
+                <text class="message-name">公告与更新</text>
+                <text wx:if="{{noticeUnreadCount > 0}}" class="message-meta">有新公告</text>
+              </view>
+              <text class="message-preview">{{noticeText}}</text>
+            </view>
+            <text class="message-arrow" aria-hidden="true">›</text>
+          </button>
+          <block wx:else>
+            <view class="notice-timeline">
+              <view wx:for="{{noticeGroups}}" wx:for-item="group" wx:for-index="groupIndex" wx:key="date" class="notice-date-group {{groupIndex === 0 ? 'current' : ''}}">
+                <text class="notice-group-date">{{group.dateText}}</text>
+                <view wx:for="{{group.entries}}" wx:for-item="entry" wx:key="id" class="notice-entry {{latestNoticeId === entry.id ? 'latest' : ''}}">
+                  <button class="message-row notice-entry-button" data-id="{{entry.id}}" bindtap="openNotice" hover-class="message-pressed" aria-expanded="{{expandedNoticeId === entry.id}}" aria-label="{{entry.title + (latestNoticeId === entry.id ? '，最新' : '') + (entry.unread ? '，未读' : '')}}">
+                    <text class="notice-entry-title">{{entry.title}}</text>
+                    <view wx:if="{{latestNoticeId === entry.id || entry.unread}}" class="notice-entry-flags" aria-hidden="true">
+                      <text wx:if="{{latestNoticeId === entry.id}}" class="notice-latest-label">最新</text>
+                      <text wx:if="{{entry.unread}}" class="notice-unread">未读</text>
+                    </view>
+                    <text class="message-arrow notice-arrow {{expandedNoticeId === entry.id ? 'expanded' : ''}}" aria-hidden="true">›</text>
+                  </button>
+                  <text wx:if="{{expandedNoticeId === entry.id}}" class="notice-entry-body">{{entry.text}}</text>
+                </view>
+              </view>
+            </view>
+            <view wx:if="{{noticeHasMore}}" class="notice-more">
+              <text wx:if="{{noticeMoreError}}" class="notice-more-error">{{noticeMoreError}}</text>
+              <button class="retry-button" bindtap="loadMoreNotices" disabled="{{noticeMoreLoading || noticeLoading}}">{{noticeMoreLoading ? '正在加载…' : (noticeMoreError ? '重试' : '查看更早公告')}}</button>
+            </view>
+          </block>
+        </block>
         <view wx:elif="{{noticeLoading}}" class="message-state">正在加载公告…</view>
         <view wx:elif="{{noticeLoaded && !noticeError}}" class="message-state">
           <text class="empty-title">暂无公告更新</text>

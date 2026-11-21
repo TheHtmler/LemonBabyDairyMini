@@ -1,10 +1,8 @@
 .notice-settings-page {
   min-height: 100vh;
-  padding: 24rpx;
+  padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at top right, rgba(255, 226, 122, 0.35), transparent 26%),
-    linear-gradient(180deg, #fff7dc 0%, #fff2c8 100%);
+  background: linear-gradient(180deg, #fff7dc 0%, #fff2c8 100%);
 }
 
 .page-shell {
@@ -13,61 +11,26 @@
   gap: 20rpx;
 }
 
-.hero-card,
 .config-card,
 .empty-card {
-  background: rgba(255, 255, 255, 0.94);
-  border-radius: 24rpx;
-  border: 2rpx solid rgba(255, 184, 0, 0.12);
-  box-shadow: 0 10rpx 24rpx rgba(255, 184, 0, 0.08);
-}
-
-.hero-card {
-  padding: 26rpx 24rpx;
-}
-
-.hero-title {
-  display: block;
-  font-size: 34rpx;
-  font-weight: 800;
-  color: #5f3900;
-}
-
-.hero-subtitle {
-  display: block;
-  margin-top: 10rpx;
-  font-size: 24rpx;
-  line-height: 1.6;
-  color: rgba(95, 57, 0, 0.76);
-}
-
-.meta-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 18rpx;
-  margin-top: 14rpx;
-  font-size: 22rpx;
-  color: #8a7c60;
-}
-
-.meta-value {
-  flex: 1;
-  text-align: right;
-  word-break: break-all;
-  color: #5f3900;
-  font-weight: 700;
-}
-
-.config-card {
   padding: 24rpx;
+  background: #fffdf8;
+  border: 2rpx solid rgba(255, 184, 0, 0.12);
+  border-radius: 24rpx;
+}
+
+.section-title,
+.field-label,
+.status-text,
+.error-text {
+  display: block;
 }
 
 .section-title {
-  display: block;
   margin-bottom: 14rpx;
-  font-size: 28rpx;
-  font-weight: 800;
   color: #5f3900;
+  font-size: 29rpx;
+  font-weight: 700;
 }
 
 .switch-row {
@@ -81,52 +44,228 @@
   margin-bottom: 6rpx;
 }
 
-.message-textarea {
+.field-label {
+  margin: 18rpx 0 8rpx;
+  color: #5f3900;
+  font-size: 25rpx;
+  font-weight: 600;
+}
+
+.title-input,
+.message-textarea,
+.date-picker {
   width: 100%;
-  padding: 18rpx;
-  border-radius: 18rpx;
-  border: 2rpx solid rgba(201, 136, 23, 0.14);
+  padding: 14rpx;
+  border: 2rpx solid rgba(201, 136, 23, 0.18);
+  border-radius: 16rpx;
   background: #fffaf0;
   box-sizing: border-box;
-  font-size: 23rpx;
-  line-height: 1.5;
   color: #2c1d09;
-  min-height: 160rpx;
+  font-size: 28rpx;
+  line-height: 1.55;
 }
 
-.field-hint {
-  display: block;
-  margin-top: 10rpx;
-  font-size: 21rpx;
-  line-height: 1.5;
-  color: #8d7449;
+.title-input,
+.date-picker {
+  min-height: 72rpx;
 }
 
-.save-section {
+.date-picker,
+.history-toolbar,
+.form-actions,
+.entry-actions {
   display: flex;
-  width: 100%;
-  box-sizing: border-box;
+  align-items: center;
+  gap: 16rpx;
 }
 
-.save-button {
-  width: 100%;
-  height: 88rpx;
-  line-height: normal;
+.date-picker,
+.history-toolbar {
+  justify-content: space-between;
+}
+
+.history-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 16rpx;
+}
+
+.history-toolbar .section-title {
+  margin-bottom: 0;
+}
+
+.field-placeholder {
+  color: #775e38;
+}
+
+.message-textarea {
+  height: 280rpx;
+}
+
+.field-hint,
+.status-text,
+.history-date {
+  display: block;
+  color: #775e38;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.field-hint,
+.error-text {
+  margin-top: 10rpx;
+}
+
+.error-text {
+  color: #a6392b;
+  font-size: 25rpx;
+  line-height: 1.5;
+}
+
+.form-actions {
+  margin-top: 24rpx;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+.save-button,
+.secondary-button,
+.new-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  margin: 0 0 24rpx;
-  box-sizing: border-box;
-  border-radius: 24rpx;
-  background: linear-gradient(135deg, #ffd577 0%, #ffbf4d 100%);
-  color: #2c1d09;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0 20rpx;
+  border-radius: 18rpx;
+  background: #ffca5c;
+  color: #3d290c;
   font-size: 28rpx;
-  font-weight: 800;
-  border: none;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.save-button::after {
+.secondary-button,
+.new-button {
+  background: #fff3ce;
+  border: 1rpx solid #ead6a4;
+}
+
+.history-toolbar > button.new-button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 74rpx;
+  margin: 0 0 0 auto;
+  padding: 0 18rpx;
+  font-size: 26rpx;
+  white-space: nowrap;
+}
+
+.history-group + .history-group {
+  margin-top: 24rpx;
+}
+
+.history-group > .history-date {
+  margin-bottom: 8rpx;
+  font-weight: 700;
+}
+
+.history-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 4rpx 0;
+  border-top: 1rpx solid #eee3cc;
+}
+
+.history-copy {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.text-button,
+.entry-button {
+  min-height: 80rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.4;
+}
+
+.history-title,
+.history-content {
+  display: block;
+  color: #493d28;
+  word-break: break-word;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.history-content {
+  margin-top: 6rpx;
+  font-size: 26rpx;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.entry-actions {
+  flex: 0 0 auto;
+  gap: 4rpx;
+}
+
+.entry-actions > button.entry-button {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  color: #825200;
+  font-weight: 500;
+  font-size: 25rpx;
+  white-space: nowrap;
+}
+
+.entry-actions > button.entry-delete {
+  color: #a6392b;
+}
+
+.latest-version {
+  margin-top: 16rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 16rpx;
+  background: #fff4d6;
+}
+
+.latest-version .field-label {
+  margin-top: 0;
+}
+
+.text-button {
+  flex-shrink: 0;
+  color: #825200;
+  font-size: 25rpx;
+}
+
+.text-button {
+  margin: 10rpx 0 0;
+}
+
+.save-button::after,
+.secondary-button::after,
+.new-button::after,
+.entry-button::after,
+.text-button::after {
   border: none;
 }
 
@@ -137,14 +276,14 @@
 
 .empty-title {
   display: block;
-  font-size: 30rpx;
-  font-weight: 800;
   color: #5f3900;
+  font-size: 30rpx;
+  font-weight: 700;
 }
 
 .empty-subtitle {
   display: block;
   margin-top: 10rpx;
+  color: #775e38;
   font-size: 24rpx;
-  color: #8a7c60;
 }

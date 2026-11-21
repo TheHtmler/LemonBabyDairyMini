@@ -534,7 +534,7 @@ Page({
   updateNotificationState(state) {
     if (!this._notificationAlive) return;
     const notice = releaseNotice.getReleaseNoticeState(state.identity);
-    const unreadCount = state.count + (notice.unread ? 1 : 0);
+    const unreadCount = state.count + notice.unreadCount;
     const adminPendingCount = isDeveloperOpenid(state.identity) ? state.adminPendingCount : 0;
     const count = unreadCount + adminPendingCount;
     this.setData({

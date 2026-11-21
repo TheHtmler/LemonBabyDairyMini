@@ -275,6 +275,151 @@ page {
   font-size: 36rpx;
 }
 
+.notice-timeline {
+  position: relative;
+  padding: 32rpx 28rpx 32rpx 66rpx;
+}
+
+.notice-timeline::before {
+  position: absolute;
+  top: 48rpx;
+  bottom: 48rpx;
+  left: 42rpx;
+  width: 1rpx;
+  background: #d8c9a8;
+  content: '';
+}
+
+.notice-date-group {
+  position: relative;
+}
+
+.notice-date-group + .notice-date-group {
+  margin-top: 28rpx;
+}
+
+.notice-date-group::before {
+  position: absolute;
+  top: 13rpx;
+  left: -30rpx;
+  width: 13rpx;
+  height: 13rpx;
+  box-sizing: border-box;
+  border: 1rpx solid #a38b5b;
+  border-radius: 50%;
+  background: #fffdf7;
+  content: '';
+}
+
+.notice-date-group.current::before {
+  top: 11rpx;
+  left: -32rpx;
+  width: 17rpx;
+  height: 17rpx;
+  border-color: #85601c;
+  background: #f3c446;
+  box-shadow: 0 0 0 4rpx #fffdf7;
+}
+
+.notice-group-date {
+  display: block;
+  margin-bottom: 12rpx;
+  color: #625b48;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 38rpx;
+}
+
+.notice-date-group.current .notice-group-date {
+  color: #79530c;
+}
+
+.notice-entry {
+  overflow: hidden;
+  border: 1rpx solid #e5ddc9;
+  border-radius: 22rpx;
+  background: #faf7ee;
+}
+
+.notice-entry + .notice-entry {
+  margin-top: 12rpx;
+}
+
+.notice-entry.latest {
+  border-color: #e8c56c;
+  background: #fff1bb;
+}
+
+.message-list button.notice-entry-button {
+  gap: 12rpx;
+  min-height: 88rpx;
+  padding: 18rpx 22rpx;
+}
+
+.notice-entry-button::before {
+  display: none;
+}
+
+.notice-entry-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.latest .notice-entry-title {
+  font-size: 32rpx;
+}
+
+.notice-entry-flags {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.notice-latest-label {
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  background: #f5d571;
+  color: #513707;
+  font-size: 21rpx;
+  font-weight: 600;
+}
+
+.notice-unread {
+  color: #a54c36;
+  font-size: 21rpx;
+}
+
+.notice-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.notice-entry-body {
+  display: block;
+  padding: 0 22rpx 24rpx;
+  color: #493d28;
+  font-size: 28rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notice-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 18rpx;
+}
+
+.notice-more-error {
+  color: #a54c36;
+  font-size: 24rpx;
+}
+
 .message-state {
   padding: 56rpx 28rpx;
   color: #8a7651;

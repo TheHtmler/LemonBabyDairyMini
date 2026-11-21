@@ -1,45 +1,100 @@
 <view class="notice-settings-page">
   <view wx:if="{{hasAccess}}" class="page-shell">
-    <view class="hero-card">
-      <text class="hero-title">首页公告配置</text>
-      <text class="hero-subtitle">设置消息中心「公告与更新」的显示与内容。用户可从首页消息入口查看。</text>
-      <view class="meta-row">
-        <text>最近保存</text>
-        <text class="meta-value">{{updatedAtText}}</text>
-      </view>
-      <view class="meta-row" wx:if="{{updatedByText}}">
-        <text>最近操作</text>
-        <text class="meta-value">{{updatedByText}}</text>
-      </view>
+    <view wx:if="{{loading || loadError}}" class="config-card">
+      <text wx:if="{{loading}}" class="status-text">正在加载公告…</text>
+      <block wx:else>
+        <text class="error-text">{{loadError}}</text>
+        <button class="text-button" bindtap="onLoad">重新加载</button>
+      </block>
     </view>
 
-    <view class="config-card">
-      <view class="switch-row">
-        <view class="switch-copy">
-          <text class="section-title">显示公告</text>
-          <text class="field-hint">关闭后消息中心不再展示公告，反馈信息和反馈入口仍可使用。</text>
+    <view wx:if="{{ready && !canManage}}" class="config-card">
+      <text class="section-title">当前连接旧版公告服务</text>
+      <text class="status-text">可以查看现有公告。更新 featureFlagManager 云函数后，才能新建、编辑、删除公告或调整显示设置。</text>
+    </view>
+
+    <view wx:if="{{ready && draft}}" class="config-card">
+      <text class="section-title">{{draft.id ? '编辑公告' : '新建公告'}}</text>
+
+      <text class="field-label">公告日期</text>
+      <picker mode="date" value="{{draft.date}}" bindchange="onDraftInput" data-field="date" disabled="{{savingNotice}}">
+        <view class="date-picker">
+          <text class="{{draft.date ? '' : 'field-placeholder'}}">{{draft.date || '选择日期'}}</text>
+          <text aria-hidden="true">›</text>
         </view>
-        <switch checked="{{visible}}" color="#ffb800" bindchange="onVisibleChange" />
+      </picker>
+      <text class="field-hint">用于用户端分组与排序。</text>
+
+      <text class="field-label">标题</text>
+      <input class="title-input" value="{{draft.title}}" maxlength="40" bindinput="onDraftInput"
+        data-field="title" disabled="{{savingNotice}}" placeholder="例如 食谱功能更新" aria-label="公告标题" />
+      <text class="field-label">公告内容</text>
+      <textarea class="message-textarea" value="{{draft.text}}" maxlength="2000" bindinput="onDraftInput"
+        data-field="text" disabled="{{savingNotice}}" placeholder="填写这次发布的内容，可分行说明" aria-label="公告内容" />
+      <text wx:if="{{!visible && !draft.id}}" class="field-hint">公告展示已关闭，开启后用户即可查看。</text>
+      <text wx:if="{{saveError}}" class="error-text" aria-live="polite">{{saveError}}</text>
+
+      <view wx:if="{{versionConflict}}" class="latest-version">
+        <block wx:if="{{latestEntry}}">
+          <text class="field-label">最新版本</text>
+          <text class="history-date">{{latestEntry.displayDate}}</text>
+          <text class="history-title">{{latestEntry.title || '公告与更新'}}</text>
+          <text class="history-content">{{latestEntry.text}}</text>
+          <button class="text-button" bindtap="useLatestRevision">保留草稿，继续编辑</button>
+        </block>
+        <button wx:else class="text-button" bindtap="checkLatestVersion" loading="{{checkingVersion}}"
+          disabled="{{checkingVersion}}">核对最新公告</button>
+      </view>
+
+      <view class="form-actions">
+        <button class="secondary-button" bindtap="closeDraft" disabled="{{savingNotice || checkingVersion}}">返回历史</button>
+        <button class="save-button" bindtap="saveNotice" loading="{{savingNotice}}"
+          disabled="{{!canManage || savingNotice || versionConflict}}">{{draft.id ? '保存修改' : '发布公告'}}</button>
       </view>
     </view>
 
-    <view class="config-card">
-      <text class="section-title">公告内容</text>
-      <textarea
-        class="message-textarea"
-        value="{{text}}"
-        placeholder="请输入公告或更新说明"
-        maxlength="120"
-        bindinput="onTextInput"
-      />
-      <text class="field-hint">最多 120 字。消息中心展示摘要，点击后可阅读完整内容。</text>
-    </view>
+    <block wx:elif="{{ready}}">
+      <view class="config-card">
+        <view class="switch-row">
+          <view class="switch-copy">
+            <text class="section-title">显示公告</text>
+            <text class="field-hint">控制用户能否在消息中心看到公告与历史。</text>
+          </view>
+          <switch checked="{{visible}}" color="#ffb800" bindchange="onVisibleChange"
+            disabled="{{!canManage || savingVisibility || deletingId || loadingMore}}" aria-label="显示公告" />
+        </view>
+        <text wx:if="{{visibilityError}}" class="error-text">{{visibilityError}}</text>
+      </view>
 
-    <view class="save-section">
-      <button class="save-button" bindtap="onSaveConfig" loading="{{saving}}" disabled="{{saving || loading}}">
-        {{saving ? '保存中...' : '保存配置'}}
-      </button>
-    </view>
+      <view class="config-card">
+        <view class="history-toolbar">
+          <text class="section-title">发布历史</text>
+          <button wx:if="{{canManage}}" class="new-button" bindtap="openDraft" disabled="{{savingVisibility || deletingId || loadingMore}}">＋ 新建公告</button>
+        </view>
+        <text wx:if="{{!noticeGroups.length}}" class="status-text">暂无发布记录</text>
+        <view wx:for="{{noticeGroups}}" wx:for-item="group" wx:key="key" class="history-group">
+          <text class="history-date">{{group.label}}</text>
+          <view wx:for="{{group.entries}}" wx:for-item="notice" wx:key="id" class="history-entry">
+            <view class="history-copy">
+              <text class="history-title">{{notice.displayTitle}}</text>
+              <text wx:if="{{!canManage}}" class="history-content">{{notice.text}}</text>
+            </view>
+            <view wx:if="{{canManage}}" class="entry-actions">
+              <button class="entry-button" data-id="{{notice.id}}" bindtap="openDraft"
+                disabled="{{savingVisibility || deletingId || loadingMore}}" aria-label="{{'编辑公告 ' + notice.displayTitle}}">编辑</button>
+              <button class="entry-button entry-delete" data-id="{{notice.id}}" bindtap="requestDelete"
+                disabled="{{savingVisibility || deletingId || loadingMore}}" loading="{{deletingId === notice.id}}"
+                aria-label="{{'删除公告 ' + notice.displayTitle}}">删除</button>
+            </view>
+          </view>
+        </view>
+        <text wx:if="{{historyError}}" class="error-text" aria-live="polite">{{historyError}}</text>
+        <button wx:if="{{historyError}}" class="text-button" bindtap="refreshHistory"
+          disabled="{{loadingMore || deletingId || savingVisibility}}">刷新列表</button>
+        <button wx:if="{{nextCursor}}" class="text-button" bindtap="loadMore" loading="{{loadingMore}}"
+          disabled="{{loadingMore || deletingId || savingVisibility}}">查看更早公告</button>
+      </view>
+    </block>
   </view>
 
   <view wx:else class="empty-card">

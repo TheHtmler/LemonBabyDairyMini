@@ -34,7 +34,13 @@ Page({
     feedbackError: '',
     noticeVisible: false,
     noticeText: '',
-    noticeUnread: false,
+    noticeUnreadCount: 0,
+    noticeGroups: [],
+    latestNoticeId: '',
+    expandedNoticeId: '',
+    noticeHasMore: false,
+    noticeMoreLoading: false,
+    noticeMoreError: '',
     noticeLoading: true,
     noticeError: '',
     noticeLoaded: false,
@@ -49,7 +55,13 @@ Page({
   },
 
   onShow() {
+    this._visible = true;
+    this.applyMessageState(feedback.getUnreadState(), true);
     this.loadMessages();
+  },
+
+  onHide() {
+    this._visible = false;
   },
 
   onUnload() {
@@ -59,22 +71,26 @@ Page({
     if (this._unsubscribe) this._unsubscribe();
   },
 
-  applyMessageState(state) {
+  applyMessageState(state, readOnShow = false) {
     if (!this._alive) return;
     const notice = releaseNotice.getReleaseNoticeState(state.identity);
     const isFeedbackAdmin = isDeveloperOpenid(state.identity);
     const identityChanged = this._messageIdentity !== state.identity || this._messageGeneration !== state.generation;
+    const latestNoticeId = notice.entries[0]?.id || '';
+    const openLatest = !!latestNoticeId && (identityChanged || latestNoticeId !== this.data.latestNoticeId);
+    const expandedNoticeId = openLatest ? latestNoticeId : this.data.expandedNoticeId;
+    this._noticeEntries = notice.entries;
     this._messageIdentity = state.identity;
     this._messageGeneration = state.generation;
     // 账号变化或失去管理权限时立即清空管理数据，并阻断旧请求回写。
     const resetAdminList = identityChanged || !isFeedbackAdmin;
     if (resetAdminList) this._adminListSeq += 1;
     const tabs = isFeedbackAdmin ? [...MESSAGE_TABS, ADMIN_FEEDBACK_TAB] : MESSAGE_TABS;
-    const unreadCount = state.count + (notice.unread ? 1 : 0);
+    const unreadCount = state.count + notice.unreadCount;
     const adminPendingCount = isFeedbackAdmin ? state.adminPendingCount : 0;
     const counts = {
       all: unreadCount + adminPendingCount,
-      notice: notice.unread ? 1 : 0,
+      notice: notice.unreadCount,
       feedback: state.count,
       'admin-feedback': adminPendingCount
     };
@@ -91,26 +107,30 @@ Page({
       feedbackKnown: state.known,
       noticeVisible: notice.visible,
       noticeText: notice.text,
-      noticeUnread: notice.unread,
+      noticeUnreadCount: notice.unreadCount,
+      noticeGroups: releaseNotice.groupReleaseNotices(notice.entries),
+      latestNoticeId,
+      noticeHasMore: notice.hasMore,
+      expandedNoticeId: notice.entries.some(item => item.id === expandedNoticeId) ? expandedNoticeId : '',
+      ...(identityChanged ? { noticeMoreLoading: false, noticeMoreError: '' } : {}),
       noticeLoaded: notice.loaded,
       unreadCount
-    });
+    }, openLatest || readOnShow ? () => this.markExpandedNoticeRead() : undefined);
   },
 
   onTabTap(event) {
     const tab = event.currentTarget.dataset.tab;
     this.applyMessageState(feedback.getUnreadState());
     if (!this.data.messageTabs.some(item => item.id === tab) || tab === this.data.activeTab) return;
-    // 切换分类不确认已读；管理列表仅在管理员打开时加载。
-    this.setData({ activeTab: tab });
+    this.setData({ activeTab: tab }, tab === 'notice' ? () => this.markExpandedNoticeRead() : undefined);
     if (tab === ADMIN_FEEDBACK_TAB.id) this.retryAdminList();
   },
 
   async loadMessages({ force = false } = {}) {
     const request = ++this._loadSeq;
     const isCurrent = () => this._alive && request === this._loadSeq;
-    this.setData({ noticeLoading: true, feedbackLoading: true,
-      noticeError: '', feedbackError: '', identityError: '' });
+    this.setData({ noticeLoading: true, feedbackLoading: true, noticeMoreLoading: false,
+      noticeError: '', noticeMoreError: '', feedbackError: '', identityError: '' });
     try {
       await waitForAppInitialization();
       await feedback.readyIdentity();
@@ -206,28 +226,47 @@ Page({
     }
   },
 
-  openNotice() {
-    if (!this.data.noticeVisible || !this.data.noticeText) return;
-    const text = this.data.noticeText;
+  async loadMoreNotices() {
+    if (!this.data.noticeHasMore || this.data.noticeLoading || this.data.noticeMoreLoading) return;
+    const request = this._loadSeq;
     const session = feedback.getUnreadState();
-    wx.showModal({
-      title: '公告与更新',
-      content: text,
-      showCancel: false,
-      confirmText: '知道了',
-      success: result => {
-        if (!result.confirm || !this._alive) return;
-        const current = feedback.getUnreadState();
-        if (session.identity !== current.identity || session.generation !== current.generation) return;
-        try {
-          // 只确认本次实际打开的正文，不会消除稍后更新的公告或其他反馈红点。
-          releaseNotice.markReleaseNoticeRead(text, session.identity);
-          this.applyMessageState(current);
-        } catch (error) {
-          wx.showToast({ title: '阅读状态未保存，请重试', icon: 'none' });
-        }
-      }
-    });
+    const isCurrent = () => {
+      const current = feedback.getUnreadState();
+      return this._alive && request === this._loadSeq
+        && current.identity === session.identity && current.generation === session.generation;
+    };
+    this.setData({ noticeMoreLoading: true, noticeMoreError: '' });
+    try {
+      await releaseNotice.loadMoreReleaseNotices();
+      if (isCurrent()) this.applyMessageState(feedback.getUnreadState());
+    } catch (error) {
+      if (isCurrent()) this.setData({ noticeMoreError: '更早的公告暂时无法加载' });
+    } finally {
+      if (isCurrent()) this.setData({ noticeMoreLoading: false });
+    }
+  },
+
+  openNotice(event) {
+    const { id } = event.currentTarget.dataset;
+    if (!this.data.noticeVisible || !this._noticeEntries?.some(item => item.id === id)) return;
+    const expandedNoticeId = this.data.expandedNoticeId === id ? '' : id;
+    this.setData({ expandedNoticeId }, () => this.markExpandedNoticeRead());
+  },
+
+  markExpandedNoticeRead() {
+    if (!this._alive || !this._visible || this.data.activeTab !== 'notice') return;
+    const entry = this._noticeEntries?.find(item => item.id === this.data.expandedNoticeId && item.unread);
+    if (!entry) return;
+    const identity = this._messageIdentity;
+    const generation = this._messageGeneration;
+    const session = feedback.getUnreadState();
+    if (!session.identity || session.identity !== identity || session.generation !== generation) return;
+    try {
+      releaseNotice.markReleaseNoticeRead(entry, session.identity);
+      this.applyMessageState(session);
+    } catch (error) {
+      wx.showToast({ title: '阅读状态未保存，请重试', icon: 'none' });
+    }
   },
 
   openFeedbackReplies() {
