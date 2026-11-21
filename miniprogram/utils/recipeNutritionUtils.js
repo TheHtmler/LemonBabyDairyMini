@@ -91,7 +91,8 @@ function summarizeBatchFromIngredients(ingredients = []) {
 }
 
 function resolveBatchIntake(batchNutrition = {}, batchWeightG, intakeMode, intakeValue) {
-  const mode = intakeMode === 'percent' ? 'percent' : 'grams';
+  const isFinished = intakeMode === 'finishedGrams';
+  const mode = intakeMode === 'percent' || isFinished ? intakeMode : 'grams';
   const value = Number(intakeValue);
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error(mode === 'percent' ? '请输入有效的摄入百分比' : '请输入有效的食用克数');
@@ -111,18 +112,19 @@ function resolveBatchIntake(batchNutrition = {}, batchWeightG, intakeMode, intak
     };
   }
 
-  if (!(weight > 0)) {
-    throw new Error('请先填写各原料用量以计算本次总重');
+  if (!(weight > 0) || (isFinished && !Number.isFinite(weight))) {
+    throw new Error(isFinished ? '请填写整批成品实称重量' : '请先填写各原料用量以计算本次总重');
   }
   if (value > weight) {
-    throw new Error('食用克数不能超过本次食谱总重');
+    throw new Error(isFinished ? '吃掉的重量不能超过整批成品重量' : '食用克数不能超过本次食谱总重');
   }
   const factor = value / weight;
   return {
-    intakeMode: 'grams',
+    intakeMode: mode,
     intakePercent: roundNumber(factor * 100, 2),
-    eatenG: roundNumber(value, 2),
-    nutrition: scaleNutritionByFactor(batchNutrition, factor)
+    eatenG: isFinished ? value : roundNumber(value, 2),
+    nutrition: scaleNutritionByFactor(batchNutrition, factor),
+    ...(isFinished ? { measurement: { batchWeightG: weight } } : {})
   };
 }
 

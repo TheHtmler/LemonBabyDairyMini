@@ -223,27 +223,6 @@ page {
   background: #fffaf0;
 }
 
-.recipe-avatar {
-  flex-shrink: 0;
-  width: 68rpx;
-  height: 68rpx;
-  border-radius: 22rpx;
-  background: #fff1bd;
-  color: #8a5a00;
-  font-size: 28rpx;
-  font-weight: 800;
-  line-height: 68rpx;
-  text-align: center;
-}
-
-.recipe-card.tone-b .recipe-avatar {
-  background: #ffe4b8;
-}
-
-.recipe-card.tone-c .recipe-avatar {
-  background: #fff6c8;
-}
-
 .recipe-body {
   flex: 1;
   min-width: 0;
@@ -340,8 +319,7 @@ page {
 .elder-form .intro-action,
 .elder-form .search-clear { min-height: 88rpx; padding: 14rpx 18rpx; display: flex; align-items: center; box-sizing: border-box; }
 .elder-form .search-input { height: 96rpx; font-size: 32rpx; }
-.elder-form .search-icon,
-.elder-form .recipe-avatar { display: none; }
+.elder-form .search-icon { display: none; }
 .elder-form .recipe-card { min-height: 160rpx; padding: 24rpx 18rpx; }
 .elder-form .recipe-top { display: block; }
 .elder-form .recipe-meta { display: inline-block; margin-top: 8rpx; }

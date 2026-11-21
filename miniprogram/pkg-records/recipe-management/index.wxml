@@ -62,7 +62,11 @@
             bindtap="onRecipeTap"
           >
             <view class="catalog-head">
-              <text class="catalog-name">{{item.name}}</text>
+              <view class="catalog-heading">
+                <recipe-cover name="{{item.name}}" file-id="{{item.coverImageFileId}}"
+                  local-path="{{item.coverImageFileId === recentCover.fileId ? recentCover.path : ''}}" />
+                <text class="catalog-name">{{item.name}}</text>
+              </view>
               <view class="catalog-actions">
                 <text
                   class="catalog-edit"
@@ -119,6 +123,25 @@
           placeholder="例如：番茄炒蛋"
           bindinput="onNameInput"
         />
+        <text class="field-label field-gap">封面（选填）</text>
+        <view class="cover-field">
+          <recipe-cover large="{{true}}" previewable="{{true}}" name="{{form.name}}"
+            file-id="{{coverDraft ? coverDraft.fileId : form.coverImageFileId}}"
+            local-path="{{coverDraft ? coverDraft.path : (form.coverImageFileId === recentCover.fileId ? recentCover.path : '')}}" />
+          <view class="cover-controls">
+            <view class="cover-actions">
+              <button class="cover-action" bindtap="onChooseCover" loading="{{choosingCover}}" disabled="{{saving || choosingCover}}">
+                {{coverDraft || form.coverImageFileId ? '更换封面' : '添加封面'}}
+              </button>
+              <button wx:if="{{coverDraft || form.coverImageFileId}}" class="cover-action cover-remove"
+                bindtap="onRemoveCover" disabled="{{saving || choosingCover}}">
+                {{coverDraft ? (form.coverImageFileId ? '撤销更换' : '撤销选图') : '移除封面'}}
+              </button>
+            </view>
+            <text wx:if="{{coverError}}" class="cover-hint cover-error">{{coverError}}</text>
+            <text wx:elif="{{coverDraft}}" class="cover-hint">{{coverDraft.fileId ? '已上传，保存后生效' : '已选图，保存食谱时上传'}}</text>
+          </view>
+        </view>
         <text class="field-label field-gap">备注（选填）</text>
         <textarea
           class="notes-area"
@@ -209,15 +232,16 @@
     </scroll-view>
 
     <view class="footer-actions dual-actions">
-      <button class="secondary-btn" bindtap="backToList">取消</button>
-      <button class="primary-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="saveRecipe">保存</button>
+      <button class="secondary-btn" disabled="{{saving || choosingCover}}" bindtap="backToList">取消</button>
+      <button class="primary-btn" loading="{{saving}}" disabled="{{saving || choosingCover}}" bindtap="saveRecipe">保存</button>
     </view>
   </block>
 
   <block wx:if="{{!loading && mode === 'detail' && recipe}}">
     <scroll-view class="detail-scroll" scroll-y="true" show-scrollbar="{{false}}">
       <view class="intro-card detail-intro">
-        <view class="intro-icon">🍽️</view>
+        <recipe-cover large="{{true}}" previewable="{{true}}" name="{{recipe.name}}" file-id="{{recipe.coverImageFileId}}"
+          local-path="{{recipe.coverImageFileId === recentCover.fileId ? recentCover.path : ''}}" />
         <view class="intro-copy">
           <text class="intro-title">{{recipe.name}}</text>
           <text class="intro-desc" wx:if="{{recipe.notes}}">{{recipe.notes}}</text>

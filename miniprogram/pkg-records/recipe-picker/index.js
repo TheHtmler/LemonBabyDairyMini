@@ -8,7 +8,7 @@ function getBabyUid() {
   return app?.globalData?.babyUid || wx.getStorageSync('baby_uid') || '';
 }
 
-function mapRecipeListItem(recipe = {}, index = 0) {
+function mapRecipeListItem(recipe = {}) {
   const ingredientTags = (recipe.ingredients || [])
     .map((item) => item.foodName)
     .filter(Boolean);
@@ -16,15 +16,14 @@ function mapRecipeListItem(recipe = {}, index = 0) {
   return {
     _id: recipe._id,
     name,
-    nameInitial: name.slice(0, 1) || '菜',
+    coverImageFileId: recipe.coverImageFileId || '',
     notes: recipe.notes || '',
     ingredients: recipe.ingredients || [],
     ingredientCount: ingredientTags.length,
     ingredientLine: ingredientTags.length
       ? ingredientTags.join(' · ')
       : '还没加原料',
-    ingredientNames: ingredientTags.join('、'),
-    tone: ['tone-a', 'tone-b', 'tone-c'][index % 3]
+    ingredientNames: ingredientTags.join('、')
   };
 }
 
@@ -49,7 +48,7 @@ Page({
   },
 
   applyRecipesToView(recipeDocs = [], emptyHint = '') {
-    const recipes = (recipeDocs || []).map((recipe, index) => mapRecipeListItem(recipe, index));
+    const recipes = (recipeDocs || []).map(mapRecipeListItem);
     this.setData({
       loading: false,
       recipes,

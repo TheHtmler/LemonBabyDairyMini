@@ -36,48 +36,52 @@
       </view>
 
       <view class="qty-action-panel" wx:if="{{showQtyActions}}">
-        <view class="qty-action-row">
-          <text class="qty-action-label">快捷操作：</text>
-          <text
-            class="qty-action-chip"
-            wx:if="{{hasDefaultQuantities}}"
-            bindtap="applyDefaultQuantities"
-          >默认份量</text>
-          <text
-            class="qty-action-chip"
-            wx:if="{{hasLastQuantities}}"
-            bindtap="applyLastQuantities"
-          >上次份量</text>
-          <text class="qty-action-chip danger" bindtap="clearAllQuantities">清空</text>
+        <view class="qty-action-bar">
+          <view class="qty-action-row">
+            <text class="qty-action-label">快捷操作：</text>
+            <text
+              class="qty-action-chip"
+              wx:if="{{hasDefaultQuantities}}"
+              bindtap="applyDefaultQuantities"
+            >默认份量</text>
+            <text
+              class="qty-action-chip"
+              wx:if="{{hasLastQuantities}}"
+              bindtap="applyLastQuantities"
+            >上次份量</text>
+            <text class="qty-action-chip danger" bindtap="clearAllQuantities">清空</text>
+          </view>
+          <button class="batch-nutrition-toggle" bindtap="toggleBatchNutrition" aria-expanded="{{showBatchNutrition}}">
+            {{showBatchNutrition ? '收起营养成分' : '查看营养成分'}}
+          </button>
         </view>
-      </view>
-    </view>
-
-    <view class="nutrition-preview">
-      <view class="nutrition-preview-head">
-        <text class="nutrition-preview-title">这次一共</text>
-        <text class="nutrition-preview-meta">约 {{batchPreview.totalWeightG}}g</text>
-      </view>
-      <view class="summary-grid">
-        <view class="summary-item">
-          <text class="summary-value">{{batchPreview.totalCalories}}</text>
-          <text class="summary-label">热量</text>
+        <view class="nutrition-preview" wx:if="{{showBatchNutrition}}">
+          <view class="nutrition-preview-head">
+            <text class="nutrition-preview-title">整批原料营养</text>
+            <text class="nutrition-preview-meta" wx:if="{{intakeMode !== 'finishedGrams' && batchPreview.canUseGramsIntake && batchPreview.totalWeightG > 0}}">原料合计 {{batchPreview.totalWeightG}} g</text>
+          </view>
+          <view class="summary-grid">
+            <view class="summary-item">
+              <text class="summary-value">{{batchPreview.totalCalories}}</text>
+              <text class="summary-label">热量 (kcal)</text>
+            </view>
+            <view class="summary-item">
+              <text class="summary-value">{{batchPreview.totalProtein}}</text>
+              <text class="summary-label">蛋白 (g)</text>
+            </view>
+            <view class="summary-item">
+              <text class="summary-value">{{batchPreview.totalCarbs}}</text>
+              <text class="summary-label">碳水 (g)</text>
+            </view>
+            <view class="summary-item">
+              <text class="summary-value">{{batchPreview.totalFat}}</text>
+              <text class="summary-label">脂肪 (g)</text>
+            </view>
+          </view>
+          <view class="nutrition-preview-premium" wx:if="{{batchPreview.showPremiumProtein}}">
+            <text class="nutrition-preview-premium-text">含优质蛋白 {{batchPreview.premiumProteinText}}g · {{batchPreview.premiumRatio}}%</text>
+          </view>
         </view>
-        <view class="summary-item">
-          <text class="summary-value">{{batchPreview.totalProtein}}</text>
-          <text class="summary-label">蛋白</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-value">{{batchPreview.totalCarbs}}</text>
-          <text class="summary-label">碳水</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-value">{{batchPreview.totalFat}}</text>
-          <text class="summary-label">脂肪</text>
-        </view>
-      </view>
-      <view class="nutrition-preview-premium" wx:if="{{batchPreview.showPremiumProtein}}">
-        <text class="nutrition-preview-premium-text">含优质蛋白 {{batchPreview.premiumProteinText}}g · {{batchPreview.premiumRatio}}%</text>
       </view>
     </view>
 
@@ -90,15 +94,37 @@
               class="mode-tab {{intakeMode === 'grams' ? 'active' : ''}} {{batchPreview.canUseGramsIntake ? '' : 'disabled'}}"
               data-mode="grams"
               bindtap="switchIntakeMode"
-            >克数</view>
+            >原料克重</view>
             <view
               class="mode-tab {{intakeMode === 'percent' ? 'active' : ''}}"
               data-mode="percent"
               bindtap="switchIntakeMode"
             >百分比</view>
+            <view
+              class="mode-tab {{intakeMode === 'finishedGrams' ? 'active' : ''}}"
+              data-mode="finishedGrams"
+              bindtap="switchIntakeMode"
+            >成品克重</view>
           </view>
         </view>
+        <view class="intake-value-row intake-batch-row" id="finished-batch-weight-row" wx:if="{{intakeMode === 'finishedGrams'}}">
+          <text class="intake-panel-label intake-weight-label">整批成品实称重量</text>
+          <input
+            class="qty-input intake-input {{finishedBatchWeightMissing ? 'missing' : ''}}"
+            type="digit"
+            value="{{finishedBatchWeight}}"
+            placeholder="必填"
+            placeholder-class="qty-placeholder"
+            focus="{{focusedFinishedBatchWeight}}"
+            bindinput="onFinishedBatchWeightInput"
+            bindblur="onFinishedBatchWeightBlur"
+            confirm-type="done"
+            aria-label="整批成品实称重量，单位克，必填"
+          />
+          <text class="unit-text">g</text>
+        </view>
         <view class="intake-value-row" id="intake-value-row">
+          <text class="intake-panel-label intake-weight-label" wx:if="{{intakeMode === 'finishedGrams'}}">吃掉的成品重量</text>
           <input
             class="qty-input intake-input {{intakeValueMissing ? 'missing' : ''}}"
             type="digit"
@@ -109,8 +135,9 @@
             bindinput="onIntakeValueInput"
             bindblur="onIntakeValueBlur"
             confirm-type="done"
+            aria-label="{{intakeMode === 'percent' ? '摄入百分比，必填' : intakeMode === 'finishedGrams' ? '吃掉的成品重量，单位克，必填' : '食用克数，必填'}}"
           />
-          <text class="unit-text">{{intakeMode === 'grams' ? 'g' : '%'}}</text>
+          <text class="unit-text">{{intakeMode === 'percent' ? '%' : 'g'}}</text>
         </view>
         <text class="intake-tip" wx:if="{{intakePreview.tip}}">{{intakePreview.tip}}</text>
       </view>

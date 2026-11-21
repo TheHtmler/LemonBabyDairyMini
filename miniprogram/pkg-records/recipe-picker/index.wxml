@@ -51,7 +51,7 @@
 
         <view class="recipe-list" wx:else>
           <view
-            class="recipe-card {{item.tone}}"
+            class="recipe-card"
             wx:for="{{filteredRecipes}}"
             wx:key="_id"
             data-id="{{item._id}}"
@@ -59,7 +59,7 @@
             hover-stay-time="80"
             bindtap="selectRecipe"
           >
-            <view class="recipe-avatar">{{item.nameInitial}}</view>
+            <recipe-cover name="{{item.name}}" file-id="{{item.coverImageFileId}}" />
             <view class="recipe-body">
               <view class="recipe-top">
                 <text class="recipe-name">{{item.name}}</text>

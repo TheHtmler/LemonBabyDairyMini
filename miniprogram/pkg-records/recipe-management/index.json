@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "食谱管理",
   "enablePullDownRefresh": false,
-  "backgroundColor": "#FFF6D8"
+  "backgroundColor": "#FFF6D8",
+  "usingComponents": { "recipe-cover": "../components/recipe-cover/index" }
 }

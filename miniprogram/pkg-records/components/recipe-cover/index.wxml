@@ -1,0 +1,8 @@
+<view class="recipe-cover {{large ? 'large' : ''}}" aria-hidden="{{!previewable || !imageReady}}"
+  aria-role="{{previewable && imageReady ? 'button' : ''}}" aria-label="{{previewable && imageReady ? '查看封面大图' : ''}}"
+  bindtap="onPreview">
+  <text wx:if="{{!imageReady}}">{{initial}}</text>
+  <image wx:if="{{imageSrc}}" class="cover-image {{imageReady ? 'ready' : ''}}" src="{{imageSrc}}" data-src="{{imageSrc}}"
+    mode="aspectFill" lazy-load="{{!large}}" bindload="onImageLoad" binderror="onImageError" />
+  <text wx:if="{{previewable && imageReady}}" class="preview-label">看大图</text>
+</view>

@@ -898,8 +898,10 @@ function buildRecipeIntakeDisplay(intake = {}) {
     || '食谱成品'
   ).trim();
   const yieldWeightG = Number(recipeSource.yieldWeightG || recipeSource.batchWeightG) || 0;
-  const eatenWeightG = Number(intake.quantity) || 0;
-  const scale = yieldWeightG > 0 ? eatenWeightG / yieldWeightG : 0;
+  const quantity = Number(intake.quantity) || 0;
+  const scale = intake.unit === '%'
+    ? quantity / 100
+    : yieldWeightG > 0 ? quantity / yieldWeightG : 0;
   const nutritionFields = [
     'calories',
     'protein',

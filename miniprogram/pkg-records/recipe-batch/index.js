@@ -7,8 +7,10 @@ const {
   summarizeBatchFromIngredients,
   summarizePremiumProteinFromIngredients,
   scalePremiumProteinSummary,
+  resolveFoodIntakePremiumProteinSplit,
   combinePremiumProteinWithDay,
   resolveBatchIntake,
+  scaleNutritionByFactor,
   emptyNutrition
 } = require('../../utils/recipeNutritionUtils');
 const {
@@ -38,8 +40,9 @@ function readRecipeBatchEditContext() {
       originalIntakeId: context.originalIntakeId || '',
       recipeId: context.recipeId || '',
       ingredients: Array.isArray(context.ingredients) ? context.ingredients : [],
-      intakeMode: context.intakeMode === 'percent' ? 'percent' : 'grams',
-      intakeValue: context.intakeValue != null ? String(context.intakeValue) : ''
+      intakeMode: ['percent', 'finishedGrams'].includes(context.intakeMode) ? context.intakeMode : 'grams',
+      intakeValue: context.intakeValue != null ? String(context.intakeValue) : '',
+      finishedBatchWeight: String(context.measurement?.batchWeightG ?? '')
     };
   } catch (error) {
     return null;
@@ -163,11 +166,15 @@ Page({
     hasDefaultQuantities: false,
     hasLastQuantities: false,
     showQtyActions: false,
+    showBatchNutrition: false,
     focusedQuantityIndex: -1,
     focusedIntake: false,
     intakeValueMissing: false,
+    focusedFinishedBatchWeight: false,
+    finishedBatchWeightMissing: false,
     intakeMode: 'grams',
     intakeValue: '',
+    finishedBatchWeight: '',
     batchPreview: {
       totalWeightG: 0,
       totalProtein: '0.00',
@@ -290,10 +297,25 @@ Page({
   },
 
   getIngredientSource(ingredient = {}) {
-    if (ingredient.foodSnapshot?.proteinQuality === 'mixed') return ingredient.foodSnapshot;
+    if (this._editContext?.ingredients.length || ingredient.foodSnapshot?.proteinQuality === 'mixed') {
+      return ingredient.foodSnapshot;
+    }
     return this.foodById.get(ingredient.foodId)
       || ingredient.foodSnapshot
       || null;
+  },
+
+  getIngredientNutrition(ingredient, quantity, index) {
+    if (!(quantity > 0)) return emptyNutrition();
+    const saved = this._editContext?.ingredients[index];
+    const savedQuantity = Number(saved?.quantity);
+    if (savedQuantity > 0 && saved.nutrition && Object.keys(saved.nutrition).length) {
+      // 修改用量时从当餐保存的营养值折算，避免食材库更新影响历史记录。
+      return quantity === savedQuantity
+        ? saved.nutrition
+        : scaleNutritionByFactor(saved.nutrition, quantity / savedQuantity);
+    }
+    return buildIngredientNutrition(this.getIngredientSource(ingredient), quantity);
   },
 
   async loadFoodCatalog() {
@@ -335,52 +357,42 @@ Page({
 
     this._recipe = recipe;
     const editContext = readRecipeBatchEditContext();
-    this._editContext = editContext && editContext.recipeId === recipe._id
+    this._editContext = this._isEditMode && editContext?.recipeId === recipe._id
       ? editContext
       : null;
-    const editQtyByFoodId = new Map(
-      (this._editContext?.ingredients || [])
-        .map((item = {}) => [String(item.foodId || '').trim(), item])
-        .filter(([foodId]) => !!foodId)
-    );
-
-    const draftIngredients = (recipe.ingredients || []).map((item, index) => {
+    const defaults = recipe.ingredients || [];
+    const defaultsById = new Map(defaults.filter(item => item.foodId).map(item => [item.foodId, item]));
+    const savedIngredients = this._editContext?.ingredients;
+    const useSaved = !!savedIngredients?.length;
+    const draftIngredients = (useSaved ? savedIngredients : defaults).map((item, index) => {
       const food = this.foodById.get(item.foodId) || null;
-      const editIngredient = editQtyByFoodId.get(String(item.foodId || '').trim());
-      const snapshot = slimFoodSnapshot(
-        (editIngredient?.foodSnapshot && editIngredient.foodSnapshot.name
-          ? editIngredient.foodSnapshot
-          : null)
-        || (item.foodSnapshot && item.foodSnapshot.name
-          ? item.foodSnapshot
-          : (food ? FoodModel.buildFoodSnapshot(food) : (item.foodSnapshot || {})))
-      );
-      const unit = food?.baseUnit
-        || editIngredient?.unit
-        || item.unit
-        || snapshot.nutritionBasis?.unit
-        || 'g';
-      const source = snapshot.proteinQuality === 'mixed' ? snapshot : food || snapshot;
-      const per100 = buildPer100Display(source, unit);
-      const editQuantity = Number(editIngredient?.quantity);
-      const defaultQuantity = editQuantity > 0
-        ? String(editQuantity)
-        : (Number(item.quantity) > 0 ? String(Number(item.quantity)) : '');
-      const nutrition = defaultQuantity
-        ? buildIngredientNutrition(source, Number(defaultQuantity) || 0)
-        : emptyNutrition();
-      const current = buildCurrentNutritionDisplay(nutrition, defaultQuantity);
-      return {
+      const savedUnit = useSaved && (item.unit || item.foodSnapshot?.nutritionBasis?.unit);
+      const itemSnapshot = item.foodSnapshot || {};
+      const hasSnapshot = useSaved ? Object.keys(itemSnapshot).length > 0 : !!itemSnapshot.name;
+      const canUseCatalog = food && (!savedUnit || food.baseUnit === savedUnit);
+      const snapshot = slimFoodSnapshot(hasSnapshot || !canUseCatalog
+        ? itemSnapshot : FoodModel.buildFoodSnapshot(food));
+      const unit = savedUnit || food?.baseUnit || item.unit || snapshot.nutritionBasis.unit;
+      const quantity = Number(item.quantity) > 0 ? String(Number(item.quantity)) : '';
+      const defaultItem = useSaved ? defaultsById.get(item.foodId) : item;
+      const defaultQuantity = Number(defaultItem?.quantity);
+      const ingredient = {
         foodId: item.foodId || '',
-        foodName: food?.name || editIngredient?.foodName || item.foodName || snapshot.name || `原料${index + 1}`,
+        foodName: (useSaved && (item.foodName || snapshot.name)) || food?.name || item.foodName || snapshot.name || `原料${index + 1}`,
         unit,
-        quantity: defaultQuantity,
-        proteinQuality: editIngredient?.proteinQuality
-          || item.proteinQuality
-          || food?.proteinQuality
-          || snapshot.proteinQuality
-          || '',
-        foodSnapshot: snapshot,
+        quantity,
+        defaultQuantity: defaultQuantity > 0 && (!useSaved || (defaultItem.unit || 'g') === unit)
+          ? defaultQuantity : null,
+        proteinQuality: useSaved
+          ? item.proteinQuality || snapshot.proteinQuality || ''
+          : item.proteinQuality || food?.proteinQuality || snapshot.proteinQuality || '',
+        foodSnapshot: snapshot
+      };
+      const per100 = buildPer100Display(this.getIngredientSource(ingredient), unit);
+      const nutrition = this.getIngredientNutrition(ingredient, Number(quantity), index);
+      const current = buildCurrentNutritionDisplay(nutrition, quantity);
+      return {
+        ...ingredient,
         nutrition,
         per100Label: per100.per100Label,
         per100Text: per100.per100Text,
@@ -391,9 +403,7 @@ Page({
 
     const unitPreview = summarizeBatchFromIngredients(draftIngredients);
     const canUseGramsIntake = !!unitPreview.canUseGramsIntake;
-    const hasDefaultQuantities = (recipe.ingredients || []).some(
-      (item) => Number(item.quantity) > 0
-    );
+    const hasDefaultQuantities = draftIngredients.some(item => item.defaultQuantity > 0);
     const lastIngredients = readLastBatchQuantities(getBabyUid(), recipe._id);
     const lastFoodIds = new Set(lastIngredients.map((item) => item.foodId));
     const hasLastQuantities = !this._editContext
@@ -406,7 +416,7 @@ Page({
     let intakeMode = canUseGramsIntake ? 'grams' : 'percent';
     let intakeValue = '';
     if (this._editContext) {
-      const editMode = this._editContext.intakeMode === 'percent' ? 'percent' : 'grams';
+      const editMode = this._editContext.intakeMode;
       intakeMode = editMode === 'grams' && !canUseGramsIntake ? 'percent' : editMode;
       intakeValue = this._editContext.intakeValue || '';
       if (intakeMode === 'percent' && editMode === 'grams' && !canUseGramsIntake) {
@@ -425,6 +435,7 @@ Page({
       showQtyActions: hasDefaultQuantities || hasLastQuantities || draftIngredients.length > 0,
       intakeMode,
       intakeValue,
+      finishedBatchWeight: this._editContext?.finishedBatchWeight || '',
       batchPreview: {
         totalWeightG: 0,
         totalProtein: '0.00',
@@ -439,13 +450,17 @@ Page({
     }, () => this.refreshBatchPreview());
   },
 
+  toggleBatchNutrition() {
+    this.setData({ showBatchNutrition: !this.data.showBatchNutrition });
+  },
+
   applyIngredientQuantities(resolveQuantity) {
     this._quantityDrafts = {};
     const liveCurrentByIndex = [];
     const draftIngredients = (this.data.draftIngredients || []).map((item, index) => {
       const quantityNum = Math.max(0, Number(resolveQuantity(item, index)) || 0);
       const quantity = quantityNum > 0 ? String(quantityNum) : '';
-      const live = this.buildLiveCurrentEntry(item, quantity);
+      const live = this.buildLiveCurrentEntry(item, quantity, index);
       liveCurrentByIndex[index] = {
         hasCurrentNutrition: live.hasCurrentNutrition,
         currentText: live.currentText
@@ -471,6 +486,11 @@ Page({
   },
 
   applyDefaultQuantities() {
+    if (this._editContext?.ingredients.length) {
+      this.applyIngredientQuantities(item => item.defaultQuantity ?? item.quantity);
+      wx.showToast({ title: '已填入默认份量', icon: 'none' });
+      return;
+    }
     const recipeIngredients = this._recipe?.ingredients || [];
     const byFoodId = new Map();
     recipeIngredients.forEach((item = {}) => {
@@ -516,12 +536,9 @@ Page({
     wx.showToast({ title: '已填入上次份量', icon: 'none' });
   },
 
-  buildLiveCurrentEntry(ingredient = {}, quantityRaw = '') {
-    const source = this.getIngredientSource(ingredient);
+  buildLiveCurrentEntry(ingredient, quantityRaw, index) {
     const quantityNum = Math.max(0, Number(quantityRaw) || 0);
-    const nutrition = quantityNum > 0
-      ? buildIngredientNutrition(source, quantityNum)
-      : emptyNutrition();
+    const nutrition = this.getIngredientNutrition(ingredient, quantityNum, index);
     const current = buildCurrentNutritionDisplay(nutrition, quantityRaw);
     return {
       nutrition,
@@ -542,7 +559,7 @@ Page({
       this.refreshBatchPreview();
       return;
     }
-    const live = this.buildLiveCurrentEntry(ingredient, raw);
+    const live = this.buildLiveCurrentEntry(ingredient, raw, index);
     // 行内「本次」走独立字段，避免改 draftIngredients 把受控输入顶回旧值
     this.setData({
       [`liveCurrentByIndex[${index}]`]: {
@@ -560,7 +577,7 @@ Page({
     const quantity = draft === undefined ? e.detail.value : draft;
     if (this._quantityDrafts) delete this._quantityDrafts[index];
 
-    const live = this.buildLiveCurrentEntry(ingredient, quantity);
+    const live = this.buildLiveCurrentEntry(ingredient, quantity, index);
     const updates = {
       focusedQuantityIndex: -1,
       [`draftIngredients[${index}].quantity`]: quantity,
@@ -607,9 +624,10 @@ Page({
   },
 
   switchIntakeMode(e) {
-    const mode = e.currentTarget.dataset.mode === 'grams' ? 'grams' : 'percent';
+    const { mode } = e.currentTarget.dataset;
+    if (!['grams', 'percent', 'finishedGrams'].includes(mode)) return;
     if (mode === 'grams' && !this.data.batchPreview.canUseGramsIntake) {
-      wx.showToast({ title: '含非克单位时请用百分比', icon: 'none' });
+      wx.showToast({ title: '含非克单位时请用百分比或成品克重', icon: 'none' });
       return;
     }
     this._intakeDraft = '';
@@ -617,7 +635,9 @@ Page({
       intakeMode: mode,
       intakeValue: '',
       intakeValueMissing: false,
-      focusedIntake: false
+      focusedIntake: false,
+      finishedBatchWeightMissing: false,
+      focusedFinishedBatchWeight: false
     }, () => this.refreshIntakePreview());
   },
 
@@ -641,13 +661,25 @@ Page({
     }, () => this.refreshIntakePreview());
   },
 
-  focusIntakeValueInput() {
+  onFinishedBatchWeightInput(e) {
+    this.setData({
+      finishedBatchWeight: e.detail.value,
+      finishedBatchWeightMissing: false
+    }, () => this.refreshIntakePreview());
+  },
+
+  onFinishedBatchWeightBlur() {
+    this.setData({ focusedFinishedBatchWeight: false });
+  },
+
+  focusIntakeValueInput(focusBatchWeight = false) {
+    const field = focusBatchWeight ? 'focusedFinishedBatchWeight' : 'focusedIntake';
     const scrollToTarget = () => {
       if (typeof wx.createSelectorQuery !== 'function' || typeof wx.pageScrollTo !== 'function') {
         return;
       }
       wx.createSelectorQuery()
-        .select('#intake-value-row')
+        .select(focusBatchWeight ? '#finished-batch-weight-row' : '#intake-value-row')
         .boundingClientRect()
         .selectViewport()
         .scrollOffset()
@@ -662,8 +694,8 @@ Page({
         });
     };
 
-    this.setData({ focusedIntake: false }, () => {
-      this.setData({ focusedIntake: true }, () => {
+    this.setData({ [field]: false }, () => {
+      this.setData({ [field]: true }, () => {
         setTimeout(scrollToTarget, 40);
       });
     });
@@ -673,8 +705,7 @@ Page({
     const draftIngredients = (this.data.draftIngredients || []).map((item, index) => {
       const draft = this._quantityDrafts ? this._quantityDrafts[index] : undefined;
       const quantity = draft === undefined ? item.quantity : draft;
-      const source = this.getIngredientSource(item);
-      const nutrition = buildIngredientNutrition(source, Number(quantity) || 0);
+      const nutrition = this.getIngredientNutrition(item, Number(quantity), index);
       const current = buildCurrentNutritionDisplay(nutrition, quantity);
       return {
         ...item,
@@ -703,10 +734,7 @@ Page({
       const draft = this._quantityDrafts ? this._quantityDrafts[index] : undefined;
       const quantityRaw = draft === undefined ? item.quantity : draft;
       const quantity = Math.max(0, Number(quantityRaw) || 0);
-      const source = this.getIngredientSource(item);
-      const nutrition = quantity > 0
-        ? buildIngredientNutrition(source, quantity)
-        : emptyNutrition();
+      const nutrition = this.getIngredientNutrition(item, quantity, index);
       return {
         ...item,
         quantity,
@@ -789,18 +817,18 @@ Page({
     }
 
     const summary = summarizeBatchFromIngredients(prepared);
+    const { intakeMode, finishedBatchWeight } = this.data;
     try {
       const intake = resolveBatchIntake(
         summary.totalNutrition,
-        summary.totalWeightG,
-        this.data.intakeMode,
+        intakeMode === 'finishedGrams' ? finishedBatchWeight : summary.totalWeightG,
+        intakeMode,
         intakeValue
       );
-      const premiumSummary = scalePremiumProteinSummary(
-        summarizePremiumProteinFromIngredients(prepared),
-        (Number(intake.intakePercent) || 0) / 100
-      );
       const naturalProtein = Number(intake.nutrition.naturalProtein) || 0;
+      const premiumSummary = intake.measurement
+        ? resolveFoodIntakePremiumProteinSplit({ sourceType: 'recipe', ingredientsSnapshot: prepared }, naturalProtein)
+        : scalePremiumProteinSummary(summarizePremiumProteinFromIngredients(prepared), intake.intakePercent / 100);
       const dayCombined = combinePremiumProteinWithDay(
         this._dayProteinContext || { naturalProtein: 0, premiumProtein: 0 },
         premiumSummary.premiumProtein,
@@ -866,11 +894,21 @@ Page({
     }
 
     const batch = summarizeBatchFromIngredients(draftIngredients);
+    const { intakeMode, finishedBatchWeight } = this.data;
+    const isFinished = intakeMode === 'finishedGrams';
+    const measuredWeight = Number(finishedBatchWeight);
+    if (isFinished && (!Number.isFinite(measuredWeight) || measuredWeight <= 0)) {
+      this.setData({ finishedBatchWeightMissing: true });
+      this.focusIntakeValueInput(true);
+      wx.showToast({ title: '请填写整批成品实称重量', icon: 'none' });
+      return;
+    }
     if (!(Number(intakeValue) > 0)) {
       this.setData({ intakeValueMissing: true });
       this.focusIntakeValueInput();
       wx.showToast({
-        title: this.data.intakeMode === 'percent' ? '请填写摄入百分比' : '请填写实际克数',
+        title: isFinished ? '请填写吃掉的成品重量'
+          : intakeMode === 'percent' ? '请填写摄入百分比' : '请填写实际克数',
         icon: 'none'
       });
       return;
@@ -880,8 +918,8 @@ Page({
     try {
       intake = resolveBatchIntake(
         batch.totalNutrition,
-        batch.totalWeightG,
-        this.data.intakeMode,
+        isFinished ? measuredWeight : batch.totalWeightG,
+        intakeMode,
         intakeValue
       );
     } catch (error) {
@@ -894,7 +932,7 @@ Page({
     if (intake.intakeMode === 'grams' && !batch.canUseGramsIntake) {
       this.setData({ intakeValueMissing: true });
       this.focusIntakeValueInput();
-      wx.showToast({ title: '含非克单位原料时请用百分比', icon: 'none' });
+      wx.showToast({ title: '含非克单位时请用百分比或成品克重', icon: 'none' });
       return;
     }
 
@@ -909,10 +947,9 @@ Page({
         unit: item.unit || 'g',
         sortOrder: index,
         nutrition: item.nutrition || emptyNutrition(),
-        proteinQuality: source.proteinQuality
-          || item.foodSnapshot?.proteinQuality
-          || item.proteinQuality
-          || '',
+        proteinQuality: this._editContext?.ingredients.length
+          ? item.proteinQuality
+          : source.proteinQuality || item.foodSnapshot?.proteinQuality || item.proteinQuality || '',
         foodSnapshot: item.foodSnapshot || slimFoodSnapshot(source)
       };
     });
@@ -922,6 +959,7 @@ Page({
       : (intake.intakeMode === 'percent' ? intake.intakePercent : 0);
 
     const editContext = this._editContext || null;
+    const batchWeightG = intake.measurement?.batchWeightG || batch.totalWeightG;
     wx.setStorageSync(RECIPE_PICKER_SELECTION_KEY, {
       items: [{
         localId: editContext?.localId
@@ -933,12 +971,15 @@ Page({
         unit: 'g',
         intakeMode: intake.intakeMode,
         intakePercent: intake.intakePercent,
-        batchWeightG: batch.totalWeightG,
+        batchWeightG,
+        ...(intake.measurement ? { measurement: intake.measurement } : {}),
         batchNutrition: batch.totalNutrition,
-        nutritionPer100g: batch.nutritionPer100g,
+        nutritionPer100g: intake.measurement
+          ? scaleNutritionByFactor(batch.totalNutrition, 100 / batchWeightG)
+          : batch.nutritionPer100g,
         nutrition: intake.nutrition,
         proteinSource: batch.proteinSource,
-        yieldWeightG: batch.totalWeightG,
+        yieldWeightG: batchWeightG,
         ingredientsSnapshot,
         sourceType: 'recipe'
       }]

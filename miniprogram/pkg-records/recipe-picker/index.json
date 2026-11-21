@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "选择食谱",
-  "enablePullDownRefresh": false
+  "enablePullDownRefresh": false,
+  "usingComponents": { "recipe-cover": "../components/recipe-cover/index" }
 }

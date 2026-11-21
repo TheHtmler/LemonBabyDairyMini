@@ -103,8 +103,9 @@ function normalizeRecipeSource(source = {}) {
     recipeName,
     yieldWeightG: batchWeightG,
     batchWeightG,
-    intakeMode: source.intakeMode === 'percent' ? 'percent' : 'grams',
+    intakeMode: ['percent', 'finishedGrams'].includes(source.intakeMode) ? source.intakeMode : 'grams',
     intakePercent: Number(source.intakePercent) || 0,
+    ...(source.measurement ? { measurement: source.measurement } : {}),
     ingredientsSnapshot: Array.isArray(source.ingredientsSnapshot)
       ? source.ingredientsSnapshot
       : []

@@ -103,6 +103,7 @@ function mapRecipeListItem(recipe = {}) {
   return {
     _id: recipe._id,
     name,
+    coverImageFileId: recipe.coverImageFileId || '',
     notes: recipe.notes || '',
     ingredients: recipe.ingredients || [],
     ingredientCount: ingredientTags.length,
@@ -121,6 +122,10 @@ Page({
     mode: 'list',
     loading: true,
     saving: false,
+    choosingCover: false,
+    coverDraft: null,
+    coverError: '',
+    recentCover: null,
     searchQuery: '',
     recipes: [],
     filteredRecipes: [],
@@ -166,6 +171,8 @@ Page({
     this.consumeIngredientSelection();
     this.loadLibraryUpdateHint();
   },
+
+  onUnload() { this._unloaded = true; },
 
   // 曾经从其他宝宝导入过食谱时，检查来源宝宝的食谱库是否有新变化
   async loadLibraryUpdateHint() {
@@ -325,6 +332,8 @@ Page({
       recipeId: '',
       recipe: null,
       form,
+      coverDraft: null,
+      coverError: '',
       defaultPreview: buildDefaultPreview(form.ingredients || [])
     });
     wx.setNavigationBarTitle({ title: '新建食谱' });
@@ -406,6 +415,8 @@ Page({
         ingredientNames: ingredients.map(item => item.foodName).join('、')
       },
       form,
+      coverDraft: null,
+      coverError: '',
       defaultPreview: buildDefaultPreview(ingredients)
     });
     wx.setNavigationBarTitle({ title: mode === 'edit' ? '编辑食谱' : '食谱详情' });
@@ -429,6 +440,38 @@ Page({
 
   onNameInput(e) {
     this.setData({ 'form.name': e.detail.value });
+  },
+
+  async onChooseCover() {
+    if (this.data.saving || this.data.choosingCover) return;
+    this.setData({ choosingCover: true });
+    try {
+      const result = await wx.chooseMedia({ count: 1, mediaType: ['image'],
+        sourceType: ['album', 'camera'], sizeType: ['compressed'] });
+      const photo = result.tempFiles?.[0];
+      if (!photo?.tempFilePath) return;
+      if (photo.size > 8 * 1024 * 1024) throw new Error('请选择 8 MB 以内的封面图');
+      const info = await wx.getImageInfo({ src: photo.tempFilePath });
+      const type = String(info.type || '').toLowerCase().replace(/^jpeg$/, 'jpg');
+      if (!['jpg', 'png', 'webp', 'gif'].includes(type)) throw new Error('请选择 JPG、PNG、WebP 或 GIF 图片');
+      if (!this._unloaded && this.data.mode === 'edit') {
+        this.setData({ coverDraft: { path: photo.tempFilePath, type, fileId: '' }, coverError: '' });
+      }
+    } catch (error) {
+      if (!this._unloaded && !/cancel/i.test(error.errMsg || '')) {
+        this.setData({ coverError: error.message || '选取失败，请重新选择图片。' });
+      }
+    } finally {
+      if (!this._unloaded) this.setData({ choosingCover: false });
+    }
+  },
+
+  onRemoveCover() {
+    if (this.data.saving || this.data.choosingCover) return;
+    // 有待保存的新图时只撤销这次选图，恢复原封面。
+    const updates = { coverDraft: null, coverError: '' };
+    if (!this.data.coverDraft) updates['form.coverImageFileId'] = '';
+    this.setData(updates);
   },
 
   onNotesInput(e) {
@@ -595,51 +638,66 @@ Page({
   },
 
   async saveRecipe() {
-    if (this.data.saving) return;
-    await this.ensureFoodCatalog();
-    const payload = this.buildSavePayload();
-    if (!payload.name) {
-      wx.showToast({ title: '请输入食谱名称', icon: 'none' });
-      return;
-    }
-    if (!payload.ingredients.length) {
-      wx.showToast({ title: '请至少添加一种原料', icon: 'none' });
-      return;
-    }
+    if (this.data.saving || this.data.loading || this.data.choosingCover) return;
+    const { recipeId, coverDraft } = this.data;
+    const babyUid = getBabyUid();
+    const app = getApp();
+    const currentOperator = () => app.globalData.openid || wx.getStorageSync('openid') || '';
+    const operatorOpenid = currentOperator();
+    const isCurrent = () => !this._unloaded && this.data.mode === 'edit'
+      && this.data.recipeId === recipeId && getBabyUid() === babyUid && currentOperator() === operatorOpenid;
+    this.setData({ saving: true, coverError: '' });
+    let loading = false;
+    let uploadingCover = false;
+    let result;
+    let failure = '';
+    try {
+      await this.ensureFoodCatalog();
+      if (!isCurrent()) return;
+      const payload = { ...this.buildSavePayload(), operatorOpenid };
+      if (!payload.name) throw new Error('请输入食谱名称');
+      if (!payload.ingredients.length) throw new Error('请至少添加一种原料');
+      if (!babyUid) throw new Error('未找到宝宝信息');
 
-    this.setData({ saving: true });
-    wx.showLoading({ title: '保存中...', mask: true });
-    const app = typeof getApp === 'function' ? getApp() : null;
-    const savePayload = {
-      ...payload,
-      operatorOpenid: app?.globalData?.openid || wx.getStorageSync('openid') || ''
-    };
-    console.log('[recipe-management] saveRecipe', {
-      mode: this.data.recipeId ? 'update' : 'create',
-      recipeId: this.data.recipeId || '',
-      babyUid: savePayload.babyUid,
-      name: savePayload.name,
-      ingredientCount: (savePayload.ingredients || []).length
-    });
-    const result = this.data.recipeId
-      ? await RecipeModel.update(this.data.recipeId, savePayload, getBabyUid())
-      : await RecipeModel.create(savePayload);
-    console.log('[recipe-management] saveRecipe result', {
-      success: result.success,
-      message: result.message || '',
-      readable: result.readable,
-      newId: result.data?._id || result.recipe?._id || ''
-    });
-    wx.hideLoading();
-    this.setData({ saving: false });
-    if (!result.success) {
-      wx.showToast({ title: result.message || '保存失败', icon: 'none' });
+      let coverFileId = coverDraft?.fileId;
+      if (coverDraft && !coverFileId) {
+        wx.showLoading({ title: '正在上传封面', mask: true });
+        loading = true;
+        uploadingCover = true;
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${coverDraft.type}`;
+        const cloudPath = `recipe_covers/${encodeURIComponent(babyUid)}/${encodeURIComponent(operatorOpenid || 'owner')}/${fileName}`;
+        const { fileID } = await wx.cloud.uploadFile({ cloudPath, filePath: coverDraft.path });
+        if (!fileID) throw new Error('封面上传失败，请重试');
+        if (!isCurrent()) return;
+        coverFileId = fileID;
+        uploadingCover = false;
+        // 保留本地预览，保存食谱失败时可复用已上传的文件。
+        this.setData({ 'coverDraft.fileId': fileID });
+      }
+      if (coverFileId) payload.coverImageFileId = coverFileId;
+      wx.showLoading({ title: '正在保存食谱', mask: true });
+      loading = true;
+      result = recipeId ? await RecipeModel.update(recipeId, payload, babyUid) : await RecipeModel.create(payload);
+    } catch (error) {
+      failure = uploadingCover ? '封面上传失败，可重试保存' : error.message || '保存失败，请重试';
+    } finally {
+      if (loading) wx.hideLoading();
+      if (!this._unloaded) this.setData({ saving: false });
+    }
+    if (!isCurrent()) return;
+    if (!result?.success) {
+      if (uploadingCover) this.setData({ coverError: '封面上传失败，图片已保留。再次保存即可重试。' });
+      wx.showToast({ title: failure || result?.message || '保存失败', icon: 'none' });
       return;
     }
-    if (!this.data.recipeId && result.readable === false) {
+    const savedCover = this.data.coverDraft;
+    if (savedCover?.fileId) {
+      this.setData({ recentCover: { fileId: savedCover.fileId, path: savedCover.path } });
+    }
+    if (!recipeId && result.readable === false) {
       wx.showModal({
         title: '已保存但读回失败',
-        content: `请到云开发控制台检查 recipe_catalog 权限（建议与 food_catalog 一致），并确认记录 babyUid=${payload.babyUid || ''}`,
+        content: `请到云开发控制台检查 recipe_catalog 权限（建议与 food_catalog 一致），并确认记录 babyUid=${babyUid}`,
         showCancel: false
       });
     } else {

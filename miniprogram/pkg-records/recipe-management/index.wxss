@@ -287,6 +287,24 @@ page {
   gap: 12rpx;
 }
 
+.catalog-heading {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.cover-field { display: flex; align-items: center; gap: 20rpx; margin-top: 12rpx; }
+.cover-controls { flex: 1; min-width: 0; }
+.cover-actions { display: flex; flex-wrap: wrap; gap: 8rpx; }
+.cover-action { width: auto; min-height: 80rpx; margin: 0; padding: 14rpx 18rpx; line-height: 48rpx; border-radius: 14rpx; color: #754411; background: #fff1c8; font-size: 24rpx; }
+.cover-action::after { border: 0; }
+.cover-action[disabled] { opacity: .55; }
+.cover-remove { background: transparent; color: #775340; }
+.cover-hint { display: block; margin-top: 8rpx; color: #765727; font-size: 24rpx; line-height: 1.5; overflow-wrap: anywhere; }
+.cover-hint.cover-error { color: #a33224; }
+
 .catalog-name {
   flex: 1;
   min-width: 0;
